@@ -2,8 +2,10 @@
 //
 // Runs selected task-agent scenarios as same-task cascades: each
 // `appState.taskLogEntries` item is appended before one wake, while reports,
-// observations, and proposals persist across wakes. The output is one trace per
-// wake, using trialIndex as the wake index.
+// observations, and proposals persist across wakes. This is a sidecar live
+// runner for cascade smoke evidence. It emits one trace per wake, using
+// trialIndex as the wake index, so these traces must not be interpreted as
+// repeated-trial reliability or promotion evidence.
 
 @Tags(['eval-live'])
 library;
@@ -196,45 +198,25 @@ List<String> _cascadeWakeExpectationErrors({
   required EvalProfile profile,
   required List<AgentRunOutput> outputs,
 }) {
-  if (scenario.id != 'task_workflow_checklist_transcript_cascade') {
-    return const [];
-  }
-
   final errors = <String>[];
   final label = '${scenario.id}::${profile.name}';
-  if (outputs.length < 2) {
-    return ['$label expected at least two cascade wakes'];
-  }
-
-  final wake1 = outputs[1];
-  final checkedPullRequest = wake1.proposals.any(
-    (proposal) =>
-        proposal.toolName == 'update_checklist_item' &&
-        proposal.targetId == 'task-redesign' &&
-        proposal.status == 'pending' &&
-        proposal.args['id'] == 'ci-pr' &&
-        proposal.args['isChecked'] == true,
-  );
-  if (!checkedPullRequest) {
-    errors.add(
-      '$label wake 1 missing pending update_checklist_item proposal for '
-      'ci-pr with isChecked=true',
+  for (final expectedWake in scenario.expectations.cascadeWakes) {
+    final wakeIndex = expectedWake.wakeIndex;
+    if (wakeIndex < 0 || wakeIndex >= outputs.length) {
+      errors.add('$label wake $wakeIndex has no output');
+      continue;
+    }
+    final checks = runCascadeWakeLevel1(
+      scenario,
+      outputs[wakeIndex],
+      expectedWake,
+      profile: profile,
     );
-  }
-
-  final incorrectlyCheckedLaterItems = outputs.expand((output) {
-    return output.proposals.where(
-      (proposal) =>
-          proposal.toolName == 'update_checklist_item' &&
-          proposal.args['isChecked'] == true &&
-          {'ci-review', 'ci-release'}.contains(proposal.args['id']),
-    );
-  }).toList();
-  if (incorrectlyCheckedLaterItems.isNotEmpty) {
-    errors.add(
-      '$label checked checklist items that the transcript leaves pending: '
-      '${incorrectlyCheckedLaterItems.map((proposal) => proposal.args['id']).join(', ')}',
-    );
+    for (final check in checks.where((check) => !check.passed)) {
+      errors.add(
+        '$label wake $wakeIndex ${check.name}: ${check.detail}',
+      );
+    }
   }
 
   return errors;

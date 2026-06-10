@@ -833,6 +833,28 @@ List<EvalCheck> runLevel1(
   return checks;
 }
 
+/// Run Level 1 checks for one expected wake inside a cascade scenario.
+///
+/// The wake expectation is projected into a scenario-shaped view so the same
+/// check implementations grade normal one-shot runs and cascade wakes.
+List<EvalCheck> runCascadeWakeLevel1(
+  EvalScenario scenario,
+  AgentRunOutput output,
+  ExpectedCascadeWakeState expectedWake, {
+  EvalProfile? profile,
+}) {
+  final wakeScenario = EvalScenario(
+    id: '${scenario.id}#wake-${expectedWake.wakeIndex}',
+    title: '${scenario.title} wake ${expectedWake.wakeIndex}',
+    agentKind: scenario.agentKind,
+    appState: scenario.appState,
+    userInput: scenario.userInput,
+    metadata: scenario.metadata,
+    expectations: expectedWake.toExpectations(),
+  );
+  return runLevel1(wakeScenario, output, profile: profile);
+}
+
 // ---------------------------------------------------------------------------
 // Arg helpers (no dynamic dispatch — type-promote before use)
 // ---------------------------------------------------------------------------

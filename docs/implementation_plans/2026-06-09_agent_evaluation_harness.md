@@ -120,7 +120,7 @@ fvm dart analyze test/eval        # the analyzer GATE (see gotcha below)
 fvm dart format test/eval
 ```
 
-Current gate: 270 eval tests green, 7 expected skips without `EVAL_RUN` /
+Current gate: 278 eval tests green, 8 expected skips without `EVAL_RUN` /
 `EVAL_SCENARIOS` / `EVAL_CALIBRATION_TEMPLATE` / `EVAL_CALIBRATION` /
 `LOTTI_EVAL_LIVE`, analyzer clean.
 Latest active slice adds Level 2 run-manifest promotion-plan evidence plus a
@@ -171,6 +171,22 @@ proposals. Matchers use exact tool names, recursive JSON containment, distinct
 required call/list-item matching, and raw tool-schema validation, so scenarios
 can hard-check due date, estimate, priority, label, and checklist arguments
 before persistence or batching transforms them.
+Current active slice adds scenario-authored cascade wake oracles:
+`EvalExpectations.cascadeWakes` scopes raw tool-call and durable-state
+expectations to a specific wake inside a same-task transcript cascade. The
+live task cascade runner now enforces those wake-specific expectations
+generically instead of hard-coding one checklist example. The intended hard
+gate boundary is structured behavior: estimate, priority, due date, labels,
+checklist updates, and persisted proposals. Generated reports and summaries are
+still read into `AgentRunOutput.report`, trace JSON, and judge inputs, but
+free-text quality should be judged by LLM/human comparative review and quorum
+rather than brittle Level 1 string assertions.
+Known limitation: the current cascade live runner is still a sidecar smoke
+entrypoint and writes one trace per wake using `trialIndex` as the wake index.
+Do not use those traces as repeated-trial reliability or promotion evidence.
+The next harness-hardening slice should add first-class cascade/wake trace
+semantics to `EvalMatrixRunner` while preserving real `trialIndex` for repeated
+trials.
 Current active slice adds provider response-side provenance: the real
 `ConversationRepository` stream loop records authoritative provider-reported
 model ids, system fingerprints, provider names, and service tiers when exposed,

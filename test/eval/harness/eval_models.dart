@@ -1445,6 +1445,120 @@ class ExpectedParsedCaptureCount {
   };
 }
 
+/// A hard oracle for one wake inside a multi-wake cascade scenario.
+///
+/// This reuses the same raw-tool and durable-state matcher language as normal
+/// scenario expectations, but scopes it to the output for one cascade wake.
+class ExpectedCascadeWakeState {
+  const ExpectedCascadeWakeState({
+    required this.wakeIndex,
+    this.maxTokenBudget,
+    this.maxToolCalls,
+    this.mustCallTools = const <String>{},
+    this.mustNotCallTools = const <String>{},
+    this.requiredToolCalls = const <ExpectedToolCallState>[],
+    this.forbiddenToolCalls = const <ExpectedToolCallState>[],
+    this.allowedFailedToolNames = const <String>{},
+    this.maxAllowedToolResultFailures = 0,
+    this.durableState = const ExpectedDurableState(),
+  });
+
+  factory ExpectedCascadeWakeState.fromJson(Map<String, dynamic> json) =>
+      ExpectedCascadeWakeState(
+        wakeIndex: (json['wakeIndex'] as num).toInt(),
+        maxTokenBudget: (json['maxTokenBudget'] as num?)?.toInt(),
+        maxToolCalls: (json['maxToolCalls'] as num?)?.toInt(),
+        mustCallTools: ((json['mustCallTools'] as List<dynamic>?) ?? const [])
+            .map((e) => e as String)
+            .toSet(),
+        mustNotCallTools:
+            ((json['mustNotCallTools'] as List<dynamic>?) ?? const [])
+                .map((e) => e as String)
+                .toSet(),
+        requiredToolCalls:
+            ((json['requiredToolCalls'] as List<dynamic>?) ?? const [])
+                .map(
+                  (e) =>
+                      ExpectedToolCallState.fromJson(e as Map<String, dynamic>),
+                )
+                .toList(),
+        forbiddenToolCalls:
+            ((json['forbiddenToolCalls'] as List<dynamic>?) ?? const [])
+                .map(
+                  (e) =>
+                      ExpectedToolCallState.fromJson(e as Map<String, dynamic>),
+                )
+                .toList(),
+        allowedFailedToolNames:
+            ((json['allowedFailedToolNames'] as List<dynamic>?) ?? const [])
+                .map((e) => e as String)
+                .toSet(),
+        maxAllowedToolResultFailures:
+            (json['maxAllowedToolResultFailures'] as num?)?.toInt() ?? 0,
+        durableState: json['durableState'] == null
+            ? const ExpectedDurableState()
+            : ExpectedDurableState.fromJson(
+                json['durableState'] as Map<String, dynamic>,
+              ),
+      );
+
+  final int wakeIndex;
+  final int? maxTokenBudget;
+  final int? maxToolCalls;
+  final Set<String> mustCallTools;
+  final Set<String> mustNotCallTools;
+  final List<ExpectedToolCallState> requiredToolCalls;
+  final List<ExpectedToolCallState> forbiddenToolCalls;
+  final Set<String> allowedFailedToolNames;
+  final int maxAllowedToolResultFailures;
+  final ExpectedDurableState durableState;
+
+  bool get hasOracle =>
+      maxTokenBudget != null ||
+      maxToolCalls != null ||
+      mustCallTools.isNotEmpty ||
+      mustNotCallTools.isNotEmpty ||
+      requiredToolCalls.isNotEmpty ||
+      forbiddenToolCalls.isNotEmpty ||
+      allowedFailedToolNames.isNotEmpty ||
+      maxAllowedToolResultFailures != 0 ||
+      !durableState.isEmpty;
+
+  EvalExpectations toExpectations() => EvalExpectations(
+    maxTokenBudget: maxTokenBudget,
+    maxToolCalls: maxToolCalls,
+    mustCallTools: mustCallTools,
+    mustNotCallTools: mustNotCallTools,
+    requiredToolCalls: requiredToolCalls,
+    forbiddenToolCalls: forbiddenToolCalls,
+    allowedFailedToolNames: allowedFailedToolNames,
+    maxAllowedToolResultFailures: maxAllowedToolResultFailures,
+    durableState: durableState,
+  );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'wakeIndex': wakeIndex,
+    if (maxTokenBudget != null) 'maxTokenBudget': maxTokenBudget,
+    if (maxToolCalls != null) 'maxToolCalls': maxToolCalls,
+    if (mustCallTools.isNotEmpty) 'mustCallTools': mustCallTools.toList(),
+    if (mustNotCallTools.isNotEmpty)
+      'mustNotCallTools': mustNotCallTools.toList(),
+    if (requiredToolCalls.isNotEmpty)
+      'requiredToolCalls': [
+        for (final matcher in requiredToolCalls) matcher.toJson(),
+      ],
+    if (forbiddenToolCalls.isNotEmpty)
+      'forbiddenToolCalls': [
+        for (final matcher in forbiddenToolCalls) matcher.toJson(),
+      ],
+    if (allowedFailedToolNames.isNotEmpty)
+      'allowedFailedToolNames': allowedFailedToolNames.toList()..sort(),
+    if (maxAllowedToolResultFailures != 0)
+      'maxAllowedToolResultFailures': maxAllowedToolResultFailures,
+    if (!durableState.isEmpty) 'durableState': durableState.toJson(),
+  };
+}
+
 /// Optional hard gates a scenario can assert at Level 1, independent of the
 /// model's behaviour.
 class EvalExpectations {
@@ -1458,6 +1572,7 @@ class EvalExpectations {
     this.allowedFailedToolNames = const <String>{},
     this.maxAllowedToolResultFailures = 0,
     this.durableState = const ExpectedDurableState(),
+    this.cascadeWakes = const <ExpectedCascadeWakeState>[],
   });
 
   factory EvalExpectations.fromJson(Map<String, dynamic> json) =>
@@ -1496,6 +1611,12 @@ class EvalExpectations {
             : ExpectedDurableState.fromJson(
                 json['durableState'] as Map<String, dynamic>,
               ),
+        cascadeWakes: ((json['cascadeWakes'] as List<dynamic>?) ?? const [])
+            .map(
+              (e) =>
+                  ExpectedCascadeWakeState.fromJson(e as Map<String, dynamic>),
+            )
+            .toList(),
       );
 
   final int? maxTokenBudget;
@@ -1507,6 +1628,7 @@ class EvalExpectations {
   final Set<String> allowedFailedToolNames;
   final int maxAllowedToolResultFailures;
   final ExpectedDurableState durableState;
+  final List<ExpectedCascadeWakeState> cascadeWakes;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     if (maxTokenBudget != null) 'maxTokenBudget': maxTokenBudget,
@@ -1526,6 +1648,10 @@ class EvalExpectations {
     if (maxAllowedToolResultFailures != 0)
       'maxAllowedToolResultFailures': maxAllowedToolResultFailures,
     if (!durableState.isEmpty) 'durableState': durableState.toJson(),
+    if (cascadeWakes.isNotEmpty)
+      'cascadeWakes': [
+        for (final wake in cascadeWakes) wake.toJson(),
+      ],
   };
 }
 

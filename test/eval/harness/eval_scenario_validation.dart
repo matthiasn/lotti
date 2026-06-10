@@ -310,6 +310,15 @@ List<EvalScenarioValidationIssue> validateEvalScenario(EvalScenario scenario) {
     captureIds: captureIds,
     categoryIds: categoryIds,
   );
+  _validateCascadeWakeExpectations(
+    add,
+    scenario.expectations.cascadeWakes,
+    agentKind: scenario.agentKind,
+    taskIds: taskIds,
+    captureIds: captureIds,
+    categoryIds: categoryIds,
+    wakeCount: state.taskLogEntries.length,
+  );
 
   return issues;
 }
@@ -503,6 +512,56 @@ void _validateNonTrivialRawArgsContainValue(
         value: value[i],
       );
     }
+  }
+}
+
+void _validateCascadeWakeExpectations(
+  void Function(String message) add,
+  List<ExpectedCascadeWakeState> wakes, {
+  required AgentKind agentKind,
+  required Set<String> taskIds,
+  required Set<String> captureIds,
+  required Set<String> categoryIds,
+  required int wakeCount,
+}) {
+  if (wakes.isNotEmpty && wakeCount == 0) {
+    add('cascadeWakes require appState.taskLogEntries');
+  }
+  for (final duplicate in _duplicates(
+    wakes.map((wake) => wake.wakeIndex.toString()),
+  )) {
+    add('cascadeWakes has duplicate wakeIndex $duplicate');
+  }
+  for (var i = 0; i < wakes.length; i++) {
+    final wake = wakes[i];
+    final field = 'cascadeWakes[$i]';
+    void addWake(String message) => add('$field.$message');
+
+    if (wake.wakeIndex < 0) {
+      add('$field.wakeIndex is negative');
+    }
+    if (wakeCount > 0 && wake.wakeIndex >= wakeCount) {
+      add(
+        '$field.wakeIndex ${wake.wakeIndex} has no matching taskLogEntries '
+        'wake',
+      );
+    }
+    if (!wake.hasOracle) {
+      add('$field has no oracle fields');
+    }
+    _validateExpectations(
+      addWake,
+      wake.toExpectations(),
+      agentKind: agentKind,
+    );
+    _validateDurableStateExpectations(
+      addWake,
+      wake.durableState,
+      agentKind: agentKind,
+      taskIds: taskIds,
+      captureIds: captureIds,
+      categoryIds: categoryIds,
+    );
   }
 }
 

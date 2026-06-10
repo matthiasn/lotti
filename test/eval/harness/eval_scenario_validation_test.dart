@@ -497,6 +497,98 @@ void main() {
     );
   });
 
+  test('validates cascade wake oracle schemas', () {
+    final valid = _taskScenarioWithExpectations(
+      const EvalExpectations(
+        cascadeWakes: [
+          ExpectedCascadeWakeState(
+            wakeIndex: 0,
+            requiredToolCalls: [
+              ExpectedToolCallState(
+                toolName: 'update_checklist_items',
+                argsContain: {
+                  'items': [
+                    {'id': 'ci-1', 'isChecked': true},
+                  ],
+                },
+              ),
+            ],
+            durableState: ExpectedDurableState(
+              reportContains: {'pull request'},
+              requiredProposals: [
+                ExpectedProposalState(
+                  toolName: 'update_checklist_item',
+                  targetId: 'task-known',
+                  status: 'pending',
+                  argsContain: {'id': 'ci-1', 'isChecked': true},
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+
+    expect(validateEvalScenario(valid), isEmpty);
+
+    final invalid = _taskScenarioWithExpectations(
+      const EvalExpectations(
+        cascadeWakes: [
+          ExpectedCascadeWakeState(wakeIndex: -1),
+          ExpectedCascadeWakeState(
+            wakeIndex: 0,
+            requiredToolCalls: [
+              ExpectedToolCallState(
+                toolName: 'add_checklist_item',
+                argsContain: {'title': 'Wrong raw tool'},
+              ),
+            ],
+          ),
+          ExpectedCascadeWakeState(
+            wakeIndex: 0,
+            durableState: ExpectedDurableState(
+              requiredProposals: [
+                ExpectedProposalState(targetId: 'task-missing'),
+              ],
+            ),
+          ),
+          ExpectedCascadeWakeState(
+            wakeIndex: 2,
+            durableState: ExpectedDurableState(reportContains: {'later'}),
+          ),
+        ],
+      ),
+    );
+
+    final messages = validateEvalScenario(
+      invalid,
+    ).map((issue) => issue.message).toList();
+
+    expect(messages, contains('cascadeWakes has duplicate wakeIndex 0'));
+    expect(messages, contains('cascadeWakes[0].wakeIndex is negative'));
+    expect(messages, contains('cascadeWakes[0] has no oracle fields'));
+    expect(
+      messages,
+      _containsMessage(
+        'cascadeWakes[1].requiredToolCalls has unknown raw toolName '
+        'add_checklist_item',
+      ),
+    );
+    expect(
+      messages,
+      contains(
+        'cascadeWakes[2].durableState.requiredProposals references unknown '
+        'target task-missing',
+      ),
+    );
+    expect(
+      messages,
+      contains(
+        'cascadeWakes[3].wakeIndex 2 has no matching taskLogEntries wake',
+      ),
+    );
+  });
+
   test('accepts persisted singular proposal schemas and broad matchers', () {
     final scenario = _taskScenarioWithDurableState(
       const ExpectedDurableState(
@@ -820,6 +912,13 @@ EvalScenario _taskScenarioWithExpectations(EvalExpectations expectations) =>
               MockChecklistItem(id: 'ci-1', title: 'Old note'),
               MockChecklistItem(id: 'ci-2', title: 'Move to follow-up'),
             ],
+          ),
+        ],
+        taskLogEntries: const [
+          MockTaskLogEntry(
+            id: 'task-log-known',
+            taskId: 'task-known',
+            transcript: 'I created the pull request.',
           ),
         ],
       ),

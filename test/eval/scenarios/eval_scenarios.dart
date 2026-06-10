@@ -1245,6 +1245,89 @@ final EvalScenario taskWorkflowChecklistTranscriptCascadeScenario =
         ),
         expectations: const EvalExpectations(
           mustNotCallTools: {'set_task_status'},
+          cascadeWakes: [
+            ExpectedCascadeWakeState(
+              wakeIndex: 0,
+              durableState: ExpectedDurableState(
+                requiredProposals: [
+                  ExpectedProposalState(
+                    toolName: 'update_task_estimate',
+                    targetId: 'task-redesign',
+                    status: 'pending',
+                    argsContain: {'minutes': 120},
+                  ),
+                ],
+              ),
+            ),
+            ExpectedCascadeWakeState(
+              wakeIndex: 1,
+              requiredToolCalls: [
+                ExpectedToolCallState(
+                  toolName: 'update_checklist_items',
+                  argsContain: {
+                    'items': [
+                      {'id': 'ci-pr', 'isChecked': true},
+                    ],
+                  },
+                ),
+              ],
+              durableState: ExpectedDurableState(
+                requiredProposals: [
+                  ExpectedProposalState(
+                    toolName: 'update_task_estimate',
+                    targetId: 'task-redesign',
+                    status: 'pending',
+                    argsContain: {'minutes': 120},
+                  ),
+                  ExpectedProposalState(
+                    toolName: 'update_checklist_item',
+                    targetId: 'task-redesign',
+                    status: 'pending',
+                    argsContain: {'id': 'ci-pr', 'isChecked': true},
+                  ),
+                ],
+                forbiddenProposals: [
+                  ExpectedProposalState(
+                    toolName: 'update_checklist_item',
+                    argsContain: {'id': 'ci-review', 'isChecked': true},
+                  ),
+                  ExpectedProposalState(
+                    toolName: 'update_checklist_item',
+                    argsContain: {'id': 'ci-release', 'isChecked': true},
+                  ),
+                ],
+              ),
+            ),
+            ExpectedCascadeWakeState(
+              wakeIndex: 2,
+              durableState: ExpectedDurableState(
+                requiredProposals: [
+                  ExpectedProposalState(
+                    toolName: 'update_task_estimate',
+                    targetId: 'task-redesign',
+                    status: 'pending',
+                    argsContain: {'minutes': 120},
+                  ),
+                  ExpectedProposalState(
+                    toolName: 'update_checklist_item',
+                    targetId: 'task-redesign',
+                    status: 'pending',
+                    argsContain: {'id': 'ci-pr', 'isChecked': true},
+                  ),
+                ],
+                forbiddenProposals: [
+                  ExpectedProposalState(
+                    toolName: 'update_checklist_item',
+                    argsContain: {'id': 'ci-review', 'isChecked': true},
+                  ),
+                  ExpectedProposalState(
+                    toolName: 'update_checklist_item',
+                    argsContain: {'id': 'ci-release', 'isChecked': true},
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
       rationale:

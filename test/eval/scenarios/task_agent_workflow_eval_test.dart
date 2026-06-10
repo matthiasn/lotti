@@ -278,6 +278,58 @@ void main() {
           transcript: 'Wake the task agent after linked task audio.',
           triggerTokens: {'decided_task:task-redesign'},
         ),
+        expectations: const EvalExpectations(
+          cascadeWakes: [
+            ExpectedCascadeWakeState(
+              wakeIndex: 0,
+              durableState: ExpectedDurableState(
+                requiredProposals: [
+                  ExpectedProposalState(
+                    toolName: 'update_task_estimate',
+                    targetId: 'task-redesign',
+                    status: 'pending',
+                    argsContain: {'minutes': 120},
+                  ),
+                ],
+              ),
+            ),
+            ExpectedCascadeWakeState(
+              wakeIndex: 1,
+              requiredToolCalls: [
+                ExpectedToolCallState(
+                  toolName: 'update_checklist_items',
+                  argsContain: {
+                    'items': [
+                      {'id': 'ci-pr', 'isChecked': true},
+                    ],
+                  },
+                ),
+              ],
+              durableState: ExpectedDurableState(
+                requiredProposals: [
+                  ExpectedProposalState(
+                    toolName: 'update_task_estimate',
+                    targetId: 'task-redesign',
+                    status: 'pending',
+                    argsContain: {'minutes': 120},
+                  ),
+                  ExpectedProposalState(
+                    toolName: 'update_checklist_item',
+                    targetId: 'task-redesign',
+                    status: 'pending',
+                    argsContain: {'id': 'ci-pr', 'isChecked': true},
+                  ),
+                ],
+                forbiddenProposals: [
+                  ExpectedProposalState(
+                    toolName: 'update_checklist_item',
+                    argsContain: {'id': 'ci-review', 'isChecked': true},
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       );
 
       final userMessagesByWake = <int, String>{};
@@ -393,6 +445,20 @@ void main() {
       expect(userMessagesByWake[1], contains('created the pull request'));
       expect(userMessagesByWake[1], contains('## Proposal Ledger'));
       expect(userMessagesByWake[1], contains('update_task_estimate'));
+      for (final expectedWake in cascadeScenario.expectations.cascadeWakes) {
+        final checks = runCascadeWakeLevel1(
+          cascadeScenario,
+          outputs[expectedWake.wakeIndex],
+          expectedWake,
+          profile: kFrontierProfile,
+        );
+
+        expect(
+          checks.where((check) => !check.passed),
+          isEmpty,
+          reason: checks.map((check) => check.toJson()).join('\n'),
+        );
+      }
     },
   );
 

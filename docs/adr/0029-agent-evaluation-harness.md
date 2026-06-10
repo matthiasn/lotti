@@ -219,13 +219,15 @@ contracts:
   stress scenarios may explicitly allow a bounded count of named failed tool
   results; optional `ExpectedDurableState` matchers assert scenario-specific
   required/forbidden
-  persisted proposals, planned blocks, parsed capture items, report text,
-  observations, allowed/required/forbidden mutated entry IDs, accepted `anyOf`
-  alternatives, scoped min/max/exact count checks, parsed-capture confidence
-  bands, and distinct required matches so one actual persisted record cannot
-  satisfy two expected outcomes. Scenario validation cross-checks trigger,
-  fixture, proposal-history, and expectation references before run verification
-  accepts a Level 2 matrix.
+  persisted proposals, planned blocks, parsed capture items, optional
+  report/observation text anchors, allowed/required/forbidden mutated entry
+  IDs, accepted `anyOf` alternatives, scoped min/max/exact count checks,
+  parsed-capture confidence bands, and distinct required matches so one actual
+  persisted record cannot satisfy two expected outcomes. Report/summary text
+  anchors are smoke checks only; subjective prose quality is judged in Level 2
+  through LLM/human comparison, quorum, and recorded A/B artifacts. Scenario
+  validation cross-checks trigger, fixture, proposal-history, and expectation
+  references before run verification accepts a Level 2 matrix.
 - **Task agent:** `set_task_status` never sets the user-only `DONE`/`REJECTED`
   (agent-settable enum is `OPEN`/`IN PROGRESS`/`GROOMED`/`BLOCKED`/`ON HOLD`);
   `update_task_estimate` `minutes` within `1..1440`; `assign_task_labels` ≤ 3;
