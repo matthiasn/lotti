@@ -2460,10 +2460,12 @@
     }
   },
   "multiSelectNoItemsFound": "Nu s-au găsit elemente",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Mai multe, 1 secțiune suplimentară} few{Mai multe, {count} secțiuni suplimentare} other{Mai multe, {count} de secțiuni suplimentare}}",
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleHabits": "Obiceiuri",
   "navTabTitleInsights": "Informaţii",
   "navTabTitleJournal": "Jurnal",
+  "navTabTitleMore": "Mai multe",
   "navTabTitleProjects": "Proiecte",
   "navTabTitleSettings": "Setări",
   "navTabTitleTasks": "Sarcini",

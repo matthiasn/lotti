@@ -180,7 +180,11 @@ Representative composite or feature-shaped components:
 
 - task filters
 - task list items
-- navigation tab bar (`components/navigation/`)
+- navigation tab bar and the mobile five-slot bottom nav bar
+  (`components/navigation/`) — the five-slot bar fixes the slot count
+  (primary destinations + More) with equal flex per slot so labels never
+  shrink, docks flush against the bottom edge, and absorbs the bottom
+  safe-area inset into its own surface
 - desktop navigation sidebar with a collapsible icon-only state and a
   resizable divider that disables drag input while the sidebar is
   collapsed, preserving the previous expanded width so re-expanding
@@ -241,9 +245,10 @@ Representative components such as `DesignSystemButton`, `DesignSystemCheckbox`, 
 
 ### Shell-Aware Overlay Spacing
 
-The floating bottom navigation shell is an app-level overlay, not a normal
-`Scaffold.bottomNavigationBar`. That means any screen-level floating action
-button or status overlay that hugs the bottom edge needs explicit clearance.
+The bottom navigation shell is an app-level overlay docked flush against
+the screen's bottom edge, not a normal `Scaffold.bottomNavigationBar`. That
+means any screen-level floating action button or status overlay that hugs
+the bottom edge needs explicit clearance.
 
 The shell itself (`DesignSystemBottomNavigationBar`) and its FAB clearance
 wrapper (`DesignSystemBottomNavigationFabPadding`) live outside this feature, in
@@ -251,7 +256,10 @@ wrapper (`DesignSystemBottomNavigationFabPadding`) live outside this feature, in
 exercised through the DS widgetbook. The current contract is:
 
 - `DesignSystemBottomNavigationBar.occupiedHeight(context)` defines how much
-  vertical space the shell consumes, including safe-area inset
+  vertical space the shell consumes: the bar (including safe-area inset)
+  plus the height of the indicator overlay row currently riding above it,
+  published by the app shell through
+  `DesignSystemBottomNavigationOverlayHeight`
 - `DesignSystemBottomNavigationFabPadding` is the default wrapper for
   screen-level FABs that need to stay visually above that shell
 - feature pages should use that wrapper rather than inventing local bottom

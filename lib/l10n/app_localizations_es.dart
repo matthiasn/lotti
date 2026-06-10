@@ -5555,6 +5555,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get multiSelectNoItemsFound => 'No se encontraron elementos';
 
   @override
+  String navTabMoreSemanticsLabel(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Más, $count destinos adicionales',
+      one: 'Más, 1 destino adicional',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get navTabTitleCalendar => 'DailyOS';
 
   @override
@@ -5565,6 +5576,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get navTabTitleJournal => 'Diario';
+
+  @override
+  String get navTabTitleMore => 'Más';
 
   @override
   String get navTabTitleProjects => 'Proyectos';

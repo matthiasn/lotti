@@ -2734,10 +2734,19 @@
     }
   },
   "multiSelectNoItemsFound": "No items found",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{More, 1 additional destination} other{More, {count} additional destinations}}",
+  "@navTabMoreSemanticsLabel": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleHabits": "Habits",
   "navTabTitleInsights": "Insights",
   "navTabTitleJournal": "Logbook",
+  "navTabTitleMore": "More",
   "navTabTitleProjects": "Projects",
   "navTabTitleSettings": "Settings",
   "navTabTitleTasks": "Tasks",

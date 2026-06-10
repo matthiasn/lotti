@@ -244,12 +244,24 @@ Custom `WoltDialogType` that renders at a configurable target width (`preferredW
 Located in `/lib/widgets/nav_bar/`
 
 ### DesignSystemBottomNavigationBar
-Floating bottom-navigation shell that hosts the design-system tab bar and
-reserves the correct safe-area spacing for the main app scaffold.
+Mobile bottom-navigation shell that hosts the design-system five-slot bar
+(`DesignSystemFiveSlotNavBar`), docked flush against the screen's bottom
+edge with zero gap. The bar shows Tasks, DailyOS (when its flag is
+enabled — it never overflows), and Logbook plus a More slot; the bottom
+safe-area inset is absorbed into the bar surface itself. An optional
+`overlay` slot renders the time/audio recording indicators directly above
+the bar.
+
+### showMobileNavMoreSheet / MobileNavMoreSheetItem
+`WoltModalSheet`-based overflow sheet listing the destinations without a
+bar slot: Settings always, plus the flag-gated Projects, Habits, and
+Insights — newly toggled pages surface here. Selecting a row dismisses the
+sheet and navigates; the bar's More slot then renders that destination's
+name with the active tint.
 
 ### DesignSystemBottomNavigationFabPadding
 Padding helper that lifts floating action buttons clear of the shared bottom
-navigation shell.
+navigation shell (`DesignSystemBottomNavigationBar.occupiedHeight`).
 
 ## Search Widgets
 

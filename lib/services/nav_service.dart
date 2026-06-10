@@ -103,11 +103,6 @@ class NavService {
   final indexStreamController = StreamController<int>.broadcast();
 
   final tasksIndex = 0;
-  // final calendarIndex = 1;
-  // final habitsIndex = 2;
-  // final dashboardsIndex = 3;
-  // final journalIndex = 4;
-  // final settingsIndex = 5;
 
   int index = 0;
 
@@ -128,16 +123,20 @@ class NavService {
 
   Iterable<({bool enabled, String rootPath, BeamerDelegate delegate})>
   get _tabSpecs sync* {
+    // Tab order is shared with the app shell's destination list (see
+    // `_buildNavigationDestinations` in `beamer_app.dart`): Tasks and
+    // Daily OS lead as the most important pages, then Projects, then the
+    // rest, with Settings last.
     yield (enabled: true, rootPath: '/tasks', delegate: tasksDelegate);
-    yield (
-      enabled: _isProjectsPageEnabled,
-      rootPath: '/projects',
-      delegate: projectsDelegate,
-    );
     yield (
       enabled: _isDailyOsPageEnabled,
       rootPath: '/calendar',
       delegate: calendarDelegate,
+    );
+    yield (
+      enabled: _isProjectsPageEnabled,
+      rootPath: '/projects',
+      delegate: projectsDelegate,
     );
     yield (
       enabled: _isHabitsPageEnabled,

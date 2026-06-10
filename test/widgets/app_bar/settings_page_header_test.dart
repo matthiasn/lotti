@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
 /// Pumps a [SettingsPageHeader] inside the standard scroll-view scaffolding,
@@ -18,9 +19,21 @@ Future<void> _pumpHeader(
   double contentHeight = 400,
   ThemeData? theme,
 }) async {
+  // The header reads context.designTokens (for the bottom corner radius),
+  // so whatever theme the test supplies must carry the DsTokens extension.
+  final baseTheme = theme ?? ThemeData.light();
+  final themedWithTokens = baseTheme.copyWith(
+    extensions: [
+      ...baseTheme.extensions.values,
+      if (baseTheme.brightness == Brightness.dark)
+        dsTokensDark
+      else
+        dsTokensLight,
+    ],
+  );
   await tester.pumpWidget(
     MaterialApp(
-      theme: theme,
+      theme: themedWithTokens,
       home: MediaQuery(
         data: MediaQueryData(
           size: Size(width, height),
