@@ -2126,6 +2126,36 @@ void main() {
     );
   });
 
+  test('accepts explicit matrix cell binding for shared workflow runs', () {
+    final runtimePrompt = _runtimePrompt('shared-workflow');
+    final trace = _trace(
+      scenario: scenario,
+      profile: profile,
+      output: _outputFor(
+        profile,
+        workflowRun: const WorkflowRunRecord(
+          runKey: 'eval-run:shared-cascade:wake-1',
+          threadId: 'eval-thread:shared-cascade',
+          matrixCellId: 'run-1::task_release_notes::verifier-profile::0',
+        ),
+        runtimePrompt: runtimePrompt,
+        modelInvocations: [
+          _modelInvocation(profile, runtimePrompt: runtimePrompt),
+        ],
+        turnCount: 1,
+      ),
+    );
+
+    final verification = _verify(
+      runId: 'run-1',
+      traces: [trace],
+      scenarios: [scenario],
+      profiles: [profile],
+    );
+
+    expect(verification.errors, isEmpty);
+  });
+
   test('rejects trace-embedded scenario and profile payload drift', () {
     final output = _outputFor(profile);
     final tamperedScenario = EvalScenario(

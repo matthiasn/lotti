@@ -245,6 +245,158 @@ void main() {
   });
 
   test(
+    'same-task cascade preserves proposal state across transcript wakes',
+    () async {
+      final cascadeScenario = EvalScenario(
+        id: 'task_workflow_checklist_transcript_cascade',
+        title: 'Real workflow: transcript cascade checks off a checklist item',
+        agentKind: AgentKind.taskAgent,
+        appState: MockedAppState(
+          now: DateTime(2026, 6, 10, 11),
+          categoryIds: const ['cat-001'],
+          categories: [kEvalWorkCategory],
+          tasks: const [
+            MockTask(
+              id: 'task-redesign',
+              title: 'Ship notification redesign',
+              status: 'IN PROGRESS',
+              categoryId: 'cat-001',
+              checklist: [
+                MockChecklistItem(
+                  id: 'ci-pr',
+                  title: 'Create pull request',
+                ),
+                MockChecklistItem(
+                  id: 'ci-review',
+                  title: 'Address review feedback',
+                ),
+              ],
+            ),
+          ],
+        ),
+        userInput: const UserInput(
+          transcript: 'Wake the task agent after linked task audio.',
+          triggerTokens: {'decided_task:task-redesign'},
+        ),
+      );
+
+      final userMessagesByWake = <int, String>{};
+      final outputs = await TaskAgentEvalBench.runCascade(
+        cascadeScenario,
+        kFrontierProfile,
+        wakes: [
+          TaskAgentEvalCascadeWake(
+            taskLogEntries: [
+              MockTaskLogEntry(
+                id: 'audio-estimate',
+                taskId: 'task-redesign',
+                transcript:
+                    'The remaining notification redesign work is about two '
+                    'hours.',
+                createdAt: DateTime(2026, 6, 10, 10, 10),
+              ),
+            ],
+            behavior: const ScriptedAgentBehavior(
+              toolCalls: [
+                ToolCallRecord(
+                  name: 'update_task_estimate',
+                  args: {'minutes': 120},
+                ),
+                ToolCallRecord(
+                  name: 'update_report',
+                  args: {
+                    'oneLiner': 'Notification redesign scoped',
+                    'tldr': 'Remaining work is estimated at two hours.',
+                    'content': 'The redesign work is scoped.',
+                  },
+                ),
+              ],
+              usage: InferenceUsage(inputTokens: 1000, outputTokens: 180),
+            ),
+          ),
+          TaskAgentEvalCascadeWake(
+            taskLogEntries: [
+              MockTaskLogEntry(
+                id: 'audio-pr-opened',
+                taskId: 'task-redesign',
+                transcript:
+                    'I created the pull request. That checks off the Create '
+                    'pull request item, but review feedback is not done yet.',
+                createdAt: DateTime(2026, 6, 10, 10, 40),
+              ),
+            ],
+            behavior: const ScriptedAgentBehavior(
+              toolCalls: [
+                ToolCallRecord(
+                  name: 'update_checklist_items',
+                  args: {
+                    'items': [
+                      {
+                        'id': 'ci-pr',
+                        'isChecked': true,
+                        'reason':
+                            'Linked audio transcript says the pull request '
+                            'is open now.',
+                      },
+                    ],
+                  },
+                ),
+                ToolCallRecord(
+                  name: 'update_report',
+                  args: {
+                    'oneLiner': 'Pull request opened',
+                    'tldr':
+                        'The pull request checklist item is ready to mark '
+                        'complete.',
+                    'content': 'The linked transcript says the PR is open.',
+                  },
+                ),
+              ],
+              usage: InferenceUsage(inputTokens: 1100, outputTokens: 200),
+            ),
+          ),
+        ],
+        onUserMessage: (wakeIndex, message) {
+          userMessagesByWake[wakeIndex] = message;
+        },
+      );
+
+      expect(outputs, hasLength(2));
+      expect(outputs[0].success, isTrue, reason: outputs[0].error);
+      expect(outputs[1].success, isTrue, reason: outputs[1].error);
+      expect(outputs[0].toolNames, [
+        'update_task_estimate',
+        'update_report',
+      ]);
+      expect(outputs[1].toolNames, [
+        'update_checklist_items',
+        'update_report',
+      ]);
+      expect(
+        outputs[1].proposals.map((proposal) => proposal.toolName),
+        containsAll(['update_task_estimate', 'update_checklist_item']),
+      );
+      expect(
+        outputs[1].proposals.where(
+          (proposal) =>
+              proposal.toolName == 'update_checklist_item' &&
+              proposal.args['id'] == 'ci-pr' &&
+              proposal.args['isChecked'] == true,
+        ),
+        hasLength(1),
+      );
+      expect(userMessagesByWake[0], contains('about two hours'));
+      expect(
+        userMessagesByWake[0],
+        isNot(contains('created the pull request')),
+      );
+      expect(userMessagesByWake[1], contains('created the pull request'));
+      expect(userMessagesByWake[1], contains('## Proposal Ledger'));
+      expect(userMessagesByWake[1], contains('update_task_estimate'));
+    },
+  );
+
+  test(
     'real workflow resolves a local profile through Ollama config',
     () async {
       const behavior = ScriptedAgentBehavior(

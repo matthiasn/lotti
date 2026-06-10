@@ -2066,20 +2066,24 @@ class WorkflowRunRecord {
   const WorkflowRunRecord({
     required this.runKey,
     required this.threadId,
+    this.matrixCellId,
   });
 
   factory WorkflowRunRecord.fromJson(Map<String, dynamic> json) =>
       WorkflowRunRecord(
         runKey: json['runKey'] as String,
         threadId: json['threadId'] as String,
+        matrixCellId: json['matrixCellId'] as String?,
       );
 
   final String runKey;
   final String threadId;
+  final String? matrixCellId;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'runKey': runKey,
     'threadId': threadId,
+    if (matrixCellId != null) 'matrixCellId': matrixCellId,
   };
 }
 

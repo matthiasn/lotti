@@ -762,12 +762,15 @@ abstract final class EvalRunVerifier {
     final expectedCellId =
         '${trace.runId}::${trace.scenario.id}::${trace.profile.name}::'
         '${trace.trialIndex}';
-    if (!workflowRun.runKey.contains(expectedCellId)) {
+    final isBoundToExpectedCell = workflowRun.matrixCellId == expectedCellId;
+    if (!isBoundToExpectedCell &&
+        !workflowRun.runKey.contains(expectedCellId)) {
       errors.add(
         '$key workflow runKey is not bound to matrix cell $expectedCellId',
       );
     }
-    if (!workflowRun.threadId.contains(expectedCellId)) {
+    if (!isBoundToExpectedCell &&
+        !workflowRun.threadId.contains(expectedCellId)) {
       errors.add(
         '$key workflow threadId is not bound to matrix cell $expectedCellId',
       );

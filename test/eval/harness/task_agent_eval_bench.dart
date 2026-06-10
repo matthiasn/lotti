@@ -62,6 +62,21 @@ import 'proposal_record_mapper.dart';
 import 'scripted_agent_behavior.dart';
 import 'tool_call_record_mapper.dart';
 
+/// One wake in a same-task task-agent eval cascade.
+///
+/// [taskLogEntries] are appended to the session before the wake runs, so each
+/// wake can add a small transcript while prior reports/proposals remain
+/// durable state.
+class TaskAgentEvalCascadeWake {
+  const TaskAgentEvalCascadeWake({
+    this.behavior = const ScriptedAgentBehavior(),
+    this.taskLogEntries = const <MockTaskLogEntry>[],
+  });
+
+  final ScriptedAgentBehavior behavior;
+  final List<MockTaskLogEntry> taskLogEntries;
+}
+
 /// Runs the real task-agent workflow for a single-task wake.
 abstract final class TaskAgentEvalBench {
   static const _agentId = 'eval-task-agent';
@@ -82,259 +97,79 @@ abstract final class TaskAgentEvalBench {
     EvalProfileConfig? profileConfigOverride,
     Map<String, bool>? providerEnvPresence,
   }) async {
-    if (scenario.appState.tasks.isEmpty) {
-      throw ArgumentError(
-        'Task-agent scenario "${scenario.id}" needs at least one task',
+    final session = _TaskAgentEvalSession(
+      scenario,
+      profile,
+      profileConfigOverride: profileConfigOverride,
+      providerEnvPresence: providerEnvPresence,
+    );
+    return session.runWake(
+      behavior,
+      context: context,
+      onUserMessage: onUserMessage,
+      conversationRepositoryOverride: conversationRepositoryOverride,
+      cloudInferenceRepositoryOverride: cloudInferenceRepositoryOverride,
+    );
+  }
+
+  /// Runs multiple sequential wakes over one shared task-agent session.
+  ///
+  /// Unlike `profile.trialCount`, this does not reseed repositories between
+  /// wakes. Prior reports, observations, proposals, and linked log entries
+  /// remain visible to later wakes.
+  static Future<List<AgentRunOutput>> runCascade(
+    EvalScenario scenario,
+    EvalProfile profile, {
+    required List<TaskAgentEvalCascadeWake> wakes,
+    EvalTargetRunContext context = EvalTargetRunContext.direct,
+    void Function(int wakeIndex, String message)? onUserMessage,
+    ConversationRepository Function(int wakeIndex)?
+    conversationRepositoryForWake,
+    CloudInferenceRepository? cloudInferenceRepositoryOverride,
+    EvalProfileConfig? profileConfigOverride,
+    Map<String, bool>? providerEnvPresence,
+    bool seedScenarioTaskLogEntries = true,
+  }) async {
+    if (wakes.isEmpty) {
+      throw ArgumentError.value(wakes, 'wakes', 'must not be empty');
+    }
+    final session = _TaskAgentEvalSession(
+      scenario,
+      profile,
+      profileConfigOverride: profileConfigOverride,
+      providerEnvPresence: providerEnvPresence,
+      seedScenarioTaskLogEntries: seedScenarioTaskLogEntries,
+    );
+    final outputs = <AgentRunOutput>[];
+    final baseRunKey = _runKeyFor(context);
+    final threadId = _threadIdFor(context);
+    for (var wakeIndex = 0; wakeIndex < wakes.length; wakeIndex++) {
+      final wake = wakes[wakeIndex];
+      final wakeContext = EvalTargetRunContext(
+        runId: context.runId,
+        scenarioId: context.scenarioId,
+        profileName: context.profileName,
+        trialIndex: context.trialIndex + wakeIndex,
+      );
+      session.addTaskLogEntries(wake.taskLogEntries);
+      outputs.add(
+        await session.runWake(
+          wake.behavior,
+          context: context,
+          runKeyOverride: '$baseRunKey:wake-$wakeIndex',
+          threadIdOverride: threadId,
+          matrixCellIdOverride: wakeContext.cellId,
+          onUserMessage: onUserMessage == null
+              ? null
+              : (message) => onUserMessage(wakeIndex, message),
+          conversationRepositoryOverride: conversationRepositoryForWake?.call(
+            wakeIndex,
+          ),
+          cloudInferenceRepositoryOverride: cloudInferenceRepositoryOverride,
+        ),
       );
     }
-    final taskId = _activeTaskIdFromScenario(scenario);
-    final activeTask = _taskFixtureFor(scenario, taskId);
-    final now = scenario.appState.now;
-    final runKey = _runKeyFor(context);
-    final threadId = _threadIdFor(context);
-
-    final agentRepository = MockAgentRepository();
-    final syncService = MockAgentSyncService();
-    final conversationManager = MockConversationManager();
-    final scriptedConversationRepository =
-        conversationRepositoryOverride == null
-        ? MockConversationRepository(conversationManager)
-        : null;
-    final conversationRepository =
-        conversationRepositoryOverride ?? scriptedConversationRepository!;
-    final aiInputRepository = MockAiInputRepository();
-    final aiConfigRepository = MockAiConfigRepository();
-    final journalDb = MockJournalDb();
-    final cloudInferenceRepository =
-        cloudInferenceRepositoryOverride ?? MockCloudInferenceRepository();
-    final journalRepository = MockJournalRepository();
-    final checklistRepository = MockChecklistRepository();
-    final labelsRepository = MockLabelsRepository();
-    final templateService = MockAgentTemplateService();
-    final persistedEntities = <AgentDomainEntity>[];
-    final entityStore = <String, AgentDomainEntity>{};
-    final profileConfig = profileConfigOverride ?? evalProfileConfig(profile);
-    final journalState = _seededJournalState(
-      scenario.appState.tasks,
-      scenario.appState.taskLogEntries,
-      now,
-      defaultTaskId: taskId,
-    );
-    String? sentProviderModelId;
-    AiConfigInferenceProvider? sentProvider;
-    String? wakeRunResolvedModelId;
-    String? wakeRunTemplateId;
-    String? wakeRunTemplateVersionId;
-
-    final testAgentState = makeTestState(
-      id: 'state-$_agentId',
-      agentId: _agentId,
-      slots: AgentSlots(activeTaskId: taskId),
-      updatedAt: now,
-    );
-    final testTemplate = makeTestTemplate(
-      modelId: 'legacy-template-model-must-not-win',
-      profileId: profileConfig.profileId,
-    );
-    final testTemplateVersion = makeTestTemplateVersion(
-      directives: 'You are a diligent task agent.',
-      modelId: 'legacy-version-model-must-not-win',
-      profileId: profileConfig.profileId,
-    );
-    for (final changeSet in _seededProposalSets(scenario, taskId)) {
-      entityStore[changeSet.id] = changeSet;
-    }
-    for (final decision in _seededProposalDecisions(scenario, taskId)) {
-      entityStore[decision.id] = decision;
-    }
-
-    final identity =
-        AgentDomainEntity.agent(
-              id: _agentId,
-              agentId: _agentId,
-              kind: 'task_agent',
-              displayName: 'Eval Task Agent',
-              lifecycle: AgentLifecycle.active,
-              mode: AgentInteractionMode.autonomous,
-              allowedCategoryIds: scenario.appState.allowedCategoryIds,
-              currentStateId: 'state-$_agentId',
-              config: AgentConfig(profileId: profileConfig.profileId),
-              createdAt: DateTime(2024),
-              updatedAt: now,
-              vectorClock: null,
-            )
-            as AgentIdentityEntity;
-
-    _applyDefaults(
-      agentRepository: agentRepository,
-      syncService: syncService,
-      aiInputRepository: aiInputRepository,
-      journalDb: journalDb,
-      checklistRepository: checklistRepository,
-      templateService: templateService,
-      testTemplate: testTemplate,
-      testTemplateVersion: testTemplateVersion,
-      persistedEntities: persistedEntities,
-      entityStore: entityStore,
-      journalEntities: journalState.entities,
-      linkedEntitiesByTaskId: journalState.linkedEntitiesByTaskId,
-      checklistItemsByTaskId: journalState.checklistItemsByTaskId,
-      categories: _categoryDefinitionsFromScenario(scenario),
-      labels: _labelDefinitionsFromScenario(scenario),
-      targetTaskId: taskId,
-    );
-    stubFullExecutePath(
-      mockAgentRepository: agentRepository,
-      mockAiInputRepository: aiInputRepository,
-      mockAiConfigRepository: aiConfigRepository,
-      mockConversationManager: conversationManager,
-      testAgentState: testAgentState,
-      geminiModel: profileConfig.model,
-      geminiProvider: profileConfig.provider,
-      agentId: _agentId,
-      taskId: taskId,
-    );
-    _stubPersistedAgentReads(agentRepository, persistedEntities);
-    _stubInferenceProfile(aiConfigRepository, profileConfig);
-    when(
-      () => agentRepository.updateWakeRunTemplate(
-        any(),
-        any(),
-        any(),
-        resolvedModelId: any(named: 'resolvedModelId'),
-        soulId: any(named: 'soulId'),
-        soulVersionId: any(named: 'soulVersionId'),
-      ),
-    ).thenAnswer((invocation) async {
-      wakeRunTemplateId = invocation.positionalArguments[1] as String;
-      wakeRunTemplateVersionId = invocation.positionalArguments[2] as String;
-      wakeRunResolvedModelId =
-          invocation.namedArguments[#resolvedModelId] as String?;
-    });
-    when(
-      () => aiInputRepository.buildTaskDetailsJson(id: taskId),
-    ).thenAnswer(
-      (_) async => _taskDetailsJson(
-        activeTask,
-        linkedEntities: journalState.linkedEntitiesByTaskId[taskId] ?? const [],
-      ),
-    );
-
-    if (scriptedConversationRepository != null) {
-      scriptedConversationRepository
-        ..maxDelegateCalls = behavior.isMultiTurn ? behavior.turns.length : 1
-        ..sendMessageDelegate =
-            ({
-              required conversationId,
-              required message,
-              required model,
-              required provider,
-              required inferenceRepo,
-              tools,
-              toolChoice,
-              temperature = 0.7,
-              strategy,
-            }) async {
-              onUserMessage?.call(message);
-              sentProviderModelId = model;
-              sentProvider = provider;
-              final turnIndex =
-                  scriptedConversationRepository.sendMessageDelegateCallCount -
-                  1;
-              final toolCalls = behavior.isMultiTurn
-                  ? behavior.turns[turnIndex].toolCalls
-                  : behavior.toolCalls;
-              if (strategy is TaskAgentStrategy) {
-                await strategy.processToolCalls(
-                  toolCalls: _toToolCalls(toolCalls),
-                  manager: conversationManager,
-                );
-              }
-              return behavior.isMultiTurn
-                  ? behavior.turns[turnIndex].usage
-                  : behavior.usage;
-            };
-    }
-
-    final workflow = createTestWorkflow(
-      agentRepository: agentRepository,
-      conversationRepository: conversationRepository,
-      aiInputRepository: aiInputRepository,
-      aiConfigRepository: aiConfigRepository,
-      journalDb: journalDb,
-      cloudInferenceRepository: cloudInferenceRepository,
-      journalRepository: journalRepository,
-      checklistRepository: checklistRepository,
-      labelsRepository: labelsRepository,
-      syncService: syncService,
-      templateService: templateService,
-    );
-
-    final result = await withClock(
-      Clock.fixed(now),
-      () => workflow.execute(
-        agentIdentity: identity,
-        runKey: runKey,
-        triggerTokens: scenario.userInput.triggerTokens.isEmpty
-            ? {taskId}
-            : scenario.userInput.triggerTokens,
-        threadId: threadId,
-      ),
-    );
-
-    final observer = conversationRepository is EvalConversationObserver
-        ? conversationRepository as EvalConversationObserver
-        : null;
-    final lastUserMessage = observer?.lastUserMessage;
-    if (lastUserMessage != null) {
-      onUserMessage?.call(lastUserMessage);
-    }
-
-    final executedToolCalls = scriptedConversationRepository == null
-        ? toolCallRecordsFromPersistedActions(persistedEntities)
-        : behavior.toolCallsForTurns(
-            scriptedConversationRepository.sendMessageDelegateCallCount,
-          );
-    return AgentRunOutput(
-      success: result.success,
-      error: result.error,
-      usage: _usageFromPersisted(persistedEntities),
-      toolCalls: executedToolCalls,
-      toolResults: _toolResultsFromPersisted(persistedEntities),
-      report: _reportFromPersisted(persistedEntities),
-      observations: _observationsFromPersisted(persistedEntities),
-      proposals: proposalRecordsFromPersisted(entityStore.values),
-      resolvedModel: _resolvedModelFrom(
-        profileConfig: profileConfig,
-        providerModelId: observer?.lastModel ?? sentProviderModelId,
-        provider: observer?.lastProvider ?? sentProvider,
-        templateId: wakeRunTemplateId ?? testTemplate.id,
-        templateVersionId: wakeRunTemplateVersionId ?? testTemplateVersion.id,
-        wakeRunResolvedModelId: wakeRunResolvedModelId,
-        usageModelId: _usageModelIdFromPersisted(persistedEntities),
-      ),
-      providerDecision: profileConfig.toProviderDecisionRecord(
-        envPresence:
-            providerEnvPresence ??
-            EvalProvenance.envPresence(Platform.environment),
-      ),
-      workflowRun: WorkflowRunRecord(runKey: runKey, threadId: threadId),
-      runtimePrompt: observer == null
-          ? null
-          : EvalProvenance.runtimePrompt(
-              systemMessage: observer.lastSystemMessage,
-              userMessage: observer.lastUserMessage,
-              tools: observer.lastTools,
-            ),
-      modelInvocations: observer?.modelInvocations ?? const [],
-      providerRequests: observer?.providerRequests ?? const [],
-      providerResponses: observer?.providerResponses ?? const [],
-      mutatedEntryIds: result.mutatedEntries.keys.toSet(),
-      turnCount:
-          observer?.sendMessageCount ??
-          scriptedConversationRepository?.sendMessageDelegateCallCount ??
-          0,
-    );
+    return outputs;
   }
 
   static String _activeTaskIdFromScenario(EvalScenario scenario) {
@@ -1333,4 +1168,407 @@ abstract final class TaskAgentEvalBench {
 
   static DecisionActor _decisionActor(String name) =>
       DecisionActor.values.firstWhere((actor) => actor.name == name);
+}
+
+class _TaskAgentEvalSession {
+  factory _TaskAgentEvalSession(
+    EvalScenario scenario,
+    EvalProfile profile, {
+    EvalProfileConfig? profileConfigOverride,
+    Map<String, bool>? providerEnvPresence,
+    bool seedScenarioTaskLogEntries = true,
+  }) {
+    if (scenario.appState.tasks.isEmpty) {
+      throw ArgumentError(
+        'Task-agent scenario "${scenario.id}" needs at least one task',
+      );
+    }
+    final taskId = TaskAgentEvalBench._activeTaskIdFromScenario(scenario);
+    final activeTask = TaskAgentEvalBench._taskFixtureFor(scenario, taskId);
+    final now = scenario.appState.now;
+    final profileConfig = profileConfigOverride ?? evalProfileConfig(profile);
+    final persistedEntities = <AgentDomainEntity>[];
+    final entityStore = <String, AgentDomainEntity>{};
+    final journalState = TaskAgentEvalBench._seededJournalState(
+      scenario.appState.tasks,
+      seedScenarioTaskLogEntries
+          ? scenario.appState.taskLogEntries
+          : const <MockTaskLogEntry>[],
+      now,
+      defaultTaskId: taskId,
+    );
+
+    for (final changeSet in TaskAgentEvalBench._seededProposalSets(
+      scenario,
+      taskId,
+    )) {
+      entityStore[changeSet.id] = changeSet;
+    }
+    for (final decision in TaskAgentEvalBench._seededProposalDecisions(
+      scenario,
+      taskId,
+    )) {
+      entityStore[decision.id] = decision;
+    }
+
+    final testAgentState = makeTestState(
+      id: 'state-${TaskAgentEvalBench._agentId}',
+      agentId: TaskAgentEvalBench._agentId,
+      slots: AgentSlots(activeTaskId: taskId),
+      updatedAt: now,
+    );
+    final testTemplate = makeTestTemplate(
+      modelId: 'legacy-template-model-must-not-win',
+      profileId: profileConfig.profileId,
+    );
+    final testTemplateVersion = makeTestTemplateVersion(
+      directives: 'You are a diligent task agent.',
+      modelId: 'legacy-version-model-must-not-win',
+      profileId: profileConfig.profileId,
+    );
+    final identity =
+        AgentDomainEntity.agent(
+              id: TaskAgentEvalBench._agentId,
+              agentId: TaskAgentEvalBench._agentId,
+              kind: 'task_agent',
+              displayName: 'Eval Task Agent',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: scenario.appState.allowedCategoryIds,
+              currentStateId: 'state-${TaskAgentEvalBench._agentId}',
+              config: AgentConfig(profileId: profileConfig.profileId),
+              createdAt: DateTime(2024),
+              updatedAt: now,
+              vectorClock: null,
+            )
+            as AgentIdentityEntity;
+
+    return _TaskAgentEvalSession._(
+      scenario: scenario,
+      profileConfig: profileConfig,
+      providerEnvPresence: providerEnvPresence,
+      taskId: taskId,
+      activeTask: activeTask,
+      now: now,
+      agentRepository: MockAgentRepository(),
+      syncService: MockAgentSyncService(),
+      aiInputRepository: MockAiInputRepository(),
+      aiConfigRepository: MockAiConfigRepository(),
+      journalDb: MockJournalDb(),
+      journalRepository: MockJournalRepository(),
+      checklistRepository: MockChecklistRepository(),
+      labelsRepository: MockLabelsRepository(),
+      templateService: MockAgentTemplateService(),
+      persistedEntities: persistedEntities,
+      entityStore: entityStore,
+      journalEntities: journalState.entities,
+      linkedEntitiesByTaskId: journalState.linkedEntitiesByTaskId,
+      checklistItemsByTaskId: journalState.checklistItemsByTaskId,
+      testAgentState: testAgentState,
+      testTemplate: testTemplate,
+      testTemplateVersion: testTemplateVersion,
+      identity: identity,
+    ).._configureStubs();
+  }
+
+  _TaskAgentEvalSession._({
+    required this.scenario,
+    required this.profileConfig,
+    required this.providerEnvPresence,
+    required this.taskId,
+    required this.activeTask,
+    required this.now,
+    required this.agentRepository,
+    required this.syncService,
+    required this.aiInputRepository,
+    required this.aiConfigRepository,
+    required this.journalDb,
+    required this.journalRepository,
+    required this.checklistRepository,
+    required this.labelsRepository,
+    required this.templateService,
+    required this.persistedEntities,
+    required this.entityStore,
+    required this.journalEntities,
+    required this.linkedEntitiesByTaskId,
+    required this.checklistItemsByTaskId,
+    required this.testAgentState,
+    required this.testTemplate,
+    required this.testTemplateVersion,
+    required this.identity,
+  });
+
+  final EvalScenario scenario;
+  final EvalProfileConfig profileConfig;
+  final Map<String, bool>? providerEnvPresence;
+  final String taskId;
+  final MockTask activeTask;
+  final DateTime now;
+  final MockAgentRepository agentRepository;
+  final MockAgentSyncService syncService;
+  final MockAiInputRepository aiInputRepository;
+  final MockAiConfigRepository aiConfigRepository;
+  final MockJournalDb journalDb;
+  final MockJournalRepository journalRepository;
+  final MockChecklistRepository checklistRepository;
+  final MockLabelsRepository labelsRepository;
+  final MockAgentTemplateService templateService;
+  final List<AgentDomainEntity> persistedEntities;
+  final Map<String, AgentDomainEntity> entityStore;
+  final Map<String, JournalEntity> journalEntities;
+  final Map<String, List<JournalEntity>> linkedEntitiesByTaskId;
+  final Map<String, List<ChecklistItem>> checklistItemsByTaskId;
+  final AgentStateEntity testAgentState;
+  final AgentTemplateEntity testTemplate;
+  final AgentTemplateVersionEntity testTemplateVersion;
+  final AgentIdentityEntity identity;
+
+  String? _wakeRunResolvedModelId;
+  String? _wakeRunTemplateId;
+  String? _wakeRunTemplateVersionId;
+
+  void _configureStubs() {
+    TaskAgentEvalBench._applyDefaults(
+      agentRepository: agentRepository,
+      syncService: syncService,
+      aiInputRepository: aiInputRepository,
+      journalDb: journalDb,
+      checklistRepository: checklistRepository,
+      templateService: templateService,
+      testTemplate: testTemplate,
+      testTemplateVersion: testTemplateVersion,
+      persistedEntities: persistedEntities,
+      entityStore: entityStore,
+      journalEntities: journalEntities,
+      linkedEntitiesByTaskId: linkedEntitiesByTaskId,
+      checklistItemsByTaskId: checklistItemsByTaskId,
+      categories: TaskAgentEvalBench._categoryDefinitionsFromScenario(
+        scenario,
+      ),
+      labels: TaskAgentEvalBench._labelDefinitionsFromScenario(scenario),
+      targetTaskId: taskId,
+    );
+    final setupConversationManager = MockConversationManager();
+    stubFullExecutePath(
+      mockAgentRepository: agentRepository,
+      mockAiInputRepository: aiInputRepository,
+      mockAiConfigRepository: aiConfigRepository,
+      mockConversationManager: setupConversationManager,
+      testAgentState: testAgentState,
+      geminiModel: profileConfig.model,
+      geminiProvider: profileConfig.provider,
+      agentId: TaskAgentEvalBench._agentId,
+      taskId: taskId,
+    );
+    TaskAgentEvalBench._stubPersistedAgentReads(
+      agentRepository,
+      persistedEntities,
+    );
+    TaskAgentEvalBench._stubInferenceProfile(aiConfigRepository, profileConfig);
+    when(
+      () => agentRepository.updateWakeRunTemplate(
+        any(),
+        any(),
+        any(),
+        resolvedModelId: any(named: 'resolvedModelId'),
+        soulId: any(named: 'soulId'),
+        soulVersionId: any(named: 'soulVersionId'),
+      ),
+    ).thenAnswer((invocation) async {
+      _wakeRunTemplateId = invocation.positionalArguments[1] as String;
+      _wakeRunTemplateVersionId = invocation.positionalArguments[2] as String;
+      _wakeRunResolvedModelId =
+          invocation.namedArguments[#resolvedModelId] as String?;
+    });
+    when(
+      () => aiInputRepository.buildTaskDetailsJson(id: taskId),
+    ).thenAnswer(
+      (_) async => TaskAgentEvalBench._taskDetailsJson(
+        activeTask,
+        linkedEntities: linkedEntitiesByTaskId[taskId] ?? const [],
+      ),
+    );
+  }
+
+  void addTaskLogEntries(Iterable<MockTaskLogEntry> entries) {
+    for (final entry in entries) {
+      final targetTaskId = entry.taskId ?? taskId;
+      if (journalEntities[targetTaskId] is! Task) {
+        throw ArgumentError(
+          'Task log entry "${entry.id}" references unknown task '
+          '"$targetTaskId"',
+        );
+      }
+      if (journalEntities.containsKey(entry.id)) {
+        throw ArgumentError('Duplicate task log entry id: ${entry.id}');
+      }
+      final entity = TaskAgentEvalBench._taskLogEntryEntityFromMock(entry, now);
+      journalEntities[entity.meta.id] = entity;
+      linkedEntitiesByTaskId.putIfAbsent(targetTaskId, () => []).add(entity);
+      linkedEntitiesByTaskId[targetTaskId]!.sort((a, b) {
+        final byDate = a.meta.dateFrom.compareTo(b.meta.dateFrom);
+        if (byDate != 0) return byDate;
+        return a.meta.id.compareTo(b.meta.id);
+      });
+    }
+  }
+
+  Future<AgentRunOutput> runWake(
+    ScriptedAgentBehavior behavior, {
+    EvalTargetRunContext context = EvalTargetRunContext.direct,
+    String? runKeyOverride,
+    String? threadIdOverride,
+    String? matrixCellIdOverride,
+    void Function(String message)? onUserMessage,
+    ConversationRepository? conversationRepositoryOverride,
+    CloudInferenceRepository? cloudInferenceRepositoryOverride,
+  }) async {
+    _wakeRunResolvedModelId = null;
+    _wakeRunTemplateId = null;
+    _wakeRunTemplateVersionId = null;
+    final runKey = runKeyOverride ?? TaskAgentEvalBench._runKeyFor(context);
+    final threadId =
+        threadIdOverride ?? TaskAgentEvalBench._threadIdFor(context);
+    final wakeStartEntityCount = persistedEntities.length;
+    String? sentProviderModelId;
+    AiConfigInferenceProvider? sentProvider;
+
+    final conversationManager = MockConversationManager();
+    when(() => conversationManager.messages).thenReturn([]);
+    final scriptedConversationRepository =
+        conversationRepositoryOverride == null
+        ? MockConversationRepository(conversationManager)
+        : null;
+    final conversationRepository =
+        conversationRepositoryOverride ?? scriptedConversationRepository!;
+    final cloudInferenceRepository =
+        cloudInferenceRepositoryOverride ?? MockCloudInferenceRepository();
+
+    if (scriptedConversationRepository != null) {
+      scriptedConversationRepository
+        ..maxDelegateCalls = behavior.isMultiTurn ? behavior.turns.length : 1
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              onUserMessage?.call(message);
+              sentProviderModelId = model;
+              sentProvider = provider;
+              final turnIndex =
+                  scriptedConversationRepository.sendMessageDelegateCallCount -
+                  1;
+              final toolCalls = behavior.isMultiTurn
+                  ? behavior.turns[turnIndex].toolCalls
+                  : behavior.toolCalls;
+              if (strategy is TaskAgentStrategy) {
+                await strategy.processToolCalls(
+                  toolCalls: TaskAgentEvalBench._toToolCalls(toolCalls),
+                  manager: conversationManager,
+                );
+              }
+              return behavior.isMultiTurn
+                  ? behavior.turns[turnIndex].usage
+                  : behavior.usage;
+            };
+    }
+
+    final workflow = createTestWorkflow(
+      agentRepository: agentRepository,
+      conversationRepository: conversationRepository,
+      aiInputRepository: aiInputRepository,
+      aiConfigRepository: aiConfigRepository,
+      journalDb: journalDb,
+      cloudInferenceRepository: cloudInferenceRepository,
+      journalRepository: journalRepository,
+      checklistRepository: checklistRepository,
+      labelsRepository: labelsRepository,
+      syncService: syncService,
+      templateService: templateService,
+    );
+
+    final result = await withClock(
+      Clock.fixed(now),
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: runKey,
+        triggerTokens: scenario.userInput.triggerTokens.isEmpty
+            ? {taskId}
+            : scenario.userInput.triggerTokens,
+        threadId: threadId,
+      ),
+    );
+
+    final wakeEntities = persistedEntities.skip(wakeStartEntityCount).toList();
+    final observer = conversationRepository is EvalConversationObserver
+        ? conversationRepository as EvalConversationObserver
+        : null;
+    final lastUserMessage = observer?.lastUserMessage;
+    if (lastUserMessage != null) {
+      onUserMessage?.call(lastUserMessage);
+    }
+
+    final executedToolCalls = scriptedConversationRepository == null
+        ? toolCallRecordsFromPersistedActions(wakeEntities)
+        : behavior.toolCallsForTurns(
+            scriptedConversationRepository.sendMessageDelegateCallCount,
+          );
+    return AgentRunOutput(
+      success: result.success,
+      error: result.error,
+      usage: TaskAgentEvalBench._usageFromPersisted(wakeEntities),
+      toolCalls: executedToolCalls,
+      toolResults: TaskAgentEvalBench._toolResultsFromPersisted(wakeEntities),
+      report:
+          TaskAgentEvalBench._reportFromPersisted(wakeEntities) ??
+          TaskAgentEvalBench._reportFromPersisted(persistedEntities),
+      observations: TaskAgentEvalBench._observationsFromPersisted(
+        wakeEntities,
+      ),
+      proposals: proposalRecordsFromPersisted(entityStore.values),
+      resolvedModel: TaskAgentEvalBench._resolvedModelFrom(
+        profileConfig: profileConfig,
+        providerModelId: observer?.lastModel ?? sentProviderModelId,
+        provider: observer?.lastProvider ?? sentProvider,
+        templateId: _wakeRunTemplateId ?? testTemplate.id,
+        templateVersionId: _wakeRunTemplateVersionId ?? testTemplateVersion.id,
+        wakeRunResolvedModelId: _wakeRunResolvedModelId,
+        usageModelId: TaskAgentEvalBench._usageModelIdFromPersisted(
+          wakeEntities,
+        ),
+      ),
+      providerDecision: profileConfig.toProviderDecisionRecord(
+        envPresence:
+            providerEnvPresence ??
+            EvalProvenance.envPresence(Platform.environment),
+      ),
+      workflowRun: WorkflowRunRecord(
+        runKey: runKey,
+        threadId: threadId,
+        matrixCellId: matrixCellIdOverride,
+      ),
+      runtimePrompt: observer == null
+          ? null
+          : EvalProvenance.runtimePrompt(
+              systemMessage: observer.lastSystemMessage,
+              userMessage: observer.lastUserMessage,
+              tools: observer.lastTools,
+            ),
+      modelInvocations: observer?.modelInvocations ?? const [],
+      providerRequests: observer?.providerRequests ?? const [],
+      providerResponses: observer?.providerResponses ?? const [],
+      mutatedEntryIds: result.mutatedEntries.keys.toSet(),
+      turnCount:
+          observer?.sendMessageCount ??
+          scriptedConversationRepository?.sendMessageDelegateCallCount ??
+          0,
+    );
+  }
 }

@@ -1163,6 +1163,96 @@ final EvalScenario taskWorkflowCheckedChecklistNoopScenario = _reviewedScenario(
       'suppression on already-checked checklist work.',
 );
 
+final EvalScenario taskWorkflowChecklistTranscriptCascadeScenario =
+    _reviewedScenario(
+      EvalScenario(
+        id: 'task_workflow_checklist_transcript_cascade',
+        title:
+            'Real workflow: incremental transcripts update one checklist item',
+        agentKind: AgentKind.taskAgent,
+        metadata: const EvalScenarioMetadata(
+          capabilityIds: [
+            'task.checklist.transcriptcascade',
+            'task.cache.stableprefix',
+          ],
+          split: EvalScenarioSplit.canary,
+          tags: {
+            'task',
+            'workflow',
+            'checklist',
+            'transcript',
+            'cascade',
+            'cache',
+          },
+        ),
+        appState: MockedAppState(
+          now: DateTime(2026, 6, 10, 11),
+          categoryIds: const ['cat-001'],
+          categories: [kEvalWorkCategory],
+          tasks: const [
+            MockTask(
+              id: 'task-redesign',
+              title: 'Ship notification redesign',
+              status: 'IN PROGRESS',
+              categoryId: 'cat-001',
+              checklist: [
+                MockChecklistItem(
+                  id: 'ci-pr',
+                  title: 'Create pull request',
+                ),
+                MockChecklistItem(
+                  id: 'ci-review',
+                  title: 'Address review feedback',
+                ),
+                MockChecklistItem(
+                  id: 'ci-release',
+                  title: 'Prepare release note',
+                ),
+              ],
+            ),
+          ],
+          taskLogEntries: [
+            MockTaskLogEntry(
+              id: 'audio-redesign-estimate',
+              taskId: 'task-redesign',
+              transcript:
+                  'The remaining notification redesign work is about two '
+                  'hours.',
+              createdAt: DateTime(2026, 6, 10, 10, 10),
+            ),
+            MockTaskLogEntry(
+              id: 'audio-redesign-pr-open',
+              taskId: 'task-redesign',
+              transcript:
+                  'I created the pull request. That checks off the Create '
+                  'pull request item, but review feedback is not done yet.',
+              createdAt: DateTime(2026, 6, 10, 10, 40),
+            ),
+            MockTaskLogEntry(
+              id: 'audio-redesign-review-pending',
+              taskId: 'task-redesign',
+              transcript:
+                  'I still need to address review feedback and write the '
+                  'release note.',
+              createdAt: DateTime(2026, 6, 10, 10, 55),
+            ),
+          ],
+        ),
+        userInput: const UserInput(
+          transcript:
+              'Wake the task agent after each short linked audio transcript.',
+          triggerTokens: {'decided_task:task-redesign'},
+        ),
+        expectations: const EvalExpectations(
+          mustNotCallTools: {'set_task_status'},
+        ),
+      ),
+      rationale:
+          'Reviewed as a public same-task task-agent cascade case: short '
+          'linked audio transcripts should add narrow checklist evidence while '
+          'the broader task remains in progress.',
+    );
+
 final allEvalScenarios = <EvalScenario>[
   plannerMorningCapacityScenario,
   plannerWorkflowDraftingScenario,
@@ -1179,6 +1269,7 @@ final allEvalScenarios = <EvalScenario>[
   taskWorkflowPendingProposalMergeScenario,
   taskWorkflowRejectedProposalStickinessScenario,
   taskWorkflowCheckedChecklistNoopScenario,
+  taskWorkflowChecklistTranscriptCascadeScenario,
 ];
 
 final List<EvalScenario> planningEvalScenarios = allEvalScenarios
