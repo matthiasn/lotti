@@ -6,7 +6,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/daily_os_next/logic/recorded_time.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -76,29 +76,22 @@ List<TimeBlock> actualTimeBlocksForEntries({
   required Map<String, JournalEntity> linkedFromById,
   required CategoryDefinition? Function(String id) categoryById,
 }) {
-  final entryIdToLinkedFromIds = <String, Set<String>>{};
-  for (final link in links) {
-    if (link.deletedAt != null) continue;
-    entryIdToLinkedFromIds
-        .putIfAbsent(link.toId, () => <String>{})
-        .add(link.fromId);
-  }
+  // The shared core decides what counts as recorded time (tombstones,
+  // zero-length entries, linked-from resolution); this provider only projects
+  // the resolved pairs into UI TimeBlocks.
+  final resolved = resolveTimeEntries(
+    entries: entries,
+    links: links,
+    linkedFromById: linkedFromById,
+  );
 
   final out = <TimeBlock>[];
-  for (final entry in entries) {
-    if (entry.meta.deletedAt != null) continue;
-    final duration = entryDuration(entry);
-    if (duration <= Duration.zero) continue;
-
-    final linkedFrom = _resolveLinkedFrom(
-      linkedFromIds: entryIdToLinkedFromIds[entry.meta.id],
-      linkedFromById: linkedFromById,
-    );
-    final categoryId = linkedFrom?.meta.categoryId ?? entry.meta.categoryId;
-    final category = _projectCategory(categoryId, categoryById);
+  for (final pair in resolved) {
+    final entry = pair.entry;
+    final category = _projectCategory(pair.categoryId, categoryById);
     final title = _actualBlockTitle(
       entry: entry,
-      linkedFrom: linkedFrom,
+      linkedFrom: pair.linkedFrom,
       category: category,
     );
 
@@ -111,7 +104,7 @@ List<TimeBlock> actualTimeBlocksForEntries({
         type: TimeBlockType.manual,
         state: TimeBlockState.completed,
         category: category,
-        taskId: linkedFrom is Task ? linkedFrom.meta.id : null,
+        taskId: pair.taskId,
       ),
     );
   }
@@ -120,12 +113,13 @@ List<TimeBlock> actualTimeBlocksForEntries({
   return out;
 }
 
-/// Test-only seam for [_resolveLinkedFrom] — the pure linked-from picker.
+/// Test-only seam for the pure linked-from picker (shared core:
+/// [resolveLinkedFrom] in `logic/recorded_time.dart`).
 @visibleForTesting
 JournalEntity? debugResolveLinkedFrom({
   required Set<String>? linkedFromIds,
   required Map<String, JournalEntity> linkedFromById,
-}) => _resolveLinkedFrom(
+}) => resolveLinkedFrom(
   linkedFromIds: linkedFromIds,
   linkedFromById: linkedFromById,
 );
@@ -141,23 +135,6 @@ DayAgentCategory debugProjectCategory(
 /// The fallback category used when no category is resolvable.
 @visibleForTesting
 DayAgentCategory get debugFallbackActualCategory => _fallbackActualCategory;
-
-JournalEntity? _resolveLinkedFrom({
-  required Set<String>? linkedFromIds,
-  required Map<String, JournalEntity> linkedFromById,
-}) {
-  if (linkedFromIds == null) return null;
-
-  JournalEntity? fallbackNonRating;
-  for (final linkedFromId in linkedFromIds) {
-    final linkedFrom = linkedFromById[linkedFromId];
-    if (linkedFrom == null || linkedFrom.meta.deletedAt != null) continue;
-    if (linkedFrom is Task) return linkedFrom;
-    if (linkedFrom is RatingEntry) continue;
-    fallbackNonRating ??= linkedFrom;
-  }
-  return fallbackNonRating;
-}
 
 DayAgentCategory _projectCategory(
   String? categoryId,

@@ -349,6 +349,14 @@ stateDiagram-v2
   resolves categories through `EntitiesCacheService`, and refreshes from every
   non-empty database update batch so newly stopped timers appear in the Actual
   lane.
+- What counts as recorded time is decided once, in
+  `logic/recorded_time.dart`: `resolveTimeEntries` skips tombstones and
+  zero-length entries and resolves each survivor's linked-from entity (a linked
+  Task wins, ratings never count, otherwise the first surviving non-rating
+  link), yielding `ResolvedTimeEntry` pairs with derived `categoryId`/`taskId`/
+  `duration`. The Actual lane projects these pairs into UI `TimeBlock`s; the
+  planner's week context derives prompt span buckets from the same pairs, so
+  the two can never disagree on what was recorded.
 - The Day timeline spans `00:00` to `00:00` and folds idle regions instead of
   cropping the day. Folding is calculated from the union of planned and actual
   blocks, so gaps on either side compress into the same folded-paper region
