@@ -216,10 +216,12 @@ Runtime behavior:
   Capture → Reconcile → Drafting ritual runs inside a full-height
   **day-planning modal** (`showDayPlanningModal`,
   `ui/pages/day_planning_modal.dart`), a Wolt multi-page sheet pushed on the
-  root navigator (full-height bottom sheet on phones — covering the bottom nav
-  — dialog on wide). The modal is opened from the empty surface's footer CTA
-  (`DayPlanningCreate`) and from the Day surface's Refine CTA
-  (`DayPlanningAdapt`). Each step submits against the selected date for
+  root navigator — a full-height bottom sheet on phones (covering the bottom
+  nav) and a right-anchored full-height **side panel** on wide screens
+  (`SizedWoltSideSheetType`, 45% of the window clamped to 480–720 px), so the
+  day surface stays visible beside the conversation. The modal is opened from
+  the empty surface's footer CTA (`DayPlanningCreate`) and from the Day
+  surface's Refine CTA (`DayPlanningAdapt`). Each step submits against the selected date for
   day-agent routing; on create the Drafting step closes the whole modal once
   the plan is ready and invalidates `currentDraftPlanProvider` so the root
   re-renders the new plan. Background agent or sync updates reload the current
@@ -321,11 +323,56 @@ stateDiagram-v2
   realtime output looks truncated. Refine uses the same Mistral-preferred
   realtime path but disables the full-file batch verifier for that session so a
   reviewed Mistral transcript is not replaced by an MLX fallback.
+- Capture and Refine share one **anchored voice template**: a per-phase
+  headline at the top (the state narrator — "What's on your mind …", "I'm
+  listening.", "Writing that down…", "Does this look right?"), a flexible
+  middle zone, and a fixed-height `VoiceOrbZone`
+  (`ui/widgets/voice_orb_zone.dart`: always-reserved waveform slot + orb +
+  single-strut status caption) pinned directly above the sticky glass action
+  bar. The orb **never moves between phases** — the live transcript grows
+  *upward* from just above the orb inside the bounded middle zone
+  (`LiveTranscriptView`: bottom-pinned, reverse-scrolled, top fade), the
+  editable transcript takes the same zone after capture, and Refine's idle
+  zone shows the read-only current-plan rows. On viewports shorter than the
+  template's minimum the body scrolls instead of overflowing
+  (`_CaptureFlowBody._minBodyHeightFor`).
+
+  ```text
+  headline (state narrator)        ← copy cross-fades in place
+  middle zone                      ← transcript / editor / plan / diff rows
+  waveform slot · orb · caption    ← fixed height, orb stays put
+  sticky glass action bar          ← never empty; all actions live here
+  ```
+
 - `CaptureState` keeps two live audio signals while the mic is open:
   normalized `amplitudes` for the compact waveform bars and raw `dbfs` for the
   shader voice affordance. `VoiceButton` mounts the AI tension-loop shader only
-  during `listening`, wraps it around the fixed-size record button, and removes
-  the shader subtree for idle, transcribing, captured, and error phases.
+  during `listening`, wraps it around the record button, and removes the
+  shader subtree for the other phases. The glyph is bound to the state
+  machine — mic (idle/error), stop square (listening), dimmed mic
+  (transcribing), outlined mic (captured — demoted so the advance CTA carries
+  the primary weight). Presses scale the core down with an overshoot release
+  and the ink ripple paints *above* the gradient (via `Ink`), so taps read as
+  alive.
+- The modal's sticky glass bar is populated in every phase: idle/error →
+  "Type instead"; listening → a teal "Done" pill mirroring the orb's stop
+  action in the thumb zone; transcribing → a quiet "Cancel"; captured →
+  "Re-record" + "Review". On the desktop side panel the pills render at
+  intrinsic width aligned to the trailing edge instead of stretching
+  edge-to-edge, and bar content is capped at the 560 px content width.
+- The Drafting wait is carried by a hero thinking moment instead of skeleton
+  shimmer: the decoder-bars shader (`AiThinkingShaderPresence`) over a
+  `DraftingStatusTicker` — a deterministic ~21 s rotation of localized
+  narration lines ("Reading your check-in…", "Placing deep work first…") that
+  cross-fade in place — with yesterday's learning cards below as real content
+  to read while waiting. The drafting step has no sticky bar (it offers no
+  actions and auto-advances when the draft is ready).
+- The modal's Refine step (`RefineModalContent`) runs on the same anchored
+  template: idle shows the current plan (eyebrow + category-dot rows) where
+  the spoken words will land, the diff rows render in the middle zone with
+  inline accept/reject, and the bar carries "Revert" (enabled once a diff is
+  pending) and "Looks good" (closes the modal). The standalone `RefinePage`
+  keeps its two-pane timeline + side-panel layout for the route-level flow.
 - Agenda and Commit surfaces use the `CapacityDonut` ring (86 px on the Agenda
   stat strip, 62 px on the Commit recap) per the design handoff: teal under
   90% load, warning amber at 90–100%, error red above 100% with the
@@ -464,9 +511,9 @@ stateDiagram-v2
   `propose_plan_diff` so stale widget parameters cannot drop the user's edits.
   From Day, the Refine CTA opens the shared day-planning modal with a
   `DayPlanningAdapt` intent (`showDayPlanningModal`), whose Refine step hosts
-  `RefineModalContent` over the existing plan surface (bottom sheet on narrow
-  screens, dialog on wider screens); the full `RefinePage` remains as a
-  direct-route fallback. Failed or empty proposals
+  `RefineModalContent` on the anchored voice template (full-height bottom
+  sheet on narrow screens, right side panel on wide); the full `RefinePage`
+  remains as a direct-route fallback. Failed or empty proposals
   keep the review field open and show inline feedback instead of silently
   closing. Proposed changes render as independent suggestion cards, matching
   task-agent approval affordances: each row can be accepted or rejected, then

@@ -238,7 +238,7 @@ void main() {
       expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
     });
 
-    testWidgets('listening bar shows no action pills and no shader', (
+    testWidgets('listening bar mirrors the orb stop action as a Done pill', (
       tester,
     ) async {
       await _openCreate(
@@ -249,7 +249,13 @@ void main() {
           amplitudes: [],
         ),
       );
-      expect(find.byType(DsGlassPill), findsNothing);
+      final messages = _l10n(tester);
+      // The bar is never empty: stopping must be reachable in the thumb
+      // zone without reaching back up to the orb.
+      expect(
+        find.widgetWithText(DsGlassPill, messages.dailyOsNextCaptureDoneCta),
+        findsOneWidget,
+      );
       expect(find.byKey(DayPlanningThinkingShader.indicatorKey), findsNothing);
     });
 
@@ -262,7 +268,13 @@ void main() {
           amplitudes: [],
         ),
       );
-      expect(find.byType(DsGlassPill), findsNothing);
+      // One honest action while working: a quiet Cancel that discards the
+      // in-flight transcription.
+      final messages = _l10n(tester);
+      expect(
+        find.widgetWithText(DsGlassPill, messages.cancelButton),
+        findsOneWidget,
+      );
       expect(
         find.byKey(DayPlanningThinkingShader.indicatorKey),
         findsOneWidget,
@@ -376,8 +388,10 @@ void main() {
       await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
       await _tapPill(tester, messages.dailyOsNextReconcileBuildDayCta);
       expect(find.byType(DraftingModalContent), findsOneWidget);
+      // The drafting step carries its own hero thinking shader in the body
+      // (no sticky bar on this step — it offers no actions).
       expect(
-        find.byKey(DayPlanningThinkingShader.indicatorKey),
+        find.byKey(DraftingModalContent.thinkingShaderKey),
         findsOneWidget,
       );
     });
@@ -530,7 +544,7 @@ void main() {
       expect(width, closeTo(420, 2));
     });
 
-    testWidgets('wide viewport renders a width-bounded centered dialog', (
+    testWidgets('wide viewport renders a full-height right side panel', (
       tester,
     ) async {
       tester.view
@@ -541,11 +555,13 @@ void main() {
 
       await _openCreate(tester, size: const Size(1280, 900));
       expect(find.byType(CaptureModalContent), findsOneWidget);
-      // The dialog branch constrains the content to the configured width —
-      // wider than the phone content but well below the full 1280 screen.
-      final width = tester.getSize(find.byType(CaptureModalContent)).width;
-      expect(width, lessThan(1280));
-      expect(width, greaterThan(700));
+      // The side-sheet branch gives the interaction a substantial
+      // right-anchored column: 45% of 1280 = 576, full window height.
+      final content = tester.getRect(find.byType(CaptureModalContent));
+      expect(content.width, lessThan(1280));
+      expect(content.width, greaterThan(480));
+      // Right-anchored: the panel's right edge hugs the window edge.
+      expect(content.right, greaterThan(1270));
     });
   });
 }

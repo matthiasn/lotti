@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +21,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/modal/sized_wolt_dialog_type.dart';
+import 'package:lotti/widgets/modal/sized_wolt_side_sheet_type.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// What the day-planning modal opens to.
@@ -80,30 +82,26 @@ Future<void> showDayPlanningModal({
   );
 }
 
-/// Target width of the desktop/tablet dialog. Wider than Wolt's default
-/// ~524px so the two-column Reconcile and Drafting steps and the learning
-/// cards have room to breathe; [SizedWoltDialogType] shrinks it to fit on
-/// narrower screens.
-const double _dayPlanningDialogWidth = 920;
-
-/// Bottom sheet on phones (covers the nav), dialog on wide.
+/// Bottom sheet on phones (covers the nav), full-height side panel on wide.
 ///
 /// The Create ritual (Capture → Reconcile → Drafting) runs as a calm
 /// full-height bottom sheet so it reads as a near-full layer; the Adapt
 /// (Refine) flow is a compact, content-sized panel that shouldn't stretch
-/// to fill the screen for its sparse voice content.
+/// to fill the screen for its sparse voice content. On desktop both run in
+/// a right-anchored [SizedWoltSideSheetType]: full height suits the
+/// conversational back-and-forth far better than a height-capped dialog,
+/// and the day surface stays visible beside it.
 WoltModalType _dayPlanningModalType(
   BuildContext context,
   DayPlanningIntent intent,
 ) {
   final width = MediaQuery.of(context).size.width;
   if (width < WoltModalConfig.pageBreakpoint) {
-    return switch (intent) {
-      DayPlanningCreate() => const WoltBottomSheetType(forceMaxHeight: true),
-      DayPlanningAdapt() => const WoltBottomSheetType(),
-    };
+    // Both intents run full height: the anchored voice template pins the
+    // orb above the action bar and lets the middle zone breathe.
+    return const WoltBottomSheetType(forceMaxHeight: true);
   }
-  return const SizedWoltDialogType(preferredWidth: _dayPlanningDialogWidth);
+  return const SizedWoltSideSheetType();
 }
 
 /// Bottom padding reserved under scrolling step content so the last rows
@@ -114,11 +112,22 @@ const double _barClearance = 112;
 /// (Capture, Drafting, Refine). Wolt lays page content in a
 /// shrink-wrapping viewport (unbounded height), so those bodies — which
 /// rely on a bounded box for `Expanded`/`SingleChildScrollView` — need an
-/// explicit height rather than `SliverFillRemaining`. Sized as a fraction
-/// of the screen so the full-height sheet reads as a calm, near-full layer
-/// with the sticky bar docked below.
-double _stepViewportHeight(BuildContext context) =>
-    MediaQuery.sizeOf(context).height * 0.72;
+/// explicit height rather than `SliverFillRemaining`.
+///
+/// Both planning containers are full height (bottom sheet on phones, side
+/// sheet on desktop), so the body height is the screen minus the modal
+/// chrome: the sheet's top inset + nav bar above the body, and the sticky
+/// glass action bar below it. Slightly undershooting is fine (a little
+/// breathing room above the bar); overshooting would push the
+/// bottom-anchored orb under the bar.
+double _stepViewportHeight(BuildContext context) {
+  final size = MediaQuery.sizeOf(context);
+  final isBottomSheet = size.width < WoltModalConfig.pageBreakpoint;
+  // Bottom sheets keep a visible sliver of the underlying page above the
+  // sheet; the side sheet starts at the window's top edge.
+  final chrome = isBottomSheet ? 250.0 : 180.0;
+  return math.max(420, size.height - chrome);
+}
 
 DateTime _capturedAtForDay(DateTime day) {
   final now = clock.now();
@@ -126,6 +135,25 @@ DateTime _capturedAtForDay(DateTime day) {
   // rather than mixing [day]'s date with [now]'s wall-clock components.
   // `clock.now()` is always local here, so local midnight is correct.
   return day.add(now.difference(DateTime(now.year, now.month, now.day)));
+}
+
+/// Lays out action-bar pills for the host container: phones get
+/// edge-to-edge pills (each wrapped in [Expanded]); the desktop side sheet
+/// gets intrinsic-width pills aligned to the trailing edge so they read as
+/// buttons rather than full-width slabs.
+Widget _layoutBarPills(BuildContext context, List<Widget> pills) {
+  final tokens = context.designTokens;
+  final wide =
+      MediaQuery.sizeOf(context).width >= WoltModalConfig.pageBreakpoint;
+  return Row(
+    mainAxisAlignment: wide ? MainAxisAlignment.end : MainAxisAlignment.start,
+    children: [
+      for (var i = 0; i < pills.length; i++) ...[
+        if (i > 0) SizedBox(width: tokens.spacing.step2),
+        if (wide) pills[i] else Expanded(child: pills[i]),
+      ],
+    ],
+  );
 }
 
 // ─────────────────────────────── Capture ───────────────────────────────
@@ -222,42 +250,58 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
     switch (state.phase) {
       case CapturePhase.captured:
         final canContinue = state.transcript.trim().isNotEmpty && !_submitting;
-        actions = Row(
-          children: [
-            Expanded(
-              child: DsGlassPill(
-                icon: Icons.mic_rounded,
-                label: messages.dailyOsNextReconcileReRecord,
-                enabled: !_submitting,
-                onTap: () =>
-                    ref.read(captureControllerProvider.notifier).reset(),
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step2),
-            Expanded(
-              child: DsGlassPill(
-                icon: Icons.arrow_forward_rounded,
-                label: messages.dailyOsNextCaptureReconcileCta,
-                fillColor: tokens.colors.interactive.enabled,
-                foregroundColor: tokens.colors.text.onInteractiveAlert,
-                enabled: canContinue,
-                onTap: _continue,
-              ),
-            ),
-          ],
-        );
+        actions = _layoutBarPills(context, [
+          DsGlassPill(
+            icon: Icons.mic_rounded,
+            label: messages.dailyOsNextReconcileReRecord,
+            fillColor: tokens.colors.surface.focusPressed,
+            enabled: !_submitting,
+            onTap: () => ref.read(captureControllerProvider.notifier).reset(),
+          ),
+          DsGlassPill(
+            icon: Icons.arrow_forward_rounded,
+            label: messages.dailyOsNextCaptureReconcileCta,
+            fillColor: tokens.colors.interactive.enabled,
+            foregroundColor: tokens.colors.text.onInteractiveAlert,
+            enabled: canContinue,
+            onTap: _continue,
+          ),
+        ]);
       case CapturePhase.idle:
       case CapturePhase.error:
-        actions = DsGlassPill(
-          icon: Icons.keyboard_rounded,
-          label: messages.dailyOsNextCaptureTypeInstead,
-          expand: true,
-          onTap: () =>
-              ref.read(captureControllerProvider.notifier).startTyping(),
-        );
+        actions = _layoutBarPills(context, [
+          DsGlassPill(
+            icon: Icons.keyboard_rounded,
+            label: messages.dailyOsNextCaptureTypeInstead,
+            fillColor: tokens.colors.surface.focusPressed,
+            onTap: () =>
+                ref.read(captureControllerProvider.notifier).startTyping(),
+          ),
+        ]);
       case CapturePhase.listening:
+        // Mirrors the orb's stop action in the thumb zone, so finishing a
+        // capture never requires reaching back up to the orb.
+        actions = _layoutBarPills(context, [
+          DsGlassPill(
+            icon: Icons.check_rounded,
+            label: messages.dailyOsNextCaptureDoneCta,
+            fillColor: tokens.colors.interactive.enabled,
+            foregroundColor: tokens.colors.text.onInteractiveAlert,
+            onTap: () => ref.read(captureControllerProvider.notifier).toggle(),
+          ),
+        ]);
       case CapturePhase.transcribing:
-        actions = const SizedBox(width: double.infinity);
+        // One honest action while working: a quiet Cancel that discards the
+        // in-flight transcription (controller reset). The thinking shader on
+        // the bar's top edge carries the busy signal.
+        actions = _layoutBarPills(context, [
+          DsGlassPill(
+            icon: Icons.close_rounded,
+            label: messages.cancelButton,
+            fillColor: tokens.colors.surface.focusPressed,
+            onTap: () => ref.read(captureControllerProvider.notifier).reset(),
+          ),
+        ]);
     }
 
     return DayPlanningGlassActionBar(
@@ -367,29 +411,23 @@ class _ReconcileStepBarState extends ConsumerState<_ReconcileStepBar> {
       topSlot: DayPlanningThinkingShader(
         isThinking: state.isLoading && !state.hasValue,
       ),
-      actions: Row(
-        children: [
-          Expanded(
-            child: DsGlassPill(
-              icon: Icons.mic_rounded,
-              label: messages.dailyOsNextReconcileReRecord,
-              enabled: !_pushing,
-              onTap: () => WoltModalSheet.of(context).popPage(),
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          Expanded(
-            child: DsGlassPill(
-              icon: Icons.arrow_forward_rounded,
-              label: messages.dailyOsNextReconcileBuildDayCta,
-              fillColor: tokens.colors.interactive.enabled,
-              foregroundColor: tokens.colors.text.onInteractiveAlert,
-              enabled: canBuild,
-              onTap: _buildDay,
-            ),
-          ),
-        ],
-      ),
+      actions: _layoutBarPills(context, [
+        DsGlassPill(
+          icon: Icons.mic_rounded,
+          label: messages.dailyOsNextReconcileReRecord,
+          fillColor: tokens.colors.surface.focusPressed,
+          enabled: !_pushing,
+          onTap: () => WoltModalSheet.of(context).popPage(),
+        ),
+        DsGlassPill(
+          icon: Icons.arrow_forward_rounded,
+          label: messages.dailyOsNextReconcileBuildDayCta,
+          fillColor: tokens.colors.interactive.enabled,
+          foregroundColor: tokens.colors.text.onInteractiveAlert,
+          enabled: canBuild,
+          onTap: _buildDay,
+        ),
+      ]),
     );
   }
 }
@@ -409,6 +447,9 @@ SliverWoltModalSheetPage _draftingStepPage(
     decidedCaptureItemIds: selections.captureItemIds,
     dayDate: day,
   );
+  // No sticky action bar: drafting offers no actions (it auto-advances when
+  // the draft is ready), and the step body carries its own hero thinking
+  // shader — a bar would be a dead strip duplicating that signal.
   return ModalUtils.sliverModalSheetPage(
     context: context,
     onTapBack: onBack,
@@ -421,7 +462,6 @@ SliverWoltModalSheetPage _draftingStepPage(
         ),
       ),
     ],
-    stickyActionBar: _DraftingStepBar(params: params),
   );
 }
 
@@ -488,23 +528,6 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
   }
 }
 
-class _DraftingStepBar extends ConsumerWidget {
-  const _DraftingStepBar({required this.params});
-
-  final DraftingParams params;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(draftingControllerProvider(params));
-    final isThinking =
-        state.isLoading || state.value?.phase == DraftingPhase.drafting;
-    return DayPlanningGlassActionBar(
-      topSlot: DayPlanningThinkingShader(isThinking: isThinking),
-      actions: const SizedBox(width: double.infinity),
-    );
-  }
-}
-
 // ──────────────────────────────── Refine ───────────────────────────────
 
 SliverWoltModalSheetPage _refineStepPage(
@@ -515,12 +538,14 @@ SliverWoltModalSheetPage _refineStepPage(
     context: context,
     title: context.messages.dailyOsNextRefineTitle,
     slivers: [
-      // Refine's modal content is a content-sized scroll view (voice panel +
-      // diff rows), so let it size to its content instead of forcing the
-      // full step viewport height — otherwise the sparse idle state leaves a
-      // large empty gap below the orb.
-      SliverToBoxAdapter(child: RefineModalContent(draft: draft)),
-      const SliverToBoxAdapter(child: SizedBox(height: _barClearance)),
+      // Same anchored voice template as Capture: a bounded viewport pins
+      // the orb above the sticky bar while the refine zone breathes.
+      SliverToBoxAdapter(
+        child: SizedBox(
+          height: _stepViewportHeight(context),
+          child: RefineModalContent(draft: draft),
+        ),
+      ),
     ],
     stickyActionBar: _RefineStepBar(draft: draft),
   );
@@ -533,14 +558,35 @@ class _RefineStepBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final phase = ref.watch(
-      refineControllerProvider(draft).select((s) => s.phase),
-    );
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final state = ref.watch(refineControllerProvider(draft));
+    final notifier = ref.read(refineControllerProvider(draft).notifier);
+    final busy =
+        state.phase == RefinePhase.listening ||
+        state.phase == RefinePhase.thinking;
+
     return DayPlanningGlassActionBar(
       topSlot: DayPlanningThinkingShader(
-        isThinking: phase == RefinePhase.thinking,
+        isThinking: state.phase == RefinePhase.thinking,
       ),
-      actions: const SizedBox(width: double.infinity),
+      actions: _layoutBarPills(context, [
+        DsGlassPill(
+          icon: Icons.undo_rounded,
+          label: messages.dailyOsNextRefineRevert,
+          fillColor: tokens.colors.surface.focusPressed,
+          enabled: state.diff != null && state.phase == RefinePhase.diffReady,
+          onTap: notifier.revert,
+        ),
+        DsGlassPill(
+          icon: Icons.check_rounded,
+          label: messages.dailyOsNextRefineLooksGood,
+          fillColor: tokens.colors.interactive.enabled,
+          foregroundColor: tokens.colors.text.onInteractiveAlert,
+          enabled: !busy,
+          onTap: () => Navigator.of(context).pop(),
+        ),
+      ]),
     );
   }
 }

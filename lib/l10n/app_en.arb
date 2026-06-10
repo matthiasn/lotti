@@ -1770,6 +1770,7 @@
     }
   },
   "dailyOsNextCaptureCaptured": "Got it.",
+  "dailyOsNextCaptureDoneCta": "Done",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Microphone permission was denied.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "No active realtime session.",
   "dailyOsNextCaptureErrorNoAudioRecorded": "No audio was recorded.",
@@ -1777,8 +1778,10 @@
   "dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed": "Realtime transcription could not start.",
   "dailyOsNextCaptureErrorRecordingStartFailed": "Recording could not start.",
   "dailyOsNextCaptureErrorTranscriptionFailed": "Transcription failed.",
-  "dailyOsNextCaptureHeadlineLead": "What's on your mind",
-  "dailyOsNextCaptureHeadlineTail": "for today?",
+  "dailyOsNextCaptureHeadlineCaptured": "Does this look right?",
+  "dailyOsNextCaptureHeadlineLead": "What’s on your mind",
+  "dailyOsNextCaptureHeadlineListening": "I’m listening.",
+  "dailyOsNextCaptureHeadlineTail": "for today?",
   "dailyOsNextCaptureHeadlineTailForDate": "for {date}?",
   "@dailyOsNextCaptureHeadlineTailForDate": {
     "placeholders": {
@@ -1787,11 +1790,15 @@
       }
     }
   },
-  "dailyOsNextCaptureHeadlineTailTomorrow": "for tomorrow?",
-  "dailyOsNextCaptureHeadlineTailYesterday": "for yesterday?",
+  "dailyOsNextCaptureHeadlineTailTomorrow": "for tomorrow?",
+  "dailyOsNextCaptureHeadlineTailYesterday": "for yesterday?",
+  "dailyOsNextCaptureHeadlineTranscribing": "Writing that down…",
+  "dailyOsNextCaptureIdleClick": "Click to talk",
+  "dailyOsNextCaptureIdleExample": "“Deep work this morning, a walk after lunch, emails before five.”",
   "dailyOsNextCaptureIdleHint": "Tap to talk · type instead",
   "dailyOsNextCaptureIdleTalk": "Tap to talk",
   "dailyOsNextCaptureListening": "LISTENING",
+  "dailyOsNextCaptureListeningStatus": "Listening…",
   "dailyOsNextCapturePastPrompt": "Anything you still want to track from {date}?",
   "@dailyOsNextCapturePastPrompt": {
     "placeholders": {
@@ -1800,8 +1807,9 @@
       }
     }
   },
-  "dailyOsNextCaptureReconcileCta": "Reconcile",
+  "dailyOsNextCaptureReconcileCta": "Review",
   "dailyOsNextCapturesPanelTitle": "Captures",
+  "dailyOsNextCaptureTranscribing": "Transcribing…",
   "dailyOsNextCaptureTranscriptHint": "Fix anything the transcript got wrong before planning.",
   "dailyOsNextCaptureTranscriptLabel": "Review transcript",
   "dailyOsNextCaptureTypeInstead": "Type instead",
@@ -1859,6 +1867,14 @@
   "dailyOsNextDraftingNudgeAccept": "Yes, protect mornings",
   "dailyOsNextDraftingNudgeDecline": "Not today",
   "dailyOsNextDraftingReasoningOverline": "✦ REASONING",
+  "dailyOsNextDraftingStatusAfternoon": "Sequencing the afternoon…",
+  "dailyOsNextDraftingStatusAlmost": "Almost there…",
+  "dailyOsNextDraftingStatusBreathing": "Leaving room to breathe…",
+  "dailyOsNextDraftingStatusDeepWork": "Placing deep work first…",
+  "dailyOsNextDraftingStatusMatching": "Matching tasks to your day…",
+  "dailyOsNextDraftingStatusReading": "Reading your check-in…",
+  "dailyOsNextDraftingStatusTimings": "Double-checking timings…",
+  "dailyOsNextDraftingStatusYesterday": "Looking at yesterday's rhythm…",
   "dailyOsNextEditTitleHint": "Edit title",
   "dailyOsNextEstimateMinutes": "{minutes}m",
   "@dailyOsNextEstimateMinutes": {
@@ -1912,16 +1928,22 @@
       }
     }
   },
+  "dailyOsNextReconcileHeadline": "Here’s what I heard.",
   "dailyOsNextReconcileHeardEmpty": "Capture cards will appear here once parsing finishes.",
-  "dailyOsNextReconcileHeardOverline": "HERE'S WHAT I HEARD",
+  "dailyOsNextReconcileHeardOverline": "HEARD",
   "dailyOsNextReconcileLowConfidence": "low confidence",
   "dailyOsNextReconcileReRecord": "Re-record",
   "dailyOsNextReconcileVoiceHint": "Review decisions before building your day",
   "dailyOsNextRefineAccept": "Accept",
+  "dailyOsNextRefineCurrentPlan": "CURRENT PLAN",
   "dailyOsNextRefineDiffAdded": "ADDED",
   "dailyOsNextRefineDiffDropped": "DROPPED",
   "dailyOsNextRefineDiffMoved": "MOVED",
+  "dailyOsNextRefineHeadlineDiffReady": "Here’s what I’d change.",
+  "dailyOsNextRefineHeadlineIdle": "What should change?",
+  "dailyOsNextRefineHeadlineThinking": "Reworking your plan…",
   "dailyOsNextRefineKeepTalking": "Keep talking",
+  "dailyOsNextRefineLooksGood": "Looks good",
   "dailyOsNextRefineNoChanges": "No plan changes came back. Reword it and try again.",
   "dailyOsNextRefineOverline": "🎤 REFINEMENT",
   "dailyOsNextRefineRevert": "Revert",

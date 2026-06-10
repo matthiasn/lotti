@@ -374,22 +374,39 @@ class ReconcileModalContent extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= _reconcileTwoColumnBreakpoint;
+          // Same headline system as the Capture step, so the ritual keeps
+          // one header spine across pages.
+          final header = Padding(
+            padding: EdgeInsets.only(bottom: tokens.spacing.step6),
+            child: Text(
+              context.messages.dailyOsNextReconcileHeadline,
+              textAlign: TextAlign.center,
+              style: calmDisplayStyle(tokens),
+            ),
+          );
           if (!isWide) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                header,
                 heardColumn,
                 SizedBox(height: tokens.spacing.step6),
                 decideColumn,
               ],
             );
           }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(flex: _heardColumnFlex, child: heardColumn),
-              SizedBox(width: tokens.spacing.step6),
-              Expanded(flex: _decideColumnFlex, child: decideColumn),
+              header,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: _heardColumnFlex, child: heardColumn),
+                  SizedBox(width: tokens.spacing.step6),
+                  Expanded(flex: _decideColumnFlex, child: decideColumn),
+                ],
+              ),
             ],
           );
         },

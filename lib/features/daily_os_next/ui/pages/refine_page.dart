@@ -2,32 +2,32 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 
-Future<DraftPlan?> showRefineModal({
-  required BuildContext context,
-  required DraftPlan draft,
-}) {
-  return ModalUtils.showSinglePageModal<DraftPlan>(
-    context: context,
-    title: context.messages.dailyOsNextRefineTitle,
-    padding: EdgeInsets.zero,
-    useRootNavigator: true,
-    builder: (_) => RefineModalContent(draft: draft),
-  );
-}
-
+/// Scaffold-free refine content for the day-planning modal, built on the
+/// same anchored skeleton as the Capture step:
+///
+/// ```text
+/// per-phase headline            ← top, copy swaps in place
+/// refine zone                   ← Expanded: plan list / live words / diff
+/// orb zone (waveform·orb·caption) ← fixed height, fixed position
+/// ```
+///
+/// The host's sticky glass bar carries Start over / Looks good; diff rows
+/// keep their inline accept/reject affordances inside the zone.
 class RefineModalContent extends ConsumerWidget {
   const RefineModalContent({required this.draft, super.key});
 
@@ -35,17 +35,351 @@ class RefineModalContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
     final state = ref.watch(refineControllerProvider(draft));
-    ref.listen<RefineState>(refineControllerProvider(draft), (previous, next) {
-      if (next.phase == RefinePhase.accepted) {
-        Navigator.of(context).pop(next.currentPlan);
-      }
-    });
+    final notifier = ref.read(refineControllerProvider(draft).notifier);
+    final captureState = ref.watch(captureControllerProvider);
+    final captureNotifier = ref.read(captureControllerProvider.notifier);
 
-    return _RefinementPanel(
-      draft: draft,
-      state: state,
-      chrome: _RefinementChrome.modal,
+    ref
+      ..listen<RefineState>(refineControllerProvider(draft), (previous, next) {
+        if (next.phase == RefinePhase.accepted) {
+          Navigator.of(context).pop(next.currentPlan);
+        }
+      })
+      ..listen<CaptureState>(captureControllerProvider, (previous, next) {
+        final refineNotifier = ref.read(
+          refineControllerProvider(draft).notifier,
+        );
+        if (next.phase == CapturePhase.listening ||
+            next.phase == CapturePhase.transcribing) {
+          if (next.partialTranscript.trim().isNotEmpty) {
+            refineNotifier.updateActiveTranscript(next.partialTranscript);
+          }
+          return;
+        }
+        if (next.phase == CapturePhase.captured) {
+          refineNotifier.reviewTranscript(next.transcript);
+          return;
+        }
+        if (next.phase == CapturePhase.error) {
+          refineNotifier.cancelListening();
+        }
+      });
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 560),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            tokens.spacing.step6,
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+          ),
+          child: Column(
+            children: [
+              _RefineHeadline(phase: state.phase),
+              SizedBox(height: tokens.spacing.step4),
+              Expanded(
+                child: _RefineZone(draft: draft, state: state),
+              ),
+              SizedBox(height: tokens.spacing.step4),
+              VoiceOrbZone(
+                phase: _capturePhaseFor(state.phase, captureState.phase),
+                caption: _caption(context, state.phase),
+                captionColor: _captionColor(tokens, state.phase),
+                semanticLabel: _voiceLabel(context, state.phase),
+                amplitudes: captureState.amplitudes,
+                dbfs: captureState.dbfs,
+                onTap: () => _handleVoiceTap(
+                  refineState: state,
+                  refineNotifier: notifier,
+                  captureNotifier: captureNotifier,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _caption(BuildContext context, RefinePhase phase) {
+    final messages = context.messages;
+    return switch (phase) {
+      RefinePhase.idle => messages.dailyOsNextRefineStatusIdle,
+      RefinePhase.listening => messages.dailyOsNextRefineStatusListening,
+      RefinePhase.reviewing => messages.dailyOsNextCaptureCaptured,
+      RefinePhase.thinking => messages.dailyOsNextRefineStatusThinking,
+      // The headline already narrates the diff; keep the caption silent
+      // (the empty strut line preserves the orb position).
+      RefinePhase.diffReady => '',
+      RefinePhase.accepted => messages.dailyOsNextRefineStatusAccepted,
+    };
+  }
+
+  Color _captionColor(DsTokens tokens, RefinePhase phase) {
+    return switch (phase) {
+      RefinePhase.listening ||
+      RefinePhase.reviewing ||
+      RefinePhase.thinking => tokens.colors.interactive.enabled,
+      RefinePhase.accepted => tokens.colors.alert.success.defaultColor,
+      RefinePhase.idle ||
+      RefinePhase.diffReady => tokens.colors.text.lowEmphasis,
+    };
+  }
+
+  void _handleVoiceTap({
+    required RefineState refineState,
+    required RefineController refineNotifier,
+    required CaptureController captureNotifier,
+  }) {
+    switch (refineState.phase) {
+      case RefinePhase.idle:
+      case RefinePhase.reviewing:
+      case RefinePhase.diffReady:
+        captureNotifier.reset();
+        captureNotifier.skipRealtimeTranscriptVerificationForNextCapture();
+        refineNotifier.beginListening(
+          resetTranscript: refineState.phase != RefinePhase.diffReady,
+        );
+        unawaited(captureNotifier.toggle());
+      case RefinePhase.listening:
+        unawaited(captureNotifier.toggle());
+      case RefinePhase.thinking:
+      case RefinePhase.accepted:
+        break;
+    }
+  }
+
+  CapturePhase _capturePhaseFor(RefinePhase phase, CapturePhase capturePhase) {
+    switch (phase) {
+      case RefinePhase.idle:
+      case RefinePhase.accepted:
+        return CapturePhase.idle;
+      case RefinePhase.thinking:
+        return CapturePhase.transcribing;
+      case RefinePhase.reviewing:
+        return CapturePhase.captured;
+      case RefinePhase.listening:
+        return capturePhase == CapturePhase.listening
+            ? CapturePhase.listening
+            : CapturePhase.idle;
+      case RefinePhase.diffReady:
+        return CapturePhase.captured;
+    }
+  }
+
+  String _voiceLabel(BuildContext context, RefinePhase phase) {
+    switch (phase) {
+      case RefinePhase.idle:
+      case RefinePhase.diffReady:
+        return context.messages.dailyOsNextCaptureVoiceButtonStart;
+      case RefinePhase.reviewing:
+        return context.messages.dailyOsNextCaptureVoiceButtonReset;
+      case RefinePhase.listening:
+        return context.messages.dailyOsNextCaptureVoiceButtonStop;
+      case RefinePhase.thinking:
+      case RefinePhase.accepted:
+        return context.messages.dailyOsNextCaptureVoiceButtonReset;
+    }
+  }
+}
+
+/// Per-phase headline for the refine step, cross-fading in place like the
+/// capture header.
+class _RefineHeadline extends StatelessWidget {
+  const _RefineHeadline({required this.phase});
+
+  final RefinePhase phase;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final text = switch (phase) {
+      RefinePhase.idle => messages.dailyOsNextRefineHeadlineIdle,
+      RefinePhase.listening => messages.dailyOsNextCaptureHeadlineListening,
+      RefinePhase.reviewing => messages.dailyOsNextCaptureHeadlineCaptured,
+      RefinePhase.thinking => messages.dailyOsNextRefineHeadlineThinking,
+      RefinePhase.diffReady ||
+      RefinePhase.accepted => messages.dailyOsNextRefineHeadlineDiffReady,
+    };
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 240),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      layoutBuilder: (currentChild, previousChildren) => Stack(
+        alignment: Alignment.topCenter,
+        children: [...previousChildren, ?currentChild],
+      ),
+      child: Text(
+        text,
+        key: ValueKey<String>(text),
+        textAlign: TextAlign.center,
+        style: calmDisplayStyle(tokens),
+      ),
+    );
+  }
+}
+
+/// The flexible middle of the refine step. Idle shows the current plan
+/// (what you're about to change); listening/thinking stream the words;
+/// reviewing hosts the editable transcript; diffReady lists the proposed
+/// changes with inline accept/reject.
+class _RefineZone extends ConsumerWidget {
+  const _RefineZone({required this.draft, required this.state});
+
+  final DraftPlan draft;
+  final RefineState state;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final notifier = ref.read(refineControllerProvider(draft).notifier);
+
+    final Widget zone;
+    switch (state.phase) {
+      case RefinePhase.idle:
+      case RefinePhase.accepted:
+        zone = _CurrentPlanList(plan: state.currentPlan);
+      case RefinePhase.listening:
+        zone = LiveTranscriptView(
+          text: state.transcript,
+          color: tokens.colors.text.mediumEmphasis,
+        );
+      case RefinePhase.thinking:
+        zone = AnimatedOpacity(
+          opacity: 0.55,
+          duration: const Duration(milliseconds: 200),
+          child: LiveTranscriptView(
+            text: state.transcript,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        );
+      case RefinePhase.reviewing:
+        zone = Align(
+          alignment: Alignment.bottomCenter,
+          child: SingleChildScrollView(
+            reverse: true,
+            child: _TranscriptReview(
+              draft: draft,
+              transcript: state.transcript,
+            ),
+          ),
+        );
+      case RefinePhase.diffReady:
+        final diff = state.diff;
+        zone = Align(
+          alignment: Alignment.bottomCenter,
+          child: SingleChildScrollView(
+            reverse: true,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (diff != null)
+                  for (final change in diff.changes) ...[
+                    DiffRow(
+                      change: change,
+                      decision: state.decisionFor(change),
+                      resolving: state.resolvingChangeId == change.id,
+                      onAccept: () => notifier.acceptChange(change.id),
+                      onReject: () => notifier.rejectChange(change.id),
+                    ),
+                    SizedBox(height: tokens.spacing.step3),
+                  ],
+              ],
+            ),
+          ),
+        );
+    }
+
+    if (state.problem == null) return zone;
+    return Column(
+      children: [
+        Expanded(child: zone),
+        SizedBox(height: tokens.spacing.step3),
+        _ProblemNotice(problem: state.problem!),
+      ],
+    );
+  }
+}
+
+/// Read-only summary of the plan being refined — what the user is about to
+/// talk about. Bottom-aligned so the rows sit right above the orb, mirroring
+/// where the spoken words will land.
+class _CurrentPlanList extends StatelessWidget {
+  const _CurrentPlanList({required this.plan});
+
+  final DraftPlan plan;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    if (plan.blocks.isEmpty) return const SizedBox.expand();
+    final locale = Localizations.localeOf(context).toString();
+    final timeFormat = DateFormat.Hm(locale);
+
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: SingleChildScrollView(
+        reverse: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(
+              context.messages.dailyOsNextRefineCurrentPlan,
+              style: calmEyebrowStyle(tokens),
+            ),
+            SizedBox(height: tokens.spacing.step3),
+            for (final block in plan.blocks) ...[
+              _PlanRow(block: block, timeFormat: timeFormat),
+              SizedBox(height: tokens.spacing.step2),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanRow extends StatelessWidget {
+  const _PlanRow({required this.block, required this.timeFormat});
+
+  final TimeBlock block;
+  final DateFormat timeFormat;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final color = categoryColorFromHex(block.category.colorHex);
+    return Row(
+      children: [
+        Container(
+          width: tokens.spacing.step3,
+          height: tokens.spacing.step3,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        Text(
+          '${timeFormat.format(block.start)}–${timeFormat.format(block.end)}',
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            color: tokens.colors.text.lowEmphasis,
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        Expanded(
+          child: Text(
+            block.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -120,12 +454,10 @@ class _RefinementPanel extends ConsumerWidget {
   const _RefinementPanel({
     required this.draft,
     required this.state,
-    this.chrome = _RefinementChrome.sidePanel,
   });
 
   final DraftPlan draft;
   final RefineState state;
-  final _RefinementChrome chrome;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -160,6 +492,7 @@ class _RefinementPanel extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // The side panel has no other title, so it keeps the eyebrow.
           Text(
             messages.dailyOsNextRefineOverline,
             style: calmEyebrowStyle(tokens, color: teal),
@@ -227,14 +560,12 @@ class _RefinementPanel extends ConsumerWidget {
     );
 
     return Container(
-      decoration: chrome == _RefinementChrome.sidePanel
-          ? BoxDecoration(
-              color: teal.withValues(alpha: 0.04),
-              border: Border(
-                left: BorderSide(color: teal.withValues(alpha: 0.18)),
-              ),
-            )
-          : null,
+      decoration: BoxDecoration(
+        color: teal.withValues(alpha: 0.04),
+        border: Border(
+          left: BorderSide(color: teal.withValues(alpha: 0.18)),
+        ),
+      ),
       padding: EdgeInsets.all(tokens.spacing.step5),
       child: content,
     );
@@ -295,8 +626,6 @@ class _RefinementPanel extends ConsumerWidget {
     }
   }
 }
-
-enum _RefinementChrome { sidePanel, modal }
 
 class _StatusLine extends StatelessWidget {
   const _StatusLine({required this.state});

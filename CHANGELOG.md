@@ -13,6 +13,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reads those notes back later — so after an overworked stretch it plans a
   gentler day instead of piling on. Sustainability over throughput.
 
+### Changed
+- The Daily OS day-planning conversation was redesigned around a stable
+  voice orb: the orb now stays put directly above the action bar in every
+  state while the live transcript grows upward above it (no more layout
+  jumping under your finger mid-recording), the orb is smaller and reacts
+  to presses with a visible ripple and a press-scale animation, recording
+  shows a stop glyph, and after capture the orb steps back so the Review
+  action carries the weight. Every action lives on the sticky bottom bar
+  in every state — including a Done pill while recording and a Cancel
+  while transcribing — and the per-state headline narrates what is
+  happening ("I'm listening.", "Writing that down…", "Does this look
+  right?").
+- On desktop, day planning now opens in a full-height side panel on the
+  right (45% of the window) instead of a centered dialog, so the day stays
+  visible while you talk; panel buttons size to their content instead of
+  stretching across the panel.
+- The Drafting wait replaced its empty shimmer boxes with the AI thinking
+  animation over a rotating narration of what the agent is doing
+  ("Reading your check-in…", "Placing deep work first…"), with yesterday's
+  learning cards as real content to read while waiting.
+- The Refine step was rebuilt on the same layout as Capture: it now shows
+  the current plan you are about to change, streams your words above the
+  orb, and offers Revert / Looks good on the bottom bar.
+- Day-planning copy and typography polish: a "Review" CTA instead of the
+  jargon "Reconcile", a real headline on the review step, typographic
+  apostrophes, and large accessibility text sizes no longer overflow the
+  capture sheet on small phones.
+
 ## [0.9.1017]
 ### Added
 - New desktop "Time Analysis" dashboard under Daily OS, opened from a

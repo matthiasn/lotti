@@ -3199,6 +3199,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureCaptured => 'Am înțeles.';
 
   @override
+  String get dailyOsNextCaptureDoneCta => 'Gata';
+
+  @override
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
       'Permisiunea pentru microfon a fost refuzată.';
 
@@ -3227,7 +3230,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Transcrierea a eșuat.';
 
   @override
+  String get dailyOsNextCaptureHeadlineCaptured => 'Arată corect?';
+
+  @override
   String get dailyOsNextCaptureHeadlineLead => 'La ce vă gândiți';
+
+  @override
+  String get dailyOsNextCaptureHeadlineListening => 'Vă ascult.';
 
   @override
   String get dailyOsNextCaptureHeadlineTail => 'pentru astăzi?';
@@ -3244,6 +3253,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTailYesterday => 'pentru ieri?';
 
   @override
+  String get dailyOsNextCaptureHeadlineTranscribing => 'Se notează…';
+
+  @override
+  String get dailyOsNextCaptureIdleClick => 'Faceți clic pentru a vorbi';
+
+  @override
+  String get dailyOsNextCaptureIdleExample =>
+      '„Dimineață muncă concentrată, o plimbare după prânz, e-mailuri până la cinci.”';
+
+  @override
   String get dailyOsNextCaptureIdleHint =>
       'Apăsați pentru a vorbi · tastați în schimb';
 
@@ -3254,15 +3273,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureListening => 'ASCULT';
 
   @override
+  String get dailyOsNextCaptureListeningStatus => 'Se ascultă…';
+
+  @override
   String dailyOsNextCapturePastPrompt(String date) {
     return 'Mai doriți să înregistrați ceva din $date?';
   }
 
   @override
-  String get dailyOsNextCaptureReconcileCta => 'Reconciliere';
+  String get dailyOsNextCaptureReconcileCta => 'Verificați';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Capturi';
+
+  @override
+  String get dailyOsNextCaptureTranscribing => 'Se transcrie…';
 
   @override
   String get dailyOsNextCaptureTranscriptHint =>
@@ -3412,6 +3437,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDraftingReasoningOverline => '✦ RAȚIONAMENT';
 
   @override
+  String get dailyOsNextDraftingStatusAfternoon => 'Se ordonează după-amiaza…';
+
+  @override
+  String get dailyOsNextDraftingStatusAlmost => 'Aproape gata…';
+
+  @override
+  String get dailyOsNextDraftingStatusBreathing => 'Se lasă loc de respiro…';
+
+  @override
+  String get dailyOsNextDraftingStatusDeepWork =>
+      'Munca concentrată este plasată prima…';
+
+  @override
+  String get dailyOsNextDraftingStatusMatching =>
+      'Se potrivesc sarcinile cu ziua dvs.…';
+
+  @override
+  String get dailyOsNextDraftingStatusReading => 'Se citește check-in-ul dvs.…';
+
+  @override
+  String get dailyOsNextDraftingStatusTimings => 'Se verifică orarele…';
+
+  @override
+  String get dailyOsNextDraftingStatusYesterday =>
+      'Se analizează ritmul de ieri…';
+
+  @override
   String get dailyOsNextEditTitleHint => 'Editați titlul';
 
   @override
@@ -3511,11 +3563,14 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextReconcileHeadline => 'Iată ce am auzit.';
+
+  @override
   String get dailyOsNextReconcileHeardEmpty =>
       'Cardurile capturii vor apărea aici după finalizarea parsării.';
 
   @override
-  String get dailyOsNextReconcileHeardOverline => 'IATĂ CE AM AUZIT';
+  String get dailyOsNextReconcileHeardOverline => 'AUZIT';
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'încredere scăzută';
@@ -3531,6 +3586,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextRefineAccept => 'Acceptă';
 
   @override
+  String get dailyOsNextRefineCurrentPlan => 'PLANUL CURENT';
+
+  @override
   String get dailyOsNextRefineDiffAdded => 'ADĂUGAT';
 
   @override
@@ -3540,7 +3598,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextRefineDiffMoved => 'MUTAT';
 
   @override
+  String get dailyOsNextRefineHeadlineDiffReady => 'Iată ce aș schimba.';
+
+  @override
+  String get dailyOsNextRefineHeadlineIdle => 'Ce ar trebui schimbat?';
+
+  @override
+  String get dailyOsNextRefineHeadlineThinking => 'Se reface planul dvs.…';
+
+  @override
   String get dailyOsNextRefineKeepTalking => 'Continuă să vorbești';
+
+  @override
+  String get dailyOsNextRefineLooksGood => 'Arată bine';
 
   @override
   String get dailyOsNextRefineNoChanges =>
