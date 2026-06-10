@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -212,27 +210,6 @@ class _CaptureFlowBody extends ConsumerWidget {
   final DateTime? forDate;
   final bool showInlineAdvanceCta;
 
-  /// Minimum body height the anchored skeleton needs before it falls back
-  /// to scrolling: only the *fixed* parts count (header, orb zone, gaps,
-  /// caption — the text-driven ones scaled by the ambient text scaler).
-  /// The transcript zone is deliberately excluded: under mild squeeze it
-  /// shrinks toward zero so the orb and caption stay fully visible above
-  /// the fold, which beats pushing the bottom-anchored caption under the
-  /// fold by a few scrollable pixels. Phones in portrait never hit the
-  /// fallback; tiny or heavily split windows degrade to scrolling.
-  static double _minBodyHeightFor(
-    BuildContext context, {
-    required bool withFooterSlot,
-  }) {
-    final scale = MediaQuery.textScalerOf(context).scale(100) / 100;
-    const fixedChrome = 288.0;
-    const textDriven = 112.0;
-    const footerSlot = 64.0;
-    return fixedChrome +
-        textDriven * scale +
-        (withFooterSlot ? footerSlot : 0.0);
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
@@ -254,15 +231,27 @@ class _CaptureFlowBody extends ConsumerWidget {
       ],
     );
 
+    // Canonical fill-or-scroll pattern: on a normal viewport the column
+    // fills it exactly and the transcript zone takes the slack (orb pinned
+    // at the bottom). Under squeeze — huge accessibility text, tiny or
+    // split windows — the zone shrinks toward zero first, and only when
+    // the fixed parts alone (header, orb zone, footer slot) exceed the
+    // viewport does the body scroll. No height estimates: the fixed parts
+    // measure themselves via IntrinsicHeight.
+    //
+    // `reverse: true` so the scroll fallback anchors the BOTTOM: the orb,
+    // its caption, and the newest spoken words must stay on screen at any
+    // text scale — it is the headline that scrolls away, never the voice
+    // control (a 2x-text reviewer otherwise loses the orb entirely and
+    // cannot start the flow).
     return LayoutBuilder(
       builder: (context, constraints) {
-        final minBody = _minBodyHeightFor(
-          context,
-          withFooterSlot: showInlineAdvanceCta,
-        );
-        final bodyHeight = math.max(constraints.maxHeight, minBody);
         return SingleChildScrollView(
-          child: SizedBox(height: bodyHeight, child: body),
+          reverse: true,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(child: body),
+          ),
         );
       },
     );

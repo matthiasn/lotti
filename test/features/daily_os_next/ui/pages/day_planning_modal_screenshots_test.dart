@@ -575,6 +575,50 @@ void main() {
     await _capture(tester, 'mini_13_captured_dark_ts13');
   });
 
+  // 2.0x — the upper end of common accessibility text sizes. The layout
+  // may fall back to scrolling here; the bar actions and orb must stay
+  // reachable and no text may clip.
+  for (final (name, capture) in <(String, CaptureState)>[
+    ('idle', const CaptureState.idle()),
+    ('listening', _listening(partial: _longUtterance)),
+    ('captured', _captured),
+  ]) {
+    testWidgets('mini $name — dark, 2.0x text', (tester) async {
+      await _openModal(
+        tester,
+        intent: const DayPlanningCreate(),
+        device: _mini,
+        capture: capture,
+        textScale: 2,
+      );
+      await _capture(tester, 'mini_20_${name}_dark_ts20');
+    });
+  }
+
+  testWidgets('mini reconcile — dark, 2.0x text', (tester) async {
+    await _openModal(
+      tester,
+      intent: const DayPlanningCreate(),
+      device: _mini,
+      capture: _captured,
+      agent: _fastAgent(),
+      textScale: 2,
+    );
+    await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
+    await _capture(tester, 'mini_21_reconcile_dark_ts20');
+  });
+
+  testWidgets('mini refine — dark, 2.0x text', (tester) async {
+    await _openModal(
+      tester,
+      intent: DayPlanningAdapt(_refineDraft()),
+      device: _mini,
+      agent: _fastAgent(),
+      textScale: 2,
+    );
+    await _capture(tester, 'mini_22_refine_dark_ts20');
+  });
+
   testWidgets('capture with "Today so far" card — mini dark', (tester) async {
     final block = TimeBlock(
       id: 'actual:entry-1',

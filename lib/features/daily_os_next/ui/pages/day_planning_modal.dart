@@ -140,11 +140,26 @@ DateTime _capturedAtForDay(DateTime day) {
 /// Lays out action-bar pills for the host container: phones get
 /// edge-to-edge pills (each wrapped in [Expanded]); the desktop side sheet
 /// gets intrinsic-width pills aligned to the trailing edge so they read as
-/// buttons rather than full-width slabs.
+/// buttons rather than full-width slabs. At large accessibility text
+/// scales a phone row can no longer fit two readable labels, so the pills
+/// stack vertically instead — the last (primary) pill lands closest to
+/// the thumb.
 Widget _layoutBarPills(BuildContext context, List<Widget> pills) {
   final tokens = context.designTokens;
   final wide =
       MediaQuery.sizeOf(context).width >= WoltModalConfig.pageBreakpoint;
+  final textScale = MediaQuery.textScalerOf(context).scale(100) / 100;
+  if (!wide && pills.length > 1 && textScale >= 1.5) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var i = 0; i < pills.length; i++) ...[
+          if (i > 0) SizedBox(height: tokens.spacing.step2),
+          pills[i],
+        ],
+      ],
+    );
+  }
   return Row(
     mainAxisAlignment: wide ? MainAxisAlignment.end : MainAxisAlignment.start,
     children: [
