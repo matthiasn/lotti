@@ -178,6 +178,72 @@ void main() {
     },
   );
 
+  test('renders linked task audio transcripts into the wake prompt', () async {
+    final transcriptScenario = EvalScenario(
+      id: 'task_workflow_linked_audio_transcript',
+      title: 'Real workflow: linked audio transcript reaches task prompt',
+      agentKind: AgentKind.taskAgent,
+      appState: MockedAppState(
+        now: DateTime(2026, 6, 10, 11),
+        categoryIds: const ['cat-001'],
+        categories: [kEvalWorkCategory],
+        tasks: const [
+          MockTask(
+            id: 'task-larger',
+            title: 'Ship notification redesign',
+            status: 'IN PROGRESS',
+            categoryId: 'cat-001',
+            checklist: [
+              MockChecklistItem(
+                id: 'ci-pr',
+                title: 'Create pull request',
+              ),
+            ],
+          ),
+        ],
+        taskLogEntries: [
+          MockTaskLogEntry(
+            id: 'audio-pr-opened',
+            taskId: 'task-larger',
+            transcript: 'The pull request is open now.',
+            createdAt: DateTime(2026, 6, 10, 10, 45),
+          ),
+        ],
+      ),
+      userInput: const UserInput(
+        transcript: 'Wake the task agent after a short audio transcript.',
+        triggerTokens: {'decided_task:task-larger'},
+      ),
+    );
+    const behavior = ScriptedAgentBehavior(
+      toolCalls: [
+        ToolCallRecord(
+          name: 'update_report',
+          args: {
+            'oneLiner': 'PR evidence reviewed',
+            'tldr': 'The linked transcript was reviewed.',
+            'content': 'The task log mentions that the pull request is open.',
+          },
+        ),
+      ],
+      usage: InferenceUsage(inputTokens: 900, outputTokens: 160),
+    );
+
+    String? userMessage;
+    final output = await TaskAgentEvalBench.runWake(
+      transcriptScenario,
+      kFrontierProfile,
+      behavior,
+      onUserMessage: (message) => userMessage = message,
+    );
+
+    expect(output.success, isTrue, reason: output.error);
+    expect(userMessage, isNotNull);
+    expect(userMessage, contains('audioTranscript'));
+    expect(userMessage, contains('The pull request is open now.'));
+    expect(userMessage, contains('ci-pr'));
+  });
+
   test(
     'real workflow resolves a local profile through Ollama config',
     () async {

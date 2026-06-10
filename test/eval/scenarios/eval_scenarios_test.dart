@@ -261,6 +261,30 @@ void main() {
           }),
         );
         expect(
+          roundTripped.appState.taskLogEntries.map((entry) {
+            return (
+              entry.id,
+              entry.taskId,
+              entry.transcript,
+              entry.createdAt,
+              entry.durationMinutes,
+              entry.entryType,
+              entry.language,
+            );
+          }),
+          scenario.appState.taskLogEntries.map((entry) {
+            return (
+              entry.id,
+              entry.taskId,
+              entry.transcript,
+              entry.createdAt,
+              entry.durationMinutes,
+              entry.entryType,
+              entry.language,
+            );
+          }),
+        );
+        expect(
           roundTripped.appState.existingBlocks.map((block) {
             return (
               block.id,

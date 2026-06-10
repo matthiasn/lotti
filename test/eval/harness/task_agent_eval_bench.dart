@@ -31,6 +31,7 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -40,6 +41,7 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
+import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
@@ -114,7 +116,9 @@ abstract final class TaskAgentEvalBench {
     final profileConfig = profileConfigOverride ?? evalProfileConfig(profile);
     final journalState = _seededJournalState(
       scenario.appState.tasks,
+      scenario.appState.taskLogEntries,
       now,
+      defaultTaskId: taskId,
     );
     String? sentProviderModelId;
     AiConfigInferenceProvider? sentProvider;
@@ -173,6 +177,7 @@ abstract final class TaskAgentEvalBench {
       persistedEntities: persistedEntities,
       entityStore: entityStore,
       journalEntities: journalState.entities,
+      linkedEntitiesByTaskId: journalState.linkedEntitiesByTaskId,
       checklistItemsByTaskId: journalState.checklistItemsByTaskId,
       categories: _categoryDefinitionsFromScenario(scenario),
       labels: _labelDefinitionsFromScenario(scenario),
@@ -189,6 +194,7 @@ abstract final class TaskAgentEvalBench {
       agentId: _agentId,
       taskId: taskId,
     );
+    _stubPersistedAgentReads(agentRepository, persistedEntities);
     _stubInferenceProfile(aiConfigRepository, profileConfig);
     when(
       () => agentRepository.updateWakeRunTemplate(
@@ -208,7 +214,10 @@ abstract final class TaskAgentEvalBench {
     when(
       () => aiInputRepository.buildTaskDetailsJson(id: taskId),
     ).thenAnswer(
-      (_) async => jsonEncode(activeTask.toJson()),
+      (_) async => _taskDetailsJson(
+        activeTask,
+        linkedEntities: journalState.linkedEntitiesByTaskId[taskId] ?? const [],
+      ),
     );
 
     if (scriptedConversationRepository != null) {
@@ -384,6 +393,54 @@ abstract final class TaskAgentEvalBench {
     );
   }
 
+  static void _stubPersistedAgentReads(
+    MockAgentRepository repo,
+    List<AgentDomainEntity> persistedEntities,
+  ) {
+    when(() => repo.getLatestReport(any(), any())).thenAnswer((
+      invocation,
+    ) async {
+      final agentId = invocation.positionalArguments.first as String;
+      final scope = invocation.positionalArguments[1] as String;
+      final reports =
+          persistedEntities
+              .whereType<AgentReportEntity>()
+              .where(
+                (report) =>
+                    report.agentId == agentId &&
+                    report.scope == scope &&
+                    report.deletedAt == null,
+              )
+              .toList()
+            ..sort((a, b) {
+              final newestFirst = b.createdAt.compareTo(a.createdAt);
+              if (newestFirst != 0) return newestFirst;
+              return b.id.compareTo(a.id);
+            });
+      return reports.isEmpty ? null : reports.first;
+    });
+    when(() => repo.getMessagesByKind(any(), any())).thenAnswer((
+      invocation,
+    ) async {
+      final agentId = invocation.positionalArguments.first as String;
+      final kind = invocation.positionalArguments[1] as AgentMessageKind;
+      return persistedEntities
+          .whereType<AgentMessageEntity>()
+          .where(
+            (message) =>
+                message.agentId == agentId &&
+                message.kind == kind &&
+                message.deletedAt == null,
+          )
+          .toList()
+        ..sort((a, b) {
+          final newestFirst = b.createdAt.compareTo(a.createdAt);
+          if (newestFirst != 0) return newestFirst;
+          return b.id.compareTo(a.id);
+        });
+    });
+  }
+
   static ResolvedModelRecord? _resolvedModelFrom({
     required EvalProfileConfig profileConfig,
     required String? providerModelId,
@@ -419,6 +476,7 @@ abstract final class TaskAgentEvalBench {
     required List<AgentDomainEntity> persistedEntities,
     required Map<String, AgentDomainEntity> entityStore,
     required Map<String, JournalEntity> journalEntities,
+    required Map<String, List<JournalEntity>> linkedEntitiesByTaskId,
     required Map<String, List<ChecklistItem>> checklistItemsByTaskId,
     required List<CategoryDefinition> categories,
     required List<LabelDefinition> labels,
@@ -566,7 +624,10 @@ abstract final class TaskAgentEvalBench {
     ).thenAnswer((_) async => '{}');
     when(
       () => journalDb.getLinkedEntities(any()),
-    ).thenAnswer((_) async => <JournalEntity>[]);
+    ).thenAnswer((invocation) async {
+      final id = invocation.positionalArguments.single as String;
+      return linkedEntitiesByTaskId[id] ?? const <JournalEntity>[];
+    });
     when(() => journalDb.journalEntityById(any())).thenAnswer((invocation) {
       final id = invocation.positionalArguments.single as String;
       return Future.value(journalEntities[id]);
@@ -609,10 +670,17 @@ abstract final class TaskAgentEvalBench {
   static ({
     Map<String, JournalEntity> entities,
     Map<String, List<ChecklistItem>> checklistItemsByTaskId,
+    Map<String, List<JournalEntity>> linkedEntitiesByTaskId,
   })
-  _seededJournalState(List<MockTask> tasks, DateTime now) {
+  _seededJournalState(
+    List<MockTask> tasks,
+    List<MockTaskLogEntry> taskLogEntries,
+    DateTime now, {
+    required String defaultTaskId,
+  }) {
     final entities = <String, JournalEntity>{};
     final checklistItemsByTaskId = <String, List<ChecklistItem>>{};
+    final linkedEntitiesByTaskId = <String, List<JournalEntity>>{};
     for (final task in tasks) {
       final taskEntity = _taskEntityFromMock(task, now);
       entities[taskEntity.meta.id] = taskEntity;
@@ -629,7 +697,24 @@ abstract final class TaskAgentEvalBench {
       }
       checklistItemsByTaskId[task.id] = items;
     }
-    return (entities: entities, checklistItemsByTaskId: checklistItemsByTaskId);
+    for (final entry in taskLogEntries) {
+      final taskId = entry.taskId ?? defaultTaskId;
+      final entity = _taskLogEntryEntityFromMock(entry, now);
+      entities[entity.meta.id] = entity;
+      linkedEntitiesByTaskId.putIfAbsent(taskId, () => []).add(entity);
+    }
+    for (final linked in linkedEntitiesByTaskId.values) {
+      linked.sort((a, b) {
+        final byDate = a.meta.dateFrom.compareTo(b.meta.dateFrom);
+        if (byDate != 0) return byDate;
+        return a.meta.id.compareTo(b.meta.id);
+      });
+    }
+    return (
+      entities: entities,
+      checklistItemsByTaskId: checklistItemsByTaskId,
+      linkedEntitiesByTaskId: linkedEntitiesByTaskId,
+    );
   }
 
   static List<CategoryDefinition> _categoryDefinitionsFromScenario(
@@ -734,6 +819,64 @@ abstract final class TaskAgentEvalBench {
           ),
         )
         as ChecklistItem;
+  }
+
+  static JournalEntity _taskLogEntryEntityFromMock(
+    MockTaskLogEntry entry,
+    DateTime now,
+  ) {
+    final startedAt = entry.createdAt ?? now;
+    final endedAt = startedAt.add(Duration(minutes: entry.durationMinutes));
+    final meta = Metadata(
+      id: entry.id,
+      createdAt: startedAt,
+      updatedAt: startedAt,
+      dateFrom: startedAt,
+      dateTo: endedAt,
+    );
+    return switch (entry.entryType) {
+      'text' => JournalEntity.journalEntry(
+        meta: meta,
+        entryText: EntryText(plainText: entry.transcript),
+      ),
+      'audio' => JournalEntity.journalAudio(
+        meta: meta,
+        data: AudioData(
+          dateFrom: startedAt,
+          dateTo: endedAt,
+          duration: Duration(minutes: entry.durationMinutes),
+          audioFile: '${entry.id}.m4a',
+          audioDirectory: '/eval-audio',
+          transcripts: [
+            AudioTranscript(
+              created: startedAt,
+              library: 'eval',
+              model: 'fixture',
+              detectedLanguage: entry.language,
+              transcript: entry.transcript,
+            ),
+          ],
+        ),
+      ),
+      _ => throw ArgumentError(
+        'Unsupported task log entryType "${entry.entryType}"',
+      ),
+    };
+  }
+
+  static String _taskDetailsJson(
+    MockTask task, {
+    required Iterable<JournalEntity> linkedEntities,
+  }) {
+    final taskJson = Map<String, dynamic>.from(task.toJson());
+    taskJson['logEntries'] = [
+      for (final source in renderTaskSources(linkedEntities))
+        <String, dynamic>{
+          'creationTimestamp': source.sourceCreatedAt.toIso8601String(),
+          ...source.content,
+        },
+    ];
+    return const JsonEncoder.withIndent('    ').convert(taskJson);
   }
 
   static TaskStatus _taskStatusFromMock(String status, DateTime now) {

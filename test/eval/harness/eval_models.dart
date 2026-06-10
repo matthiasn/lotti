@@ -498,6 +498,53 @@ class MockCapture {
   };
 }
 
+/// A mocked journal log entry linked to a task.
+///
+/// Task-agent wakes read these through the same `logEntries` task context that
+/// production builds from linked journal text/audio entries. Use `entryType:
+/// "audio"` for transcript-only recordings and `entryType: "text"` for typed
+/// notes.
+class MockTaskLogEntry {
+  const MockTaskLogEntry({
+    required this.id,
+    required this.transcript,
+    this.taskId,
+    this.createdAt,
+    this.durationMinutes = 1,
+    this.entryType = 'audio',
+    this.language = 'en',
+  });
+
+  factory MockTaskLogEntry.fromJson(Map<String, dynamic> json) =>
+      MockTaskLogEntry(
+        id: json['id'] as String,
+        taskId: json['taskId'] as String?,
+        transcript: json['transcript'] as String,
+        createdAt: _parseDate(json['createdAt']),
+        durationMinutes: (json['durationMinutes'] as num?)?.toInt() ?? 1,
+        entryType: (json['entryType'] as String?) ?? 'audio',
+        language: (json['language'] as String?) ?? 'en',
+      );
+
+  final String id;
+  final String? taskId;
+  final String transcript;
+  final DateTime? createdAt;
+  final int durationMinutes;
+  final String entryType;
+  final String language;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'id': id,
+    if (taskId != null) 'taskId': taskId,
+    'transcript': transcript,
+    if (createdAt != null) 'createdAt': createdAt!.toIso8601String(),
+    if (durationMinutes != 1) 'durationMinutes': durationMinutes,
+    if (entryType != 'audio') 'entryType': entryType,
+    if (language != 'en') 'language': language,
+  };
+}
+
 /// A category-scoped checklist correction example presented to the task agent.
 ///
 /// This mirrors the production `ChecklistCorrectionExample` shape without
@@ -768,6 +815,7 @@ class MockedAppState {
     required this.now,
     this.tasks = const <MockTask>[],
     this.captures = const <MockCapture>[],
+    this.taskLogEntries = const <MockTaskLogEntry>[],
     this.existingBlocks = const <MockDayBlock>[],
     this.proposalSets = const <MockProposalSet>[],
     this.proposalDecisions = const <MockProposalDecision>[],
@@ -784,6 +832,9 @@ class MockedAppState {
         .toList(),
     captures: ((json['captures'] as List<dynamic>?) ?? const [])
         .map((e) => MockCapture.fromJson(e as Map<String, dynamic>))
+        .toList(),
+    taskLogEntries: ((json['taskLogEntries'] as List<dynamic>?) ?? const [])
+        .map((e) => MockTaskLogEntry.fromJson(e as Map<String, dynamic>))
         .toList(),
     existingBlocks: ((json['existingBlocks'] as List<dynamic>?) ?? const [])
         .map((e) => MockDayBlock.fromJson(e as Map<String, dynamic>))
@@ -812,6 +863,7 @@ class MockedAppState {
   final DateTime now;
   final List<MockTask> tasks;
   final List<MockCapture> captures;
+  final List<MockTaskLogEntry> taskLogEntries;
   final List<MockDayBlock> existingBlocks;
   final List<MockProposalSet> proposalSets;
   final List<MockProposalDecision> proposalDecisions;
@@ -841,6 +893,7 @@ class MockedAppState {
     'now': now.toIso8601String(),
     'tasks': tasks.map((t) => t.toJson()).toList(),
     'captures': captures.map((c) => c.toJson()).toList(),
+    'taskLogEntries': taskLogEntries.map((e) => e.toJson()).toList(),
     'existingBlocks': existingBlocks.map((b) => b.toJson()).toList(),
     'proposalSets': proposalSets.map((p) => p.toJson()).toList(),
     'proposalDecisions': proposalDecisions.map((d) => d.toJson()).toList(),

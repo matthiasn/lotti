@@ -110,6 +110,11 @@ List<EvalScenarioValidationIssue> validateEvalScenario(EvalScenario scenario) {
   );
   _addDuplicateIssues(
     add,
+    'task log entry id',
+    state.taskLogEntries.map((entry) => entry.id),
+  );
+  _addDuplicateIssues(
+    add,
     'parsed capture item id',
     parsedItemIdList,
   );
@@ -181,6 +186,25 @@ List<EvalScenarioValidationIssue> validateEvalScenario(EvalScenario scenario) {
         confidence: item.confidence,
         score: item.confidenceScore,
       );
+    }
+  }
+
+  for (final entry in state.taskLogEntries) {
+    if (entry.transcript.trim().isEmpty) {
+      add('task log entry ${entry.id} has an empty transcript');
+    }
+    if (entry.durationMinutes < 0) {
+      add('task log entry ${entry.id} has negative durationMinutes');
+    }
+    if (entry.entryType != 'audio' && entry.entryType != 'text') {
+      add(
+        'task log entry ${entry.id} has unsupported entryType '
+        '${entry.entryType}',
+      );
+    }
+    final taskId = entry.taskId;
+    if (taskId != null && !taskIds.contains(taskId)) {
+      add('task log entry ${entry.id} references unknown task $taskId');
     }
   }
 

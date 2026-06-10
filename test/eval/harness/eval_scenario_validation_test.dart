@@ -43,6 +43,15 @@ void main() {
             ],
           ),
         ],
+        taskLogEntries: const [
+          MockTaskLogEntry(
+            id: 'task-log-known',
+            taskId: 'task-missing',
+            transcript: '',
+            durationMinutes: -1,
+            entryType: 'video',
+          ),
+        ],
         existingBlocks: [
           MockDayBlock(
             id: 'block-broken',
@@ -138,6 +147,26 @@ void main() {
       contains(
         'existing block block-broken has non-positive '
         'duration',
+      ),
+    );
+    expect(
+      messages,
+      contains('task log entry task-log-known has an empty transcript'),
+    );
+    expect(
+      messages,
+      contains('task log entry task-log-known has negative durationMinutes'),
+    );
+    expect(
+      messages,
+      contains(
+        'task log entry task-log-known has unsupported entryType video',
+      ),
+    );
+    expect(
+      messages,
+      contains(
+        'task log entry task-log-known references unknown task task-missing',
       ),
     );
     expect(
