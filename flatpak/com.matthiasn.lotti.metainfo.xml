@@ -39,6 +39,7 @@
           <p>Daily OS Next: tapping a recorded session on the Day timeline now reopens its task scrolled to — and briefly highlighting — that exact entry again, instead of dropping you at the top of the task.</p>
           <p>Daily OS Next: the sidebar month calendar now starts the week on your device region's first weekday — Monday across most of Europe, Sunday in the US — read from the OS region rather than the app language, instead of always starting on Sunday.</p>
           <p>Task and project lists stay snappier under sync: a task's project is now resolved from a denormalized, indexed column and batched across rows instead of one query per task, and the projects overview plus the saved-filter sidebar counts coalesce rapid update notifications into a single refresh.</p>
+          <p>The desktop sidebar's running-timer card now stays visible the whole time a timer is running, instead of hiding while you view the running task or after navigating away from the Tasks tab. The elapsed time and the quick jump-back button now persist in the sidebar everywhere — including alongside the task's own running indicator when that task is open.</p>
       </description>
     </release>
     <release version="0.9.1016" date="2026-06-06">

@@ -218,8 +218,9 @@ Checklist content is modeled separately through checklist entities and linked ch
   no per-page lifecycle plumbing), so the action bar can dock flush
   against the home indicator. This predicate is mobile-only — the desktop
   shell has no floating recording indicator; the desktop running-timer
-  surface is the sidebar `SidebarTimerSection` card, which hides itself via
-  its own logic (see "Sidebar timer coordination" below).
+  surface is the sidebar `SidebarTimerSection` card, which stays visible for
+  the whole lifetime of a running timer (see "Sidebar timer coordination"
+  below).
   TaskActionBar consumes the safe-area inset internally.
 
 ```mermaid
@@ -245,37 +246,34 @@ This page is not just "show task fields." It is the task workspace where task me
 
 ### Sidebar timer coordination
 
-`SidebarTimerSection` (desktop, `aboveSettings` slot — see `lib/widgets/README.md` for the visual contract) and `TaskActionBar`'s running pill both render the same live `TimeService` session. To avoid duplicating the task title on screen, the sidebar card hides itself when the action bar is already showing the indicator — but only when the action bar is actually visible.
+`SidebarTimerSection` (desktop, `aboveSettings` slot — see `lib/widgets/README.md` for the visual contract) and `TaskActionBar`'s running pill both render the same live `TimeService` session. They are allowed to be on screen at the same time: the sidebar card is **not** suppressed while the running task is open in the details pane. A single, always-present place to read the elapsed time and jump back to the running task is worth more than avoiding the duplicate title — so the duplication is intentional.
 
-The hide condition is the conjunction of:
+Visibility is a pure function of `TimeService.getStream()`:
 
-- the running timer's `linkedFrom` is a `Task`,
-- `linkedFrom.meta.id == NavService.desktopSelectedTaskId`, and
-- `NavService.currentPath` starts with `/tasks/` (i.e. user is on a task-detail route).
+- a running entity → the card is shown,
+- `null` (timer stopped) → the card collapses to `SizedBox.shrink`.
 
-The route check matters because `desktopSelectedTaskId` is sticky across tab switches: it's only mutated by `NavService.resetDesktopTaskDetail` (called from `tasks_location.dart` on URL changes), `NavService.pushDesktopTaskDetail` (linked-task taps via `task_navigation.dart`), and `NavService.popDesktopTaskDetail` (desktop back arrow in `task_detail_back_leading.dart`). Without the path guard, switching from a task to e.g. Habits would leave the sidebar card hidden even though the action bar is no longer on screen.
+Neither `NavService.desktopSelectedTaskId`, the active route, nor the selected top-level tab affects visibility. The card therefore survives every navigation: opening the running task, switching to Habits/Settings, or leaving the Tasks tab entirely all leave it in place. The stream is seeded with `TimeService.getCurrent()` as `initialData` so an already-running session renders on the first frame instead of flashing through a hidden state.
 
-Reactivity sources composed inside the card:
-
-- `TimeService.getStream()` — running entity + duration. Seeded with `TimeService.getCurrent()` as `initialData` so an already-running session renders on first frame instead of flashing through a hidden state.
-- `NavService.desktopSelectedTaskId` (`ValueListenableBuilder`) — selection changes inside the tasks pane.
-- `NavService.getIndexStream()` (`StreamBuilder`) — top-level tab/route changes; `currentPath` is read synchronously when the stream emits.
-
-The show/hide flip runs through an `AnimatedSwitcher` + `AnimatedSize` (`SidebarTimerSection.animationDuration` ≈ 220 ms, `Curves.easeInOut`) so the card fades and the surrounding sidebar collapses smoothly instead of popping.
+The appear/disappear transition runs through an `AnimatedSwitcher` + `AnimatedSize` (`SidebarTimerSection.animationDuration` ≈ 220 ms, `Curves.easeInOut`) so the card fades and the surrounding sidebar collapses smoothly instead of popping.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Hidden
-    Hidden --> Visible: TimeService emits a running entity\nand hide-condition is false
+    Hidden --> Visible: TimeService emits a running entity
     Visible --> Hidden: TimeService emits null (timer stopped)
-    Visible --> Hidden: linkedFrom.task.id == openTaskId\nAND currentPath startsWith /tasks/
-    Hidden --> Visible: openTaskId changes (different task selected)
-    Hidden --> Visible: currentPath leaves /tasks/<uuid>\n(tab switch / nav away)
+    note right of Visible
+      Navigation, the open task, and the
+      selected tab do NOT affect visibility —
+      the card persists everywhere while a
+      timer is running (duplicated with the
+      action bar on the task detail page).
+    end note
     note right of Hidden
-      AnimatedSwitcher fades the
-      outgoing card; AnimatedSize
-      collapses the surrounding column
-      (~220 ms, Curves.easeInOut).
+      AnimatedSwitcher fades the outgoing
+      card; AnimatedSize collapses the
+      surrounding column (~220 ms,
+      Curves.easeInOut).
     end note
 ```
 

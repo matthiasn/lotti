@@ -17,6 +17,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   entries stay hidden unless the private flag is on.
 
 ### Changed
+- The desktop sidebar's running-timer card now stays visible the whole time
+  a timer is running. Previously it hid itself while you were viewing the
+  running task and could also disappear after you navigated away from the
+  Tasks tab, so the elapsed-time readout and the quick jump-back button were
+  easy to lose. The card now persists in the sidebar everywhere — including
+  while the same task is open in the main view, where it sits alongside the
+  task's own running indicator.
 - Task and project lists stay snappier under sync: a task's project is now
   resolved from a denormalized, indexed column (and batched across rows
   instead of one query per task), and the projects overview plus the

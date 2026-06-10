@@ -283,8 +283,11 @@ void main() {
   });
 
   testWidgets(
-    'hides the card when the running task is open in the details pane',
+    'stays visible when the running task is open in the details pane',
     (tester) async {
+      // The task detail action bar shows its own running pill; the
+      // sidebar card is intentionally rendered alongside it (the
+      // duplication is allowed) so the timer is never lost from view.
       final task = makeTask('task-open', title: 'Refine sidebar visibility');
       final timer = makeTimerEntry(
         'timer-open',
@@ -299,19 +302,19 @@ void main() {
       await tester.pump();
       expect(find.text('Refine sidebar visibility'), findsOneWidget);
 
+      // Selecting the running task in the details pane must NOT hide it.
       desktopSelectedTaskId.value = 'task-open';
-      // Pump past the fade+collapse animation.
       await tester.pump();
       await tester.pump(SidebarTimerSection.animationDuration);
 
-      expect(find.text('Refine sidebar visibility'), findsNothing);
-      expect(find.byIcon(Icons.timer_outlined), findsNothing);
-      expect(find.byIcon(Icons.stop_rounded), findsNothing);
+      expect(find.text('Refine sidebar visibility'), findsOneWidget);
+      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
     },
   );
 
   testWidgets(
-    'reappears when navigating away from the running task',
+    'stays visible regardless of which task is selected',
     (tester) async {
       final task = makeTask('task-here', title: 'Tracked');
       final timer = makeTimerEntry('timer-here');
@@ -324,8 +327,9 @@ void main() {
       desktopSelectedTaskId.value = 'task-here';
       await tester.pump();
       await tester.pump(SidebarTimerSection.animationDuration);
-      expect(find.text('Tracked'), findsNothing);
+      expect(find.text('Tracked'), findsOneWidget);
 
+      // Switching the selected task in the pane leaves the card untouched.
       desktopSelectedTaskId.value = 'some-other-task';
       await tester.pump();
       await tester.pump(SidebarTimerSection.animationDuration);
@@ -336,13 +340,12 @@ void main() {
   );
 
   testWidgets(
-    'stays visible when on a non-task route, even if selected task matches',
+    'stays visible when navigating away from the Tasks tab',
     (tester) async {
-      // Sticky state: user opened a task, started a timer, then
-      // switched tabs. desktopSelectedTaskId is still pointing at the
-      // task, but the user is now on /habits, so the sticky action bar
-      // is no longer visible — the sidebar must keep showing the
-      // running indicator.
+      // Sticky state: user opened a task, started a timer, then switched
+      // tabs. desktopSelectedTaskId still points at the task and the
+      // route is no longer a task-detail route — neither must hide the
+      // sidebar card.
       final task = makeTask('task-sticky', title: 'Sticky');
       final timer = makeTimerEntry('timer-sticky');
 
@@ -354,11 +357,10 @@ void main() {
       desktopSelectedTaskId.value = 'task-sticky';
       await tester.pump();
       await tester.pump(SidebarTimerSection.animationDuration);
-      // Sanity: while on the task route, the card is hidden.
-      expect(find.text('Sticky'), findsNothing);
+      expect(find.text('Sticky'), findsOneWidget);
 
       // User switches to the Habits tab — currentPath is no longer a
-      // task-detail route. The card must come back.
+      // task-detail route. The card must remain.
       setCurrentPath('/habits');
       await tester.pump();
       await tester.pump(SidebarTimerSection.animationDuration);
