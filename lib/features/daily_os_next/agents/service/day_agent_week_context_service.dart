@@ -84,6 +84,9 @@ class DayAgentWeekContextService {
   }) async {
     try {
       now ??= clock.now();
+      // `localDay` returns a LOCAL midnight (it converts to local first), so
+      // all `DateTime(y, m, d ± n)` window arithmetic on these bases is
+      // local-by-construction — the wall-clock day contract of ADR 0028.
       final anchor = localDay(planDate);
       final today = localDay(now);
 

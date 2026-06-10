@@ -100,6 +100,11 @@ WeekContext buildWeekContext({
   required List<RecordedSpan> recordedSpans,
   required String? Function(String categoryId) categoryName,
 }) {
+  // `localDay` converts to local time and returns a LOCAL midnight, so every
+  // base used in the `DateTime(y, m, d ± n)` window arithmetic below is
+  // local by construction (never UTC) — wall-clock day semantics are the
+  // contract here (ADR 0028), and component arithmetic on these bases stays
+  // at local midnight across DST transitions.
   final anchor = localDay(planDate);
   final today = localDay(now);
 
