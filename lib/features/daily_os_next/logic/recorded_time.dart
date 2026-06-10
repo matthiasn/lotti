@@ -57,10 +57,11 @@ class ResolvedTimeEntry {
 ///
 /// The [links] are ordered by `(createdAt, fromId)` before the candidate
 /// sets are built: the backing query carries no ORDER BY, so its row order
-/// is not stable across runs or devices — without this, the first-survivor
-/// fallback pick in [resolveLinkedFrom] could differ per device for entries
-/// with several non-rating candidates. Earliest-created link first matches
-/// the insertion order the query typically (but not contractually) returns.
+/// is not stable across runs or devices — without this, every
+/// order-dependent pick in [resolveLinkedFrom] (the first surviving Task
+/// among several, and the first-survivor non-rating fallback) could differ
+/// per device. Earliest-created link first matches the insertion order the
+/// query typically (but not contractually) returns.
 List<ResolvedTimeEntry> resolveTimeEntries({
   required List<JournalEntity> entries,
   required List<EntryLink> links,

@@ -535,6 +535,11 @@ const dayAgentTools = <AgentToolDefinition>[
         },
         'text': {
           'type': 'string',
+          // Raw-input bound for schema-enforcing providers. The service's
+          // post-normalization check stays authoritative: whitespace
+          // collapse only shrinks text, so this is strictly narrower —
+          // no input the service would accept is schema-rejected except
+          // multi-line text whose collapsed form would have fit.
           'maxLength': 500,
           'description':
               'The summary paragraph (max 500 characters, single paragraph).',

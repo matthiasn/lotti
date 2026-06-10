@@ -275,8 +275,9 @@ class DayAgentWeekContextService {
     final today = localDay(now);
     final yesterday = DateTime(today.year, today.month, today.day - 1);
     if (dayId != dayPlanId(today) && dayId != dayPlanId(yesterday)) {
+      // No 'Error: ' prefix — DayAgentDirectToolResult.failure adds it.
       throw DayAgentWeekContextException(
-        'Error: day summaries can only be written for today '
+        'day summaries can only be written for today '
         '(${dayPlanId(today)}) or yesterday (${dayPlanId(yesterday)}); '
         'got "$dayId".',
       );
@@ -284,8 +285,9 @@ class DayAgentWeekContextService {
 
     final id = dayAgentSummaryEntityId(dayId);
     final existing = await agentRepository.getEntity(id);
-    final prior = existing is DaySummaryEntity && existing.deletedAt == null
-        ? existing
+    final priorSummary = existing is DaySummaryEntity ? existing : null;
+    final prior = priorSummary != null && priorSummary.deletedAt == null
+        ? priorSummary
         : null;
     final entity = prior != null
         ? prior.copyWith(
@@ -300,7 +302,12 @@ class DayAgentWeekContextService {
             text: text,
             createdAt: now,
             updatedAt: now,
-            vectorClock: null,
+            // Seed from a tombstoned prior register (if any) so the sync
+            // layer's next-clock stamp causally DOMINATES the tombstone:
+            // judged concurrent instead, the earliest-createdAt rule would
+            // let the tombstone win on peers while this device keeps the
+            // rewrite — permanent divergence.
+            vectorClock: priorSummary?.vectorClock,
           );
     await syncService.upsertEntity(entity);
     onPersistedStateChanged?.call(agentId);

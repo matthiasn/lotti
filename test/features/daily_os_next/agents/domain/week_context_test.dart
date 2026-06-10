@@ -446,6 +446,37 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
       );
     });
 
+    test("caps today's still-planned list with \"+N more planned.\"", () {
+      final jun10 = DateTime(2026, 6, 10);
+      final ctx = _build(
+        dayPlans: [
+          _plan(
+            day: jun10,
+            blocks: [
+              for (var i = 0; i < 7; i++)
+                _block(
+                  id: 'b$i',
+                  categoryId: 'work',
+                  start: DateTime(2026, 6, 10, 8 + i),
+                  minutes: 30,
+                  title: 'Block $i',
+                ),
+            ],
+          ),
+        ],
+      );
+      final paragraph = ctx.recentDays!.split('\n\n').last;
+      expect(paragraph, contains('(today so far)'));
+      expect(
+        paragraph,
+        contains(
+          "Still planned: 'Block 0' (30m, Work), 'Block 1' (30m, Work), "
+          "'Block 2' (30m, Work), 'Block 3' (30m, Work), "
+          "'Block 4' (30m, Work). +2 more planned.",
+        ),
+      );
+    });
+
     test('caps deadlines at 10 with "+N more."', () {
       final ctx = _build(
         claims: [

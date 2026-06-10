@@ -3947,6 +3947,16 @@ void main() {
           contains('Sustainability beats'),
         );
 
+        // The gated block keeps exactly one blank line on each seam.
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('shut down a day.\n\nWeek context'),
+        );
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('contradiction.\n\nYour memory'),
+        );
+
         await execute(workflow());
         expect(
           conversationRepository.lastTools.map((t) => t.function.name),
@@ -3955,6 +3965,11 @@ void main() {
         expect(
           conversationRepository.lastSystemMessage,
           isNot(contains('Week context')),
+        );
+        // No double blank line where the gated block collapsed to nothing.
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('shut down a day.\n\nYour memory'),
         );
       });
     });

@@ -164,8 +164,9 @@ Runtime behavior:
   retrospectives; `record_observations` is forward-looking learnings only —
   never day recaps (seeded directive, 2026-06-10).
 - **Caps.** Max 6 categories per day (by `max(planned, recorded)`), 5 named
-  misses, 10 deadline lines — each truncation renders a deterministic
-  overflow marker (`+N more (X.Xh)` / `+N more missed` / `+N more.`).
+  misses/still-planned items, 10 deadline lines — each truncation renders a
+  deterministic overflow marker (`+N more (X.Xh).` / `+N more missed.` /
+  `+N more planned.` / `+N more.`).
 - **Cost gating.** Week context builds only on wakes whose day came from
   day-carrying tokens (planning-day / drafting / refine / scheduled);
   capture-submitted wakes skip the 8-day journal+links+claims load.
@@ -395,8 +396,9 @@ stateDiagram-v2
   `logic/recorded_time.dart`: `resolveTimeEntries` skips tombstones and
   zero-length entries and resolves each survivor's linked-from entity (a linked
   Task wins, ratings never count, otherwise the first surviving non-rating
-  link), yielding `ResolvedTimeEntry` pairs with derived `categoryId`/`taskId`/
-  `duration`. The Actual lane projects these pairs into UI `TimeBlock`s; the
+  link — candidates are ordered by link `(createdAt, fromId)` first, since the
+  backing query has no ORDER BY, so the pick is device-stable), yielding
+  `ResolvedTimeEntry` pairs with derived `categoryId`/`taskId`/`duration`. The Actual lane projects these pairs into UI `TimeBlock`s; the
   planner's week context derives prompt span buckets from the same pairs, so
   the two can never disagree on what was recorded.
 - The Day timeline spans `00:00` to `00:00` and folds idle regions instead of

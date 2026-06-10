@@ -7,6 +7,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -342,6 +343,48 @@ void main() {
       expect(ctx!.recentDays, contains('cat-work: 2h recorded.'));
     });
 
+    test('an explicitly passed now drives day classification end-to-end '
+        '(no ambient clock)', () async {
+      final day = DateTime(2026, 6, 10);
+      final entry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'entry-now',
+          createdAt: day,
+          updatedAt: day,
+          dateFrom: day.add(const Duration(hours: 7)),
+          dateTo: day.add(const Duration(hours: 8)),
+        ),
+      );
+      when(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [entry]);
+
+      // Deliberately NO withClock: the passed `now` must drive both the
+      // window arithmetic and the rendered day classification.
+      final ctx = await service.buildForDay(
+        agentId: _agentId,
+        planDate: DateTime(2026, 6, 10),
+        now: DateTime(2026, 6, 10, 8, 30),
+      );
+
+      expect(
+        ctx!.recentDays,
+        contains(
+          'Wed Jun 10 (today so far) — no plan. '
+          'Uncategorized: 1h recorded.',
+        ),
+      );
+      verify(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: DateTime(2026, 6, 3),
+          rangeEnd: DateTime(2026, 6, 11),
+        ),
+      ).called(1);
+    });
+
     test('fail-soft: a load error logs and returns null', () async {
       when(
         () => repository.getEntitiesByIds(any()),
@@ -497,6 +540,10 @@ void main() {
       final result = await write(dayId: 'dayplan-2026-06-08');
       expect(result.success, isFalse);
       expect(result.output, contains('today'));
+      // Exactly one prefix: the wrapper adds 'Error: '; the thrown message
+      // must not double it.
+      expect(result.output, startsWith('Error: day summaries'));
+      expect(result.output, isNot(contains('Error: Error:')));
       expect(upserted, isEmpty);
     });
 
@@ -553,13 +600,16 @@ void main() {
     );
 
     test(
-      'a tombstoned prior summary is replaced by a fresh register',
+      'a tombstoned prior summary is replaced by a fresh register that '
+      'causally dominates the tombstone',
       () async {
+        const tombstoneClock = VectorClock({'host-a': 7});
         final tombstone = makeTestDaySummary(
           dayId: 'dayplan-2026-06-10',
           agentId: _agentId,
           createdAt: DateTime(2026, 6, 10, 7),
           deletedAt: DateTime(2026, 6, 10, 7, 30),
+          vectorClock: tombstoneClock,
         );
         when(() => repository.getEntity(tombstone.id)).thenAnswer(
           (_) async => tombstone,
@@ -569,10 +619,12 @@ void main() {
 
         expect(result.success, isTrue);
         expect(result.output, contains('"updated": false'));
-        expect(
-          upserted.whereType<DaySummaryEntity>().single.createdAt,
-          _now,
-        );
+        final entity = upserted.whereType<DaySummaryEntity>().single;
+        expect(entity.createdAt, _now);
+        // Seeded from the tombstone so the sync layer's next-clock stamp
+        // dominates it — judged concurrent, the earliest-createdAt rule
+        // would resurrect the tombstone on peers (divergence).
+        expect(entity.vectorClock, tombstoneClock);
       },
     );
   });
