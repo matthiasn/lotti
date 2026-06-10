@@ -40,6 +40,7 @@
           <p>Daily OS Next: the drafting wait replaced its shimmer placeholders with the AI thinking animation over a rotating narration of what the agent is doing, alongside yesterday's learning cards.</p>
           <p>Daily OS Next: the Refine step was rebuilt on the same layout as Capture — it shows the current plan you are about to change, streams your words above the orb, and offers Revert / Looks good on the bottom bar.</p>
           <p>Daily OS Next: copy and typography polish — a "Review" CTA instead of "Reconcile", a real headline on the review step, typographic apostrophes, and large accessibility text sizes no longer overflow the capture sheet on small phones.</p>
+          <p>Light theme contrast: secondary text and the teal accent were too faint to read (about 2.2:1); light-mode secondary text is darker now and the teal accent chain is deeper, so captions, hints, and white-on-teal buttons meet accessibility contrast. Dark mode is unchanged.</p>
       </description>
     </release>
     <release version="0.9.1017" date="2026-06-07">

@@ -406,7 +406,7 @@ void main() {
     });
 
     testWidgets(
-      'enabled false: drops fill, dims foreground, ignores taps, disables a11y',
+      'enabled false: dims fill and foreground, ignores taps, disables a11y',
       (tester) async {
         var taps = 0;
         const fill = Color(0xFF0A7E76);
@@ -426,9 +426,11 @@ void main() {
 
         final tokens = _tokens(tester, DsGlassPill);
 
-        // (b) Solid fill is dropped for the translucent glass fill.
+        // (b) The caller's fill is kept but dimmed — a quieter version of
+        // itself, not the bright translucent slab (which out-shines enabled
+        // secondaries in dark theme).
         final decoration = _inkDecoration(tester, DsGlassPill);
-        expect(decoration.color, dsGlassChipFill(tokens));
+        expect(decoration.color, fill.withValues(alpha: fill.a * 0.45));
         expect(decoration.color, isNot(fill));
 
         // (c) Foreground dims to text.lowEmphasis.

@@ -40,6 +40,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   jargon "Reconcile", a real headline on the review step, typographic
   apostrophes, and large accessibility text sizes no longer overflow the
   capture sheet on small phones.
+- Light theme contrast: secondary "low emphasis" text and the teal accent
+  were too faint to read for low-vision users (about 2.2:1 against the
+  background). Light-mode secondary text is darker now, and the light
+  teal accent chain is deeper, so captions, hints, and white-on-teal
+  buttons all meet accessibility contrast. Dark mode is unchanged.
 
 ## [0.9.1017]
 ### Added

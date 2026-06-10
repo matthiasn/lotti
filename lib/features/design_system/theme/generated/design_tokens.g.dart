@@ -9,7 +9,7 @@ const DsTokens dsTokensLight = DsTokens(
     text: DsColorsText(
       highEmphasis: Color(0xE0000000),
       mediumEmphasis: Color(0xA3000000),
-      lowEmphasis: Color(0x52000000),
+      lowEmphasis: Color(0x94000000),
       onInteractiveAlert: Color(0xFFFFFFFF),
     ),
     surface: DsColorsSurface(
@@ -48,9 +48,9 @@ const DsTokens dsTokensLight = DsTokens(
       alternative01: Color(0xFFEEF7FF),
     ),
     interactive: DsColorsInteractive(
-      enabled: Color(0xFF2BA184),
-      hover: Color(0xFF1F7963),
-      pressed: Color(0xFF165042),
+      enabled: Color(0xFF1F7963),
+      hover: Color(0xFF165042),
+      pressed: Color(0xFF103A30),
     ),
     decorative: DsColorsDecorative(
       level01: Color(0x1F000000),
