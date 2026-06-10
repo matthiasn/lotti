@@ -72,12 +72,18 @@ class DayAgentWeekContextService {
   /// fails (fail-soft). An information-free window yields a [WeekContext]
   /// whose sections are null ([WeekContext.isEmpty]) — the prompt builder
   /// omits absent sections, so callers need not special-case it.
+  ///
+  /// [now] lets the caller pass its own wall-clock read so the rendered day
+  /// classification agrees with the rest of the prompt (e.g. the payload's
+  /// `current_local_time`) across a midnight straddle; defaults to
+  /// `clock.now()`.
   Future<WeekContext?> buildForDay({
     required String agentId,
     required DateTime planDate,
+    DateTime? now,
   }) async {
     try {
-      final now = clock.now();
+      now ??= clock.now();
       final anchor = localDay(planDate);
       final today = localDay(now);
 

@@ -21,6 +21,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
+import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
@@ -1788,6 +1789,7 @@ void main() {
       );
 
       expect(result.success, isTrue);
+      expectCanonicalSectionOrder(sentPrompt());
       final capturePayload =
           sentPrompt().json('capture')! as Map<String, dynamic>;
       expect(capturePayload['captureId'], 'capture-1');
@@ -3017,6 +3019,33 @@ void main() {
                 as PlannerKnowledgeEntity,
           ],
         );
+        when(
+          () => repository.getAttentionPlanningInputsForWindow(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          ),
+        ).thenAnswer(
+          (_) async => AttentionPlanningInputs(
+            claims: [
+              AgentDomainEntity.attentionRequest(
+                    id: 'attn-c1',
+                    agentId: 'task-agent',
+                    kind: AttentionRequestKind.task,
+                    title: 'Focus block',
+                    categoryId: 'work',
+                    requestedMinutes: 45,
+                    impact: 3,
+                    urgency: 3,
+                    energyFit: AttentionEnergyFit.high,
+                    evidenceRefs: const [],
+                    createdAt: DateTime(2026, 5, 24),
+                    vectorClock: null,
+                  )
+                  as AttentionRequestEntity,
+            ],
+            standingAgreements: const [],
+          ),
+        );
 
         final result = await execute(
           workflow(knowledgeService: knowledgeService),
@@ -3024,7 +3053,9 @@ void main() {
 
         expect(result.success, isTrue);
         final sent = sentPrompt();
-        // The C1 invariant: index → day_log → statements.
+        // The C1 invariant: index → day_log → statements — and the volatile
+        // attention claims must never drift ahead of the (much larger,
+        // byte-stable) day log.
         expect(sent.has('knowledge_index'), isTrue);
         expect(sent.has('day_log'), isTrue);
         expect(
@@ -3033,8 +3064,13 @@ void main() {
         );
         expect(
           sent.indexOf('day_log'),
+          lessThan(sent.indexOf('attention_planning')),
+        );
+        expect(
+          sent.indexOf('attention_planning'),
           lessThan(sent.indexOf('knowledge_statements')),
         );
+        expectCanonicalSectionOrder(sent);
       },
     );
 
@@ -3522,6 +3558,7 @@ void main() {
           () => service.buildForDay(
             agentId: any(named: 'agentId'),
             planDate: any(named: 'planDate'),
+            now: any(named: 'now'),
           ),
         ).thenAnswer((_) async => context);
         return service;
@@ -3623,6 +3660,40 @@ void main() {
             sent.indexOf('week_ahead'),
             lessThan(sent.indexOf('drafting')),
           );
+          expectCanonicalSectionOrder(sent);
+        },
+      );
+
+      test(
+        'refine wakes carry week context before the refine section, in '
+        'canonical order',
+        () async {
+          final planService = MockDayAgentPlanService();
+          when(
+            () => planService.draftPlanForDay(
+              agentId: agentId,
+              dayId: dayId,
+            ),
+          ).thenAnswer((_) async => null);
+
+          final result = await execute(
+            workflow(
+              planService: planService,
+              weekContextService: weekContextStub(context: sampleContext),
+            ),
+            triggerTokens: {
+              dayAgentRefineToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+          );
+
+          expect(result.success, isTrue);
+          final sent = sentPrompt();
+          expect(
+            sent.indexOf('week_ahead'),
+            lessThan(sent.indexOf('refine')),
+          );
+          expectCanonicalSectionOrder(sent);
         },
       );
 
@@ -3644,6 +3715,7 @@ void main() {
           () => service.buildForDay(
             agentId: any(named: 'agentId'),
             planDate: any(named: 'planDate'),
+            now: any(named: 'now'),
           ),
         ).thenThrow(StateError('service bug'));
 
@@ -3681,6 +3753,9 @@ void main() {
           () => service.buildForDay(
             agentId: agentId,
             planDate: DateTime(2026, 5, 25),
+            // The wake's own clock read is passed through so the section's
+            // day classification matches current_local_time.
+            now: now,
           ),
         ).called(1);
       });
@@ -3742,6 +3817,7 @@ void main() {
             () => service.buildForDay(
               agentId: any(named: 'agentId'),
               planDate: any(named: 'planDate'),
+              now: any(named: 'now'),
             ),
           );
           expect(sentPrompt().has('recent_days'), isFalse);
@@ -3930,6 +4006,18 @@ void main() {
       },
     );
   });
+}
+
+/// Pins the cache invariant the prompt-section vocabulary declares: the
+/// payload's sections must appear exactly in the canonical stable→volatile
+/// order of [DayAgentPromptTags.all]. Any reordering that would hurt the
+/// prefix cache (e.g. a volatile section drifting ahead of `day_log`) fails
+/// here by name.
+void expectCanonicalSectionOrder(ParsedDayAgentPrompt sent) {
+  expect(
+    sent.tagsInOrder,
+    DayAgentPromptTags.all.where(sent.has).toList(),
+  );
 }
 
 ChatCompletionMessageToolCall _toolCall({

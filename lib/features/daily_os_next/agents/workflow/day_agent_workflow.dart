@@ -309,7 +309,7 @@ class DayAgentWorkflow {
       now: now,
     );
     final weekContext = isDayTokenWake
-        ? await _weekContext(agentId: agentId, planDate: dayDate)
+        ? await _weekContext(agentId: agentId, planDate: dayDate, now: now)
         : null;
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
@@ -519,15 +519,19 @@ class DayAgentWorkflow {
   /// Loads the week context for a day-token wake. The service is fail-soft
   /// already (load errors log and return null); this guard additionally
   /// absorbs unexpected service bugs so lookback context can never kill a
-  /// wake.
+  /// wake. The wake's own [now] is passed through so the section's day
+  /// classification agrees with `current_local_time` across a midnight
+  /// straddle.
   Future<WeekContext?> _weekContext({
     required String agentId,
     required DateTime planDate,
+    required DateTime now,
   }) async {
     try {
       return await weekContextService?.buildForDay(
         agentId: agentId,
         planDate: planDate,
+        now: now,
       );
     } catch (e, s) {
       _logError('failed to load week context', error: e, stackTrace: s);

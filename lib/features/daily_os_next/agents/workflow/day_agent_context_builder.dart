@@ -58,10 +58,14 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         knowledge.statements.isEmpty ? null : knowledge.statements,
       )
       // Week context: the today-so-far line changes with tracked time, making
-      // these sections more volatile than the knowledge statements above —
-      // they sit after them (and before the mode sections) so their churn
-      // evicts as little prefix as possible. Bodies arrive fully rendered and
-      // sanitized from the week-context renderer.
+      // these sections more volatile than the knowledge statements above, so
+      // they sit after them. Placing them BEFORE the mode sections is a
+      // deliberate trade (plan red-team correction): it lets modeless wakes
+      // (scheduled → drafting, the morning pattern) reuse the prefix through
+      // `week_ahead`, at the cost of a same-mode re-wake with an unchanged
+      // baseline (refine → refine) re-prefilling its mode section when the
+      // today line churns. Bodies arrive fully rendered and sanitized from
+      // the week-context renderer.
       ..addPreRendered(DayAgentPromptTags.recentDays, weekContext?.recentDays)
       ..addPreRendered(DayAgentPromptTags.weekAhead, weekContext?.weekAhead)
       // Mode blocks: present only for the wake that owns them, stable for it.
