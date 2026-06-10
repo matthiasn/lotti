@@ -54,13 +54,26 @@ class ResolvedTimeEntry {
 /// Skips deleted entries and entries without a positive [entryDuration];
 /// resolves each survivor's linked-from entity via [resolveLinkedFrom] using
 /// the non-deleted [links]. Output preserves the order of [entries].
+///
+/// The [links] are ordered by `(createdAt, fromId)` before the candidate
+/// sets are built: the backing query carries no ORDER BY, so its row order
+/// is not stable across runs or devices — without this, the first-survivor
+/// fallback pick in [resolveLinkedFrom] could differ per device for entries
+/// with several non-rating candidates. Earliest-created link first matches
+/// the insertion order the query typically (but not contractually) returns.
 List<ResolvedTimeEntry> resolveTimeEntries({
   required List<JournalEntity> entries,
   required List<EntryLink> links,
   required Map<String, JournalEntity> linkedFromById,
 }) {
+  final orderedLinks = links.toList()
+    ..sort((a, b) {
+      final byCreated = a.createdAt.compareTo(b.createdAt);
+      if (byCreated != 0) return byCreated;
+      return a.fromId.compareTo(b.fromId);
+    });
   final entryIdToLinkedFromIds = <String, Set<String>>{};
-  for (final link in links) {
+  for (final link in orderedLinks) {
     if (link.deletedAt != null) continue;
     entryIdToLinkedFromIds
         .putIfAbsent(link.toId, () => <String>{})

@@ -354,6 +354,13 @@ void main() {
         requiredFor(DayAgentToolNames.writeDaySummary),
         ['dayId', 'text'],
       );
+      // The documented 500-char cap is encoded in the schema so
+      // schema-enforcing providers reject oversized text before the
+      // service-side (post-normalization) check even runs.
+      final props =
+          parametersFor(DayAgentToolNames.writeDaySummary)['properties']!
+              as Map<String, dynamic>;
+      expect((props['text']! as Map<String, dynamic>)['maxLength'], 500);
       final description = dayAgentTools
           .singleWhere(
             (tool) => tool.name == DayAgentToolNames.writeDaySummary,

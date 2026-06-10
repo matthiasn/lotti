@@ -17,7 +17,7 @@ Final converged design (each point user-driven):
 
 ## Target rendered shape
 
-```
+```text
 <recent_days>
 Sat Jun 7 — committed plan. Work: 10.2h recorded vs 6h planned (4.2h over). Missed: 'Gym session' (90m, Fitness), 'Do taxes' (1h, Admin). Total recorded: 10.2h.
 Agent note: Client emergency ate the evening; gym and taxes dropped. User seemed drained.

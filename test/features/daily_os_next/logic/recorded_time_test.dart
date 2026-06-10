@@ -222,6 +222,47 @@ void main() {
       expect(pair.taskId, isNull);
     });
 
+    test('the fallback pick is invariant to the link list order '
+        '(the backing query has no ORDER BY)', () {
+      final noteA = _note(id: 'note-a', categoryId: 'cat-a');
+      final noteB = _note(id: 'note-b', categoryId: 'cat-b');
+      final entry = _entry(id: 'e1', startHour: 9);
+      // note-b's link row was created FIRST, so it must win the fallback
+      // pick regardless of the order the query happens to return the rows.
+      final linkToB = EntryLink.basic(
+        id: 'link-b',
+        fromId: 'note-b',
+        toId: 'e1',
+        createdAt: _day.add(const Duration(hours: 1)),
+        updatedAt: _day,
+        vectorClock: null,
+      );
+      final linkToA = EntryLink.basic(
+        id: 'link-a',
+        fromId: 'note-a',
+        toId: 'e1',
+        createdAt: _day.add(const Duration(hours: 2)),
+        updatedAt: _day,
+        vectorClock: null,
+      );
+
+      for (final permutation in [
+        [linkToA, linkToB],
+        [linkToB, linkToA],
+      ]) {
+        final pair = resolveTimeEntries(
+          entries: [entry],
+          links: permutation,
+          linkedFromById: {'note-a': noteA, 'note-b': noteB},
+        ).single;
+        expect(
+          pair.linkedFrom?.meta.id,
+          'note-b',
+          reason: 'order: ${permutation.map((l) => l.id)}',
+        );
+      }
+    });
+
     Glados<List<_GeneratedRecordedEntry>>(
       any.list(any.recordedEntry),
       ExploreConfig(numRuns: 140),

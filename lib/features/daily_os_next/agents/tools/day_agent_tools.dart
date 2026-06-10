@@ -535,6 +535,7 @@ const dayAgentTools = <AgentToolDefinition>[
         },
         'text': {
           'type': 'string',
+          'maxLength': 500,
           'description':
               'The summary paragraph (max 500 characters, single paragraph).',
         },
