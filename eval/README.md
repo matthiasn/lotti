@@ -172,6 +172,23 @@ EVAL_CALIBRATION=/private/tmp/judge_gold_v1.json \
 Omit `<runId>` for `grade`, `verify`, or `report` to use the latest
 timestamp-named directory under `eval/runs/`.
 
+For fast iteration on one use case, select a subset of the loaded matrix with
+comma-separated ids and profile names. Use the same selector env for `run`,
+`verify`, `report`, `template`, and `calibrate`; the run manifest binds to the
+selected scenario/profile set and later phases fail closed if the selectors
+drift.
+
+```
+EVAL_SCENARIO_IDS=task_workflow_structured_update \
+EVAL_PROFILE_NAMES=local-small,frontier-gemini \
+LOTTI_EVAL_LIVE=1 \
+  eval/run_level2.sh run <runId>
+
+EVAL_SCENARIO_IDS=task_workflow_structured_update \
+EVAL_PROFILE_NAMES=local-small,frontier-gemini \
+  eval/run_level2.sh report <runId>
+```
+
 For private production-replay holdouts, provide an external catalog and keep
 trace artifacts outside the repo unless you explicitly acknowledge that trace
 JSON contains raw scenario payloads:
@@ -186,6 +203,18 @@ EVAL_SCENARIOS=/private/path/lotti_eval_scenarios_v1.json \
 EVAL_SCENARIOS=/private/path/lotti_eval_scenarios_v1.json \
 EVAL_RUNS_ROOT=/private/tmp/lotti-eval-runs \
   eval/run_level2.sh report <runId>
+```
+
+By default, external scenarios are appended to the public catalog. Set
+`EVAL_SCENARIOS_MODE=replace` when a private catalog should be the whole
+scenario set for the run:
+
+```
+EVAL_SCENARIOS=/private/path/lotti_eval_scenarios_v1.json \
+EVAL_SCENARIOS_MODE=replace \
+EVAL_RUNS_ROOT=/private/tmp/lotti-eval-runs \
+LOTTI_EVAL_LIVE=1 \
+  eval/run_level2.sh run <runId>
 ```
 
 Custom model/profile matrices can be supplied with `EVAL_PROFILES`. The value

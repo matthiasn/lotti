@@ -120,7 +120,7 @@ fvm dart analyze test/eval        # the analyzer GATE (see gotcha below)
 fvm dart format test/eval
 ```
 
-Current gate: 245 eval tests green, 6 expected skips without `EVAL_RUN` /
+Current gate: 260 eval tests green, 6 expected skips without `EVAL_RUN` /
 `EVAL_SCENARIOS` / `EVAL_CALIBRATION_TEMPLATE` / `EVAL_CALIBRATION` /
 `LOTTI_EVAL_LIVE`, analyzer clean.
 Latest active slice adds Level 2 run-manifest promotion-plan evidence plus a
@@ -150,6 +150,12 @@ different actual provider/model/endpoint between runs. It also adds
 `EVAL_PROFILES` JSON loading for live run, verify, report, calibration
 templates, and promotion config so local/frontier profile matrices can be
 changed from the command line instead of by editing Dart code.
+Current active slice adds focused matrix selectors: `EVAL_SCENARIO_IDS` and
+`EVAL_PROFILE_NAMES` filter the loaded matrix for run, verify, report,
+calibration template, and calibration phases, while `EVAL_SCENARIOS_MODE`
+supports `append` (default) or `replace` for external scenario catalogs. The
+selected scenario/profile set is what the run manifest digests, so later phases
+must use the same selectors or verification fails closed.
 Current active slice adds provider response-side provenance: the real
 `ConversationRepository` stream loop records authoritative provider-reported
 model ids, system fingerprints, provider names, and service tiers when exposed,

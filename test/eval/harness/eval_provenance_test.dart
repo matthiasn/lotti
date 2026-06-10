@@ -49,12 +49,17 @@ void main() {
       command:
           'LOTTI_EVAL_LIVE=1 OPENAI_API_KEY=secret-value '
           '--dart-define=EVAL_SCENARIOS=/private/path/protected_scenarios.json '
+          '--dart-define=EVAL_PROFILES=/private/path/profiles.json '
           '--dart-define=EVAL_PROMOTION_PLAN=/private/path/promotion_plan.json '
           'run',
       environment: const {
         'LOTTI_EVAL_LIVE': '1',
         'OPENAI_API_KEY': 'secret-value',
         'EVAL_SCENARIOS': '/private/path/protected_scenarios.json',
+        'EVAL_SCENARIOS_MODE': 'replace',
+        'EVAL_SCENARIO_IDS': 'private_task_holdout',
+        'EVAL_PROFILES': '/private/path/profiles.json',
+        'EVAL_PROFILE_NAMES': 'frontier-gemini',
         'EVAL_PROMOTION_PLAN': '/private/path/promotion_plan.json',
       },
     );
@@ -63,12 +68,18 @@ void main() {
     expect(manifest.envPresence['LOTTI_EVAL_LIVE'], isTrue);
     expect(manifest.envPresence['OPENAI_API_KEY'], isTrue);
     expect(manifest.envPresence['EVAL_SCENARIOS'], isTrue);
+    expect(manifest.envPresence['EVAL_SCENARIOS_MODE'], isTrue);
+    expect(manifest.envPresence['EVAL_SCENARIO_IDS'], isTrue);
+    expect(manifest.envPresence['EVAL_PROFILES'], isTrue);
+    expect(manifest.envPresence['EVAL_PROFILE_NAMES'], isTrue);
     expect(manifest.envPresence['EVAL_PROMOTION_PLAN'], isTrue);
     expect(json, isNot(contains('secret-value')));
     expect(json, isNot(contains('/private/path/protected_scenarios.json')));
+    expect(json, isNot(contains('/private/path/profiles.json')));
     expect(json, isNot(contains('/private/path/promotion_plan.json')));
     expect(manifest.command, contains('OPENAI_API_KEY=<redacted>'));
     expect(manifest.command, contains('EVAL_SCENARIOS=<redacted>'));
+    expect(manifest.command, contains('EVAL_PROFILES=<redacted>'));
     expect(manifest.command, contains('EVAL_PROMOTION_PLAN=<redacted>'));
   });
 

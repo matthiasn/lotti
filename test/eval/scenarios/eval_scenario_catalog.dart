@@ -5,6 +5,8 @@ import '../harness/eval_harness.dart';
 import 'eval_scenarios.dart';
 
 const kEvalScenarioCatalogPathEnv = 'EVAL_SCENARIOS';
+const kEvalScenarioCatalogModeEnv = 'EVAL_SCENARIOS_MODE';
+const kEvalScenarioIdsEnv = 'EVAL_SCENARIO_IDS';
 
 class EvalScenarioCatalog {
   const EvalScenarioCatalog({
@@ -24,12 +26,31 @@ abstract final class EvalScenarioCatalogLoader {
   static EvalScenarioCatalog fromEnvironment(
     Map<String, String> environment, {
     String dartDefinePath = '',
+    String dartDefineMode = '',
+    String dartDefineScenarioIds = '',
     List<EvalScenario>? publicScenarios,
   }) {
-    final baseScenarios = publicScenarios ?? allEvalScenarios;
+    final requestedScenarioIds = _scenarioIds(
+      environment,
+      dartDefineScenarioIds,
+    );
     final path = _scenarioPath(environment, dartDefinePath);
+    final mode = _scenarioCatalogMode(environment, dartDefineMode);
+    if (path == null && mode == _ScenarioCatalogMode.replace) {
+      throw StateError(
+        '$kEvalScenarioCatalogModeEnv=replace requires '
+        '$kEvalScenarioCatalogPathEnv.',
+      );
+    }
+    final baseScenarios = mode == _ScenarioCatalogMode.replace
+        ? const <EvalScenario>[]
+        : (publicScenarios ?? allEvalScenarios);
     if (path == null) {
-      final scenarios = List<EvalScenario>.unmodifiable(baseScenarios);
+      final scenarios = _selectScenarios(
+        publicScenarios: baseScenarios,
+        externalScenarios: const [],
+        requestedScenarioIds: requestedScenarioIds,
+      );
       return EvalScenarioCatalog(
         scenarios: scenarios,
         evidence: EvalScenarioCatalogEvidence(
@@ -40,26 +61,35 @@ abstract final class EvalScenarioCatalogLoader {
           protectedScenarioIds: const [],
           protectedHoldoutScenarioIds: const [],
         ),
-        sourceDescription: 'public catalog',
+        sourceDescription: _sourceDescription(
+          'public catalog',
+          requestedScenarioIds,
+        ),
       );
     }
 
     final external = _loadExternal(path);
-    final scenarios = List<EvalScenario>.unmodifiable([
+    final unfilteredScenarios = [
       ...baseScenarios,
       ...external.scenarios,
-    ]);
-    final issues = validateEvalScenarioCatalog(scenarios);
+    ];
+    final issues = validateEvalScenarioCatalog(unfilteredScenarios);
     if (issues.isNotEmpty) {
       throw FormatException(
         'Invalid eval scenario catalog:\n${issues.join('\n')}',
       );
     }
+    final selected = _selectScenarioParts(
+      publicScenarios: baseScenarios,
+      externalScenarios: external.scenarios,
+      requestedScenarioIds: requestedScenarioIds,
+    );
+    final scenarios = selected.scenarios;
     final protectedScenarioIds = external.protectedHoldout
-        ? external.scenarios.map((scenario) => scenario.id).toList()
+        ? selected.externalScenarios.map((scenario) => scenario.id).toList()
         : const <String>[];
     final protectedHoldoutScenarioIds = external.protectedHoldout
-        ? external.scenarios
+        ? selected.externalScenarios
               .where(
                 (scenario) =>
                     scenario.metadata.split == EvalScenarioSplit.holdout,
@@ -71,16 +101,29 @@ abstract final class EvalScenarioCatalogLoader {
       scenarios: scenarios,
       evidence: EvalScenarioCatalogEvidence(
         scenarioSetDigest: EvalProvenance.scenarioSetDigest(scenarios),
-        publicScenarioCount: baseScenarios.length,
-        externalScenarioCount: external.scenarios.length,
-        externalCatalogDigest: external.catalogDigest,
-        externalCatalogId: external.catalogId,
-        externalSourceLabel: external.sourceLabel,
-        protectedHoldout: external.protectedHoldout,
+        publicScenarioCount: selected.publicScenarios.length,
+        externalScenarioCount: selected.externalScenarios.length,
+        externalCatalogDigest: selected.externalScenarios.isEmpty
+            ? null
+            : external.catalogDigest,
+        externalCatalogId: selected.externalScenarios.isEmpty
+            ? null
+            : external.catalogId,
+        externalSourceLabel: selected.externalScenarios.isEmpty
+            ? null
+            : external.sourceLabel,
+        protectedHoldout: protectedHoldoutScenarioIds.isNotEmpty,
         protectedScenarioIds: protectedScenarioIds,
         protectedHoldoutScenarioIds: protectedHoldoutScenarioIds,
       ),
-      sourceDescription: 'public catalog + ${external.sourceLabel}',
+      sourceDescription: _sourceDescription(
+        switch (mode) {
+          _ScenarioCatalogMode.append =>
+            'public catalog + ${external.sourceLabel}',
+          _ScenarioCatalogMode.replace => external.sourceLabel,
+        },
+        requestedScenarioIds,
+      ),
     );
   }
 
@@ -96,6 +139,137 @@ abstract final class EvalScenarioCatalogLoader {
     }
     return null;
   }
+
+  static _ScenarioCatalogMode _scenarioCatalogMode(
+    Map<String, String> environment,
+    String dartDefineMode,
+  ) {
+    final fromDefine = dartDefineMode.trim();
+    final configured = fromDefine.isNotEmpty
+        ? fromDefine
+        : (environment[kEvalScenarioCatalogModeEnv]?.trim() ?? '');
+    if (configured.isEmpty || configured == 'append') {
+      return _ScenarioCatalogMode.append;
+    }
+    if (configured == 'replace') {
+      return _ScenarioCatalogMode.replace;
+    }
+    throw StateError(
+      '$kEvalScenarioCatalogModeEnv must be "append" or "replace"; '
+      'got "$configured".',
+    );
+  }
+
+  static List<String>? _scenarioIds(
+    Map<String, String> environment,
+    String dartDefineScenarioIds,
+  ) {
+    final fromDefine = dartDefineScenarioIds.trim();
+    final configured = fromDefine.isNotEmpty
+        ? fromDefine
+        : (environment[kEvalScenarioIdsEnv]?.trim() ?? '');
+    if (configured.isEmpty) return null;
+    return _parseCsvSelection(configured, label: kEvalScenarioIdsEnv);
+  }
+
+  static List<String> _parseCsvSelection(
+    String value, {
+    required String label,
+  }) {
+    final selected = value.split(',').map((entry) => entry.trim()).toList();
+    if (selected.any((entry) => entry.isEmpty)) {
+      throw StateError('$label must not contain empty entries.');
+    }
+    final seen = <String>{};
+    for (final entry in selected) {
+      if (!seen.add(entry)) {
+        throw StateError('$label contains duplicate entry: $entry');
+      }
+    }
+    return List.unmodifiable(selected);
+  }
+
+  static List<EvalScenario> _selectScenarios({
+    required List<EvalScenario> publicScenarios,
+    required List<EvalScenario> externalScenarios,
+    required List<String>? requestedScenarioIds,
+  }) {
+    final selected = _selectScenarioParts(
+      publicScenarios: publicScenarios,
+      externalScenarios: externalScenarios,
+      requestedScenarioIds: requestedScenarioIds,
+    );
+    return List<EvalScenario>.unmodifiable([
+      ...selected.publicScenarios,
+      ...selected.externalScenarios,
+    ]);
+  }
+
+  static ({
+    List<EvalScenario> scenarios,
+    List<EvalScenario> publicScenarios,
+    List<EvalScenario> externalScenarios,
+  })
+  _selectScenarioParts({
+    required List<EvalScenario> publicScenarios,
+    required List<EvalScenario> externalScenarios,
+    required List<String>? requestedScenarioIds,
+  }) {
+    if (requestedScenarioIds == null) {
+      return (
+        scenarios: List<EvalScenario>.unmodifiable([
+          ...publicScenarios,
+          ...externalScenarios,
+        ]),
+        publicScenarios: List<EvalScenario>.unmodifiable(publicScenarios),
+        externalScenarios: List<EvalScenario>.unmodifiable(externalScenarios),
+      );
+    }
+
+    final publicById = {
+      for (final scenario in publicScenarios) scenario.id: scenario,
+    };
+    final externalById = {
+      for (final scenario in externalScenarios) scenario.id: scenario,
+    };
+    final allIds = {...publicById.keys, ...externalById.keys};
+    final missing = [
+      for (final id in requestedScenarioIds)
+        if (!allIds.contains(id)) id,
+    ];
+    if (missing.isNotEmpty) {
+      throw StateError(
+        'Unknown eval scenario id(s): ${missing.join(', ')}. '
+        'Available scenario ids: ${_sortedList(allIds).join(', ')}',
+      );
+    }
+
+    return (
+      scenarios: List<EvalScenario>.unmodifiable([
+        for (final id in requestedScenarioIds)
+          publicById[id] ?? externalById[id]!,
+      ]),
+      publicScenarios: [
+        for (final id in requestedScenarioIds)
+          if (publicById[id] case final EvalScenario scenario) scenario,
+      ],
+      externalScenarios: [
+        for (final id in requestedScenarioIds)
+          if (externalById[id] case final EvalScenario scenario) scenario,
+      ],
+    );
+  }
+
+  static String _sourceDescription(
+    String source,
+    List<String>? requestedScenarioIds,
+  ) {
+    if (requestedScenarioIds == null) return source;
+    return '$source filtered to ${requestedScenarioIds.join(', ')}';
+  }
+
+  static List<String> _sortedList(Iterable<String> values) =>
+      values.toList()..sort();
 
   static _ExternalScenarioEnvelope _loadExternal(String path) {
     final file = File(path);
@@ -143,6 +317,8 @@ abstract final class EvalScenarioCatalogLoader {
     return envelope;
   }
 }
+
+enum _ScenarioCatalogMode { append, replace }
 
 class _ExternalScenarioEnvelope {
   const _ExternalScenarioEnvelope({

@@ -16,6 +16,20 @@ void main() {
     expect(catalog.profiles, kDefaultProfiles);
   });
 
+  test('filters built-in profiles by requested names', () {
+    final catalog = EvalProfileCatalogLoader.fromEnvironment(
+      const {},
+      dartDefineProfileNames: 'frontier-gemini,local-small',
+    );
+
+    expect(catalog.usesExternalProfiles, isFalse);
+    expect(
+      catalog.sourceLabel,
+      'built-in default profiles filtered to frontier-gemini, local-small',
+    );
+    expect(catalog.profiles, [kFrontierProfile, kLocalSmallProfile]);
+  });
+
   test('loads profiles from an object catalog file', () async {
     final tempDir = await Directory.systemTemp.createTemp(
       'lotti-eval-profiles-',
@@ -61,6 +75,44 @@ void main() {
       'local-qwen-reasoning',
     ]);
     expect(catalog.profiles.first.trialCount, 2);
+  });
+
+  test('filters external profiles by requested names', () async {
+    final tempDir = await Directory.systemTemp.createTemp(
+      'lotti-eval-profiles-filtered-',
+    );
+    addTearDown(() async {
+      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+    });
+    final file = File('${tempDir.path}/profiles.json');
+    await file.writeAsString(
+      jsonEncode({
+        'profiles': [
+          kFrontierFastProfile.toJson(),
+          kFrontierProfile.toJson(),
+          kLocalSmallProfile.toJson(),
+        ],
+      }),
+    );
+
+    final catalog = EvalProfileCatalogLoader.fromEnvironment(
+      {kEvalProfilesPathEnv: file.path},
+      dartDefineProfileNames: 'local-small,frontier-fast',
+    );
+
+    expect(catalog.usesExternalProfiles, isTrue);
+    expect(
+      catalog.sourceLabel,
+      '${file.path} filtered to local-small, frontier-fast',
+    );
+    expect(catalog.profiles.map((profile) => profile.name), [
+      'local-small',
+      'frontier-fast',
+    ]);
+    expect(catalog.profiles.map((profile) => profile.modelClass), [
+      EvalModelClass.localSmall,
+      EvalModelClass.frontierFast,
+    ]);
   });
 
   test('loads profiles from inline JSON', () {
@@ -112,6 +164,56 @@ void main() {
           (error) => error.message,
           'message',
           contains('inconsistent isLocal/modelClass'),
+        ),
+      ),
+    );
+  });
+
+  test('validates profile selector configuration', () {
+    expect(
+      () => EvalProfileCatalogLoader.fromEnvironment(
+        const {},
+        dartDefineProfileNames: 'frontier-gemini,missing-profile',
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          allOf(
+            contains('Unknown eval profile name(s): missing-profile'),
+            contains(
+              'Available profile names: frontier-fast, frontier-gemini, '
+              'local-ollama, local-small',
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(
+      () => EvalProfileCatalogLoader.fromEnvironment(
+        const {},
+        dartDefineProfileNames: 'frontier-gemini,frontier-gemini',
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains(
+            'EVAL_PROFILE_NAMES contains duplicate entry: frontier-gemini',
+          ),
+        ),
+      ),
+    );
+    expect(
+      () => EvalProfileCatalogLoader.fromEnvironment(
+        const {},
+        dartDefineProfileNames: 'frontier-gemini,',
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('EVAL_PROFILE_NAMES must not contain empty entries'),
         ),
       ),
     );

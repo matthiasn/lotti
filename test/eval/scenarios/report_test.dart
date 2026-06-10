@@ -40,7 +40,12 @@ const _protectedTraceAck = String.fromEnvironment(
 const _scenarioCatalogPath = String.fromEnvironment(
   kEvalScenarioCatalogPathEnv,
 );
+const _scenarioCatalogMode = String.fromEnvironment(
+  kEvalScenarioCatalogModeEnv,
+);
+const _scenarioIds = String.fromEnvironment(kEvalScenarioIdsEnv);
 const _profileCatalogValue = String.fromEnvironment(kEvalProfilesPathEnv);
+const _profileNames = String.fromEnvironment(kEvalProfileNamesEnv);
 const _runsRootPath = String.fromEnvironment('EVAL_RUNS_ROOT');
 
 void main() {
@@ -1060,6 +1065,8 @@ EvalScenarioCatalog _loadScenarioCatalog() {
   return EvalScenarioCatalogLoader.fromEnvironment(
     Platform.environment,
     dartDefinePath: _scenarioCatalogPathFromDefine(),
+    dartDefineMode: _scenarioCatalogModeFromDefine(),
+    dartDefineScenarioIds: _scenarioIdsFromDefine(),
   );
 }
 
@@ -1067,12 +1074,19 @@ List<EvalProfile> _loadProfiles() {
   return EvalProfileCatalogLoader.fromEnvironment(
     Platform.environment,
     dartDefineValue: _profileCatalogValueFromDefine(),
+    dartDefineProfileNames: _profileNamesFromDefine(),
   ).profiles;
 }
 
 String _scenarioCatalogPathFromDefine() => _scenarioCatalogPath;
 
+String _scenarioCatalogModeFromDefine() => _scenarioCatalogMode;
+
+String _scenarioIdsFromDefine() => _scenarioIds;
+
 String _profileCatalogValueFromDefine() => _profileCatalogValue;
+
+String _profileNamesFromDefine() => _profileNames;
 
 bool _hasExternalScenarioCatalog() {
   return _scenarioCatalogPathValue() != null;

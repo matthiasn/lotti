@@ -21,6 +21,29 @@ void main() {
     );
   });
 
+  test('filters public scenarios by requested ids', () {
+    final catalog = EvalScenarioCatalogLoader.fromEnvironment(
+      const {},
+      dartDefineScenarioIds:
+          '${plannerMorningCapacityScenario.id},${taskReleaseNotesScenario.id}',
+    );
+
+    expect(catalog.scenarios.map((scenario) => scenario.id), [
+      plannerMorningCapacityScenario.id,
+      taskReleaseNotesScenario.id,
+    ]);
+    expect(catalog.evidence.publicScenarioCount, 2);
+    expect(catalog.evidence.externalScenarioCount, 0);
+    expect(
+      catalog.evidence.scenarioSetDigest,
+      EvalProvenance.scenarioSetDigest(catalog.scenarios),
+    );
+    expect(
+      catalog.sourceDescription,
+      'public catalog filtered to planner_morning_capacity, task_release_notes',
+    );
+  });
+
   test('loads protected external holdout scenarios from dart define path', () {
     final file = _writeCatalog(
       {
@@ -55,6 +78,59 @@ void main() {
     );
   });
 
+  test('filters appended external catalogs and protected evidence', () {
+    final file = _writeCatalog(
+      {
+        'schemaVersion': 1,
+        'catalogId': 'private-production-replay-v1',
+        'protectedHoldout': true,
+        'scenarios': [
+          _scenarioJson(id: 'private_task_holdout_a'),
+          _scenarioJson(id: 'private_task_holdout_b'),
+        ],
+      },
+    );
+
+    final catalog = EvalScenarioCatalogLoader.fromEnvironment(
+      const {},
+      dartDefinePath: file.path,
+      dartDefineScenarioIds: 'private_task_holdout_b,task_release_notes',
+    );
+
+    expect(catalog.scenarios.map((scenario) => scenario.id), [
+      'private_task_holdout_b',
+      'task_release_notes',
+    ]);
+    expect(catalog.evidence.publicScenarioCount, 1);
+    expect(catalog.evidence.externalScenarioCount, 1);
+    expect(catalog.evidence.externalCatalogId, 'private-production-replay-v1');
+    expect(catalog.evidence.protectedScenarioIds, ['private_task_holdout_b']);
+    expect(
+      catalog.evidence.protectedHoldoutScenarioIds,
+      ['private_task_holdout_b'],
+    );
+    expect(catalog.protectedHoldoutEvidence, isTrue);
+  });
+
+  test('replace mode runs only external scenarios', () {
+    final file = _writeCatalog([
+      _scenarioJson(id: 'replacement_task_holdout'),
+    ]);
+
+    final catalog = EvalScenarioCatalogLoader.fromEnvironment(
+      const {},
+      dartDefinePath: file.path,
+      dartDefineMode: 'replace',
+    );
+
+    expect(catalog.scenarios.map((scenario) => scenario.id), [
+      'replacement_task_holdout',
+    ]);
+    expect(catalog.evidence.publicScenarioCount, 0);
+    expect(catalog.evidence.externalScenarioCount, 1);
+    expect(catalog.sourceDescription, 'scenarios.json');
+  });
+
   test(
     'loads plain scenario lists from environment path without protection',
     () {
@@ -70,6 +146,78 @@ void main() {
       expect(catalog.protectedHoldoutEvidence, isFalse);
     },
   );
+
+  test('validates scenario selector configuration', () {
+    expect(
+      () => EvalScenarioCatalogLoader.fromEnvironment(
+        const {},
+        dartDefineScenarioIds: 'task_release_notes,missing_scenario',
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          allOf(
+            contains('Unknown eval scenario id(s): missing_scenario'),
+            contains('Available scenario ids:'),
+          ),
+        ),
+      ),
+    );
+    expect(
+      () => EvalScenarioCatalogLoader.fromEnvironment(
+        const {},
+        dartDefineScenarioIds: 'task_release_notes,task_release_notes',
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains(
+            'EVAL_SCENARIO_IDS contains duplicate entry: task_release_notes',
+          ),
+        ),
+      ),
+    );
+    expect(
+      () => EvalScenarioCatalogLoader.fromEnvironment(
+        const {},
+        dartDefineScenarioIds: 'task_release_notes,',
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('EVAL_SCENARIO_IDS must not contain empty entries'),
+        ),
+      ),
+    );
+    expect(
+      () => EvalScenarioCatalogLoader.fromEnvironment(
+        const {},
+        dartDefineMode: 'replace',
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('EVAL_SCENARIOS_MODE=replace requires EVAL_SCENARIOS'),
+        ),
+      ),
+    );
+    expect(
+      () => EvalScenarioCatalogLoader.fromEnvironment(
+        const {kEvalScenarioCatalogModeEnv: 'overwrite'},
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('EVAL_SCENARIOS_MODE must be "append" or "replace"'),
+        ),
+      ),
+    );
+  });
 
   test('rejects protected catalogs without holdout scenarios', () {
     final scenario = _scenarioJson(id: 'not_a_holdout');

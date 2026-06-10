@@ -12,6 +12,7 @@ import 'eval_profile_config.dart';
 import 'profiles.dart';
 
 const kEvalProfilesPathEnv = 'EVAL_PROFILES';
+const kEvalProfileNamesEnv = 'EVAL_PROFILE_NAMES';
 
 class EvalProfileCatalog {
   EvalProfileCatalog({
@@ -29,31 +30,54 @@ abstract final class EvalProfileCatalogLoader {
   static EvalProfileCatalog fromEnvironment(
     Map<String, String> environment, {
     String dartDefineValue = '',
+    String dartDefineProfileNames = '',
   }) {
+    final requestedProfileNames = _profileNames(
+      environment,
+      dartDefineProfileNames,
+    );
     final configured = dartDefineValue.trim().isNotEmpty
         ? dartDefineValue.trim()
         : (environment[kEvalProfilesPathEnv]?.trim() ?? '');
     if (configured.isEmpty) {
+      final profiles = _selectProfiles(
+        kDefaultProfiles,
+        requestedProfileNames,
+      );
       return EvalProfileCatalog(
-        profiles: kDefaultProfiles,
-        sourceLabel: 'built-in default profiles',
+        profiles: profiles,
+        sourceLabel: _sourceLabel(
+          'built-in default profiles',
+          requestedProfileNames,
+        ),
         usesExternalProfiles: false,
       );
     }
-    return fromJsonSource(configured);
+    return fromJsonSource(
+      configured,
+      requestedProfileNames: requestedProfileNames,
+    );
   }
 
-  static EvalProfileCatalog fromJsonSource(String source) {
+  static EvalProfileCatalog fromJsonSource(
+    String source, {
+    List<String>? requestedProfileNames,
+  }) {
     final trimmed = source.trim();
     final rawJson = _looksLikeJson(trimmed)
         ? trimmed
         : _readProfileFile(File(trimmed));
     final decoded = jsonDecode(rawJson);
-    final profiles = _profilesFromDecodedJson(decoded);
+    final allProfiles = _profilesFromDecodedJson(decoded);
+    validateEvalProfiles(allProfiles);
+    final profiles = _selectProfiles(allProfiles, requestedProfileNames);
     validateEvalProfiles(profiles);
+    final baseSourceLabel = _looksLikeJson(trimmed)
+        ? 'inline JSON'
+        : File(trimmed).path;
     return EvalProfileCatalog(
       profiles: profiles,
-      sourceLabel: _looksLikeJson(trimmed) ? 'inline JSON' : File(trimmed).path,
+      sourceLabel: _sourceLabel(baseSourceLabel, requestedProfileNames),
       usesExternalProfiles: true,
     );
   }
@@ -86,6 +110,68 @@ abstract final class EvalProfileCatalogLoader {
       throw StateError('Invalid eval profile catalog: $error');
     }
   }
+
+  static List<String>? _profileNames(
+    Map<String, String> environment,
+    String dartDefineProfileNames,
+  ) {
+    final fromDefine = dartDefineProfileNames.trim();
+    final configured = fromDefine.isNotEmpty
+        ? fromDefine
+        : (environment[kEvalProfileNamesEnv]?.trim() ?? '');
+    if (configured.isEmpty) return null;
+    return _parseCsvSelection(configured, label: kEvalProfileNamesEnv);
+  }
+
+  static List<String> _parseCsvSelection(
+    String value, {
+    required String label,
+  }) {
+    final selected = value.split(',').map((entry) => entry.trim()).toList();
+    if (selected.any((entry) => entry.isEmpty)) {
+      throw StateError('$label must not contain empty entries.');
+    }
+    final seen = <String>{};
+    for (final entry in selected) {
+      if (!seen.add(entry)) {
+        throw StateError('$label contains duplicate entry: $entry');
+      }
+    }
+    return List.unmodifiable(selected);
+  }
+
+  static List<EvalProfile> _selectProfiles(
+    List<EvalProfile> profiles,
+    List<String>? requestedProfileNames,
+  ) {
+    if (requestedProfileNames == null) {
+      return List<EvalProfile>.unmodifiable(profiles);
+    }
+    final byName = {
+      for (final profile in profiles) profile.name: profile,
+    };
+    final missing = [
+      for (final name in requestedProfileNames)
+        if (!byName.containsKey(name)) name,
+    ];
+    if (missing.isNotEmpty) {
+      throw StateError(
+        'Unknown eval profile name(s): ${missing.join(', ')}. '
+        'Available profile names: ${_sortedList(byName.keys).join(', ')}',
+      );
+    }
+    return List<EvalProfile>.unmodifiable([
+      for (final name in requestedProfileNames) byName[name]!,
+    ]);
+  }
+
+  static String _sourceLabel(String source, List<String>? names) {
+    if (names == null) return source;
+    return '$source filtered to ${names.join(', ')}';
+  }
+
+  static List<String> _sortedList(Iterable<String> values) =>
+      values.toList()..sort();
 }
 
 void validateEvalProfiles(List<EvalProfile> profiles) {

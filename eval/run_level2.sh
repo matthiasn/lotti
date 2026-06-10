@@ -26,6 +26,8 @@
 #   EVAL_PROMOTION_CANDIDATE_PROFILE=frontier-gemini EVAL_PROMOTION_BASELINE_PROFILE=frontier-fast EVAL_CALIBRATION=/private/tmp/judge_gold_v1.json eval/run_level2.sh report [runId]
 #   EVAL_SCENARIOS=/private/path/scenarios.json EVAL_RUNS_ROOT=/private/tmp/lotti-eval-runs eval/run_level2.sh run [runId]
 #   EVAL_PROFILES=/private/path/profiles.json eval/run_level2.sh run [runId]
+#   EVAL_SCENARIO_IDS=task_workflow_structured_update EVAL_PROFILE_NAMES=frontier-gemini eval/run_level2.sh run [runId]
+#   EVAL_SCENARIOS=/private/path/scenarios.json EVAL_SCENARIOS_MODE=replace eval/run_level2.sh catalog
 #   eval/run_level2.sh all [runId]
 #
 set -euo pipefail
@@ -81,7 +83,10 @@ CALIBRATION_TEMPLATE_VERSION="${EVAL_CALIBRATION_VERSION:-human-gold-v1}"
 CALIBRATION_TEMPLATE_OVERWRITE="${EVAL_CALIBRATION_TEMPLATE_OVERWRITE:-}"
 CALIBRATION_TEMPLATE_MAX_ROWS="${EVAL_CALIBRATION_TEMPLATE_MAX_ROWS:-}"
 SCENARIO_CATALOG_PATH="${EVAL_SCENARIOS:-}"
+SCENARIO_CATALOG_MODE="${EVAL_SCENARIOS_MODE:-}"
+SCENARIO_IDS="${EVAL_SCENARIO_IDS:-}"
 PROFILE_CATALOG_PATH="${EVAL_PROFILES:-}"
+PROFILE_NAMES="${EVAL_PROFILE_NAMES:-}"
 PROTECTED_TRACE_ACK="${LOTTI_EVAL_PROTECTED_TRACE_ACK:-}"
 PROMOTION_CANDIDATE_PROFILE="${EVAL_PROMOTION_CANDIDATE_PROFILE:-}"
 PROMOTION_BASELINE_PROFILE="${EVAL_PROMOTION_BASELINE_PROFILE:-}"
@@ -93,8 +98,17 @@ DART_DEFINES=(
 if [[ -n "$SCENARIO_CATALOG_PATH" ]]; then
   DART_DEFINES+=("--dart-define=EVAL_SCENARIOS=${SCENARIO_CATALOG_PATH}")
 fi
+if [[ -n "$SCENARIO_CATALOG_MODE" ]]; then
+  DART_DEFINES+=("--dart-define=EVAL_SCENARIOS_MODE=${SCENARIO_CATALOG_MODE}")
+fi
+if [[ -n "$SCENARIO_IDS" ]]; then
+  DART_DEFINES+=("--dart-define=EVAL_SCENARIO_IDS=${SCENARIO_IDS}")
+fi
 if [[ -n "$PROFILE_CATALOG_PATH" ]]; then
   DART_DEFINES+=("--dart-define=EVAL_PROFILES=${PROFILE_CATALOG_PATH}")
+fi
+if [[ -n "$PROFILE_NAMES" ]]; then
+  DART_DEFINES+=("--dart-define=EVAL_PROFILE_NAMES=${PROFILE_NAMES}")
 fi
 if [[ -n "$PROTECTED_TRACE_ACK" ]]; then
   DART_DEFINES+=(
@@ -113,13 +127,22 @@ else
 fi
 if [[ -n "$SCENARIO_CATALOG_PATH" ]]; then
   echo "    scenario catalog: ${SCENARIO_CATALOG_PATH}"
+  if [[ -n "$SCENARIO_CATALOG_MODE" ]]; then
+    echo "    scenario catalog mode: ${SCENARIO_CATALOG_MODE}"
+  fi
   if [[ "$PROTECTED_TRACE_ACK" != "1" ]]; then
     echo "    protected trace guard: run roots inside the repo require either" \
       "EVAL_RUNS_ROOT outside the repo or LOTTI_EVAL_PROTECTED_TRACE_ACK=1" >&2
   fi
 fi
+if [[ -n "$SCENARIO_IDS" ]]; then
+  echo "    scenario ids: ${SCENARIO_IDS}"
+fi
 if [[ -n "$PROFILE_CATALOG_PATH" ]]; then
   echo "    profile catalog: ${PROFILE_CATALOG_PATH}"
+fi
+if [[ -n "$PROFILE_NAMES" ]]; then
+  echo "    profile names: ${PROFILE_NAMES}"
 fi
 if [[ -n "$PROMOTION_CANDIDATE_PROFILE" || -n "$PROMOTION_BASELINE_PROFILE" ]]; then
   if [[ -z "$PROMOTION_CANDIDATE_PROFILE" || -z "$PROMOTION_BASELINE_PROFILE" ]]; then

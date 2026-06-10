@@ -226,7 +226,11 @@ abstract final class EvalProvenance {
     'CI',
     'EVAL_RUN',
     'EVAL_PROMOTION_PLAN',
+    'EVAL_PROFILES',
     'EVAL_SCENARIOS',
+    'EVAL_SCENARIOS_MODE',
+    'EVAL_SCENARIO_IDS',
+    'EVAL_PROFILE_NAMES',
     'LOTTI_EVAL_ALLOW_CI',
     'LOTTI_EVAL_LIVE',
     'LOTTI_EVAL_LOCAL_MODEL',
@@ -284,7 +288,9 @@ abstract final class EvalProvenance {
       (match) => '${match.group(1)}<redacted>',
     );
     return secretRedacted.replaceAllMapped(
-      RegExp(r'((?:EVAL_SCENARIOS|EVAL_PROMOTION_PLAN)=)([^\s]+)'),
+      RegExp(
+        r'((?:EVAL_SCENARIOS|EVAL_PROFILES|EVAL_PROMOTION_PLAN)=)([^\s]+)',
+      ),
       (match) => '${match.group(1)}<redacted>',
     );
   }
