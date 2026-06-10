@@ -4,18 +4,21 @@
 // scenario is graded by every target so Level 1 (scripted) and Level 2 (live)
 // can never drift apart.
 //
-// Phase 0 ships `FixtureEvalTarget` (returns a pre-baked output) so the example
+// Phase 0 shipped `FixtureEvalTarget` (returns a pre-baked output) so the example
 // test can exercise the full scenario -> output -> assertions -> trace pipeline
-// with no live dependencies. The two real targets land later:
+// with no live dependencies. The real targets are:
 //
 //   ScriptedEvalTarget (Phase 1)
 //     Seeds the agent/journal DB from the scenario using the existing factories
-//     (makeTestCapture / makeTestDayPlan / makeTestState / journal Task inserts),
+//     (CaptureEntity / ParsedItemEntity / DayPlanEntity / makeTestState /
+//     journal Task inserts),
+//     seeds production-style AiConfig profile/model/provider rows from
+//     EvalProfile,
 //     runs the real `*.execute(...)` with a `ConversationRepository` subclass
 //     whose tool calls are scripted (generalising `_ConversationHarness`), and
 //     maps the persisted entities (DayPlanEntity.plannedBlocks, ChangeSetEntity,
-//     AgentReportEntity, observations, WakeTokenUsageEntity) into AgentRunOutput.
-//     Deterministic, free, CI-safe.
+//     AgentReportEntity, observations, WakeTokenUsageEntity) plus resolved
+//     model provenance into AgentRunOutput. Deterministic, free, CI-safe.
 //
 //   LiveEvalTarget (Phase 2)
 //     Identical seeding, but the workflow's ConversationRepository is the real
@@ -25,17 +28,64 @@
 //     Gated behind LOTTI_EVAL_LIVE=1 + credentials.
 
 import 'eval_models.dart';
+import 'eval_profile_config.dart';
+
+/// Identifies one concrete scenario/profile/trial execution cell.
+///
+/// Direct unit calls use [direct]; matrix runs always pass the real run
+/// context so targets can choose distinct run keys, thread IDs, caches, or
+/// random seeds per trial.
+class EvalTargetRunContext {
+  const EvalTargetRunContext({
+    required this.runId,
+    required this.scenarioId,
+    required this.profileName,
+    required this.trialIndex,
+  });
+
+  static const direct = EvalTargetRunContext(
+    runId: 'direct',
+    scenarioId: 'direct',
+    profileName: 'direct',
+    trialIndex: 0,
+  );
+
+  final String runId;
+  final String scenarioId;
+  final String profileName;
+  final int trialIndex;
+
+  String get cellId => '$runId::$scenarioId::$profileName::$trialIndex';
+}
 
 /// Runs one scenario under one profile and returns the normalised output.
 abstract class EvalTarget {
   String get profileName;
 
-  Future<AgentRunOutput> run(EvalScenario scenario, EvalProfile profile);
+  String get targetKind => runtimeType.toString();
+
+  List<EvalProfileExecutionBinding> profileExecutionBindings(
+    List<EvalProfile> profiles,
+  ) => [
+    for (final profile in profiles)
+      evalProfileConfig(profile).toExecutionBinding(),
+  ];
+
+  Future<AgentRunOutput> run(
+    EvalScenario scenario,
+    EvalProfile profile, {
+    EvalTargetRunContext context = EvalTargetRunContext.direct,
+  });
 }
+
+List<EvalProfileExecutionBinding> profileExecutionBindingsForTarget(
+  EvalTarget target,
+  List<EvalProfile> profiles,
+) => target.profileExecutionBindings(profiles);
 
 /// Returns a pre-baked output per scenario id. Used by the example test and as
 /// a stand-in until `ScriptedEvalTarget` lands.
-class FixtureEvalTarget implements EvalTarget {
+class FixtureEvalTarget extends EvalTarget {
   FixtureEvalTarget(this._outputs, {this.profileName = 'fixture'});
 
   /// Convenience for a single scenario.
@@ -54,7 +104,14 @@ class FixtureEvalTarget implements EvalTarget {
   final String profileName;
 
   @override
-  Future<AgentRunOutput> run(EvalScenario scenario, EvalProfile profile) async {
+  String get targetKind => 'fixture';
+
+  @override
+  Future<AgentRunOutput> run(
+    EvalScenario scenario,
+    EvalProfile profile, {
+    EvalTargetRunContext context = EvalTargetRunContext.direct,
+  }) async {
     final output = _outputs[scenario.id];
     if (output == null) {
       throw StateError('No fixture output registered for "${scenario.id}"');

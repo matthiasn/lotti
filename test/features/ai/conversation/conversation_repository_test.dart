@@ -19,6 +19,15 @@ class FakeChatCompletionMessageToolCall extends Fake
 
 class FakeConversationManager extends Fake implements ConversationManager {}
 
+class _RequestObservingConversationRepository extends ConversationRepository {
+  final requests = <ConversationProviderRequest>[];
+
+  @override
+  void observeProviderRequest(ConversationProviderRequest request) {
+    requests.add(request);
+  }
+}
+
 /// Shared 8-argument stub for `generateTextWithMessages`;
 /// chain `.thenAnswer(...)` with the stream (or function) the test needs.
 When<Stream<CreateChatCompletionStreamResponse>> _stubGenerateText(
@@ -1603,6 +1612,143 @@ void main() {
           // 80 + 120 = 200 input, 20 + 30 = 50 output
           expect(usage!.inputTokens, 200);
           expect(usage.outputTokens, 50);
+        },
+      );
+
+      test(
+        'observes every provider request in a multi-turn conversation',
+        () async {
+          final observingRepository = _RequestObservingConversationRepository();
+          final observedConversationId = observingRepository.createConversation(
+            systemMessage: 'System instructions',
+          );
+          var callCount = 0;
+
+          _stubGenerateText(mockOllamaRepo).thenAnswer((_) {
+            callCount++;
+            if (callCount == 1) {
+              return Stream.fromIterable([
+                const CreateChatCompletionStreamResponse(
+                  id: 'resp-1',
+                  choices: [
+                    ChatCompletionStreamResponseChoice(
+                      index: 0,
+                      delta: ChatCompletionStreamResponseDelta(
+                        toolCalls: [
+                          ChatCompletionStreamMessageToolCallChunk(
+                            index: 0,
+                            id: 'tool-1',
+                            type: ChatCompletionStreamMessageToolCallChunkType
+                                .function,
+                            function: ChatCompletionStreamMessageFunctionCall(
+                              name: 'test_function',
+                              arguments: '{}',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  object: 'chat.completion.chunk',
+                  created: 1700000000,
+                ),
+              ]);
+            }
+            return Stream.fromIterable([
+              const CreateChatCompletionStreamResponse(
+                id: 'resp-2',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(content: 'Done'),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1700000000,
+              ),
+            ]);
+          });
+
+          when(
+            () => mockStrategy.processToolCalls(
+              toolCalls: any(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            ),
+          ).thenAnswer((_) async => ConversationAction.continueConversation);
+          when(
+            () => mockStrategy.getContinuationPrompt(any()),
+          ).thenReturn('Continue');
+
+          await observingRepository.sendMessage(
+            conversationId: observedConversationId,
+            message: 'Multi-turn',
+            model: 'test-model',
+            provider: provider.copyWith(apiKey: 'secret-key'),
+            inferenceRepo: mockOllamaRepo,
+            strategy: mockStrategy,
+            tools: [
+              const ChatCompletionTool(
+                type: ChatCompletionToolType.function,
+                function: FunctionObject(
+                  name: 'test_function',
+                  description: 'A test function',
+                ),
+              ),
+            ],
+          );
+
+          expect(observingRepository.requests, hasLength(2));
+          expect(
+            observingRepository.requests.map((request) => request.requestIndex),
+            [0, 1],
+          );
+          expect(
+            observingRepository.requests.map((request) => request.turnIndex),
+            [1, 2],
+          );
+          expect(
+            observingRepository.requests.map((request) => request.providerId),
+            ['test-provider', 'test-provider'],
+          );
+          expect(
+            observingRepository.requests.map((request) => request.providerType),
+            ['ollama', 'ollama'],
+          );
+          expect(
+            observingRepository.requests.map(
+              (request) => request.providerModelId,
+            ),
+            ['test-model', 'test-model'],
+          );
+          expect(
+            observingRepository.requests.map((request) => request.toolNames),
+            [
+              ['test_function'],
+              ['test_function'],
+            ],
+          );
+          expect(observingRepository.requests.first.messageCount, 2);
+          expect(observingRepository.requests.last.messageCount, 4);
+          expect(
+            observingRepository.requests.every(
+              (request) => request.messageDigest.startsWith('sha256:'),
+            ),
+            isTrue,
+          );
+          expect(
+            observingRepository.requests.every(
+              (request) => request.toolSchemaDigest.startsWith('sha256:'),
+            ),
+            isTrue,
+          );
+          expect(
+            observingRepository.requests.toString(),
+            isNot(contains('secret-key')),
+          );
+          expect(
+            observingRepository.requests.toString(),
+            isNot(contains('Multi-turn')),
+          );
         },
       );
 

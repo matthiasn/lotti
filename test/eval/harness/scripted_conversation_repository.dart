@@ -14,8 +14,14 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+import 'eval_endpoint_identity.dart';
+import 'eval_models.dart';
+import 'eval_provenance.dart';
+import 'observing_conversation_repository.dart';
+
 /// A [ConversationRepository] whose responses are scripted ahead of time.
-class ScriptedConversationRepository extends ConversationRepository {
+class ScriptedConversationRepository extends ConversationRepository
+    implements EvalConversationObserver {
   final Map<String, ConversationManager> _managers =
       <String, ConversationManager>{};
 
@@ -40,10 +46,29 @@ class ScriptedConversationRepository extends ConversationRepository {
 
   int createdConversationCount = 0;
   int deletedConversationCount = 0;
+  @override
   int sendMessageCount = 0;
+  @override
   String? lastSystemMessage;
+  @override
   String? lastUserMessage;
+  @override
+  String? lastModel;
+  @override
+  AiConfigInferenceProvider? lastProvider;
+  double? lastTemperature;
+  @override
   List<ChatCompletionTool> lastTools = const [];
+  final List<ModelInvocationRecord> _modelInvocations =
+      <ModelInvocationRecord>[];
+
+  @override
+  List<ModelInvocationRecord> get modelInvocations =>
+      List.unmodifiable(_modelInvocations);
+
+  @override
+  List<ProviderRequestRecord> get providerRequests =>
+      const <ProviderRequestRecord>[];
 
   @override
   String createConversation({String? systemMessage, int maxTurns = 20}) {
@@ -75,9 +100,29 @@ class ScriptedConversationRepository extends ConversationRepository {
     if (thrown != null) throw thrown;
 
     lastUserMessage = message;
+    lastModel = model;
+    lastProvider = provider;
+    lastTemperature = temperature;
     lastTools = tools ?? const [];
     final invocationIndex = sendMessageCount;
     sendMessageCount++;
+    _modelInvocations.add(
+      ModelInvocationRecord(
+        invocationIndex: invocationIndex,
+        providerModelId: model,
+        providerId: provider.id,
+        providerType: provider.inferenceProviderType.name,
+        providerEndpointOrigin: evalProviderEndpointOrigin(provider.baseUrl),
+        providerBaseUrlDigest: evalProviderBaseUrlDigest(provider.baseUrl),
+        runtimePrompt: EvalProvenance.runtimePrompt(
+          systemMessage: lastSystemMessage,
+          userMessage: message,
+          tools: tools ?? const [],
+        ),
+        toolNames: _toolNames(tools ?? const []),
+        forcedToolName: _forcedToolName(toolChoice),
+      ),
+    );
 
     final manager = _managers[conversationId]!..addUserMessage(message);
     final selected = invocationIndex < toolCallsByInvocation.length
@@ -101,4 +146,14 @@ class ScriptedConversationRepository extends ConversationRepository {
     deletedConversationCount++;
     _managers.remove(conversationId)?.dispose();
   }
+}
+
+List<String> _toolNames(List<ChatCompletionTool> tools) =>
+    tools.map((tool) => tool.function.name).toList();
+
+String? _forcedToolName(ChatCompletionToolChoiceOption? toolChoice) {
+  return toolChoice?.map(
+    mode: (_) => null,
+    tool: (choice) => choice.value.function.name,
+  );
 }

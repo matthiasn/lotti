@@ -11,7 +11,7 @@ import 'task_agent_eval_bench.dart';
 
 /// Runs an eval scenario through the real workflow benches with scripted model
 /// behaviour.
-class ScriptedEvalTarget implements EvalTarget {
+class ScriptedEvalTarget extends EvalTarget {
   /// Creates a target that resolves scripted model behaviour per scenario.
   ScriptedEvalTarget(this.behaviorFor, {this.profileName = 'scripted'});
 
@@ -82,14 +82,28 @@ class ScriptedEvalTarget implements EvalTarget {
   final String profileName;
 
   @override
-  Future<AgentRunOutput> run(EvalScenario scenario, EvalProfile profile) async {
+  String get targetKind => 'scripted';
+
+  @override
+  Future<AgentRunOutput> run(
+    EvalScenario scenario,
+    EvalProfile profile, {
+    EvalTargetRunContext context = EvalTargetRunContext.direct,
+  }) async {
     final behavior = behaviorFor(scenario, profile);
     return switch (scenario.agentKind) {
-      AgentKind.planningAgent => PlannerEvalBench.runDraftingWake(
+      AgentKind.planningAgent => PlannerEvalBench.runWake(
         scenario,
+        profile,
         behavior,
+        context: context,
       ),
-      AgentKind.taskAgent => TaskAgentEvalBench.runWake(scenario, behavior),
+      AgentKind.taskAgent => TaskAgentEvalBench.runWake(
+        scenario,
+        profile,
+        behavior,
+        context: context,
+      ),
     };
   }
 }

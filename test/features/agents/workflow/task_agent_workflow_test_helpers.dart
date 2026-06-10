@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -195,11 +196,11 @@ void stubFullExecutePath({
 /// the 12-parameter constructor in every test that needs a custom repo.
 TaskAgentWorkflow createTestWorkflow({
   required MockAgentRepository agentRepository,
-  required MockConversationRepository conversationRepository,
+  required ConversationRepository conversationRepository,
   required MockAiInputRepository aiInputRepository,
   required MockAiConfigRepository aiConfigRepository,
   required MockJournalDb journalDb,
-  required MockCloudInferenceRepository cloudInferenceRepository,
+  required CloudInferenceRepository cloudInferenceRepository,
   required MockJournalRepository journalRepository,
   required MockChecklistRepository checklistRepository,
   required MockLabelsRepository labelsRepository,

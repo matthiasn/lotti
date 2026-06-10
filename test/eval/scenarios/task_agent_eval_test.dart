@@ -114,4 +114,94 @@ void main() {
     );
     expect(named(checks, 'report_published').passed, isFalse);
   });
+
+  test('unknown task-agent tool names fail Level 1', () {
+    final output = goodOutput();
+    final checks = runLevel1(
+      scenario,
+      AgentRunOutput(
+        success: output.success,
+        usage: output.usage,
+        toolCalls: [
+          ...output.toolCalls,
+          const ToolCallRecord(name: 'delete_everything'),
+          const ToolCallRecord(name: 'update_task_estimate '),
+        ],
+        report: output.report,
+      ),
+      profile: kLocalOllamaProfile,
+    );
+
+    expect(named(checks, 'known_tools').passed, isFalse);
+    expect(named(checks, 'known_tools').detail, contains('delete_everything'));
+    expect(
+      named(checks, 'known_tools').detail,
+      contains('update_task_estimate '),
+    );
+  });
+
+  test('unknown durable proposal tool names fail Level 1', () {
+    final output = goodOutput();
+    final checks = runLevel1(
+      scenario,
+      AgentRunOutput(
+        success: output.success,
+        usage: output.usage,
+        toolCalls: output.toolCalls,
+        report: output.report,
+        proposals: const [
+          ProposalRecord(
+            changeSetId: 'cs-valid',
+            changeSetStatus: 'pending',
+            targetId: 'task-notes',
+            itemIndex: 0,
+            toolName: 'migrate_checklist_item',
+            args: {'checklistItemId': 'ci-1'},
+            humanSummary: 'Move checklist item',
+            status: 'pending',
+          ),
+          ProposalRecord(
+            changeSetId: 'cs-bad',
+            changeSetStatus: 'pending',
+            targetId: 'task-notes',
+            itemIndex: 1,
+            toolName: 'rewrite_history',
+            args: {},
+            humanSummary: 'Bad durable tool',
+            status: 'pending',
+          ),
+          ProposalRecord(
+            changeSetId: 'cs-batch',
+            changeSetStatus: 'pending',
+            targetId: 'task-notes',
+            itemIndex: 2,
+            toolName: 'add_multiple_checklist_items',
+            args: {
+              'items': [
+                {'title': 'Draft summary'},
+              ],
+            },
+            humanSummary: 'Raw batch tool leaked into durable output',
+            status: 'pending',
+          ),
+        ],
+      ),
+      profile: kLocalOllamaProfile,
+    );
+
+    expect(named(checks, 'known_tools').passed, isTrue);
+    expect(named(checks, 'known_proposal_tools').passed, isFalse);
+    expect(
+      named(checks, 'known_proposal_tools').detail,
+      contains('rewrite_history'),
+    );
+    expect(
+      named(checks, 'known_proposal_tools').detail,
+      contains('add_multiple_checklist_items'),
+    );
+    expect(
+      named(checks, 'known_proposal_tools').detail,
+      isNot(contains('migrate_checklist_item')),
+    );
+  });
 }

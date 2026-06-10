@@ -15,17 +15,23 @@ claude -p "Follow eval/grade_run.md to grade eval/runs/<runId>"
 
 …or, interactively, just say: *"Grade the latest eval run."*
 
+Protected production-replay runs may use `EVAL_RUNS_ROOT` outside the repo.
+Point Claude Code at that explicit directory instead of `eval/runs/<runId>`.
+Trace JSON contains the raw scenario payload and model output needed for
+judging; do not copy protected trace files into tickets, docs, prompts, or
+committed fixtures.
+
 ## Inputs
 
-- `eval/runs/<runId>/*.trace.json` — one `EvalTrace` per
+- `<runsRoot>/<runId>/*.trace.json` — one `EvalTrace` per
   `(scenario, profile, trialIndex)`, written by the Level 2 runner.
 - `eval/prompts/judge_system.md` — the judge persona + output contract.
 - `eval/prompts/rubric_task_agent.md` / `rubric_planning_agent.md` — anchors.
 
 ## Procedure
 
-1. List `eval/runs/<runId>/*.trace.json`. If `<runId>` is omitted, use the
-   latest timestamp-named subdirectory of `eval/runs/`.
+1. List `<runsRoot>/<runId>/*.trace.json`. If `<runId>` is omitted, use the
+   latest timestamp-named subdirectory of the configured runs root.
 2. Read `eval/prompts/judge_system.md` once. It defines the scoring and the exact
    output JSON contract.
 3. For **each** trace file:
@@ -47,7 +53,11 @@ claude -p "Follow eval/grade_run.md to grade eval/runs/<runId>"
       `morning_capacity__local-ollama.trace.json` →
       `morning_capacity__local-ollama.verdict.json`. The file content is exactly
       the `JudgeVerdict` JSON object from the contract (no surrounding prose),
-      including the computed `traceDigest`.
+      including `schemaVersion: 1`, the computed `traceDigest`, and a `judge`
+      block. Set `judge.promptDigest` to the trace's
+      `provenance.promptDigest`. Set `judge.calibrationSetVersion` to the
+      current human-labeled calibration set version; if no calibration set has
+      been run yet, write `"uncalibrated"` explicitly.
 4. After all traces are graded, run the reporter to print the summary:
 
    ```
@@ -55,6 +65,14 @@ claude -p "Follow eval/grade_run.md to grade eval/runs/<runId>"
    ```
 
    Omitting `<runId>` reports the latest timestamp-named run directory.
+5. If a human-label calibration set exists, render judge/human agreement:
+
+   ```
+   EVAL_CALIBRATION=eval/calibration/judge_gold_v1.json eval/run_level2.sh calibrate <runId>
+   ```
+
+   Calibration labels are trace-keyed, digest-bound, and non-secret; see
+   `eval/calibration/README.md`.
 
 ## Grading discipline
 
@@ -65,8 +83,17 @@ claude -p "Follow eval/grade_run.md to grade eval/runs/<runId>"
 - Be specific and skeptical. The point of the eval is to find real problems
   before users do, not to confirm the agent is fine.
 - Keep verdicts reproducible: the verdict file plus the trace file are the audit
-  record for that `(scenario, profile, trialIndex)` at that `runId`.
+  record for that `(scenario, profile, trialIndex)` at that `runId`. The verdict
+  must name the judge runner/model, prompt digest, judge calibration set version,
+  and whether profile/model identity was visible.
+- Keep exact provider/model identity hidden for blinded comparison exports when
+  possible. If the judge saw exact model identity, set
+  `judge.modelIdentityVisible: true`; calibration reports count those verdicts
+  so model-class comparisons can treat them as diagnostic rather than blinded.
+  The model-class tuning policy requires `judge.modelIdentityVisible: false`
+  verdicts before a run can be tuning-ready. Set that flag to `false` only when
+  you actually graded a blinded input that hid exact provider/model identity.
 - Do not rewrite trace files after grading. The reporter verifies exact matrix
   coverage, rejects embedded/orphan/stale verdicts, recomputes Level 1 checks,
-  validates the judge score/pass contract, and checks that every verdict's
-  `traceDigest` still matches its sibling trace.
+  validates the judge score/pass contract and judge provenance, and checks that
+  every verdict's `traceDigest` still matches its sibling trace.

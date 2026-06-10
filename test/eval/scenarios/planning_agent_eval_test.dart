@@ -93,6 +93,62 @@ void main() {
     expect(named(checks, 'known_categories').passed, isTrue);
   });
 
+  test('task-agent-only tool names fail planner Level 1', () {
+    final checks = runLevel1(
+      scenario,
+      AgentRunOutput(
+        success: true,
+        usage: const InferenceUsage(inputTokens: 3200, outputTokens: 480),
+        toolCalls: const [
+          ToolCallRecord(name: 'update_task_estimate'),
+          ToolCallRecord(name: 'draft_day_plan '),
+        ],
+        plannedBlocks: goodOutput().plannedBlocks,
+      ),
+      profile: kLocalOllamaProfile,
+    );
+
+    expect(named(checks, 'known_tools').passed, isFalse);
+    expect(
+      named(checks, 'known_tools').detail,
+      contains('update_task_estimate'),
+    );
+    expect(
+      named(checks, 'known_tools').detail,
+      contains('draft_day_plan '),
+    );
+  });
+
+  test('tool-result errors fail Level 1', () {
+    final checks = runLevel1(
+      scenario,
+      AgentRunOutput(
+        success: true,
+        usage: const InferenceUsage(inputTokens: 3200, outputTokens: 480),
+        toolCalls: const [ToolCallRecord(name: 'draft_day_plan')],
+        toolResults: const [
+          ToolResultRecord(
+            name: 'propose_plan_diff',
+            success: false,
+            error: '`to.end` must be after `to.start`',
+          ),
+        ],
+        plannedBlocks: goodOutput().plannedBlocks,
+      ),
+      profile: kLocalOllamaProfile,
+    );
+
+    expect(named(checks, 'tool_results_succeeded').passed, isFalse);
+    expect(
+      named(checks, 'tool_results_succeeded').detail,
+      contains('propose_plan_diff'),
+    );
+    expect(
+      named(checks, 'tool_results_succeeded').detail,
+      contains('to.end'),
+    );
+  });
+
   test(
     'bad plan fails exactly the capacity/overlap/category/ref checks',
     () async {
@@ -118,6 +174,36 @@ void main() {
     },
   );
 
+  test('capture-only parse must persist items for the submitted capture', () {
+    const wrongCaptureOutput = AgentRunOutput(
+      success: true,
+      usage: InferenceUsage(inputTokens: 900, outputTokens: 120),
+      toolCalls: [ToolCallRecord(name: 'parse_capture_to_items')],
+      parsedCaptureItems: [
+        ParsedCaptureItemRecord(
+          id: 'parsed-wrong',
+          captureId: 'other-capture',
+          kind: 'newTask',
+          title: 'Unrelated parsed item',
+          categoryId: 'cat-work',
+          confidence: 'low',
+          confidenceScore: 0.2,
+          lowConfidence: true,
+        ),
+      ],
+    );
+
+    final checks = runLevel1(
+      plannerCaptureOnlyScenario,
+      wrongCaptureOutput,
+      profile: kFrontierProfile,
+    );
+
+    final captureParse = named(checks, 'capture_parse_persisted');
+    expect(captureParse.passed, isFalse);
+    expect(captureParse.detail, contains(kPlannerCaptureOnlyCaptureId));
+  });
+
   test(
     'traces round-trip through TraceWriter and the reporter summarises',
     () async {
@@ -131,6 +217,10 @@ void main() {
         runId: 'run-1',
         scenario: scenario,
         profile: kLocalOllamaProfile,
+        provenance: EvalProvenance.capture(
+          scenario: scenario,
+          profile: kLocalOllamaProfile,
+        ),
         output: goodOutput(),
         level1Checks: runLevel1(
           scenario,
@@ -142,6 +232,10 @@ void main() {
         runId: 'run-1',
         scenario: scenario,
         profile: kFrontierProfile,
+        provenance: EvalProvenance.capture(
+          scenario: scenario,
+          profile: kFrontierProfile,
+        ),
         output: badOutput(),
         level1Checks: runLevel1(
           scenario,
@@ -155,7 +249,7 @@ void main() {
       // Verdicts arrive separately (written by the Claude Code judge step).
       await writer.writeVerdict(
         localFile,
-        const JudgeVerdict(
+        _verdict(
           goalAttainment: 5,
           quality: 5,
           efficiency: 4,
@@ -165,7 +259,7 @@ void main() {
       );
       await writer.writeVerdict(
         frontierFile,
-        const JudgeVerdict(
+        _verdict(
           goalAttainment: 2,
           quality: 1,
           efficiency: 3,
@@ -211,3 +305,27 @@ void main() {
     },
   );
 }
+
+JudgeVerdict _verdict({
+  required int goalAttainment,
+  required int quality,
+  required int efficiency,
+  required bool pass,
+  String rationale = '',
+  List<String> issues = const <String>[],
+}) => JudgeVerdict(
+  goalAttainment: goalAttainment,
+  quality: quality,
+  efficiency: efficiency,
+  pass: pass,
+  judge: JudgeProvenanceRecord(
+    judgeName: 'claude-code',
+    judgeModel: 'test-judge',
+    promptDigest: EvalProvenance.promptDigest(),
+    calibrationSetVersion: 'test-gold-v1',
+    profileVisible: true,
+    modelIdentityVisible: true,
+  ),
+  rationale: rationale,
+  issues: issues,
+);

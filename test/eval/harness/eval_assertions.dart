@@ -10,6 +10,8 @@
 //   - status enum          — lib/features/agents/tools/task_agent_tool_definitions.dart:775
 
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 
 import 'eval_models.dart';
 
@@ -36,6 +38,19 @@ const _newTaskIntroducingTools = <String>{
   TaskAgentToolNames.createFollowUpTask,
 };
 
+const _taskAgentSingularizedProposalTools = <String>{
+  TaskAgentToolNames.addChecklistItem,
+  TaskAgentToolNames.updateChecklistItem,
+  TaskAgentToolNames.assignTaskLabel,
+  TaskAgentToolNames.migrateChecklistItem,
+};
+
+const _plannerDiffProposalTools = <String>{
+  'move_block',
+  'add_block',
+  'drop_block',
+};
+
 // ---------------------------------------------------------------------------
 // Shared checks
 // ---------------------------------------------------------------------------
@@ -57,6 +72,10 @@ EvalCheck checkNoHallucinatedTaskRefs(
   final referenced = <String>{};
   for (final block in output.plannedBlocks) {
     final id = block.taskId;
+    if (id != null) referenced.add(id);
+  }
+  for (final item in output.parsedCaptureItems) {
+    final id = item.matchedTaskId;
     if (id != null) referenced.add(id);
   }
   for (final call in output.toolCalls) {
@@ -125,6 +144,298 @@ EvalCheck checkExpectations(EvalScenario scenario, AgentRunOutput output) {
     return EvalCheck.fail('expected_tools', parts.join('; '));
   }
   return EvalCheck.pass('expected_tools');
+}
+
+/// Every emitted tool name must be known to the scenario's agent kind.
+EvalCheck checkKnownToolNames(EvalScenario scenario, AgentRunOutput output) {
+  final known = _knownToolNamesFor(scenario.agentKind);
+  final unknown = {
+    for (final name in output.toolNames)
+      if (!known.contains(name)) name,
+  };
+  if (unknown.isNotEmpty) {
+    return EvalCheck.fail(
+      'known_tools',
+      'unknown ${scenario.agentKind.name} tool(s): ${unknown.join(', ')}',
+    );
+  }
+  return EvalCheck.pass('known_tools');
+}
+
+/// Persisted proposal item names use a durable normalized namespace, which can
+/// differ from raw model-facing tool names after batch tools are exploded.
+EvalCheck checkKnownProposalToolNames(
+  EvalScenario scenario,
+  AgentRunOutput output,
+) {
+  final known = _knownProposalToolNamesFor(scenario.agentKind);
+  final unknown = {
+    for (final proposal in output.proposals)
+      if (!known.contains(proposal.toolName)) proposal.toolName,
+  };
+  if (unknown.isNotEmpty) {
+    return EvalCheck.fail(
+      'known_proposal_tools',
+      'unknown ${scenario.agentKind.name} proposal tool(s): '
+          '${unknown.join(', ')}',
+    );
+  }
+  return EvalCheck.pass('known_proposal_tools');
+}
+
+/// Tool calls that production rejected must remain visible to the eval.
+EvalCheck checkToolResultsSucceeded(
+  EvalScenario scenario,
+  AgentRunOutput output,
+) {
+  final expected = scenario.expectations;
+  final failures = [
+    for (final result in output.toolResults)
+      if (!result.success)
+        '${result.name}: ${result.error ?? 'tool execution failed'}',
+  ];
+  final unexpectedFailures = [
+    for (final result in output.toolResults)
+      if (!result.success &&
+          !expected.allowedFailedToolNames.contains(result.name))
+        '${result.name}: ${result.error ?? 'tool execution failed'}',
+  ];
+  if (failures.length > expected.maxAllowedToolResultFailures) {
+    return EvalCheck.fail(
+      'tool_results_succeeded',
+      'failed tool result count ${failures.length} > '
+          '${expected.maxAllowedToolResultFailures}: ${failures.join('; ')}',
+    );
+  }
+  if (unexpectedFailures.isNotEmpty) {
+    return EvalCheck.fail(
+      'tool_results_succeeded',
+      unexpectedFailures.join('; '),
+    );
+  }
+  if (failures.isNotEmpty) {
+    return EvalCheck.pass(
+      'tool_results_succeeded',
+      'allowed recoverable failure(s): ${failures.join('; ')}',
+    );
+  }
+  return EvalCheck.pass('tool_results_succeeded');
+}
+
+/// Scenario-specific durable-state oracle.
+///
+/// Generic checks catch unsafe shapes; this check lets a scenario define what
+/// success means for its user goal while still allowing multiple valid outputs.
+EvalCheck checkExpectedDurableState(
+  EvalScenario scenario,
+  AgentRunOutput output,
+) {
+  final expected = scenario.expectations.durableState;
+  if (expected.isEmpty) {
+    return EvalCheck.pass(
+      'expected_durable_state',
+      'no durable-state oracle set',
+    );
+  }
+
+  final failures = <String>[];
+  final proposalCount = expected.proposalCount;
+  if (proposalCount != null && output.proposals.length != proposalCount) {
+    failures.add(
+      'proposal count ${output.proposals.length} != $proposalCount',
+    );
+  }
+  final plannedBlockCount = expected.plannedBlockCount;
+  if (plannedBlockCount != null &&
+      output.plannedBlocks.length != plannedBlockCount) {
+    failures.add(
+      'planned block count ${output.plannedBlocks.length} '
+      '!= $plannedBlockCount',
+    );
+  }
+  final parsedCaptureItemCount = expected.parsedCaptureItemCount;
+  if (parsedCaptureItemCount != null &&
+      output.parsedCaptureItems.length != parsedCaptureItemCount) {
+    failures.add(
+      'parsed capture item count ${output.parsedCaptureItems.length} '
+      '!= $parsedCaptureItemCount',
+    );
+  }
+  final mutatedEntryCount = expected.mutatedEntryCount;
+  if (mutatedEntryCount != null &&
+      output.mutatedEntryIds.length != mutatedEntryCount) {
+    failures.add(
+      'mutated entry count ${output.mutatedEntryIds.length} '
+      '!= $mutatedEntryCount',
+    );
+  }
+
+  final reportText = _norm(
+    [
+      output.report?.oneLiner ?? '',
+      output.report?.tldr ?? '',
+      output.report?.content ?? '',
+    ].join('\n'),
+  );
+  for (final needle in expected.reportContains) {
+    if (!reportText.contains(_norm(needle))) {
+      failures.add('report missing "$needle"');
+    }
+  }
+
+  final observationText = _norm(output.observations.join('\n'));
+  for (final needle in expected.observationContains) {
+    if (!observationText.contains(_norm(needle))) {
+      failures.add('observations missing "$needle"');
+    }
+  }
+
+  final missingMutations = expected.requiredMutatedEntryIds.difference(
+    output.mutatedEntryIds,
+  );
+  if (missingMutations.isNotEmpty) {
+    failures.add('missing mutations: ${missingMutations.join(', ')}');
+  }
+  if (expected.allowedMutatedEntryIds.isNotEmpty) {
+    final unexpectedMutations = output.mutatedEntryIds.difference(
+      expected.allowedMutatedEntryIds,
+    );
+    if (unexpectedMutations.isNotEmpty) {
+      failures.add('unexpected mutations: ${unexpectedMutations.join(', ')}');
+    }
+  }
+  final forbiddenMutations = expected.forbiddenMutatedEntryIds.intersection(
+    output.mutatedEntryIds,
+  );
+  if (forbiddenMutations.isNotEmpty) {
+    failures.add('forbidden mutations: ${forbiddenMutations.join(', ')}');
+  }
+
+  if (!_hasDistinctMatcherGroups<ProposalRecord, ExpectedProposalState>(
+    output.proposals,
+    [
+      for (final matcher in expected.requiredProposals) [matcher],
+      for (final group in expected.requiredProposalAnyOf) group.anyOf,
+    ],
+    _proposalMatches,
+  )) {
+    failures.add(
+      'missing distinct proposal expectations: '
+      '${_describeProposalMatcherGroups(
+        expected.requiredProposals,
+        expected.requiredProposalAnyOf,
+      )}',
+    );
+  }
+  for (final count in expected.proposalCounts) {
+    final actual = output.proposals
+        .where((proposal) => _proposalMatches(proposal, count.matcher))
+        .length;
+    final failure = _countFailure(
+      'proposal count for ${_describeProposalMatcher(count.matcher)}',
+      actual: actual,
+      min: count.minCount,
+      max: count.maxCount,
+      exact: count.exactCount,
+    );
+    if (failure != null) failures.add(failure);
+  }
+  for (final matcher in expected.forbiddenProposals) {
+    final matched = output.proposals.where(
+      (proposal) => _proposalMatches(proposal, matcher),
+    );
+    if (matched.isNotEmpty) {
+      failures.add('forbidden proposal ${_describeProposalMatcher(matcher)}');
+    }
+  }
+
+  if (!_hasDistinctMatcherGroups<PlannedBlockRecord, ExpectedPlannedBlockState>(
+    output.plannedBlocks,
+    [
+      for (final matcher in expected.requiredPlannedBlocks) [matcher],
+      for (final group in expected.requiredPlannedBlockAnyOf) group.anyOf,
+    ],
+    _blockMatches,
+  )) {
+    failures.add(
+      'missing distinct planned-block expectations: '
+      '${_describeBlockMatcherGroups(
+        expected.requiredPlannedBlocks,
+        expected.requiredPlannedBlockAnyOf,
+      )}',
+    );
+  }
+  for (final count in expected.plannedBlockCounts) {
+    final actual = output.plannedBlocks
+        .where((block) => _blockMatches(block, count.matcher))
+        .length;
+    final failure = _countFailure(
+      'planned-block count for ${_describeBlockMatcher(count.matcher)}',
+      actual: actual,
+      min: count.minCount,
+      max: count.maxCount,
+      exact: count.exactCount,
+    );
+    if (failure != null) failures.add(failure);
+  }
+  for (final matcher in expected.forbiddenPlannedBlocks) {
+    final matched = output.plannedBlocks.where(
+      (block) => _blockMatches(block, matcher),
+    );
+    if (matched.isNotEmpty) {
+      failures.add('forbidden planned block ${_describeBlockMatcher(matcher)}');
+    }
+  }
+
+  if (!_hasDistinctMatcherGroups<
+    ParsedCaptureItemRecord,
+    ExpectedParsedCaptureState
+  >(
+    output.parsedCaptureItems,
+    [
+      for (final matcher in expected.requiredParsedCaptureItems) [matcher],
+      for (final group in expected.requiredParsedCaptureAnyOf) group.anyOf,
+    ],
+    _parsedCaptureMatches,
+  )) {
+    failures.add(
+      'missing distinct parsed-capture expectations: '
+      '${_describeParsedCaptureMatcherGroups(
+        expected.requiredParsedCaptureItems,
+        expected.requiredParsedCaptureAnyOf,
+      )}',
+    );
+  }
+  for (final count in expected.parsedCaptureCounts) {
+    final actual = output.parsedCaptureItems
+        .where((item) => _parsedCaptureMatches(item, count.matcher))
+        .length;
+    final failure = _countFailure(
+      'parsed-capture count for '
+      '${_describeParsedCaptureMatcher(count.matcher)}',
+      actual: actual,
+      min: count.minCount,
+      max: count.maxCount,
+      exact: count.exactCount,
+    );
+    if (failure != null) failures.add(failure);
+  }
+  for (final matcher in expected.forbiddenParsedCaptureItems) {
+    final matched = output.parsedCaptureItems.where(
+      (item) => _parsedCaptureMatches(item, matcher),
+    );
+    if (matched.isNotEmpty) {
+      failures.add(
+        'forbidden parsed capture item '
+        '${_describeParsedCaptureMatcher(matcher)}',
+      );
+    }
+  }
+
+  if (failures.isNotEmpty) {
+    return EvalCheck.fail('expected_durable_state', failures.join('; '));
+  }
+  return EvalCheck.pass('expected_durable_state');
 }
 
 // ---------------------------------------------------------------------------
@@ -203,6 +514,81 @@ EvalCheck checkLabelCap(AgentRunOutput output) {
   return EvalCheck.pass('label_cap');
 }
 
+/// Persisted label-assignment proposals must be new, active, in-scope labels.
+EvalCheck checkValidLabelProposals(
+  EvalScenario scenario,
+  AgentRunOutput output,
+) {
+  final labelsById = {
+    for (final label in scenario.appState.labels) label.id: label,
+  };
+  final tasksById = {
+    for (final task in scenario.appState.tasks) task.id: task,
+  };
+  for (final proposal in output.proposals) {
+    if (proposal.status != 'pending') continue;
+    if (proposal.toolName != 'assign_task_label') continue;
+
+    final taskId = proposal.targetId;
+    final task = tasksById[taskId];
+    if (task == null) {
+      return EvalCheck.fail(
+        'valid_label_proposals',
+        'label proposal ${proposal.changeSetId}:${proposal.itemIndex} '
+            'targets unknown task $taskId',
+      );
+    }
+
+    final labelId = proposal.args['id'];
+    if (labelId is! String || labelId.trim().isEmpty) {
+      return EvalCheck.fail(
+        'valid_label_proposals',
+        'label proposal ${proposal.changeSetId}:${proposal.itemIndex} '
+            'has no label id',
+      );
+    }
+    if (task.labelIds.contains(labelId)) {
+      return EvalCheck.fail(
+        'valid_label_proposals',
+        'label $labelId is already assigned to task ${task.id}',
+      );
+    }
+    if (task.aiSuppressedLabelIds.contains(labelId)) {
+      return EvalCheck.fail(
+        'valid_label_proposals',
+        'label $labelId is suppressed for task ${task.id}',
+      );
+    }
+
+    final label = labelsById[labelId];
+    if (label == null) {
+      return EvalCheck.fail(
+        'valid_label_proposals',
+        'label $labelId is not in scenario label definitions',
+      );
+    }
+    if (label.deletedAt != null) {
+      return EvalCheck.fail(
+        'valid_label_proposals',
+        'label $labelId is deleted',
+      );
+    }
+
+    final applicable = label.applicableCategoryIds;
+    final isGlobal = applicable == null || applicable.isEmpty;
+    final inCategory =
+        task.categoryId != null &&
+        (applicable?.contains(task.categoryId) ?? false);
+    if (!isGlobal && !inCategory) {
+      return EvalCheck.fail(
+        'valid_label_proposals',
+        'label $labelId is not applicable to task category ${task.categoryId}',
+      );
+    }
+  }
+  return EvalCheck.pass('valid_label_proposals');
+}
+
 /// Added checklist items don't duplicate each other or existing items.
 EvalCheck checkNoDuplicateChecklistTitles(
   EvalScenario scenario,
@@ -252,6 +638,26 @@ EvalCheck checkWithinCapacity(EvalScenario scenario, AgentRunOutput output) {
   return EvalCheck.pass('within_capacity', '$scheduled/$capacity min');
 }
 
+/// When a target can read the persisted plan, its capacity must match the
+/// scenario's capacity instead of silently falling back to production defaults.
+EvalCheck checkPlanCapacityMatchesScenario(
+  EvalScenario scenario,
+  AgentRunOutput output,
+) {
+  final actual = output.plannedCapacityMinutes;
+  if (actual == null) {
+    return EvalCheck.pass('plan_capacity_matches', 'target did not record it');
+  }
+  final expected = scenario.appState.capacityMinutes;
+  if (actual != expected) {
+    return EvalCheck.fail(
+      'plan_capacity_matches',
+      'persisted capacity $actual min != scenario capacity $expected min',
+    );
+  }
+  return EvalCheck.pass('plan_capacity_matches', '$actual min');
+}
+
 /// Planned blocks must not overlap in time.
 EvalCheck checkNoOverlappingBlocks(AgentRunOutput output) {
   final sorted = [...output.plannedBlocks]
@@ -274,7 +680,7 @@ EvalCheck checkBlocksUseKnownCategories(
   EvalScenario scenario,
   AgentRunOutput output,
 ) {
-  final known = scenario.appState.categoryIds.toSet();
+  final known = scenario.appState.allowedCategoryIds;
   if (known.isEmpty) {
     return EvalCheck.pass('known_categories', 'no category allowlist');
   }
@@ -294,7 +700,15 @@ EvalCheck checkProducedPlanForCapture(
   EvalScenario scenario,
   AgentRunOutput output,
 ) {
-  if (scenario.userInput.transcript.trim().isEmpty) {
+  if (_isCaptureOnlyPlannerWake(scenario)) {
+    return EvalCheck.pass('produced_plan', 'capture-only parse wake');
+  }
+  final hasCaptureEvidence =
+      scenario.userInput.transcript.trim().isNotEmpty ||
+      scenario.appState.captures.any(
+        (capture) => capture.transcript.trim().isNotEmpty,
+      );
+  if (!hasCaptureEvidence) {
     return EvalCheck.pass('produced_plan', 'no capture to act on');
   }
   if (output.plannedBlocks.isEmpty) {
@@ -304,6 +718,34 @@ EvalCheck checkProducedPlanForCapture(
     );
   }
   return EvalCheck.pass('produced_plan');
+}
+
+/// Capture-submitted parse wakes must persist parsed capture items.
+EvalCheck checkCaptureOnlyParsedItems(
+  EvalScenario scenario,
+  AgentRunOutput output,
+) {
+  if (!_isCaptureOnlyPlannerWake(scenario)) {
+    return EvalCheck.pass('capture_parse_persisted', 'not capture-only');
+  }
+  final submittedCaptureIds = captureIdsFromTriggerTokens(
+    scenario.userInput.triggerTokens,
+  ).toSet();
+  final parsedForSubmittedCapture = [
+    for (final item in output.parsedCaptureItems)
+      if (submittedCaptureIds.contains(item.captureId)) item,
+  ];
+  if (parsedForSubmittedCapture.isEmpty) {
+    return EvalCheck.fail(
+      'capture_parse_persisted',
+      'capture-only wake persisted no parsed items for submitted captures '
+          '${submittedCaptureIds.join(', ')}',
+    );
+  }
+  return EvalCheck.pass(
+    'capture_parse_persisted',
+    '${parsedForSubmittedCapture.length} parsed item(s)',
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -322,6 +764,10 @@ List<EvalCheck> runLevel1(
     checkTokenBudget(scenario, output, profile: profile),
     checkToolCallBudget(scenario, output),
     checkExpectations(scenario, output),
+    checkKnownToolNames(scenario, output),
+    checkKnownProposalToolNames(scenario, output),
+    checkToolResultsSucceeded(scenario, output),
+    checkExpectedDurableState(scenario, output),
   ];
   switch (scenario.agentKind) {
     case AgentKind.taskAgent:
@@ -330,12 +776,15 @@ List<EvalCheck> runLevel1(
         ..add(checkValidStatusTransitions(output))
         ..add(checkEstimateRange(output))
         ..add(checkLabelCap(output))
+        ..add(checkValidLabelProposals(scenario, output))
         ..add(checkNoDuplicateChecklistTitles(scenario, output));
     case AgentKind.planningAgent:
       checks
         ..add(checkWithinCapacity(scenario, output))
+        ..add(checkPlanCapacityMatchesScenario(scenario, output))
         ..add(checkNoOverlappingBlocks(output))
         ..add(checkBlocksUseKnownCategories(scenario, output))
+        ..add(checkCaptureOnlyParsedItems(scenario, output))
         ..add(checkProducedPlanForCapture(scenario, output));
   }
   return checks;
@@ -372,3 +821,297 @@ String? _checklistTitle(Object? item) {
 }
 
 String _norm(String s) => s.trim().toLowerCase();
+
+bool _hasDistinctMatcherGroups<T, M>(
+  List<T> records,
+  List<List<M>> matcherGroups,
+  bool Function(T record, M matcher) matches,
+) {
+  if (matcherGroups.isEmpty) return true;
+  if (matcherGroups.any((group) => group.isEmpty)) return false;
+  if (records.length < matcherGroups.length) return false;
+  final used = List<bool>.filled(records.length, false);
+
+  bool search(int groupIndex) {
+    if (groupIndex == matcherGroups.length) return true;
+    final group = matcherGroups[groupIndex];
+    for (var i = 0; i < records.length; i++) {
+      if (used[i] || !group.any((matcher) => matches(records[i], matcher))) {
+        continue;
+      }
+      used[i] = true;
+      if (search(groupIndex + 1)) return true;
+      used[i] = false;
+    }
+    return false;
+  }
+
+  return search(0);
+}
+
+String? _countFailure(
+  String label, {
+  required int actual,
+  required int? min,
+  required int? max,
+  required int? exact,
+}) {
+  if (exact != null && actual != exact) {
+    return '$label $actual != $exact';
+  }
+  if (min != null && actual < min) {
+    return '$label $actual < $min';
+  }
+  if (max != null && actual > max) {
+    return '$label $actual > $max';
+  }
+  return null;
+}
+
+bool _proposalMatches(
+  ProposalRecord proposal,
+  ExpectedProposalState matcher,
+) {
+  if (matcher.toolName != null && proposal.toolName != matcher.toolName) {
+    return false;
+  }
+  if (matcher.targetId != null && proposal.targetId != matcher.targetId) {
+    return false;
+  }
+  if (matcher.status != null && proposal.status != matcher.status) {
+    return false;
+  }
+  if (matcher.changeSetStatus != null &&
+      proposal.changeSetStatus != matcher.changeSetStatus) {
+    return false;
+  }
+  for (final entry in matcher.argsContain.entries) {
+    if (!proposal.args.containsKey(entry.key)) return false;
+    if (!_jsonEquals(proposal.args[entry.key], entry.value)) return false;
+  }
+  final summary = _norm(proposal.humanSummary);
+  for (final needle in matcher.humanSummaryContains) {
+    if (!summary.contains(_norm(needle))) return false;
+  }
+  return true;
+}
+
+bool _blockMatches(
+  PlannedBlockRecord block,
+  ExpectedPlannedBlockState matcher,
+) {
+  if (matcher.id != null && block.id != matcher.id) return false;
+  if (matcher.taskId != null && block.taskId != matcher.taskId) return false;
+  if (matcher.categoryId != null && block.categoryId != matcher.categoryId) {
+    return false;
+  }
+  final duration = block.durationMinutes;
+  if (matcher.minDurationMinutes != null &&
+      duration < matcher.minDurationMinutes!) {
+    return false;
+  }
+  if (matcher.maxDurationMinutes != null &&
+      duration > matcher.maxDurationMinutes!) {
+    return false;
+  }
+  if (matcher.startAtOrAfter != null &&
+      block.start.isBefore(matcher.startAtOrAfter!)) {
+    return false;
+  }
+  if (matcher.endAtOrBefore != null &&
+      block.end.isAfter(matcher.endAtOrBefore!)) {
+    return false;
+  }
+  return true;
+}
+
+bool _parsedCaptureMatches(
+  ParsedCaptureItemRecord item,
+  ExpectedParsedCaptureState matcher,
+) {
+  if (matcher.id != null && item.id != matcher.id) return false;
+  if (matcher.captureId != null && item.captureId != matcher.captureId) {
+    return false;
+  }
+  if (matcher.kind != null && item.kind != matcher.kind) return false;
+  if (matcher.titleContains != null &&
+      !_norm(item.title).contains(_norm(matcher.titleContains!))) {
+    return false;
+  }
+  if (matcher.categoryId != null && item.categoryId != matcher.categoryId) {
+    return false;
+  }
+  if (matcher.matchedTaskId != null &&
+      item.matchedTaskId != matcher.matchedTaskId) {
+    return false;
+  }
+  if (matcher.confidence != null && item.confidence != matcher.confidence) {
+    return false;
+  }
+  final score = item.confidenceScore;
+  if (matcher.minConfidenceScore != null &&
+      score < matcher.minConfidenceScore!) {
+    return false;
+  }
+  if (matcher.maxConfidenceScore != null &&
+      score > matcher.maxConfidenceScore!) {
+    return false;
+  }
+  if (matcher.lowConfidence != null &&
+      item.lowConfidence != matcher.lowConfidence) {
+    return false;
+  }
+  return true;
+}
+
+bool _jsonEquals(Object? a, Object? b) {
+  if (a is num && b is num) return a == b;
+  if (a is String || a is bool || a == null) return a == b;
+  if (a is List && b is List) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!_jsonEquals(a[i], b[i])) return false;
+    }
+    return true;
+  }
+  if (a is Map && b is Map) {
+    if (a.length != b.length) return false;
+    for (final key in a.keys) {
+      if (!b.containsKey(key)) return false;
+      if (!_jsonEquals(a[key], b[key])) return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+String _describeProposalMatcher(ExpectedProposalState matcher) {
+  final parts = <String>[
+    if (matcher.toolName != null) 'tool=${matcher.toolName}',
+    if (matcher.targetId != null) 'target=${matcher.targetId}',
+    if (matcher.status != null) 'status=${matcher.status}',
+    if (matcher.changeSetStatus != null) 'changeSet=${matcher.changeSetStatus}',
+    if (matcher.argsContain.isNotEmpty) 'args=${matcher.argsContain}',
+    if (matcher.humanSummaryContains.isNotEmpty)
+      'summary~${matcher.humanSummaryContains.join('|')}',
+  ];
+  return parts.isEmpty ? '<any proposal>' : parts.join(',');
+}
+
+String _describeProposalMatcherGroups(
+  List<ExpectedProposalState> required,
+  List<ExpectedProposalStateAnyOf> anyOf,
+) {
+  return _describeMatcherGroups<ExpectedProposalState>(
+    [
+      for (final matcher in required) [matcher],
+      for (final group in anyOf) group.anyOf,
+    ],
+    _describeProposalMatcher,
+  );
+}
+
+String _describeBlockMatcher(ExpectedPlannedBlockState matcher) {
+  final parts = <String>[
+    if (matcher.id != null) 'id=${matcher.id}',
+    if (matcher.taskId != null) 'task=${matcher.taskId}',
+    if (matcher.categoryId != null) 'category=${matcher.categoryId}',
+    if (matcher.minDurationMinutes != null) 'min=${matcher.minDurationMinutes}',
+    if (matcher.maxDurationMinutes != null) 'max=${matcher.maxDurationMinutes}',
+  ];
+  return parts.isEmpty ? '<any block>' : parts.join(',');
+}
+
+String _describeBlockMatcherGroups(
+  List<ExpectedPlannedBlockState> required,
+  List<ExpectedPlannedBlockStateAnyOf> anyOf,
+) {
+  return _describeMatcherGroups<ExpectedPlannedBlockState>(
+    [
+      for (final matcher in required) [matcher],
+      for (final group in anyOf) group.anyOf,
+    ],
+    _describeBlockMatcher,
+  );
+}
+
+String _describeParsedCaptureMatcher(ExpectedParsedCaptureState matcher) {
+  final parts = <String>[
+    if (matcher.id != null) 'id=${matcher.id}',
+    if (matcher.captureId != null) 'capture=${matcher.captureId}',
+    if (matcher.kind != null) 'kind=${matcher.kind}',
+    if (matcher.titleContains != null) 'title~${matcher.titleContains}',
+    if (matcher.categoryId != null) 'category=${matcher.categoryId}',
+    if (matcher.matchedTaskId != null) 'task=${matcher.matchedTaskId}',
+    if (matcher.confidence != null) 'confidence=${matcher.confidence}',
+    if (matcher.minConfidenceScore != null)
+      'minConfidence=${matcher.minConfidenceScore}',
+    if (matcher.maxConfidenceScore != null)
+      'maxConfidence=${matcher.maxConfidenceScore}',
+    if (matcher.lowConfidence != null) 'lowConfidence=${matcher.lowConfidence}',
+  ];
+  return parts.isEmpty ? '<any parsed item>' : parts.join(',');
+}
+
+String _describeParsedCaptureMatcherGroups(
+  List<ExpectedParsedCaptureState> required,
+  List<ExpectedParsedCaptureStateAnyOf> anyOf,
+) {
+  return _describeMatcherGroups<ExpectedParsedCaptureState>(
+    [
+      for (final matcher in required) [matcher],
+      for (final group in anyOf) group.anyOf,
+    ],
+    _describeParsedCaptureMatcher,
+  );
+}
+
+String _describeMatcherGroups<M>(
+  List<List<M>> groups,
+  String Function(M matcher) describe,
+) {
+  if (groups.isEmpty) return '<none>';
+  return groups
+      .map(
+        (group) => group.length == 1
+            ? describe(group.single)
+            : 'anyOf(${group.map(describe).join(' OR ')})',
+      )
+      .join('; ');
+}
+
+bool _isCaptureOnlyPlannerWake(EvalScenario scenario) {
+  final tokens = scenario.userInput.triggerTokens;
+  final hasCapture = tokens.any(
+    (token) => token.startsWith(dayAgentCaptureSubmittedPrefix),
+  );
+  final hasDrafting = tokens.any(
+    (token) => token.startsWith(dayAgentDraftingPrefix),
+  );
+  final hasRefine = tokens.any(
+    (token) => token.startsWith(dayAgentRefinePrefix),
+  );
+  return hasCapture && !hasDrafting && !hasRefine;
+}
+
+Set<String> _knownToolNamesFor(AgentKind agentKind) {
+  return switch (agentKind) {
+    AgentKind.taskAgent => {
+      for (final tool in AgentToolRegistry.taskAgentTools) tool.name,
+    },
+    AgentKind.planningAgent => {
+      for (final tool in dayAgentTools) tool.name,
+    },
+  };
+}
+
+Set<String> _knownProposalToolNamesFor(AgentKind agentKind) {
+  return switch (agentKind) {
+    AgentKind.taskAgent => {
+      for (final tool in AgentToolRegistry.deferredTools)
+        if (!AgentToolRegistry.explodedBatchTools.containsKey(tool)) tool,
+      ..._taskAgentSingularizedProposalTools,
+    },
+    AgentKind.planningAgent => _plannerDiffProposalTools,
+  };
+}

@@ -19,6 +19,7 @@ const kLocalOllamaProfile = EvalProfile(
   maxCompletionTokens: 2048,
   // A correct result that needs far more than this is a poor local fit.
   tokenBudget: 12000,
+  trialCount: 3,
 );
 
 /// Frontier profile — optimise for quality, watch token burn.
@@ -29,6 +30,7 @@ const kFrontierProfile = EvalProfile(
   modelId: 'gemini-thinking',
   maxCompletionTokens: 8192,
   tokenBudget: 200000,
+  trialCount: 3,
 );
 
 /// Fast local profile — useful for deciding which use cases are realistic on
@@ -41,6 +43,7 @@ const kLocalSmallProfile = EvalProfile(
   temperature: 0.4,
   maxCompletionTokens: 1024,
   tokenBudget: 6000,
+  trialCount: 3,
 );
 
 /// Fast frontier profile — useful when latency/cost matters more than maximum
@@ -53,6 +56,7 @@ const kFrontierFastProfile = EvalProfile(
   temperature: 0.5,
   maxCompletionTokens: 4096,
   tokenBudget: 60000,
+  trialCount: 3,
 );
 
 /// The default set of profiles a Level 2 run grades every scenario against.

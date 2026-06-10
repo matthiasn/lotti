@@ -13,17 +13,30 @@ A JSON `EvalTrace` with:
 
 - `schemaVersion`, `runId`, and `trialIndex`.
 - `scenario.agentKind` — `taskAgent` or `planningAgent`.
+- `scenario.metadata` — capability ids, split/source, adversarial flag, and
+  tags used for reporting. Do not reward or penalise a trace just for metadata;
+  use it to understand the intended capability under test.
 - `profile.name`, `profile.modelClass`, and whether it was a local or frontier
   model.
+- `provenance` — digests for the scenario/profile payload, eval prompts,
+  tool schema, and code revision. The verifier checks these; you usually do not
+  need to mention them unless they are missing or visibly inconsistent.
 - `scenario.userInput.transcript` — what the user said they want.
 - `scenario.userInput.triggerTokens` — what woke the agent
   (e.g. `drafting:<dayId>`).
-- `scenario.appState` — mocked tasks, deadlines, capacity, and categories.
-- `output` — the agent's actual result: `toolCalls`, `plannedBlocks`, `report`,
-  `observations`, `mutatedEntryIds`, and `usage` (token counts:
-  `inputTokens` / `outputTokens` / `thoughtsTokens` / `cachedInputTokens`).
+- `scenario.appState` — mocked tasks, deadlines, capacity, categories, and any
+  pre-existing proposal sets seeded before the wake.
+- `output` — the agent's actual result: `toolCalls`, persisted `toolResults`
+  with production validation errors, `workflowRun` run/thread provenance,
+  `plannedBlocks`, `report`, `observations`, persisted final-state `proposals`
+  from `ChangeSetEntity` items (including parent `changeSetStatus` and item
+  `status`), `resolvedModel` provenance, optional `runtimePrompt` prompt/tool
+  digests, `mutatedEntryIds`, and `usage` (token counts: `inputTokens` /
+  `outputTokens` / `thoughtsTokens` / `cachedInputTokens`).
 - `level1Checks` — deterministic gate results already computed by the harness.
   Treat a failed Level 1 check as strong evidence, but still judge the substance.
+- `provenance.promptDigest` — the digest of this judge prompt, the rubrics, and
+  the grading runbook. Copy it into the verdict's `judge.promptDigest`.
 
 ## What you grade (and nothing else)
 
@@ -42,14 +55,23 @@ agent-specific rubric provided alongside this prompt
    On a **local** profile, weigh tight token use and few turns heavily — a
    correct plan that needs a huge prompt or many tool calls is a poor local fit.
    On a **frontier** profile, allow more headroom but still penalise redundant
-   tool calls, repeated work, and output bloat. Read `usage` and the length of
-   `toolCalls` as evidence.
+   tool calls, failed tool results, repeated work, and output bloat. Read
+   `usage`, `toolCalls`, and `toolResults` as evidence.
 
 ## Output contract — return ONLY this JSON
 
 ```json
 {
+  "schemaVersion": 1,
   "traceDigest": "sha256:<digest of the .trace.json file>",
+  "judge": {
+    "judgeName": "claude-code",
+    "judgeModel": "<model shown by Claude Code for this grading run>",
+    "promptDigest": "sha256:<copy trace.provenance.promptDigest>",
+    "calibrationSetVersion": "<human calibration set version, or uncalibrated>",
+    "profileVisible": true,
+    "modelIdentityVisible": true
+  },
   "goalAttainment": 4,
   "quality": 5,
   "efficiency": 3,
@@ -65,9 +87,18 @@ Rules:
   failed for a correctness/safety invariant (hallucinated id, over-capacity plan,
   invalid status transition).
 - `traceDigest` must be copied from the SHA-256 digest you computed for the
-  exact `.trace.json` file. The reporter rejects verdicts with missing or stale
+  exact `.trace.json` file, as `sha256:` followed by 64 lowercase hex
+  characters. The reporter rejects verdicts with missing, stale, or malformed
   digests.
-- `rationale` must cite specifics from the trace (a tool name, a block time, a
-  token count), never generic praise.
+- `judge.promptDigest` must match `provenance.promptDigest` from the trace.
+- `judge.calibrationSetVersion` is mandatory. Use the current human-labeled
+  calibration set version when one exists; otherwise write `"uncalibrated"` so
+  the report does not hide that limitation.
+- `profileVisible` must be `true` because the efficiency score is profile-aware.
+  `modelIdentityVisible` is `true` for raw traces; future blinded trace exports
+  should set it to `false`. Model-class tuning readiness requires
+  model-identity-blinded verdicts.
+- `rationale` must cite specifics from the trace (a tool name, proposal, block
+  time, or token count), never generic praise.
 - `issues` is empty `[]` only for a clean pass. Otherwise list the real problems.
 - Do not include any prose outside the JSON object.
