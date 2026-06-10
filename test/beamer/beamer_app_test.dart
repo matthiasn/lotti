@@ -196,9 +196,10 @@ Future<void> _stubNavService(
   );
   when(() => navService.tapIndex(any())).thenReturn(null);
   when(() => navService.isDesktopMode).thenReturn(false);
-  // SidebarTimerSection reads these to decide whether to hide when the
-  // running task matches the open task. Empty selection + a non-task
-  // root path in these tests so the sidebar timer surfaces normally.
+  // The desktop tasks pane (`tasks_tab_page.dart`) reads
+  // `desktopSelectedTaskId` for its detail selection; stub it with an
+  // empty selection so the pane builds. (The sidebar running-timer card
+  // no longer reads it — it stays visible whenever a timer runs.)
   when(
     () => navService.desktopSelectedTaskId,
   ).thenReturn(ValueNotifier<String?>(null));
@@ -627,9 +628,9 @@ void main() {
     // Pin a mobile-width surface so AppScreen takes the mobile-shell branch
     // regardless of any view-size leakage from earlier tests in a bundled
     // `very_good test` run. Without this, a contaminated view ≥960 px wide
-    // routes AppScreen into the desktop sidebar, which mounts
-    // DesktopNavigationSidebar / SidebarTimerSection and trips on the
-    // unstubbed `MockNavService.desktopSelectedTaskId` getter.
+    // routes AppScreen into the desktop layout, which mounts the desktop
+    // tasks pane (`tasks_tab_page.dart`) and trips on the unstubbed
+    // `MockNavService.desktopSelectedTaskId` getter.
     setUp(() {
       TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
         ..physicalSize = const Size(800, 1200)

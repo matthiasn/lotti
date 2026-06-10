@@ -191,6 +191,7 @@ Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever a t
 - Layout: a text-only title row (task title) over a body row with a timer icon, the tabular HH:MM:SS duration, and a circular stop button.
 - Typography: Inter with `numericBadgeFontFeatures` (tabular figures, slashed zero, `cv02`/`cv03`/`cv04` open digits) so 4/6/9 stay legible at small sizes and digits do not breathe.
 - Interactions: tapping the body navigates to the running task (or the timer's journal entry, if not task-linked); tapping the stop button calls `TimeService.stop()`.
+- Visibility: shown for the entire lifetime of a running timer, driven solely by `TimeService.getStream()`. It is intentionally not hidden when the running task is open in the details pane (the action bar's running pill and this card may both show at once) and persists across tab navigation. See "Sidebar timer coordination" in `lib/features/tasks/README.md`.
 - Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
 
 ### SidebarAudioRecordingSection

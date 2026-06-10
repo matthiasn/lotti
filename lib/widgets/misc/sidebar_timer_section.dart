@@ -7,7 +7,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/widgets/misc/timer_navigation.dart';
@@ -19,28 +18,22 @@ import 'package:lotti/widgets/misc/timer_navigation.dart';
 /// timer's journal entry, if not linked to a task). Tapping the stop
 /// button stops the timer.
 ///
-/// The card is hidden in two situations, each producing a smooth
-/// fade-and-collapse transition rather than a hard pop:
-///
-/// * No timer is running. There is nothing to show.
-/// * The running timer is linked to the same task that is currently
-///   open in the desktop task-details pane (tracked via
-///   [NavService.desktopSelectedTaskId]) AND the user is actually
-///   viewing a task-detail route. The detail page already shows a
-///   running indicator in its sticky action bar, so duplicating the
-///   title in the sidebar is just noise. The route check matters
-///   because [NavService.desktopSelectedTaskId] is sticky across tab
-///   switches — without it, switching from a task to e.g. Habits would
-///   leave the sidebar timer hidden even though the user can no longer
-///   see the action-bar indicator.
+/// Visibility is a pure function of whether a timer is running: the card
+/// stays mounted for the entire lifetime of a session and collapses only
+/// when no timer is running. It is deliberately *not* suppressed when the
+/// running task is open in the task-details pane, nor when the user
+/// navigates to another tab. The running indicator in the task detail
+/// action bar and this sidebar card may both be on screen at once — that
+/// duplication is intentional. A single, always-present sidebar surface
+/// guarantees the user never loses the elapsed-time readout or the
+/// one-tap path back to the running task, no matter where they are in the
+/// app.
 ///
 /// Reactivity:
 ///
-/// * [TimeService.getStream] drives running/duration updates.
-/// * [NavService.desktopSelectedTaskId] drives selection changes inside
-///   the tasks pane.
-/// * [NavService.getIndexStream] drives top-level tab/route changes;
-///   we read [NavService.currentPath] synchronously when it fires.
+/// * [TimeService.getStream] drives running/duration updates and is the
+///   sole input to visibility — appearance and disappearance follow the
+///   timer starting and stopping, nothing else.
 class SidebarTimerSection extends ConsumerWidget {
   const SidebarTimerSection({super.key});
 
@@ -50,57 +43,33 @@ class SidebarTimerSection extends ConsumerWidget {
   @visibleForTesting
   static const Duration animationDuration = Duration(milliseconds: 220);
 
-  /// Stable key used by the hidden state. Sharing one key across all
-  /// hidden variants keeps [AnimatedSwitcher] from running an extra
-  /// transition when we toggle between "no timer" and
-  /// "timer hidden because the task is open".
+  /// Stable key for the collapsed (no running timer) state so the
+  /// [AnimatedSwitcher] animates a single hidden ↔ visible transition.
   static const Key _hiddenKey = ValueKey('sidebar-timer-hidden');
-
-  /// True when [path] points at an individual task-detail route
-  /// (e.g. `/tasks/<uuid>`), as opposed to the tasks list root or any
-  /// other top-level tab.
-  static bool _isTaskDetailRoute(String path) => path.startsWith('/tasks/');
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final timeService = getIt<TimeService>();
-    final navService = getIt<NavService>();
 
     return StreamBuilder<JournalEntity?>(
       stream: timeService.getStream(),
       initialData: timeService.getCurrent(),
       builder: (context, snapshot) {
-        final current = snapshot.data;
-        return ValueListenableBuilder<String?>(
-          valueListenable: navService.desktopSelectedTaskId,
-          builder: (context, openTaskId, _) {
-            return StreamBuilder<int>(
-              // Tab/route switches don't otherwise rebuild this widget;
-              // subscribe to the nav index stream so we re-evaluate the
-              // active path when the user moves between top-level tabs.
-              stream: navService.getIndexStream(),
-              builder: (context, _) {
-                final child = _resolveChild(
-                  ref: ref,
-                  timeService: timeService,
-                  navService: navService,
-                  current: current,
-                  openTaskId: openTaskId,
-                );
-                return AnimatedSize(
-                  duration: animationDuration,
-                  curve: Curves.easeInOut,
-                  alignment: Alignment.bottomCenter,
-                  child: AnimatedSwitcher(
-                    duration: animationDuration,
-                    switchInCurve: Curves.easeIn,
-                    switchOutCurve: Curves.easeOut,
-                    child: child,
-                  ),
-                );
-              },
-            );
-          },
+        final child = _resolveChild(
+          ref: ref,
+          timeService: timeService,
+          current: snapshot.data,
+        );
+        return AnimatedSize(
+          duration: animationDuration,
+          curve: Curves.easeInOut,
+          alignment: Alignment.bottomCenter,
+          child: AnimatedSwitcher(
+            duration: animationDuration,
+            switchInCurve: Curves.easeIn,
+            switchOutCurve: Curves.easeOut,
+            child: child,
+          ),
         );
       },
     );
@@ -109,20 +78,12 @@ class SidebarTimerSection extends ConsumerWidget {
   Widget _resolveChild({
     required WidgetRef ref,
     required TimeService timeService,
-    required NavService navService,
     required JournalEntity? current,
-    required String? openTaskId,
   }) {
     if (current == null) {
       return const SizedBox.shrink(key: _hiddenKey);
     }
     final linkedFrom = timeService.linkedFrom;
-    if (linkedFrom is Task &&
-        openTaskId != null &&
-        linkedFrom.meta.id == openTaskId &&
-        _isTaskDetailRoute(navService.currentPath)) {
-      return const SizedBox.shrink(key: _hiddenKey);
-    }
     return _SidebarTimerCard(
       key: ValueKey('sidebar-timer-${current.meta.id}'),
       current: current,
