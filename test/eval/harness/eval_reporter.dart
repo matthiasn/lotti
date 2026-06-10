@@ -278,6 +278,164 @@ class SliceSummary {
   );
 }
 
+/// Request-shape evidence for one scenario/profile/provider turn.
+///
+/// This deliberately reports full-request fingerprint stability only. It does
+/// not claim per-token prefix-cache attribution, because provider usage is
+/// reported at the trace level.
+class ProviderRequestStabilitySummary {
+  const ProviderRequestStabilitySummary({
+    required this.scenarioId,
+    required this.profileName,
+    required this.providerType,
+    required this.providerModelId,
+    required this.endpointKey,
+    required this.invocationIndex,
+    required this.requestIndex,
+    required this.turnIndex,
+    required this.expectedTrialCount,
+    required this.traceCount,
+    required this.requestCount,
+    required this.uniqueMessageDigestCount,
+    required this.uniqueToolSchemaDigestCount,
+    required this.messageCounts,
+    required this.toolCounts,
+    required this.thoughtSignatureCounts,
+  });
+
+  final String scenarioId;
+  final String profileName;
+  final String providerType;
+  final String providerModelId;
+  final String endpointKey;
+  final int invocationIndex;
+  final int requestIndex;
+  final int turnIndex;
+  final int expectedTrialCount;
+  final int traceCount;
+  final int requestCount;
+  final int uniqueMessageDigestCount;
+  final int uniqueToolSchemaDigestCount;
+  final List<int> messageCounts;
+  final List<int> toolCounts;
+  final List<int> thoughtSignatureCounts;
+
+  int get missingTrialCount => expectedTrialCount - traceCount;
+
+  bool get requestShapeStable =>
+      uniqueMessageDigestCount == 1 &&
+      uniqueToolSchemaDigestCount == 1 &&
+      messageCounts.length == 1 &&
+      toolCounts.length == 1 &&
+      thoughtSignatureCounts.length == 1;
+}
+
+/// Trace-level provider usage coverage for one scenario/profile pair.
+///
+/// Cached-token values are aggregate trace outcomes, not per-request
+/// attributions. A missing cached-token field means the provider stream did not
+/// report cache usage to the app, not that the provider cache was zero.
+class ProviderUsageCacheSummary {
+  const ProviderUsageCacheSummary({
+    required this.scenarioId,
+    required this.profileName,
+    required this.expectedTrialCount,
+    required this.traceCount,
+    required this.inputTokenTraceCount,
+    required this.cachedInputTokenTraceCount,
+    required this.fullyReportedTraceCount,
+    required this.reportedInputTokens,
+    required this.reportedCachedInputTokens,
+  });
+
+  final String scenarioId;
+  final String profileName;
+  final int expectedTrialCount;
+  final int traceCount;
+  final int inputTokenTraceCount;
+  final int cachedInputTokenTraceCount;
+  final int fullyReportedTraceCount;
+  final int reportedInputTokens;
+  final int reportedCachedInputTokens;
+
+  int get missingTrialCount => expectedTrialCount - traceCount;
+
+  double? get reportedCacheRate {
+    if (fullyReportedTraceCount == 0 || reportedInputTokens == 0) return null;
+    return reportedCachedInputTokens / reportedInputTokens;
+  }
+}
+
+class _ProviderRequestStabilityBucket {
+  _ProviderRequestStabilityBucket({
+    required this.scenarioId,
+    required this.profileName,
+    required this.providerType,
+    required this.providerModelId,
+    required this.endpointKey,
+    required this.invocationIndex,
+    required this.requestIndex,
+    required this.turnIndex,
+    required this.expectedTrialCount,
+  });
+
+  final String scenarioId;
+  final String profileName;
+  final String providerType;
+  final String providerModelId;
+  final String endpointKey;
+  final int invocationIndex;
+  final int requestIndex;
+  final int turnIndex;
+  final int expectedTrialCount;
+  final _traceKeys = <String>{};
+  final _messageDigests = <String>{};
+  final _toolSchemaDigests = <String>{};
+  final _messageCounts = <int>{};
+  final _toolCounts = <int>{};
+  final _thoughtSignatureCounts = <int>{};
+  int requestCount = 0;
+
+  void add(EvalTrace trace, ProviderRequestRecord request) {
+    requestCount++;
+    _traceKeys.add(_traceKey(trace));
+    _messageDigests.add(request.messageDigest);
+    _toolSchemaDigests.add(request.toolSchemaDigest);
+    _messageCounts.add(request.messageCount);
+    _toolCounts.add(request.toolCount);
+    _thoughtSignatureCounts.add(request.thoughtSignatureCount);
+  }
+
+  ProviderRequestStabilitySummary toSummary() =>
+      ProviderRequestStabilitySummary(
+        scenarioId: scenarioId,
+        profileName: profileName,
+        providerType: providerType,
+        providerModelId: providerModelId,
+        endpointKey: endpointKey,
+        invocationIndex: invocationIndex,
+        requestIndex: requestIndex,
+        turnIndex: turnIndex,
+        expectedTrialCount: expectedTrialCount,
+        traceCount: _traceKeys.length,
+        requestCount: requestCount,
+        uniqueMessageDigestCount: _messageDigests.length,
+        uniqueToolSchemaDigestCount: _toolSchemaDigests.length,
+        messageCounts: _sortedInts(_messageCounts),
+        toolCounts: _sortedInts(_toolCounts),
+        thoughtSignatureCounts: _sortedInts(_thoughtSignatureCounts),
+      );
+}
+
+String _traceKey(EvalTrace trace) =>
+    '${trace.runId}\n${trace.scenario.id}\n${trace.profile.name}\n'
+    '${trace.trialIndex}';
+
+List<int> _sortedInts(Set<int> values) {
+  final sorted = values.toList()..sort();
+  return sorted;
+}
+
 /// Optional context that lets reports use the expected run matrix instead of
 /// only the matrix cells that happened to produce traces.
 class EvalReportContext {
@@ -672,6 +830,112 @@ abstract final class EvalReporter {
     return summaries;
   }
 
+  /// Request fingerprint stability grouped by scenario/profile/provider turn.
+  static List<ProviderRequestStabilitySummary>
+  summarizeProviderRequestStability(List<EvalTrace> traces) {
+    final byKey = <String, _ProviderRequestStabilityBucket>{};
+    for (final trace in traces) {
+      for (final request in trace.output.providerRequests) {
+        final endpointKey =
+            request.providerEndpointOrigin ??
+            request.providerBaseUrlDigest ??
+            'unknown';
+        final key = [
+          trace.scenario.id,
+          trace.profile.name,
+          request.providerType,
+          request.providerModelId,
+          endpointKey,
+          request.invocationIndex,
+          request.requestIndex,
+          request.turnIndex,
+        ].join('\n');
+        byKey
+            .putIfAbsent(
+              key,
+              () => _ProviderRequestStabilityBucket(
+                scenarioId: trace.scenario.id,
+                profileName: trace.profile.name,
+                providerType: request.providerType,
+                providerModelId: request.providerModelId,
+                endpointKey: endpointKey,
+                invocationIndex: request.invocationIndex,
+                requestIndex: request.requestIndex,
+                turnIndex: request.turnIndex,
+                expectedTrialCount: trace.profile.trialCount,
+              ),
+            )
+            .add(trace, request);
+      }
+    }
+
+    final summaries = [
+      for (final bucket in byKey.values) bucket.toSummary(),
+    ]..sort(_compareProviderRequestStability);
+    return summaries;
+  }
+
+  /// Aggregate provider usage coverage grouped by scenario/profile.
+  static List<ProviderUsageCacheSummary> summarizeProviderUsageCache(
+    List<EvalTrace> traces,
+  ) {
+    final byKey = <String, List<EvalTrace>>{};
+    for (final trace in traces) {
+      if (trace.output.providerRequests.isEmpty) continue;
+      byKey
+          .putIfAbsent(
+            _scenarioProfileKey(trace.scenario.id, trace.profile.name),
+            () => <EvalTrace>[],
+          )
+          .add(trace);
+    }
+
+    final summaries = <ProviderUsageCacheSummary>[];
+    for (final entry in byKey.entries) {
+      final group = entry.value;
+      final first = group.first;
+      var inputTokenTraceCount = 0;
+      var cachedInputTokenTraceCount = 0;
+      var fullyReportedTraceCount = 0;
+      var reportedInputTokens = 0;
+      var reportedCachedInputTokens = 0;
+      for (final trace in group) {
+        final inputTokens = trace.output.usage.inputTokens;
+        final cachedInputTokens = trace.output.usage.cachedInputTokens;
+        if (inputTokens != null) {
+          inputTokenTraceCount++;
+        }
+        if (cachedInputTokens != null) {
+          cachedInputTokenTraceCount++;
+        }
+        if (inputTokens != null && cachedInputTokens != null) {
+          fullyReportedTraceCount++;
+          reportedInputTokens += inputTokens;
+          reportedCachedInputTokens += cachedInputTokens;
+        }
+      }
+      summaries.add(
+        ProviderUsageCacheSummary(
+          scenarioId: first.scenario.id,
+          profileName: first.profile.name,
+          expectedTrialCount: first.profile.trialCount,
+          traceCount: group.length,
+          inputTokenTraceCount: inputTokenTraceCount,
+          cachedInputTokenTraceCount: cachedInputTokenTraceCount,
+          fullyReportedTraceCount: fullyReportedTraceCount,
+          reportedInputTokens: reportedInputTokens,
+          reportedCachedInputTokens: reportedCachedInputTokens,
+        ),
+      );
+    }
+    summaries.sort((a, b) {
+      final profileOrder = a.profileName.compareTo(b.profileName);
+      if (profileOrder != 0) return profileOrder;
+      return a.scenarioId.compareTo(b.scenarioId);
+    });
+    return summaries;
+  }
+
   /// A human-readable summary table.
   static String render(
     List<EvalTrace> traces, {
@@ -710,6 +974,79 @@ abstract final class EvalReporter {
         '${_one(s.meanGoalAttainment)} / ${_one(s.meanQuality)} / '
         '${_one(s.meanEfficiency)}',
       );
+    }
+    final requestSummaries = summarizeProviderRequestStability(traces);
+    if (requestSummaries.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('Provider request fingerprints')
+        ..writeln(
+          'profile           scenario                           provider  '
+          'model             turn  req  traces  calls  msg dig  tool dig  '
+          'msgs  tools  thoughts  stable',
+        )
+        ..writeln(
+          '----------------  ---------------------------------  --------  '
+          '----------------  ----  ---  ------  -----  -------  --------  '
+          '----  -----  --------  ------',
+        );
+      for (final s in requestSummaries) {
+        buffer.writeln(
+          '${_clip(s.profileName, 16).padRight(16)}  '
+          '${_clip(s.scenarioId, 33).padRight(33)}  '
+          '${_clip(s.providerType, 8).padRight(8)}  '
+          '${_clip(s.providerModelId, 16).padRight(16)}  '
+          '${s.turnIndex.toString().padLeft(4)}  '
+          '${s.requestIndex.toString().padLeft(3)}  '
+          '${'${s.traceCount}/${s.expectedTrialCount}'.padLeft(6)}  '
+          '${s.requestCount.toString().padLeft(5)}  '
+          '${s.uniqueMessageDigestCount.toString().padLeft(7)}  '
+          '${s.uniqueToolSchemaDigestCount.toString().padLeft(8)}  '
+          '${_formatIntSet(s.messageCounts).padLeft(4)}  '
+          '${_formatIntSet(s.toolCounts).padLeft(5)}  '
+          '${_formatIntSet(s.thoughtSignatureCounts).padLeft(8)}  '
+          '${s.requestShapeStable ? 'yes' : 'no'}',
+        );
+      }
+      final tracesWithoutProviderRequests = traces
+          .where((trace) => trace.output.providerRequests.isEmpty)
+          .length;
+      if (tracesWithoutProviderRequests > 0) {
+        buffer.writeln(
+          'traces without provider request evidence: '
+          '$tracesWithoutProviderRequests',
+        );
+      }
+    }
+    final usageSummaries = summarizeProviderUsageCache(traces);
+    if (usageSummaries.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('Provider usage cache coverage')
+        ..writeln(
+          'profile           scenario                           traces  '
+          'input  cached  full  cache tokens       cache%',
+        )
+        ..writeln(
+          '----------------  ---------------------------------  ------  '
+          '-----  ------  ----  -----------------  ------',
+        );
+      for (final s in usageSummaries) {
+        final cacheRate = s.reportedCacheRate;
+        final tokenText = s.fullyReportedTraceCount == 0
+            ? 'unreported'
+            : '${s.reportedCachedInputTokens}/${s.reportedInputTokens}';
+        buffer.writeln(
+          '${_clip(s.profileName, 16).padRight(16)}  '
+          '${_clip(s.scenarioId, 33).padRight(33)}  '
+          '${'${s.traceCount}/${s.expectedTrialCount}'.padLeft(6)}  '
+          '${'${s.inputTokenTraceCount}/${s.traceCount}'.padLeft(5)}  '
+          '${'${s.cachedInputTokenTraceCount}/${s.traceCount}'.padLeft(6)}  '
+          '${'${s.fullyReportedTraceCount}/${s.traceCount}'.padLeft(4)}  '
+          '${tokenText.padLeft(17)}  '
+          '${cacheRate == null ? 'n/a' : _pct(cacheRate).padLeft(6)}',
+        );
+      }
     }
     final capabilitySummaries = summarizeByCapability(traces);
     if (capabilitySummaries.isNotEmpty) {
@@ -1982,6 +2319,34 @@ abstract final class EvalReporter {
     if (comparison.estimatedCostMissingScenarioCount > 0) return 'cost missing';
     if (comparison.isLowSample) return 'low n';
     return '';
+  }
+
+  static int _compareProviderRequestStability(
+    ProviderRequestStabilitySummary left,
+    ProviderRequestStabilitySummary right,
+  ) {
+    final profileOrder = left.profileName.compareTo(right.profileName);
+    if (profileOrder != 0) return profileOrder;
+    final scenarioOrder = left.scenarioId.compareTo(right.scenarioId);
+    if (scenarioOrder != 0) return scenarioOrder;
+    final providerOrder = left.providerType.compareTo(right.providerType);
+    if (providerOrder != 0) return providerOrder;
+    final modelOrder = left.providerModelId.compareTo(right.providerModelId);
+    if (modelOrder != 0) return modelOrder;
+    final endpointOrder = left.endpointKey.compareTo(right.endpointKey);
+    if (endpointOrder != 0) return endpointOrder;
+    final invocationOrder = left.invocationIndex.compareTo(
+      right.invocationIndex,
+    );
+    if (invocationOrder != 0) return invocationOrder;
+    final turnOrder = left.turnIndex.compareTo(right.turnIndex);
+    if (turnOrder != 0) return turnOrder;
+    return left.requestIndex.compareTo(right.requestIndex);
+  }
+
+  static String _formatIntSet(List<int> values) {
+    if (values.isEmpty) return '-';
+    return values.join(',');
   }
 
   static String _clip(String value, int width) {

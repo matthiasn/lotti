@@ -110,6 +110,121 @@ void main() {
     expect(sliceSummary.judgePassEstimate.successes, 1);
   });
 
+  test('reports provider request stability and cache usage coverage', () {
+    final traces = [
+      _trace(
+        scenario: taskWorkflowReleaseNotesScenario,
+        profile: profile,
+        inputTokens: 2048,
+        cachedInputTokens: 0,
+        providerRequests: [
+          _providerRequest(),
+        ],
+      ),
+      _trace(
+        scenario: taskWorkflowReleaseNotesScenario,
+        profile: profile,
+        trialIndex: 1,
+        inputTokens: 2048,
+        cachedInputTokens: 1024,
+        providerRequests: [
+          _providerRequest(),
+        ],
+      ),
+      _trace(
+        scenario: taskWorkflowReleaseNotesScenario,
+        profile: profile,
+        trialIndex: 2,
+        inputTokens: 2048,
+        providerRequests: [
+          _providerRequest(
+            messageDigest: 'sha256:changed-messages',
+            messageCount: 3,
+            toolSchemaDigest: 'sha256:changed-tools',
+          ),
+        ],
+      ),
+    ];
+
+    final requestSummary = EvalReporter.summarizeProviderRequestStability(
+      traces,
+    ).single;
+    expect(requestSummary.traceCount, 3);
+    expect(requestSummary.requestCount, 3);
+    expect(requestSummary.uniqueMessageDigestCount, 2);
+    expect(requestSummary.uniqueToolSchemaDigestCount, 2);
+    expect(requestSummary.messageCounts, [2, 3]);
+    expect(requestSummary.toolCounts, [19]);
+    expect(requestSummary.requestShapeStable, isFalse);
+
+    final usageSummary = EvalReporter.summarizeProviderUsageCache(
+      traces,
+    ).single;
+    expect(usageSummary.inputTokenTraceCount, 3);
+    expect(usageSummary.cachedInputTokenTraceCount, 2);
+    expect(usageSummary.fullyReportedTraceCount, 2);
+    expect(usageSummary.reportedInputTokens, 4096);
+    expect(usageSummary.reportedCachedInputTokens, 1024);
+    expect(usageSummary.reportedCacheRate, closeTo(0.25, 0.001));
+
+    final rendered = EvalReporter.render(traces);
+    expect(rendered, contains('Provider request fingerprints'));
+    expect(rendered, contains('Provider usage cache coverage'));
+    expect(rendered, contains('1024/4096'));
+    expect(rendered, contains('25%'));
+    expect(rendered, contains('no'));
+  });
+
+  test('separates provider request stability by continuation turn', () {
+    final traces = [
+      _trace(
+        scenario: taskWorkflowReleaseNotesScenario,
+        profile: profile,
+        providerRequests: [
+          _providerRequest(),
+          _providerRequest(
+            requestIndex: 1,
+            turnIndex: 2,
+            messageDigest: 'sha256:turn-two-messages',
+            messageCount: 5,
+          ),
+        ],
+      ),
+    ];
+
+    final summaries = EvalReporter.summarizeProviderRequestStability(traces);
+
+    expect(summaries, hasLength(2));
+    expect(summaries.map((summary) => summary.turnIndex), [1, 2]);
+    expect(summaries.map((summary) => summary.requestIndex), [0, 1]);
+    expect(summaries.map((summary) => summary.messageCounts), [
+      [2],
+      [5],
+    ]);
+  });
+
+  test('reports traces without provider request evidence in mixed runs', () {
+    final traces = [
+      _trace(
+        scenario: taskWorkflowReleaseNotesScenario,
+        profile: profile,
+        providerRequests: [
+          _providerRequest(),
+        ],
+      ),
+      _trace(
+        scenario: taskWorkflowReleaseNotesScenario,
+        profile: profile,
+        trialIndex: 1,
+      ),
+    ];
+
+    final rendered = EvalReporter.render(traces);
+
+    expect(rendered, contains('Provider request fingerprints'));
+    expect(rendered, contains('traces without provider request evidence: 1'));
+  });
+
   test('reports by profile and capability', () {
     final traces = [
       _trace(
@@ -2141,6 +2256,42 @@ EvalRunManifest _manifestFor({
   );
 }
 
+ProviderRequestRecord _providerRequest({
+  int invocationIndex = 0,
+  int requestIndex = 0,
+  int turnIndex = 1,
+  String providerModelId = 'frontier-repeatable-model',
+  String providerId = 'provider-frontier-repeatable',
+  String providerType = 'openAi',
+  String providerEndpointOrigin = 'http://localhost:8003',
+  String providerBaseUrlDigest = 'sha256:provider-base',
+  String messageDigest = 'sha256:stable-messages',
+  int messageCount = 2,
+  String toolSchemaDigest = 'sha256:stable-tools',
+  int toolCount = 19,
+  List<String> toolNames = const ['update_report'],
+  double temperature = 1,
+  int thoughtSignatureCount = 0,
+}) {
+  return ProviderRequestRecord(
+    invocationIndex: invocationIndex,
+    requestIndex: requestIndex,
+    turnIndex: turnIndex,
+    providerModelId: providerModelId,
+    providerId: providerId,
+    providerType: providerType,
+    providerEndpointOrigin: providerEndpointOrigin,
+    providerBaseUrlDigest: providerBaseUrlDigest,
+    messageDigest: messageDigest,
+    messageCount: messageCount,
+    toolSchemaDigest: toolSchemaDigest,
+    toolCount: toolCount,
+    toolNames: toolNames,
+    temperature: temperature,
+    thoughtSignatureCount: thoughtSignatureCount,
+  );
+}
+
 EvalTrace _trace({
   required EvalScenario scenario,
   required EvalProfile profile,
@@ -2155,6 +2306,8 @@ EvalTrace _trace({
   int? outputTokens = 50,
   int? cachedInputTokens,
   int? thoughtsTokens,
+  List<ProviderRequestRecord> providerRequests =
+      const <ProviderRequestRecord>[],
 }) {
   return EvalTrace(
     runId: 'run-1',
@@ -2175,6 +2328,7 @@ EvalTrace _trace({
         tldr: 'The wake produced durable state.',
         content: 'Done.',
       ),
+      providerRequests: providerRequests,
     ),
     level1Checks: [
       if (level1Passed)
