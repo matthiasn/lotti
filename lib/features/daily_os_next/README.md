@@ -125,8 +125,48 @@ Runtime behavior:
   decodable.
 - `DayAgentStrategy` handles private observations itself and delegates
   `set_next_wake`, `search_memory`, the knowledge tool (`propose_knowledge`),
-  Capture/Reconcile tools, draft plan tools, and refine tools through the
-  workflow handler.
+  Capture/Reconcile tools, draft plan tools, refine tools, and the week-context
+  tool (`write_day_summary`) through the workflow handler.
+
+### Week Context & Day Summaries (ADR 0028)
+
+- **Facts vs testimony.** `<recent_days>` renders one paragraph per day over a
+  rolling last-7-days lookback plus the plan date: facts first — deterministic,
+  template-rendered planned-vs-recorded minutes per category (integer-tenths
+  arithmetic, never doubles), named block-level misses, plan status, total —
+  then the agent's own contemporaneous day summary as an `Agent note:` line.
+  Facts come exclusively from entities; the note is testimony rendered adjacent
+  for self-auditing, and on contradiction the facts line wins. `<week_ahead>`
+  carries future days `[planDate+1 .. planDate+5]` that have plans plus claim
+  deadlines within `[today, today+5)`. All wording lives in ONE renderer
+  (`agents/domain/week_context.dart`); the service
+  (`agents/service/day_agent_week_context_service.dart`) assembles inputs —
+  one chunked `getEntitiesByIds` for the 21 deterministic plan/summary ids,
+  recorded spans via the shared `logic/recorded_time.dart` core over an
+  end-of-day-bounded calendar query, claims by visibility window — and is
+  fail-soft (a load error logs and the wake proceeds without the sections).
+- **Wall-clock day classification.** `today := localDay(clock.now())`, not the
+  wake's workspace day: past days render "Missed:", today renders
+  "(today so far)" / "Still planned:", days after today render "(upcoming)" —
+  never "Missed:" and never fake "Nothing recorded." rest-day lines for days
+  that have not happened (drafting-tomorrow wakes see tomorrow as upcoming).
+- **`write_day_summary`** persists `AgentDomainEntity.daySummary`
+  (`day_agent_summary:<dayId>`) — a keyed mutable register, upserted in place
+  within its window (preserving `createdAt`), windowed to the wall clock:
+  today or yesterday only, independent of the wake workspace (the sole,
+  ADR-governed exception to the workspace-day tool guard — dispatched before
+  the blanket dayId rejection). Text is whitespace-normalized and capped at
+  500 chars at the write path. Concurrent versions resolve earliest-createdAt
+  wins (the most contemporaneous testimony is canonical).
+- **Channel partition.** `write_day_summary` is the sole channel for day
+  retrospectives; `record_observations` is forward-looking learnings only —
+  never day recaps (seeded directive, 2026-06-10).
+- **Caps.** Max 6 categories per day (by `max(planned, recorded)`), 5 named
+  misses, 10 deadline lines — each truncation renders a deterministic
+  overflow marker (`+N more (X.Xh)` / `+N more missed` / `+N more.`).
+- **Cost gating.** Week context builds only on wakes whose day came from
+  day-carrying tokens (planning-day / drafting / refine / scheduled);
+  capture-submitted wakes skip the 8-day journal+links+claims load.
 - `search_memory` is the planner's recall + memory-linking tool, handled by the
   workflow itself (`DayAgentWorkflow._searchMemory` over `AgentLogCompactor`).
   With `query` it keyword-scans the **full** immutable capture-and-observation

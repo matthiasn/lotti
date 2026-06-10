@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1018]
+### Added
+- The Daily OS planner now sees the last week in context when drafting a
+  day: planned-vs-recorded time per category, missed sessions by name, and
+  upcoming plans plus deadlines for the next five days. It also keeps a
+  short note on how each day actually went, written as the day closes, and
+  reads those notes back later — so after an overworked stretch it plans a
+  gentler day instead of piling on. Sustainability over throughput.
+
 ## [0.9.1017]
 ### Added
 - New desktop "Time Analysis" dashboard under Daily OS, opened from a
