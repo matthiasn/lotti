@@ -323,6 +323,44 @@ void main() {
       );
     });
 
+    test('selectToDate jumps to the current month-to-date', () {
+      final container = makeContainer();
+      withClock(Clock.fixed(fixedNow), () {
+        container
+            .read(insightsRangeControllerProvider.notifier)
+            .selectToDate(InsightsPeriodUnit.month);
+      });
+      final selection = container.read(insightsRangeControllerProvider);
+      expect(selection.unit, InsightsPeriodUnit.month);
+      expect(dayStart(selection.range.startDay), DateTime(2026, 6));
+      // fixedNow is Jun 7 → the range ends after today, not after the month.
+      expect(dayStart(selection.range.endDayExclusive), DateTime(2026, 6, 8));
+    });
+
+    test(
+      'year-to-date comparison covers the same elapsed days last year',
+      () {
+        final container = makeContainer();
+        final notifier = withClock(
+          Clock.fixed(fixedNow),
+          () => container.read(insightsRangeControllerProvider.notifier),
+        );
+        withClock(Clock.fixed(fixedNow), () {
+          notifier
+            ..selectToDate(InsightsPeriodUnit.year)
+            ..toggleCompare();
+        });
+        final selection = container.read(insightsRangeControllerProvider);
+        expect(dayStart(selection.range.startDay), DateTime(2026));
+        expect(dayStart(selection.range.endDayExclusive), DateTime(2026, 6, 8));
+
+        final previous = notifier.previousComparisonRange!;
+        expect(dayStart(previous.startDay), DateTime(2025));
+        // Truncated to the same elapsed days — never YTD vs a full year.
+        expect(previous.dayCount, selection.range.dayCount);
+      },
+    );
+
     test('jumpTo snaps to the current granularity period of a far date', () {
       final container = makeContainer();
       withClock(Clock.fixed(fixedNow), () {

@@ -78,6 +78,49 @@ void main() {
     });
   });
 
+  group('periodToDate', () {
+    test('month-to-date spans from the 1st through today inclusive', () {
+      final r = periodToDate(
+        InsightsPeriodUnit.month,
+        DateTime(2026, 6, 7, 16),
+      );
+      expect(startOf(r), DateTime(2026, 6));
+      expect(endOf(r), DateTime(2026, 6, 8)); // today is included
+      expect(r.dayCount, 7);
+    });
+
+    test('year-to-date spans from January 1st through today inclusive', () {
+      final r = periodToDate(InsightsPeriodUnit.year, DateTime(2026, 6, 7));
+      expect(startOf(r), DateTime(2026));
+      expect(endOf(r), DateTime(2026, 6, 8));
+    });
+
+    test('on the period first day it is a single-day range', () {
+      final r = periodToDate(InsightsPeriodUnit.month, DateTime(2026, 6, 1, 9));
+      expect(startOf(r), DateTime(2026, 6));
+      expect(r.dayCount, 1);
+    });
+
+    test('on the period last day it equals the full period', () {
+      final lastOfJune = DateTime(2026, 6, 30, 12);
+      expect(
+        periodToDate(InsightsPeriodUnit.month, lastOfJune),
+        periodContaining(InsightsPeriodUnit.month, lastOfJune),
+      );
+    });
+
+    test('week-to-date honors the first weekday', () {
+      // Tue 2026-06-09 in a Sunday-first region → Sun Jun 7 through Tue.
+      final r = periodToDate(
+        InsightsPeriodUnit.week,
+        DateTime(2026, 6, 9),
+        firstDayOfWeekIndex: DateTime.sunday % 7,
+      );
+      expect(startOf(r), DateTime(2026, 6, 7));
+      expect(endOf(r), DateTime(2026, 6, 10));
+    });
+  });
+
   group('shiftPeriod / previousPeriod', () {
     test('week steps by seven days in either direction', () {
       final week = periodContaining(
@@ -159,5 +202,55 @@ void main() {
         DateTime(2026, 2, 28),
       );
     });
+
+    test(
+      'a partial month-to-date compares against the same days last month',
+      () {
+        final mtd = periodToDate(
+          InsightsPeriodUnit.month,
+          DateTime(2026, 6, 10),
+        );
+        final prev = previousPeriod(mtd, InsightsPeriodUnit.month);
+        expect(startOf(prev), DateTime(2026, 5));
+        expect(endOf(prev), DateTime(2026, 5, 11)); // same 10 elapsed days
+      },
+    );
+
+    test(
+      'a partial year-to-date compares against the same days last year',
+      () {
+        final ytd = periodToDate(
+          InsightsPeriodUnit.year,
+          DateTime(2026, 6, 10),
+        );
+        final prev = previousPeriod(ytd, InsightsPeriodUnit.year);
+        expect(startOf(prev), DateTime(2025));
+        expect(prev.dayCount, ytd.dayCount);
+      },
+    );
+
+    test('a full month keeps the shorter previous month untruncated', () {
+      final march = periodContaining(
+        InsightsPeriodUnit.month,
+        DateTime(2026, 3, 15),
+      );
+      final feb = previousPeriod(march, InsightsPeriodUnit.month);
+      expect(startOf(feb), DateTime(2026, 2));
+      expect(endOf(feb), DateTime(2026, 3)); // all 28 days, no truncation
+    });
+
+    test(
+      'month-to-date longer than the previous month keeps that full month',
+      () {
+        // MTD on May 31 spans 31 days; April only has 30 — no truncation.
+        final mtd = periodToDate(
+          InsightsPeriodUnit.month,
+          DateTime(2026, 5, 31),
+        );
+        final prev = previousPeriod(mtd, InsightsPeriodUnit.month);
+        expect(startOf(prev), DateTime(2026, 4));
+        expect(endOf(prev), DateTime(2026, 5));
+      },
+    );
   });
 }

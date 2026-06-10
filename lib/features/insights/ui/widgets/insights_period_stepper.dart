@@ -2,17 +2,19 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Compact period navigator for the Time Analysis dashboard:
-/// `‹  [ Week ▾ ]  Jun 1 – 7  ›`.
+/// `‹  [ Week ▾ ]  Jun 1 – 7  ›  MTD YTD`.
 ///
 /// The granularity dropdown re-derives the period via the controller; the
 /// chevrons step one whole period at a time. Stepping forward past the
-/// current period is disabled — there is no data in the future.
+/// current period is disabled — there is no data in the future. The MTD/YTD
+/// pills jump straight to the current month-to-date / year-to-date.
 class InsightsPeriodStepper extends StatelessWidget {
   const InsightsPeriodStepper({
     required this.selection,
@@ -20,6 +22,7 @@ class InsightsPeriodStepper extends StatelessWidget {
     required this.onStep,
     this.onOpenCalendar,
     this.onToggleCompare,
+    this.onSelectToDate,
     super.key,
   });
 
@@ -36,14 +39,21 @@ class InsightsPeriodStepper extends StatelessWidget {
   /// Toggles previous-period comparison. Null hides the compare control.
   final VoidCallback? onToggleCompare;
 
+  /// Jumps to the to-date portion of the current month/year (the MTD/YTD
+  /// shortcut pills). Null hides the pills.
+  final ValueChanged<InsightsPeriodUnit>? onSelectToDate;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final now = clock.now();
     // Forward is disabled once the period already reaches today: the future
     // holds no tracked time.
-    final canStepForward =
-        selection.range.endDayExclusive <= epochDay(clock.now());
+    final canStepForward = selection.range.endDayExclusive <= epochDay(now);
+
+    bool toDateActive(InsightsPeriodUnit unit) =>
+        selection.unit == unit && selection.range == periodToDate(unit, now);
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -69,6 +79,28 @@ class InsightsPeriodStepper extends StatelessWidget {
           tooltip: messages.insightsPeriodNext,
           onPressed: canStepForward ? () => onStep(1) : null,
         ),
+        if (onSelectToDate != null) ...[
+          SizedBox(width: tokens.spacing.step4),
+          Tooltip(
+            message: messages.insightsRangeMonthToDate,
+            child: InsightsPillButton(
+              label: messages.insightsRangeMtd,
+              active: toDateActive(InsightsPeriodUnit.month),
+              onTap: () => onSelectToDate!(InsightsPeriodUnit.month),
+              semanticsLabel: messages.insightsRangeMonthToDate,
+            ),
+          ),
+          SizedBox(width: tokens.spacing.step2),
+          Tooltip(
+            message: messages.insightsRangeYearToDate,
+            child: InsightsPillButton(
+              label: messages.insightsRangeYtd,
+              active: toDateActive(InsightsPeriodUnit.year),
+              onTap: () => onSelectToDate!(InsightsPeriodUnit.year),
+              semanticsLabel: messages.insightsRangeYearToDate,
+            ),
+          ),
+        ],
         if (onToggleCompare != null) ...[
           SizedBox(width: tokens.spacing.step4),
           InsightsPillButton(
@@ -96,19 +128,26 @@ String _unitLabel(BuildContext context, InsightsPeriodUnit unit) {
 
 /// Human label for the current period, formatted per granularity in the
 /// active locale (e.g. `Jun 1 – 7`, `June 2026`, `Q2 2026`, `2026`).
+///
+/// A partial to-date range (MTD/YTD) is labeled by its actual day span
+/// (`Jun 1 – 10`, `Jan 1 – Jun 10`) — naming the whole month/year would
+/// overstate what the dashboard shows.
 String _periodLabel(BuildContext context, InsightsPeriodSelection selection) {
   final locale = Localizations.localeOf(context).toString();
   final start = dayStart(selection.range.startDay);
   final lastDay = dayStart(selection.range.endDayExclusive - 1);
+  final isPartial =
+      selection.unit != InsightsPeriodUnit.day &&
+      selection.unit != InsightsPeriodUnit.week &&
+      selection.range != periodContaining(selection.unit, start);
   switch (selection.unit) {
     case InsightsPeriodUnit.day:
       return DateFormat.yMMMMd(locale).format(start);
+    case InsightsPeriodUnit.month when isPartial:
+    case InsightsPeriodUnit.quarter when isPartial:
+    case InsightsPeriodUnit.year when isPartial:
     case InsightsPeriodUnit.week:
-      final from = DateFormat.MMMd(locale).format(start);
-      final to = start.month == lastDay.month
-          ? DateFormat.d(locale).format(lastDay)
-          : DateFormat.MMMd(locale).format(lastDay);
-      return '$from – $to';
+      return _spanLabel(locale, start, lastDay);
     case InsightsPeriodUnit.month:
       return DateFormat.yMMMM(locale).format(start);
     case InsightsPeriodUnit.quarter:
@@ -117,6 +156,17 @@ String _periodLabel(BuildContext context, InsightsPeriodSelection selection) {
     case InsightsPeriodUnit.year:
       return '${start.year}';
   }
+}
+
+/// `Jun 1 – 7` within a month, `Jan 1 – Jun 10` across months, `Jun 1` for
+/// a single day (MTD/YTD on the period's first day).
+String _spanLabel(String locale, DateTime start, DateTime lastDay) {
+  final from = DateFormat.MMMd(locale).format(start);
+  if (start == lastDay) return from;
+  final to = start.month == lastDay.month
+      ? DateFormat.d(locale).format(lastDay)
+      : DateFormat.MMMd(locale).format(lastDay);
+  return '$from – $to';
 }
 
 class _UnitDropdown extends StatelessWidget {

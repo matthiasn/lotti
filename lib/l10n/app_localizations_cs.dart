@@ -5128,6 +5128,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsPeriodYear => 'Rok';
 
   @override
+  String get insightsRangeMonthToDate => 'Od začátku měsíce';
+
+  @override
+  String get insightsRangeMtd => 'MTD';
+
+  @override
+  String get insightsRangeYearToDate => 'Od začátku roku';
+
+  @override
+  String get insightsRangeYtd => 'YTD';
+
+  @override
   String get insightsTableAvgPerDay => 'Ø/DEN';
 
   @override

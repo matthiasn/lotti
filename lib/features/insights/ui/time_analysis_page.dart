@@ -90,6 +90,9 @@ class TimeAnalysisPage extends ConsumerWidget {
                 .read(insightsRangeControllerProvider.notifier)
                 .selectUnit,
             onStep: ref.read(insightsRangeControllerProvider.notifier).step,
+            onSelectToDate: ref
+                .read(insightsRangeControllerProvider.notifier)
+                .selectToDate,
             onOpenCalendar: () => showInsightsPeriodPicker(context: context),
             onToggleCompare: ref
                 .read(insightsRangeControllerProvider.notifier)
@@ -115,6 +118,7 @@ class _DashboardContent extends StatelessWidget {
     required this.focusCategoryIds,
     required this.onSelectUnit,
     required this.onStep,
+    required this.onSelectToDate,
     required this.onOpenCalendar,
     required this.onToggleCompare,
     required this.onToggleFocusCategory,
@@ -132,6 +136,7 @@ class _DashboardContent extends StatelessWidget {
   final Set<String> focusCategoryIds;
   final ValueChanged<InsightsPeriodUnit> onSelectUnit;
   final ValueChanged<int> onStep;
+  final ValueChanged<InsightsPeriodUnit> onSelectToDate;
   final VoidCallback onOpenCalendar;
   final VoidCallback onToggleCompare;
   final ValueChanged<String> onToggleFocusCategory;
@@ -204,6 +209,7 @@ class _DashboardContent extends StatelessWidget {
               selection: selection,
               onSelectUnit: onSelectUnit,
               onStep: onStep,
+              onSelectToDate: onSelectToDate,
               onOpenCalendar: onOpenCalendar,
               onToggleCompare: onToggleCompare,
             ),

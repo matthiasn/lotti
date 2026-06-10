@@ -41,7 +41,8 @@ Layering:
 
 ## Period navigation
 
-The range is browsed, not picked from presets. `InsightsRangeController`
+The range is browsed period by period (with MTD/YTD shortcut pills for the
+two most useful jumps). `InsightsRangeController`
 holds an `InsightsPeriodSelection` — a granularity (`InsightsPeriodUnit`:
 day / week / month / quarter / year) plus the resolved `InsightsRange` it
 points at, and a `compareEnabled` flag (see *Comparison* below).
@@ -51,11 +52,22 @@ whole periods. Snapping (`periodContaining`) takes the first weekday;
 shifting (`shiftPeriod`) does not — an aligned week stays aligned under a
 ±7-day move, so week stepping shifts the bounds directly and is independent
 of the first weekday (which matters because it resolves asynchronously).
-The `InsightsPeriodStepper` renders `‹ [unit ▾] label ›`: the
+The `InsightsPeriodStepper` renders `‹ [unit ▾] label › MTD YTD`: the
 dropdown re-derives the period for a new granularity (keeping the current
 anchor), the chevrons step one period at a time, and forward is disabled
 once the period reaches today. Every step is an in-memory slice within the
 year window (below), so the dashboard updates with no database round trip.
+
+**MTD / YTD shortcuts.** Two pills on the stepper row jump straight to the
+current month-to-date / year-to-date via
+`InsightsRangeController.selectToDate`, which sets the unit to month/year
+and the range to `periodToDate` — period start through today inclusive,
+rather than the full calendar period (so the chart isn't padded with empty
+future days and avg/day divides by elapsed days only). A pill lights up
+when the selection equals its to-date period; the period label shows the
+actual day span (`Jun 1 – 10`, `Jan 1 – Jun 10`) instead of naming the
+whole month/year. Stepping back from a to-date range lands on the full
+previous period (the stepper's `shiftPeriod` re-snaps month/quarter/year).
 
 **Region-aware week start.** Week periods (and the calendar grid) start on
 the device region's first weekday — Monday across most of Europe, Sunday in
@@ -90,6 +102,10 @@ already-aligned `state.range` via `shiftPeriod` (so it never re-snaps and
 can't drift out of step with the current range, even if the first weekday
 resolves after the range was built — the page used to re-derive it with a
 Monday default and misaligned the comparison for Sunday/Saturday regions).
+For a partial to-date range (MTD/YTD), `previousPeriod` truncates the
+previous period to the same number of elapsed days — MTD compares against
+the same days of last month, YTD against the same days of last year, never
+a 10-day range against a full month.
 The KPI
 tiles render an `InsightsDeltaChip` (sign and color convey direction;
 `insightsDeltaPercent` returns `null` for a zero baseline, shown as "new"),

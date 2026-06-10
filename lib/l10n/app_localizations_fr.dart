@@ -5170,6 +5170,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get insightsPeriodYear => 'Année';
 
   @override
+  String get insightsRangeMonthToDate => 'Depuis le début du mois';
+
+  @override
+  String get insightsRangeMtd => 'MTD';
+
+  @override
+  String get insightsRangeYearToDate => 'Depuis le début de l\'année';
+
+  @override
+  String get insightsRangeYtd => 'YTD';
+
+  @override
   String get insightsTableAvgPerDay => 'MOY./JOUR';
 
   @override

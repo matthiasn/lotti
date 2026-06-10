@@ -91,10 +91,44 @@ InsightsRange shiftPeriod(
   }
 }
 
+/// The to-date portion of the period of [unit] containing [now]: from the
+/// period start through today inclusive. Powers the MTD/YTD shortcuts.
+///
+/// On the period's first day this is a single-day range; on its last day it
+/// equals the full period.
+InsightsRange periodToDate(
+  InsightsPeriodUnit unit,
+  DateTime now, {
+  int firstDayOfWeekIndex = defaultFirstDayOfWeekIndex,
+}) {
+  final full = periodContaining(
+    unit,
+    now,
+    firstDayOfWeekIndex: firstDayOfWeekIndex,
+  );
+  return InsightsRange(
+    startDay: full.startDay,
+    endDayExclusive: epochDay(now) + 1,
+  );
+}
+
 /// The period immediately before [range] (one whole [unit] earlier). Used by
 /// the comparison mode to derive the "previous period".
-InsightsRange previousPeriod(InsightsRange range, InsightsPeriodUnit unit) =>
-    shiftPeriod(range, unit, -1);
+///
+/// When [range] is a partial to-date period (see [periodToDate]), the
+/// previous period is truncated to the same number of elapsed days, so MTD
+/// compares against the same days of last month and YTD against the same
+/// days of last year — never a 10-day range against a full month.
+InsightsRange previousPeriod(InsightsRange range, InsightsPeriodUnit unit) {
+  final shifted = shiftPeriod(range, unit, -1);
+  if (range.dayCount < shifted.dayCount) {
+    return InsightsRange(
+      startDay: shifted.startDay,
+      endDayExclusive: shifted.startDay + range.dayCount,
+    );
+  }
+  return shifted;
+}
 
 InsightsRange _bounds(DateTime startInclusive, DateTime endExclusive) =>
     InsightsRange(

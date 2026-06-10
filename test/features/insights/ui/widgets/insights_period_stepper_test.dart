@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -23,6 +24,7 @@ void main() {
     ValueChanged<int>? onStep,
     VoidCallback? onOpenCalendar,
     VoidCallback? onToggleCompare,
+    ValueChanged<InsightsPeriodUnit>? onSelectToDate,
   }) {
     return withClock(
       Clock.fixed(now),
@@ -34,6 +36,7 @@ void main() {
             onStep: onStep ?? (_) {},
             onOpenCalendar: onOpenCalendar,
             onToggleCompare: onToggleCompare,
+            onSelectToDate: onSelectToDate,
           ),
         ),
       ),
@@ -111,6 +114,95 @@ void main() {
     );
     await tester.tap(find.text('Compare'));
     expect(toggled, 1);
+  });
+
+  testWidgets('without onSelectToDate the MTD/YTD pills are hidden', (
+    tester,
+  ) async {
+    await pump(tester, selection: weekOf(now));
+    expect(find.text('MTD'), findsNothing);
+    expect(find.text('YTD'), findsNothing);
+  });
+
+  testWidgets('tapping MTD requests month-to-date', (tester) async {
+    InsightsPeriodUnit? requested;
+    await pump(
+      tester,
+      selection: weekOf(now),
+      onSelectToDate: (unit) => requested = unit,
+    );
+    await tester.tap(find.text('MTD'));
+    expect(requested, InsightsPeriodUnit.month);
+  });
+
+  testWidgets('tapping YTD requests year-to-date', (tester) async {
+    InsightsPeriodUnit? requested;
+    await pump(
+      tester,
+      selection: weekOf(now),
+      onSelectToDate: (unit) => requested = unit,
+    );
+    await tester.tap(find.text('YTD'));
+    expect(requested, InsightsPeriodUnit.year);
+  });
+
+  testWidgets(
+    'a month-to-date selection lights MTD and labels the day span',
+    (tester) async {
+      final mtd = InsightsPeriodSelection(
+        unit: InsightsPeriodUnit.month,
+        range: periodToDate(InsightsPeriodUnit.month, now),
+      );
+      await pump(tester, selection: mtd, onSelectToDate: (_) {});
+
+      bool pillActive(String label) => tester
+          .widget<InsightsPillButton>(
+            find.widgetWithText(InsightsPillButton, label),
+          )
+          .active;
+      expect(pillActive('MTD'), isTrue);
+      expect(pillActive('YTD'), isFalse);
+      // The partial period is labeled by its actual span, not "June 2026".
+      expect(find.text('Jun 1 – 7'), findsOneWidget);
+      expect(find.text('June 2026'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a year-to-date selection lights YTD and spans from January 1st',
+    (tester) async {
+      final ytd = InsightsPeriodSelection(
+        unit: InsightsPeriodUnit.year,
+        range: periodToDate(InsightsPeriodUnit.year, now),
+      );
+      await pump(tester, selection: ytd, onSelectToDate: (_) {});
+      expect(
+        tester
+            .widget<InsightsPillButton>(
+              find.widgetWithText(InsightsPillButton, 'YTD'),
+            )
+            .active,
+        isTrue,
+      );
+      expect(find.text('Jan 1 – Jun 7'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a full-month selection leaves MTD inactive', (tester) async {
+    final fullMonth = InsightsPeriodSelection(
+      unit: InsightsPeriodUnit.month,
+      range: periodContaining(InsightsPeriodUnit.month, now),
+    );
+    await pump(tester, selection: fullMonth, onSelectToDate: (_) {});
+    expect(
+      tester
+          .widget<InsightsPillButton>(
+            find.widgetWithText(InsightsPillButton, 'MTD'),
+          )
+          .active,
+      isFalse,
+    );
+    expect(find.text('June 2026'), findsOneWidget);
   });
 
   testWidgets('selecting a granularity from the dropdown reports it', (

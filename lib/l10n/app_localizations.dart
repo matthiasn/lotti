@@ -8892,6 +8892,30 @@ abstract class AppLocalizations {
   /// **'Year'**
   String get insightsPeriodYear;
 
+  /// No description provided for @insightsRangeMonthToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Month to date'**
+  String get insightsRangeMonthToDate;
+
+  /// No description provided for @insightsRangeMtd.
+  ///
+  /// In en, this message translates to:
+  /// **'MTD'**
+  String get insightsRangeMtd;
+
+  /// No description provided for @insightsRangeYearToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Year to date'**
+  String get insightsRangeYearToDate;
+
+  /// No description provided for @insightsRangeYtd.
+  ///
+  /// In en, this message translates to:
+  /// **'YTD'**
+  String get insightsRangeYtd;
+
   /// No description provided for @insightsTableAvgPerDay.
   ///
   /// In en, this message translates to:

@@ -43,7 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   previous or next period with the ‹ › arrows; the dashboard updates live
   as you step, with no dialog. Weeks follow your device region — they start
   on Monday across most of Europe and on Sunday in the US — both in the
-  stepper's week periods and in the jump-to-date calendar grid.
+  stepper's week periods and in the jump-to-date calendar grid. MTD and
+  YTD shortcut pills stay on the row: one click jumps to the current
+  month-to-date or year-to-date (through today, not the full calendar
+  period), and with Compare on they line up against the same elapsed days
+  of the previous month or year.
 - Time Analysis (desktop): tap the period label to open a calendar and jump
   straight to any date's period; the dashboard updates live behind the
   sheet as you pick.

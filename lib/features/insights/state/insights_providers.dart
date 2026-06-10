@@ -104,7 +104,8 @@ final insightsBucketsProvider = StreamProvider.autoDispose
 /// Europe, Sunday in the US), read from [firstDayOfWeekIndexProvider] so the
 /// dashboard matches the rest of the app. The stepper drives this:
 /// [selectUnit] re-derives the period for a new granularity (keeping the
-/// current anchor), and [step] browses prev/next by one whole period.
+/// current anchor), [step] browses prev/next by one whole period, and
+/// [selectToDate] jumps to the current month-to-date / year-to-date.
 class InsightsRangeController extends Notifier<InsightsPeriodSelection> {
   // 0 = Sunday … 6 = Saturday; Monday until the region resolves. Held in a
   // field rather than re-read in build() so the async region lookup
@@ -186,6 +187,20 @@ class InsightsRangeController extends Notifier<InsightsPeriodSelection> {
       range: periodContaining(
         unit,
         dayStart(state.range.startDay),
+        firstDayOfWeekIndex: _firstDayOfWeekIndex,
+      ),
+    );
+  }
+
+  /// Jumps to the to-date portion of the current period of [unit] — month
+  /// start through today for MTD, January 1st through today for YTD. The
+  /// MTD/YTD shortcut pills call this.
+  void selectToDate(InsightsPeriodUnit unit) {
+    state = state.copyWith(
+      unit: unit,
+      range: periodToDate(
+        unit,
+        clock.now(),
         firstDayOfWeekIndex: _firstDayOfWeekIndex,
       ),
     );
