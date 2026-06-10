@@ -9,7 +9,7 @@ void main() {
 
     expect(ids.toSet(), hasLength(ids.length));
     expect(planningEvalScenarios, hasLength(6));
-    expect(taskEvalScenarios, hasLength(8));
+    expect(taskEvalScenarios, hasLength(9));
     expect(
       allEvalScenarios.every(
         (scenario) => scenario.userInput.triggerTokens.isNotEmpty,

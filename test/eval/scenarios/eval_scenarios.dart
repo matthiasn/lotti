@@ -584,6 +584,133 @@ final taskWorkflowReleaseNotesScenario = EvalScenario(
   ),
 );
 
+final EvalScenario taskWorkflowStructuredUpdateScenario = _reviewedScenario(
+  EvalScenario(
+    id: 'task_workflow_structured_update',
+    title:
+        'Real workflow: extract due date, priority, estimate, labels, checklist',
+    agentKind: AgentKind.taskAgent,
+    metadata: const EvalScenarioMetadata(
+      capabilityIds: [
+        'task.grooming.structuredfields',
+        'task.labels.scopeboundary',
+      ],
+      split: EvalScenarioSplit.canary,
+      tags: {
+        'task',
+        'workflow',
+        'structured-fields',
+        'relative-date',
+        'priority',
+        'estimate',
+        'labels',
+        'checklist',
+      },
+    ),
+    appState: MockedAppState(
+      now: DateTime(2026, 6, 10, 9),
+      categoryIds: const ['cat-001'],
+      categories: [kEvalWorkCategory, kEvalAdminCategory],
+      labels: const [
+        kEvalReleaseLabel,
+        kEvalAssignedLabel,
+        kEvalSuppressedLabel,
+        kEvalOutOfScopeLabel,
+      ],
+      tasks: const [
+        MockTask(
+          id: 'task-launch',
+          title: 'Prepare launch follow-up',
+          status: 'OPEN',
+          categoryId: 'cat-001',
+          aiSuppressedLabelIds: {'lbl-legal'},
+          checklist: [
+            MockChecklistItem(id: 'ci-existing', title: 'Draft outline'),
+          ],
+        ),
+      ],
+    ),
+    userInput: const UserInput(
+      transcript:
+          'For the launch follow-up, make it due tomorrow, mark priority P1, '
+          'estimate 45 minutes, tag it as release work, and add checklist '
+          'items: write the customer update, confirm screenshots, and send '
+          'to Sam.',
+      triggerTokens: {'decided_task:task-launch'},
+    ),
+    expectations: const EvalExpectations(
+      mustCallTools: {
+        'update_report',
+        'update_task_due_date',
+        'update_task_priority',
+        'update_task_estimate',
+        'assign_task_labels',
+        'add_multiple_checklist_items',
+      },
+      durableState: ExpectedDurableState(
+        proposalCount: 7,
+        requiredProposals: [
+          ExpectedProposalState(
+            toolName: 'update_task_due_date',
+            targetId: 'task-launch',
+            status: 'pending',
+            argsContain: {'dueDate': '2026-06-11'},
+          ),
+          ExpectedProposalState(
+            toolName: 'update_task_priority',
+            targetId: 'task-launch',
+            status: 'pending',
+            argsContain: {'priority': 'P1'},
+          ),
+          ExpectedProposalState(
+            toolName: 'update_task_estimate',
+            targetId: 'task-launch',
+            status: 'pending',
+            argsContain: {'minutes': 45},
+          ),
+          ExpectedProposalState(
+            toolName: 'assign_task_label',
+            targetId: 'task-launch',
+            status: 'pending',
+            argsContain: {'id': 'lbl-release', 'confidence': 'high'},
+          ),
+          ExpectedProposalState(
+            toolName: 'add_checklist_item',
+            targetId: 'task-launch',
+            status: 'pending',
+            argsContain: {'title': 'Write the customer update'},
+          ),
+          ExpectedProposalState(
+            toolName: 'add_checklist_item',
+            targetId: 'task-launch',
+            status: 'pending',
+            argsContain: {'title': 'Confirm screenshots'},
+          ),
+          ExpectedProposalState(
+            toolName: 'add_checklist_item',
+            targetId: 'task-launch',
+            status: 'pending',
+            argsContain: {'title': 'Send to Sam'},
+          ),
+        ],
+        forbiddenProposals: [
+          ExpectedProposalState(argsContain: {'id': 'lbl-docs'}),
+          ExpectedProposalState(argsContain: {'id': 'lbl-legal'}),
+          ExpectedProposalState(argsContain: {'id': 'lbl-admin'}),
+          ExpectedProposalState(
+            toolName: 'add_checklist_item',
+            argsContain: {'title': 'Draft outline'},
+          ),
+        ],
+      ),
+    ),
+  ),
+  rationale:
+      'Reviewed as a public hand-authored task-agent case for deterministic '
+      'relative-date extraction, priority/estimate updates, in-scope label '
+      'selection, and checklist proposal creation.',
+);
+
 final EvalScenario taskWorkflowReportRecoveryScenario = _reviewedScenario(
   EvalScenario(
     id: 'task_workflow_report_recovery',
@@ -979,6 +1106,7 @@ final allEvalScenarios = <EvalScenario>[
   plannerCaptureAmbiguousPersonScenario,
   taskReleaseNotesScenario,
   taskWorkflowReleaseNotesScenario,
+  taskWorkflowStructuredUpdateScenario,
   taskWorkflowReportRecoveryScenario,
   taskWorkflowLabelScopeBoundaryScenario,
   taskWorkflowCompletionBoundaryScenario,

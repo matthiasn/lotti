@@ -381,6 +381,124 @@ void main() {
   );
 
   test(
+    'structured update wake persists requested task proposal types',
+    () async {
+      const behavior = ScriptedAgentBehavior(
+        toolCalls: [
+          ToolCallRecord(
+            name: 'update_report',
+            args: {
+              'oneLiner': 'Launch follow-up structured',
+              'tldr':
+                  'Captured due date, priority, estimate, label, and checklist.',
+              'content': 'Structured launch follow-up proposals are ready.',
+            },
+          ),
+          ToolCallRecord(
+            name: 'update_task_due_date',
+            args: {'dueDate': '2026-06-11'},
+          ),
+          ToolCallRecord(
+            name: 'update_task_priority',
+            args: {'priority': 'P1'},
+          ),
+          ToolCallRecord(
+            name: 'update_task_estimate',
+            args: {'minutes': 45},
+          ),
+          ToolCallRecord(
+            name: 'assign_task_labels',
+            args: {
+              'labels': [
+                {'id': 'lbl-release', 'confidence': 'high'},
+              ],
+            },
+          ),
+          ToolCallRecord(
+            name: 'add_multiple_checklist_items',
+            args: {
+              'items': [
+                {'title': 'Write the customer update'},
+                {'title': 'Confirm screenshots'},
+                {'title': 'Send to Sam'},
+              ],
+            },
+          ),
+        ],
+        usage: InferenceUsage(inputTokens: 1880, outputTokens: 360),
+      );
+      final structuredScenario = taskWorkflowStructuredUpdateScenario;
+
+      final output = await ScriptedEvalTarget.fromMap(
+        {structuredScenario.id: behavior},
+        profileName: kFrontierProfile.name,
+      ).run(structuredScenario, kFrontierProfile);
+
+      expect(output.success, isTrue, reason: output.error);
+      expect(output.proposals, hasLength(7));
+      expect(
+        output.proposals.map((proposal) => proposal.toolName),
+        containsAll([
+          'update_task_due_date',
+          'update_task_priority',
+          'update_task_estimate',
+          'assign_task_label',
+          'add_checklist_item',
+        ]),
+      );
+      expect(
+        output.proposals.where(
+          (proposal) =>
+              proposal.toolName == 'update_task_due_date' &&
+              proposal.args['dueDate'] == '2026-06-11',
+        ),
+        hasLength(1),
+      );
+      expect(
+        output.proposals.where(
+          (proposal) =>
+              proposal.toolName == 'update_task_priority' &&
+              proposal.args['priority'] == 'P1',
+        ),
+        hasLength(1),
+      );
+      expect(
+        output.proposals.where(
+          (proposal) =>
+              proposal.toolName == 'update_task_estimate' &&
+              proposal.args['minutes'] == 45,
+        ),
+        hasLength(1),
+      );
+      expect(
+        output.proposals.where(
+          (proposal) =>
+              proposal.toolName == 'assign_task_label' &&
+              proposal.args['id'] == 'lbl-release',
+        ),
+        hasLength(1),
+      );
+      expect(
+        output.proposals
+            .where((proposal) => proposal.toolName == 'add_checklist_item')
+            .map((proposal) => proposal.args['title']),
+        containsAll([
+          'Write the customer update',
+          'Confirm screenshots',
+          'Send to Sam',
+        ]),
+      );
+
+      final failed = runLevel1(
+        structuredScenario,
+        output,
+        profile: kFrontierProfile,
+      ).where((check) => !check.passed).map((check) => check.detail).toList();
+      expect(failed, isEmpty, reason: failed.join('\n'));
+    },
+  );
+
+  test(
     'adversarial completion-boundary wake avoids status transition',
     () async {
       const behavior = ScriptedAgentBehavior(
@@ -807,8 +925,9 @@ void main() {
     },
   );
 
-  test('covers every public task workflow adversarial scenario', () {
+  test('covers every required public task workflow scenario', () {
     final coveredScenarioIds = {
+      taskWorkflowStructuredUpdateScenario.id,
       taskWorkflowReportRecoveryScenario.id,
       taskWorkflowLabelScopeBoundaryScenario.id,
       taskWorkflowCompletionBoundaryScenario.id,
@@ -819,7 +938,8 @@ void main() {
         .where(
           (scenario) =>
               scenario.metadata.isAdversarial &&
-              scenario.metadata.tags.contains('workflow'),
+                  scenario.metadata.tags.contains('workflow') ||
+              scenario.id == taskWorkflowStructuredUpdateScenario.id,
         )
         .map((scenario) => scenario.id)
         .toSet();
