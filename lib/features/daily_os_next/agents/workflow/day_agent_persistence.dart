@@ -13,23 +13,30 @@ extension DayAgentPersistence on DayAgentWorkflow {
   }) async {
     try {
       final payloadId = DayAgentWorkflow._uuid.v4();
-      // ADR 0020 v2 prompt records: when the read flipped, the `dayLog`
-      // JSON field is a pure function of the synced event log — store the
-      // payload WITHOUT that line plus the reconstruction marker. The line
-      // is re-encoded on reconstruction (`json-day-log-line` wrap).
+      // ADR 0020 v2 prompt records: when the read flipped, the `<day_log>`
+      // section is a pure function of the synced event log — store the payload
+      // WITHOUT the whole section plus the reconstruction marker. The day log
+      // is multi-line, so we splice on the section boundaries (not a single
+      // line) and re-render it between the tags on reconstruction
+      // (`day-log-section` wrap).
       var content = <String, Object?>{'text': userMessage};
       if (memoryView != null && memoryView.useCompactedLog) {
-        final anchor = userMessage.indexOf(DayAgentWorkflow._dayLogLineAnchor);
-        if (anchor >= 0) {
-          final lineStart = anchor + 1;
-          final lineEnd = userMessage.indexOf('\n', lineStart);
-          if (lineEnd > lineStart) {
+        final sectionStart = userMessage.indexOf(dayLogSectionOpenMarker);
+        if (sectionStart >= 0) {
+          final closeStart = userMessage.indexOf(
+            dayLogSectionCloseMarker,
+            sectionStart + dayLogSectionOpenMarker.length,
+          );
+          if (closeStart > sectionStart) {
+            final tailStart = closeStart + dayLogSectionCloseMarker.length;
             content = encodePromptRecord(
-              head: userMessage.substring(0, lineStart),
-              tail: userMessage.substring(lineEnd + 1),
+              // The whole `<day_log>…</day_log>` section is derivable, so head
+              // ends just before it and tail begins just after it.
+              head: userMessage.substring(0, sectionStart),
+              tail: userMessage.substring(tailStart),
               summaryId: memoryView.activeSummaryId,
               until: memoryView.lastEventPosition,
-              wrap: promptRecordWrapDayLogJsonLine,
+              wrap: promptRecordWrapDayLogSection,
             );
           }
         }

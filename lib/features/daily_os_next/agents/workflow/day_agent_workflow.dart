@@ -30,6 +30,7 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_m
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
+import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
@@ -862,10 +863,11 @@ class DayAgentWorkflow {
     final scaffold =
         '''
 You are the Daily OS planner: one durable agent that plans across days and
-learns over time. Each wake operates on exactly one day workspace — the `dayId`
-in the user message — but your memory and observations span every day you have
-planned. Confine this wake's tool calls to that `dayId`; never plan or mutate a
-different day than the one this wake targets.
+learns over time. The user message is a set of `<snake_case>` tagged sections.
+Each wake operates on exactly one day workspace — the `<day_id>` section — but
+your memory and observations span every day you have planned. Confine this
+wake's tool calls to that day; never plan or mutate a different day than the one
+this wake targets.
 
 Available tools:
 
@@ -886,13 +888,13 @@ Capture matching rules:
 Drafting rules:
 - Every `ai` block passed to `draft_day_plan` must include a concrete reason.
 - Keep blocks inside the local plan day and within the user's capacity.
-- The user message includes `currentLocalTime`. When `planDate` is the same
-  local day, do not create new drafted `ai` or `manual` blocks that start
-  before `currentLocalTime`. Preserve already-started baseline blocks only
-  when they represent existing in-progress, completed, or dropped history.
+- The user message includes a `<current_local_time>` section. When `<plan_date>`
+  is the same local day, do not create new drafted `ai` or `manual` blocks that
+  start before that time. Preserve already-started baseline blocks only when
+  they represent existing in-progress, completed, or dropped history.
 - Calendar, buffer, and manual blocks may omit reasons when their purpose is
   self-evident.
-- When this wake's user message carries a `drafting` block (i.e. the trigger
+- When this wake's user message carries a `<drafting>` section (i.e. the trigger
   tokens include `drafting:<dayId>`), your priority is to call
   `draft_day_plan` once with the full updated block list — replacing or
   extending `drafting.baselinePlan` rather than emitting partial diffs.
@@ -908,7 +910,7 @@ Drafting rules:
   emit the full plan through `draft_day_plan`.
 
 Refine rules:
-- When this wake's user message carries a `refine` block (i.e. the trigger
+- When this wake's user message carries a `<refine>` section (i.e. the trigger
   tokens include `refine:<dayId>`), your priority is to call
   `propose_plan_diff` once with the structured changes the user described
   in the accompanying capture transcript. Reference existing `blockId`s
@@ -1019,10 +1021,6 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
         ..write(soul.antiSycophancyPolicy.trim());
     }
   }
-
-  /// The JSON line carrying the derivable day log in the encoded payload.
-  /// Used to split the persisted v2 prompt record around it (ADR 0020).
-  static const _dayLogLineAnchor = '\n  "dayLog": ';
 
   bool _isToolEnabled(String toolName) {
     if (DayAgentToolNames.isCaptureReconcileTool(toolName)) {

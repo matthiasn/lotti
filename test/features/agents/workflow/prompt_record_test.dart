@@ -43,6 +43,39 @@ void main() {
       expect(decodePromptRecord({'promptFormat': 'v1'}), isNull);
     });
 
+    test('omits the plain wrap and defaults it back on decode', () {
+      final encoded = encodePromptRecord(head: 'H', tail: 'T');
+      // The default wrap is not serialized (keeps existing records compact)…
+      expect(encoded.containsKey('wrap'), isFalse);
+      // …and decodes back to the plain wrap.
+      expect(decodePromptRecord(encoded)!.wrap, promptRecordWrapPlain);
+    });
+
+    test('round-trips the day-log-section wrap kind', () {
+      final encoded = encodePromptRecord(
+        head: '<day_id>\nx\n</day_id>\n\n',
+        tail: '\n\n<current_local_time>\nT\n</current_local_time>',
+        wrap: promptRecordWrapDayLogSection,
+      );
+      expect(encoded['wrap'], promptRecordWrapDayLogSection);
+      expect(
+        decodePromptRecord(encoded)!.wrap,
+        promptRecordWrapDayLogSection,
+      );
+    });
+
+    test('still decodes the legacy json-day-log-line wrap', () {
+      final encoded = encodePromptRecord(
+        head: '{\n  "dayId": "x",\n',
+        tail: '  "currentLocalTime": "T"\n}',
+        wrap: promptRecordWrapDayLogJsonLine,
+      );
+      expect(
+        decodePromptRecord(encoded)!.wrap,
+        promptRecordWrapDayLogJsonLine,
+      );
+    });
+
     test('survives a JSON round-trip (sync serialization shape)', () {
       final until = EventPosition(
         at: DateTime.utc(2026, 6, 4, 10),

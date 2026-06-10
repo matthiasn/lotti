@@ -28,6 +28,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../agents/test_utils.dart';
+import '../prompt/day_agent_prompt_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -173,6 +174,10 @@ void main() {
       onPersistedStateChanged: changedTokens.add,
     );
   }
+
+  /// Parses the last sent user message as a tagged-plaintext payload.
+  ParsedDayAgentPrompt sentPrompt() =>
+      ParsedDayAgentPrompt(conversationRepository.lastUserMessage!);
 
   Future<WakeResult> execute(
     DayAgentWorkflow sut, {
@@ -423,10 +428,7 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final sent =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, Object?>;
-        expect(sent['dayId'], dayId);
+        expect(sentPrompt().section('day_id'), dayId);
       },
     );
 
@@ -519,10 +521,7 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final sent =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, Object?>;
-        expect(sent['dayId'], dayId);
+        expect(sentPrompt().section('day_id'), dayId);
       },
     );
 
@@ -1086,11 +1085,9 @@ void main() {
             workflow(knowledgeService: knowledgeService),
           );
           expect(result.success, isTrue);
-          final sent =
-              jsonDecode(conversationRepository.lastUserMessage!)
-                  as Map<String, dynamic>;
-          expect(sent.containsKey('knowledgeIndex'), isFalse);
-          expect(sent.containsKey('knowledgeStatements'), isFalse);
+          final sent = sentPrompt();
+          expect(sent.has('knowledge_index'), isFalse);
+          expect(sent.has('knowledge_statements'), isFalse);
         },
       );
 
@@ -1150,13 +1147,10 @@ void main() {
             workflow(knowledgeService: knowledgeService),
           );
           expect(result.success, isTrue);
-          final sent =
-              jsonDecode(conversationRepository.lastUserMessage!)
-                  as Map<String, dynamic>;
           // The project-targeted claim put project:proj-1 in touched scopes, so
           // the project-scoped statement is pulled in.
           expect(
-            sent['knowledgeStatements'],
+            sentPrompt().section('knowledge_statements'),
             contains('Protect project X morn'),
           );
         },
@@ -1241,10 +1235,10 @@ void main() {
       // observations interleaved in event order (capture 07:01 before
       // observation 08:00), superseding the recentObservations listing.
       final sent = conversationRepository.lastUserMessage!;
-      expect(sent, contains('"dayLog"'));
+      expect(sent, contains('<day_log>'));
       expect(sent, contains('(id: cap-1, capture) morning planning capture'));
       expect(sent, contains('(id: obs-1, observation) a day observation'));
-      expect(sent, isNot(contains('"recentObservations"')));
+      expect(sent, isNot(contains('<recent_observations>')));
       expect(
         sent.indexOf('morning planning capture'),
         lessThan(sent.indexOf('a day observation')),
@@ -1258,15 +1252,17 @@ void main() {
           .firstWhere((c) => c['promptFormat'] == 'v2');
       final head = record['head']! as String;
       final tail = record['tail']! as String;
-      expect(record['wrap'], 'json-day-log-line');
-      expect(head, contains('"dayId"'));
-      expect(head, isNot(contains('"dayLog"')));
-      expect(tail, isNot(contains('"dayLog"')));
-      expect(tail, contains('"triggerTokens"'));
+      expect(record['wrap'], 'day-log-section');
+      expect(head, contains('<day_id>'));
+      // The whole derivable `<day_log>…</day_log>` section is stripped from
+      // storage; head ends before it and tail begins after it.
+      expect(head, isNot(contains('<day_log>')));
+      expect(tail, isNot(contains('</day_log>')));
+      expect(tail, contains('<trigger_tokens>'));
       // The derivable log content is gone from storage…
       expect(head + tail, isNot(contains('morning planning capture')));
       // …and the substrate supersedes the separate listing.
-      expect(head + tail, isNot(contains('"recentObservations"')));
+      expect(head + tail, isNot(contains('<recent_observations>')));
       final marker = record['log']! as Map<String, Object?>;
       expect(marker['until'], isNotNull);
     });
@@ -1303,11 +1299,11 @@ void main() {
       );
       expect(result.success, isTrue);
 
-      // No dayLog in the sent prompt, and the persisted payload stays a
+      // No day_log in the sent prompt, and the persisted payload stays a
       // legacy full blob (no v2 record without a usable compacted log).
       expect(
         conversationRepository.lastUserMessage,
-        isNot(contains('"dayLog"')),
+        isNot(contains('<day_log>')),
       );
       final v2Records = upsertedEntities
           .whereType<AgentMessagePayloadEntity>()
@@ -1390,10 +1386,7 @@ void main() {
       );
       expect(result.success, isTrue);
 
-      final attentionPlanning =
-          (jsonDecode(conversationRepository.lastUserMessage!)
-                  as Map<String, dynamic>)['attentionPlanning']
-              as Map;
+      final attentionPlanning = sentPrompt().json('attention_planning')! as Map;
       final claims = attentionPlanning['claims'] as List;
       expect(claims, hasLength(1));
       final renderedClaim = claims.single as Map;
@@ -1460,10 +1453,7 @@ void main() {
       // entirely (it is only rendered when non-empty) and the wake still
       // succeeds rather than propagating the error.
       expect(result.success, isTrue);
-      final userPayload =
-          jsonDecode(conversationRepository.lastUserMessage!)
-              as Map<String, dynamic>;
-      expect(userPayload.containsKey('attentionPlanning'), isFalse);
+      expect(sentPrompt().has('attention_planning'), isFalse);
     });
 
     test(
@@ -1546,21 +1536,24 @@ void main() {
         );
         expect(
           conversationRepository.lastSystemMessage,
-          contains('currentLocalTime'),
+          contains('current_local_time'),
         );
 
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        expect(userPayload['dayId'], dayId);
-        expect(userPayload['planDate'], '2026-05-25T00:00:00.000');
-        expect(userPayload['currentLocalTime'], '2026-05-25T08:00:00.000');
-        // Volatile wall-clock must be the trailing key so the rest of the
-        // payload stays a stable prefix across wakes (prefix/KV-cache reuse).
-        expect(userPayload.keys.last, 'currentLocalTime');
-        expect(userPayload['triggerTokens'], [dayAgentPlanningDayToken(dayId)]);
+        final userPayload = sentPrompt();
+        expect(userPayload.section('day_id'), dayId);
+        expect(userPayload.section('plan_date'), '2026-05-25T00:00:00.000');
         expect(
-          userPayload['recentObservations'],
+          userPayload.section('current_local_time'),
+          '2026-05-25T08:00:00.000',
+        );
+        // Volatile wall-clock must be the trailing section so the rest of the
+        // payload stays a stable prefix across wakes (prefix/KV-cache reuse).
+        expect(userPayload.tagsInOrder.last, 'current_local_time');
+        expect(userPayload.json('trigger_tokens'), [
+          dayAgentPlanningDayToken(dayId),
+        ]);
+        expect(
+          userPayload.json('recent_observations'),
           [
             {
               'createdAt': '2026-05-25T06:00:00.000',
@@ -1777,10 +1770,8 @@ void main() {
       );
 
       expect(result.success, isTrue);
-      final userPayload =
-          jsonDecode(conversationRepository.lastUserMessage!)
-              as Map<String, dynamic>;
-      final capturePayload = userPayload['capture'] as Map<String, dynamic>;
+      final capturePayload =
+          sentPrompt().json('capture')! as Map<String, dynamic>;
       expect(capturePayload['captureId'], 'capture-1');
       expect(capturePayload['transcript'], 'Prep demo and buy milk');
       expect(capturePayload['audioRef'], 'audio-1');
@@ -1964,10 +1955,7 @@ void main() {
 
           expect(result.success, isTrue);
           expect(conversationRepository.sendMessageCalls, hasLength(1));
-          final userPayload =
-              jsonDecode(conversationRepository.lastUserMessage!)
-                  as Map<String, dynamic>;
-          expect(userPayload.containsKey('capture'), isFalse);
+          expect(sentPrompt().has('capture'), isFalse);
           verify(
             () => captureService.getCapture('capture-1'),
           ).called(1);
@@ -2062,10 +2050,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final draftingPayload = userPayload['drafting'] as Map<String, dynamic>;
+        final draftingPayload =
+            sentPrompt().json('drafting')! as Map<String, dynamic>;
         expect(draftingPayload['requested'], isTrue);
         expect(draftingPayload['baselinePlan'], isNull);
         expect(draftingPayload['decidedTasks'], isEmpty);
@@ -2124,10 +2110,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final draftingPayload = userPayload['drafting'] as Map<String, dynamic>;
+        final draftingPayload =
+            sentPrompt().json('drafting')! as Map<String, dynamic>;
         final plan = draftingPayload['baselinePlan'] as Map<String, dynamic>;
         expect(plan['planId'], 'day_agent_plan:$dayId');
         expect(plan['capacityMinutes'], 360);
@@ -2155,10 +2139,7 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        expect(userPayload.containsKey('drafting'), isFalse);
+        expect(sentPrompt().has('drafting'), isFalse);
         verifyNever(
           () => planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
@@ -2260,10 +2241,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final draftingPayload = userPayload['drafting'] as Map<String, dynamic>;
+        final draftingPayload =
+            sentPrompt().json('drafting')! as Map<String, dynamic>;
         final decidedTasks = draftingPayload['decidedTasks'] as List<dynamic>;
         expect(decidedTasks, hasLength(2));
         expect(
@@ -2615,10 +2594,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final refinePayload = userPayload['refine'] as Map<String, dynamic>;
+        final refinePayload =
+            sentPrompt().json('refine')! as Map<String, dynamic>;
         expect(refinePayload['requested'], isTrue);
         final plan = refinePayload['baselinePlan'] as Map<String, dynamic>;
         expect(plan['planId'], 'day_agent_plan:$dayId');
@@ -2658,10 +2635,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final refinePayload = userPayload['refine'] as Map<String, dynamic>;
+        final refinePayload =
+            sentPrompt().json('refine')! as Map<String, dynamic>;
         expect(refinePayload['requested'], isTrue);
         expect(refinePayload['baselinePlan'], isNull);
       },
@@ -2678,10 +2653,7 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        expect(userPayload.containsKey('refine'), isFalse);
+        expect(sentPrompt().has('refine'), isFalse);
       },
     );
 
@@ -2854,31 +2826,28 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final sent =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
+        final sent = sentPrompt();
         // Hook index always present; the global statement is pulled in.
         expect(
-          sent['knowledgeIndex'],
+          sent.section('knowledge_index'),
           contains('[deep-work] no deep work before 10 (scope: global)'),
         );
         expect(
-          sent['knowledgeStatements'],
+          sent.section('knowledge_statements'),
           contains('Never schedule deep work before 10:00.'),
         );
         // Prefix-cache stability: the always-on index leads the prefix, the
         // per-wake scope-filtered statements trail it, and the wall-clock is
-        // the last (most volatile) key.
-        final keys = sent.keys.toList();
+        // the last (most volatile) section.
         expect(
-          keys.indexOf('knowledgeIndex'),
-          lessThan(keys.indexOf('knowledgeStatements')),
+          sent.indexOf('knowledge_index'),
+          lessThan(sent.indexOf('knowledge_statements')),
         );
         expect(
-          keys.indexOf('knowledgeStatements'),
-          lessThan(keys.indexOf('currentLocalTime')),
+          sent.indexOf('knowledge_statements'),
+          lessThan(sent.indexOf('current_local_time')),
         );
-        expect(keys.last, 'currentLocalTime');
+        expect(sent.tagsInOrder.last, 'current_local_time');
       },
     );
 
@@ -2893,11 +2862,9 @@ void main() {
       );
 
       expect(result.success, isTrue);
-      final sent =
-          jsonDecode(conversationRepository.lastUserMessage!)
-              as Map<String, dynamic>;
-      expect(sent.containsKey('knowledgeIndex'), isFalse);
-      expect(sent.containsKey('knowledgeStatements'), isFalse);
+      final sent = sentPrompt();
+      expect(sent.has('knowledge_index'), isFalse);
+      expect(sent.has('knowledge_statements'), isFalse);
     });
 
     test(
@@ -2965,14 +2932,12 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final sent =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
+        final sent = sentPrompt();
         // Hook index always lists the key (discovery)...
-        expect(sent['knowledgeIndex'], contains('[gym]'));
+        expect(sent.section('knowledge_index'), contains('[gym]'));
         // ...but the full statement is withheld since this wake touches no
         // fitness category.
-        expect(sent.containsKey('knowledgeStatements'), isFalse);
+        expect(sent.has('knowledge_statements'), isFalse);
       },
     );
 
@@ -3040,19 +3005,17 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final sent =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final keys = sent.keys.toList();
-        // The C1 invariant: index → dayLog → statements.
-        expect(keys, containsAll(['knowledgeIndex', 'dayLog']));
+        final sent = sentPrompt();
+        // The C1 invariant: index → day_log → statements.
+        expect(sent.has('knowledge_index'), isTrue);
+        expect(sent.has('day_log'), isTrue);
         expect(
-          keys.indexOf('knowledgeIndex'),
-          lessThan(keys.indexOf('dayLog')),
+          sent.indexOf('knowledge_index'),
+          lessThan(sent.indexOf('day_log')),
         );
         expect(
-          keys.indexOf('dayLog'),
-          lessThan(keys.indexOf('knowledgeStatements')),
+          sent.indexOf('day_log'),
+          lessThan(sent.indexOf('knowledge_statements')),
         );
       },
     );
@@ -3175,11 +3138,8 @@ void main() {
         final result = await execute(workflow());
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
         final recentObservations =
-            userPayload['recentObservations'] as List<dynamic>;
+            sentPrompt().json('recent_observations')! as List<dynamic>;
         expect(recentObservations, hasLength(20));
         expect(
           recentObservations.first,
@@ -3268,11 +3228,8 @@ void main() {
       final result = await execute(workflow());
 
       expect(result.success, isTrue);
-      final userPayload =
-          jsonDecode(conversationRepository.lastUserMessage!)
-              as Map<String, dynamic>;
       final recentObservations =
-          userPayload['recentObservations'] as List<dynamic>;
+          sentPrompt().json('recent_observations')! as List<dynamic>;
       expect(
         recentObservations.map(
           (observation) => (observation as Map<String, dynamic>)['text'],
