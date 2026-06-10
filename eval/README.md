@@ -45,6 +45,7 @@ flowchart LR
   TR --> J[Claude Code judge<br/>grade_run.md + rubrics]
   J --> V[verdict JSON]
   V --> REP[EvalReporter<br/>per-profile summary]
+  TR --> AB[Pairwise preference votes<br/>blind A/B quorum]
 ```
 
 ## Level 1 — every change
@@ -462,6 +463,21 @@ percentage. Scenario-profile and expected-trial denominators come from the
 scenario x profile cross-product, not only from observed cells; in report mode
 they come from the verified catalog/profile matrix, so a completely missing
 profile, scenario, split, or capability still appears as zero-trace coverage.
+Free-text quality is handled separately from these scalar verdicts. Pairwise
+preference votes compare two digest-bound trace artifacts for the same run,
+scenario, trial, cascade wake, agent kind, and primary capability, with different
+profiles. Each vote records the reviewer kind/id, reviewer model when relevant,
+prompt digest, calibration-set version, whether profile/model/peer-vote
+identity was visible, whether trace order was randomized, an `optionA` /
+`optionB` / `tie` choice, rationale, and issues.
+`EvalPairwisePreferenceReporter` then reports
+`optionAWins`, `optionBWins`, `tie`, `noConsensus`, `incomplete`, or `invalid`
+using a configurable minimum vote count and quorum fraction, canonicalizing
+reversed option order before counting votes; `preferredTrace` points at the
+winning trace when there is a strict preference. These A/B outcomes are
+diagnostic and audit-friendly: they support the human-or-LLM quorum workflow
+for subjective summaries, but they are not `JudgeVerdict`s and do not affect
+profile promotion unless a future pre-registered policy explicitly opts them in.
 Summary Wilson 95% confidence intervals cluster repeated trials at the scenario
 or scenario-profile-cell level by default; explicit trace-level estimates remain
 available only as diagnostics. Cascade wake traces are also diagnostics by

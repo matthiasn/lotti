@@ -62,7 +62,9 @@
   plus manifest-validated expected-matrix slice reporting, plus stricter
   provider-request provenance checks, manifest-bound profile execution
   bindings for actual provider/model/endpoint overrides, external
-  `EVAL_PROFILES` profile catalogs, and model-selection judge-blinding gates.
+  `EVAL_PROFILES` profile catalogs, model-selection judge-blinding gates, and
+  diagnostic pairwise A/B preference quorum records for subjective free-text
+  quality.
   Next up:
   populate a real human-labeled calibration set, private production-replay
   holdout JSON catalogs, and a larger production-scale adversarial scenario
@@ -106,7 +108,9 @@ durable-state oracles and scripted workflow coverage-map guards, plus optional
 bounded human-calibration review queues that cover model class, agent kind,
 judge pass/fail, protection bucket, and primary-capability strata before
 humans label a subset, plus optional independent human review votes on completed
-gold labels with derived human-human reliability gates).
+gold labels with derived human-human reliability gates, plus diagnostic
+pairwise A/B preference votes and quorum summaries for subjective free-text
+quality).
 Promotion reports now include display-only evidence planning for blocked or
 inconclusive candidate-vs-baseline decisions.
 ADR is **0029**
@@ -120,7 +124,7 @@ fvm dart analyze test/eval        # the analyzer GATE (see gotcha below)
 fvm dart format test/eval
 ```
 
-Current gate: 278 eval tests green, 8 expected skips without `EVAL_RUN` /
+Current gate: 292 eval tests green, 8 expected skips without `EVAL_RUN` /
 `EVAL_SCENARIOS` / `EVAL_CALIBRATION_TEMPLATE` / `EVAL_CALIBRATION` /
 `LOTTI_EVAL_LIVE`, analyzer clean.
 Latest active slice adds Level 2 run-manifest promotion-plan evidence plus a
@@ -187,6 +191,14 @@ and persisted proposals. Generated reports and summaries are still read into
 `AgentRunOutput.report`, trace JSON, and judge inputs, but free-text quality
 should be judged by LLM/human comparative review and quorum rather than brittle
 Level 1 string assertions.
+Current active slice adds that comparative-review data model:
+`EvalPairwisePreferenceVote` binds two trace artifacts by run, scenario,
+profile, trial, cascade identity, trace digest, scenario digest, and profile
+digest; records reviewer and protocol blinding metadata; and lets
+`EvalPairwisePreferenceReporter` derive quorum outcomes (`optionAWins`,
+`optionBWins`, `tie`, `noConsensus`, `incomplete`, or `invalid`). These
+pairwise preference records remain diagnostic and separate from `JudgeVerdict`
+and profile promotion until a future pre-registered policy opts them in.
 Known limitation: the current cascade live runner is still a sidecar smoke
 entrypoint rather than part of the main `EvalMatrixRunner` run path.
 Current active slice adds provider response-side provenance: the real

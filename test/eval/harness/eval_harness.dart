@@ -7,6 +7,7 @@ export 'eval_assertions.dart';
 export 'eval_judge_calibration.dart';
 export 'eval_matrix_runner.dart';
 export 'eval_models.dart';
+export 'eval_pairwise_preference.dart';
 export 'eval_profile_catalog.dart';
 export 'eval_provenance.dart';
 export 'eval_reporter.dart';

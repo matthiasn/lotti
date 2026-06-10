@@ -133,6 +133,16 @@ void main() {
         // ignore: avoid_print
         print(promotionReport);
       }
+      if (run.pairwisePreferenceVotes.isNotEmpty) {
+        // ignore: avoid_print
+        print(
+          EvalPairwisePreferenceReporter.render(
+            EvalPairwisePreferenceReporter.summarize(
+              run.pairwisePreferenceVotes,
+            ),
+          ),
+        );
+      }
       // ignore: avoid_print
       print(
         EvalReporter.render(

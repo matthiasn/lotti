@@ -75,6 +75,34 @@ committed fixtures.
    Calibration labels are trace-keyed, digest-bound, and non-secret; see
    `eval/calibration/README.md`.
 
+## Optional Pairwise A/B Review
+
+Use pairwise preference votes when the question is subjective free-text quality
+rather than a hard fact like due date, priority, estimate, label assignment, or
+planner block time. A pairwise vote compares two trace artifacts for the same
+run, scenario, trial, optional cascade wake, agent kind, and primary capability,
+with different profiles.
+
+Each vote is an `EvalPairwisePreferenceVote` JSON object, not a `JudgeVerdict`.
+It must bind both sides through `optionA` and `optionB` trace refs, including
+`runId`, `scenarioId`, `profileName`, `agentKind`, `modelClass`,
+`capabilityId`, `trialIndex`, optional `cascadeWake`, `traceDigest`,
+`scenarioDigest`, and `profileDigest`. It also records `reviewerId`,
+`reviewerKind`, optional `reviewerModel`, `promptDigest`,
+`calibrationSetVersion`, `profileVisible`, `modelIdentityVisible`,
+`peerVotesVisible`, `traceOrderRandomized`, `choice` (`optionA`, `optionB`, or
+`tie`), `rationale`, and `issues`.
+
+Run multiple independent reviewers with profile/model identity and peer votes
+hidden when possible. Randomize option order for each reviewer when the
+review protocol requires it, and record that in `traceOrderRandomized`. The
+pairwise reporter derives `optionAWins`, `optionBWins`, `tie`, `noConsensus`,
+`incomplete`, or `invalid` from the configured minimum vote count and quorum
+fraction after canonicalizing reversed option order; `preferredTrace` points at
+the winning trace when there is a strict preference. These records are audit
+evidence for A/B comparison; they do not feed promotion or tuning-readiness
+gates unless a future pre-registered policy explicitly says so.
+
 ## Grading discipline
 
 - Judge one trace at a time; do not let one scenario's quality bleed into

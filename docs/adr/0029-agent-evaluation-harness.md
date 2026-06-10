@@ -276,6 +276,14 @@ A Claude Code script
 efficiency, pass, rationale, issues }` back next to the trace. The nested
 `judge` block records the non-secret judge runner/model, prompt digest,
 calibration set version, and whether profile/model identity was visible.
+Subjective A/B review uses separate `EvalPairwisePreferenceVote` records, not
+`JudgeVerdict` fields. Each vote binds two trace refs for the same run,
+scenario, trial, cascade wake, agent kind, and capability through trace,
+scenario, and profile digests; records reviewer/protocol blinding metadata; and
+is summarized by quorum as `optionAWins`, `optionBWins`, `tie`, `noConsensus`,
+`incomplete`, or `invalid`. These records are diagnostic human/LLM preference
+evidence unless a future pre-registered promotion policy explicitly opts them
+in.
 `TraceWriter.readRun` rejects missing, stale, or
 tampered manifests and traces bound to a different manifest before reporting.
 `EvalRunVerifier` rejects traces whose embedded scenario/profile payload drifts
