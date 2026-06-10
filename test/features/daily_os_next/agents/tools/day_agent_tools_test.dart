@@ -19,7 +19,7 @@ void main() {
       // Pin the exact tool count so a tool added to dayAgentTools but missing
       // from the expected list below (or vice versa) is caught: containsAll
       // alone tolerates extras, hasLength closes that gap.
-      expect(names, hasLength(15));
+      expect(names, hasLength(16));
       expect(
         names,
         containsAll(const [
@@ -38,6 +38,7 @@ void main() {
           DayAgentToolNames.summarizeRecentPatterns,
           DayAgentToolNames.proposePlanDiff,
           DayAgentToolNames.proposeKnowledge,
+          DayAgentToolNames.writeDaySummary,
         ]),
       );
     });
@@ -342,6 +343,35 @@ void main() {
         requiredFor(DayAgentToolNames.proposeKnowledge),
         isNot(contains('tags')),
       );
+    });
+
+    test('writeDaySummary requires dayId + text and documents the wall-clock '
+        'window and char budget', () {
+      final params = parametersFor(DayAgentToolNames.writeDaySummary);
+      expect(params['type'], 'object');
+      expect(params['additionalProperties'], isFalse);
+      expect(
+        requiredFor(DayAgentToolNames.writeDaySummary),
+        ['dayId', 'text'],
+      );
+      // The documented 500-char cap is encoded in the schema so
+      // schema-enforcing providers reject oversized text before the
+      // service-side (post-normalization) check even runs.
+      final props =
+          parametersFor(DayAgentToolNames.writeDaySummary)['properties']!
+              as Map<String, dynamic>;
+      expect((props['text']! as Map<String, dynamic>)['maxLength'], 500);
+      final description = dayAgentTools
+          .singleWhere(
+            (tool) => tool.name == DayAgentToolNames.writeDaySummary,
+          )
+          .description;
+      // The summary is testimony, not a numbers recap, and only the
+      // wall-clock window is writable.
+      expect(description, contains('500 characters'));
+      expect(description, contains('today and yesterday'));
+      expect(description.toLowerCase(), contains('why'));
+      expect(description, contains('Do not restate'));
     });
 
     test('nested item schemas keep their own strict contracts', () {

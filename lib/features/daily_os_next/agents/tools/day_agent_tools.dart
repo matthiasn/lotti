@@ -515,4 +515,38 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
+  AgentToolDefinition(
+    name: DayAgentToolNames.writeDaySummary,
+    description:
+        'Write your contemporaneous summary of a day, in your own words, for '
+        'your own future planning: one paragraph (max 500 characters) on what '
+        'happened and WHY — the context the numbers cannot carry. Do not '
+        'restate the planned-vs-recorded numbers; the facts line already '
+        'shows them. Only today and yesterday are writable; writing again '
+        'within that window replaces your earlier note for that day.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'dayId': {
+          'type': 'string',
+          'description':
+              'The day being summarized (dayplan-YYYY-MM-DD). Must be today '
+              'or yesterday by the wall clock.',
+        },
+        'text': {
+          'type': 'string',
+          // Raw-input bound for schema-enforcing providers. The service's
+          // post-normalization check stays authoritative: whitespace
+          // collapse only shrinks text, so this is strictly narrower —
+          // no input the service would accept is schema-rejected except
+          // multi-line text whose collapsed form would have fit.
+          'maxLength': 500,
+          'description':
+              'The summary paragraph (max 500 characters, single paragraph).',
+        },
+      },
+      'required': ['dayId', 'text'],
+      'additionalProperties': false,
+    },
+  ),
 ];

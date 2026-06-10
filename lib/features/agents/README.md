@@ -514,10 +514,12 @@ back into the reconstruction, and one inside it renders as its own marker line
 beside the content it concerns — the past render stays faithful rather than
 retroactively redacted; a late-synced event inside the boundary makes the
 reconstruction reflect the CONVERGED log — semantically auditable rather
-than forensically byte-exact. The day agent splices its log back as the
-JSON `"dayLog"` line (`json-day-log-line` wrap). Inline fallback wakes keep
-full blobs because their prompts are live journal renders with nothing to
-re-derive.
+than forensically byte-exact. The day agent splices its log back inside the
+`<day_log>` tagged section of its plaintext payload (`day-log-section` wrap,
+re-sanitized on render); records persisted before the tagged-plaintext
+conversion splice the legacy JSON `"dayLog"` line (`json-day-log-line` wrap)
+and stay decodable. Inline fallback wakes keep full blobs because their
+prompts are live journal renders with nothing to re-derive.
 
 The dormant model fields now earn their keep: `AgentMessageKind.summary`,
 `summaryStartMessageId`/`summaryEndMessageId`/`summaryDepth`,

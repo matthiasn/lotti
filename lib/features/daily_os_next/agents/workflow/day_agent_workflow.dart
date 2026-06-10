@@ -30,9 +30,12 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_m
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
+import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
@@ -58,6 +61,7 @@ class DayAgentWorkflow {
     this.captureService,
     this.planService,
     this.knowledgeService,
+    this.weekContextService,
     this.soulDocumentService,
     this.onPersistedStateChanged,
     this.config = const DayAgentConfig(),
@@ -95,6 +99,10 @@ class DayAgentWorkflow {
 
   /// Durable-knowledge backend tool implementation (ADR 0022).
   final DayAgentKnowledgeService? knowledgeService;
+
+  /// Week-context backend: lookback/lookahead prompt sections and the
+  /// `write_day_summary` tool.
+  final DayAgentWeekContextService? weekContextService;
 
   /// Structured logger.
   final DomainLogger domainLogger;
@@ -163,6 +171,13 @@ class DayAgentWorkflow {
       );
     }
     var dayId = dayResolution.dayId;
+    // Whether the workspace came from day-carrying tokens (planning_day /
+    // drafting / refine — including scheduled wakes, which carry a
+    // planning_day token) rather than the capture fallback below. Week
+    // context is gated to these wakes: a capture-submitted wake is
+    // high-frequency text triage, and an 8-day journal+links+claims load per
+    // capture is unjustified for it.
+    final isDayTokenWake = dayId != null;
     if (dayId == null) {
       final captureResolution = await _dayIdFromCaptureTokens(
         agentId: agentId,
@@ -293,6 +308,9 @@ class DayAgentWorkflow {
       ),
       now: now,
     );
+    final weekContext = isDayTokenWake
+        ? await _weekContext(agentId: agentId, planDate: dayDate, now: now)
+        : null;
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       dayId: resolvedDayId,
@@ -306,6 +324,7 @@ class DayAgentWorkflow {
       refineContext: refineContext,
       attentionPlanning: attentionPlanning,
       knowledge: knowledge,
+      weekContext: weekContext,
       compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
     );
 
@@ -497,6 +516,29 @@ class DayAgentWorkflow {
     }
   }
 
+  /// Loads the week context for a day-token wake. The service is fail-soft
+  /// already (load errors log and return null); this guard additionally
+  /// absorbs unexpected service bugs so lookback context can never kill a
+  /// wake. The wake's own [now] is passed through so the section's day
+  /// classification agrees with `current_local_time` across a midnight
+  /// straddle.
+  Future<WeekContext?> _weekContext({
+    required String agentId,
+    required DateTime planDate,
+    required DateTime now,
+  }) async {
+    try {
+      return await weekContextService?.buildForDay(
+        agentId: agentId,
+        planDate: planDate,
+        now: now,
+      );
+    } catch (e, s) {
+      _logError('failed to load week context', error: e, stackTrace: s);
+      return null;
+    }
+  }
+
   Future<DayAgentToolResult> _executeToolHandler({
     required String agentId,
     required String threadId,
@@ -505,6 +547,31 @@ class DayAgentWorkflow {
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
+    // `write_day_summary` is dispatched BEFORE the blanket workspace-day
+    // guard below: its dayId is anchored to the wall clock (today/yesterday,
+    // enforced inside the service), independent of the wake's workspace —
+    // the ADR-governed exception to ADR 0022 Decision 4 (a drafting-tomorrow
+    // wake writes yesterday's missing summary without mutating another day's
+    // plan state).
+    if (DayAgentToolNames.isWeekContextTool(toolName)) {
+      final service = weekContextService;
+      if (service == null) {
+        return const DayAgentToolResult(
+          success: false,
+          output: 'Error: week-context tools are not configured.',
+        );
+      }
+      final result = await service.executeTool(
+        agentId: agentId,
+        toolName: toolName,
+        args: args,
+      );
+      return DayAgentToolResult(
+        success: result.success,
+        output: result.output,
+      );
+    }
+
     // Reject day-scoped tool calls targeting a day other than this wake's
     // workspace (ADR 0022 Decision 4). Under one planner the model must never
     // mutate a different day than the wake it is running.
@@ -851,6 +918,10 @@ class DayAgentWorkflow {
         '- `propose_knowledge`: durably remember how the user wants to be '
         'planned. Use source "userStated" only when the user told you '
         'directly; every entry awaits their confirmation in the panel.';
+    const weekContextToolLines =
+        '- `write_day_summary`: your contemporaneous note on a day (today or '
+        'yesterday only) — what happened and why, one paragraph, max 500 '
+        'characters.';
     final toolLines = <String>[
       '- `record_observations`: private memory for learnings and uncertainty.',
       '- `set_next_wake`: schedule the next useful pre-warm wake.',
@@ -858,14 +929,16 @@ class DayAgentWorkflow {
       if (captureService != null) captureToolLines,
       if (planService != null) planToolLines,
       if (knowledgeService != null) knowledgeToolLines,
+      if (weekContextService != null) weekContextToolLines,
     ];
     final scaffold =
         '''
 You are the Daily OS planner: one durable agent that plans across days and
-learns over time. Each wake operates on exactly one day workspace — the `dayId`
-in the user message — but your memory and observations span every day you have
-planned. Confine this wake's tool calls to that `dayId`; never plan or mutate a
-different day than the one this wake targets.
+learns over time. The user message is a set of `<snake_case>` tagged sections.
+Each wake operates on exactly one day workspace — the `<day_id>` section — but
+your memory and observations span every day you have planned. Confine this
+wake's tool calls to that day; never plan or mutate a different day than the one
+this wake targets.
 
 Available tools:
 
@@ -886,13 +959,13 @@ Capture matching rules:
 Drafting rules:
 - Every `ai` block passed to `draft_day_plan` must include a concrete reason.
 - Keep blocks inside the local plan day and within the user's capacity.
-- The user message includes `currentLocalTime`. When `planDate` is the same
-  local day, do not create new drafted `ai` or `manual` blocks that start
-  before `currentLocalTime`. Preserve already-started baseline blocks only
-  when they represent existing in-progress, completed, or dropped history.
+- The user message includes a `<current_local_time>` section. When `<plan_date>`
+  is the same local day, do not create new drafted `ai` or `manual` blocks that
+  start before that time. Preserve already-started baseline blocks only when
+  they represent existing in-progress, completed, or dropped history.
 - Calendar, buffer, and manual blocks may omit reasons when their purpose is
   self-evident.
-- When this wake's user message carries a `drafting` block (i.e. the trigger
+- When this wake's user message carries a `<drafting>` section (i.e. the trigger
   tokens include `drafting:<dayId>`), your priority is to call
   `draft_day_plan` once with the full updated block list — replacing or
   extending `drafting.baselinePlan` rather than emitting partial diffs.
@@ -908,7 +981,7 @@ Drafting rules:
   emit the full plan through `draft_day_plan`.
 
 Refine rules:
-- When this wake's user message carries a `refine` block (i.e. the trigger
+- When this wake's user message carries a `<refine>` section (i.e. the trigger
   tokens include `refine:<dayId>`), your priority is to call
   `propose_plan_diff` once with the structured changes the user described
   in the accompanying capture transcript. Reference existing `blockId`s
@@ -921,7 +994,24 @@ Refine rules:
   your own. After the user commits, the plan is in shepherding mode and
   further edits require an explicit refine.
 - Shutdown and agenda mutation tools are not available yet. Do not claim you
-  shut down a day.
+  shut down a day.${weekContextService == null ? '' : '''
+
+
+Week context (`<recent_days>` / `<week_ahead>`):
+- The facts in `<recent_days>` are deterministic: recorded time is ground
+  truth (excluding any still-running session), planned time is intent. A
+  committed plan was a real commitment; a draft plan is weak evidence.
+- Plan sustainably: after a heavy stretch (days recorded far over plan, missed
+  rest), prefer a gentler day over maximum throughput. Sustainability beats
+  throughput.
+- Respect `<week_ahead>`: deadlines within the window should shape today's
+  plan before they become urgent.
+- `write_day_summary` rules: one paragraph, max 500 characters, what happened
+  and WHY in your own words for your own future reading. Today or yesterday
+  only. Do not restate the numbers — the facts line already carries them. If
+  yesterday has no note yet, write it on any wake while it is still writable.
+- Your `Agent note:` lines in `<recent_days>` are your own past testimony; the
+  facts line next to them wins on any contradiction.'''}
 
 Your memory (append-only — you add, never overwrite):
 - Keep each observation atomic: one idea per note, so it can be linked and
@@ -1020,10 +1110,6 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     }
   }
 
-  /// The JSON line carrying the derivable day log in the encoded payload.
-  /// Used to split the persisted v2 prompt record around it (ADR 0020).
-  static const _dayLogLineAnchor = '\n  "dayLog": ';
-
   bool _isToolEnabled(String toolName) {
     if (DayAgentToolNames.isCaptureReconcileTool(toolName)) {
       return captureService != null;
@@ -1033,6 +1119,11 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     }
     if (DayAgentToolNames.isKnowledgeTool(toolName)) {
       return knowledgeService != null;
+    }
+    // Explicit branch — the fallthrough default is `true`, which would offer
+    // the model a tool whose every call dies as unconfigured.
+    if (DayAgentToolNames.isWeekContextTool(toolName)) {
+      return weekContextService != null;
     }
     return true;
   }

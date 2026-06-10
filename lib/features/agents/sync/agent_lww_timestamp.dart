@@ -26,6 +26,7 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
     capture: (e) => e.createdAt,
     parsedItem: (e) => e.createdAt,
     dayPlan: (e) => e.updatedAt,
+    daySummary: (e) => e.updatedAt,
     attentionRequest: (e) => e.createdAt,
     attentionClaimDisposition: (e) => e.createdAt,
     attentionAward: (e) => e.createdAt,

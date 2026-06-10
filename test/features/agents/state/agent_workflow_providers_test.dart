@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -95,6 +96,11 @@ void main() {
       expect(workflow.planService?.syncService, same(syncService));
       expect(workflow.planService?.journalDb, same(journalDb));
       expect(workflow.planService?.domainLogger, same(domainLogger));
+      expect(workflow.weekContextService, isA<DayAgentWeekContextService>());
+      expect(workflow.weekContextService?.agentRepository, same(repository));
+      expect(workflow.weekContextService?.syncService, same(syncService));
+      expect(workflow.weekContextService?.journalDb, same(journalDb));
+      expect(workflow.weekContextService?.domainLogger, same(domainLogger));
       workflow.onPersistedStateChanged?.call('day-agent-001');
       verify(
         () => notifications.notifyUiOnly({

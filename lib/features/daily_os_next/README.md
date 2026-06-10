@@ -88,24 +88,88 @@ Runtime behavior:
 - The shared template service seeds the `Shepherd` day-agent template.
 - `DayAgentWorkflow` builds the prompt from template directives, the planner's
   durable knowledge (a compact always-on **hook index** plus scoped full
-  statements), recent private observations, the day's `dayLog`, and — for
+  statements), recent private observations, the day's `day_log`, and — for
   `capture_submitted:<captureId>` wakes — the submitted capture plus a bounded
-  task corpus snapshot. The user-message keys are ordered **stable → volatile**
-  so the cacheable prompt prefix is maximised for local KV-cache / prefix-cache
-  reuse. The two knowledge tiers are split by stability: the always-on
-  `knowledgeIndex` (global, slow-changing) leads the prefix *before* the large
-  `dayLog`, while the scope-filtered `knowledgeStatements` vary by which scopes
-  the wake touches (capture vs drafting vs refine) and therefore trail the
-  `dayLog`/`attentionPlanning` — a changing statement set must never evict the
-  much larger `dayLog` prefix behind it. Net order: `dayId`, `planDate`,
-  `knowledgeIndex`, `dayLog`, `attentionPlanning`, `knowledgeStatements`, the
-  per-wake mode block, then `triggerTokens` and `currentLocalTime` last.
-  `currentLocalTime` lets same-day drafting distinguish future plan slots from
+  task corpus snapshot.
+- **The user message is tagged plaintext, not a JSON document.** The payload is
+  a set of `<snake_case>` sections (`day_agent_prompt_sections.dart`) rather
+  than one `jsonEncode`d map: tags keep JSON's named sections and boundary
+  integrity while letting **prose** sections (`day_log`, `knowledge_index`,
+  `knowledge_statements`, `recent_days`/`week_ahead`, scalars) carry real
+  newlines — which weak local models read far better than newline-escaped
+  run-on strings. **Data-shaped, tool-facing** sections stay JSON *inside* their
+  tags (`attention_planning`, `capture`, `drafting`, `refine`,
+  `recent_observations`, `trigger_tokens`) so the model can copy ids verbatim
+  into tool calls. Every interpolation — including the JSON-kept sections, since
+  `jsonEncode` does not escape `<`/`>` — runs through a shared sanitizer that
+  neutralizes forged tag boundaries; single-line interpolations additionally
+  collapse whitespace so a multi-line value cannot fabricate a section.
+- Sections are ordered **stable → volatile** so the cacheable prompt prefix is
+  maximised for local KV-cache / prefix-cache reuse. The two knowledge tiers are
+  split by stability: the always-on `knowledge_index` (global, slow-changing)
+  leads the prefix *before* the large `day_log`, while the scope-filtered
+  `knowledge_statements` vary by which scopes the wake touches (capture vs
+  drafting vs refine) and therefore trail the `day_log`/`attention_planning` — a
+  changing statement set must never evict the much larger `day_log` prefix
+  behind it. Net order: `day_id`, `plan_date`, `knowledge_index`, `day_log`,
+  `attention_planning`, `knowledge_statements`, `recent_days`, `week_ahead`
+  (the today-so-far line churns with tracked time, so week context trails the
+  knowledge statements), the per-wake mode section, then
+  `recent_observations`, `trigger_tokens`, and `current_local_time` last.
+  `current_local_time` lets same-day drafting distinguish future plan slots from
   time that has already passed.
+- **v2 prompt-record splice (ADR 0020).** Once the read flips to the compacted
+  `day_log`, the whole `<day_log>…</day_log>` section is a pure function of the
+  synced event log, so the persisted wake record stores only the non-derivable
+  head/tail around it (`day-log-section` wrap) and `WakePromptReconstructor`
+  re-renders the section on demand for the history UI. Records persisted before
+  the tagged-plaintext conversion used a `json-day-log-line` wrap and stay
+  decodable.
 - `DayAgentStrategy` handles private observations itself and delegates
   `set_next_wake`, `search_memory`, the knowledge tool (`propose_knowledge`),
-  Capture/Reconcile tools, draft plan tools, and refine tools through the
-  workflow handler.
+  Capture/Reconcile tools, draft plan tools, refine tools, and the week-context
+  tool (`write_day_summary`) through the workflow handler.
+
+### Week Context & Day Summaries (ADR 0028)
+
+- **Facts vs testimony.** `<recent_days>` renders one paragraph per day over a
+  rolling last-7-days lookback plus the plan date: facts first — deterministic,
+  template-rendered planned-vs-recorded minutes per category (integer-tenths
+  arithmetic, never doubles), named block-level misses, plan status, total —
+  then the agent's own contemporaneous day summary as an `Agent note:` line.
+  Facts come exclusively from entities; the note is testimony rendered adjacent
+  for self-auditing, and on contradiction the facts line wins. `<week_ahead>`
+  carries future days `[planDate+1 .. planDate+5]` that have plans plus claim
+  deadlines within `[today, today+5)`. All wording lives in ONE renderer
+  (`agents/domain/week_context.dart`); the service
+  (`agents/service/day_agent_week_context_service.dart`) assembles inputs —
+  one chunked `getEntitiesByIds` for the 21 deterministic plan/summary ids,
+  recorded spans via the shared `logic/recorded_time.dart` core over an
+  end-of-day-bounded calendar query, claims by visibility window — and is
+  fail-soft (a load error logs and the wake proceeds without the sections).
+- **Wall-clock day classification.** `today := localDay(clock.now())`, not the
+  wake's workspace day: past days render "Missed:", today renders
+  "(today so far)" / "Still planned:", days after today render "(upcoming)" —
+  never "Missed:" and never fake "Nothing recorded." rest-day lines for days
+  that have not happened (drafting-tomorrow wakes see tomorrow as upcoming).
+- **`write_day_summary`** persists `AgentDomainEntity.daySummary`
+  (`day_agent_summary:<dayId>`) — a keyed mutable register, upserted in place
+  within its window (preserving `createdAt`), windowed to the wall clock:
+  today or yesterday only, independent of the wake workspace (the sole,
+  ADR-governed exception to the workspace-day tool guard — dispatched before
+  the blanket dayId rejection). Text is whitespace-normalized and capped at
+  500 chars at the write path. Concurrent versions resolve earliest-createdAt
+  wins (the most contemporaneous testimony is canonical).
+- **Channel partition.** `write_day_summary` is the sole channel for day
+  retrospectives; `record_observations` is forward-looking learnings only —
+  never day recaps (seeded directive, 2026-06-10).
+- **Caps.** Max 6 categories per day (by `max(planned, recorded)`), 5 named
+  misses/still-planned items, 10 deadline lines — each truncation renders a
+  deterministic overflow marker (`+N more (X.Xh).` / `+N more missed.` /
+  `+N more planned.` / `+N more.`).
+- **Cost gating.** Week context builds only on wakes whose day came from
+  day-carrying tokens (planning-day / drafting / refine / scheduled);
+  capture-submitted wakes skip the 8-day journal+links+claims load.
 - `search_memory` is the planner's recall + memory-linking tool, handled by the
   workflow itself (`DayAgentWorkflow._searchMemory` over `AgentLogCompactor`).
   With `query` it keyword-scans the **full** immutable capture-and-observation
@@ -318,7 +382,7 @@ stateDiagram-v2
   rejects their old wire names as unknown (ADR 0006; the user confirms, the
   model only proposes).
 - For today's plan, `draft_day_plan` rejects new drafted `ai` or `manual`
-  blocks whose start is before `currentLocalTime`. It still accepts earlier
+  blocks whose start is before `current_local_time`. It still accepts earlier
   blocks when their state is `inProgress`, `completed`, or `dropped`, because
   those represent what actually happened rather than new future planning.
 - `dailyOsActualTimeBlocksProvider` projects recorded journal entries for the
@@ -328,6 +392,15 @@ stateDiagram-v2
   resolves categories through `EntitiesCacheService`, and refreshes from every
   non-empty database update batch so newly stopped timers appear in the Actual
   lane.
+- What counts as recorded time is decided once, in
+  `logic/recorded_time.dart`: `resolveTimeEntries` skips tombstones and
+  zero-length entries and resolves each survivor's linked-from entity (a linked
+  Task wins, ratings never count, otherwise the first surviving non-rating
+  link — candidates are ordered by link `(createdAt, fromId)` first, since the
+  backing query has no ORDER BY, so the pick is device-stable), yielding
+  `ResolvedTimeEntry` pairs with derived `categoryId`/`taskId`/`duration`. The Actual lane projects these pairs into UI `TimeBlock`s; the
+  planner's week context derives prompt span buckets from the same pairs, so
+  the two can never disagree on what was recorded.
 - The Day timeline spans `00:00` to `00:00` and folds idle regions instead of
   cropping the day. Folding is calculated from the union of planned and actual
   blocks, so gaps on either side compress into the same folded-paper region
@@ -358,7 +431,7 @@ stateDiagram-v2
   `capture_submitted:<id>`, `decided_task:<taskId>`, and
   `decided_capture_item:<parsedItemId>` tokens. The workflow surfaces the
   baseline plan, hydrated decided tasks, and `decidedCaptureItems` under the
-  `drafting` block in the user message JSON. Items in `decidedCaptureItems`
+  `<drafting>` section (JSON inside its tag). Items in `decidedCaptureItems`
   are approved NEW/unlinked capture items; the model must call
   `create_task_from_phrase` first and place the returned task id.
 - Day-agent wakes forward the resolved profile model's `geminiThinkingMode`

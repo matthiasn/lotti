@@ -586,6 +586,47 @@ void main() {
       expect(companion.updatedAt, Value(updatedAt));
     });
 
+    test('daySummary writes type/subtype and roundtrips through a row', () {
+      final entity = AgentDomainEntity.daySummary(
+        id: 'day_agent_summary:dayplan-2026-06-08',
+        agentId: 'daily_os_planner',
+        dayId: 'dayplan-2026-06-08',
+        text: 'Client emergency ate the evening; gym and taxes dropped.',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: const VectorClock({'node-a': 5}),
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+      expect(companion.type, const Value(AgentEntityTypes.daySummary));
+      // Subtype is the dayId so indexed type+subtype lookups can fetch one
+      // day's summary without scanning.
+      expect(companion.subtype, const Value('dayplan-2026-06-08'));
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(updatedAt));
+
+      final row = AgentEntity(
+        id: entity.id,
+        agentId: 'daily_os_planner',
+        type: AgentEntityTypes.daySummary,
+        subtype: 'dayplan-2026-06-08',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<DaySummaryEntity>());
+      final summary = result as DaySummaryEntity;
+      expect(summary.dayId, 'dayplan-2026-06-08');
+      expect(
+        summary.text,
+        'Client emergency ate the evening; gym and taxes dropped.',
+      );
+      expect(summary.vectorClock, const VectorClock({'node-a': 5}));
+    });
+
     test(
       'toEntityCompanion writes attention request type and scope subtype',
       () {
@@ -1802,6 +1843,7 @@ void main() {
           makeTestCapture(),
           makeTestParsedItem(),
           makeTestDayPlan(),
+          makeTestDaySummary(),
           makeTestChangeSet(),
           makeTestChangeDecision(),
           makeTestEvolutionSession(),

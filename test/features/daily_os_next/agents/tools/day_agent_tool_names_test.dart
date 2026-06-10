@@ -19,6 +19,7 @@ void main() {
       DayAgentToolNames.summarizeRecentPatterns,
       DayAgentToolNames.proposePlanDiff,
       DayAgentToolNames.proposeKnowledge,
+      DayAgentToolNames.writeDaySummary,
     ];
 
     test('uses the wire names expected by the day-agent prompt', () {
@@ -38,6 +39,7 @@ void main() {
         'summarize_recent_patterns',
         'propose_plan_diff',
         'propose_knowledge',
+        'write_day_summary',
       ]);
     });
 
@@ -91,6 +93,10 @@ void main() {
         {DayAgentToolNames.proposeKnowledge},
       );
       expect(
+        DayAgentToolNames.weekContextTools,
+        {DayAgentToolNames.writeDaySummary},
+      );
+      expect(
         DayAgentToolNames.workflowHandlerTools,
         {
           DayAgentToolNames.setNextWake,
@@ -98,6 +104,7 @@ void main() {
           ...DayAgentToolNames.captureReconcileTools,
           ...DayAgentToolNames.planTools,
           ...DayAgentToolNames.knowledgeTools,
+          ...DayAgentToolNames.weekContextTools,
         },
       );
     });
@@ -143,6 +150,14 @@ void main() {
         DayAgentToolNames.isPlanTool(DayAgentToolNames.submitCapture),
         isFalse,
       );
+      expect(
+        DayAgentToolNames.isWeekContextTool(DayAgentToolNames.writeDaySummary),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isWeekContextTool(DayAgentToolNames.draftDayPlan),
+        isFalse,
+      );
     });
 
     test('routing membership is explicit for every tool name', () {
@@ -164,6 +179,20 @@ void main() {
         DayAgentToolNames.summarizeRecentPatterns: (false, true, false, false),
         DayAgentToolNames.proposePlanDiff: (false, true, false, false),
       };
+      // Knowledge + week-context tools are workflow-routed through their own
+      // services; assert their routing separately from the 4-tuple table.
+      expect(
+        DayAgentToolNames.isWorkflowHandlerTool(
+          DayAgentToolNames.proposeKnowledge,
+        ),
+        isTrue,
+      );
+      expect(
+        DayAgentToolNames.isWorkflowHandlerTool(
+          DayAgentToolNames.writeDaySummary,
+        ),
+        isTrue,
+      );
 
       for (final MapEntry(key: name, value: (capture, plan, wake, search))
           in routing.entries) {

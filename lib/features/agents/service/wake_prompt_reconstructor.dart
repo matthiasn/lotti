@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -78,6 +79,14 @@ class WakePromptReconstructor {
     );
 
     return switch (record.wrap) {
+      // Current day-agent payload: re-render the log inside its tagged section,
+      // neutralizing forged boundaries exactly as the live wake did.
+      promptRecordWrapDayLogSection =>
+        '${record.head}$dayLogSectionOpenMarker'
+            '${neutralizePromptTags(log)}'
+            '$dayLogSectionCloseMarker${record.tail}',
+      // Legacy day-agent payload (pre tagged-plaintext conversion): re-encode
+      // the log as the `"dayLog"` JSON field line so old records still render.
       promptRecordWrapDayLogJsonLine =>
         '${record.head}  "dayLog": ${jsonEncode(log)},\n${record.tail}',
       _ => record.head + log + record.tail,

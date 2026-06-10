@@ -84,6 +84,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
@@ -1044,6 +1045,9 @@ class MockDayAgentPlanService extends Mock implements DayAgentPlanService {}
 
 class MockDayAgentKnowledgeService extends Mock
     implements DayAgentKnowledgeService {}
+
+class MockDayAgentWeekContextService extends Mock
+    implements DayAgentWeekContextService {}
 
 class MockDayAgentWorkflow extends Mock implements DayAgentWorkflow {}
 

@@ -47,7 +47,7 @@ final class HabitsControllerProvider
   }
 }
 
-String _$habitsControllerHash() => r'07c7cd1ee06fc45f94c9842ae4aed0d8382209cf';
+String _$habitsControllerHash() => r'c6438f63ee552f3abe9ea889658d7980b7ddfa35';
 
 /// Notifier managing the complete habits page state.
 /// Marked as keepAlive since habits state should persist across navigation.

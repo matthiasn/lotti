@@ -15,59 +15,97 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required _RefineContext? refineContext,
     required AttentionPlanningInputs attentionPlanning,
     required _KnowledgeContext knowledge,
+    WeekContext? weekContext,
     String? compactedLog,
   }) {
-    // Key order is deliberately STABLE → VOLATILE for prompt-prefix / KV-cache
-    // reuse: providers cache the longest identical leading prefix, so anything
-    // that varies wake-to-wake must come last. Crucially the two tiers of
-    // durable knowledge are split by stability: the always-on `knowledgeIndex`
-    // is global and slow-changing, so it leads the prefix; the scope-filtered
-    // `knowledgeStatements` vary by which scopes THIS wake touches (capture vs
-    // drafting vs refine touch different categories), so they sit AFTER the
-    // large day-stable `dayLog`/`attentionPlanning` — a changing statement set
-    // must never evict the (much larger) dayLog prefix behind it.
-    final payload = <String, Object?>{
-      'dayId': dayId,
-      'planDate': planDate.toIso8601String(),
+    // Section order is deliberately STABLE → VOLATILE for prompt-prefix /
+    // KV-cache reuse: providers cache the longest identical leading prefix, so
+    // anything that varies wake-to-wake must come last. Crucially the two tiers
+    // of durable knowledge are split by stability: the always-on
+    // `knowledge_index` is global and slow-changing, so it leads the prefix;
+    // the scope-filtered `knowledge_statements` vary by which scopes THIS wake
+    // touches (capture vs drafting vs refine touch different categories), so
+    // they sit AFTER the large day-stable `day_log`/`attention_planning` — a
+    // changing statement set must never evict the (much larger) day-log prefix
+    // behind it. Prose sections are plain text; data-shaped, tool-facing
+    // sections stay JSON inside their tags (see [DayAgentPromptSections]).
+    final sections = DayAgentPromptSections()
+      ..addText(DayAgentPromptTags.dayId, dayId)
+      ..addText(DayAgentPromptTags.planDate, planDate.toIso8601String())
       // Tier 1 — the always-on compact hook index of durable knowledge
       // (ADR 0022 Decisions 9–10). One line per active key, independent of the
       // wake's touched scopes, so it is byte-stable across a planning session
-      // and belongs ahead of the dayLog in the stable prefix.
-      if (knowledge.hookIndex.isNotEmpty) 'knowledgeIndex': knowledge.hookIndex,
+      // and belongs ahead of the day log in the stable prefix.
+      ..addText(DayAgentPromptTags.knowledgeIndex, knowledge.hookIndex)
       // The compacted day log (ADR 0017): capture transcripts and the agent's
       // observations as an append-only event tail behind a summary —
-      // byte-stable at its head between folds.
-      'dayLog': ?compactedLog,
+      // byte-stable at its head between folds. The derivable section the v2
+      // prompt record splices around.
+      ..addText(DayAgentPromptTags.dayLog, compactedLog)
       // Day-stable attention claims/agreements precede the per-wake mode blocks.
-      if (!attentionPlanning.isEmpty)
-        'attentionPlanning': _attentionPlanningToJson(attentionPlanning),
+      ..addJson(
+        DayAgentPromptTags.attentionPlanning,
+        attentionPlanning.isEmpty
+            ? null
+            : _attentionPlanningToJson(attentionPlanning),
+      )
       // Tier 2 — the scope-filtered full statements for the scopes THIS wake
       // touches. Per-wake-variable, so placed below the large stable blocks
-      // (and above the equally per-wake mode blocks) to keep the dayLog prefix
+      // (and above the equally per-wake mode blocks) to keep the day-log prefix
       // reusable across differing wake types within a day.
-      if (knowledge.statements.isNotEmpty)
-        'knowledgeStatements': knowledge.statements,
+      ..addText(
+        DayAgentPromptTags.knowledgeStatements,
+        knowledge.statements.isEmpty ? null : knowledge.statements,
+      )
+      // Week context: the today-so-far line changes with tracked time, making
+      // these sections more volatile than the knowledge statements above, so
+      // they sit after them. Placing them BEFORE the mode sections is a
+      // deliberate trade (plan red-team correction): it lets modeless wakes
+      // (scheduled → drafting, the morning pattern) reuse the prefix through
+      // `week_ahead`, at the cost of a same-mode re-wake with an unchanged
+      // baseline (refine → refine) re-prefilling its mode section when the
+      // today line churns. Bodies arrive fully rendered and sanitized from
+      // the week-context renderer.
+      ..addPreRendered(DayAgentPromptTags.recentDays, weekContext?.recentDays)
+      ..addPreRendered(DayAgentPromptTags.weekAhead, weekContext?.weekAhead)
       // Mode blocks: present only for the wake that owns them, stable for it.
-      if (captureContext != null) 'capture': captureContext.toJson(),
-      if (draftingContext != null) 'drafting': draftingContext.toJson(),
-      if (refineContext != null) 'refine': refineContext.toJson(),
-      if (compactedLog == null)
-        'recentObservations': [
-          for (final observation in observations)
-            {
-              'createdAt': observation.createdAt.toIso8601String(),
-              'text': DayAgentWorkflow._extractPayloadText(
-                observationPayloads[observation.contentEntryId],
-              ),
-            },
-        ],
+      ..addJson(
+        DayAgentPromptTags.capture,
+        captureContext?.toJson(),
+      )
+      ..addJson(
+        DayAgentPromptTags.drafting,
+        draftingContext?.toJson(),
+      )
+      ..addJson(
+        DayAgentPromptTags.refine,
+        refineContext?.toJson(),
+      )
+      // Pre-compaction fallback listing: superseded by the day log once the
+      // read flips, so only rendered while there is no compacted log.
+      ..addJson(
+        DayAgentPromptTags.recentObservations,
+        compactedLog != null
+            ? null
+            : [
+                for (final observation in observations)
+                  {
+                    'createdAt': observation.createdAt.toIso8601String(),
+                    'text': DayAgentWorkflow._extractPayloadText(
+                      observationPayloads[observation.contentEntryId],
+                    ),
+                  },
+              ],
+      )
       // Volatile per-wake metadata, kept LAST (before the wall-clock) so a
       // changing trigger set never evicts the large stable blocks above it.
-      'triggerTokens': triggerTokens.toList()..sort(),
-      // The volatile wall-clock is the trailing key.
-      'currentLocalTime': now.toIso8601String(),
-    };
-    return const JsonEncoder.withIndent('  ').convert(payload);
+      ..addJson(
+        DayAgentPromptTags.triggerTokens,
+        triggerTokens.toList()..sort(),
+      )
+      // The volatile wall-clock is the trailing section.
+      ..addText(DayAgentPromptTags.currentLocalTime, now.toIso8601String());
+    return sections.build();
   }
 
   /// Loads the planner's durable knowledge and renders the two-tier prompt

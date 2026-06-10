@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_se
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
@@ -51,6 +52,20 @@ DayAgentKnowledgeService dayAgentKnowledgeService(Ref ref) {
   final notifications = ref.watch(updateNotificationsProvider);
   return DayAgentKnowledgeService(
     agentRepository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+  );
+}
+
+/// The Daily OS week-context service: lookback/lookahead prompt sections and
+/// the `write_day_summary` tool backend.
+@Riverpod(keepAlive: true)
+DayAgentWeekContextService dayAgentWeekContextService(Ref ref) {
+  final notifications = ref.watch(updateNotificationsProvider);
+  return DayAgentWeekContextService(
+    agentRepository: ref.watch(agentRepositoryProvider),
+    journalDb: ref.watch(journalDbProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),

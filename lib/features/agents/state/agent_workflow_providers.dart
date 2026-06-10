@@ -151,6 +151,7 @@ DayAgentWorkflow dayAgentWorkflow(Ref ref) {
     captureService: ref.watch(dayAgentCaptureServiceProvider),
     planService: ref.watch(dayAgentPlanServiceProvider),
     knowledgeService: ref.watch(dayAgentKnowledgeServiceProvider),
+    weekContextService: ref.watch(dayAgentWeekContextServiceProvider),
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),

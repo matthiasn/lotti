@@ -32,16 +32,24 @@ class PromptRecord {
 
   /// How the re-derived log splices between [head] and [tail]:
   /// [promptRecordWrapPlain] inserts the text verbatim;
-  /// [promptRecordWrapDayLogJsonLine] re-encodes it as the day payload's
-  /// `"dayLog"` JSON field line.
+  /// [promptRecordWrapDayLogSection] re-renders it inside the day payload's
+  /// `<day_log>` tagged section;
+  /// [promptRecordWrapDayLogJsonLine] re-encodes it as the legacy day payload's
+  /// `"dayLog"` JSON field line (kept decodable for already-persisted records).
   final String wrap;
 }
 
 /// Verbatim splice (markdown block prompts).
 const String promptRecordWrapPlain = 'plain';
 
-/// `  "dayLog": <json-encoded log>,\n` splice (the day agent's JSON
-/// payload).
+/// `<day_log>\n<log>\n</day_log>` splice — the day agent's tagged-plaintext
+/// payload (current). The whole derivable section is dropped from storage and
+/// re-rendered on reconstruction.
+const String promptRecordWrapDayLogSection = 'day-log-section';
+
+/// `  "dayLog": <json-encoded log>,\n` splice — the day agent's LEGACY JSON
+/// payload. Retained so v2 records persisted before the tagged-plaintext
+/// conversion still reconstruct for the history UI.
 const String promptRecordWrapDayLogJsonLine = 'json-day-log-line';
 
 /// Marker value of the `promptFormat` field for v2 records.

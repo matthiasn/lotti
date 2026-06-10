@@ -268,3 +268,26 @@ DayPlanEntity makeTestDayPlan({
       )
       as DayPlanEntity;
 }
+
+DaySummaryEntity makeTestDaySummary({
+  String? id,
+  String agentId = kTestAgentId,
+  String dayId = 'dayplan-2026-05-25',
+  String text = 'Client emergency ate the evening; gym dropped.',
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+  DateTime? deletedAt,
+}) {
+  return AgentDomainEntity.daySummary(
+        id: id ?? 'day_agent_summary:$dayId',
+        agentId: agentId,
+        dayId: dayId,
+        text: text,
+        createdAt: createdAt ?? kAgentTestDate,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        deletedAt: deletedAt,
+      )
+      as DaySummaryEntity;
+}

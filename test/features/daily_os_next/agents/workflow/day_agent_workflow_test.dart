@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
+import 'package:lotti/features/agents/service/wake_prompt_reconstructor.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -19,6 +20,8 @@ import 'package:lotti/features/ai/repository/inference_repository_interface.dart
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
+import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
@@ -28,6 +31,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../agents/test_utils.dart';
+import '../prompt/day_agent_prompt_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -157,6 +161,7 @@ void main() {
     MockDayAgentCaptureService? captureService,
     MockDayAgentPlanService? planService,
     MockDayAgentKnowledgeService? knowledgeService,
+    MockDayAgentWeekContextService? weekContextService,
   }) {
     return DayAgentWorkflow(
       agentRepository: repository,
@@ -169,10 +174,15 @@ void main() {
       captureService: captureService,
       planService: planService,
       knowledgeService: knowledgeService,
+      weekContextService: weekContextService,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
   }
+
+  /// Parses the last sent user message as a tagged-plaintext payload.
+  ParsedDayAgentPrompt sentPrompt() =>
+      ParsedDayAgentPrompt(conversationRepository.lastUserMessage!);
 
   Future<WakeResult> execute(
     DayAgentWorkflow sut, {
@@ -423,10 +433,7 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final sent =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, Object?>;
-        expect(sent['dayId'], dayId);
+        expect(sentPrompt().section('day_id'), dayId);
       },
     );
 
@@ -519,10 +526,7 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final sent =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, Object?>;
-        expect(sent['dayId'], dayId);
+        expect(sentPrompt().section('day_id'), dayId);
       },
     );
 
@@ -1086,11 +1090,9 @@ void main() {
             workflow(knowledgeService: knowledgeService),
           );
           expect(result.success, isTrue);
-          final sent =
-              jsonDecode(conversationRepository.lastUserMessage!)
-                  as Map<String, dynamic>;
-          expect(sent.containsKey('knowledgeIndex'), isFalse);
-          expect(sent.containsKey('knowledgeStatements'), isFalse);
+          final sent = sentPrompt();
+          expect(sent.has('knowledge_index'), isFalse);
+          expect(sent.has('knowledge_statements'), isFalse);
         },
       );
 
@@ -1150,13 +1152,10 @@ void main() {
             workflow(knowledgeService: knowledgeService),
           );
           expect(result.success, isTrue);
-          final sent =
-              jsonDecode(conversationRepository.lastUserMessage!)
-                  as Map<String, dynamic>;
           // The project-targeted claim put project:proj-1 in touched scopes, so
           // the project-scoped statement is pulled in.
           expect(
-            sent['knowledgeStatements'],
+            sentPrompt().section('knowledge_statements'),
             contains('Protect project X morn'),
           );
         },
@@ -1241,10 +1240,10 @@ void main() {
       // observations interleaved in event order (capture 07:01 before
       // observation 08:00), superseding the recentObservations listing.
       final sent = conversationRepository.lastUserMessage!;
-      expect(sent, contains('"dayLog"'));
+      expect(sent, contains('<day_log>'));
       expect(sent, contains('(id: cap-1, capture) morning planning capture'));
       expect(sent, contains('(id: obs-1, observation) a day observation'));
-      expect(sent, isNot(contains('"recentObservations"')));
+      expect(sent, isNot(contains('<recent_observations>')));
       expect(
         sent.indexOf('morning planning capture'),
         lessThan(sent.indexOf('a day observation')),
@@ -1258,17 +1257,33 @@ void main() {
           .firstWhere((c) => c['promptFormat'] == 'v2');
       final head = record['head']! as String;
       final tail = record['tail']! as String;
-      expect(record['wrap'], 'json-day-log-line');
-      expect(head, contains('"dayId"'));
-      expect(head, isNot(contains('"dayLog"')));
-      expect(tail, isNot(contains('"dayLog"')));
-      expect(tail, contains('"triggerTokens"'));
+      expect(record['wrap'], 'day-log-section');
+      expect(head, contains('<day_id>'));
+      // The whole derivable `<day_log>…</day_log>` section is stripped from
+      // storage; head ends before it and tail begins after it.
+      expect(head, isNot(contains('<day_log>')));
+      expect(tail, isNot(contains('</day_log>')));
+      expect(tail, contains('<trigger_tokens>'));
       // The derivable log content is gone from storage…
       expect(head + tail, isNot(contains('morning planning capture')));
       // …and the substrate supersedes the separate listing.
-      expect(head + tail, isNot(contains('"recentObservations"')));
+      expect(head + tail, isNot(contains('<recent_observations>')));
       final marker = record['log']! as Map<String, Object?>;
       expect(marker['until'], isNotNull);
+
+      // End-to-end: the persisted record must reconstruct byte-identically
+      // to the prompt the wake actually sent — the head/tail boundaries and
+      // the re-rendered <day_log> section have to line up exactly (ADR 0020).
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.capture,
+        ),
+      ).thenAnswer((_) async => [capture]);
+      final reconstructed = await WakePromptReconstructor(
+        syncService: syncService,
+      ).reconstruct(agentId: agentId, content: record);
+      expect(reconstructed, conversationRepository.lastUserMessage);
     });
 
     test('falls back to the legacy prompt when the capture-entity load '
@@ -1303,11 +1318,11 @@ void main() {
       );
       expect(result.success, isTrue);
 
-      // No dayLog in the sent prompt, and the persisted payload stays a
+      // No day_log in the sent prompt, and the persisted payload stays a
       // legacy full blob (no v2 record without a usable compacted log).
       expect(
         conversationRepository.lastUserMessage,
-        isNot(contains('"dayLog"')),
+        isNot(contains('<day_log>')),
       );
       final v2Records = upsertedEntities
           .whereType<AgentMessagePayloadEntity>()
@@ -1390,10 +1405,7 @@ void main() {
       );
       expect(result.success, isTrue);
 
-      final attentionPlanning =
-          (jsonDecode(conversationRepository.lastUserMessage!)
-                  as Map<String, dynamic>)['attentionPlanning']
-              as Map;
+      final attentionPlanning = sentPrompt().json('attention_planning')! as Map;
       final claims = attentionPlanning['claims'] as List;
       expect(claims, hasLength(1));
       final renderedClaim = claims.single as Map;
@@ -1460,10 +1472,7 @@ void main() {
       // entirely (it is only rendered when non-empty) and the wake still
       // succeeds rather than propagating the error.
       expect(result.success, isTrue);
-      final userPayload =
-          jsonDecode(conversationRepository.lastUserMessage!)
-              as Map<String, dynamic>;
-      expect(userPayload.containsKey('attentionPlanning'), isFalse);
+      expect(sentPrompt().has('attention_planning'), isFalse);
     });
 
     test(
@@ -1546,21 +1555,24 @@ void main() {
         );
         expect(
           conversationRepository.lastSystemMessage,
-          contains('currentLocalTime'),
+          contains('current_local_time'),
         );
 
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        expect(userPayload['dayId'], dayId);
-        expect(userPayload['planDate'], '2026-05-25T00:00:00.000');
-        expect(userPayload['currentLocalTime'], '2026-05-25T08:00:00.000');
-        // Volatile wall-clock must be the trailing key so the rest of the
-        // payload stays a stable prefix across wakes (prefix/KV-cache reuse).
-        expect(userPayload.keys.last, 'currentLocalTime');
-        expect(userPayload['triggerTokens'], [dayAgentPlanningDayToken(dayId)]);
+        final userPayload = sentPrompt();
+        expect(userPayload.section('day_id'), dayId);
+        expect(userPayload.section('plan_date'), '2026-05-25T00:00:00.000');
         expect(
-          userPayload['recentObservations'],
+          userPayload.section('current_local_time'),
+          '2026-05-25T08:00:00.000',
+        );
+        // Volatile wall-clock must be the trailing section so the rest of the
+        // payload stays a stable prefix across wakes (prefix/KV-cache reuse).
+        expect(userPayload.tagsInOrder.last, 'current_local_time');
+        expect(userPayload.json('trigger_tokens'), [
+          dayAgentPlanningDayToken(dayId),
+        ]);
+        expect(
+          userPayload.json('recent_observations'),
           [
             {
               'createdAt': '2026-05-25T06:00:00.000',
@@ -1777,10 +1789,9 @@ void main() {
       );
 
       expect(result.success, isTrue);
-      final userPayload =
-          jsonDecode(conversationRepository.lastUserMessage!)
-              as Map<String, dynamic>;
-      final capturePayload = userPayload['capture'] as Map<String, dynamic>;
+      expectCanonicalSectionOrder(sentPrompt());
+      final capturePayload =
+          sentPrompt().json('capture')! as Map<String, dynamic>;
       expect(capturePayload['captureId'], 'capture-1');
       expect(capturePayload['transcript'], 'Prep demo and buy milk');
       expect(capturePayload['audioRef'], 'audio-1');
@@ -1964,10 +1975,7 @@ void main() {
 
           expect(result.success, isTrue);
           expect(conversationRepository.sendMessageCalls, hasLength(1));
-          final userPayload =
-              jsonDecode(conversationRepository.lastUserMessage!)
-                  as Map<String, dynamic>;
-          expect(userPayload.containsKey('capture'), isFalse);
+          expect(sentPrompt().has('capture'), isFalse);
           verify(
             () => captureService.getCapture('capture-1'),
           ).called(1);
@@ -2062,10 +2070,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final draftingPayload = userPayload['drafting'] as Map<String, dynamic>;
+        final draftingPayload =
+            sentPrompt().json('drafting')! as Map<String, dynamic>;
         expect(draftingPayload['requested'], isTrue);
         expect(draftingPayload['baselinePlan'], isNull);
         expect(draftingPayload['decidedTasks'], isEmpty);
@@ -2124,10 +2130,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final draftingPayload = userPayload['drafting'] as Map<String, dynamic>;
+        final draftingPayload =
+            sentPrompt().json('drafting')! as Map<String, dynamic>;
         final plan = draftingPayload['baselinePlan'] as Map<String, dynamic>;
         expect(plan['planId'], 'day_agent_plan:$dayId');
         expect(plan['capacityMinutes'], 360);
@@ -2155,10 +2159,7 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        expect(userPayload.containsKey('drafting'), isFalse);
+        expect(sentPrompt().has('drafting'), isFalse);
         verifyNever(
           () => planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
@@ -2260,10 +2261,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final draftingPayload = userPayload['drafting'] as Map<String, dynamic>;
+        final draftingPayload =
+            sentPrompt().json('drafting')! as Map<String, dynamic>;
         final decidedTasks = draftingPayload['decidedTasks'] as List<dynamic>;
         expect(decidedTasks, hasLength(2));
         expect(
@@ -2615,10 +2614,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final refinePayload = userPayload['refine'] as Map<String, dynamic>;
+        final refinePayload =
+            sentPrompt().json('refine')! as Map<String, dynamic>;
         expect(refinePayload['requested'], isTrue);
         final plan = refinePayload['baselinePlan'] as Map<String, dynamic>;
         expect(plan['planId'], 'day_agent_plan:$dayId');
@@ -2658,10 +2655,8 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final refinePayload = userPayload['refine'] as Map<String, dynamic>;
+        final refinePayload =
+            sentPrompt().json('refine')! as Map<String, dynamic>;
         expect(refinePayload['requested'], isTrue);
         expect(refinePayload['baselinePlan'], isNull);
       },
@@ -2678,10 +2673,7 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        expect(userPayload.containsKey('refine'), isFalse);
+        expect(sentPrompt().has('refine'), isFalse);
       },
     );
 
@@ -2854,31 +2846,28 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final sent =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
+        final sent = sentPrompt();
         // Hook index always present; the global statement is pulled in.
         expect(
-          sent['knowledgeIndex'],
+          sent.section('knowledge_index'),
           contains('[deep-work] no deep work before 10 (scope: global)'),
         );
         expect(
-          sent['knowledgeStatements'],
+          sent.section('knowledge_statements'),
           contains('Never schedule deep work before 10:00.'),
         );
         // Prefix-cache stability: the always-on index leads the prefix, the
         // per-wake scope-filtered statements trail it, and the wall-clock is
-        // the last (most volatile) key.
-        final keys = sent.keys.toList();
+        // the last (most volatile) section.
         expect(
-          keys.indexOf('knowledgeIndex'),
-          lessThan(keys.indexOf('knowledgeStatements')),
+          sent.indexOf('knowledge_index'),
+          lessThan(sent.indexOf('knowledge_statements')),
         );
         expect(
-          keys.indexOf('knowledgeStatements'),
-          lessThan(keys.indexOf('currentLocalTime')),
+          sent.indexOf('knowledge_statements'),
+          lessThan(sent.indexOf('current_local_time')),
         );
-        expect(keys.last, 'currentLocalTime');
+        expect(sent.tagsInOrder.last, 'current_local_time');
       },
     );
 
@@ -2893,11 +2882,9 @@ void main() {
       );
 
       expect(result.success, isTrue);
-      final sent =
-          jsonDecode(conversationRepository.lastUserMessage!)
-              as Map<String, dynamic>;
-      expect(sent.containsKey('knowledgeIndex'), isFalse);
-      expect(sent.containsKey('knowledgeStatements'), isFalse);
+      final sent = sentPrompt();
+      expect(sent.has('knowledge_index'), isFalse);
+      expect(sent.has('knowledge_statements'), isFalse);
     });
 
     test(
@@ -2965,14 +2952,12 @@ void main() {
         );
 
         expect(result.success, isTrue);
-        final sent =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
+        final sent = sentPrompt();
         // Hook index always lists the key (discovery)...
-        expect(sent['knowledgeIndex'], contains('[gym]'));
+        expect(sent.section('knowledge_index'), contains('[gym]'));
         // ...but the full statement is withheld since this wake touches no
         // fitness category.
-        expect(sent.containsKey('knowledgeStatements'), isFalse);
+        expect(sent.has('knowledge_statements'), isFalse);
       },
     );
 
@@ -3034,26 +3019,58 @@ void main() {
                 as PlannerKnowledgeEntity,
           ],
         );
+        when(
+          () => repository.getAttentionPlanningInputsForWindow(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          ),
+        ).thenAnswer(
+          (_) async => AttentionPlanningInputs(
+            claims: [
+              AgentDomainEntity.attentionRequest(
+                    id: 'attn-c1',
+                    agentId: 'task-agent',
+                    kind: AttentionRequestKind.task,
+                    title: 'Focus block',
+                    categoryId: 'work',
+                    requestedMinutes: 45,
+                    impact: 3,
+                    urgency: 3,
+                    energyFit: AttentionEnergyFit.high,
+                    evidenceRefs: const [],
+                    createdAt: DateTime(2026, 5, 24),
+                    vectorClock: null,
+                  )
+                  as AttentionRequestEntity,
+            ],
+            standingAgreements: const [],
+          ),
+        );
 
         final result = await execute(
           workflow(knowledgeService: knowledgeService),
         );
 
         expect(result.success, isTrue);
-        final sent =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
-        final keys = sent.keys.toList();
-        // The C1 invariant: index → dayLog → statements.
-        expect(keys, containsAll(['knowledgeIndex', 'dayLog']));
+        final sent = sentPrompt();
+        // The C1 invariant: index → day_log → statements — and the volatile
+        // attention claims must never drift ahead of the (much larger,
+        // byte-stable) day log.
+        expect(sent.has('knowledge_index'), isTrue);
+        expect(sent.has('day_log'), isTrue);
         expect(
-          keys.indexOf('knowledgeIndex'),
-          lessThan(keys.indexOf('dayLog')),
+          sent.indexOf('knowledge_index'),
+          lessThan(sent.indexOf('day_log')),
         );
         expect(
-          keys.indexOf('dayLog'),
-          lessThan(keys.indexOf('knowledgeStatements')),
+          sent.indexOf('day_log'),
+          lessThan(sent.indexOf('attention_planning')),
         );
+        expect(
+          sent.indexOf('attention_planning'),
+          lessThan(sent.indexOf('knowledge_statements')),
+        );
+        expectCanonicalSectionOrder(sent);
       },
     );
 
@@ -3175,11 +3192,8 @@ void main() {
         final result = await execute(workflow());
 
         expect(result.success, isTrue);
-        final userPayload =
-            jsonDecode(conversationRepository.lastUserMessage!)
-                as Map<String, dynamic>;
         final recentObservations =
-            userPayload['recentObservations'] as List<dynamic>;
+            sentPrompt().json('recent_observations')! as List<dynamic>;
         expect(recentObservations, hasLength(20));
         expect(
           recentObservations.first,
@@ -3268,11 +3282,8 @@ void main() {
       final result = await execute(workflow());
 
       expect(result.success, isTrue);
-      final userPayload =
-          jsonDecode(conversationRepository.lastUserMessage!)
-              as Map<String, dynamic>;
       final recentObservations =
-          userPayload['recentObservations'] as List<dynamic>;
+          sentPrompt().json('recent_observations')! as List<dynamic>;
       expect(
         recentObservations.map(
           (observation) => (observation as Map<String, dynamic>)['text'],
@@ -3540,6 +3551,429 @@ void main() {
       },
     );
 
+    group('week context', () {
+      MockDayAgentWeekContextService weekContextStub({WeekContext? context}) {
+        final service = MockDayAgentWeekContextService();
+        when(
+          () => service.buildForDay(
+            agentId: any(named: 'agentId'),
+            planDate: any(named: 'planDate'),
+            now: any(named: 'now'),
+          ),
+        ).thenAnswer((_) async => context);
+        return service;
+      }
+
+      const sampleContext = WeekContext(
+        recentDays:
+            'Sun Jun 7 — no plan. Work: 9h recorded. '
+            'Total recorded: 9h.',
+        weekAhead: 'Fri Jun 12 — draft plan: Work 4h.',
+      );
+
+      test(
+        'renders recent_days + week_ahead after knowledge statements and '
+        'before the mode section',
+        () async {
+          final knowledgeService = MockDayAgentKnowledgeService();
+          when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+            (_) async => [
+              AgentDomainEntity.plannerKnowledge(
+                    id: 'k-global',
+                    agentId: agentId,
+                    key: 'deep-work',
+                    hook: 'no deep work before 10',
+                    statementText: 'Never schedule deep work before 10:00.',
+                    source: KnowledgeSource.userStated,
+                    status: KnowledgeStatus.confirmed,
+                    createdAt: DateTime(2026, 5, 20),
+                    updatedAt: DateTime(2026, 5, 20),
+                    vectorClock: null,
+                  )
+                  as PlannerKnowledgeEntity,
+            ],
+          );
+          final planService = MockDayAgentPlanService();
+          stubDraftingPlanContext(planService);
+          stubSuccessfulDraftToolCall(planService);
+          when(
+            () => repository.getAttentionPlanningInputsForWindow(
+              start: any(named: 'start'),
+              end: any(named: 'end'),
+            ),
+          ).thenAnswer(
+            (_) async => AttentionPlanningInputs(
+              claims: [
+                AgentDomainEntity.attentionRequest(
+                      id: 'attn-1',
+                      agentId: 'task-agent',
+                      kind: AttentionRequestKind.task,
+                      title: 'Focus block',
+                      categoryId: 'work',
+                      requestedMinutes: 45,
+                      impact: 3,
+                      urgency: 3,
+                      energyFit: AttentionEnergyFit.high,
+                      evidenceRefs: const [],
+                      createdAt: DateTime(2026, 5, 24),
+                      vectorClock: null,
+                    )
+                    as AttentionRequestEntity,
+              ],
+              standingAgreements: const [],
+            ),
+          );
+
+          final result = await execute(
+            workflow(
+              knowledgeService: knowledgeService,
+              planService: planService,
+              weekContextService: weekContextStub(context: sampleContext),
+            ),
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+          );
+
+          expect(result.success, isTrue);
+          final sent = sentPrompt();
+          expect(sent.section('recent_days'), sampleContext.recentDays);
+          expect(sent.section('week_ahead'), sampleContext.weekAhead);
+          // Volatility ordering (the plan-mandated chain): day-stable
+          // attention claims, then per-wake knowledge statements, then the
+          // week context (its today-so-far line churns with tracked time),
+          // then the per-wake mode section.
+          expect(
+            sent.indexOf('attention_planning'),
+            lessThan(sent.indexOf('knowledge_statements')),
+          );
+          expect(
+            sent.indexOf('knowledge_statements'),
+            lessThan(sent.indexOf('recent_days')),
+          );
+          expect(
+            sent.indexOf('recent_days'),
+            lessThan(sent.indexOf('week_ahead')),
+          );
+          expect(
+            sent.indexOf('week_ahead'),
+            lessThan(sent.indexOf('drafting')),
+          );
+          expectCanonicalSectionOrder(sent);
+        },
+      );
+
+      test(
+        'refine wakes carry week context before the refine section, in '
+        'canonical order',
+        () async {
+          final planService = MockDayAgentPlanService();
+          when(
+            () => planService.draftPlanForDay(
+              agentId: agentId,
+              dayId: dayId,
+            ),
+          ).thenAnswer((_) async => null);
+
+          final result = await execute(
+            workflow(
+              planService: planService,
+              weekContextService: weekContextStub(context: sampleContext),
+            ),
+            triggerTokens: {
+              dayAgentRefineToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+          );
+
+          expect(result.success, isTrue);
+          final sent = sentPrompt();
+          expect(
+            sent.indexOf('week_ahead'),
+            lessThan(sent.indexOf('refine')),
+          );
+          expectCanonicalSectionOrder(sent);
+        },
+      );
+
+      test('omits the sections when the service yields null', () async {
+        final result = await execute(
+          workflow(weekContextService: weekContextStub()),
+        );
+
+        expect(result.success, isTrue);
+        final sent = sentPrompt();
+        expect(sent.has('recent_days'), isFalse);
+        expect(sent.has('week_ahead'), isFalse);
+      });
+
+      test('absorbs an unexpected service throw (sections absent, wake '
+          'succeeds)', () async {
+        final service = MockDayAgentWeekContextService();
+        when(
+          () => service.buildForDay(
+            agentId: any(named: 'agentId'),
+            planDate: any(named: 'planDate'),
+            now: any(named: 'now'),
+          ),
+        ).thenThrow(StateError('service bug'));
+
+        final result = await execute(
+          workflow(weekContextService: service),
+        );
+
+        expect(result.success, isTrue);
+        final sent = sentPrompt();
+        expect(sent.has('recent_days'), isFalse);
+        expect(sent.has('week_ahead'), isFalse);
+      });
+
+      test('omits each section independently', () async {
+        const historyOnly = WeekContext(
+          recentDays: 'Sun Jun 7 — no plan. Nothing recorded.',
+          weekAhead: null,
+        );
+        final result = await execute(
+          workflow(weekContextService: weekContextStub(context: historyOnly)),
+        );
+
+        expect(result.success, isTrue);
+        final sent = sentPrompt();
+        expect(sent.section('recent_days'), historyOnly.recentDays);
+        expect(sent.has('week_ahead'), isFalse);
+      });
+
+      test('builds week context for the wake-resolved plan date', () async {
+        final service = weekContextStub(context: sampleContext);
+
+        await execute(workflow(weekContextService: service));
+
+        verify(
+          () => service.buildForDay(
+            agentId: agentId,
+            planDate: DateTime(2026, 5, 25),
+            // The wake's own clock read is passed through so the section's
+            // day classification matches current_local_time.
+            now: now,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'capture-submitted wakes (day from capture fallback) skip the '
+        'week-context build entirely',
+        () async {
+          currentState = state(activeDayId: '');
+          final service = weekContextStub(context: sampleContext);
+          final captureService = MockDayAgentCaptureService();
+          stubCaptureContext(captureService);
+          when(
+            () => captureService.parsedItemsForCapture('capture-1'),
+          ).thenAnswer((_) async => const []);
+          when(
+            () => captureService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.parseCaptureToItems,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(const {
+              'captureId': 'capture-1',
+              'items': [
+                {'kind': 'newTask', 'title': 'x', 'categoryId': 'home'},
+              ],
+            }),
+          );
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.parseCaptureToItems,
+              args: const {
+                'captureId': 'capture-1',
+                'items': [
+                  {
+                    'kind': 'newTask',
+                    'title': 'x',
+                    'categoryId': 'home',
+                    'confidenceScore': 0.4,
+                  },
+                ],
+              },
+            ),
+          ];
+
+          final result = await execute(
+            workflow(
+              captureService: captureService,
+              weekContextService: service,
+            ),
+            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1')},
+          );
+
+          expect(result.success, isTrue);
+          verifyNever(
+            () => service.buildForDay(
+              agentId: any(named: 'agentId'),
+              planDate: any(named: 'planDate'),
+              now: any(named: 'now'),
+            ),
+          );
+          expect(sentPrompt().has('recent_days'), isFalse);
+        },
+      );
+
+      test(
+        'write_day_summary dispatches to the service, bypassing the blanket '
+        'workspace-day guard (wall-clock window is the service contract)',
+        () async {
+          final service = weekContextStub(context: sampleContext);
+          when(
+            () => service.executeTool(
+              agentId: agentId,
+              toolName: DayAgentToolNames.writeDaySummary,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(const {
+              'dayId': 'dayplan-2026-05-24',
+              'updated': false,
+            }),
+          );
+          // The summary targets YESTERDAY relative to the wake clock — a
+          // different day than the wake workspace. The blanket guard would
+          // reject it; the week-context branch must run first.
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.writeDaySummary,
+              args: const {
+                'dayId': 'dayplan-2026-05-24',
+                'text': 'Calm day; finished early.',
+              },
+            ),
+          ];
+
+          final result = await execute(
+            workflow(weekContextService: service),
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            conversationRepository.toolResponses.single,
+            isNot(contains('does not match the wake workspace')),
+          );
+          expect(
+            conversationRepository.toolResponses.single,
+            contains('dayplan-2026-05-24'),
+          );
+          final captured =
+              verify(
+                    () => service.executeTool(
+                      agentId: agentId,
+                      toolName: DayAgentToolNames.writeDaySummary,
+                      args: captureAny(named: 'args'),
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(captured['text'], 'Calm day; finished early.');
+        },
+      );
+
+      test(
+        'other day-scoped tools still hit the blanket guard even with the '
+        'week-context service configured',
+        () async {
+          final service = weekContextStub(context: sampleContext);
+          final planService = MockDayAgentPlanService();
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.draftDayPlan,
+              args: const {
+                'dayId': 'dayplan-2026-05-26',
+                'blocks': <Object?>[],
+              },
+            ),
+          ];
+
+          final result = await execute(
+            workflow(planService: planService, weekContextService: service),
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            conversationRepository.toolResponses.single,
+            contains('does not match the wake workspace'),
+          );
+        },
+      );
+
+      test(
+        'write_day_summary returns a tool error when the service is not '
+        'configured',
+        () async {
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.writeDaySummary,
+              args: const {
+                'dayId': 'dayplan-2026-05-25',
+                'text': 'note',
+              },
+            ),
+          ];
+
+          final result = await execute(workflow());
+
+          expect(result.success, isTrue);
+          expect(
+            conversationRepository.toolResponses.single,
+            contains('week-context tools are not configured'),
+          );
+        },
+      );
+
+      test('offers the write_day_summary tool only when configured', () async {
+        await execute(workflow(weekContextService: weekContextStub()));
+        expect(
+          conversationRepository.lastTools.map((t) => t.function.name),
+          contains(DayAgentToolNames.writeDaySummary),
+        );
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('Week context'),
+        );
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('Sustainability beats'),
+        );
+
+        // The gated block keeps exactly one blank line on each seam.
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('shut down a day.\n\nWeek context'),
+        );
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('contradiction.\n\nYour memory'),
+        );
+
+        await execute(workflow());
+        expect(
+          conversationRepository.lastTools.map((t) => t.function.name),
+          isNot(contains(DayAgentToolNames.writeDaySummary)),
+        );
+        expect(
+          conversationRepository.lastSystemMessage,
+          isNot(contains('Week context')),
+        );
+        // No double blank line where the gated block collapsed to nothing.
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('shut down a day.\n\nYour memory'),
+        );
+      });
+    });
+
     test(
       'includes soul sections in the system prompt when one is assigned',
       () async {
@@ -3587,6 +4021,18 @@ void main() {
       },
     );
   });
+}
+
+/// Pins the cache invariant the prompt-section vocabulary declares: the
+/// payload's sections must appear exactly in the canonical stable→volatile
+/// order of [DayAgentPromptTags.all]. Any reordering that would hurt the
+/// prefix cache (e.g. a volatile section drifting ahead of `day_log`) fails
+/// here by name.
+void expectCanonicalSectionOrder(ParsedDayAgentPrompt sent) {
+  expect(
+    sent.tagsInOrder,
+    DayAgentPromptTags.all.where(sent.has).toList(),
+  );
 }
 
 ChatCompletionMessageToolCall _toolCall({
