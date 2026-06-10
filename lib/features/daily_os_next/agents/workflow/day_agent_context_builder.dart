@@ -15,6 +15,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required _RefineContext? refineContext,
     required AttentionPlanningInputs attentionPlanning,
     required _KnowledgeContext knowledge,
+    WeekContext? weekContext,
     String? compactedLog,
   }) {
     // Section order is deliberately STABLE → VOLATILE for prompt-prefix /
@@ -56,6 +57,13 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         DayAgentPromptTags.knowledgeStatements,
         knowledge.statements.isEmpty ? null : knowledge.statements,
       )
+      // Week context: the today-so-far line changes with tracked time, making
+      // these sections more volatile than the knowledge statements above —
+      // they sit after them (and before the mode sections) so their churn
+      // evicts as little prefix as possible. Bodies arrive fully rendered and
+      // sanitized from the week-context renderer.
+      ..addPreRendered(DayAgentPromptTags.recentDays, weekContext?.recentDays)
+      ..addPreRendered(DayAgentPromptTags.weekAhead, weekContext?.weekAhead)
       // Mode blocks: present only for the wake that owns them, stable for it.
       ..addJson(
         DayAgentPromptTags.capture,

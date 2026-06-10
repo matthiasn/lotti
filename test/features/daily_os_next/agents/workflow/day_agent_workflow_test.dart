@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/repository/inference_repository_interface.dart
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
@@ -158,6 +159,7 @@ void main() {
     MockDayAgentCaptureService? captureService,
     MockDayAgentPlanService? planService,
     MockDayAgentKnowledgeService? knowledgeService,
+    MockDayAgentWeekContextService? weekContextService,
   }) {
     return DayAgentWorkflow(
       agentRepository: repository,
@@ -170,6 +172,7 @@ void main() {
       captureService: captureService,
       planService: planService,
       knowledgeService: knowledgeService,
+      weekContextService: weekContextService,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
@@ -3496,6 +3499,342 @@ void main() {
         expect(conversationRepository.createdConversationCount, 0);
       },
     );
+
+    group('week context', () {
+      MockDayAgentWeekContextService weekContextStub({WeekContext? context}) {
+        final service = MockDayAgentWeekContextService();
+        when(
+          () => service.buildForDay(
+            agentId: any(named: 'agentId'),
+            planDate: any(named: 'planDate'),
+          ),
+        ).thenAnswer((_) async => context);
+        return service;
+      }
+
+      const sampleContext = WeekContext(
+        recentDays:
+            'Sun Jun 7 — no plan. Work: 9h recorded. '
+            'Total recorded: 9h.',
+        weekAhead: 'Fri Jun 12 — draft plan: Work 4h.',
+      );
+
+      test(
+        'renders recent_days + week_ahead after knowledge statements and '
+        'before the mode section',
+        () async {
+          final knowledgeService = MockDayAgentKnowledgeService();
+          when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+            (_) async => [
+              AgentDomainEntity.plannerKnowledge(
+                    id: 'k-global',
+                    agentId: agentId,
+                    key: 'deep-work',
+                    hook: 'no deep work before 10',
+                    statementText: 'Never schedule deep work before 10:00.',
+                    source: KnowledgeSource.userStated,
+                    status: KnowledgeStatus.confirmed,
+                    createdAt: DateTime(2026, 5, 20),
+                    updatedAt: DateTime(2026, 5, 20),
+                    vectorClock: null,
+                  )
+                  as PlannerKnowledgeEntity,
+            ],
+          );
+          final planService = MockDayAgentPlanService();
+          stubDraftingPlanContext(planService);
+          stubSuccessfulDraftToolCall(planService);
+
+          final result = await execute(
+            workflow(
+              knowledgeService: knowledgeService,
+              planService: planService,
+              weekContextService: weekContextStub(context: sampleContext),
+            ),
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
+          );
+
+          expect(result.success, isTrue);
+          final sent = sentPrompt();
+          expect(sent.section('recent_days'), sampleContext.recentDays);
+          expect(sent.section('week_ahead'), sampleContext.weekAhead);
+          // Volatility ordering: the today-so-far line churns with tracked
+          // time, so week context must trail the knowledge statements and
+          // precede the per-wake mode section.
+          expect(
+            sent.indexOf('knowledge_statements'),
+            lessThan(sent.indexOf('recent_days')),
+          );
+          expect(
+            sent.indexOf('recent_days'),
+            lessThan(sent.indexOf('week_ahead')),
+          );
+          expect(
+            sent.indexOf('week_ahead'),
+            lessThan(sent.indexOf('drafting')),
+          );
+        },
+      );
+
+      test('omits the sections when the service yields null', () async {
+        final result = await execute(
+          workflow(weekContextService: weekContextStub()),
+        );
+
+        expect(result.success, isTrue);
+        final sent = sentPrompt();
+        expect(sent.has('recent_days'), isFalse);
+        expect(sent.has('week_ahead'), isFalse);
+      });
+
+      test('absorbs an unexpected service throw (sections absent, wake '
+          'succeeds)', () async {
+        final service = MockDayAgentWeekContextService();
+        when(
+          () => service.buildForDay(
+            agentId: any(named: 'agentId'),
+            planDate: any(named: 'planDate'),
+          ),
+        ).thenThrow(StateError('service bug'));
+
+        final result = await execute(
+          workflow(weekContextService: service),
+        );
+
+        expect(result.success, isTrue);
+        final sent = sentPrompt();
+        expect(sent.has('recent_days'), isFalse);
+        expect(sent.has('week_ahead'), isFalse);
+      });
+
+      test('omits each section independently', () async {
+        const historyOnly = WeekContext(
+          recentDays: 'Sun Jun 7 — no plan. Nothing recorded.',
+          weekAhead: null,
+        );
+        final result = await execute(
+          workflow(weekContextService: weekContextStub(context: historyOnly)),
+        );
+
+        expect(result.success, isTrue);
+        final sent = sentPrompt();
+        expect(sent.section('recent_days'), historyOnly.recentDays);
+        expect(sent.has('week_ahead'), isFalse);
+      });
+
+      test('builds week context for the wake-resolved plan date', () async {
+        final service = weekContextStub(context: sampleContext);
+
+        await execute(workflow(weekContextService: service));
+
+        verify(
+          () => service.buildForDay(
+            agentId: agentId,
+            planDate: DateTime(2026, 5, 25),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'capture-submitted wakes (day from capture fallback) skip the '
+        'week-context build entirely',
+        () async {
+          currentState = state(activeDayId: '');
+          final service = weekContextStub(context: sampleContext);
+          final captureService = MockDayAgentCaptureService();
+          stubCaptureContext(captureService);
+          when(
+            () => captureService.parsedItemsForCapture('capture-1'),
+          ).thenAnswer((_) async => const []);
+          when(
+            () => captureService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.parseCaptureToItems,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(const {
+              'captureId': 'capture-1',
+              'items': [
+                {'kind': 'newTask', 'title': 'x', 'categoryId': 'home'},
+              ],
+            }),
+          );
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.parseCaptureToItems,
+              args: const {
+                'captureId': 'capture-1',
+                'items': [
+                  {
+                    'kind': 'newTask',
+                    'title': 'x',
+                    'categoryId': 'home',
+                    'confidenceScore': 0.4,
+                  },
+                ],
+              },
+            ),
+          ];
+
+          final result = await execute(
+            workflow(
+              captureService: captureService,
+              weekContextService: service,
+            ),
+            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1')},
+          );
+
+          expect(result.success, isTrue);
+          verifyNever(
+            () => service.buildForDay(
+              agentId: any(named: 'agentId'),
+              planDate: any(named: 'planDate'),
+            ),
+          );
+          expect(sentPrompt().has('recent_days'), isFalse);
+        },
+      );
+
+      test(
+        'write_day_summary dispatches to the service, bypassing the blanket '
+        'workspace-day guard (wall-clock window is the service contract)',
+        () async {
+          final service = weekContextStub(context: sampleContext);
+          when(
+            () => service.executeTool(
+              agentId: agentId,
+              toolName: DayAgentToolNames.writeDaySummary,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(const {
+              'dayId': 'dayplan-2026-05-24',
+              'updated': false,
+            }),
+          );
+          // The summary targets YESTERDAY relative to the wake clock — a
+          // different day than the wake workspace. The blanket guard would
+          // reject it; the week-context branch must run first.
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.writeDaySummary,
+              args: const {
+                'dayId': 'dayplan-2026-05-24',
+                'text': 'Calm day; finished early.',
+              },
+            ),
+          ];
+
+          final result = await execute(
+            workflow(weekContextService: service),
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            conversationRepository.toolResponses.single,
+            isNot(contains('does not match the wake workspace')),
+          );
+          expect(
+            conversationRepository.toolResponses.single,
+            contains('dayplan-2026-05-24'),
+          );
+          final captured =
+              verify(
+                    () => service.executeTool(
+                      agentId: agentId,
+                      toolName: DayAgentToolNames.writeDaySummary,
+                      args: captureAny(named: 'args'),
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(captured['text'], 'Calm day; finished early.');
+        },
+      );
+
+      test(
+        'other day-scoped tools still hit the blanket guard even with the '
+        'week-context service configured',
+        () async {
+          final service = weekContextStub(context: sampleContext);
+          final planService = MockDayAgentPlanService();
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.draftDayPlan,
+              args: const {
+                'dayId': 'dayplan-2026-05-26',
+                'blocks': <Object?>[],
+              },
+            ),
+          ];
+
+          final result = await execute(
+            workflow(planService: planService, weekContextService: service),
+          );
+
+          expect(result.success, isTrue);
+          expect(
+            conversationRepository.toolResponses.single,
+            contains('does not match the wake workspace'),
+          );
+        },
+      );
+
+      test(
+        'write_day_summary returns a tool error when the service is not '
+        'configured',
+        () async {
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.writeDaySummary,
+              args: const {
+                'dayId': 'dayplan-2026-05-25',
+                'text': 'note',
+              },
+            ),
+          ];
+
+          final result = await execute(workflow());
+
+          expect(result.success, isTrue);
+          expect(
+            conversationRepository.toolResponses.single,
+            contains('week-context tools are not configured'),
+          );
+        },
+      );
+
+      test('offers the write_day_summary tool only when configured', () async {
+        await execute(workflow(weekContextService: weekContextStub()));
+        expect(
+          conversationRepository.lastTools.map((t) => t.function.name),
+          contains(DayAgentToolNames.writeDaySummary),
+        );
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('Week context'),
+        );
+        expect(
+          conversationRepository.lastSystemMessage,
+          contains('Sustainability beats'),
+        );
+
+        await execute(workflow());
+        expect(
+          conversationRepository.lastTools.map((t) => t.function.name),
+          isNot(contains(DayAgentToolNames.writeDaySummary)),
+        );
+        expect(
+          conversationRepository.lastSystemMessage,
+          isNot(contains('Week context')),
+        );
+      });
+    });
 
     test(
       'includes soul sections in the system prompt when one is assigned',

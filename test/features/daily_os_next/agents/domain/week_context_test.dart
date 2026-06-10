@@ -462,6 +462,55 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
       expect(lines.last, '+2 more.');
     });
 
+    test('week_ahead plan lines cap categories with an overflow marker', () {
+      final jun11 = DateTime(2026, 6, 11);
+      final ctx = _build(
+        dayPlans: [
+          _plan(
+            day: jun11,
+            blocks: [
+              for (var i = 0; i < 8; i++)
+                _block(
+                  id: 'b$i',
+                  categoryId: 'cat-$i',
+                  start: DateTime(2026, 6, 11, 8 + i),
+                  // Descending planned minutes so cat-6/cat-7 overflow.
+                  minutes: 480 - i * 30,
+                ),
+            ],
+          ),
+        ],
+        categoryName: (id) => id.toUpperCase(),
+      );
+      final line = ctx.weekAhead!;
+      expect('CAT-'.allMatches(line).length, 6);
+      // Overflow total: 300m + 270m = 570m → 9.5h.
+      expect(line, contains('+2 more (9.5h).'));
+      expect(line, startsWith('Thu Jun 11 — draft plan: '));
+    });
+
+    test('a week_ahead plan with no live blocks renders header only', () {
+      final jun11 = DateTime(2026, 6, 11);
+      final ctx = _build(
+        dayPlans: [
+          _plan(
+            day: jun11,
+            status: DayPlanStatus.committed(committedAt: jun11),
+            blocks: [
+              _block(
+                id: 'b-dropped',
+                categoryId: 'work',
+                start: DateTime(2026, 6, 11, 9),
+                minutes: 60,
+                state: PlannedBlockState.dropped,
+              ),
+            ],
+          ),
+        ],
+      );
+      expect(ctx.weekAhead, 'Thu Jun 11 — committed plan.');
+    });
+
     test('dropped blocks contribute neither planned minutes nor misses', () {
       final jun9 = DateTime(2026, 6, 9);
       final ctx = _build(
@@ -485,6 +534,152 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
           .split('\n\n')
           .singleWhere((p) => p.startsWith('Tue Jun 9'));
       expect(paragraph, 'Tue Jun 9 — draft plan. Nothing recorded.');
+    });
+  });
+
+  group('buildWeekContext — clause phrasing edges', () {
+    test('a past category recorded exactly on plan renders no delta, and '
+        'equal-weight categories tie-break by name', () {
+      final jun9 = DateTime(2026, 6, 9);
+      final ctx = _build(
+        dayPlans: [
+          _plan(
+            day: jun9,
+            blocks: [
+              _block(
+                id: 'b-work',
+                categoryId: 'work',
+                start: DateTime(2026, 6, 9, 9),
+                minutes: 60,
+                taskId: 't-w',
+                title: 'Work block',
+              ),
+            ],
+          ),
+        ],
+        recordedSpans: [
+          RecordedSpan(
+            categoryId: 'work',
+            start: DateTime(2026, 6, 9, 9),
+            duration: const Duration(minutes: 60),
+            taskId: 't-w',
+          ),
+          // Equal weight (60m) to the work category → selection ties on
+          // weight and falls to the name comparison.
+          RecordedSpan(
+            categoryId: 'admin',
+            start: DateTime(2026, 6, 9, 11),
+            duration: const Duration(minutes: 60),
+          ),
+        ],
+      );
+      final paragraph = ctx.recentDays!
+          .split('\n\n')
+          .singleWhere((p) => p.startsWith('Tue Jun 9'));
+      expect(paragraph, contains('Work: 1h recorded vs 1h planned.'));
+      expect(paragraph, isNot(contains('over')));
+      expect(paragraph, isNot(contains('under')));
+      // Rendered sorted by display name: Admin before Work.
+      expect(
+        paragraph.indexOf('Admin:'),
+        lessThan(paragraph.indexOf('Work:')),
+      );
+    });
+
+    test('a today category with recorded time but no plan renders '
+        'recorded-only', () {
+      final ctx = _build(
+        recordedSpans: [
+          RecordedSpan(
+            categoryId: 'work',
+            start: DateTime(2026, 6, 10, 7),
+            duration: const Duration(minutes: 90),
+          ),
+        ],
+      );
+      expect(
+        ctx.recentDays!.split('\n\n').last,
+        'Wed Jun 10 (today so far) — no plan. Work: 1.5h recorded.',
+      );
+    });
+
+    test('a future-dated recorded span (manually edited entry) renders on '
+        'its upcoming day without a Missed label', () {
+      final tomorrow = DateTime(2026, 6, 11);
+      final ctx = _build(
+        planDate: tomorrow,
+        dayPlans: [
+          _plan(
+            day: tomorrow,
+            blocks: [
+              _block(
+                id: 'b1',
+                categoryId: 'work',
+                start: DateTime(2026, 6, 11, 9),
+                minutes: 120,
+                title: 'Plan kickoff',
+                taskId: 't-k',
+              ),
+            ],
+          ),
+        ],
+        recordedSpans: [
+          RecordedSpan(
+            categoryId: 'work',
+            start: DateTime(2026, 6, 11, 9),
+            duration: const Duration(minutes: 30),
+            taskId: 't-k',
+          ),
+        ],
+      );
+      expect(
+        ctx.recentDays!.split('\n\n').last,
+        'Thu Jun 11 (upcoming) — draft plan. '
+        'Work: 30m recorded of 2h planned.',
+      );
+    });
+
+    test('week_ahead accumulates multiple live blocks of one category', () {
+      final jun11 = DateTime(2026, 6, 11);
+      final ctx = _build(
+        dayPlans: [
+          _plan(
+            day: jun11,
+            blocks: [
+              _block(
+                id: 'b1',
+                categoryId: 'work',
+                start: DateTime(2026, 6, 11, 9),
+                minutes: 120,
+              ),
+              _block(
+                id: 'b2',
+                categoryId: 'work',
+                start: DateTime(2026, 6, 11, 14),
+                minutes: 60,
+              ),
+            ],
+          ),
+        ],
+      );
+      expect(ctx.weekAhead, 'Thu Jun 11 — draft plan: Work 3h.');
+    });
+
+    test('deadline ordering tie-breaks by title then id', () {
+      final at = DateTime(2026, 6, 11, 9);
+      final ctx = _build(
+        claims: [
+          _claim(id: 'c-z', title: 'Beta', deadline: at),
+          _claim(id: 'c-a', title: 'Alpha', deadline: at),
+          _claim(id: 'c-2', title: 'Alpha', deadline: at),
+        ],
+      );
+      final lines = ctx.weekAhead!.split('\n');
+      expect(lines, hasLength(3));
+      // Same instant: 'Alpha' before 'Beta'; same title: id 'c-2' < 'c-a'.
+      expect(lines[0], contains("'Alpha'"));
+      expect(lines[1], contains("'Alpha'"));
+      expect(lines[2], contains("'Beta'"));
     });
   });
 

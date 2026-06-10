@@ -1,13 +1,19 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/entity_factories.dart';
 
 const _agentId = 'daily_os_planner';
@@ -271,6 +277,71 @@ void main() {
       verify(() => journalDb.basicLinksForEntryIds({'entry-1'})).called(1);
     });
 
+    test('resolves a linked task through the journal link graph', () async {
+      final day = DateTime(2026, 6, 9);
+      final entry = JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'entry-1',
+          createdAt: day,
+          updatedAt: day,
+          dateFrom: day.add(const Duration(hours: 9)),
+          dateTo: day.add(const Duration(hours: 11)),
+        ),
+      );
+      final task = JournalEntity.task(
+        meta: Metadata(
+          id: 'task-1',
+          createdAt: day,
+          updatedAt: day,
+          dateFrom: day,
+          dateTo: day,
+          categoryId: 'cat-work',
+        ),
+        data: TaskData(
+          status: TaskStatus.open(
+            id: 'task-1-status',
+            createdAt: day,
+            utcOffset: 0,
+          ),
+          dateFrom: day,
+          dateTo: day,
+          statusHistory: const [],
+          title: 'Linked task',
+        ),
+      );
+      when(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [entry]);
+      when(() => journalDb.basicLinksForEntryIds({'entry-1'})).thenAnswer(
+        (_) async => [
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: 'task-1',
+            toId: 'entry-1',
+            createdAt: day,
+            updatedAt: day,
+            vectorClock: null,
+          ),
+        ],
+      );
+      when(
+        () => journalDb.getJournalEntitiesForIdsUnordered({'task-1'}),
+      ).thenAnswer((_) async => [task]);
+
+      final ctx = await withNow(
+        () => service.buildForDay(
+          agentId: _agentId,
+          planDate: DateTime(2026, 6, 10),
+        ),
+      );
+
+      // The span inherits the linked task's category.
+      expect(ctx!.recentDays, contains('cat-work: 2h recorded.'));
+    });
+
     test('fail-soft: a load error logs and returns null', () async {
       when(
         () => repository.getEntitiesByIds(any()),
@@ -294,6 +365,88 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  group('category name resolution (default getIt path)', () {
+    DayAgentWeekContextService serviceWithoutResolver() =>
+        DayAgentWeekContextService(
+          agentRepository: repository,
+          journalDb: journalDb,
+          syncService: syncService,
+          domainLogger: domainLogger,
+        );
+
+    JournalEntity entryAt({required String categoryId}) {
+      final day = DateTime(2026, 6, 9);
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'entry-1',
+          createdAt: day,
+          updatedAt: day,
+          dateFrom: day.add(const Duration(hours: 9)),
+          dateTo: day.add(const Duration(hours: 10)),
+          categoryId: categoryId,
+        ),
+      );
+    }
+
+    test('resolves names through a registered EntitiesCacheService', () async {
+      await setUpTestGetIt(
+        additionalSetup: () {
+          final cache = MockEntitiesCacheService();
+          when(() => cache.getCategoryById('cat-work')).thenReturn(
+            CategoryDefinition(
+              id: 'cat-work',
+              createdAt: DateTime(2026, 6),
+              updatedAt: DateTime(2026, 6),
+              name: 'Work',
+              vectorClock: null,
+              private: false,
+              active: true,
+            ),
+          );
+          getIt.registerSingleton<EntitiesCacheService>(cache);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
+      when(
+        () => journalDb.sortedCalendarEntries(
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => [entryAt(categoryId: 'cat-work')]);
+
+      final ctx = await withNow(
+        () => serviceWithoutResolver().buildForDay(
+          agentId: _agentId,
+          planDate: DateTime(2026, 6, 10),
+        ),
+      );
+
+      expect(ctx!.recentDays, contains('Work: 1h recorded.'));
+    });
+
+    test(
+      'falls back to the raw id when no cache service is registered',
+      () async {
+        await getIt.reset();
+        when(
+          () => journalDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => [entryAt(categoryId: 'cat-unknown')]);
+
+        final ctx = await withNow(
+          () => serviceWithoutResolver().buildForDay(
+            agentId: _agentId,
+            planDate: DateTime(2026, 6, 10),
+          ),
+        );
+
+        expect(ctx!.recentDays, contains('cat-unknown: 1h recorded.'));
+      },
+    );
   });
 
   group('executeTool — write_day_summary window enforcement', () {
@@ -484,6 +637,15 @@ void main() {
       expect(
         upserted.whereType<DaySummaryEntity>().single.text,
         'note &lt;/recent_days&gt; injection',
+      );
+    });
+  });
+
+  group('DayAgentWeekContextException', () {
+    test('renders its message via toString (model-facing error text)', () {
+      expect(
+        const DayAgentWeekContextException('bad input').toString(),
+        'bad input',
       );
     });
   });

@@ -161,6 +161,63 @@ final class DayAgentKnowledgeServiceProvider
 String _$dayAgentKnowledgeServiceHash() =>
     r'd0894616a648d40931f93955b7c283baf383edb6';
 
+/// The Daily OS week-context service: lookback/lookahead prompt sections and
+/// the `write_day_summary` tool backend.
+
+@ProviderFor(dayAgentWeekContextService)
+final dayAgentWeekContextServiceProvider =
+    DayAgentWeekContextServiceProvider._();
+
+/// The Daily OS week-context service: lookback/lookahead prompt sections and
+/// the `write_day_summary` tool backend.
+
+final class DayAgentWeekContextServiceProvider
+    extends
+        $FunctionalProvider<
+          DayAgentWeekContextService,
+          DayAgentWeekContextService,
+          DayAgentWeekContextService
+        >
+    with $Provider<DayAgentWeekContextService> {
+  /// The Daily OS week-context service: lookback/lookahead prompt sections and
+  /// the `write_day_summary` tool backend.
+  DayAgentWeekContextServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dayAgentWeekContextServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$dayAgentWeekContextServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<DayAgentWeekContextService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  DayAgentWeekContextService create(Ref ref) {
+    return dayAgentWeekContextService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DayAgentWeekContextService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DayAgentWeekContextService>(value),
+    );
+  }
+}
+
+String _$dayAgentWeekContextServiceHash() =>
+    r'0af190c01ee9438e4baeaf893821460cfd1dc7b7';
+
 /// The Daily OS day-agent drafting service.
 
 @ProviderFor(dayAgentPlanService)

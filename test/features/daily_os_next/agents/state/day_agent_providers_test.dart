@@ -114,6 +114,39 @@ void main() {
     });
   });
 
+  group('dayAgentWeekContextServiceProvider', () {
+    test('wires dependencies and persisted-state notifications', () {
+      final repository = MockAgentRepository();
+      final syncService = MockAgentSyncService();
+      final journalDb = MockJournalDb();
+      final domainLogger = MockDomainLogger();
+      final notifications = MockUpdateNotifications();
+      final container = buildContainer([
+        agentRepositoryProvider.overrideWithValue(repository),
+        agentSyncServiceProvider.overrideWithValue(syncService),
+        journalDbProvider.overrideWithValue(journalDb),
+        domainLoggerProvider.overrideWithValue(domainLogger),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]);
+
+      final service = container.read(dayAgentWeekContextServiceProvider);
+
+      expect(service.agentRepository, same(repository));
+      expect(service.syncService, same(syncService));
+      expect(service.journalDb, same(journalDb));
+      expect(service.domainLogger, same(domainLogger));
+      // No injected resolver: production resolves category names through the
+      // getIt-guarded EntitiesCacheService lookup.
+      expect(service.categoryNameResolver, isNull);
+
+      expectPersistedStateNotification(
+        callback: service.onPersistedStateChanged,
+        notifications: notifications,
+        agentId: 'daily_os_planner',
+      );
+    });
+  });
+
   group('dayAgentCaptureServiceProvider', () {
     test('wires dependencies and persisted-state notifications', () async {
       final repository = MockAgentRepository();
