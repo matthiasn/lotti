@@ -263,6 +263,30 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = DayPlanEntity;
 
+  /// Contemporaneous day summary — the planner's own testimony about one day
+  /// (`day_agent_summary:<dayId>`), written at/near day close in its own words
+  /// for its own consumption.
+  ///
+  /// A keyed mutable register, NOT an append-only log entry: the id is
+  /// deterministic per day, within-window self-rewrites upsert in place, and
+  /// concurrent versions resolve **earliest `createdAt` wins** (the most
+  /// contemporaneous testimony is canonical — see
+  /// `resolveConcurrentAgentEntityOverride`). Deliberate amendment to
+  /// ADR 0016 D3 / ADR 0018 D1. Facts are never derived from this text; it is
+  /// rendered next to the deterministic facts line in `<recent_days>` so the
+  /// model can self-audit. Compaction-exempt for now (retention revisited with
+  /// compaction integration).
+  const factory AgentDomainEntity.daySummary({
+    required String id,
+    required String agentId,
+    required String dayId,
+    required String text,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = DaySummaryEntity;
+
   /// Event-sourced bid for the user's scarce attention.
   ///
   /// [agentId] is the requesting agent. A planner reads pending requests and

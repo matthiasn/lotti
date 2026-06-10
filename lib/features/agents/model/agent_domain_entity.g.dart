@@ -551,6 +551,36 @@ Map<String, dynamic> _$DayPlanEntityToJson(DayPlanEntity instance) =>
       'runtimeType': instance.$type,
     };
 
+DaySummaryEntity _$DaySummaryEntityFromJson(Map<String, dynamic> json) =>
+    DaySummaryEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      dayId: json['dayId'] as String,
+      text: json['text'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$DaySummaryEntityToJson(DaySummaryEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'dayId': instance.dayId,
+      'text': instance.text,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
 AttentionRequestEntity _$AttentionRequestEntityFromJson(
   Map<String, dynamic> json,
 ) => AttentionRequestEntity(

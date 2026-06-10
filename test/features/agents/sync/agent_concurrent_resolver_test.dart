@@ -673,5 +673,96 @@ void main() {
       },
       tags: 'glados',
     );
+
+    group('day summary — earliest createdAt wins (testimony is canonical)', () {
+      DaySummaryEntity summary({
+        required DateTime createdAt,
+        String id = 'day_agent_summary:dayplan-2026-06-08',
+        String text = 'note',
+      }) =>
+          AgentDomainEntity.daySummary(
+                id: id,
+                agentId: 'a1',
+                dayId: 'dayplan-2026-06-08',
+                text: text,
+                createdAt: createdAt,
+                updatedAt: DateTime(2026, 6, 9),
+                vectorClock: null,
+              )
+              as DaySummaryEntity;
+
+      final contemporaneous = DateTime(2026, 6, 8, 22);
+      final staleDevice = DateTime(2026, 6, 9, 9);
+
+      test(
+        'the earlier-created testimony beats a concurrent later rewrite, '
+        'both directions',
+        () {
+          final original = summary(createdAt: contemporaneous);
+          final lateRewrite = summary(createdAt: staleDevice, text: 'rewrite');
+          expect(
+            resolveConcurrentAgentEntityOverride(
+              local: original,
+              incoming: lateRewrite,
+            ),
+            ConcurrentWinner.local,
+          );
+          expect(
+            resolveConcurrentAgentEntityOverride(
+              local: lateRewrite,
+              incoming: original,
+            ),
+            ConcurrentWinner.incoming,
+          );
+        },
+      );
+
+      test('a createdAt tie defers to LWW (null)', () {
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: summary(createdAt: contemporaneous),
+            incoming: summary(createdAt: contemporaneous, text: 'other'),
+          ),
+          isNull,
+        );
+      });
+
+      glados.Glados2(
+        glados.IntAnys(glados.any).intInRange(0, 8),
+        glados.IntAnys(glados.any).intInRange(0, 8),
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'earliest createdAt wins, convergent regardless of arg order; '
+        'equal defers',
+        (h1, h2) {
+          final base = DateTime(2026, 6, 8, 12);
+          final a = summary(
+            createdAt: base.add(Duration(hours: h1)),
+            id: 'a',
+          );
+          final b = summary(
+            createdAt: base.add(Duration(hours: h2)),
+            id: 'b',
+          );
+          final w1 = pick(
+            resolveConcurrentAgentEntityOverride(local: a, incoming: b),
+            a,
+            b,
+          );
+          final w2 = pick(
+            resolveConcurrentAgentEntityOverride(local: b, incoming: a),
+            b,
+            a,
+          );
+          expect(w1?.id, w2?.id, reason: 'must converge');
+          if (h1 != h2) {
+            expect(w1?.id, (h1 < h2 ? a : b).id); // earliest creation wins
+          } else {
+            expect(w1, isNull); // same instant → defer to LWW
+          }
+        },
+        tags: 'glados',
+      );
+    });
   });
 }

@@ -60,7 +60,7 @@ ConcurrentWinner resolveConcurrent({
 /// `(local, incoming)` pair and compute the same winner — so the result stays
 /// convergent regardless of arrival order.
 ///
-/// The two rules close ADR 0022 conflict holes that raw wall-clock LWW on a
+/// The rules close ADR 0022 conflict holes that raw wall-clock LWW on a
 /// shared id mishandles:
 ///
 /// - **Durable knowledge — retraction is terminal.** A concurrent retract must
@@ -72,6 +72,14 @@ ConcurrentWinner resolveConcurrent({
 ///   of an earlier instant, so a re-armed wake is not silently dropped.
 ///   Same-instant conflicts defer to LWW (the consume wins), so a stale pending
 ///   can never resurrect a wake that already fired — no double-fire.
+/// - **Day summaries — earliest `createdAt` wins.** A day summary is the
+///   planner's contemporaneous testimony about a day; plain LWW would let a
+///   later (less contemporaneous, possibly stale-device) write silently
+///   replace it. On concurrent versions the EARLIEST-created testimony is
+///   canonical; a `createdAt` tie defers to [resolveConcurrent] (LWW, then the
+///   canonical-clock tiebreak). Sequential (non-concurrent) within-window
+///   self-rewrites are unaffected — they dominate by vector clock and never
+///   reach this resolver.
 ConcurrentWinner? resolveConcurrentAgentEntityOverride({
   required AgentDomainEntity local,
   required AgentDomainEntity incoming,
@@ -86,6 +94,11 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     final byTarget = local.scheduledAt.compareTo(incoming.scheduledAt);
     if (byTarget == 0) return null;
     return byTarget > 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
+  if (local is DaySummaryEntity && incoming is DaySummaryEntity) {
+    final byCreated = local.createdAt.compareTo(incoming.createdAt);
+    if (byCreated == 0) return null;
+    return byCreated < 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
   }
   return null;
 }

@@ -37,3 +37,11 @@ String captureDayId(CaptureEntity capture) => capture.dayId.isNotEmpty
 /// (e.g. `DayAgentService.enqueueRefineWake` pre-checking that a plan
 /// exists) stay in sync without leaking the constant.
 String dayAgentPlanEntityId(String dayId) => 'day_agent_plan:$dayId';
+
+/// Deterministic agent-entity ID for the contemporaneous day summary keyed by
+/// [dayId].
+///
+/// One register per day: within-window rewrites upsert the same id. Like
+/// `day_agent_plan:<dayId>`, the id deliberately carries no agentId (the same
+/// latent identity-recreation hazard, precedented and accepted).
+String dayAgentSummaryEntityId(String dayId) => 'day_agent_summary:$dayId';
