@@ -116,6 +116,11 @@ Two structural problems stood in the way:
 
 Accepted limitations (documented, not fixed):
 
+- **Cold-start omission:** both sections are omitted independently when
+  information-free — `recent_days` only when every lookback day has no plan,
+  no summary, and zero recorded spans (a fresh install renders nothing
+  instead of eight "Nothing recorded." lines), `week_ahead` when there are no
+  future plans and no deadlines in the window.
 - The `recent_days` today-so-far line churns with tracked time, costing prompt
   prefix cache on same-day re-wakes (user-accepted for wake cadence).
 - A transient week-context load failure and genuine no-data are

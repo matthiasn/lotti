@@ -112,7 +112,9 @@ Runtime behavior:
   drafting vs refine) and therefore trail the `day_log`/`attention_planning` — a
   changing statement set must never evict the much larger `day_log` prefix
   behind it. Net order: `day_id`, `plan_date`, `knowledge_index`, `day_log`,
-  `attention_planning`, `knowledge_statements`, the per-wake mode section, then
+  `attention_planning`, `knowledge_statements`, `recent_days`, `week_ahead`
+  (the today-so-far line churns with tracked time, so week context trails the
+  knowledge statements), the per-wake mode section, then
   `recent_observations`, `trigger_tokens`, and `current_local_time` last.
   `current_local_time` lets same-day drafting distinguish future plan slots from
   time that has already passed.

@@ -329,16 +329,29 @@ void main() {
 
     Glados<List<String>>(
       any.list(
-        any.choose(const ['task', 'note', 'rating', 'deleted-task', 'missing']),
+        any.choose(const [
+          'task-a',
+          'task-b',
+          'note-a',
+          'note-b',
+          'rating',
+          'deleted-task',
+          'missing',
+        ]),
       ),
       ExploreConfig(numRuns: 140),
     ).test(
       'prefers tasks, never surfaces ratings or tombstones, falls back to '
       'the first surviving non-task',
       (kinds) {
+        // Two live tasks and two live notes make the FIRST-survivor
+        // semantics observable: "any task" or "last non-rating" would
+        // diverge from the oracle for multi-candidate inputs.
         final pool = <String, JournalEntity>{
-          'task': _task(id: 'task'),
-          'note': _note(id: 'note'),
+          'task-a': _task(id: 'task-a'),
+          'task-b': _task(id: 'task-b'),
+          'note-a': _note(id: 'note-a'),
+          'note-b': _note(id: 'note-b'),
           'rating': _rating(id: 'rating'),
           'deleted-task': _task(id: 'deleted-task', deleted: true),
         };

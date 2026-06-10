@@ -990,8 +990,8 @@ Refine rules:
   your own. After the user commits, the plan is in shepherding mode and
   further edits require an explicit refine.
 - Shutdown and agenda mutation tools are not available yet. Do not claim you
-  shut down a day.
-${weekContextService == null ? '' : '''
+  shut down a day.${weekContextService == null ? '' : '''
+
 
 Week context (`<recent_days>` / `<week_ahead>`):
 - The facts in `<recent_days>` are deterministic: recorded time is ground

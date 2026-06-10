@@ -398,8 +398,8 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
             RecordedSpan(
               categoryId: 'cat-$i',
               start: DateTime(2026, 6, 9, 8 + i),
-              // cat-0 records the most, so cat-6/cat-7 (60m, 50m… descending)
-              // fall over the cap.
+              // Descending recorded minutes (480m, 450m, …) so the two
+              // smallest categories (cat-6: 300m, cat-7: 270m) overflow.
               duration: Duration(minutes: 480 - i * 30),
             ),
         ],
@@ -441,7 +441,7 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
         contains(
           "Missed: 'Block 0' (30m, Work), 'Block 1' (30m, Work), "
           "'Block 2' (30m, Work), 'Block 3' (30m, Work), "
-          "'Block 4' (30m, Work). +2 more missed",
+          "'Block 4' (30m, Work). +2 more missed.",
         ),
       );
     });
@@ -669,16 +669,21 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
       final at = DateTime(2026, 6, 11, 9);
       final ctx = _build(
         claims: [
-          _claim(id: 'c-z', title: 'Beta', deadline: at),
-          _claim(id: 'c-a', title: 'Alpha', deadline: at),
+          // Beta carries the SMALLEST id, so an id-only sort would put it
+          // first — the title tie-break must win.
+          _claim(id: 'c-0', title: 'Beta', deadline: at, requestedMinutes: 30),
+          // Two Alphas at the same instant: the id tie-break orders c-1
+          // before c-2; distinct requestedMinutes make the order observable.
           _claim(id: 'c-2', title: 'Alpha', deadline: at),
+          _claim(id: 'c-1', title: 'Alpha', deadline: at, requestedMinutes: 45),
         ],
       );
       final lines = ctx.weekAhead!.split('\n');
       expect(lines, hasLength(3));
-      // Same instant: 'Alpha' before 'Beta'; same title: id 'c-2' < 'c-a'.
       expect(lines[0], contains("'Alpha'"));
+      expect(lines[0], contains('(45m requested')); // id c-1 first
       expect(lines[1], contains("'Alpha'"));
+      expect(lines[1], contains('(2h requested')); // id c-2 second
       expect(lines[2], contains("'Beta'"));
     });
   });
@@ -814,6 +819,27 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
       expect(note, endsWith('…'));
     });
 
+    test('truncation never splits a surrogate pair at the cut point', () {
+      // 499 ASCII chars + an emoji (2 UTF-16 units) = 501 units: a naive cut
+      // at 500 would leave a lone high surrogate in the prompt.
+      final ctx = _build(
+        daySummaries: [
+          _summary(DateTime(2026, 6, 9), '${'x' * 499}\u{1F600}'),
+        ],
+      );
+      final note = ctx.recentDays!
+          .split('\n')
+          .singleWhere((line) => line.startsWith('Agent note: '));
+      expect(note, 'Agent note: ${'x' * 499}…');
+      for (final unit in note.codeUnits) {
+        expect(
+          unit >= 0xD800 && unit <= 0xDFFF,
+          isFalse,
+          reason: 'lone surrogate in rendered note',
+        );
+      }
+    });
+
     test('a block title that is only whitespace falls back to the category '
         'name', () {
       final jun9 = DateTime(2026, 6, 9);
@@ -865,7 +891,6 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
     });
 
     test('a claim without a deadline is excluded', () {
-      expect(withDeadline, isNotNull);
       expect(
         _build(
           claims: [_claim(id: 'c1', title: 'No date', deadline: null)],
@@ -940,32 +965,71 @@ Wed Jun 10 (today so far) — committed plan. Work: 1.5h recorded of 5h planned.
       expect(formatBlockMinutes(45), '45m');
     });
 
+    // Parses a rendered aggregate duration back to TENTHS of hours — an
+    // inverse oracle independent of the production arithmetic.
+    int parseTenths(String out) {
+      final body = out.substring(0, out.length - 1);
+      final parts = body.split('.');
+      return int.parse(parts[0]) * 10 +
+          (parts.length > 1 ? int.parse(parts[1]) : 0);
+    }
+
     Glados<int>(any.intInRange(0, 100000), ExploreConfig(numRuns: 200)).test(
-      'aggregate format matches the integer-tenths oracle',
+      'aggregate format round-trips within the half-up rounding bound and '
+      'is monotone',
       (minutes) {
         final out = formatAggregateMinutes(minutes);
+        final reason = '$minutes -> $out';
         if (minutes < 60) {
-          expect(out, '${minutes}m', reason: '$minutes');
-        } else {
-          final tenths = (minutes * 10 + 30) ~/ 60;
-          final expected = tenths % 10 == 0
-              ? '${tenths ~/ 10}h'
-              : '${tenths ~/ 10}.${tenths % 10}h';
-          expect(out, expected, reason: '$minutes');
-          expect(out, isNot(contains('.0h')), reason: '$minutes');
+          expect(out, '${minutes}m', reason: reason);
+          return;
+        }
+        // Shape: integer-tenths hours, decimal digit only when non-zero.
+        expect(
+          RegExp(r'^\d+(\.\d)?h$').hasMatch(out),
+          isTrue,
+          reason: reason,
+        );
+        expect(out, isNot(contains('.0h')), reason: reason);
+        // Inverse oracle: the rendered tenths value represents tenths*6
+        // minutes; half-up rounding bounds the error by 3 minutes.
+        final tenths = parseTenths(out);
+        expect(
+          (tenths * 6 - minutes).abs() <= 3,
+          isTrue,
+          reason: '$reason (parsed back to ${tenths * 6}m)',
+        );
+        // Monotone: one more minute never renders as a smaller duration.
+        final next = formatAggregateMinutes(minutes + 1);
+        if (next.endsWith('h')) {
+          expect(
+            parseTenths(next) >= tenths,
+            isTrue,
+            reason: '$reason vs ${minutes + 1} -> $next',
+          );
         }
       },
       tags: 'glados',
     );
 
     Glados<int>(any.intInRange(0, 100000), ExploreConfig(numRuns: 200)).test(
-      'block format is whole hours or raw minutes, round-trip exact',
+      'block format is exactly invertible',
       (minutes) {
         final out = formatBlockMinutes(minutes);
-        if (minutes >= 60 && minutes % 60 == 0) {
-          expect(out, '${minutes ~/ 60}h', reason: '$minutes');
+        final reason = '$minutes -> $out';
+        // Inverse oracle: whichever shape rendered, parsing it back must
+        // recover the input exactly — block durations are never rounded.
+        if (out.endsWith('h')) {
+          final hours = int.parse(out.substring(0, out.length - 1));
+          expect(hours * 60, minutes, reason: reason);
+          expect(hours >= 1, isTrue, reason: reason);
         } else {
-          expect(out, '${minutes}m', reason: '$minutes');
+          expect(out, '${minutes}m', reason: reason);
+          expect(
+            minutes < 60 || minutes % 60 != 0,
+            isTrue,
+            reason: '$reason (whole hours must render as h)',
+          );
         }
       },
       tags: 'glados',

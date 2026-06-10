@@ -69,7 +69,9 @@ class DayAgentWeekContextService {
   final String? Function(String categoryId)? categoryNameResolver;
 
   /// Builds the rendered week context for [planDate], or null when loading
-  /// fails (fail-soft) or both sections are information-free.
+  /// fails (fail-soft). An information-free window yields a [WeekContext]
+  /// whose sections are null ([WeekContext.isEmpty]) — the prompt builder
+  /// omits absent sections, so callers need not special-case it.
   Future<WeekContext?> buildForDay({
     required String agentId,
     required DateTime planDate,

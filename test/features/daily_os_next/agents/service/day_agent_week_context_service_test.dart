@@ -429,7 +429,10 @@ void main() {
     test(
       'falls back to the raw id when no cache service is registered',
       () async {
-        await getIt.reset();
+        // The shared helper resets GetIt and registers the core mocks —
+        // deliberately WITHOUT an EntitiesCacheService.
+        await setUpTestGetIt();
+        addTearDown(tearDownTestGetIt);
         when(
           () => journalDb.sortedCalendarEntries(
             rangeStart: any(named: 'rangeStart'),

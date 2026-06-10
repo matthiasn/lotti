@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
+import 'package:lotti/features/agents/service/wake_prompt_reconstructor.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -1268,6 +1269,20 @@ void main() {
       expect(head + tail, isNot(contains('<recent_observations>')));
       final marker = record['log']! as Map<String, Object?>;
       expect(marker['until'], isNotNull);
+
+      // End-to-end: the persisted record must reconstruct byte-identically
+      // to the prompt the wake actually sent — the head/tail boundaries and
+      // the re-rendered <day_log> section have to line up exactly (ADR 0020).
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.capture,
+        ),
+      ).thenAnswer((_) async => [capture]);
+      final reconstructed = await WakePromptReconstructor(
+        syncService: syncService,
+      ).reconstruct(agentId: agentId, content: record);
+      expect(reconstructed, conversationRepository.lastUserMessage);
     });
 
     test('falls back to the legacy prompt when the capture-entity load '
@@ -3544,6 +3559,33 @@ void main() {
           final planService = MockDayAgentPlanService();
           stubDraftingPlanContext(planService);
           stubSuccessfulDraftToolCall(planService);
+          when(
+            () => repository.getAttentionPlanningInputsForWindow(
+              start: any(named: 'start'),
+              end: any(named: 'end'),
+            ),
+          ).thenAnswer(
+            (_) async => AttentionPlanningInputs(
+              claims: [
+                AgentDomainEntity.attentionRequest(
+                      id: 'attn-1',
+                      agentId: 'task-agent',
+                      kind: AttentionRequestKind.task,
+                      title: 'Focus block',
+                      categoryId: 'work',
+                      requestedMinutes: 45,
+                      impact: 3,
+                      urgency: 3,
+                      energyFit: AttentionEnergyFit.high,
+                      evidenceRefs: const [],
+                      createdAt: DateTime(2026, 5, 24),
+                      vectorClock: null,
+                    )
+                    as AttentionRequestEntity,
+              ],
+              standingAgreements: const [],
+            ),
+          );
 
           final result = await execute(
             workflow(
@@ -3561,9 +3603,14 @@ void main() {
           final sent = sentPrompt();
           expect(sent.section('recent_days'), sampleContext.recentDays);
           expect(sent.section('week_ahead'), sampleContext.weekAhead);
-          // Volatility ordering: the today-so-far line churns with tracked
-          // time, so week context must trail the knowledge statements and
-          // precede the per-wake mode section.
+          // Volatility ordering (the plan-mandated chain): day-stable
+          // attention claims, then per-wake knowledge statements, then the
+          // week context (its today-so-far line churns with tracked time),
+          // then the per-wake mode section.
+          expect(
+            sent.indexOf('attention_planning'),
+            lessThan(sent.indexOf('knowledge_statements')),
+          );
           expect(
             sent.indexOf('knowledge_statements'),
             lessThan(sent.indexOf('recent_days')),

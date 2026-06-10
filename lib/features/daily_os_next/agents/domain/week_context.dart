@@ -269,7 +269,13 @@ String _renderDayParagraph({
   if (summary == null) return factsLine;
   var note = collapseToSingleLine(summary.text);
   if (note.length > daySummaryMaxChars) {
-    note = '${note.substring(0, daySummaryMaxChars)}…';
+    // Defensive render-side cap (the write path enforces the budget, but
+    // foreign/legacy data may exceed it). Never split a surrogate pair at the
+    // cut — a lone surrogate becomes U+FFFD on the wire.
+    var cut = daySummaryMaxChars;
+    final last = note.codeUnitAt(cut - 1);
+    if (last >= 0xD800 && last <= 0xDBFF) cut--;
+    note = '${note.substring(0, cut)}…';
   }
   return '$factsLine\nAgent note: $note';
 }
@@ -384,7 +390,7 @@ String _blockListClause({
   }
 
   final items = [for (final block in kept) item(block)];
-  final overflow = overflowCount > 0 ? ' +$overflowCount $overflowSuffix' : '';
+  final overflow = overflowCount > 0 ? ' +$overflowCount $overflowSuffix.' : '';
   return '$label: ${items.join(', ')}.$overflow';
 }
 
