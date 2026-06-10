@@ -156,6 +156,7 @@ class TaskAgentStrategy extends ConversationStrategy {
   String? _reportOneLiner;
   String? _finalResponse;
   final _observations = <ObservationRecord>[];
+  bool _toolCallAfterLatestReport = false;
   TaskMetadataSnapshot? _cachedTaskMetadata;
   bool _taskMetadataResolved = false;
 
@@ -204,8 +205,12 @@ class TaskAgentStrategy extends ConversationStrategy {
     // Persist the assistant message (the one that requested tool calls).
     await _recordAssistantMessage(toolCalls: toolCalls);
 
+    var reportSeenInTurn = false;
     for (final call in toolCalls) {
       final toolName = call.function.name;
+      if (reportSeenInTurn && toolName != reportToolName) {
+        _toolCallAfterLatestReport = true;
+      }
 
       Map<String, dynamic> args;
       try {
@@ -238,6 +243,8 @@ class TaskAgentStrategy extends ConversationStrategy {
       // modify journal entities so they don't need category enforcement,
       // but we still persist audit messages for completeness.
       if (toolName == reportToolName) {
+        reportSeenInTurn = true;
+        _toolCallAfterLatestReport = false;
         await _recordActionMessage(toolName: toolName, args: args);
         await _handleUpdateReport(args, call.id, manager);
         continue;
@@ -398,6 +405,13 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   @override
   String? getContinuationPrompt(ConversationManager manager) {
+    if (_toolCallAfterLatestReport) {
+      return 'Continue. You called `update_report` before later tool results '
+          'were available, so that report was not the final step. Reconcile '
+          'the latest tool results. If the report would materially change, '
+          'call `update_report` again as the final tool call; otherwise '
+          'finish with a brief plain-text note.';
+    }
     if (_reportContent != null) {
       // Report already submitted — no further turns needed.
       return null;
