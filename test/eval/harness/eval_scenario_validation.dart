@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 
 import 'eval_models.dart';
 import 'eval_provenance.dart';
@@ -272,7 +273,11 @@ List<EvalScenarioValidationIssue> validateEvalScenario(EvalScenario scenario) {
     }
   }
 
-  _validateExpectations(add, scenario.expectations);
+  _validateExpectations(
+    add,
+    scenario.expectations,
+    agentKind: scenario.agentKind,
+  );
   _validateDurableStateExpectations(
     add,
     scenario.expectations.durableState,
@@ -325,8 +330,9 @@ void _validateScenarioReview(
 
 void _validateExpectations(
   void Function(String message) add,
-  EvalExpectations expectations,
-) {
+  EvalExpectations expectations, {
+  required AgentKind agentKind,
+}) {
   final maxAllowed = expectations.maxAllowedToolResultFailures;
   if (maxAllowed < 0) {
     add('maxAllowedToolResultFailures is negative');
@@ -344,6 +350,134 @@ void _validateExpectations(
   for (final toolName in expectations.allowedFailedToolNames) {
     if (toolName.trim().isEmpty) {
       add('allowedFailedToolNames contains an empty tool name');
+    }
+  }
+  for (final matcher in expectations.requiredToolCalls) {
+    _validateRawToolCallMatcher(
+      add,
+      'requiredToolCalls',
+      matcher,
+      agentKind,
+    );
+  }
+  for (final matcher in expectations.forbiddenToolCalls) {
+    _validateRawToolCallMatcher(
+      add,
+      'forbiddenToolCalls',
+      matcher,
+      agentKind,
+    );
+  }
+}
+
+void _validateRawToolCallMatcher(
+  void Function(String message) add,
+  String field,
+  ExpectedToolCallState matcher,
+  AgentKind agentKind,
+) {
+  final toolName = matcher.toolName;
+  final trimmedToolName = toolName.trim();
+  if (trimmedToolName.isEmpty) {
+    add('$field has an empty toolName');
+    return;
+  }
+  if (trimmedToolName != toolName) {
+    add('$field has leading or trailing whitespace in toolName $toolName');
+    return;
+  }
+  final rawSchemasByTool = _rawToolSchemasFor(agentKind);
+  final schema = rawSchemasByTool[toolName];
+  if (schema == null) {
+    add(
+      '$field has unknown raw toolName $toolName '
+      '(allowed: ${_formatAllowedValues(rawSchemasByTool.keys)})',
+    );
+    return;
+  }
+  _validateRawArgsContain(
+    add,
+    field: field,
+    toolName: toolName,
+    value: matcher.argsContain,
+    schema: schema,
+  );
+}
+
+void _validateRawArgsContain(
+  void Function(String message) add, {
+  required String field,
+  required String toolName,
+  required Map<String, dynamic> value,
+  required _RawToolSchema schema,
+}) {
+  for (final entry in value.entries) {
+    final argKey = entry.key;
+    if (!schema.argKeys.contains(argKey)) {
+      add(
+        '$field argsContain key $argKey is not valid for raw toolName '
+        '$toolName (allowed: ${_formatAllowedValues(schema.argKeys)})',
+      );
+      continue;
+    }
+    _validateNonTrivialRawArgsContainValue(
+      add,
+      field: field,
+      path: '$toolName.$argKey',
+      value: entry.value,
+    );
+    final arrayItemKeys = schema.arrayItemKeysByArg[argKey];
+    if (arrayItemKeys == null) continue;
+    final rawExpectedItems = entry.value;
+    if (rawExpectedItems is! List) continue;
+    for (final item in rawExpectedItems) {
+      if (item is! Map) continue;
+      for (final itemKey in item.keys) {
+        if (!arrayItemKeys.contains(itemKey)) {
+          add(
+            '$field argsContain item key $itemKey is not valid for '
+            '$toolName.$argKey[] (allowed: '
+            '${_formatAllowedValues(arrayItemKeys)})',
+          );
+        }
+      }
+    }
+  }
+}
+
+void _validateNonTrivialRawArgsContainValue(
+  void Function(String message) add, {
+  required String field,
+  required String path,
+  required Object? value,
+}) {
+  if (value is Map) {
+    if (value.isEmpty) {
+      add('$field argsContain $path must not be an empty object');
+      return;
+    }
+    for (final entry in value.entries) {
+      _validateNonTrivialRawArgsContainValue(
+        add,
+        field: field,
+        path: '$path.${entry.key}',
+        value: entry.value,
+      );
+    }
+    return;
+  }
+  if (value is List) {
+    if (value.isEmpty) {
+      add('$field argsContain $path must not be an empty list');
+      return;
+    }
+    for (var i = 0; i < value.length; i++) {
+      _validateNonTrivialRawArgsContainValue(
+        add,
+        field: field,
+        path: '$path[$i]',
+        value: value[i],
+      );
     }
   }
 }
@@ -658,6 +792,41 @@ Map<String, Set<String>> _proposalArgKeysFor(AgentKind agentKind) {
     AgentKind.taskAgent => _taskProposalArgKeys,
     AgentKind.planningAgent => _plannerProposalArgKeys,
   };
+}
+
+Map<String, _RawToolSchema> _rawToolSchemasFor(AgentKind agentKind) {
+  return switch (agentKind) {
+    AgentKind.taskAgent => {
+      for (final tool in AgentToolRegistry.taskAgentTools)
+        tool.name: _RawToolSchema.fromParameters(tool.parameters),
+    },
+    AgentKind.planningAgent => {
+      for (final tool in dayAgentTools)
+        tool.name: _RawToolSchema.fromParameters(tool.parameters),
+    },
+  };
+}
+
+class _RawToolSchema {
+  const _RawToolSchema({
+    required this.argKeys,
+    required this.arrayItemKeysByArg,
+  });
+
+  factory _RawToolSchema.fromParameters(Map<String, dynamic> parameters) {
+    final argKeys = _schemaPropertyKeys(parameters);
+    return _RawToolSchema(
+      argKeys: argKeys,
+      arrayItemKeysByArg: {
+        for (final argKey in argKeys)
+          if (_arrayItemPropertyKeys(parameters, argKey).isNotEmpty)
+            argKey: _arrayItemPropertyKeys(parameters, argKey),
+      },
+    );
+  }
+
+  final Set<String> argKeys;
+  final Map<String, Set<String>> arrayItemKeysByArg;
 }
 
 final Map<String, Set<String>> _taskProposalArgKeys = _buildTaskProposalArgs();

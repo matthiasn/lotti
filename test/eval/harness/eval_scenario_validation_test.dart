@@ -368,6 +368,106 @@ void main() {
     );
   });
 
+  test('validates raw task tool-call oracle schemas', () {
+    final validScenario = _taskScenarioWithExpectations(
+      const EvalExpectations(
+        requiredToolCalls: [
+          ExpectedToolCallState(
+            toolName: 'assign_task_labels',
+            argsContain: {
+              'labels': [
+                {'id': 'lbl-release', 'confidence': 'high'},
+              ],
+            },
+          ),
+          ExpectedToolCallState(
+            toolName: 'add_multiple_checklist_items',
+            argsContain: {
+              'items': [
+                {'title': 'Review notes'},
+              ],
+            },
+          ),
+        ],
+      ),
+    );
+
+    expect(validateEvalScenario(validScenario), isEmpty);
+
+    final invalidScenario = _taskScenarioWithExpectations(
+      const EvalExpectations(
+        requiredToolCalls: [
+          ExpectedToolCallState(toolName: ' '),
+          ExpectedToolCallState(
+            toolName: 'add_checklist_item',
+            argsContain: {'title': 'Review notes'},
+          ),
+          ExpectedToolCallState(
+            toolName: 'assign_task_labels',
+            argsContain: {'id': 'lbl-release'},
+          ),
+          ExpectedToolCallState(
+            toolName: 'assign_task_labels',
+            argsContain: {
+              'labels': [
+                {'labelId': 'lbl-release'},
+              ],
+            },
+          ),
+          ExpectedToolCallState(
+            toolName: 'add_multiple_checklist_items',
+            argsContain: {'items': <Map<String, dynamic>>[]},
+          ),
+        ],
+        forbiddenToolCalls: [
+          ExpectedToolCallState(
+            toolName: 'rewrite_history',
+            argsContain: {'anything': true},
+          ),
+        ],
+      ),
+    );
+
+    final messages = validateEvalScenario(
+      invalidScenario,
+    ).map((issue) => issue.message).toList();
+
+    expect(messages, contains('requiredToolCalls has an empty toolName'));
+    expect(
+      messages,
+      _containsMessage(
+        'requiredToolCalls has unknown raw toolName add_checklist_item',
+      ),
+    );
+    expect(
+      messages,
+      _containsMessage(
+        'requiredToolCalls argsContain key id is not valid for raw toolName '
+        'assign_task_labels',
+      ),
+    );
+    expect(
+      messages,
+      _containsMessage(
+        'requiredToolCalls argsContain item key labelId is not valid for '
+        'assign_task_labels.labels[]',
+      ),
+    );
+    expect(
+      messages,
+      contains(
+        'requiredToolCalls argsContain add_multiple_checklist_items.items '
+        'must not be an empty list',
+      ),
+    );
+    expect(
+      messages,
+      _containsMessage(
+        'forbiddenToolCalls has unknown raw toolName rewrite_history',
+      ),
+    );
+  });
+
   test('accepts persisted singular proposal schemas and broad matchers', () {
     final scenario = _taskScenarioWithDurableState(
       const ExpectedDurableState(
@@ -662,6 +762,11 @@ void main() {
 }
 
 EvalScenario _taskScenarioWithDurableState(ExpectedDurableState durableState) =>
+    _taskScenarioWithExpectations(
+      EvalExpectations(durableState: durableState),
+    );
+
+EvalScenario _taskScenarioWithExpectations(EvalExpectations expectations) =>
     EvalScenario(
       id: 'task_proposal_oracle_schema',
       title: 'Task proposal oracle schema',
@@ -696,7 +801,7 @@ EvalScenario _taskScenarioWithDurableState(ExpectedDurableState durableState) =>
       metadata: const EvalScenarioMetadata(
         capabilityIds: ['task.proposal.schema'],
       ),
-      expectations: EvalExpectations(durableState: durableState),
+      expectations: expectations,
     );
 
 EvalScenario _plannerScenarioWithDurableState(

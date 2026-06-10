@@ -69,6 +69,26 @@ void main() {
     final scenario = _withExpectations(
       taskWorkflowReleaseNotesScenario,
       const EvalExpectations(
+        requiredToolCalls: [
+          ExpectedToolCallState(
+            toolName: 'assign_task_labels',
+            argsContain: {
+              'labels': [
+                {'id': 'lbl-release', 'confidence': 'high'},
+              ],
+            },
+          ),
+        ],
+        forbiddenToolCalls: [
+          ExpectedToolCallState(
+            toolName: 'assign_task_labels',
+            argsContain: {
+              'labels': [
+                {'id': 'lbl-legal'},
+              ],
+            },
+          ),
+        ],
         durableState: ExpectedDurableState(
           reportContains: {'release notes'},
           allowedMutatedEntryIds: {'task-notes'},
@@ -250,6 +270,173 @@ void main() {
     final toolResults = _named(checks, 'tool_results_succeeded');
     expect(toolResults.passed, isFalse);
     expect(toolResults.detail, contains('failed tool result count 2 > 1'));
+  });
+
+  test('raw tool-call oracle checks exact scalar args', () {
+    final scenario = _withExpectations(
+      taskWorkflowStructuredUpdateScenario,
+      const EvalExpectations(
+        requiredToolCalls: [
+          ExpectedToolCallState(
+            toolName: 'update_task_due_date',
+            argsContain: {'dueDate': '2026-06-11'},
+          ),
+          ExpectedToolCallState(
+            toolName: 'update_task_estimate',
+            argsContain: {'minutes': 45},
+          ),
+        ],
+      ),
+    );
+
+    final checks = runLevel1(
+      scenario,
+      const AgentRunOutput(
+        success: true,
+        usage: InferenceUsage(inputTokens: 800, outputTokens: 120),
+        toolCalls: [
+          ToolCallRecord(
+            name: 'update_task_due_date',
+            args: {'dueDate': '2026-06-12'},
+          ),
+          ToolCallRecord(
+            name: 'update_task_estimate',
+            args: {'minutes': '45'},
+          ),
+        ],
+      ),
+      profile: kLocalOllamaProfile,
+    );
+
+    final oracle = _named(checks, 'expected_tool_calls');
+    expect(oracle.passed, isFalse);
+    expect(oracle.detail, contains('update_task_due_date'));
+    expect(oracle.detail, contains('update_task_estimate'));
+  });
+
+  test('raw required tool-call matchers consume distinct calls', () {
+    final scenario = _withExpectations(
+      taskWorkflowStructuredUpdateScenario,
+      const EvalExpectations(
+        requiredToolCalls: [
+          ExpectedToolCallState(
+            toolName: 'update_task_estimate',
+            argsContain: {'minutes': 45},
+          ),
+          ExpectedToolCallState(
+            toolName: 'update_task_estimate',
+            argsContain: {'minutes': 45},
+          ),
+        ],
+      ),
+    );
+
+    final checks = runLevel1(
+      scenario,
+      const AgentRunOutput(
+        success: true,
+        usage: InferenceUsage(inputTokens: 800, outputTokens: 120),
+        toolCalls: [
+          ToolCallRecord(
+            name: 'update_task_estimate',
+            args: {'minutes': 45},
+          ),
+        ],
+      ),
+      profile: kLocalOllamaProfile,
+    );
+
+    final oracle = _named(checks, 'expected_tool_calls');
+    expect(oracle.passed, isFalse);
+    expect(oracle.detail, contains('missing distinct tool-call expectations'));
+  });
+
+  test('raw tool-call oracle matches nested batch args by containment', () {
+    final scenario = _withExpectations(
+      taskWorkflowStructuredUpdateScenario,
+      const EvalExpectations(
+        requiredToolCalls: [
+          ExpectedToolCallState(
+            toolName: 'add_multiple_checklist_items',
+            argsContain: {
+              'items': [
+                {'title': 'Write the customer update'},
+                {'title': 'Send to Sam'},
+              ],
+            },
+          ),
+        ],
+      ),
+    );
+
+    final checks = runLevel1(
+      scenario,
+      const AgentRunOutput(
+        success: true,
+        usage: InferenceUsage(inputTokens: 800, outputTokens: 120),
+        toolCalls: [
+          ToolCallRecord(
+            name: 'add_multiple_checklist_items',
+            args: {
+              'items': [
+                {
+                  'title': 'Send to Sam',
+                  'notes': 'extra fields do not break containment',
+                },
+                {'title': 'Confirm screenshots'},
+                {'title': 'Write the customer update'},
+              ],
+            },
+          ),
+        ],
+      ),
+      profile: kLocalOllamaProfile,
+    );
+
+    expect(_named(checks, 'expected_tool_calls').passed, isTrue);
+  });
+
+  test('raw forbidden tool-call oracle inspects nested batch args', () {
+    final scenario = _withExpectations(
+      taskWorkflowStructuredUpdateScenario,
+      const EvalExpectations(
+        forbiddenToolCalls: [
+          ExpectedToolCallState(
+            toolName: 'assign_task_labels',
+            argsContain: {
+              'labels': [
+                {'id': 'lbl-legal'},
+              ],
+            },
+          ),
+        ],
+      ),
+    );
+
+    final checks = runLevel1(
+      scenario,
+      const AgentRunOutput(
+        success: true,
+        usage: InferenceUsage(inputTokens: 800, outputTokens: 120),
+        toolCalls: [
+          ToolCallRecord(
+            name: 'assign_task_labels',
+            args: {
+              'labels': [
+                {'id': 'lbl-release', 'confidence': 'high'},
+                {'id': 'lbl-legal', 'confidence': 'medium'},
+              ],
+            },
+          ),
+        ],
+      ),
+      profile: kLocalOllamaProfile,
+    );
+
+    final oracle = _named(checks, 'expected_tool_calls');
+    expect(oracle.passed, isFalse);
+    expect(oracle.detail, contains('forbidden tool call'));
+    expect(oracle.detail, contains('lbl-legal'));
   });
 
   test(
@@ -697,6 +884,22 @@ void main() {
     expect(
       roundTripped.expectations.durableState.toJson(),
       scenario.expectations.durableState.toJson(),
+    );
+    expect(
+      roundTripped.expectations.requiredToolCalls.map(
+        (matcher) => matcher.toJson(),
+      ),
+      scenario.expectations.requiredToolCalls.map(
+        (matcher) => matcher.toJson(),
+      ),
+    );
+    expect(
+      roundTripped.expectations.forbiddenToolCalls.map(
+        (matcher) => matcher.toJson(),
+      ),
+      scenario.expectations.forbiddenToolCalls.map(
+        (matcher) => matcher.toJson(),
+      ),
     );
   });
 }

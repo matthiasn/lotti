@@ -146,6 +146,48 @@ EvalCheck checkExpectations(EvalScenario scenario, AgentRunOutput output) {
   return EvalCheck.pass('expected_tools');
 }
 
+/// Scenario-authored raw tool-call argument expectations.
+EvalCheck checkExpectedToolCalls(EvalScenario scenario, AgentRunOutput output) {
+  final expected = scenario.expectations;
+  if (expected.requiredToolCalls.isEmpty &&
+      expected.forbiddenToolCalls.isEmpty) {
+    return EvalCheck.pass(
+      'expected_tool_calls',
+      'no raw tool-call oracle set',
+    );
+  }
+
+  final failures = <String>[];
+  final required = expected.requiredToolCalls;
+  if (!_hasDistinctMatcherGroups<ToolCallRecord, ExpectedToolCallState>(
+    output.toolCalls,
+    [
+      for (final matcher in required) [matcher],
+    ],
+    _toolCallMatches,
+  )) {
+    failures.add(
+      'missing distinct tool-call expectations: '
+      '${_describeToolCallMatcherGroups(required)}',
+    );
+  }
+
+  final forbiddenMatches = [
+    for (final call in output.toolCalls)
+      for (final matcher in expected.forbiddenToolCalls)
+        if (_toolCallMatches(call, matcher))
+          '${call.name} ${call.args} matched ${_describeToolCallMatcher(matcher)}',
+  ];
+  if (forbiddenMatches.isNotEmpty) {
+    failures.add('forbidden tool call(s): ${forbiddenMatches.join('; ')}');
+  }
+
+  if (failures.isNotEmpty) {
+    return EvalCheck.fail('expected_tool_calls', failures.join('; '));
+  }
+  return EvalCheck.pass('expected_tool_calls');
+}
+
 /// Every emitted tool name must be known to the scenario's agent kind.
 EvalCheck checkKnownToolNames(EvalScenario scenario, AgentRunOutput output) {
   final known = _knownToolNamesFor(scenario.agentKind);
@@ -764,6 +806,7 @@ List<EvalCheck> runLevel1(
     checkTokenBudget(scenario, output, profile: profile),
     checkToolCallBudget(scenario, output),
     checkExpectations(scenario, output),
+    checkExpectedToolCalls(scenario, output),
     checkKnownToolNames(scenario, output),
     checkKnownProposalToolNames(scenario, output),
     checkToolResultsSucceeded(scenario, output),
@@ -896,6 +939,18 @@ bool _proposalMatches(
   return true;
 }
 
+bool _toolCallMatches(
+  ToolCallRecord call,
+  ExpectedToolCallState matcher,
+) {
+  if (call.name != matcher.toolName) return false;
+  for (final entry in matcher.argsContain.entries) {
+    if (!call.args.containsKey(entry.key)) return false;
+    if (!_jsonContains(call.args[entry.key], entry.value)) return false;
+  }
+  return true;
+}
+
 bool _blockMatches(
   PlannedBlockRecord block,
   ExpectedPlannedBlockState matcher,
@@ -983,6 +1038,52 @@ bool _jsonEquals(Object? a, Object? b) {
     return true;
   }
   return false;
+}
+
+bool _jsonContains(Object? actual, Object? expected) {
+  if (expected is Map) {
+    if (actual is! Map) return false;
+    for (final key in expected.keys) {
+      if (!actual.containsKey(key)) return false;
+      if (!_jsonContains(actual[key], expected[key])) return false;
+    }
+    return true;
+  }
+  if (expected is List) {
+    if (actual is! List || actual.length < expected.length) return false;
+    final used = List<bool>.filled(actual.length, false);
+    for (final expectedItem in expected) {
+      var matched = false;
+      for (var i = 0; i < actual.length; i++) {
+        if (used[i] || !_jsonContains(actual[i], expectedItem)) continue;
+        used[i] = true;
+        matched = true;
+        break;
+      }
+      if (!matched) return false;
+    }
+    return true;
+  }
+  return _jsonEquals(actual, expected);
+}
+
+String _describeToolCallMatcher(ExpectedToolCallState matcher) {
+  final parts = <String>[
+    'tool=${matcher.toolName}',
+    if (matcher.argsContain.isNotEmpty) 'args~${matcher.argsContain}',
+  ];
+  return parts.join(',');
+}
+
+String _describeToolCallMatcherGroups(
+  List<ExpectedToolCallState> required,
+) {
+  return _describeMatcherGroups<ExpectedToolCallState>(
+    [
+      for (final matcher in required) [matcher],
+    ],
+    _describeToolCallMatcher,
+  );
 }
 
 String _describeProposalMatcher(ExpectedProposalState matcher) {

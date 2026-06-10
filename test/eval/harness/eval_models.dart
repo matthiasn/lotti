@@ -1400,6 +1400,8 @@ class EvalExpectations {
     this.maxToolCalls,
     this.mustCallTools = const <String>{},
     this.mustNotCallTools = const <String>{},
+    this.requiredToolCalls = const <ExpectedToolCallState>[],
+    this.forbiddenToolCalls = const <ExpectedToolCallState>[],
     this.allowedFailedToolNames = const <String>{},
     this.maxAllowedToolResultFailures = 0,
     this.durableState = const ExpectedDurableState(),
@@ -1416,6 +1418,20 @@ class EvalExpectations {
             ((json['mustNotCallTools'] as List<dynamic>?) ?? const [])
                 .map((e) => e as String)
                 .toSet(),
+        requiredToolCalls:
+            ((json['requiredToolCalls'] as List<dynamic>?) ?? const [])
+                .map(
+                  (e) =>
+                      ExpectedToolCallState.fromJson(e as Map<String, dynamic>),
+                )
+                .toList(),
+        forbiddenToolCalls:
+            ((json['forbiddenToolCalls'] as List<dynamic>?) ?? const [])
+                .map(
+                  (e) =>
+                      ExpectedToolCallState.fromJson(e as Map<String, dynamic>),
+                )
+                .toList(),
         allowedFailedToolNames:
             ((json['allowedFailedToolNames'] as List<dynamic>?) ?? const [])
                 .map((e) => e as String)
@@ -1433,6 +1449,8 @@ class EvalExpectations {
   final int? maxToolCalls;
   final Set<String> mustCallTools;
   final Set<String> mustNotCallTools;
+  final List<ExpectedToolCallState> requiredToolCalls;
+  final List<ExpectedToolCallState> forbiddenToolCalls;
   final Set<String> allowedFailedToolNames;
   final int maxAllowedToolResultFailures;
   final ExpectedDurableState durableState;
@@ -1442,11 +1460,40 @@ class EvalExpectations {
     if (maxToolCalls != null) 'maxToolCalls': maxToolCalls,
     'mustCallTools': mustCallTools.toList(),
     'mustNotCallTools': mustNotCallTools.toList(),
+    if (requiredToolCalls.isNotEmpty)
+      'requiredToolCalls': [
+        for (final matcher in requiredToolCalls) matcher.toJson(),
+      ],
+    if (forbiddenToolCalls.isNotEmpty)
+      'forbiddenToolCalls': [
+        for (final matcher in forbiddenToolCalls) matcher.toJson(),
+      ],
     if (allowedFailedToolNames.isNotEmpty)
       'allowedFailedToolNames': allowedFailedToolNames.toList()..sort(),
     if (maxAllowedToolResultFailures != 0)
       'maxAllowedToolResultFailures': maxAllowedToolResultFailures,
     if (!durableState.isEmpty) 'durableState': durableState.toJson(),
+  };
+}
+
+class ExpectedToolCallState {
+  const ExpectedToolCallState({
+    required this.toolName,
+    this.argsContain = const <String, dynamic>{},
+  });
+
+  factory ExpectedToolCallState.fromJson(Map<String, dynamic> json) =>
+      ExpectedToolCallState(
+        toolName: json['toolName'] as String,
+        argsContain: (json['argsContain'] as Map<String, dynamic>?) ?? const {},
+      );
+
+  final String toolName;
+  final Map<String, dynamic> argsContain;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'toolName': toolName,
+    if (argsContain.isNotEmpty) 'argsContain': argsContain,
   };
 }
 

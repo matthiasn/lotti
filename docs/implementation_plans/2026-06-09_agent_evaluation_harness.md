@@ -120,7 +120,7 @@ fvm dart analyze test/eval        # the analyzer GATE (see gotcha below)
 fvm dart format test/eval
 ```
 
-Current gate: 265 eval tests green, 7 expected skips without `EVAL_RUN` /
+Current gate: 270 eval tests green, 7 expected skips without `EVAL_RUN` /
 `EVAL_SCENARIOS` / `EVAL_CALIBRATION_TEMPLATE` / `EVAL_CALIBRATION` /
 `LOTTI_EVAL_LIVE`, analyzer clean.
 Latest active slice adds Level 2 run-manifest promotion-plan evidence plus a
@@ -164,6 +164,13 @@ calls. `run(...)` executes the same planned cells, so dry-run and live-run
 matrix construction share validation and artifact preflight. The printed
 preview manifest digest is not a reservation; the subsequent live run writes
 the authoritative manifest at execution time.
+Current active slice adds raw tool-call argument oracles:
+`EvalExpectations.requiredToolCalls` / `forbiddenToolCalls` assert the
+model-facing `AgentRunOutput.toolCalls` layer separately from durable
+proposals. Matchers use exact tool names, recursive JSON containment, distinct
+required call/list-item matching, and raw tool-schema validation, so scenarios
+can hard-check due date, estimate, priority, label, and checklist arguments
+before persistence or batching transforms them.
 Current active slice adds provider response-side provenance: the real
 `ConversationRepository` stream loop records authoritative provider-reported
 model ids, system fingerprints, provider names, and service tiers when exposed,
@@ -583,7 +590,8 @@ test/eval/scenarios/
 - `MockProposalDecision { id, changeSetId, itemIndex, toolName, verdict, actor, targetId?, createdAt?, reason?, humanSummary?, args }`
 - `UserInput { transcript, triggerTokens }`
 - `EvalScenarioMetadata { capabilityIds, split, source, isAdversarial, tags }`
-- `EvalExpectations { maxTokenBudget?, maxToolCalls?, mustCallTools, mustNotCallTools, allowedFailedToolNames, maxAllowedToolResultFailures, durableState }`
+- `EvalExpectations { maxTokenBudget?, maxToolCalls?, mustCallTools, mustNotCallTools, requiredToolCalls, forbiddenToolCalls, allowedFailedToolNames, maxAllowedToolResultFailures, durableState }`
+- `ExpectedToolCallState { toolName, argsContain }`
 - `ExpectedDurableState { proposal/plannedBlock/parsedCapture/mutatedEntry counts, reportContains, observationContains, allowed/required/forbidden mutatedEntryIds, required/forbidden proposals, proposal anyOf groups + scoped counts, required/forbidden plannedBlocks, plannedBlock anyOf groups + scoped counts, required/forbidden parsedCaptureItems, parsedCapture anyOf groups + scoped counts }`
 - `ExpectedProposalState { toolName?, targetId?, status?, changeSetStatus?, argsContain, humanSummaryContains }`
 - `ExpectedPlannedBlockState { id?, taskId?, categoryId?, min/maxDurationMinutes?, startAtOrAfter?, endAtOrBefore? }`

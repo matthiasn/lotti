@@ -51,24 +51,31 @@ flowchart LR
 
 `runLevel1(scenario, output)` returns deterministic `EvalCheck`s (succeeded, no
 hallucinated task refs, known raw tool names, known durable proposal item names,
-no unexpected production tool-result errors, within capacity, valid status
-transitions, estimate range, label cap, persisted label proposal validity, no
-duplicate checklist items, …). Scenarios can also define an
-`ExpectedDurableState` oracle inside `EvalExpectations`, matching
-required/forbidden persisted proposals, planned blocks, parsed capture items,
-report text, observations, allowed or forbidden mutated entry IDs, required
-mutations, accepted `anyOf` alternatives, scoped min/max/exact count checks, and
-parsed-capture confidence bands. Recovery stress scenarios can opt in to a
-bounded set of named failed tool results through `allowedFailedToolNames` plus
-`maxAllowedToolResultFailures`; the default remains zero failures. Required
-proposal/block/item matchers and `anyOf` groups consume distinct actual records,
-so one persisted item cannot satisfy two expected outcomes. Scoped counts are
-aggregate checks over matching durable records, which lets scenarios count only
-pending proposals instead of being distorted by retired proposal history. That
-keeps final-state success code-graded while still allowing multiple valid plans
-or proposal summaries. `validateEvalScenarioCatalog` cross-checks scenario and
-expectation references before Level 2 verification accepts a run. The example
-tests under
+no unexpected production tool-result errors, scenario-authored raw tool-call
+argument oracles, within capacity, valid status transitions, estimate range,
+label cap, persisted label proposal validity, no duplicate checklist items,
+…). Scenarios can define `requiredToolCalls` / `forbiddenToolCalls` inside
+`EvalExpectations` to hard-check model-facing tool attempts and args before
+durable persistence, for example a relative due date resolving to
+`update_task_due_date { dueDate: "2026-06-11" }` or a batched
+`assign_task_labels.labels[]` entry. Raw tool-call matchers use recursive JSON
+containment with distinct list-item matching, so batch order and harmless extra
+fields do not make scenarios brittle. Scenarios can also define an
+`ExpectedDurableState` oracle, matching required/forbidden persisted proposals,
+planned blocks, parsed capture items, report text, observations, allowed or
+forbidden mutated entry IDs, required mutations, accepted `anyOf` alternatives,
+scoped min/max/exact count checks, and parsed-capture confidence bands.
+Recovery stress scenarios can opt in to a bounded set of named failed tool
+results through `allowedFailedToolNames` plus `maxAllowedToolResultFailures`;
+the default remains zero failures. Required raw calls and durable
+proposal/block/item matchers consume distinct actual records, so one actual
+record cannot satisfy two expected outcomes. Scoped counts are aggregate checks
+over matching durable records, which lets scenarios count only pending
+proposals instead of being distorted by retired proposal history. That keeps
+model intent and final-state success code-graded while still allowing multiple
+valid plans or proposal summaries. `validateEvalScenarioCatalog` cross-checks
+scenario and expectation references before Level 2 verification accepts a run.
+The example tests under
 `test/eval/scenarios/` show both a passing output and a
 regression-catching one:
 

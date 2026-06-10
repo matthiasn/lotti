@@ -647,6 +647,72 @@ final EvalScenario taskWorkflowStructuredUpdateScenario = _reviewedScenario(
         'assign_task_labels',
         'add_multiple_checklist_items',
       },
+      requiredToolCalls: [
+        ExpectedToolCallState(
+          toolName: 'update_task_due_date',
+          argsContain: {'dueDate': '2026-06-11'},
+        ),
+        ExpectedToolCallState(
+          toolName: 'update_task_priority',
+          argsContain: {'priority': 'P1'},
+        ),
+        ExpectedToolCallState(
+          toolName: 'update_task_estimate',
+          argsContain: {'minutes': 45},
+        ),
+        ExpectedToolCallState(
+          toolName: 'assign_task_labels',
+          argsContain: {
+            'labels': [
+              {'id': 'lbl-release', 'confidence': 'high'},
+            ],
+          },
+        ),
+        ExpectedToolCallState(
+          toolName: 'add_multiple_checklist_items',
+          argsContain: {
+            'items': [
+              {'title': 'Write the customer update'},
+              {'title': 'Confirm screenshots'},
+              {'title': 'Send to Sam'},
+            ],
+          },
+        ),
+      ],
+      forbiddenToolCalls: [
+        ExpectedToolCallState(
+          toolName: 'assign_task_labels',
+          argsContain: {
+            'labels': [
+              {'id': 'lbl-docs'},
+            ],
+          },
+        ),
+        ExpectedToolCallState(
+          toolName: 'assign_task_labels',
+          argsContain: {
+            'labels': [
+              {'id': 'lbl-legal'},
+            ],
+          },
+        ),
+        ExpectedToolCallState(
+          toolName: 'assign_task_labels',
+          argsContain: {
+            'labels': [
+              {'id': 'lbl-admin'},
+            ],
+          },
+        ),
+        ExpectedToolCallState(
+          toolName: 'add_multiple_checklist_items',
+          argsContain: {
+            'items': [
+              {'title': 'Draft outline'},
+            ],
+          },
+        ),
+      ],
       durableState: ExpectedDurableState(
         proposalCount: 7,
         requiredProposals: [
