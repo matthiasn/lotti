@@ -45,6 +45,9 @@ abstract final class DayAgentToolNames {
   /// Proposes a durable planner-knowledge entry ("memorize what I tell you").
   static const proposeKnowledge = 'propose_knowledge';
 
+  /// Writes the contemporaneous day summary (today/yesterday only).
+  static const writeDaySummary = 'write_day_summary';
+
   /// Foundation tools implemented by the day-agent workflow itself.
   static const foundationHandlerTools = <String>{
     setNextWake,
@@ -54,6 +57,15 @@ abstract final class DayAgentToolNames {
   /// Durable-knowledge tools delegated to the knowledge service.
   static const knowledgeTools = <String>{
     proposeKnowledge,
+  };
+
+  /// Week-context tools delegated to the week-context service.
+  ///
+  /// Must be folded into [workflowHandlerTools]: this registry is
+  /// string-keyed, NOT compiler-enforced — a tool offered to the model but
+  /// missing from that set dies as "unknown day-agent tool" on every call.
+  static const weekContextTools = <String>{
+    writeDaySummary,
   };
 
   /// Capture/reconcile tools delegated to the capture service.
@@ -86,6 +98,7 @@ abstract final class DayAgentToolNames {
     ...captureReconcileTools,
     ...planTools,
     ...knowledgeTools,
+    ...weekContextTools,
   };
 
   /// Whether [name] should be routed through the workflow handler.
@@ -106,6 +119,11 @@ abstract final class DayAgentToolNames {
   /// Whether [name] is handled by the durable-knowledge service.
   static bool isKnowledgeTool(String name) {
     return knowledgeTools.contains(name);
+  }
+
+  /// Whether [name] is handled by the week-context service.
+  static bool isWeekContextTool(String name) {
+    return weekContextTools.contains(name);
   }
 
   /// Whether [name] is the foundation wake scheduling tool.
