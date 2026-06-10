@@ -57,6 +57,175 @@ void main() {
     },
   );
 
+  test('plans the full matrix without running or writing artifacts', () async {
+    final tempDir = await Directory.systemTemp.createTemp('lotti-eval-plan-');
+    addTearDown(() async {
+      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+    });
+    final target = _RecordingTarget();
+    final writer = TraceWriter(runsRoot: tempDir.path);
+    final runner = EvalMatrixRunner(target: target, writer: writer);
+    final scenarios = [
+      taskReleaseNotesScenario,
+      plannerMorningCapacityScenario,
+    ];
+    const profiles = [stableProfile, singleProfile];
+
+    final plan = runner.plan(
+      runId: 'plan-1',
+      scenarios: scenarios,
+      profiles: profiles,
+    );
+
+    expect(target.calls, isEmpty);
+    expect(plan.manifestFile.uri.pathSegments.last, 'manifest.json');
+    expect(plan.manifestFile.existsSync(), isFalse);
+    expect(plan.manifest.manifestDigest, startsWith('sha256:'));
+    expect(plan.scenarios.map((scenario) => scenario.id), [
+      'task_release_notes',
+      'planner_morning_capacity',
+    ]);
+    expect(plan.profiles.map((profile) => profile.name), [
+      stableProfile.name,
+      singleProfile.name,
+    ]);
+    expect(
+      plan.cells.map(
+        (cell) => '${cell.scenarioId}::${cell.profileName}::${cell.trialIndex}',
+      ),
+      [
+        'task_release_notes::stable-frontier::0',
+        'task_release_notes::stable-frontier::1',
+        'task_release_notes::single-local::0',
+        'planner_morning_capacity::stable-frontier::0',
+        'planner_morning_capacity::stable-frontier::1',
+        'planner_morning_capacity::single-local::0',
+      ],
+    );
+    expect(
+      plan.cells.map((cell) => cell.traceFile.uri.pathSegments.last).toSet(),
+      containsAll({
+        'task_release_notes__stable-frontier.trace.json',
+        'task_release_notes__stable-frontier__trial-1.trace.json',
+        'task_release_notes__single-local.trace.json',
+        'planner_morning_capacity__stable-frontier.trace.json',
+        'planner_morning_capacity__stable-frontier__trial-1.trace.json',
+        'planner_morning_capacity__single-local.trace.json',
+      }),
+    );
+    expect(
+      plan.cells.map((cell) => cell.verdictFile.uri.pathSegments.last).toSet(),
+      containsAll({
+        'task_release_notes__stable-frontier.verdict.json',
+        'task_release_notes__stable-frontier__trial-1.verdict.json',
+        'task_release_notes__single-local.verdict.json',
+        'planner_morning_capacity__stable-frontier.verdict.json',
+        'planner_morning_capacity__stable-frontier__trial-1.verdict.json',
+        'planner_morning_capacity__single-local.verdict.json',
+      }),
+    );
+    expect(
+      plan.cells.every((cell) => !cell.traceFile.existsSync()),
+      isTrue,
+    );
+    expect(plan.trialCountByProfile, {
+      stableProfile.name: 2,
+      singleProfile.name: 1,
+    });
+
+    final rendered = EvalMatrixPlanRenderer.render(
+      plan,
+      scenarioSourceLabel: 'public catalog filtered to smoke',
+      profileSourceLabel: 'built-in profiles filtered to smoke',
+    );
+    expect(rendered, contains('Eval matrix plan'));
+    expect(rendered, contains('trace cells: 6'));
+    expect(rendered, contains('previewManifestDigest: sha256:'));
+    expect(rendered, contains('providerModelId='));
+    expect(rendered, contains('task_release_notes x stable-frontier trial=1'));
+  });
+
+  test('plan rejects promotion plans for another scenario set', () {
+    final target = _RecordingTarget();
+    final runner = EvalMatrixRunner(target: target);
+    final promotionPlan = _promotionPlanFor(
+      scenarios: [plannerMorningCapacityScenario],
+      profiles: const [stableProfile],
+    );
+
+    expect(
+      () => runner.plan(
+        runId: 'plan-wrong-plan',
+        scenarios: [taskReleaseNotesScenario],
+        profiles: const [stableProfile],
+        promotionPlan: promotionPlan,
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('Promotion plan scenarioSetDigest'),
+        ),
+      ),
+    );
+    expect(target.calls, isEmpty);
+  });
+
+  test('plan preflights stale verdicts before any target call', () async {
+    final tempDir = await Directory.systemTemp.createTemp(
+      'lotti-eval-plan-preflight-',
+    );
+    addTearDown(() async {
+      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+    });
+    final writer = TraceWriter(runsRoot: tempDir.path);
+    final existingTrace = EvalTrace(
+      runId: 'plan-1',
+      scenario: taskReleaseNotesScenario,
+      profile: stableProfile,
+      provenance: EvalProvenance.capture(
+        scenario: taskReleaseNotesScenario,
+        profile: stableProfile,
+      ),
+      trialIndex: 1,
+      output: _outputFor(stableProfile),
+      level1Checks: runLevel1(
+        taskReleaseNotesScenario,
+        _outputFor(stableProfile),
+        profile: stableProfile,
+      ),
+    );
+    final existingFile = await writer.writeTrace(existingTrace);
+    await writer.writeVerdict(
+      existingFile,
+      _verdict(
+        goalAttainment: 5,
+        quality: 5,
+        efficiency: 5,
+        pass: true,
+      ),
+    );
+    final target = _RecordingTarget();
+    final runner = EvalMatrixRunner(target: target, writer: writer);
+
+    expect(
+      () => runner.plan(
+        runId: 'plan-1',
+        scenarios: [taskReleaseNotesScenario],
+        profiles: const [stableProfile],
+        overwrite: true,
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('existing verdict'),
+        ),
+      ),
+    );
+    expect(target.calls, isEmpty);
+  });
+
   test('writes the full scenario x profile x trial trace matrix', () async {
     final tempDir = await Directory.systemTemp.createTemp('lotti-eval-matrix-');
     addTearDown(() async {

@@ -34,6 +34,33 @@ void main() {
     );
   });
 
+  test('profile execution bindings can be previewed before live opt-in', () {
+    final settings = LiveEvalSettings.fromEnvironment(const <String, String>{
+      'LOTTI_EVAL_FRONTIER_PROVIDER': 'openAi',
+      'LOTTI_EVAL_FRONTIER_MODEL': 'gpt-5-mini',
+      'OPENAI_API_KEY': 'live-key',
+    });
+    final target = LiveEvalTarget(settings: settings);
+    addTearDown(target.dispose);
+
+    final bindings = target.profileExecutionBindings([kFrontierFastProfile]);
+
+    expect(bindings, hasLength(1));
+    expect(bindings.single.profileName, kFrontierFastProfile.name);
+    expect(bindings.single.providerType, InferenceProviderType.openAi.name);
+    expect(bindings.single.providerModelId, 'gpt-5-mini');
+    expect(
+      () => settings.validateProfile(kFrontierFastProfile),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('LOTTI_EVAL_LIVE'),
+        ),
+      ),
+    );
+  });
+
   test('refuses CI live runs without explicit opt-in', () {
     final settings = LiveEvalSettings.fromEnvironment(const <String, String>{
       'LOTTI_EVAL_LIVE': '1',

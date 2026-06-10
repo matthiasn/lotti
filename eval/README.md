@@ -143,6 +143,25 @@ summaries are scenario-backed rather than raw scripted intent.
 
 ## Level 2 — periodic
 
+Preview the exact matrix before spending model calls. `plan` validates the
+loaded scenario/profile selectors, run-root safety, artifact collisions,
+promotion-plan digests, and live provider/model bindings, but it does not
+require `LOTTI_EVAL_LIVE=1` and does not write traces:
+
+```
+EVAL_SCENARIO_IDS=task_workflow_structured_update \
+EVAL_PROFILE_NAMES=frontier-gemini \
+LOTTI_EVAL_FRONTIER_PROVIDER=openAi \
+LOTTI_EVAL_FRONTIER_MODEL=gpt-5-mini \
+OPENAI_API_KEY=... \
+  eval/run_level2.sh plan <runId>
+```
+
+The printed `previewManifestDigest` is a dry-run fingerprint, not a reservation.
+The actual `run` command writes the authoritative manifest when it executes, so
+rerun `plan` with the same env whenever selectors, catalogs, profile JSON,
+provider overrides, prompt/rubric files, or git state change.
+
 ```
 LOTTI_EVAL_LIVE=1 \
 LOTTI_EVAL_LOCAL_MODEL=llama3.1:8b OLLAMA_BASE_URL=http://localhost:11434 \
@@ -176,9 +195,17 @@ For fast iteration on one use case, select a subset of the loaded matrix with
 comma-separated ids and profile names. Use the same selector env for `run`,
 `verify`, `report`, `template`, and `calibrate`; the run manifest binds to the
 selected scenario/profile set and later phases fail closed if the selectors
-drift.
+drift. `plan` uses the same selectors and prints every scenario/profile/trial
+cell with its future trace and verdict path.
 
 ```
+EVAL_SCENARIO_IDS=task_workflow_structured_update \
+EVAL_PROFILE_NAMES=local-small,frontier-gemini \
+LOTTI_EVAL_LOCAL_MODEL=llama3.1:8b OLLAMA_BASE_URL=http://localhost:11434 \
+LOTTI_EVAL_FRONTIER_PROVIDER=openAi LOTTI_EVAL_FRONTIER_MODEL=gpt-5-mini \
+OPENAI_API_KEY=... \
+  eval/run_level2.sh plan <runId>
+
 EVAL_SCENARIO_IDS=task_workflow_structured_update \
 EVAL_PROFILE_NAMES=local-small,frontier-gemini \
 LOTTI_EVAL_LIVE=1 \

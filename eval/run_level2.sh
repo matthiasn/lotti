@@ -14,6 +14,7 @@
 # this NEVER runs in default CI. See docs/adr/0029-agent-evaluation-harness.md.
 #
 # Usage:
+#   eval/run_level2.sh plan [runId]
 #   eval/run_level2.sh run [runId]
 #   eval/run_level2.sh grade [runId]
 #   eval/run_level2.sh verify [runId]
@@ -27,6 +28,7 @@
 #   EVAL_SCENARIOS=/private/path/scenarios.json EVAL_RUNS_ROOT=/private/tmp/lotti-eval-runs eval/run_level2.sh run [runId]
 #   EVAL_PROFILES=/private/path/profiles.json eval/run_level2.sh run [runId]
 #   EVAL_SCENARIO_IDS=task_workflow_structured_update EVAL_PROFILE_NAMES=frontier-gemini eval/run_level2.sh run [runId]
+#   EVAL_SCENARIO_IDS=task_workflow_structured_update EVAL_PROFILE_NAMES=frontier-gemini eval/run_level2.sh plan [runId]
 #   EVAL_SCENARIOS=/private/path/scenarios.json EVAL_SCENARIOS_MODE=replace eval/run_level2.sh catalog
 #   eval/run_level2.sh all [runId]
 #
@@ -52,12 +54,12 @@ latest_run_id() {
 }
 
 MODE="${1:-run}"
-if [[ "$MODE" != "run" && "$MODE" != "grade" && "$MODE" != "verify" && "$MODE" != "catalog" && "$MODE" != "report" && "$MODE" != "template" && "$MODE" != "calibrate" && "$MODE" != "all" ]]; then
+if [[ "$MODE" != "plan" && "$MODE" != "run" && "$MODE" != "grade" && "$MODE" != "verify" && "$MODE" != "catalog" && "$MODE" != "report" && "$MODE" != "template" && "$MODE" != "calibrate" && "$MODE" != "all" ]]; then
   RUN_ID="$MODE"
   MODE="run"
 else
   case "$MODE" in
-    run | all)
+    plan | run | all)
       RUN_ID="${2:-$(date +%Y%m%d-%H%M%S)}"
       ;;
     catalog)
@@ -121,6 +123,9 @@ fi
 
 if [[ "$MODE" == "catalog" ]]; then
   echo "==> Level 2 scenario catalog preflight"
+elif [[ "$MODE" == "plan" ]]; then
+  echo "==> Level 2 eval plan: ${RUN_ID}"
+  echo "    output: ${RUN_DIR}"
 else
   echo "==> Level 2 eval run: ${RUN_ID}"
   echo "    output: ${RUN_DIR}"
@@ -163,6 +168,14 @@ catalog_preflight() {
   echo "==> Preflighting scenario catalog..."
   fvm flutter test test/eval/scenarios/report_test.dart \
     --plain-name "renders scenario catalog preflight" \
+    "${DART_DEFINES[@]}"
+}
+
+plan_run() {
+  echo "==> Rendering eval matrix plan..."
+  fvm flutter test test/eval/scenarios/plan_runner_test.dart \
+    --plain-name "renders eval matrix plan" \
+    --dart-define=EVAL_RUN="${RUN_ID}" \
     "${DART_DEFINES[@]}"
 }
 
@@ -261,6 +274,9 @@ template_run() {
 }
 
 case "$MODE" in
+  plan)
+    plan_run
+    ;;
   run)
     run_traces
     grade_prompt

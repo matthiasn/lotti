@@ -44,6 +44,10 @@ class LiveEvalSettings {
 
   EvalProfileConfig profileConfigFor(EvalProfile profile) {
     validateProfile(profile);
+    return profileBindingConfigFor(profile);
+  }
+
+  EvalProfileConfig profileBindingConfigFor(EvalProfile profile) {
     return evalProfileConfig(
       profile,
       providerOverride: providerOverrideFor(profile),
@@ -233,7 +237,7 @@ class LiveEvalTarget extends EvalTarget {
     List<EvalProfile> profiles,
   ) => [
     for (final profile in profiles)
-      settings.profileConfigFor(profile).toExecutionBinding(),
+      settings.profileBindingConfigFor(profile).toExecutionBinding(),
   ];
 
   @override
