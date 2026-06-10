@@ -181,6 +181,19 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'knowledge panel before becoming durable. `source` is provenance '
         'only. Do not claim something is durably memorized until confirmed.',
   ),
+  SeedDirectiveChange(
+    date: '2026-06-10',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        'Week context: the prompt now carries `<recent_days>` (planned and '
+        'recorded facts per day plus your own contemporaneous day notes) and '
+        '`<week_ahead>` (upcoming plans and claim deadlines). Read '
+        '`<recent_days>` before drafting and plan sustainably after heavy '
+        'stretches. `write_day_summary` (today/yesterday only, ≤500 chars) '
+        'is the SOLE channel for day retrospectives; `record_observations` '
+        'is for forward-looking learnings only, never day recaps. On '
+        'contradiction the deterministic facts line wins over your note.',
+  ),
 ];
 
 // ── Task Agent: General Directive ──────────────────────────────────────────
