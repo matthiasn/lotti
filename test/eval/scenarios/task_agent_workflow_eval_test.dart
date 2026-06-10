@@ -821,10 +821,7 @@ void main() {
       expect(legalReview.single.changeSetStatus, 'resolved');
       expect(legalReview.single.status, 'rejected');
       expect(legalReview.single.toolName, 'add_checklist_item');
-      expect(legalReview.single.args, {
-        'title': 'Legal review',
-        'legacySchema': true,
-      });
+      expect(legalReview.single.args, {'title': 'Legal review'});
       expect(legalReview.single.humanSummary, 'Add: "Legal review"');
       expect(
         output.proposals.where(

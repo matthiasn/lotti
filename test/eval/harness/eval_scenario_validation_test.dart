@@ -271,6 +271,261 @@ void main() {
     );
   });
 
+  test('validates tool-specific task proposal oracle schemas', () {
+    final scenario = _taskScenarioWithDurableState(
+      const ExpectedDurableState(
+        requiredProposals: [
+          ExpectedProposalState(
+            toolName: 'update_task_due_date',
+            argsContain: {'due': '2026-06-11'},
+          ),
+          ExpectedProposalState(
+            toolName: 'add_multiple_checklist_items',
+            argsContain: {'title': 'Review notes'},
+          ),
+          ExpectedProposalState(toolName: ' '),
+        ],
+        requiredProposalAnyOf: [
+          ExpectedProposalStateAnyOf(
+            anyOf: [
+              ExpectedProposalState(
+                toolName: 'assign_task_label',
+                argsContain: {'labelId': 'lbl-release'},
+              ),
+            ],
+          ),
+        ],
+        proposalCounts: [
+          ExpectedProposalCount(
+            matcher: ExpectedProposalState(
+              toolName: 'rewrite_history',
+              status: 'pending',
+            ),
+            exactCount: 1,
+          ),
+        ],
+        forbiddenProposals: [
+          ExpectedProposalState(
+            argsContain: {'id': 'ci-1', 'dueDate': '2026-06-11'},
+          ),
+          ExpectedProposalState(
+            toolName: 'add_checklist_item',
+            argsContain: {'name': 'Review notes'},
+          ),
+        ],
+      ),
+    );
+
+    final messages = validateEvalScenario(
+      scenario,
+    ).map((issue) => issue.message).toList();
+
+    expect(
+      messages,
+      _containsMessage(
+        'durableState.requiredProposals argsContain key due is not valid '
+        'for proposal toolName update_task_due_date',
+      ),
+    );
+    expect(
+      messages,
+      _containsMessage(
+        'durableState.requiredProposals has unknown proposal toolName '
+        'add_multiple_checklist_items for taskAgent',
+      ),
+    );
+    expect(
+      messages,
+      contains('durableState.requiredProposals has an empty toolName'),
+    );
+    expect(
+      messages,
+      _containsMessage(
+        'durableState.requiredProposalAnyOf argsContain key labelId is not '
+        'valid for proposal toolName assign_task_label',
+      ),
+    );
+    expect(
+      messages,
+      _containsMessage(
+        'durableState.proposalCounts.matcher has unknown proposal toolName '
+        'rewrite_history for taskAgent',
+      ),
+    );
+    expect(
+      messages,
+      _containsMessage(
+        'durableState.forbiddenProposals argsContain keys dueDate, id do not '
+        'match any known proposal tool for taskAgent',
+      ),
+    );
+    expect(
+      messages,
+      _containsMessage(
+        'durableState.forbiddenProposals argsContain key name is not valid '
+        'for proposal toolName add_checklist_item',
+      ),
+    );
+  });
+
+  test('accepts persisted singular proposal schemas and broad matchers', () {
+    final scenario = _taskScenarioWithDurableState(
+      const ExpectedDurableState(
+        requiredProposals: [
+          ExpectedProposalState(
+            toolName: 'assign_task_label',
+            argsContain: {'id': 'lbl-release', 'confidence': 'high'},
+          ),
+          ExpectedProposalState(
+            toolName: 'add_checklist_item',
+            argsContain: {'title': 'Review notes', 'isChecked': false},
+          ),
+          ExpectedProposalState(
+            toolName: 'update_checklist_item',
+            argsContain: {
+              'id': 'ci-1',
+              'title': 'Updated note',
+              'isArchived': true,
+            },
+          ),
+          ExpectedProposalState(
+            toolName: 'migrate_checklist_item',
+            argsContain: {
+              'id': 'ci-2',
+              'title': 'Move to follow-up',
+              'targetTaskId': 'follow-up-placeholder',
+            },
+          ),
+          ExpectedProposalState(
+            toolName: 'create_follow_up_task',
+            argsContain: {
+              'title': 'Follow up with Sam',
+              '_placeholderTaskId': 'follow-up-placeholder',
+            },
+          ),
+        ],
+        forbiddenProposals: [
+          ExpectedProposalState(argsContain: {'id': 'ci-1'}),
+        ],
+      ),
+    );
+
+    expect(validateEvalScenario(scenario), isEmpty);
+  });
+
+  test('validates planner diff proposal oracle schemas', () {
+    final valid = _plannerScenarioWithDurableState(
+      const ExpectedDurableState(
+        requiredProposals: [
+          ExpectedProposalState(
+            toolName: 'add_block',
+            argsContain: {
+              'action': 'added',
+              'toStart': '2026-06-10T10:00:00',
+              'title': 'Review notes',
+            },
+          ),
+        ],
+      ),
+    );
+
+    expect(validateEvalScenario(valid), isEmpty);
+
+    final invalid = _plannerScenarioWithDurableState(
+      const ExpectedDurableState(
+        requiredProposals: [
+          ExpectedProposalState(toolName: 'assign_task_label'),
+          ExpectedProposalState(
+            toolName: 'add_block',
+            argsContain: {'start': '2026-06-10T10:00:00'},
+          ),
+        ],
+      ),
+    );
+    final messages = validateEvalScenario(
+      invalid,
+    ).map((issue) => issue.message).toList();
+
+    expect(
+      messages,
+      _containsMessage(
+        'durableState.requiredProposals has unknown proposal toolName '
+        'assign_task_label for planningAgent',
+      ),
+    );
+    expect(
+      messages,
+      _containsMessage(
+        'durableState.requiredProposals argsContain key start is not valid '
+        'for proposal toolName add_block',
+      ),
+    );
+  });
+
+  test('validates seeded proposal fixture tool names and argument keys', () {
+    final scenario = EvalScenario(
+      id: 'seeded_proposal_schema',
+      title: 'Seeded proposal schema',
+      agentKind: AgentKind.taskAgent,
+      appState: MockedAppState(
+        now: DateTime(2026, 6, 10, 7),
+        categoryIds: const ['cat-work'],
+        tasks: const [
+          MockTask(
+            id: 'task-known',
+            title: 'Known task',
+            status: 'OPEN',
+            categoryId: 'cat-work',
+          ),
+        ],
+        proposalSets: const [
+          MockProposalSet(
+            id: 'bad-fixture',
+            targetId: 'task-known',
+            items: [
+              MockProposalItem(
+                toolName: 'add_multiple_checklist_items',
+                args: {'items': <Object?>[]},
+                humanSummary: 'Raw batch should not be persisted',
+              ),
+              MockProposalItem(
+                toolName: 'add_checklist_item',
+                args: {'name': 'Review notes'},
+                humanSummary: 'Wrong argument key',
+              ),
+            ],
+          ),
+        ],
+      ),
+      userInput: const UserInput(
+        transcript: 'Validate seeded proposal rows.',
+        triggerTokens: {'decided_task:task-known'},
+      ),
+      metadata: const EvalScenarioMetadata(
+        capabilityIds: ['task.seeded.proposal.schema'],
+      ),
+    );
+
+    final messages = validateEvalScenario(
+      scenario,
+    ).map((issue) => issue.message).toList();
+
+    expect(
+      messages,
+      _containsMessage(
+        'proposal set bad-fixture item 0 has unknown proposal toolName '
+        'add_multiple_checklist_items for taskAgent',
+      ),
+    );
+    expect(
+      messages,
+      _containsMessage(
+        'proposal set bad-fixture item 1 argsContain key name is not valid '
+        'for proposal toolName add_checklist_item',
+      ),
+    );
+  });
+
   test('validates scenario review metadata without requiring it globally', () {
     final base = EvalScenario(
       id: 'reviewed_fixture',
@@ -405,3 +660,76 @@ void main() {
     );
   });
 }
+
+EvalScenario _taskScenarioWithDurableState(ExpectedDurableState durableState) =>
+    EvalScenario(
+      id: 'task_proposal_oracle_schema',
+      title: 'Task proposal oracle schema',
+      agentKind: AgentKind.taskAgent,
+      appState: MockedAppState(
+        now: DateTime(2026, 6, 10, 7),
+        categoryIds: const ['cat-work'],
+        labels: const [
+          MockLabelDefinition(
+            id: 'lbl-release',
+            name: 'Release',
+            color: '#00AA00',
+          ),
+        ],
+        tasks: const [
+          MockTask(
+            id: 'task-known',
+            title: 'Known task',
+            status: 'OPEN',
+            categoryId: 'cat-work',
+            checklist: [
+              MockChecklistItem(id: 'ci-1', title: 'Old note'),
+              MockChecklistItem(id: 'ci-2', title: 'Move to follow-up'),
+            ],
+          ),
+        ],
+      ),
+      userInput: const UserInput(
+        transcript: 'Validate expected proposals.',
+        triggerTokens: {'decided_task:task-known'},
+      ),
+      metadata: const EvalScenarioMetadata(
+        capabilityIds: ['task.proposal.schema'],
+      ),
+      expectations: EvalExpectations(durableState: durableState),
+    );
+
+EvalScenario _plannerScenarioWithDurableState(
+  ExpectedDurableState durableState,
+) => EvalScenario(
+  id: 'planner_proposal_oracle_schema',
+  title: 'Planner proposal oracle schema',
+  agentKind: AgentKind.planningAgent,
+  appState: MockedAppState(
+    now: DateTime(2026, 6, 10, 7),
+    categoryIds: const ['cat-work'],
+    tasks: const [
+      MockTask(
+        id: 'task-known',
+        title: 'Known task',
+        status: 'OPEN',
+        categoryId: 'cat-work',
+      ),
+    ],
+  ),
+  userInput: const UserInput(
+    transcript: 'Validate expected planner proposals.',
+    triggerTokens: {'drafting:2026-06-10'},
+  ),
+  metadata: const EvalScenarioMetadata(
+    capabilityIds: ['planner.proposal.schema'],
+  ),
+  expectations: EvalExpectations(durableState: durableState),
+);
+
+Matcher _containsMessage(String fragment) => contains(
+  predicate<String>(
+    (message) => message.contains(fragment),
+    'message containing "$fragment"',
+  ),
+);

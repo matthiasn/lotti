@@ -1,3 +1,5 @@
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+
 import 'eval_models.dart';
 import 'eval_provenance.dart';
 
@@ -198,9 +200,18 @@ List<EvalScenarioValidationIssue> validateEvalScenario(EvalScenario scenario) {
     if (set.items.isEmpty) {
       add('proposal set ${set.id} has no items');
     }
-    for (final item in set.items) {
+    for (var i = 0; i < set.items.length; i++) {
+      final item = set.items[i];
       if (item.toolName.trim().isEmpty) {
         add('proposal set ${set.id} has an item with empty toolName');
+      } else {
+        _validatePersistedProposalItem(
+          add,
+          'proposal set ${set.id} item $i',
+          item.toolName,
+          item.args,
+          scenario.agentKind,
+        );
       }
       if (item.humanSummary.trim().isEmpty) {
         add('proposal set ${set.id} has an item with empty humanSummary');
@@ -265,6 +276,7 @@ List<EvalScenarioValidationIssue> validateEvalScenario(EvalScenario scenario) {
   _validateDurableStateExpectations(
     add,
     scenario.expectations.durableState,
+    agentKind: scenario.agentKind,
     taskIds: taskIds,
     captureIds: captureIds,
     categoryIds: categoryIds,
@@ -339,6 +351,7 @@ void _validateExpectations(
 void _validateDurableStateExpectations(
   void Function(String message) add,
   ExpectedDurableState expected, {
+  required AgentKind agentKind,
   required Set<String> taskIds,
   required Set<String> captureIds,
   required Set<String> categoryIds,
@@ -356,14 +369,26 @@ void _validateDurableStateExpectations(
   }
 
   for (final matcher in expected.requiredProposals) {
-    _validateProposalMatcher(add, 'requiredProposals', matcher, taskIds);
+    _validateProposalMatcher(
+      add,
+      'requiredProposals',
+      matcher,
+      taskIds,
+      agentKind,
+    );
   }
   for (final group in expected.requiredProposalAnyOf) {
     if (group.anyOf.isEmpty) {
       add('durableState.requiredProposalAnyOf has an empty anyOf group');
     }
     for (final matcher in group.anyOf) {
-      _validateProposalMatcher(add, 'requiredProposalAnyOf', matcher, taskIds);
+      _validateProposalMatcher(
+        add,
+        'requiredProposalAnyOf',
+        matcher,
+        taskIds,
+        agentKind,
+      );
     }
   }
   for (final count in expected.proposalCounts) {
@@ -379,6 +404,7 @@ void _validateDurableStateExpectations(
       'proposalCounts.matcher',
       count.matcher,
       taskIds,
+      agentKind,
     );
     if (count.matcher.status == null && count.matcher.changeSetStatus == null) {
       add(
@@ -388,7 +414,13 @@ void _validateDurableStateExpectations(
     }
   }
   for (final matcher in expected.forbiddenProposals) {
-    _validateProposalMatcher(add, 'forbiddenProposals', matcher, taskIds);
+    _validateProposalMatcher(
+      add,
+      'forbiddenProposals',
+      matcher,
+      taskIds,
+      agentKind,
+    );
   }
 
   for (final matcher in expected.requiredPlannedBlocks) {
@@ -527,11 +559,226 @@ void _validateProposalMatcher(
   String field,
   ExpectedProposalState matcher,
   Set<String> taskIds,
+  AgentKind agentKind,
 ) {
   final targetId = matcher.targetId;
-  if (targetId != null && !taskIds.contains(targetId)) {
+  if (targetId != null &&
+      !_isKnownProposalTarget(agentKind, targetId, taskIds)) {
     add('durableState.$field references unknown target $targetId');
   }
+  _validateProposalToolAndArgs(
+    add,
+    field: 'durableState.$field',
+    agentKind: agentKind,
+    toolName: matcher.toolName,
+    argKeys: matcher.argsContain.keys.toSet(),
+  );
+}
+
+bool _isKnownProposalTarget(
+  AgentKind agentKind,
+  String targetId,
+  Set<String> taskIds,
+) {
+  return switch (agentKind) {
+    AgentKind.taskAgent => taskIds.contains(targetId),
+    AgentKind.planningAgent => targetId.startsWith('day_agent_plan:'),
+  };
+}
+
+void _validatePersistedProposalItem(
+  void Function(String message) add,
+  String field,
+  String toolName,
+  Map<String, dynamic> args,
+  AgentKind agentKind,
+) {
+  _validateProposalToolAndArgs(
+    add,
+    field: field,
+    agentKind: agentKind,
+    toolName: toolName,
+    argKeys: args.keys.toSet(),
+  );
+}
+
+void _validateProposalToolAndArgs(
+  void Function(String message) add, {
+  required String field,
+  required AgentKind agentKind,
+  required String? toolName,
+  required Set<String> argKeys,
+}) {
+  final knownArgsByTool = _proposalArgKeysFor(agentKind);
+
+  if (toolName == null) {
+    if (argKeys.isNotEmpty &&
+        !knownArgsByTool.values.any((keys) => keys.containsAll(argKeys))) {
+      add(
+        '$field argsContain keys ${_formatAllowedValues(argKeys)} do not '
+        'match any known proposal tool for ${agentKind.name}',
+      );
+    }
+    return;
+  }
+
+  final trimmedToolName = toolName.trim();
+  if (trimmedToolName.isEmpty) {
+    add('$field has an empty toolName');
+    return;
+  }
+  if (trimmedToolName != toolName) {
+    add('$field has leading or trailing whitespace in toolName $toolName');
+    return;
+  }
+
+  final allowedArgKeys = knownArgsByTool[toolName];
+  if (allowedArgKeys == null) {
+    add(
+      '$field has unknown proposal toolName $toolName '
+      'for ${agentKind.name} (allowed: '
+      '${_formatAllowedValues(knownArgsByTool.keys)})',
+    );
+    return;
+  }
+
+  for (final argKey in argKeys) {
+    if (!allowedArgKeys.contains(argKey)) {
+      add(
+        '$field argsContain key $argKey is not valid for '
+        'proposal toolName $toolName (allowed: '
+        '${_formatAllowedValues(allowedArgKeys)})',
+      );
+    }
+  }
+}
+
+Map<String, Set<String>> _proposalArgKeysFor(AgentKind agentKind) {
+  return switch (agentKind) {
+    AgentKind.taskAgent => _taskProposalArgKeys,
+    AgentKind.planningAgent => _plannerProposalArgKeys,
+  };
+}
+
+final Map<String, Set<String>> _taskProposalArgKeys = _buildTaskProposalArgs();
+
+Map<String, Set<String>> _buildTaskProposalArgs() {
+  final definitionsByName = {
+    for (final tool in AgentToolRegistry.taskAgentTools) tool.name: tool,
+  };
+  final result = <String, Set<String>>{};
+
+  for (final toolName in AgentToolRegistry.deferredTools) {
+    final definition = definitionsByName[toolName];
+    if (definition == null) continue;
+    final batchKey = AgentToolRegistry.explodedBatchTools[toolName];
+    if (batchKey == null) {
+      result[toolName] = _schemaPropertyKeys(definition.parameters);
+      continue;
+    }
+
+    result[_singularTaskProposalToolName(toolName)] = {
+      ..._arrayItemPropertyKeys(definition.parameters, batchKey),
+      ..._schemaPropertyKeys(
+        definition.parameters,
+      ).where((key) => key != batchKey),
+    };
+  }
+
+  final followUpArgs = result[TaskAgentToolNames.createFollowUpTask];
+  if (followUpArgs != null) {
+    result[TaskAgentToolNames.createFollowUpTask] = {
+      ...followUpArgs,
+      '_placeholderTaskId',
+    };
+  }
+
+  return result;
+}
+
+String _singularTaskProposalToolName(String toolName) {
+  return switch (toolName) {
+    TaskAgentToolNames.addMultipleChecklistItems =>
+      TaskAgentToolNames.addChecklistItem,
+    TaskAgentToolNames.updateChecklistItems =>
+      TaskAgentToolNames.updateChecklistItem,
+    TaskAgentToolNames.assignTaskLabels => TaskAgentToolNames.assignTaskLabel,
+    TaskAgentToolNames.migrateChecklistItems =>
+      TaskAgentToolNames.migrateChecklistItem,
+    _ => throw ArgumentError(
+      'Unsupported batch proposal tool for validation: $toolName',
+    ),
+  };
+}
+
+const _plannerProposalArgKeys = <String, Set<String>>{
+  'add_block': {
+    'action',
+    'reason',
+    'toStart',
+    'toEnd',
+    'title',
+    'categoryId',
+    'taskId',
+    'type',
+    'blockReason',
+    'captureId',
+  },
+  'move_block': {
+    'action',
+    'reason',
+    'blockId',
+    'fromStart',
+    'fromEnd',
+    'fromTitle',
+    'fromCategoryId',
+    'toStart',
+    'toEnd',
+    'title',
+    'categoryId',
+    'taskId',
+    'type',
+    'blockReason',
+    'captureId',
+  },
+  'drop_block': {
+    'action',
+    'reason',
+    'blockId',
+    'fromStart',
+    'fromEnd',
+    'fromTitle',
+    'fromCategoryId',
+    'captureId',
+  },
+};
+
+Set<String> _schemaPropertyKeys(Map<String, dynamic> schema) {
+  final properties = _jsonObject(schema['properties']);
+  if (properties == null) return const {};
+  return properties.keys.toSet();
+}
+
+Set<String> _arrayItemPropertyKeys(
+  Map<String, dynamic> schema,
+  String arrayKey,
+) {
+  final properties = _jsonObject(schema['properties']);
+  final arraySchema = _jsonObject(properties?[arrayKey]);
+  final itemsSchema = _jsonObject(arraySchema?['items']);
+  if (itemsSchema == null) return const {};
+  return _schemaPropertyKeys(itemsSchema);
+}
+
+Map<String, dynamic>? _jsonObject(Object? value) {
+  if (value is Map<String, dynamic>) return value;
+  if (value is Map) return value.cast<String, dynamic>();
+  return null;
+}
+
+String _formatAllowedValues(Iterable<String> values) {
+  final sorted = values.toList()..sort();
+  return sorted.join(', ');
 }
 
 void _validateBlockMatcher(

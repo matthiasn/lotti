@@ -992,7 +992,7 @@ taskWorkflowRejectedProposalStickinessScenario = _reviewedScenario(
           items: const [
             MockProposalItem(
               toolName: 'add_checklist_item',
-              args: {'title': 'Legal review', 'legacySchema': true},
+              args: {'title': 'Legal review'},
               humanSummary: 'Add: "Legal review"',
               status: 'rejected',
             ),
@@ -1009,7 +1009,7 @@ taskWorkflowRejectedProposalStickinessScenario = _reviewedScenario(
           createdAt: DateTime(2026, 6, 9, 9, 40),
           reason: 'Not needed for this release.',
           humanSummary: 'Add: "Legal review"',
-          args: const {'title': 'Legal review', 'legacySchema': true},
+          args: const {'title': 'Legal review'},
         ),
       ],
     ),
@@ -1027,7 +1027,7 @@ taskWorkflowRejectedProposalStickinessScenario = _reviewedScenario(
             toolName: 'add_checklist_item',
             status: 'rejected',
             changeSetStatus: 'resolved',
-            argsContain: {'title': 'Legal review', 'legacySchema': true},
+            argsContain: {'title': 'Legal review'},
             humanSummaryContains: {'Legal review'},
           ),
         ],
