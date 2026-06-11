@@ -378,6 +378,72 @@ void main() {
     );
   });
 
+  test(
+    'fails the run after writing traces when Level 1 semantics fail',
+    () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'lotti-eval-matrix-level1-failure-',
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+      });
+      final target = _RecordingTarget();
+      final writer = TraceWriter(runsRoot: tempDir.path);
+      final runner = EvalMatrixRunner(target: target, writer: writer);
+
+      await expectLater(
+        runner.run(
+          runId: 'run-level1-failure',
+          scenarios: [taskWorkflowStructuredUpdateScenario],
+          profiles: const [singleProfile],
+        ),
+        throwsA(
+          isA<StateError>()
+              .having(
+                (error) => error.message,
+                'message',
+                contains(
+                  'task_workflow_structured_update::single-local::trial-0 '
+                  'expected_tools:',
+                ),
+              )
+              .having(
+                (error) => error.message,
+                'message',
+                contains('missing required: update_report'),
+              )
+              .having(
+                (error) => error.message,
+                'message',
+                contains('expected_tool_calls:'),
+              ),
+        ),
+      );
+
+      expect(target.calls, [
+        'task_workflow_structured_update::single-local::run-level1-failure::0',
+      ]);
+      final traces = await writer.readTraces('run-level1-failure');
+      expect(traces, hasLength(1));
+      final trace = traces.single;
+      expect(trace.output.success, isTrue);
+      expect(trace.level1Passed, isFalse);
+      expect(
+        trace.level1Checks
+            .where((check) => !check.passed)
+            .map(
+              (check) => check.name,
+            ),
+        containsAll({
+          'expected_tools',
+          'expected_tool_calls',
+          'expected_durable_state',
+        }),
+      );
+      expect(await writer.readManifest('run-level1-failure'), isNotNull);
+    },
+  );
+
   test('rejects promotion plans for another scenario set before running', () {
     final target = _RecordingTarget();
     final runner = EvalMatrixRunner(target: target);
@@ -698,7 +764,7 @@ class _RecordingTarget extends EvalTarget {
       '${context.trialIndex}',
     );
     cellIds.add(context.cellId);
-    return _outputFor(profile);
+    return _outputForScenario(scenario, profile);
   }
 }
 
@@ -776,6 +842,49 @@ AgentRunOutput _outputFor(EvalProfile profile) {
     providerDecision: profileConfig.toProviderDecisionRecord(
       envPresence: const {'OPENAI_API_KEY': true},
     ),
+  );
+}
+
+AgentRunOutput _outputForScenario(EvalScenario scenario, EvalProfile profile) {
+  if (scenario.id != plannerMorningCapacityScenario.id) {
+    return _outputFor(profile);
+  }
+  final base = _outputFor(profile);
+  return AgentRunOutput(
+    success: base.success,
+    usage: base.usage,
+    report: base.report,
+    toolCalls: const [
+      ToolCallRecord(
+        name: 'draft_day_plan',
+        args: {
+          'dayId': kPlannerWorkflowDayId,
+          'decidedTaskIds': ['task-run', 'task-adr'],
+        },
+      ),
+    ],
+    toolResults: const [
+      ToolResultRecord(name: 'draft_day_plan', success: true),
+    ],
+    plannedBlocks: [
+      PlannedBlockRecord(
+        id: 'plan-run',
+        categoryId: 'cat-health',
+        start: DateTime(2026, 6, 9, 7, 30),
+        end: DateTime(2026, 6, 9, 8, 10),
+        taskId: 'task-run',
+      ),
+      PlannedBlockRecord(
+        id: 'plan-adr',
+        categoryId: 'cat-work',
+        start: DateTime(2026, 6, 9, 9),
+        end: DateTime(2026, 6, 9, 11),
+        taskId: 'task-adr',
+      ),
+    ],
+    plannedCapacityMinutes: scenario.appState.capacityMinutes,
+    resolvedModel: base.resolvedModel,
+    providerDecision: base.providerDecision,
   );
 }
 

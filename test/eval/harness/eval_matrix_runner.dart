@@ -426,7 +426,7 @@ class EvalMatrixRunner {
       traces.add(trace);
     }
 
-    EvalRunVerifier.verify(
+    final verification = EvalRunVerifier.verify(
       runId: runId,
       traces: traces,
       scenarios: planned.scenarios,
@@ -434,7 +434,14 @@ class EvalMatrixRunner {
       manifest: planned.manifest,
       artifactNames: _artifactNames(runId),
       requireVerdicts: false,
-    ).throwIfFailed();
+    );
+    final errors = [
+      ..._failedLevel1CheckErrors(traces),
+      ...verification.errors,
+    ];
+    if (errors.isNotEmpty) {
+      throw StateError(errors.join('\n'));
+    }
 
     return EvalMatrixRunResult(
       manifest: planned.manifest,
@@ -617,6 +624,23 @@ class EvalMatrixRunner {
     }
     names.sort();
     return names;
+  }
+
+  List<String> _failedLevel1CheckErrors(List<EvalTrace> traces) {
+    final errors = <String>[];
+    for (final trace in traces) {
+      final wake = trace.cascadeWake;
+      final label = [
+        trace.scenario.id,
+        trace.profile.name,
+        'trial-${trace.trialIndex}',
+        if (wake != null) 'wake-${wake.wakeIndex}',
+      ].join('::');
+      for (final check in trace.level1Checks.where((check) => !check.passed)) {
+        errors.add('$label ${check.name}: ${check.detail}');
+      }
+    }
+    return errors;
   }
 
   void _validatePromotionPlanForRun(

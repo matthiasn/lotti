@@ -191,6 +191,12 @@ and persisted proposals. Generated reports and summaries are still read into
 `AgentRunOutput.report`, trace JSON, and judge inputs, but free-text quality
 should be judged by LLM/human comparative review and quorum rather than brittle
 Level 1 string assertions.
+Current active slice makes the main matrix runner fail closed on deterministic
+semantic failures: `EvalMatrixRunner.run(...)` still writes the complete trace
+matrix first, then exits non-zero when any `EvalTrace.level1Checks` entry
+failed. Artifact/provenance verification still runs in the same pass, so a
+failed live model attempt leaves debuggable traces without looking like a green
+eval run.
 Current active slice adds that comparative-review data model:
 `EvalPairwisePreferenceVote` binds two trace artifacts by run, scenario,
 profile, trial, cascade identity, trace digest, scenario digest, and profile
@@ -757,8 +763,9 @@ catch regressions, not just that a widget built.
   `EvalTraceCascadeWake` metadata.
 - `EvalMatrixRunner` executes the full `scenario × profile × trialIndex` matrix,
   recomputes Level 1 checks, writes one trace per cell, keeps trace read order
-  deterministic, and records target exceptions as failed traces so matrix cells
-  are auditable instead of silently missing.
+  deterministic, records target exceptions as failed traces so matrix cells
+  are auditable instead of silently missing, and fails the run after artifact
+  writes when any deterministic Level 1 check fails.
 - `EvalRunVerifier` enforces exact run matrix coverage, rejects orphan verdicts,
   rejects trace-embedded scenario/profile payload drift from the canonical
   catalog, recomputes Level 1 checks from the canonical scenario/profile,
