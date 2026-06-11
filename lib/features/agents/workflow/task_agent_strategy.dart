@@ -467,6 +467,13 @@ class TaskAgentStrategy extends ConversationStrategy {
   static Map<String, dynamic> debugParseToolArguments(String raw) =>
       _parseToolArguments(raw);
 
+  /// Test seam for the pure human-summary formatter.
+  @visibleForTesting
+  static String debugGenerateHumanSummary(
+    String toolName,
+    Map<String, dynamic> args,
+  ) => TaskAgentChangeHandlers._generateHumanSummary(toolName, args);
+
   /// Parses tool call arguments from raw JSON, with resilience for common
   /// local model quirks (markdown fencing, trailing text, etc.).
   static Map<String, dynamic> _parseToolArguments(String raw) {

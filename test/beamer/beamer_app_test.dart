@@ -124,6 +124,11 @@ class _CountingAiSetupPromptService extends AiSetupPromptService {
   }
 }
 
+class _LoadingThemingController extends ThemingController {
+  @override
+  ThemingState build() => const ThemingState();
+}
+
 class _AppScreenLocation extends BeamLocation<BeamState> {
   _AppScreenLocation(super.routeInformation);
 
@@ -524,6 +529,38 @@ void main() {
       );
 
       expect(clampedIndex, 0);
+    });
+  });
+
+  group('MyBeamerApp loading shell', () {
+    testWidgets('renders loading shell while themes are unresolved', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      when(() => mockNavService.currentPath).thenReturn('/');
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            themingControllerProvider.overrideWith(
+              _LoadingThemingController.new,
+            ),
+            enableTooltipsProvider.overrideWith(
+              (ref) => Stream<bool>.value(true),
+            ),
+            agentInitializationProvider.overrideWith((ref) async {}),
+          ],
+          child: MyBeamerApp(navService: mockNavService),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+
+      expect(find.text('Loading...'), findsOneWidget);
+      expect(find.byType(MaterialApp), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 1));
     });
   });
 

@@ -98,6 +98,46 @@ bool _hasIncomingMessageEvent(
   );
 }
 
+Set<String> _incomingSyncMessageIdsWithPrefix(
+  List<Map<String, Object?>> events, {
+  required String roomId,
+  required String idPrefix,
+}) {
+  return events
+      .where(
+        (event) =>
+            event['event'] == 'incomingMessage' &&
+            event['roomId'] == roomId &&
+            event['messageType'] == 'com.lotti.sync.message',
+      )
+      .map(_decodeIncomingSyncMessageId)
+      .whereType<String>()
+      .where((id) => id.startsWith(idPrefix))
+      .toSet();
+}
+
+String? _decodeIncomingSyncMessageId(Map<String, Object?> event) {
+  final text = event['text'];
+  if (text is! String) return null;
+
+  try {
+    final decoded = json.decode(utf8.decode(base64.decode(text)));
+    if (decoded is! Map<String, dynamic>) return null;
+    if (decoded['runtimeType'] != 'journalEntity') return null;
+
+    final id = decoded['id'];
+    return id is String ? id : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+Set<String> _expectedOutboxIds(String prefix, int count) {
+  return {
+    for (var i = 1; i <= count; i++) '$prefix-$i',
+  };
+}
+
 bool _shouldLogHostEvent(Map<String, Object?> event) {
   final name = event['event'];
   if (name == 'ready' ||
@@ -692,6 +732,14 @@ void main() {
 
         final host1EventsBaseline = host1Events.length;
         final host2EventsBaseline = host2Events.length;
+        final expectedHost1OutboxIds = _expectedOutboxIds(
+          'phase3-outbox-host1',
+          outboxItemCount,
+        );
+        final expectedHost2OutboxIds = _expectedOutboxIds(
+          'phase3-outbox-host2',
+          outboxItemCount,
+        );
 
         debugPrint('[TEST] Enqueued $outboxItemCount durable outbox rows');
         final host1KickResult = await host1.send('kickOutbox');
@@ -723,16 +771,12 @@ void main() {
           message: 'Host2 did not receive all durable outbox messages',
           timeout: const Duration(seconds: 40),
           condition: () async {
-            final deliveredCount = host2Events
-                .skip(host2EventsBaseline)
-                .where(
-                  (event) =>
-                      event['event'] == 'incomingMessage' &&
-                      event['roomId'] == roomId &&
-                      event['messageType'] == 'com.lotti.sync.message',
-                )
-                .length;
-            return deliveredCount >= outboxItemCount;
+            final deliveredIds = _incomingSyncMessageIdsWithPrefix(
+              host2Events.skip(host2EventsBaseline).toList(),
+              roomId: roomId,
+              idPrefix: 'phase3-outbox-host1',
+            );
+            return deliveredIds.containsAll(expectedHost1OutboxIds);
           },
         );
 
@@ -752,16 +796,12 @@ void main() {
           message: 'Host1 did not receive all durable outbox messages',
           timeout: const Duration(seconds: 40),
           condition: () async {
-            final deliveredCount = host1Events
-                .skip(host1EventsBaseline)
-                .where(
-                  (event) =>
-                      event['event'] == 'incomingMessage' &&
-                      event['roomId'] == roomId &&
-                      event['messageType'] == 'com.lotti.sync.message',
-                )
-                .length;
-            return deliveredCount >= outboxItemCount;
+            final deliveredIds = _incomingSyncMessageIdsWithPrefix(
+              host1Events.skip(host1EventsBaseline).toList(),
+              roomId: roomId,
+              idPrefix: 'phase3-outbox-host2',
+            );
+            return deliveredIds.containsAll(expectedHost2OutboxIds);
           },
         );
 
@@ -776,20 +816,15 @@ void main() {
               'Expected $outboxItemCount sendAck events, got $finalAckCount',
         );
 
-        final finalDeliveredCount = host2Events
-            .skip(host2EventsBaseline)
-            .where(
-              (event) =>
-                  event['event'] == 'incomingMessage' &&
-                  event['roomId'] == roomId &&
-                  event['messageType'] == 'com.lotti.sync.message',
-            )
-            .length;
+        final finalDeliveredIds = _incomingSyncMessageIdsWithPrefix(
+          host2Events.skip(host2EventsBaseline).toList(),
+          roomId: roomId,
+          idPrefix: 'phase3-outbox-host1',
+        );
         expect(
-          finalDeliveredCount,
-          outboxItemCount,
-          reason:
-              'Expected $outboxItemCount durable incoming messages, got $finalDeliveredCount',
+          finalDeliveredIds,
+          expectedHost1OutboxIds,
+          reason: 'Expected host2 to receive all durable host1 outbox ids',
         );
 
         final host2AckCount = host2Events
@@ -803,20 +838,15 @@ void main() {
               'Expected $outboxItemCount host2 sendAck events, got $host2AckCount',
         );
 
-        final host1DeliveredCount = host1Events
-            .skip(host1EventsBaseline)
-            .where(
-              (event) =>
-                  event['event'] == 'incomingMessage' &&
-                  event['roomId'] == roomId &&
-                  event['messageType'] == 'com.lotti.sync.message',
-            )
-            .length;
+        final host1DeliveredIds = _incomingSyncMessageIdsWithPrefix(
+          host1Events.skip(host1EventsBaseline).toList(),
+          roomId: roomId,
+          idPrefix: 'phase3-outbox-host2',
+        );
         expect(
-          host1DeliveredCount,
-          outboxItemCount,
-          reason:
-              'Expected $outboxItemCount durable incoming messages on host1, got $host1DeliveredCount',
+          host1DeliveredIds,
+          expectedHost2OutboxIds,
+          reason: 'Expected host1 to receive all durable host2 outbox ids',
         );
 
         debugPrint('[TEST] Checking encryption health of both hosts...');

@@ -208,11 +208,6 @@ extension TaskAgentChangeHandlers on TaskAgentStrategy {
         'Set status to ${args['status'] ?? '?'}',
       TaskAgentToolNames.setTaskLanguage =>
         'Set language to "${args['languageCode'] ?? '?'}"',
-      TaskAgentToolNames.assignTaskLabels => () {
-        final labels = args['labels'];
-        final count = labels is List ? labels.length : 0;
-        return 'Assign $count label(s)';
-      }(),
       TaskAgentToolNames.createFollowUpTask =>
         'Create follow-up task: "${args['title'] ?? ''}"',
       TaskAgentToolNames.createTimeEntry => () {

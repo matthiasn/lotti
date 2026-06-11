@@ -1540,6 +1540,62 @@ void main() {
       );
 
       test(
+        'getTasks with label filter and restricted stars uses fallback query',
+        () async {
+          final base = DateTime(2024, 11, 21, 10);
+          await db!.upsertLabelDefinition(
+            LabelDefinition(
+              id: 'lbl-starred-fallback',
+              createdAt: base,
+              updatedAt: base,
+              name: 'StarredFallback',
+              color: '#778899',
+              vectorClock: null,
+            ),
+          );
+          final starredTask = buildTaskEntry(
+            id: 'starred-fallback-task',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'sft-status',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'sft-cat',
+            starred: true,
+          );
+          final unstarredTask = buildTaskEntry(
+            id: 'unstarred-fallback-task',
+            timestamp: base.add(const Duration(minutes: 1)),
+            status: TaskStatus.open(
+              id: 'uft-status',
+              createdAt: base.add(const Duration(minutes: 1)),
+              utcOffset: 0,
+            ),
+            categoryId: 'sft-cat',
+          );
+          await db!.upsertJournalDbEntity(toDbEntity(starredTask));
+          await db!.upsertJournalDbEntity(toDbEntity(unstarredTask));
+          await db!.insertLabel(
+            'starred-fallback-task',
+            'lbl-starred-fallback',
+          );
+          await db!.insertLabel(
+            'unstarred-fallback-task',
+            'lbl-starred-fallback',
+          );
+
+          final results = await db!.getTasks(
+            starredStatuses: const [true],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['sft-cat'],
+            labelIds: const ['lbl-starred-fallback'],
+          );
+          expect(results.map((e) => e.meta.id), ['starred-fallback-task']);
+        },
+      );
+
+      test(
         'getTasks with private-filtered path (not all-private)',
         () async {
           final base = DateTime(2024, 11, 22, 9);
@@ -1894,6 +1950,72 @@ void main() {
           // Only the starred P1 task matches both the starred filter and the
           // priority filter.
           expect(result.map((e) => e.meta.id), ['fbdfp-p1-starred']);
+        },
+      );
+
+      test(
+        'priority filter without sortByDate uses filteredTasksFastWithPriorities',
+        () async {
+          final base = DateTime(2024, 10, 16, 9);
+          final p1Starred = buildTaskEntry(
+            id: 'fbfp-p1-starred',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'fbfp-s1',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'fbfp-cat',
+            starred: true,
+          );
+          final p3Starred = buildTaskEntry(
+            id: 'fbfp-p3-starred',
+            timestamp: base.add(const Duration(minutes: 1)),
+            status: TaskStatus.open(
+              id: 'fbfp-s2',
+              createdAt: base.add(const Duration(minutes: 1)),
+              utcOffset: 0,
+            ),
+            categoryId: 'fbfp-cat',
+            starred: true,
+          );
+          final p1Unstarred = buildTaskEntry(
+            id: 'fbfp-p1-unstarred',
+            timestamp: base.add(const Duration(minutes: 2)),
+            status: TaskStatus.open(
+              id: 'fbfp-s3',
+              createdAt: base.add(const Duration(minutes: 2)),
+              utcOffset: 0,
+            ),
+            categoryId: 'fbfp-cat',
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(p1Starred));
+          await db!.upsertJournalDbEntity(toDbEntity(p3Starred));
+          await db!.upsertJournalDbEntity(toDbEntity(p1Unstarred));
+          await db!.updateTaskPriorityColumn(
+            id: 'fbfp-p1-starred',
+            priority: 'P1',
+            rank: 1,
+          );
+          await db!.updateTaskPriorityColumn(
+            id: 'fbfp-p3-starred',
+            priority: 'P3',
+            rank: 3,
+          );
+          await db!.updateTaskPriorityColumn(
+            id: 'fbfp-p1-unstarred',
+            priority: 'P1',
+            rank: 1,
+          );
+
+          final result = await db!.getTasks(
+            starredStatuses: const [true],
+            taskStatuses: const ['OPEN'],
+            categoryIds: const ['fbfp-cat'],
+            priorities: const ['P1'],
+          );
+          expect(result.map((e) => e.meta.id), ['fbfp-p1-starred']);
         },
       );
 

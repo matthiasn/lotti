@@ -405,12 +405,6 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         },
         executeToolHandler: (toolName, args, manager) =>
             toolDispatcher.dispatch(toolName, args, taskId),
-        resolveRelatedTaskDetails: (requestedTaskId) {
-          return this.aiInputRepository.buildRelatedTaskDetailsJson(
-            currentTaskId: taskId,
-            requestedTaskId: requestedTaskId,
-          );
-        },
         // The completed entries that `update_time_entry` may target — the same
         // set rendered in the "Editable Time Entries" prompt section. A
         // referenced entryId outside this set is a hallucinated id.

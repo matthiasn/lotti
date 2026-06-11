@@ -6262,6 +6262,51 @@ void main() {
           expect(result.success, isTrue);
         },
       );
+
+      test(
+        'a source rendering failure is non-fatal before capture starts',
+        () async {
+          final capture = _RecordingCaptureService();
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenThrow(Exception('linked entities unavailable'));
+          final workflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            inputCaptureService: capture,
+          );
+          stubFullExecutePath(
+            mockAgentRepository: mockAgentRepository,
+            mockAiInputRepository: mockAiInputRepository,
+            mockAiConfigRepository: mockAiConfigRepository,
+            mockConversationManager: mockConversationManager,
+            testAgentState: testAgentState,
+            geminiModel: geminiModel,
+            geminiProvider: geminiProvider,
+            agentId: agentId,
+            taskId: taskId,
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(capture.callCount, 0);
+        },
+      );
     });
 
     group('compaction read-flip (ADR 0017/0020)', () {
