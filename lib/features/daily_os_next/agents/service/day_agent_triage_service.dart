@@ -19,7 +19,7 @@ extension DayAgentTriageService on DayAgentCaptureService {
     if (entity is! Task) {
       throw DayAgentCaptureException('task $taskId not found');
     }
-    if (!DayAgentCaptureService._categoryAllowed(
+    if (!_categoryAllowed(
       entity.meta.categoryId,
       identity.allowedCategoryIds,
     )) {

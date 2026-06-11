@@ -102,21 +102,11 @@ abstract class _DayAgentPlanServiceBase {
     List<int>? itemIndices,
   });
 
-  Future<Map<String, Object?>> _acceptPlanDiffTool({
-    required String agentId,
-    required Map<String, dynamic> args,
-  });
-
   Future<CaptureEntity?> _captureOrNull(String captureId);
 
   Future<DayPlanEntity> commitDay({
     required String agentId,
     required String dayId,
-  });
-
-  Future<Map<String, Object?>> _commitDayTool({
-    required String agentId,
-    required Map<String, dynamic> args,
   });
 
   Future<Map<String, Object?>> _draftDayPlanTool(
@@ -173,11 +163,6 @@ abstract class _DayAgentPlanServiceBase {
     List<int>? itemIndices,
   });
 
-  Future<Map<String, Object?>> _revertPlanDiffTool({
-    required String agentId,
-    required Map<String, dynamic> args,
-  });
-
   Future<List<DayAgentLearningCard>> summarizeRecentPatterns({
     required String agentId,
     required DateTime asOf,
@@ -192,11 +177,6 @@ abstract class _DayAgentPlanServiceBase {
   Future<DayPlanEntity> uncommitDay({
     required String agentId,
     required String dayId,
-  });
-
-  Future<Map<String, Object?>> _uncommitDayTool({
-    required String agentId,
-    required Map<String, dynamic> args,
   });
 }
 

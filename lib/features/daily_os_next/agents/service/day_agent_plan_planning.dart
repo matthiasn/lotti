@@ -22,22 +22,6 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
           runKey: runKey,
           args: args,
         ),
-        DayAgentToolNames.acceptDiff => await _acceptPlanDiffTool(
-          agentId: agentId,
-          args: args,
-        ),
-        DayAgentToolNames.revertDiff => await _revertPlanDiffTool(
-          agentId: agentId,
-          args: args,
-        ),
-        DayAgentToolNames.commitDay => await _commitDayTool(
-          agentId: agentId,
-          args: args,
-        ),
-        DayAgentToolNames.uncommitDay => await _uncommitDayTool(
-          agentId: agentId,
-          args: args,
-        ),
         _ => throw DayAgentCaptureException('unknown tool "$toolName"'),
       };
       return DayAgentDirectToolResult.success(data);
