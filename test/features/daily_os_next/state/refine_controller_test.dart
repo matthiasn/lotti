@@ -178,6 +178,50 @@ void main() {
       expect(state.currentPlan, state.diff!.updatedPlan);
     });
 
+    test(
+      'a second accept() while the first round-trip is in flight is a '
+      'no-op: one agent call, one accepted emission',
+      () async {
+        final gate = Completer<void>();
+        final gatedAgent = _GatedAcceptAgent(gate: gate);
+        final container = makeContainer(overrideAgent: gatedAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+        expect(
+          container.read(refineControllerProvider(draft)).phase,
+          RefinePhase.diffReady,
+        );
+
+        // Count edges INTO accepted — a double-tap regression would emit
+        // two (each pops the host route once → double pop).
+        var acceptedEmissions = 0;
+        container.listen(refineControllerProvider(draft), (prev, next) {
+          if (prev?.phase != RefinePhase.accepted &&
+              next.phase == RefinePhase.accepted) {
+            acceptedEmissions++;
+          }
+        });
+
+        final first = notifier.accept();
+        expect(
+          container.read(refineControllerProvider(draft)).accepting,
+          isTrue,
+        );
+        final second = notifier.accept();
+        gate.complete();
+        await first;
+        await second;
+
+        final state = container.read(refineControllerProvider(draft));
+        expect(gatedAgent.acceptCalls, 1);
+        expect(acceptedEmissions, 1);
+        expect(state.phase, RefinePhase.accepted);
+        expect(state.accepting, isFalse);
+      },
+    );
+
     test('resolves individual diff changes with item indices', () async {
       final acceptedPlan = draft.copyWith(scheduledMinutes: 360);
       final agent = _RecordingRefineAgent(
@@ -802,5 +846,32 @@ class _ThrowingRevertAgent extends _ZeroLatencyAgent {
     List<int>? itemIndices,
   }) async {
     throw StateError('revert failed');
+  }
+}
+
+/// Suspends `acceptDiff` behind a gate and counts its calls, so a test
+/// can overlap a second `accept()` with an in-flight first one.
+class _GatedAcceptAgent extends MockDayAgent {
+  _GatedAcceptAgent({required this.gate})
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  final Completer<void> gate;
+  int acceptCalls = 0;
+
+  @override
+  Future<DraftPlan> acceptDiff(
+    PlanDiff diff, {
+    List<int>? itemIndices,
+  }) async {
+    acceptCalls++;
+    await gate.future;
+    return super.acceptDiff(diff, itemIndices: itemIndices);
   }
 }

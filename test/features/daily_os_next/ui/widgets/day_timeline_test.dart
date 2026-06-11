@@ -1435,4 +1435,75 @@ void main() {
       tags: 'glados',
     );
   });
+
+  group('DayBlock height tiers', () {
+    TimeBlock incident({int minutes = 22}) => TimeBlock(
+      id: 'tier-probe',
+      title: 'Production incident triage',
+      start: DateTime(2026, 5, 25, 10, 40),
+      end: DateTime(2026, 5, 25, 10, 40 + minutes),
+      type: TimeBlockType.manual,
+      state: TimeBlockState.completed,
+      category: _work,
+    );
+
+    Widget tierHarness({required double height, double textScale = 1.0}) =>
+        _wrap(
+          MediaQuery(
+            data: MediaQueryData(
+              size: const Size(1280, 1200),
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: Center(
+              child: SizedBox(
+                height: height,
+                width: 240,
+                child: DayBlock(block: incident(), tracked: true),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets(
+      'a 22px block at default text scale keeps a FITTED title — the '
+      'canonical short incident stays information, not just color',
+      (tester) async {
+        _setView(tester, const Size(1280, 1200));
+        await tester.pumpWidget(tierHarness(height: 22));
+        await tester.pump();
+
+        final title = find.text('Production incident triage');
+        expect(title, findsOneWidget);
+        // Content area = 22 − 2×step2 vertical padding = 14px; the fitted
+        // scaler shrinks the caption line to fit — never shears it.
+        expect(tester.getSize(title).height, lessThanOrEqualTo(14.01));
+      },
+    );
+
+    testWidgets('a micro block renders fill + stripe only (no text)', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 1200));
+      await tester.pumpWidget(tierHarness(height: 16));
+      await tester.pump();
+
+      // 16 − 8 padding = 8px content < 3/4 caption line → no glyphs; the
+      // DayBlock Semantics label still carries the title.
+      expect(find.text('Production incident triage'), findsNothing);
+    });
+
+    testWidgets(
+      'at 2.0x text the sliver line still fits its box (no shearing)',
+      (tester) async {
+        _setView(tester, const Size(1280, 1200));
+        await tester.pumpWidget(tierHarness(height: 36, textScale: 2));
+        await tester.pump();
+
+        final title = find.text('Production incident triage');
+        expect(title, findsOneWidget);
+        // Content area = 36 − 8 = 28px; the fitted line must not exceed it.
+        expect(tester.getSize(title).height, lessThanOrEqualTo(28.01));
+      },
+    );
+  });
 }

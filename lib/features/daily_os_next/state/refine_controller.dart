@@ -201,10 +201,24 @@ class RefineController extends Notifier<RefineState> {
           PlanDiffChangeDecision.accepted,
         ),
       );
-    } catch (_) {
-      // Re-arm the bar on failure instead of leaving it stuck busy.
-      if (ref.mounted) state = state.copyWith(accepting: false);
-      rethrow;
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daily_os_next',
+          context: ErrorDescription('while accepting a plan refinement'),
+        ),
+      );
+      if (!ref.mounted) return;
+      // Re-arm the bar and surface the failure in the problem notice
+      // (the caller fires accept() unawaited — a silent re-enable would
+      // look like the tap did nothing).
+      state = state.copyWith(
+        accepting: false,
+        problem: RefineProblem.proposalFailed,
+        problemDetail: error.toString(),
+      );
     }
   }
 
@@ -224,7 +238,9 @@ class RefineController extends Notifier<RefineState> {
 
   Future<void> revert() async {
     final diff = state.diff;
-    if (diff == null) return;
+    // `accepting` guard: a revert racing a whole-diff accept would make
+    // `currentPlan` last-write-wins between two agent round-trips.
+    if (diff == null || state.accepting) return;
     final agent = ref.read(dayAgentProvider);
     final itemIndices = _indicesForDecision(PlanDiffChangeDecision.pending);
     final restored = await agent.revertDiff(
@@ -342,7 +358,11 @@ class RefineController extends Notifier<RefineState> {
     required PlanDiffChangeDecision decision,
   }) async {
     final diff = state.diff;
-    if (diff == null || state.resolvingChangeId != null) return;
+    // `accepting` guard: a per-row resolve racing a whole-diff accept
+    // would make `currentPlan` last-write-wins between two round-trips.
+    if (diff == null || state.resolvingChangeId != null || state.accepting) {
+      return;
+    }
     final itemIndex = diff.changes.indexWhere(
       (change) => change.id == changeId,
     );

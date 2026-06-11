@@ -250,32 +250,40 @@ class _BlockContent extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Height-tiered content policy: never let text shear mid-glyph.
-        // Micro blocks (< one caption line) show fill + stripe only;
-        // short blocks a single centered title line; the subtitle joins
-        // from ~44px; two title lines from 64px. Both thresholds use
-        // SCALED line heights — at accessibility text sizes the text box
+        // Micro blocks (< ~3/4 caption line) show fill + stripe only;
+        // short blocks a single fitted title line; the subtitle joins
+        // from ~44px; two title lines from 64px. ALL thresholds use
+        // SCALED extents — at accessibility text sizes the text box
         // grows, so the tier a block qualifies for must grow with it.
         final textScaler = MediaQuery.textScalerOf(context);
         final lineHeight = textScaler.scale(
           tokens.typography.lineHeight.bodySmall,
         );
-        final sliverLineHeight = textScaler.scale(
-          tokens.typography.lineHeight.caption,
-        );
-        if (constraints.maxHeight < sliverLineHeight) {
-          // Too short for even one caption line — fill + stripe only
-          // (the Semantics label on DayBlock still carries the title).
+        final unscaledSliverLine = tokens.typography.lineHeight.caption;
+        final sliverLineHeight = textScaler.scale(unscaledSliverLine);
+        if (constraints.maxHeight < sliverLineHeight * 0.75) {
+          // Even a fitted caption line would be illegibly small — fill +
+          // stripe only (the Semantics label on DayBlock still carries
+          // the title).
           return const SizedBox.shrink();
         }
         if (constraints.maxHeight < lineHeight + 2) {
           // Sliver tier: one caption line so short recorded sessions
           // (the unplanned incident!) stay information, not just color.
+          // The line is FITTED to the available height via a clamped
+          // linear scaler — a 22-minute block at default zoom (content
+          // shorter than a full caption line) shrinks its glyphs to fit
+          // instead of dropping the title or shearing it mid-x-height.
+          final fittedScale =
+              math.min(sliverLineHeight, constraints.maxHeight) /
+              unscaledSliverLine;
           return Align(
             alignment: Alignment.centerLeft,
             child: Text(
               block.title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
+              textScaler: TextScaler.linear(fittedScale),
               style: tokens.typography.styles.others.caption.copyWith(
                 color: tracked
                     ? tokens.colors.text.highEmphasis
@@ -284,9 +292,11 @@ class _BlockContent extends StatelessWidget {
             ),
           );
         }
-        final compact = constraints.maxHeight < 44;
+        final compact = constraints.maxHeight < textScaler.scale(44);
         final showSubtitle = !isBuffer && !compact;
-        final titleMaxLines = constraints.maxHeight >= 64 ? 2 : 1;
+        final titleMaxLines = constraints.maxHeight >= textScaler.scale(64)
+            ? 2
+            : 1;
         // OverflowBox + ClipRect: duration-sized boxes clip content
         // gracefully at the block edge instead of throwing RenderFlex
         // overflows when a height lands between the visibility thresholds.
