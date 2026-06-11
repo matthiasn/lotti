@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/services/time_service.dart';
 
 import '../test_data/test_data.dart';
+import '../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -207,6 +208,77 @@ void main() {
 
         timeService.stop();
       });
+    });
+  });
+
+  // Starting a new timer while one is already running implicitly stops the
+  // old one. The outgoing entry must be persisted with its real stop time,
+  // otherwise it keeps the stale `dateTo` it was created with (≈ its start
+  // time) and the whole elapsed span is lost.
+  group('finalizes the outgoing timer when replaced', () {
+    setUp(() async {
+      // Registers a real DomainLogger so the finalize error path can log.
+      await setUpTestGetIt();
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    test('persists the outgoing entry once when a new timer replaces a '
+        'running one', () async {
+      final finalized = <JournalEntity>[];
+      final service = TimeService(
+        (entry) async => finalized.add(entry),
+      );
+      addTearDown(service.stop);
+
+      await service.start(testTextEntry, null);
+      expect(finalized, isEmpty, reason: 'nothing to finalize on first start');
+
+      await service.start(testImageEntry, null);
+
+      expect(finalized.map((e) => e.id), [testTextEntry.id]);
+      expect(service.getCurrent()?.id, testImageEntry.id);
+    });
+
+    test('does not persist when starting the very first timer', () async {
+      final finalized = <JournalEntity>[];
+      final service = TimeService(
+        (entry) async => finalized.add(entry),
+      );
+      addTearDown(service.stop);
+
+      await service.start(testTextEntry, null);
+
+      expect(finalized, isEmpty);
+    });
+
+    test(
+      'does not persist on an explicit stop (already saved by the caller)',
+      () async {
+        // The Stop button persists `dateTo = now` via EntryController.save
+        // before calling stop(); finalizing again here would double-write.
+        final finalized = <JournalEntity>[];
+        final service = TimeService(
+          (entry) async => finalized.add(entry),
+        );
+
+        await service.start(testTextEntry, null);
+        await service.stop();
+
+        expect(finalized, isEmpty);
+      },
+    );
+
+    test('a failing finalize still starts the replacing timer', () async {
+      final service = TimeService(
+        (_) async => throw Exception('db unavailable'),
+      );
+      addTearDown(service.stop);
+
+      await service.start(testTextEntry, null);
+      await service.start(testImageEntry, null);
+
+      expect(service.getCurrent()?.id, testImageEntry.id);
     });
   });
 }
