@@ -875,6 +875,15 @@ through `AgentToolExecutor`, which enforces the agent's allowed category set,
 captures post-write vector clocks when a journal entity changes, and persists
 audit messages for tool actions and tool results.
 
+Metadata extraction from task sources is part of this policy. When linked task
+logs or audio transcripts explicitly state task fields such as due dates,
+priorities, remaining-work estimates, labels, or checklist changes, the task
+agent is expected to call the matching metadata/checklist tool before publishing
+`update_report`. Reports can summarize observed source facts, but they must not
+claim that a metadata change was set or queued unless the tool succeeded, the
+proposal was queued, or the current task/proposal ledger already contains that
+value.
+
 Attention claims are producer-maintained. Task, project, health, and standing
 agreement agents should call `request_attention` during their own scheduled or
 event-driven wakes when their facts change or a planning horizon approaches.

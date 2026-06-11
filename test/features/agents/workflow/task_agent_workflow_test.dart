@@ -1034,6 +1034,14 @@ void main() {
           capturedSystemMessage,
           contains('queued at most ONCE per wake'),
         );
+        expect(
+          capturedSystemMessage,
+          contains('remaining-work estimate'),
+        );
+        expect(
+          capturedSystemMessage,
+          contains('Do not imply in `update_report`'),
+        );
         // Related-tasks scaffold is disabled to reduce context pollution.
         expect(
           capturedSystemMessage,

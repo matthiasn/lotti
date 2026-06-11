@@ -681,6 +681,10 @@ void main() {
       const behavior = ScriptedAgentBehavior(
         toolCalls: [
           ToolCallRecord(
+            name: 'set_task_language',
+            args: {'languageCode': 'en'},
+          ),
+          ToolCallRecord(
             name: 'update_report',
             args: {
               'oneLiner': 'Launch follow-up structured',
@@ -730,6 +734,10 @@ void main() {
       ).run(structuredScenario, kFrontierProfile);
 
       expect(output.success, isTrue, reason: output.error);
+      final languageResult = output.toolResults.singleWhere(
+        (result) => result.name == 'set_task_language',
+      );
+      expect(languageResult.success, isTrue, reason: languageResult.error);
       expect(output.proposals, hasLength(7));
       expect(
         output.proposals.map((proposal) => proposal.toolName),

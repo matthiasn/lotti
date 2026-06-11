@@ -84,6 +84,51 @@ void main() {
     expect(expectedToolCalls.detail, contains('update_checklist_items'));
   });
 
+  test('wake 0 rejects report-only estimate summaries', () {
+    const output = AgentRunOutput(
+      success: true,
+      usage: InferenceUsage.empty,
+      toolCalls: [
+        ToolCallRecord(
+          name: 'update_report',
+          args: {
+            'oneLiner': 'Notification redesign scoped',
+            'tldr': 'Remaining work is estimated at two hours.',
+          },
+        ),
+      ],
+      report: AgentReportRecord(
+        oneLiner: 'Notification redesign scoped',
+        tldr: 'Remaining work is estimated at two hours.',
+      ),
+    );
+
+    final checks = _cascadeWakeLevel1Checks(
+      scenario: taskWorkflowChecklistTranscriptCascadeScenario,
+      profile: kFrontierProfile,
+      wakeIndex: 0,
+      output: output,
+    );
+    final expectedTools = checks.singleWhere(
+      (check) => check.name == 'expected_tools',
+    );
+    final expectedToolCalls = checks.singleWhere(
+      (check) => check.name == 'expected_tool_calls',
+    );
+    final expectedDurableState = checks.singleWhere(
+      (check) => check.name == 'expected_durable_state',
+    );
+
+    expect(expectedTools.passed, isFalse);
+    expect(expectedTools.detail, contains('update_task_estimate'));
+    expect(expectedToolCalls.passed, isFalse);
+    expect(expectedToolCalls.detail, contains('update_task_estimate'));
+    expect(expectedToolCalls.detail, contains('120'));
+    expect(expectedDurableState.passed, isFalse);
+    expect(expectedDurableState.detail, contains('update_task_estimate'));
+    expect(expectedDurableState.detail, contains('120'));
+  });
+
   test(
     'produces live task-agent cascade traces',
     () async {

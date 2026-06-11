@@ -584,6 +584,12 @@ final taskWorkflowReleaseNotesScenario = EvalScenario(
   ),
 );
 
+const _taskWorkflowStructuredUpdateTranscript =
+    'For the launch follow-up, make it due tomorrow, mark priority P1, '
+    'estimate 45 minutes, tag it as release work, and add checklist '
+    'items: write the customer update, confirm screenshots, and send '
+    'to Sam.';
+
 final EvalScenario taskWorkflowStructuredUpdateScenario = _reviewedScenario(
   EvalScenario(
     id: 'task_workflow_structured_update',
@@ -629,13 +635,17 @@ final EvalScenario taskWorkflowStructuredUpdateScenario = _reviewedScenario(
           ],
         ),
       ],
+      taskLogEntries: [
+        MockTaskLogEntry(
+          id: 'audio-launch-structured-update',
+          taskId: 'task-launch',
+          transcript: _taskWorkflowStructuredUpdateTranscript,
+          createdAt: DateTime(2026, 6, 10, 8, 55),
+        ),
+      ],
     ),
     userInput: const UserInput(
-      transcript:
-          'For the launch follow-up, make it due tomorrow, mark priority P1, '
-          'estimate 45 minutes, tag it as release work, and add checklist '
-          'items: write the customer update, confirm screenshots, and send '
-          'to Sam.',
+      transcript: _taskWorkflowStructuredUpdateTranscript,
       triggerTokens: {'decided_task:task-launch'},
     ),
     expectations: const EvalExpectations(
@@ -1248,6 +1258,13 @@ final EvalScenario taskWorkflowChecklistTranscriptCascadeScenario =
           cascadeWakes: [
             ExpectedCascadeWakeState(
               wakeIndex: 0,
+              mustCallTools: {'update_task_estimate'},
+              requiredToolCalls: [
+                ExpectedToolCallState(
+                  toolName: 'update_task_estimate',
+                  argsContain: {'minutes': 120},
+                ),
+              ],
               durableState: ExpectedDurableState(
                 requiredProposals: [
                   ExpectedProposalState(
