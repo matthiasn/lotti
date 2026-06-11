@@ -178,6 +178,141 @@ void main() {
       expect(state.currentPlan, state.diff!.updatedPlan);
     });
 
+    test(
+      'a second accept() while the first round-trip is in flight is a '
+      'no-op: one agent call, one accepted emission',
+      () async {
+        final gate = Completer<void>();
+        final gatedAgent = _GatedAcceptAgent(gate: gate);
+        final container = makeContainer(overrideAgent: gatedAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+        expect(
+          container.read(refineControllerProvider(draft)).phase,
+          RefinePhase.diffReady,
+        );
+
+        // Count edges INTO accepted — a double-tap regression would emit
+        // two (each pops the host route once → double pop).
+        var acceptedEmissions = 0;
+        container.listen(refineControllerProvider(draft), (prev, next) {
+          if (prev?.phase != RefinePhase.accepted &&
+              next.phase == RefinePhase.accepted) {
+            acceptedEmissions++;
+          }
+        });
+
+        final first = notifier.accept();
+        expect(
+          container.read(refineControllerProvider(draft)).accepting,
+          isTrue,
+        );
+        final second = notifier.accept();
+        gate.complete();
+        await first;
+        await second;
+
+        final state = container.read(refineControllerProvider(draft));
+        expect(gatedAgent.acceptCalls, 1);
+        expect(acceptedEmissions, 1);
+        expect(state.phase, RefinePhase.accepted);
+        expect(state.accepting, isFalse);
+      },
+    );
+
+    test(
+      'a failing accept surfaces the problem notice and re-arms the bar',
+      () async {
+        final throwingAgent = _ThrowingAcceptAgent();
+        final container = makeContainer(overrideAgent: throwingAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+
+        await notifier.accept();
+
+        final state = container.read(refineControllerProvider(draft));
+        // The diff survives, the bar is re-armed, and the failure is
+        // narrated in the problem notice — accept() is fired unawaited
+        // from the bar, so a silent re-enable would read as a dead tap.
+        expect(state.phase, RefinePhase.diffReady);
+        expect(state.accepting, isFalse);
+        expect(state.problem, RefineProblem.proposalFailed);
+        expect(state.diff, isNotNull);
+      },
+    );
+
+    test(
+      'revert and per-row resolves are no-ops while an accept is in '
+      'flight (no last-write-wins race on currentPlan)',
+      () async {
+        final gate = Completer<void>();
+        final gatedAgent = _GatedAcceptAgent(gate: gate);
+        final container = makeContainer(overrideAgent: gatedAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+        final diff = container.read(refineControllerProvider(draft)).diff!;
+
+        final accept = notifier.accept();
+        await notifier.revert();
+        await notifier.rejectChange(diff.changes.first.id);
+        gate.complete();
+        await accept;
+
+        final state = container.read(refineControllerProvider(draft));
+        // Neither competing round-trip ran: the accept owns the plan.
+        expect(gatedAgent.revertCalls, 0);
+        expect(state.phase, RefinePhase.accepted);
+        expect(state.currentPlan, state.diff!.updatedPlan);
+      },
+    );
+
+    test(
+      'toggleListening and keepTalking are no-ops while an accept is in '
+      'flight (a new listening flow would race acceptDiff completion)',
+      () async {
+        final gate = Completer<void>();
+        final gatedAgent = _GatedAcceptAgent(gate: gate);
+        final container = makeContainer(overrideAgent: gatedAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+        expect(
+          container.read(refineControllerProvider(draft)).phase,
+          RefinePhase.diffReady,
+        );
+
+        final accept = notifier.accept();
+        expect(
+          container.read(refineControllerProvider(draft)).accepting,
+          isTrue,
+        );
+        // Both listening entry points must be inert while accepting: from
+        // diffReady each would otherwise call beginListening and flip the
+        // phase to listening mid-accept.
+        notifier
+          ..toggleListening()
+          ..keepTalking();
+        expect(
+          container.read(refineControllerProvider(draft)).phase,
+          RefinePhase.diffReady,
+        );
+
+        gate.complete();
+        await accept;
+
+        final state = container.read(refineControllerProvider(draft));
+        expect(state.phase, RefinePhase.accepted);
+        expect(state.accepting, isFalse);
+      },
+    );
+
     test('resolves individual diff changes with item indices', () async {
       final acceptedPlan = draft.copyWith(scheduledMinutes: 360);
       final agent = _RecordingRefineAgent(
@@ -802,5 +937,47 @@ class _ThrowingRevertAgent extends _ZeroLatencyAgent {
     List<int>? itemIndices,
   }) async {
     throw StateError('revert failed');
+  }
+}
+
+/// Suspends `acceptDiff` behind a gate and counts its calls, so a test
+/// can overlap a second `accept()` with an in-flight first one.
+class _GatedAcceptAgent extends MockDayAgent {
+  _GatedAcceptAgent({required this.gate})
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  final Completer<void> gate;
+  int acceptCalls = 0;
+  int revertCalls = 0;
+
+  @override
+  Future<DraftPlan> revertDiff({
+    required PlanDiff diff,
+    required DraftPlan originalPlan,
+    List<int>? itemIndices,
+  }) {
+    revertCalls++;
+    return super.revertDiff(
+      diff: diff,
+      originalPlan: originalPlan,
+      itemIndices: itemIndices,
+    );
+  }
+
+  @override
+  Future<DraftPlan> acceptDiff(
+    PlanDiff diff, {
+    List<int>? itemIndices,
+  }) async {
+    acceptCalls++;
+    await gate.future;
+    return super.acceptDiff(diff, itemIndices: itemIndices);
   }
 }

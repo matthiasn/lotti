@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Info-blue pill marking an agenda item / day block as bound to a task
 /// (`prototype/shared.jsx → LinkBadge`, handoff v2 item 3). Shows the
@@ -31,27 +30,6 @@ class LinkBadge extends StatelessWidget {
           color: info,
         ),
         onTap: onTap,
-      ),
-    );
-  }
-}
-
-/// Neutral "Time block" tag for agenda items / day blocks with no
-/// backing task (`prototype/shared.jsx → StandaloneTag`).
-class StandaloneTag extends StatelessWidget {
-  const StandaloneTag({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return DsPill(
-      variant: DsPillVariant.filled,
-      label: context.messages.dailyOsNextStandaloneTag,
-      labelColor: tokens.colors.text.lowEmphasis,
-      leading: Icon(
-        Icons.schedule_rounded,
-        size: tokens.typography.size.caption,
-        color: tokens.colors.text.lowEmphasis,
       ),
     );
   }

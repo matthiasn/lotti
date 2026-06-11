@@ -22,7 +22,29 @@ const _category = DayAgentCategory(
 
 DraftPlan _planWithItems() => DraftPlan(
   dayDate: DateTime(2026, 5, 26),
-  blocks: const [],
+  // The recap donut/note derive their total from the blocks (the stored
+  // scheduledMinutes can drift), so the fixture carries real placements:
+  // 120m + 60m = 180m of the 240m capacity.
+  blocks: [
+    TimeBlock(
+      id: 'blk_1',
+      title: 'Focus block',
+      start: DateTime(2026, 5, 26, 9),
+      end: DateTime(2026, 5, 26, 11),
+      type: TimeBlockType.ai,
+      state: TimeBlockState.drafted,
+      category: _category,
+    ),
+    TimeBlock(
+      id: 'blk_2',
+      title: 'Review block',
+      start: DateTime(2026, 5, 26, 11),
+      end: DateTime(2026, 5, 26, 12),
+      type: TimeBlockType.ai,
+      state: TimeBlockState.drafted,
+      category: _category,
+    ),
+  ],
   bands: const [],
   capacityMinutes: 240,
   scheduledMinutes: 180,
@@ -40,7 +62,9 @@ DraftPlan _planWithItems() => DraftPlan(
       title: 'Review PRs',
       category: _category,
       linkedBlockIds: ['blk_2'],
-      totalEstimateMinutes: 60,
+      // 45m, not 60m: "1h" would collide with the recap donut's center
+      // label (60m remaining), making text asserts ambiguous.
+      totalEstimateMinutes: 45,
     ),
   ],
 );
@@ -126,16 +150,9 @@ void main() {
       // Numbered index labels.
       expect(find.text('1'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
-      // Estimate labels rendered through l10n placeholder.
-      final messages = tester.element(find.byType(CommitPage)).messages;
-      expect(
-        find.text(messages.dailyOsNextEstimateMinutes(120)),
-        findsOneWidget,
-      );
-      expect(
-        find.text(messages.dailyOsNextEstimateMinutes(60)),
-        findsOneWidget,
-      );
+      // Estimates share the compact duration voice ("2h", not "120m").
+      expect(find.text('2h'), findsOneWidget);
+      expect(find.text('45m'), findsOneWidget);
     });
 
     testWidgets('capacity donut and note reflect the draft', (tester) async {

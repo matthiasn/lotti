@@ -31,7 +31,7 @@ class PendingCard extends StatelessWidget {
       opacity: decided ? 0.55 : 1.0,
       child: Container(
         decoration: BoxDecoration(
-          color: tokens.colors.background.level02,
+          color: tokens.colors.surface.enabled,
           borderRadius: BorderRadius.circular(tokens.radii.l),
           border: Border.all(color: tokens.colors.decorative.level01),
         ),
@@ -167,7 +167,9 @@ String _overdueLabel(BuildContext context, PendingItem item) {
 
 String _formatReferenceDate(BuildContext context, DateTime date) {
   final locale = Localizations.localeOf(context).toString();
-  return DateFormat.MMMd(locale).format(date);
+  // Weekday included: "due Wed, Jun 8" is decidable at a glance,
+  // "due Jun 8" sends the reader to a calendar.
+  return DateFormat.MMMEd(locale).format(date);
 }
 
 class _TriageButtonRow extends StatelessWidget {

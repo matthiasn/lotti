@@ -48,6 +48,7 @@ class RefineState {
     this.diff,
     this.problem,
     this.problemDetail,
+    this.accepting = false,
   });
 
   final RefinePhase phase;
@@ -59,6 +60,12 @@ class RefineState {
   final RefineProblem? problem;
   final String? problemDetail;
 
+  /// True while the whole-diff [RefineController.accept] round-trip is in
+  /// flight. The action bar treats this as busy so a second tap can't
+  /// start a second accept (whose completion would re-emit `accepted`
+  /// and double-pop the host route).
+  final bool accepting;
+
   RefineState copyWith({
     RefinePhase? phase,
     String? transcript,
@@ -68,6 +75,7 @@ class RefineState {
     String? resolvingChangeId,
     RefineProblem? problem,
     String? problemDetail,
+    bool? accepting,
     bool clearDiff = false,
     bool clearResolvingChangeId = false,
     bool clearProblem = false,
@@ -85,6 +93,7 @@ class RefineState {
       problemDetail: clearProblem
           ? null
           : (problemDetail ?? this.problemDetail),
+      accepting: accepting ?? this.accepting,
     );
   }
 
@@ -172,20 +181,45 @@ class RefineController extends Notifier<RefineState> {
 
   Future<void> accept() async {
     final diff = state.diff;
-    if (diff == null) return;
+    // Re-entry guard: a second tap while the first round-trip is in
+    // flight would start a second future whose completion re-emits
+    // `accepted` and double-pops the host route.
+    if (diff == null || state.accepting) return;
     final agent = ref.read(dayAgentProvider);
     final itemIndices = _indicesForDecision(PlanDiffChangeDecision.pending);
     if (itemIndices.isEmpty) return;
-    final next = await agent.acceptDiff(diff, itemIndices: itemIndices);
-    if (!ref.mounted) return;
-    state = state.copyWith(
-      phase: RefinePhase.accepted,
-      currentPlan: next,
-      decisions: _resolveMany(
-        itemIndices,
-        PlanDiffChangeDecision.accepted,
-      ),
-    );
+    state = state.copyWith(accepting: true);
+    try {
+      final next = await agent.acceptDiff(diff, itemIndices: itemIndices);
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        phase: RefinePhase.accepted,
+        accepting: false,
+        currentPlan: next,
+        decisions: _resolveMany(
+          itemIndices,
+          PlanDiffChangeDecision.accepted,
+        ),
+      );
+    } catch (error, stackTrace) {
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stackTrace,
+          library: 'daily_os_next',
+          context: ErrorDescription('while accepting a plan refinement'),
+        ),
+      );
+      if (!ref.mounted) return;
+      // Re-arm the bar and surface the failure in the problem notice
+      // (the caller fires accept() unawaited — a silent re-enable would
+      // look like the tap did nothing).
+      state = state.copyWith(
+        accepting: false,
+        problem: RefineProblem.proposalFailed,
+        problemDetail: error.toString(),
+      );
+    }
   }
 
   Future<void> acceptChange(String changeId) async {
@@ -204,7 +238,9 @@ class RefineController extends Notifier<RefineState> {
 
   Future<void> revert() async {
     final diff = state.diff;
-    if (diff == null) return;
+    // `accepting` guard: a revert racing a whole-diff accept would make
+    // `currentPlan` last-write-wins between two agent round-trips.
+    if (diff == null || state.accepting) return;
     final agent = ref.read(dayAgentProvider);
     final itemIndices = _indicesForDecision(PlanDiffChangeDecision.pending);
     final restored = await agent.revertDiff(
@@ -219,10 +255,19 @@ class RefineController extends Notifier<RefineState> {
       clearDiff: true,
       decisions: const {},
       clearResolvingChangeId: true,
+      // A notice from a failed accept refers to the diff being discarded
+      // here — don't let it outlive the plan it described.
+      clearProblem: true,
     );
   }
 
   void beginListening({required bool resetTranscript}) {
+    // `accepting` guard: starting a listening flow while a whole-diff
+    // accept round-trip is in flight would race `acceptDiff`'s completion
+    // (last-write-wins on `phase`/`transcript`). This is the choke point
+    // for every listening entry (toggleListening, keepTalking), mirroring
+    // the guards in accept()/revert()/_resolveChange().
+    if (state.accepting) return;
     _transcriptPrefix = resetTranscript ? '' : state.transcript.trim();
     state = state.copyWith(
       phase: RefinePhase.listening,
@@ -322,7 +367,11 @@ class RefineController extends Notifier<RefineState> {
     required PlanDiffChangeDecision decision,
   }) async {
     final diff = state.diff;
-    if (diff == null || state.resolvingChangeId != null) return;
+    // `accepting` guard: a per-row resolve racing a whole-diff accept
+    // would make `currentPlan` last-write-wins between two round-trips.
+    if (diff == null || state.resolvingChangeId != null || state.accepting) {
+      return;
+    }
     final itemIndex = diff.changes.indexWhere(
       (change) => change.id == changeId,
     );
@@ -371,6 +420,8 @@ class RefineController extends Notifier<RefineState> {
       currentPlan: next,
       decisions: decisions,
       clearResolvingChangeId: true,
+      // A successful resolve supersedes any earlier failure notice.
+      clearProblem: true,
     );
   }
 

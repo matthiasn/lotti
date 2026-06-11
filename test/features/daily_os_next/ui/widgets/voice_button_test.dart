@@ -105,25 +105,61 @@ void main() {
       VoiceButton.listeningFrameSizeFor(buttonSize),
       greaterThan(VoiceButton.shaderHoleSizeFor(buttonSize)),
     );
+    // While listening the core rests back inside the field and swells
+    // with the voice: −18 dBFS over the −72 floor → norm 0.75, with the
+    // slow idle breath (±listeningIdleBreath) riding on top.
+    await tester.pump(const Duration(milliseconds: 300));
     expect(
-      tester.getSize(find.byKey(VoiceButton.coreButtonKey)),
-      const Size.square(buttonSize),
+      tester.getSize(find.byKey(VoiceButton.coreButtonKey)).width,
+      closeTo(
+        buttonSize *
+            (VoiceButton.listeningCoreScale +
+                VoiceButton.listeningBreathSpan * 0.75),
+        buttonSize * VoiceButton.listeningIdleBreath + 0.01,
+      ),
     );
   });
 
-  testWidgets('captured state swaps to the stop glyph and removes the shader', (
-    tester,
-  ) async {
-    await pumpVoiceButton(tester, phase: CapturePhase.captured);
+  testWidgets(
+    'listening state shows the stop glyph (tap = stop recording)',
+    (tester) async {
+      await pumpVoiceButton(tester, phase: CapturePhase.listening);
 
-    expect(find.byType(AiVoiceInputShader), findsNothing);
-    expect(find.byKey(VoiceButton.listeningFrameKey), findsNothing);
-    expect(find.byKey(VoiceButton.restingFrameKey), findsNothing);
-    expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
-    expect(
-      tester.getSize(find.byKey(VoiceButton.fieldKey)),
-      Size.square(VoiceButton.fieldSizeFor(132)),
+      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+      expect(find.byIcon(MdiIcons.microphone), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'captured state returns to the mic glyph and removes the shader',
+    (tester) async {
+      await pumpVoiceButton(tester, phase: CapturePhase.captured);
+
+      expect(find.byType(AiVoiceInputShader), findsNothing);
+      expect(find.byKey(VoiceButton.listeningFrameKey), findsNothing);
+      expect(find.byKey(VoiceButton.restingFrameKey), findsNothing);
+      // Tap re-records, so the glyph advertises talking — not "stop".
+      expect(find.byIcon(MdiIcons.microphone), findsOneWidget);
+      expect(find.byIcon(Icons.stop_rounded), findsNothing);
+      expect(
+        tester.getSize(find.byKey(VoiceButton.fieldKey)),
+        Size.square(VoiceButton.fieldSizeFor(132)),
+      );
+    },
+  );
+
+  testWidgets('transcribing state dims the core button', (tester) async {
+    await pumpVoiceButton(tester, phase: CapturePhase.transcribing);
+
+    final opacity = tester.widget<AnimatedOpacity>(
+      find
+          .ancestor(
+            of: find.byKey(VoiceButton.coreButtonKey),
+            matching: find.byType(AnimatedOpacity),
+          )
+          .first,
     );
+    expect(opacity.opacity, lessThan(1));
   });
 
   testWidgets('tap delegates to the supplied callback', (tester) async {
@@ -136,5 +172,94 @@ void main() {
     await tester.tap(find.byType(InkWell));
 
     expect(taps, 1);
+  });
+
+  testWidgets('press feedback scales the core down and back up', (
+    tester,
+  ) async {
+    await pumpVoiceButton(tester);
+
+    double scaleTarget() => tester
+        .widget<TweenAnimationBuilder<double>>(
+          find.byKey(VoiceButton.pressScaleKey),
+        )
+        .tween
+        .end!;
+
+    expect(scaleTarget(), 1.0);
+
+    final gesture = await tester.press(
+      find.byKey(VoiceButton.coreButtonKey),
+    );
+    await tester.pump();
+    expect(scaleTarget(), VoiceButton.pressedScale);
+
+    await gesture.up();
+    await tester.pump();
+    expect(scaleTarget(), 1.0);
+    // Let the release animation (with overshoot) finish cleanly.
+    await tester.pump(const Duration(milliseconds: 300));
+  });
+
+  testWidgets(
+    'while listening the core breathes with the voice level: rests '
+    'smaller at silence, swells with dBFS, full size in other phases',
+    (tester) async {
+      double scaleTarget() => tester
+          .widget<TweenAnimationBuilder<double>>(
+            find.byKey(VoiceButton.pressScaleKey),
+          )
+          .tween
+          .end!;
+
+      // Silence (dbfs == floor): the disc rests at the listening scale so
+      // the shader owns the field. (The slow idle-breath sine multiplies
+      // in OUTSIDE this tween, so the target stays exact.)
+      await pumpVoiceButton(tester, phase: CapturePhase.listening);
+      expect(scaleTarget(), VoiceButton.listeningCoreScale);
+
+      // Loud speech (-8 dBFS over the -80 floor → norm 0.9): the disc
+      // swells with the same signal that drives the shader.
+      await pumpVoiceButton(
+        tester,
+        phase: CapturePhase.listening,
+        dbfs: -8,
+      );
+      expect(
+        scaleTarget(),
+        closeTo(
+          VoiceButton.listeningCoreScale +
+              VoiceButton.listeningBreathSpan * 0.9,
+          1e-9,
+        ),
+      );
+
+      // Outside listening the breathing is inert and the ticker stops.
+      await pumpVoiceButton(tester, phase: CapturePhase.captured);
+      expect(scaleTarget(), 1.0);
+      await tester.pump(const Duration(milliseconds: 300));
+    },
+  );
+
+  testWidgets('ink ripple is configured above the gradient surface', (
+    tester,
+  ) async {
+    await pumpVoiceButton(tester);
+
+    final inkWell = tester.widget<InkWell>(
+      find.byKey(VoiceButton.coreButtonKey),
+    );
+    // The splash must be explicit and visible — the old design painted the
+    // ripple beneath an opaque gradient container, which read as a dead
+    // button.
+    expect(inkWell.splashColor, isNotNull);
+    expect(inkWell.splashColor!.a, greaterThan(0));
+    final ink = tester.widget<Ink>(
+      find.ancestor(
+        of: find.byKey(VoiceButton.coreButtonKey),
+        matching: find.byType(Ink),
+      ),
+    );
+    expect(ink.decoration, isA<BoxDecoration>());
   });
 }

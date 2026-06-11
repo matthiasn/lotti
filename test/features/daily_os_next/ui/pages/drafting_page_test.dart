@@ -11,7 +11,6 @@ import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/learning_cards.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/skeleton_agenda.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -303,7 +302,7 @@ void main() {
     });
 
     testWidgets(
-      'once learnings resolve: skeleton + header + learning cards render',
+      'once learnings resolve: thinking hero + header + learning cards render',
       (tester) async {
         final agent = _FakeAgent();
         await _pumpDrafting(tester, agent);
@@ -311,7 +310,7 @@ void main() {
 
         final messages = tester.element(find.byType(DraftingPage)).messages;
         expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
-        expect(find.byType(SkeletonAgenda), findsOneWidget);
+        expect(find.byType(DraftingStatusTicker), findsOneWidget);
         expect(find.byType(LearningCardsColumn), findsOneWidget);
         expect(find.text('YESTERDAY'), findsOneWidget);
       },
@@ -326,7 +325,7 @@ void main() {
 
       final messages = tester.element(find.byType(DraftingPage)).messages;
       expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
-      expect(find.byType(SkeletonAgenda), findsOneWidget);
+      expect(find.byType(DraftingStatusTicker), findsOneWidget);
       expect(find.text('YESTERDAY'), findsOneWidget);
 
       agent.learnings = Completer<List<LearningCard>>();
@@ -348,7 +347,7 @@ void main() {
       await tester.pump();
 
       expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
-      expect(find.byType(SkeletonAgenda), findsOneWidget);
+      expect(find.byType(DraftingStatusTicker), findsOneWidget);
       expect(find.text('YESTERDAY'), findsOneWidget);
     });
 
@@ -362,10 +361,10 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // Page still renders the skeleton + header, just no cards content.
+      // Page still renders the thinking hero + header, just no cards content.
       final messages = tester.element(find.byType(DraftingPage)).messages;
       expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
-      expect(find.byType(SkeletonAgenda), findsOneWidget);
+      expect(find.byType(DraftingStatusTicker), findsOneWidget);
       // The learning cards column either isn't built or renders no cards.
       expect(find.text('YESTERDAY'), findsNothing);
     });
@@ -381,17 +380,20 @@ void main() {
       expect(find.textContaining('drafting unavailable'), findsNothing);
     });
 
-    testWidgets('narrow layout (< 900) stacks left + right in a Column', (
-      tester,
-    ) async {
-      final agent = _FakeAgent();
-      await _pumpDrafting(tester, agent, size: const Size(600, 1400));
-      await _resolveLearnings(tester, agent);
+    testWidgets(
+      'renders the thinking hero and learning cards in one calm column',
+      (
+        tester,
+      ) async {
+        final agent = _FakeAgent();
+        await _pumpDrafting(tester, agent, size: const Size(600, 1400));
+        await _resolveLearnings(tester, agent);
 
-      // Both sections rendered in vertical column.
-      expect(find.byType(SkeletonAgenda), findsOneWidget);
-      expect(find.byType(LearningCardsColumn), findsOneWidget);
-    });
+        // Both sections rendered in vertical column.
+        expect(find.byType(DraftingStatusTicker), findsOneWidget);
+        expect(find.byType(LearningCardsColumn), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'draft resolution (returnToRootOnReady=false) pushReplacements to DayPage',
@@ -493,9 +495,64 @@ void main() {
 
         final messages = tester.element(find.byType(DraftingPage)).messages;
         expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
-        expect(find.byType(SkeletonAgenda), findsOneWidget);
+        expect(find.byType(DraftingStatusTicker), findsOneWidget);
         expect(find.textContaining('drafting blew up'), findsNothing);
       },
     );
+  });
+
+  group('DraftingStatusTicker', () {
+    Future<void> pumpTicker(WidgetTester tester, {required bool active}) {
+      return tester.pumpWidget(
+        makeTestableWidget2(
+          Scaffold(body: DraftingStatusTicker(active: active)),
+          mediaQueryData: const MediaQueryData(size: Size(800, 600)),
+        ),
+      );
+    }
+
+    testWidgets('rotates deterministically through the narration lines', (
+      tester,
+    ) async {
+      const interval = Duration(milliseconds: 2600);
+      await pumpTicker(tester, active: true);
+
+      final messages = tester
+          .element(find.byType(DraftingStatusTicker))
+          .messages;
+      final lines = DraftingStatusTicker.linesOf(messages);
+      expect(find.text(lines[0]), findsOneWidget);
+
+      await tester.pump(interval);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text(lines[1]), findsOneWidget);
+      expect(find.text(lines[0]), findsNothing);
+
+      await tester.pump(interval);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text(lines[2]), findsOneWidget);
+
+      // Wraps around after the last line instead of stalling. Pump exact
+      // interval multiples so the periodic timer fires once per step (the
+      // extra settle pumps above would otherwise drift past tick
+      // boundaries and double-fire).
+      await tester.pump(interval * (lines.length - 2));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text(lines[0]), findsOneWidget);
+    });
+
+    testWidgets('holds the current line when inactive', (tester) async {
+      await pumpTicker(tester, active: false);
+
+      final messages = tester
+          .element(find.byType(DraftingStatusTicker))
+          .messages;
+      final lines = DraftingStatusTicker.linesOf(messages);
+      expect(find.text(lines[0]), findsOneWidget);
+
+      await tester.pump(const Duration(seconds: 6));
+      expect(find.text(lines[0]), findsOneWidget);
+      expect(find.text(lines[1]), findsNothing);
+    });
   });
 }

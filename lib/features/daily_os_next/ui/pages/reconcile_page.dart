@@ -19,7 +19,9 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 /// Width at/above which the reconcile surface lays the Heard / Decide
 /// columns side by side; below it they stack. Shared by the page, the modal
 /// content, and the footer so the breakpoint can't drift between them.
-const double _reconcileTwoColumnBreakpoint = 720;
+// 640 keeps the side-by-side Heard/Decide layout reachable inside the
+// desktop side sheet (max 720px minus gutters).
+const double _reconcileTwoColumnBreakpoint = 640;
 
 /// Flex weights for the side-by-side Heard / Decide columns — the Heard
 /// column (parsed items) gets slightly more room than the Decide column.
@@ -272,7 +274,7 @@ class _ColumnHeader extends StatelessWidget {
             vertical: 2,
           ),
           decoration: BoxDecoration(
-            color: tokens.colors.background.level02,
+            color: tokens.colors.surface.enabled,
             borderRadius: BorderRadius.circular(tokens.radii.s),
           ),
           child: Text(
@@ -364,9 +366,14 @@ class ReconcileModalContent extends StatelessWidget {
     final decideColumn = _DecideColumn(params: params, items: data.pending);
 
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step6,
-        vertical: tokens.spacing.step5,
+      // Same 16pt gutter and 24pt top inset as the capture/refine steps so
+      // the headline band and content edge hold one position across the
+      // whole ritual.
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step6,
+        tokens.spacing.step5,
+        tokens.spacing.step5,
       ),
       // Decide two-column vs stacked from the actual available width (the
       // modal/dialog box), not the screen size — the dialog can be far
@@ -374,22 +381,47 @@ class ReconcileModalContent extends StatelessWidget {
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isWide = constraints.maxWidth >= _reconcileTwoColumnBreakpoint;
+          // Same headline system as the Capture step, so the ritual keeps
+          // one header spine across pages.
+          final header = Padding(
+            padding: EdgeInsets.only(bottom: tokens.spacing.step6),
+            child: Column(
+              children: [
+                // Reserved eyebrow slot keeps the headline baseline at the
+                // same height as the other steps.
+                Text(' ', style: calmGreetingStyle(tokens)),
+                SizedBox(height: tokens.spacing.step3),
+                Text(
+                  context.messages.dailyOsNextReconcileHeadline,
+                  textAlign: TextAlign.center,
+                  style: calmDisplayStyle(tokens),
+                ),
+              ],
+            ),
+          );
           if (!isWide) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                header,
                 heardColumn,
                 SizedBox(height: tokens.spacing.step6),
                 decideColumn,
               ],
             );
           }
-          return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(flex: _heardColumnFlex, child: heardColumn),
-              SizedBox(width: tokens.spacing.step6),
-              Expanded(flex: _decideColumnFlex, child: decideColumn),
+              header,
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(flex: _heardColumnFlex, child: heardColumn),
+                  SizedBox(width: tokens.spacing.step6),
+                  Expanded(flex: _decideColumnFlex, child: decideColumn),
+                ],
+              ),
             ],
           );
         },

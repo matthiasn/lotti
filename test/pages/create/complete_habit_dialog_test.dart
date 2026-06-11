@@ -228,16 +228,22 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
+        // hotKeyManager is a process-global singleton shared across the
+        // whole `very_good test` run; assert on this dialog's NET
+        // contribution rather than absolute emptiness, so a hotkey leaked
+        // by an earlier test in the same shard cannot break this one.
+        final baseline = hotKeyManager.registeredHotKeyList.length;
+
         await pumpHabitDialog(tester);
 
         // In-app scoped hotkeys register into the manager's in-memory list
         // (no platform channel involved for HotKeyScope.inapp).
-        expect(hotKeyManager.registeredHotKeyList, isNotEmpty);
+        expect(hotKeyManager.registeredHotKeyList, hasLength(baseline + 1));
 
         // Tear the dialog down — dispose must unregister the hotkey.
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
-        expect(hotKeyManager.registeredHotKeyList, isEmpty);
+        expect(hotKeyManager.registeredHotKeyList, hasLength(baseline));
       },
     );
 

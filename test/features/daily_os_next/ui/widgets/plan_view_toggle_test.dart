@@ -11,6 +11,12 @@ Widget _wrap(Widget child) => makeTestableWidget2(
   mediaQueryData: const MediaQueryData(size: Size(800, 600)),
 );
 
+/// Each segment stacks an invisible bold ghost (reserving the
+/// selected-state width) under the visible label, so a plain
+/// `find.text` matches two Texts — the visible one is the Stack's
+/// last child.
+Finder _visibleLabel(String label) => find.text(label).last;
+
 void main() {
   group('PlanViewToggle', () {
     testWidgets('renders both Agenda + Day labels', (tester) async {
@@ -24,8 +30,29 @@ void main() {
       );
 
       final messages = tester.element(find.byType(PlanViewToggle)).messages;
-      expect(find.text(messages.dailyOsNextPlanViewAgenda), findsOneWidget);
-      expect(find.text(messages.dailyOsNextPlanViewDay), findsOneWidget);
+      expect(_visibleLabel(messages.dailyOsNextPlanViewAgenda), findsOneWidget);
+      expect(_visibleLabel(messages.dailyOsNextPlanViewDay), findsOneWidget);
+    });
+
+    testWidgets('width is selection-invariant (header placement relies '
+        'on it)', (tester) async {
+      // The day header measures the toggle to decide inline-vs-stacked
+      // placement; if selecting a segment changed the width (bold label),
+      // the control would jump rows when tapped at borderline widths.
+      await tester.pumpWidget(
+        _wrap(PlanViewToggle(selected: PlanView.agenda, onChanged: (_) {})),
+      );
+      final agendaSelectedWidth = tester
+          .getSize(find.byType(PlanViewToggle))
+          .width;
+      await tester.pumpWidget(
+        _wrap(PlanViewToggle(selected: PlanView.day, onChanged: (_) {})),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      final daySelectedWidth = tester
+          .getSize(find.byType(PlanViewToggle))
+          .width;
+      expect(daySelectedWidth, agendaSelectedWidth);
     });
 
     testWidgets('selected Agenda chip uses teal fg + bold weight', (
@@ -44,10 +71,10 @@ void main() {
       final tokens = ctx.designTokens;
       final teal = tokens.colors.interactive.enabled;
       final agendaText = tester.widget<Text>(
-        find.text(ctx.messages.dailyOsNextPlanViewAgenda),
+        _visibleLabel(ctx.messages.dailyOsNextPlanViewAgenda),
       );
       final dayText = tester.widget<Text>(
-        find.text(ctx.messages.dailyOsNextPlanViewDay),
+        _visibleLabel(ctx.messages.dailyOsNextPlanViewDay),
       );
 
       expect(agendaText.style?.color, teal);
@@ -72,10 +99,10 @@ void main() {
       final tokens = ctx.designTokens;
       final teal = tokens.colors.interactive.enabled;
       final agendaText = tester.widget<Text>(
-        find.text(ctx.messages.dailyOsNextPlanViewAgenda),
+        _visibleLabel(ctx.messages.dailyOsNextPlanViewAgenda),
       );
       final dayText = tester.widget<Text>(
-        find.text(ctx.messages.dailyOsNextPlanViewDay),
+        _visibleLabel(ctx.messages.dailyOsNextPlanViewDay),
       );
 
       expect(dayText.style?.color, teal);
@@ -98,7 +125,7 @@ void main() {
       );
 
       final messages = tester.element(find.byType(PlanViewToggle)).messages;
-      await tester.tap(find.text(messages.dailyOsNextPlanViewDay));
+      await tester.tap(_visibleLabel(messages.dailyOsNextPlanViewDay));
       await tester.pump();
 
       expect(received, PlanView.day);
@@ -118,7 +145,7 @@ void main() {
       );
 
       final messages = tester.element(find.byType(PlanViewToggle)).messages;
-      await tester.tap(find.text(messages.dailyOsNextPlanViewAgenda));
+      await tester.tap(_visibleLabel(messages.dailyOsNextPlanViewAgenda));
       await tester.pump();
 
       expect(received, PlanView.agenda);
@@ -138,7 +165,7 @@ void main() {
         );
 
         final messages = tester.element(find.byType(PlanViewToggle)).messages;
-        await tester.tap(find.text(messages.dailyOsNextPlanViewAgenda));
+        await tester.tap(_visibleLabel(messages.dailyOsNextPlanViewAgenda));
         await tester.pump();
 
         expect(count, 1);

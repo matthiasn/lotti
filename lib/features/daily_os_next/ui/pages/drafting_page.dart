@@ -1,17 +1,26 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/learning_cards.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/skeleton_agenda.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Drafting wait screen — the latency-as-reflection beat between
-/// Reconcile and the Day view. Variant A of the prototype: reasoning
-/// stream + skeleton agenda on the left, learning cards on the right.
+/// Reconcile and the Day view.
+///
+/// The wait is carried by a single hero moment: the decoder-bars thinking
+/// shader over a rotating one-line narration of what the agent is doing,
+/// with yesterday's learning cards below as real content to read while
+/// waiting. No skeleton shimmer — the narration is the progress indicator.
 ///
 /// When the controller flips to [DraftingPhase.ready], the screen
 /// either returns to the route-level root (preferred in the full app,
@@ -107,107 +116,182 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
   }
 }
 
-/// Scaffold-free drafting wait content (indeterminate progress strip +
-/// reasoning skeleton / learning cards) for hosting inside the
-/// day-planning modal as well as the standalone [DraftingPage].
+/// Scaffold-free drafting wait content (thinking hero + narration ticker +
+/// learning cards) for hosting inside the day-planning modal as well as
+/// the standalone [DraftingPage].
 class DraftingModalContent extends StatelessWidget {
   const DraftingModalContent({required this.state, super.key});
 
   final DraftingState state;
 
-  /// Width at/above which the skeleton and learning cards sit side by side.
-  /// Compared against the actual available width (the modal/dialog box), not
-  /// the screen, so the dialog never forces two cramped columns.
-  static const double _twoColumnBreakpoint = 760;
+  /// Single calm column — matches the capture surface's content width so
+  /// the ritual keeps one rhythm across steps.
+  static const double _contentMaxWidth = 560;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final teal = tokens.colors.interactive.enabled;
+    final isDrafting = state.phase == DraftingPhase.drafting;
 
-    final left = Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _DraftingHeader(teal: teal),
-        SizedBox(height: tokens.spacing.step5),
-        const SkeletonAgenda(),
-      ],
-    );
-
-    final right = state.learningCards == null
-        ? const SizedBox.shrink()
-        : LearningCardsColumn(cards: state.learningCards!);
-
-    return Column(
-      children: [
-        // Indeterminate progress strip — the wait is honest about not
-        // knowing how long the agent will think.
-        SizedBox(
-          height: 2,
-          child: LinearProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(teal),
-            backgroundColor: teal.withValues(alpha: 0.10),
-          ),
+    // Content scrolling past the sheet edge dissolves over the last ~36px
+    // instead of being razor-cut at full brightness.
+    return EdgeFade(
+      rampExtent: 36,
+      fadeTop: false,
+      minFraction: 0.04,
+      child: SingleChildScrollView(
+        // Extra bottom padding so the last learning-card line clears the
+        // fade band when scrolled to the end.
+        padding: EdgeInsets.fromLTRB(
+          tokens.spacing.step5,
+          tokens.spacing.step6,
+          tokens.spacing.step5,
+          tokens.spacing.step10,
         ),
-        Expanded(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(tokens.spacing.step6),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth >= _twoColumnBreakpoint;
-                if (!isWide) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      left,
-                      SizedBox(height: tokens.spacing.step6),
-                      right,
-                    ],
-                  );
-                }
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: left),
-                    SizedBox(width: tokens.spacing.step6),
-                    Expanded(child: right),
-                  ],
-                );
-              },
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Reserved eyebrow slot keeps the headline baseline at the
+                // same height as the other steps.
+                Text(' ', style: calmGreetingStyle(tokens)),
+                SizedBox(height: tokens.spacing.step3),
+                Text(
+                  context.messages.dailyOsNextDraftingHeader,
+                  textAlign: TextAlign.center,
+                  style: calmDisplayStyle(tokens),
+                ),
+                SizedBox(height: tokens.spacing.step6),
+                AiThinkingShaderPresence(
+                  isRunning: isDrafting,
+                  height: 44,
+                  indicatorKey: DraftingModalContent.thinkingShaderKey,
+                ),
+                SizedBox(height: tokens.spacing.step5),
+                DraftingStatusTicker(active: isDrafting),
+                SizedBox(height: tokens.spacing.step8),
+                if (state.learningCards != null)
+                  LearningCardsColumn(cards: state.learningCards!),
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
+
+  /// Stable key on the hero thinking shader, for presence asserts.
+  @visibleForTesting
+  static const Key thinkingShaderKey = ValueKey('drafting-thinking-shader');
 }
 
-class _DraftingHeader extends StatelessWidget {
-  const _DraftingHeader({required this.teal});
+/// One-line narration of what the agent is doing, rotating through a fixed
+/// localized sequence with a fade-through-slide transition.
+///
+/// The sequence is deterministic (no randomness — reproducible in tests
+/// and screenshots) and long enough (~20s per cycle) that a fast cloud
+/// draft never sees a repeat and a slow local first run doesn't feel like
+/// a stuck loop.
+class DraftingStatusTicker extends StatefulWidget {
+  const DraftingStatusTicker({
+    required this.active,
+    this.interval = const Duration(milliseconds: 2600),
+    super.key,
+  });
 
-  final Color teal;
+  /// Whether the agent is currently drafting; pauses rotation when false.
+  final bool active;
+
+  /// Time each line stays on screen.
+  final Duration interval;
+
+  /// The localized narration lines, in rotation order.
+  static List<String> linesOf(AppLocalizations messages) => [
+    messages.dailyOsNextDraftingStatusReading,
+    messages.dailyOsNextDraftingStatusMatching,
+    messages.dailyOsNextDraftingStatusYesterday,
+    messages.dailyOsNextDraftingStatusDeepWork,
+    messages.dailyOsNextDraftingStatusBreathing,
+    messages.dailyOsNextDraftingStatusAfternoon,
+    messages.dailyOsNextDraftingStatusTimings,
+    messages.dailyOsNextDraftingStatusAlmost,
+  ];
+
+  @override
+  State<DraftingStatusTicker> createState() => _DraftingStatusTickerState();
+}
+
+class _DraftingStatusTickerState extends State<DraftingStatusTicker> {
+  Timer? _timer;
+  int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.active) _start();
+  }
+
+  @override
+  void didUpdateWidget(DraftingStatusTicker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.active && _timer == null) {
+      _start();
+    } else if (!widget.active) {
+      _stop();
+    }
+  }
+
+  void _start() {
+    _timer = Timer.periodic(widget.interval, (_) {
+      setState(() => _index++);
+    });
+  }
+
+  void _stop() {
+    _timer?.cancel();
+    _timer = null;
+  }
+
+  @override
+  void dispose() {
+    _stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Row(
-      children: [
-        SizedBox(
-          width: 14,
-          height: 14,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            valueColor: AlwaysStoppedAnimation<Color>(teal),
-          ),
+    final lines = DraftingStatusTicker.linesOf(context.messages);
+    final text = lines[_index % lines.length];
+
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 420),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0, 0.35),
+            end: Offset.zero,
+          ).animate(animation),
+          child: child,
         ),
-        SizedBox(width: tokens.spacing.step3),
-        Text(
-          context.messages.dailyOsNextDraftingHeader,
-          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
+      ),
+      layoutBuilder: (currentChild, previousChildren) => Stack(
+        alignment: Alignment.center,
+        children: [...previousChildren, ?currentChild],
+      ),
+      child: Text(
+        text,
+        key: ValueKey<String>(text),
+        textAlign: TextAlign.center,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
         ),
-      ],
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@ part of 'day_page.dart';
 class _DayHeader extends StatelessWidget {
   const _DayHeader({
     required this.dateStrip,
+    required this.date,
     required this.selectedView,
     required this.hasPlan,
     required this.onViewChanged,
@@ -15,6 +16,11 @@ class _DayHeader extends StatelessWidget {
   });
 
   final Widget? dateStrip;
+
+  /// The day shown under the default title as a date overline
+  /// ("Thursday, June 11").
+  final DateTime date;
+
   final PlanView selectedView;
   final bool hasPlan;
   final ValueChanged<PlanView> onViewChanged;
@@ -28,14 +34,20 @@ class _DayHeader extends StatelessWidget {
     return Material(
       color: tokens.colors.background.level01,
       child: _MeasuredDayHeader(
-        horizontalPadding: tokens.spacing.step5,
+        // step3 chrome padding + step2 internal lead-ins put the title,
+        // the toggle, and the content below on ONE left rail (step5);
+        // the back chevron hangs in the gutter left of it.
+        horizontalPadding: tokens.spacing.step3,
         verticalPadding: tokens.spacing.step2,
         itemGap: tokens.spacing.step3,
         rowGap: tokens.spacing.step2,
-        title: dateStrip ?? _DefaultDayHeaderTitle(onBack: onBack),
-        toggle: PlanViewToggle(
-          selected: selectedView,
-          onChanged: onViewChanged,
+        title: dateStrip ?? _DefaultDayHeaderTitle(onBack: onBack, date: date),
+        toggle: Padding(
+          padding: EdgeInsets.only(left: tokens.spacing.step2),
+          child: PlanViewToggle(
+            selected: selectedView,
+            onChanged: onViewChanged,
+          ),
         ),
         actions: Row(
           mainAxisSize: MainAxisSize.min,
@@ -48,6 +60,8 @@ class _DayHeader extends StatelessWidget {
                 switch (action) {
                   case _DayMenuAction.inspectAgent:
                     onInspectAgent();
+                  case _DayMenuAction.knowledge:
+                    unawaited(showKnowledgePanelModal(context));
                   case _DayMenuAction.deletePlan:
                     onDeletePlan();
                 }
@@ -59,6 +73,16 @@ class _DayHeader extends StatelessWidget {
                     leading: const Icon(Icons.psychology_alt_outlined),
                     title: Text(
                       popupContext.messages.dailyOsNextDayMenuInspectAgent,
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem<_DayMenuAction>(
+                  value: _DayMenuAction.knowledge,
+                  child: ListTile(
+                    leading: const Icon(Icons.auto_awesome_outlined),
+                    title: Text(
+                      popupContext.messages.dailyOsNextKnowledgeTitle,
                     ),
                     contentPadding: EdgeInsets.zero,
                   ),
@@ -85,31 +109,52 @@ class _DayHeader extends StatelessWidget {
 }
 
 class _DefaultDayHeaderTitle extends StatelessWidget {
-  const _DefaultDayHeaderTitle({required this.onBack});
+  const _DefaultDayHeaderTitle({required this.onBack, required this.date});
 
   final VoidCallback onBack;
+  final DateTime date;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Row(
+    final locale = Localizations.localeOf(context).toString();
+    // Apple large-title anatomy: the chevron rides its own quiet line in
+    // the gutter; the title and its date overline sit on the page's left
+    // rail (header padding step3 + step2 lead = step5, same as content).
+    return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(Icons.arrow_back_rounded, size: 20),
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
           tooltip: context.messages.dailyOsNextDayBack,
           onPressed: onBack,
         ),
-        Flexible(
-          child: Text(
-            context.messages.dailyOsNextDayTitle,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
+        Padding(
+          padding: EdgeInsets.only(left: tokens.spacing.step2),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                context.messages.dailyOsNextDayTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: calmPageTitleStyle(tokens),
+              ),
+              SizedBox(height: tokens.spacing.step1),
+              Text(
+                DateFormat.MMMMEEEEd(locale).format(date),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: calmEyebrowStyle(tokens),
+              ),
+            ],
           ),
         ),
+        SizedBox(height: tokens.spacing.step2),
       ],
     );
   }
@@ -272,6 +317,13 @@ class _RenderMeasuredDayHeader extends RenderBox
 
     size = constraints.constrain(Size(width, headerHeight));
 
+    // A multi-line title block (chevron line + title + date) reads as a
+    // masthead: actions belong on its FIRST line, not centered against
+    // the whole block.
+    final actionsY = titleSize.height > actionsSize.height
+        ? verticalPadding
+        : verticalPadding + (firstRowHeight - actionsSize.height) / 2;
+
     if (fitsInline) {
       final rowHeight = math.max(firstRowHeight, toggleSize.height);
       _position(
@@ -290,10 +342,7 @@ class _RenderMeasuredDayHeader extends RenderBox
       );
       _position(
         actions,
-        Offset(
-          width - horizontalPadding - actionsSize.width,
-          verticalPadding + (rowHeight - actionsSize.height) / 2,
-        ),
+        Offset(width - horizontalPadding - actionsSize.width, actionsY),
       );
       return;
     }
@@ -307,10 +356,7 @@ class _RenderMeasuredDayHeader extends RenderBox
     );
     _position(
       actions,
-      Offset(
-        width - horizontalPadding - actionsSize.width,
-        verticalPadding + (firstRowHeight - actionsSize.height) / 2,
-      ),
+      Offset(width - horizontalPadding - actionsSize.width, actionsY),
     );
     _position(
       toggle,

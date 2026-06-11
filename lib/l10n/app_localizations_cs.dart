@@ -3114,13 +3114,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNearLimit => 'Blízko limitu';
 
   @override
-  String get dailyOsNextAgendaCapacityComfortable => 'POHODOVÉ';
+  String get dailyOsNextAgendaCapacityComfortable => 'Pohodové';
 
   @override
-  String get dailyOsNextAgendaCapacityNearFull => 'TÉMĚŘ PLNÉ';
+  String get dailyOsNextAgendaCapacityNearFull => 'Téměř plné';
 
   @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'ZATÍM ŽÁDNÝ PLÁN';
+  String get dailyOsNextAgendaCapacityNoPlan => 'Zatím žádný plán';
 
   @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
@@ -3128,7 +3128,23 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'PŘEPLNĚNO';
+  String get dailyOsNextAgendaCapacityOver => 'Přeplněno';
+
+  @override
+  String get dailyOsNextAgendaDonutLeft => 'volno';
+
+  @override
+  String get dailyOsNextAgendaDonutOver => 'navíc';
+
+  @override
+  String dailyOsNextAgendaHeadlineLeft(String duration) {
+    return '$duration zbývá';
+  }
+
+  @override
+  String dailyOsNextAgendaHeadlineOver(String duration) {
+    return '$duration navíc';
+  }
 
   @override
   String get dailyOsNextAgendaNoPlanBody =>
@@ -3168,6 +3184,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureCaptured => 'Rozumím.';
 
   @override
+  String get dailyOsNextCaptureDoneCta => 'Hotovo';
+
+  @override
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
       'Přístup k mikrofonu byl odepřen.';
 
@@ -3195,7 +3214,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureErrorTranscriptionFailed => 'Přepis selhal.';
 
   @override
+  String get dailyOsNextCaptureHeadlineCaptured => 'Sedí to takhle?';
+
+  @override
   String get dailyOsNextCaptureHeadlineLead => 'Co máš dnes';
+
+  @override
+  String get dailyOsNextCaptureHeadlineListening => 'Poslouchám.';
 
   @override
   String get dailyOsNextCaptureHeadlineTail => 'na mysli?';
@@ -3212,6 +3237,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTailYesterday => 'na včera?';
 
   @override
+  String get dailyOsNextCaptureHeadlineTranscribing => 'Zapisuji…';
+
+  @override
+  String get dailyOsNextCaptureIdleClick => 'Klikni a mluv';
+
+  @override
+  String get dailyOsNextCaptureIdleExample =>
+      '„Dopoledne hluboká práce, po obědě procházka, e-maily do pěti.“';
+
+  @override
   String get dailyOsNextCaptureIdleHint =>
       'Klepni pro mluvení · místo toho napiš';
 
@@ -3219,7 +3254,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureIdleTalk => 'Klepni pro mluvení';
 
   @override
-  String get dailyOsNextCaptureListening => 'POSLOUCHÁM';
+  String get dailyOsNextCaptureListeningStatus => 'Poslouchám…';
 
   @override
   String dailyOsNextCapturePastPrompt(String date) {
@@ -3227,10 +3262,13 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextCaptureReconcileCta => 'Sjednotit';
+  String get dailyOsNextCaptureReconcileCta => 'Zkontrolovat';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Záznamy';
+
+  @override
+  String get dailyOsNextCaptureTranscribing => 'Přepisuji…';
 
   @override
   String get dailyOsNextCaptureTranscriptHint =>
@@ -3351,11 +3389,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDayMoreTooltip => 'Více';
 
   @override
-  String get dailyOsNextDayRefineCta => 'Upravit hlasem';
+  String get dailyOsNextDayRefineCta => 'Upravit';
 
   @override
   String get dailyOsNextDayRefineFooterHint =>
-      'Mluv, aby ses k plánu vrátil — změny se zobrazí jako diff, než se uplatní.';
+      'Mluv a přetvoř plán — každou změnu uvidíš, než se cokoli uloží.';
 
   @override
   String get dailyOsNextDayTitle => 'Tvůj den';
@@ -3379,12 +3417,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDraftingReasoningOverline => '✦ ÚVAHA';
 
   @override
-  String get dailyOsNextEditTitleHint => 'Upravit název';
+  String get dailyOsNextDraftingStatusAfternoon => 'Skládám odpoledne…';
 
   @override
-  String dailyOsNextEstimateMinutes(int minutes) {
-    return '${minutes}m';
-  }
+  String get dailyOsNextDraftingStatusAlmost => 'Už to skoro je…';
+
+  @override
+  String get dailyOsNextDraftingStatusBreathing =>
+      'Nechávám prostor k nadechnutí…';
+
+  @override
+  String get dailyOsNextDraftingStatusDeepWork =>
+      'Hluboká práce jde na začátek…';
+
+  @override
+  String get dailyOsNextDraftingStatusMatching => 'Přiřazuji úkoly ke dni…';
+
+  @override
+  String get dailyOsNextDraftingStatusReading => 'Čtu tvůj check-in…';
+
+  @override
+  String get dailyOsNextDraftingStatusTimings => 'Kontroluji časy…';
+
+  @override
+  String get dailyOsNextDraftingStatusYesterday =>
+      'Dívám se na včerejší rytmus…';
+
+  @override
+  String get dailyOsNextEditTitleHint => 'Upravit název';
 
   @override
   String get dailyOsNextGenericError =>
@@ -3395,9 +3455,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingEvening => 'Dobrý večer.';
-
-  @override
-  String get dailyOsNextGreetingHi => 'Ahoj 👋';
 
   @override
   String dailyOsNextGreetingHiName(String name) {
@@ -3431,6 +3488,18 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get dailyOsNextKnowledgeEmpty =>
       'Zatím nic — zapamatuji si, co mi řekneš.';
+
+  @override
+  String dailyOsNextKnowledgeNudge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count postřehů — zkontrolovat',
+      few: '$count postřehy — zkontrolovat',
+      one: '1 postřeh — zkontrolovat',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dailyOsNextKnowledgeProposedHeader => 'Čeká na tvé potvrzení';
@@ -3478,11 +3547,14 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextReconcileHeadline => 'Tohle jsem zachytil.';
+
+  @override
   String get dailyOsNextReconcileHeardEmpty =>
       'Karty ze záznamu se tu objeví, jakmile skončí parsování.';
 
   @override
-  String get dailyOsNextReconcileHeardOverline => 'TADY JE, CO JSEM SLYŠEL';
+  String get dailyOsNextReconcileHeardOverline => 'ZACHYCENO';
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'nízká důvěra';
@@ -3498,6 +3570,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextRefineAccept => 'Přijmout';
 
   @override
+  String get dailyOsNextRefineCurrentPlan => 'AKTUÁLNÍ PLÁN';
+
+  @override
   String get dailyOsNextRefineDiffAdded => 'PŘIDÁNO';
 
   @override
@@ -3507,7 +3582,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextRefineDiffMoved => 'PŘESUNUTO';
 
   @override
+  String get dailyOsNextRefineHeadlineDiffReady => 'Tohle bych změnil.';
+
+  @override
+  String get dailyOsNextRefineHeadlineIdle => 'Co se má změnit?';
+
+  @override
+  String get dailyOsNextRefineHeadlineThinking => 'Předělávám tvůj plán…';
+
+  @override
   String get dailyOsNextRefineKeepTalking => 'Mluv dál';
+
+  @override
+  String get dailyOsNextRefineLooksGood => 'Vypadá to dobře';
 
   @override
   String get dailyOsNextRefineNoChanges =>
@@ -3612,9 +3699,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ NA ZÍTŘEK';
-
-  @override
-  String get dailyOsNextStandaloneTag => 'Časový blok';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {

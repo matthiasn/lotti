@@ -4,6 +4,65 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1019]
+### Changed
+- The Daily OS day-planning conversation was redesigned around a stable
+  voice orb: the orb now stays put directly above the action bar in every
+  state while the live transcript grows upward above it (no more layout
+  jumping under your finger mid-recording), the orb is smaller and reacts
+  to presses with a visible ripple and a press-scale animation, and while
+  recording its core breathes with your voice — swelling with the level
+  and keeping a slow idle pulse between words — under a stop glyph; after
+  capture the orb steps back so the Review action carries the weight.
+  Every action lives on the sticky bottom bar in every state — including a
+  Done pill while recording and a Cancel while transcribing — and the
+  per-state headline narrates what is happening ("I'm listening.",
+  "Writing that down…", "Does this look right?").
+- On desktop, day planning now opens in a full-height side panel on the
+  right (45% of the window) instead of a centered dialog, so the day stays
+  visible while you talk; panel buttons size to their content instead of
+  stretching across the panel.
+- The Drafting wait replaced its empty shimmer boxes with the AI thinking
+  animation over a rotating narration of what the agent is doing
+  ("Reading your check-in…", "Placing deep work first…"), with yesterday's
+  learning cards as real content to read while waiting.
+- The Refine step was rebuilt on the same layout as Capture: it now shows
+  the current plan you are about to change, streams your words above the
+  orb, and offers Revert / Looks good on the bottom bar.
+- Day-planning copy and typography polish: a "Review" CTA instead of the
+  jargon "Reconcile", a real headline on the review step, typographic
+  apostrophes, and large accessibility text sizes no longer overflow the
+  capture sheet on small phones.
+- The Daily OS day view now reads as paint-by-numbers: planned blocks are
+  a faint sketch of their category color (dashed while still drafted) and
+  recorded sessions carry the full, alive color — doing fills the day in.
+  The timeline opens centered on the now-line, which spans both the plan
+  and actual lanes, and short blocks no longer clip text mid-letter.
+- The day's agenda is much calmer: finished items collapse into one-line
+  receipt rows so what's next owns the screen, metadata became quiet
+  icon+text instead of a row of pills, "in progress" is no longer painted
+  amber, and the capacity ring is now a thin stacked category ring that
+  matches the legend, with the remaining time in the center.
+- The Daily OS day page gained an Apple-style large-title header — a quiet
+  back chevron on its own line, "Your day" with a weekday-first date
+  overline, and the toggle, nudge chip, and cards all aligned to one left
+  rail. First-run gesture and lock-in coaching now retire after you use
+  them once instead of lingering, and content dissolves softly at the fold
+  under the glass bar instead of being cut off. The capacity card leads
+  with the time you have left (e.g. "15m left"), demotes the
+  committed/capacity detail to a supporting line, and turns the category
+  legend into a right-aligned receipt table; every concrete date across
+  the Daily OS now carries its weekday.
+- Learnings the planner wants you to confirm now surface right on the day
+  page as a quiet "things I noticed — review" chip (plus a permanent
+  "What I've learned" entry in the day menu) on both mobile and desktop,
+  instead of being reachable only from the evening wrap-up screen.
+- Light theme contrast: secondary "low emphasis" text and the teal accent
+  were too faint to read for low-vision users (about 2.2:1 against the
+  background). Light-mode secondary text is darker now, and the light
+  teal accent chain is deeper, so captions, hints, and white-on-teal
+  buttons all meet accessibility contrast. Dark mode is unchanged.
+
 ## [0.9.1018]
 ### Added
 - The Daily OS planner now sees the last week in context when drafting a

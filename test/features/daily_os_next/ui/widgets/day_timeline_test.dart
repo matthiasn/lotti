@@ -5,9 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -359,7 +359,7 @@ void main() {
       },
     );
 
-    testWidgets('AI blocks render a WhyChip; cal and buffer blocks do not', (
+    testWidgets('timeline blocks never render a why affordance', (
       tester,
     ) async {
       _setView(tester, const Size(1280, 1200));
@@ -374,8 +374,9 @@ void main() {
       );
       await tester.pump();
 
-      // The mock draft has exactly one ai block; only that one gets a chip.
-      expect(find.byType(WhyChip), findsOneWidget);
+      // Placement reasons surface on the agenda's sparkle tooltip; the
+      // duration-sized timeline boxes stay text-light.
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
     });
 
     testWidgets('now-line renders inside the visible window', (tester) async {
@@ -517,7 +518,9 @@ void main() {
         _wrap(
           DayTimeline(
             draft: _draft(),
-            clock: () => DateTime(2026, 5, 25, 9, 15),
+            // Mid-hour so the now-chip doesn't (correctly) suppress the
+            // adjacent hour labels this test asserts on.
+            clock: () => DateTime(2026, 5, 25, 9, 35),
           ),
           size: const Size(1280, 900),
         ),
@@ -539,6 +542,28 @@ void main() {
         hourLabel.style?.fontWeight,
         tokens.typography.styles.others.caption.fontWeight,
       );
+    });
+
+    testWidgets('now-chip suppresses the hour label it would occlude', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draft(),
+            // :55 — the chip's rect overlaps the 10:00 gutter label.
+            clock: () => DateTime(2026, 5, 25, 9, 55),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('09:55'), findsAtLeastNWidgets(1));
+      expect(find.text('10:00'), findsNothing);
+      expect(find.text('09:00'), findsOneWidget);
     });
 
     testWidgets('folded timelines still span midnight to midnight', (
@@ -897,8 +922,8 @@ void main() {
     });
 
     testWidgets(
-      'tracked blocks render the neutral treatment: category dot, green '
-      'check when done, mono time range with a tracked suffix, no WhyChip',
+      'tracked blocks are the alive treatment: full category stripe and '
+      'fill, green check when done, mono time range, no why affordance',
       (tester) async {
         _setView(tester, const Size(1280, 900));
 
@@ -916,7 +941,7 @@ void main() {
                   type: TimeBlockType.manual,
                   state: TimeBlockState.completed,
                   category: _work,
-                  reason: 'should never surface as a WhyChip',
+                  reason: 'should never surface a why affordance',
                 ),
               ],
               clock: () => DateTime(2026, 5, 25, 9, 15),
@@ -926,20 +951,35 @@ void main() {
         );
         await tester.pump();
 
-        final messages = tester.element(find.byType(DayTimeline)).messages;
-        // "09:00–10:30 · tracked" subtitle suffix.
-        expect(
-          find.textContaining(messages.dailyOsNextTimelineTracked),
-          findsOneWidget,
+        // Recorded sessions carry the color: an 18% category tint
+        // composited opaquely over the canvas (paint-by-numbers — doing
+        // fills the block in; gridlines never bleed through).
+        final ink = tester.widget<Ink>(
+          find.descendant(
+            of: find.byKey(const Key('daily_os_day_block_tracked-1')),
+            matching: find.byType(Ink),
+          ),
         );
+        final fill = (ink.decoration! as BoxDecoration).color!;
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+        final isLight =
+            Theme.of(tester.element(find.byType(DayTimeline))).brightness ==
+            Brightness.light;
+        final expected = Color.alphaBlend(
+          categoryColorFromHex(
+            _work.colorHex,
+          ).withValues(alpha: isLight ? 0.30 : 0.18),
+          tokens.colors.background.level01,
+        );
+        expect(fill, expected);
+        expect(fill.a, 1.0);
         // Done sessions get the green check.
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
         // Tracked blocks never surface agent reasoning.
-        expect(find.byType(WhyChip), findsNothing);
-        // The subtitle is mono (Inconsolata) per the handoff.
-        final subtitle = tester.widget<Text>(
-          find.textContaining(messages.dailyOsNextTimelineTracked),
-        );
+        expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
+        // The mono time range carries the recorded voice (no suffix —
+        // the lane header already says Actual).
+        final subtitle = tester.widget<Text>(find.text('09:00\u201310:30'));
         expect(subtitle.style?.fontFamily, 'Inconsolata');
       },
     );
@@ -1393,6 +1433,77 @@ void main() {
         expect(displayHour, inInclusiveRange(0, 24));
       },
       tags: 'glados',
+    );
+  });
+
+  group('DayBlock height tiers', () {
+    TimeBlock incident({int minutes = 22}) => TimeBlock(
+      id: 'tier-probe',
+      title: 'Production incident triage',
+      start: DateTime(2026, 5, 25, 10, 40),
+      end: DateTime(2026, 5, 25, 10, 40 + minutes),
+      type: TimeBlockType.manual,
+      state: TimeBlockState.completed,
+      category: _work,
+    );
+
+    Widget tierHarness({required double height, double textScale = 1.0}) =>
+        _wrap(
+          MediaQuery(
+            data: MediaQueryData(
+              size: const Size(1280, 1200),
+              textScaler: TextScaler.linear(textScale),
+            ),
+            child: Center(
+              child: SizedBox(
+                height: height,
+                width: 240,
+                child: DayBlock(block: incident(), tracked: true),
+              ),
+            ),
+          ),
+        );
+
+    testWidgets(
+      'a 22px block at default text scale keeps a FITTED title — the '
+      'canonical short incident stays information, not just color',
+      (tester) async {
+        _setView(tester, const Size(1280, 1200));
+        await tester.pumpWidget(tierHarness(height: 22));
+        await tester.pump();
+
+        final title = find.text('Production incident triage');
+        expect(title, findsOneWidget);
+        // Content area = 22 − 2×step2 vertical padding = 14px; the fitted
+        // scaler shrinks the caption line to fit — never shears it.
+        expect(tester.getSize(title).height, lessThanOrEqualTo(14.01));
+      },
+    );
+
+    testWidgets('a micro block renders fill + stripe only (no text)', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 1200));
+      await tester.pumpWidget(tierHarness(height: 16));
+      await tester.pump();
+
+      // 16 − 8 padding = 8px content < 3/4 caption line → no glyphs; the
+      // DayBlock Semantics label still carries the title.
+      expect(find.text('Production incident triage'), findsNothing);
+    });
+
+    testWidgets(
+      'at 2.0x text the sliver line still fits its box (no shearing)',
+      (tester) async {
+        _setView(tester, const Size(1280, 1200));
+        await tester.pumpWidget(tierHarness(height: 36, textScale: 2));
+        await tester.pump();
+
+        final title = find.text('Production incident triage');
+        expect(title, findsOneWidget);
+        // Content area = 36 − 8 = 28px; the fitted line must not exceed it.
+        expect(tester.getSize(title).height, lessThanOrEqualTo(28.01));
+      },
     );
   });
 }

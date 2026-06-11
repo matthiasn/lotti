@@ -7,7 +7,6 @@ import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -16,6 +15,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 /// Intent-first projection of the [DraftPlan]. One [AgendaCard] per
 /// task, top stat strip with capacity donut + summary + category mix.
@@ -51,33 +51,49 @@ class AgendaView extends StatelessWidget {
     final tokens = context.designTokens;
     final onRenameItem = this.onRenameItem;
     return SingleChildScrollView(
-      padding: EdgeInsets.all(tokens.spacing.step6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _StatStrip(
-            draft: draft,
-            actualBlocks: actualBlocks,
-            hasPlan: hasPlan,
+      // step5 horizontal: the agenda shares the page's single left rail
+      // with the masthead, toggle, and nudge chip. Extra bottom inset:
+      // the host fades the last ~36px at the fold, so the final row must
+      // be able to scroll fully clear of the band.
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step6,
+        tokens.spacing.step5,
+        tokens.spacing.step10,
+      ),
+      // A reading-width column on desktop instead of a stretched phone
+      // list; phones are unaffected.
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _StatStrip(
+                draft: draft,
+                actualBlocks: actualBlocks,
+                hasPlan: hasPlan,
+              ),
+              SizedBox(height: tokens.spacing.step4),
+              for (final (index, item) in draft.agendaItems.indexed) ...[
+                _LiveAgendaCard(
+                  index: index + 1,
+                  item: item,
+                  whyReason: _whyReasonFor(item),
+                  onTap: _taskTapFor(item),
+                  onRename: onRenameItem == null
+                      ? null
+                      : (title) => onRenameItem(item, title),
+                ),
+                SizedBox(height: tokens.spacing.step3),
+              ],
+              // "No plan yet" copy only when there genuinely is no plan;
+              // a real plan with zero agenda items keeps just the strip.
+              if (draft.agendaItems.isEmpty && !hasPlan)
+                _AgendaEmptyState(actualBlocks: actualBlocks),
+            ],
           ),
-          SizedBox(height: tokens.spacing.step4),
-          for (final (index, item) in draft.agendaItems.indexed) ...[
-            _LiveAgendaCard(
-              index: index + 1,
-              item: item,
-              whyReason: _whyReasonFor(item),
-              onTap: _taskTapFor(item),
-              onRename: onRenameItem == null
-                  ? null
-                  : (title) => onRenameItem(item, title),
-            ),
-            SizedBox(height: tokens.spacing.step3),
-          ],
-          // "No plan yet" copy only when there genuinely is no plan;
-          // a real plan with zero agenda items keeps just the strip.
-          if (draft.agendaItems.isEmpty && !hasPlan)
-            _AgendaEmptyState(actualBlocks: actualBlocks),
-        ],
+        ),
       ),
     );
   }
@@ -143,6 +159,11 @@ class _LiveAgendaCard extends ConsumerWidget {
   }
 }
 
+/// Whether the committed/capacity ratio is still in the calm band — the
+/// remaining headline only takes the error tone once the day is genuinely
+/// over capacity.
+bool ratioIsCalm(double ratio) => ratio <= 1.0;
+
 class _StatStrip extends StatelessWidget {
   const _StatStrip({
     required this.draft,
@@ -159,11 +180,23 @@ class _StatStrip extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final trackedMinutes = actualBlocks.totalMinutes;
+    // One source of truth: the same per-category totals drive the legend,
+    // the donut ring, and the headline minutes, so the three can never
+    // tell different numerical stories (stored scheduledMinutes can drift
+    // from the rendered blocks).
+    final categoryTotals = categoryTotalsFor(draft);
+    final committedMinutes = categoryTotals.fold<int>(
+      0,
+      (sum, entry) => sum + entry.minutes,
+    );
     final ratio = CapacityDonut.ratioFor(
-      draft.scheduledMinutes,
+      committedMinutes,
       draft.capacityMinutes,
     );
-    final overline = !hasPlan
+    final hasCapacity = draft.capacityMinutes > 0;
+    final remaining = draft.capacityMinutes - committedMinutes;
+    final isOver = hasCapacity && remaining < 0;
+    final pressure = !hasPlan
         ? messages.dailyOsNextAgendaCapacityNoPlan
         : ratio < 0.9
         ? messages.dailyOsNextAgendaCapacityComfortable
@@ -172,11 +205,23 @@ class _StatStrip extends StatelessWidget {
         : messages.dailyOsNextAgendaCapacityOver;
     final summary = hasPlan
         ? messages.dailyOsNextAgendaSummary(
-            formatMinutesCompact(draft.scheduledMinutes),
+            formatMinutesCompact(committedMinutes),
             formatMinutesCompact(draft.capacityMinutes),
           )
         : messages.dailyOsNextAgendaNoPlanSummary(
             formatMinutesCompact(trackedMinutes),
+          );
+    // One primary voice: the remainder leads ("15m left"), the committed
+    // total and the pressure word demote to a single supporting line —
+    // three competing headlines made the card read as prose, not an
+    // instrument.
+    final showRemainingHeadline = hasPlan && hasCapacity;
+    final headline = isOver
+        ? messages.dailyOsNextAgendaHeadlineOver(
+            formatMinutesCompact(remaining.abs()),
+          )
+        : messages.dailyOsNextAgendaHeadlineLeft(
+            formatMinutesCompact(remaining),
           );
 
     return Container(
@@ -189,26 +234,58 @@ class _StatStrip extends StatelessWidget {
       child: Row(
         children: [
           CapacityDonut(
-            scheduledMinutes: hasPlan ? draft.scheduledMinutes : trackedMinutes,
+            scheduledMinutes: hasPlan ? committedMinutes : trackedMinutes,
             capacityMinutes: draft.capacityMinutes,
             neutral: !hasPlan,
+            // Reality marker: where the recorded day stands against the
+            // same capacity dial the plan is drawn on.
+            progressFraction: hasPlan && hasCapacity && trackedMinutes > 0
+                ? (trackedMinutes / draft.capacityMinutes).clamp(0.0, 1.0)
+                : null,
+            segments: [
+              if (hasPlan)
+                for (final entry in categoryTotals)
+                  CapacityDonutSegment(
+                    color: categoryColorFromHex(entry.category.colorHex),
+                    minutes: entry.minutes,
+                  ),
+            ],
           ),
           SizedBox(width: tokens.spacing.step5),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(overline, style: calmEyebrowStyle(tokens)),
-                SizedBox(height: tokens.spacing.step2),
-                Text(
-                  summary,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+                if (showRemainingHeadline) ...[
+                  Text(
+                    headline,
+                    style: calmPageTitleStyle(
+                      tokens,
+                      color: !ratioIsCalm(ratio)
+                          ? tokens.colors.alert.error.defaultColor
+                          : null,
+                    ),
                   ),
-                ),
+                  SizedBox(height: tokens.spacing.step1),
+                  Text(
+                    '$summary · $pressure',
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
+                  ),
+                ] else ...[
+                  Text(pressure, style: calmEyebrowStyle(tokens)),
+                  SizedBox(height: tokens.spacing.step2),
+                  Text(
+                    summary,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ],
                 SizedBox(height: tokens.spacing.step3),
                 if (hasPlan)
-                  _CategoryMix(draft: draft)
+                  _CategoryMix(entries: categoryTotals)
                 else
                   _TrackedLegend(blocks: actualBlocks),
               ],
@@ -230,53 +307,80 @@ class _TrackedLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return DsPill(
-      variant: DsPillVariant.filled,
-      label: context.messages.dailyOsNextAgendaTrackedLegend(
-        formatMinutesCompact(blocks.totalMinutes),
-        blocks.completedCount,
-      ),
-      labelColor: tokens.colors.text.lowEmphasis,
-      leading: SizedBox.square(
-        dimension: tokens.spacing.step2,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            color: tokens.colors.interactive.enabled,
-            shape: BoxShape.circle,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox.square(
+          dimension: tokens.spacing.step2,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: tokens.colors.interactive.enabled,
+              shape: BoxShape.circle,
+            ),
           ),
         ),
-      ),
+        SizedBox(width: tokens.spacing.step2),
+        Flexible(
+          child: Text(
+            context.messages.dailyOsNextAgendaTrackedLegend(
+              formatMinutesCompact(blocks.totalMinutes),
+              blocks.completedCount,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
 
-class _CategoryMix extends StatelessWidget {
-  const _CategoryMix({required this.draft});
+/// Per-category planned minutes (dropped blocks excluded), largest first —
+/// drives both the legend rows and the donut's stacked ring so they can't
+/// disagree.
+List<({DayAgentCategory category, int minutes})> categoryTotalsFor(
+  DraftPlan draft,
+) {
+  final totals = <String, ({DayAgentCategory category, int minutes})>{};
+  for (final block in draft.blocks) {
+    if (block.state == TimeBlockState.dropped) continue;
+    final key = block.category.id;
+    final existing = totals[key];
+    totals[key] = (
+      category: block.category,
+      minutes: (existing?.minutes ?? 0) + block.duration.inMinutes,
+    );
+  }
+  return totals.values.toList()..sort((a, b) => b.minutes.compareTo(a.minutes));
+}
 
-  final DraftPlan draft;
+class _CategoryMix extends StatelessWidget {
+  const _CategoryMix({required this.entries});
+
+  /// Shared with the donut by the stat strip so legend and ring cannot
+  /// disagree (and the per-build aggregation runs once, not twice).
+  final List<({DayAgentCategory category, int minutes})> entries;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final totals = <String, ({DayAgentCategory category, int minutes})>{};
-    for (final block in draft.blocks) {
-      if (block.state == TimeBlockState.dropped) continue;
-      final key = block.category.id;
-      final existing = totals[key];
-      totals[key] = (
-        category: block.category,
-        minutes: (existing?.minutes ?? 0) + block.duration.inMinutes,
-      );
-    }
-    if (totals.isEmpty) return const SizedBox.shrink();
-    final entries = totals.values.toList()
-      ..sort((a, b) => b.minutes.compareTo(a.minutes));
-    return Wrap(
-      spacing: tokens.spacing.step3,
-      runSpacing: tokens.spacing.step2,
+    if (entries.isEmpty) return const SizedBox.shrink();
+    // Micro-table, not a Wrap: one full-width row per category so labels
+    // get the whole column before they ever truncate (at 2x text the old
+    // half-width Wrap cells degraded to "Dee…"/"Clien…"), and the
+    // durations set as a right-aligned ledger column.
+    return Column(
       children: [
-        for (final entry in entries)
-          _CategoryLegend(category: entry.category, minutes: entry.minutes),
+        for (var i = 0; i < entries.length; i++) ...[
+          if (i > 0) SizedBox(height: tokens.spacing.step2),
+          _CategoryLegend(
+            category: entries[i].category,
+            minutes: entries[i].minutes,
+          ),
+        ],
       ],
     );
   }
@@ -292,16 +396,37 @@ class _CategoryLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = categoryColorFromHex(category.colorHex);
-    return DsPill(
-      variant: DsPillVariant.filled,
-      label: '${category.name} · ${formatMinutesCompact(minutes)}',
-      labelColor: tokens.colors.text.lowEmphasis,
-      leading: SizedBox.square(
-        dimension: tokens.spacing.step2,
-        child: DecoratedBox(
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    // Receipt typesetting: dot + label lead, duration right-aligned in
+    // tabular figures so the column of values reads as one ledger. The
+    // duration is the data — protect it; the label truncates last.
+    return Row(
+      children: [
+        SizedBox.square(
+          dimension: tokens.spacing.step2,
+          child: DecoratedBox(
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
         ),
-      ),
+        SizedBox(width: tokens.spacing.step2),
+        Expanded(
+          child: Text(
+            category.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        Text(
+          formatMinutesCompact(minutes),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+            fontFeatures: numericBadgeFontFeatures,
+          ),
+        ),
+      ],
     );
   }
 }

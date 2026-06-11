@@ -1328,9 +1328,9 @@
   "dailyOsFold": "Složit",
   "dailyOsInvalidTimeRange": "Neplatný časový rozsah",
   "dailyOsNearLimit": "Blízko limitu",
-  "dailyOsNextAgendaCapacityComfortable": "POHODOVÉ",
-  "dailyOsNextAgendaCapacityNearFull": "TÉMĚŘ PLNÉ",
-  "dailyOsNextAgendaCapacityNoPlan": "ZATÍM ŽÁDNÝ PLÁN",
+  "dailyOsNextAgendaCapacityComfortable": "Pohodové",
+  "dailyOsNextAgendaCapacityNearFull": "Téměř plné",
+  "dailyOsNextAgendaCapacityNoPlan": "Zatím žádný plán",
   "dailyOsNextAgendaCapacityOf": "z {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1340,7 +1340,27 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "PŘEPLNĚNO",
+  "dailyOsNextAgendaCapacityOver": "Přeplněno",
+  "dailyOsNextAgendaDonutLeft": "volno",
+  "dailyOsNextAgendaDonutOver": "navíc",
+  "dailyOsNextAgendaHeadlineLeft": "{duration} zbývá",
+  "@dailyOsNextAgendaHeadlineLeft": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "15m"
+      }
+    }
+  },
+  "dailyOsNextAgendaHeadlineOver": "{duration} navíc",
+  "@dailyOsNextAgendaHeadlineOver": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1h"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanBody": "Tvůj zaznamenaný čas tu je tak jako tak — namluv check-in a já kolem něj navrhnu den.",
   "dailyOsNextAgendaNoPlanSummary": "{duration} zatím zaznamenáno. Namluv check-in a já kolem toho navrhnu den.",
   "dailyOsNextAgendaNoPlanTitle": "Na dnešek zatím žádný plán.",
@@ -1363,6 +1383,7 @@
   },
   "dailyOsNextAgendaTrackedLegend": "Zaznamenáno · {duration} · {completedCount} hotovo",
   "dailyOsNextCaptureCaptured": "Rozumím.",
+  "dailyOsNextCaptureDoneCta": "Hotovo",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Přístup k mikrofonu byl odepřen.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Žádná aktivní relace v reálném čase.",
   "dailyOsNextCaptureErrorNoAudioRecorded": "Nebylo nahráno žádné audio.",
@@ -1370,17 +1391,23 @@
   "dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed": "Přepis v reálném čase se nepodařilo spustit.",
   "dailyOsNextCaptureErrorRecordingStartFailed": "Nahrávání se nepodařilo spustit.",
   "dailyOsNextCaptureErrorTranscriptionFailed": "Přepis selhal.",
+  "dailyOsNextCaptureHeadlineCaptured": "Sedí to takhle?",
   "dailyOsNextCaptureHeadlineLead": "Co máš dnes",
+  "dailyOsNextCaptureHeadlineListening": "Poslouchám.",
   "dailyOsNextCaptureHeadlineTail": "na mysli?",
   "dailyOsNextCaptureHeadlineTailForDate": "na {date}?",
   "dailyOsNextCaptureHeadlineTailTomorrow": "na zítra?",
   "dailyOsNextCaptureHeadlineTailYesterday": "na včera?",
+  "dailyOsNextCaptureHeadlineTranscribing": "Zapisuji…",
+  "dailyOsNextCaptureIdleClick": "Klikni a mluv",
+  "dailyOsNextCaptureIdleExample": "„Dopoledne hluboká práce, po obědě procházka, e-maily do pěti.“",
   "dailyOsNextCaptureIdleHint": "Klepni pro mluvení · místo toho napiš",
   "dailyOsNextCaptureIdleTalk": "Klepni pro mluvení",
-  "dailyOsNextCaptureListening": "POSLOUCHÁM",
+  "dailyOsNextCaptureListeningStatus": "Poslouchám…",
   "dailyOsNextCapturePastPrompt": "Chceš ještě něco zapsat k {date}?",
-  "dailyOsNextCaptureReconcileCta": "Sjednotit",
+  "dailyOsNextCaptureReconcileCta": "Zkontrolovat",
   "dailyOsNextCapturesPanelTitle": "Záznamy",
+  "dailyOsNextCaptureTranscribing": "Přepisuji…",
   "dailyOsNextCaptureTranscriptHint": "Oprav cokoli, co přepis spletl, než začne plánování.",
   "dailyOsNextCaptureTranscriptLabel": "Zkontroluj přepis",
   "dailyOsNextCaptureTypeInstead": "Místo toho napiš",
@@ -1429,8 +1456,8 @@
   "dailyOsNextDayMenuDeletePlan": "Smazat plán",
   "dailyOsNextDayMenuInspectAgent": "Prozkoumat agenta",
   "dailyOsNextDayMoreTooltip": "Více",
-  "dailyOsNextDayRefineCta": "Upravit hlasem",
-  "dailyOsNextDayRefineFooterHint": "Mluv, aby ses k plánu vrátil — změny se zobrazí jako diff, než se uplatní.",
+  "dailyOsNextDayRefineCta": "Upravit",
+  "dailyOsNextDayRefineFooterHint": "Mluv a přetvoř plán — každou změnu uvidíš, než se cokoli uloží.",
   "dailyOsNextDayTitle": "Tvůj den",
   "dailyOsNextDayWhyChipLabel": "PROČ",
   "dailyOsNextDayWrapUpCta": "Ukončit",
@@ -1438,20 +1465,18 @@
   "dailyOsNextDraftingNudgeAccept": "Ano, chraň ranní hodiny",
   "dailyOsNextDraftingNudgeDecline": "Dnes ne",
   "dailyOsNextDraftingReasoningOverline": "✦ ÚVAHA",
+  "dailyOsNextDraftingStatusAfternoon": "Skládám odpoledne…",
+  "dailyOsNextDraftingStatusAlmost": "Už to skoro je…",
+  "dailyOsNextDraftingStatusBreathing": "Nechávám prostor k nadechnutí…",
+  "dailyOsNextDraftingStatusDeepWork": "Hluboká práce jde na začátek…",
+  "dailyOsNextDraftingStatusMatching": "Přiřazuji úkoly ke dni…",
+  "dailyOsNextDraftingStatusReading": "Čtu tvůj check-in…",
+  "dailyOsNextDraftingStatusTimings": "Kontroluji časy…",
+  "dailyOsNextDraftingStatusYesterday": "Dívám se na včerejší rytmus…",
   "dailyOsNextEditTitleHint": "Upravit název",
-  "dailyOsNextEstimateMinutes": "{minutes}m",
-  "@dailyOsNextEstimateMinutes": {
-    "placeholders": {
-      "minutes": {
-        "type": "int",
-        "example": "45"
-      }
-    }
-  },
   "dailyOsNextGenericError": "Něco se pokazilo. Zkus to za chvíli znovu.",
   "dailyOsNextGreetingAfternoon": "Dobré odpoledne.",
   "dailyOsNextGreetingEvening": "Dobrý večer.",
-  "dailyOsNextGreetingHi": "Ahoj 👋",
   "dailyOsNextGreetingHiName": "Ahoj {name} 👋",
   "dailyOsNextGreetingMorning": "Dobré ráno.",
   "dailyOsNextKnowledgeConfirm": "Potvrdit",
@@ -1462,6 +1487,14 @@
   "dailyOsNextKnowledgeEditSave": "Uložit",
   "dailyOsNextKnowledgeEditStatementHint": "Co si mám zapamatovat?",
   "dailyOsNextKnowledgeEmpty": "Zatím nic — zapamatuji si, co mi řekneš.",
+  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 postřeh — zkontrolovat} few{{count} postřehy — zkontrolovat} other{{count} postřehů — zkontrolovat}}",
+  "@dailyOsNextKnowledgeNudge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextKnowledgeProposedHeader": "Čeká na tvé potvrzení",
   "dailyOsNextKnowledgeRetract": "Zapomenout",
   "dailyOsNextKnowledgeStale": "Platí to stále?",
@@ -1484,16 +1517,22 @@
       }
     }
   },
+  "dailyOsNextReconcileHeadline": "Tohle jsem zachytil.",
   "dailyOsNextReconcileHeardEmpty": "Karty ze záznamu se tu objeví, jakmile skončí parsování.",
-  "dailyOsNextReconcileHeardOverline": "TADY JE, CO JSEM SLYŠEL",
+  "dailyOsNextReconcileHeardOverline": "ZACHYCENO",
   "dailyOsNextReconcileLowConfidence": "nízká důvěra",
   "dailyOsNextReconcileReRecord": "Znovu nahrát",
   "dailyOsNextReconcileVoiceHint": "Zkontroluj rozhodnutí, než si poskládáš den",
   "dailyOsNextRefineAccept": "Přijmout",
+  "dailyOsNextRefineCurrentPlan": "AKTUÁLNÍ PLÁN",
   "dailyOsNextRefineDiffAdded": "PŘIDÁNO",
   "dailyOsNextRefineDiffDropped": "ODSTRANĚNO",
   "dailyOsNextRefineDiffMoved": "PŘESUNUTO",
+  "dailyOsNextRefineHeadlineDiffReady": "Tohle bych změnil.",
+  "dailyOsNextRefineHeadlineIdle": "Co se má změnit?",
+  "dailyOsNextRefineHeadlineThinking": "Předělávám tvůj plán…",
   "dailyOsNextRefineKeepTalking": "Mluv dál",
+  "dailyOsNextRefineLooksGood": "Vypadá to dobře",
   "dailyOsNextRefineNoChanges": "Nevrátily se žádné změny plánu. Zkus to přeformulovat a znovu odeslat.",
   "dailyOsNextRefineOverline": "🎤 ÚPRAVA",
   "dailyOsNextRefineRevert": "Vrátit",
@@ -1542,7 +1581,6 @@
   "dailyOsNextShutdownSaveAndClose": "Uložit a zavřít",
   "dailyOsNextShutdownTitle": "Uzavřít den",
   "dailyOsNextShutdownTomorrowOverline": "✦ NA ZÍTŘEK",
-  "dailyOsNextStandaloneTag": "Časový blok",
   "dailyOsNextStateDueOnDate": "Splatné {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

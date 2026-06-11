@@ -21,9 +21,29 @@ class KnowledgePanel extends ConsumerWidget {
     // Use the last resolved value (not maybeWhen) so a confirm/retract/edit
     // invalidation keeps the panel rendered during the background refresh
     // instead of flashing to empty (repo no-flash rule).
-    final view = ref.watch(plannerKnowledgeProvider).value;
+    final async = ref.watch(plannerKnowledgeProvider);
+    final view = async.value;
     if (view == null) {
-      return const SizedBox.shrink();
+      // First load / error with no prior value: the panel is sometimes the
+      // SOLE content of a modal, so a silent shrink would read as a broken
+      // blank sheet.
+      return Padding(
+        padding: EdgeInsets.all(tokens.spacing.step6),
+        child: Center(
+          child: async.hasError
+              ? Text(
+                  context.messages.dailyOsNextGenericError,
+                  textAlign: TextAlign.center,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                )
+              : const SizedBox.square(
+                  dimension: 24,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+        ),
+      );
     }
 
     return Container(

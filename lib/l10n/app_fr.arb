@@ -1519,9 +1519,9 @@
   "dailyOsFold": "Réduire",
   "dailyOsInvalidTimeRange": "Plage horaire invalide",
   "dailyOsNearLimit": "Proche de la limite",
-  "dailyOsNextAgendaCapacityComfortable": "CONFORTABLE",
-  "dailyOsNextAgendaCapacityNearFull": "PRESQUE PLEIN",
-  "dailyOsNextAgendaCapacityNoPlan": "PAS ENCORE DE PLAN",
+  "dailyOsNextAgendaCapacityComfortable": "Confortable",
+  "dailyOsNextAgendaCapacityNearFull": "Presque plein",
+  "dailyOsNextAgendaCapacityNoPlan": "Pas encore de plan",
   "dailyOsNextAgendaCapacityOf": "sur {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1531,7 +1531,27 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "SURCHARGE",
+  "dailyOsNextAgendaCapacityOver": "Surcharge",
+  "dailyOsNextAgendaDonutLeft": "libre",
+  "dailyOsNextAgendaDonutOver": "en trop",
+  "dailyOsNextAgendaHeadlineLeft": "{duration} restant",
+  "@dailyOsNextAgendaHeadlineLeft": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "15m"
+      }
+    }
+  },
+  "dailyOsNextAgendaHeadlineOver": "{duration} de trop",
+  "@dailyOsNextAgendaHeadlineOver": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1h"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanBody": "Ton temps suivi est là quoi qu'il arrive — dicte un check-in et je construis ta journée autour.",
   "dailyOsNextAgendaNoPlanSummary": "{duration} suivi pour l'instant. Dicte un check-in et je construis ta journée autour.",
   "dailyOsNextAgendaNoPlanTitle": "Pas encore de plan pour aujourd'hui.",
@@ -1554,6 +1574,7 @@
   },
   "dailyOsNextAgendaTrackedLegend": "Suivi · {duration} · {completedCount, plural, =1{1 terminée} other{{completedCount} terminées}}",
   "dailyOsNextCaptureCaptured": "C'est noté.",
+  "dailyOsNextCaptureDoneCta": "Terminer",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "L’autorisation du micro a été refusée.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Aucune session en temps réel active.",
   "dailyOsNextCaptureErrorNoAudioRecorded": "Aucun audio n’a été enregistré.",
@@ -1561,17 +1582,23 @@
   "dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed": "La transcription en temps réel n’a pas pu démarrer.",
   "dailyOsNextCaptureErrorRecordingStartFailed": "L’enregistrement n’a pas pu démarrer.",
   "dailyOsNextCaptureErrorTranscriptionFailed": "La transcription a échoué.",
+  "dailyOsNextCaptureHeadlineCaptured": "C'est bien ça ?",
   "dailyOsNextCaptureHeadlineLead": "Qu'as-tu en tête",
+  "dailyOsNextCaptureHeadlineListening": "Je t'écoute.",
   "dailyOsNextCaptureHeadlineTail": "pour aujourd'hui ?",
   "dailyOsNextCaptureHeadlineTailForDate": "pour {date} ?",
   "dailyOsNextCaptureHeadlineTailTomorrow": "pour demain ?",
   "dailyOsNextCaptureHeadlineTailYesterday": "pour hier ?",
+  "dailyOsNextCaptureHeadlineTranscribing": "Je note…",
+  "dailyOsNextCaptureIdleClick": "Clique pour parler",
+  "dailyOsNextCaptureIdleExample": "« Travail de fond ce matin, une balade après le déjeuner, les mails avant 17 h. »",
   "dailyOsNextCaptureIdleHint": "Tape pour parler · écris plutôt",
   "dailyOsNextCaptureIdleTalk": "Tape pour parler",
-  "dailyOsNextCaptureListening": "ÉCOUTE",
+  "dailyOsNextCaptureListeningStatus": "À l’écoute…",
   "dailyOsNextCapturePastPrompt": "Tu veux encore suivre quelque chose du {date} ?",
-  "dailyOsNextCaptureReconcileCta": "Réconcilier",
+  "dailyOsNextCaptureReconcileCta": "Vérifier",
   "dailyOsNextCapturesPanelTitle": "Captures",
+  "dailyOsNextCaptureTranscribing": "Transcription en cours…",
   "dailyOsNextCaptureTranscriptHint": "Corrige ce que la transcription a mal compris avant de planifier.",
   "dailyOsNextCaptureTranscriptLabel": "Relis la transcription",
   "dailyOsNextCaptureTypeInstead": "Écrire plutôt",
@@ -1620,8 +1647,8 @@
   "dailyOsNextDayMenuDeletePlan": "Supprimer le plan",
   "dailyOsNextDayMenuInspectAgent": "Inspecter l'agent",
   "dailyOsNextDayMoreTooltip": "Plus",
-  "dailyOsNextDayRefineCta": "Affiner à la voix",
-  "dailyOsNextDayRefineFooterHint": "Parle pour réorganiser le plan — les changements apparaissent en diff avant d'être appliqués.",
+  "dailyOsNextDayRefineCta": "Ajuster",
+  "dailyOsNextDayRefineFooterHint": "Parle pour réorganiser le plan — tu verras chaque changement avant qu'il soit enregistré.",
   "dailyOsNextDayTitle": "Ta journée",
   "dailyOsNextDayWhyChipLabel": "POURQUOI",
   "dailyOsNextDayWrapUpCta": "Clore",
@@ -1629,20 +1656,18 @@
   "dailyOsNextDraftingNudgeAccept": "Oui, protège les matinées",
   "dailyOsNextDraftingNudgeDecline": "Pas aujourd'hui",
   "dailyOsNextDraftingReasoningOverline": "✦ RAISONNEMENT",
+  "dailyOsNextDraftingStatusAfternoon": "J'organise l'après-midi…",
+  "dailyOsNextDraftingStatusAlmost": "Presque fini…",
+  "dailyOsNextDraftingStatusBreathing": "Je laisse de l'air dans le planning…",
+  "dailyOsNextDraftingStatusDeepWork": "Je place le travail de fond en premier…",
+  "dailyOsNextDraftingStatusMatching": "J'associe les tâches à ta journée…",
+  "dailyOsNextDraftingStatusReading": "Je lis ton point du jour…",
+  "dailyOsNextDraftingStatusTimings": "Je vérifie les horaires…",
+  "dailyOsNextDraftingStatusYesterday": "Je regarde le rythme d'hier…",
   "dailyOsNextEditTitleHint": "Modifier le titre",
-  "dailyOsNextEstimateMinutes": "{minutes}m",
-  "@dailyOsNextEstimateMinutes": {
-    "placeholders": {
-      "minutes": {
-        "type": "int",
-        "example": "45"
-      }
-    }
-  },
   "dailyOsNextGenericError": "Une erreur est survenue. Réessaie dans un instant.",
   "dailyOsNextGreetingAfternoon": "Bon après-midi.",
   "dailyOsNextGreetingEvening": "Bonsoir.",
-  "dailyOsNextGreetingHi": "Salut 👋",
   "dailyOsNextGreetingHiName": "Salut {name} 👋",
   "dailyOsNextGreetingMorning": "Bonjour.",
   "dailyOsNextKnowledgeConfirm": "Confirmer",
@@ -1653,6 +1678,14 @@
   "dailyOsNextKnowledgeEditSave": "Enregistrer",
   "dailyOsNextKnowledgeEditStatementHint": "Que dois-je retenir ?",
   "dailyOsNextKnowledgeEmpty": "Rien pour l'instant — je retiendrai ce que tu me dis.",
+  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 observation — à valider} other{{count} observations — à valider}}",
+  "@dailyOsNextKnowledgeNudge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextKnowledgeProposedHeader": "En attente de ta confirmation",
   "dailyOsNextKnowledgeRetract": "Oublier",
   "dailyOsNextKnowledgeStale": "Toujours vrai ?",
@@ -1675,16 +1708,22 @@
       }
     }
   },
+  "dailyOsNextReconcileHeadline": "Voici ce que j’ai entendu.",
   "dailyOsNextReconcileHeardEmpty": "Les cartes de capture apparaîtront ici une fois l'analyse terminée.",
-  "dailyOsNextReconcileHeardOverline": "VOILÀ CE QUE J'AI ENTENDU",
+  "dailyOsNextReconcileHeardOverline": "ENTENDU",
   "dailyOsNextReconcileLowConfidence": "confiance faible",
   "dailyOsNextReconcileReRecord": "Réenregistrer",
   "dailyOsNextReconcileVoiceHint": "Vérifie les décisions avant de construire ta journée",
   "dailyOsNextRefineAccept": "Accepter",
+  "dailyOsNextRefineCurrentPlan": "PLAN ACTUEL",
   "dailyOsNextRefineDiffAdded": "AJOUTÉ",
   "dailyOsNextRefineDiffDropped": "RETIRÉ",
   "dailyOsNextRefineDiffMoved": "DÉPLACÉ",
+  "dailyOsNextRefineHeadlineDiffReady": "Voilà ce que je changerais.",
+  "dailyOsNextRefineHeadlineIdle": "Qu’est-ce qu’on change ?",
+  "dailyOsNextRefineHeadlineThinking": "Je retravaille ton plan…",
   "dailyOsNextRefineKeepTalking": "Continuer à parler",
+  "dailyOsNextRefineLooksGood": "C’est bon",
   "dailyOsNextRefineNoChanges": "Aucun changement de plan n'est revenu. Reformule et réessaie.",
   "dailyOsNextRefineOverline": "🎤 AFFINEMENT",
   "dailyOsNextRefineRevert": "Annuler",
@@ -1733,7 +1772,6 @@
   "dailyOsNextShutdownSaveAndClose": "Enregistrer et fermer",
   "dailyOsNextShutdownTitle": "Clore la journée",
   "dailyOsNextShutdownTomorrowOverline": "✦ POUR DEMAIN",
-  "dailyOsNextStandaloneTag": "Bloc de temps",
   "dailyOsNextStateDueOnDate": "À rendre le {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

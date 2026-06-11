@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -29,7 +30,7 @@ class ParsedCard extends StatelessWidget {
     final tokens = context.designTokens;
     return Container(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+        color: tokens.colors.surface.enabled,
         borderRadius: BorderRadius.circular(tokens.radii.l),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
@@ -128,7 +129,7 @@ class _SpokenPhraseLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Text(
-      '"$phrase"',
+      '“$phrase”',
       style: tokens.typography.styles.body.bodySmall.copyWith(
         color: tokens.colors.text.mediumEmphasis,
         fontStyle: FontStyle.italic,
@@ -287,7 +288,9 @@ class _EstimateChip extends StatelessWidget {
         ),
         SizedBox(width: tokens.spacing.step1),
         Text(
-          context.messages.dailyOsNextEstimateMinutes(minutes),
+          // One compact duration voice ("2h", "1h 30m") across the
+          // agenda, recap, and parsed cards.
+          formatMinutesCompact(minutes),
           style: tokens.typography.styles.others.caption.copyWith(
             color: tokens.colors.text.lowEmphasis,
           ),
@@ -305,22 +308,26 @@ class _TimeAnchorChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final warning = tokens.colors.alert.warning.defaultColor;
-    return Container(
-      decoration: BoxDecoration(
-        color: warning.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: 2,
-      ),
-      child: Text(
-        anchor,
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: warning,
+    // One metadata grammar: tinted pills are reserved for the category,
+    // bare icon+text for passive attributes, and orange for exactly one
+    // semantic — uncertainty. A deadline is an attribute, not a warning,
+    // so it reads like the estimate (slightly stronger emphasis).
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.outlined_flag_rounded,
+          size: 12,
+          color: tokens.colors.text.mediumEmphasis,
         ),
-      ),
+        SizedBox(width: tokens.spacing.step1),
+        Text(
+          anchor,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      ],
     );
   }
 }

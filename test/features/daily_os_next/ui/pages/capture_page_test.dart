@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
@@ -120,7 +119,6 @@ void main() {
         final context = tester.element(find.byType(CapturePage));
         final messages = context.messages;
 
-        expect(find.text(messages.dailyOsNextGreetingHi), findsOneWidget);
         expect(find.text(messages.dailyOsNextCaptureIdleTalk), findsOneWidget);
         expect(
           find.text(messages.dailyOsNextCaptureTypeInstead),
@@ -220,7 +218,10 @@ void main() {
       await _pumpCapture(tester, harness: harness);
 
       final messages = tester.element(find.byType(CapturePage)).messages;
-      await tester.tap(find.text(messages.dailyOsNextCaptureTypeInstead));
+      final typeInstead = find.text(messages.dailyOsNextCaptureTypeInstead);
+      await tester.ensureVisible(typeInstead);
+      await tester.pump();
+      await tester.tap(typeInstead);
       await tester.pump();
 
       expect(
@@ -252,7 +253,14 @@ void main() {
 
       final context = tester.element(find.byType(CapturePage));
       final messages = context.messages;
-      expect(find.text(messages.dailyOsNextCaptureListening), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextCaptureHeadlineListening),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextCaptureListeningStatus),
+        findsOneWidget,
+      );
       expect(find.byType(LiveWaveform), findsOneWidget);
 
       await harness.dispose();
@@ -288,14 +296,14 @@ void main() {
 
         final context = tester.element(find.byType(CapturePage));
         final messages = context.messages;
-        final tokens = context.designTokens;
-        expect(find.text(messages.dailyOsNextCaptureCaptured), findsOneWidget);
-        final capturedStatus = tester.widget<Text>(
-          find.text(messages.dailyOsNextCaptureCaptured),
+        // Captured phase narrates through the headline and the orb caption.
+        expect(
+          find.text(messages.dailyOsNextCaptureHeadlineCaptured),
+          findsOneWidget,
         );
         expect(
-          capturedStatus.style?.letterSpacing,
-          tokens.typography.styles.subtitle.subtitle2.letterSpacing,
+          find.text(messages.dailyOsNextCaptureCaptured),
+          findsOneWidget,
         );
         expect(
           find.byKey(const Key('daily_os_capture_transcript_editor')),
@@ -458,7 +466,7 @@ void main() {
     });
 
     testWidgets(
-      'transcribing phase renders the spinner instead of the waveform',
+      'transcribing phase keeps the frozen waveform and narrates honestly',
       (tester) async {
         await tester.pumpWidget(
           _wrap(
@@ -469,7 +477,7 @@ void main() {
                   const CaptureState(
                     phase: CapturePhase.transcribing,
                     transcript: '',
-                    amplitudes: [],
+                    amplitudes: [0.2, 0.4, 0.6],
                   ),
                 ),
               ),
@@ -479,12 +487,18 @@ void main() {
         await tester.pump();
 
         final messages = tester.element(find.byType(CapturePage)).messages;
-        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        // No spinner: the headline + caption narrate the state, and the
+        // waveform stays frozen (dimmed) in its slot so nothing jumps.
+        expect(find.byType(CircularProgressIndicator), findsNothing);
         expect(
-          find.text(messages.dailyOsNextCaptureListening),
+          find.text(messages.dailyOsNextCaptureHeadlineTranscribing),
           findsOneWidget,
         );
-        expect(find.byType(LiveWaveform), findsNothing);
+        expect(
+          find.text(messages.dailyOsNextCaptureTranscribing),
+          findsOneWidget,
+        );
+        expect(find.byType(LiveWaveform), findsOneWidget);
       },
     );
 
@@ -652,7 +666,6 @@ void main() {
         );
         expect(scrollView.reverse, isTrue);
         final transcriptText = tester.widget<Text>(find.text(liveTranscript));
-        expect(transcriptText.strutStyle?.forceStrutHeight, isTrue);
         expect(transcriptText.maxLines, isNull);
         expect(transcriptText.overflow, isNull);
       },
@@ -685,8 +698,13 @@ void main() {
         );
         await tester.pump();
 
-        final tokens = tester.element(find.byType(CapturePage)).designTokens;
+        // On a squeezed viewport the transcript zone yields height so the
+        // orb and its caption stay fully above the fold (the anchored
+        // layout's priority); the live text itself must stay rendered and
+        // on screen.
+        expect(tester.takeException(), isNull);
         expect(find.text(liveTranscript), findsOneWidget);
+        expect(tester.getTopLeft(find.text(liveTranscript)).dy, greaterThan(0));
         expect(
           tester
               .getSize(
@@ -695,20 +713,19 @@ void main() {
                 ),
               )
               .height,
-          greaterThanOrEqualTo(tokens.typography.lineHeight.bodyMedium * 3),
+          greaterThan(0),
         );
-        expect(tester.getTopLeft(find.text(liveTranscript)).dy, greaterThan(0));
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        final caption = find.text(messages.dailyOsNextCaptureListeningStatus);
+        expect(caption, findsOneWidget);
+        expect(tester.getBottomLeft(caption).dy, lessThanOrEqualTo(568));
       },
     );
 
     testWidgets(
-      'capture state slot keeps the voice button stable while listening starts',
+      'voice orb keeps its exact position while listening starts and text grows',
       (tester) async {
-        const stateSlotKey = Key('daily_os_capture_state_slot');
-
-        Future<({Size slotSize, Offset voiceOffset})> pumpWithState(
-          CaptureState state,
-        ) async {
+        Future<Offset> pumpWithState(CaptureState state) async {
           await tester.pumpWidget(const SizedBox.shrink());
           await tester.pump();
           await tester.pumpWidget(
@@ -721,12 +738,8 @@ void main() {
               ],
             ),
           );
-          await tester.pump();
-
-          return (
-            slotSize: tester.getSize(find.byKey(stateSlotKey)),
-            voiceOffset: tester.getTopLeft(find.byType(VoiceButton)),
-          );
+          await tester.pump(const Duration(milliseconds: 300));
+          return tester.getCenter(find.byKey(VoiceButton.coreButtonKey));
         }
 
         final idle = await pumpWithState(const CaptureState.idle());
@@ -750,10 +763,12 @@ void main() {
           ),
         );
 
-        expect(listening.slotSize, idle.slotSize);
-        expect(longTranscript.slotSize, idle.slotSize);
-        expect(listening.voiceOffset, idle.voiceOffset);
-        expect(longTranscript.voiceOffset, idle.voiceOffset);
+        // The core's diameter breathes while listening, but its CENTER —
+        // the position under the finger — must not move. Sub-pixel float
+        // tolerance: centering an odd breathing diameter inside the fixed
+        // field shifts the computed center by < 1e-3.
+        expect((listening - idle).distance, lessThan(0.01));
+        expect((longTranscript - idle).distance, lessThan(0.01));
       },
     );
 
@@ -809,13 +824,13 @@ void main() {
             matching: find.byType(TextField),
           ),
         );
-        expect(field.minLines, greaterThanOrEqualTo(4));
+        expect(field.minLines, greaterThanOrEqualTo(3));
         expect(field.maxLines, isNull);
       },
     );
 
     testWidgets(
-      'captured transcript editor compacts on very small phone viewports',
+      'captured surface stays usable on very small phone viewports',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(320, 568));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -839,23 +854,22 @@ void main() {
         );
         await tester.pump();
 
-        final field = tester.widget<TextField>(
-          find.descendant(
-            of: find.byKey(const Key('daily_os_capture_transcript_editor')),
-            matching: find.byType(TextField),
-          ),
+        // The bounded transcript zone absorbs the squeeze: no overflow, and
+        // both the editor and the advance CTA stay on screen.
+        expect(tester.takeException(), isNull);
+        expect(
+          find.byKey(const Key('daily_os_capture_transcript_editor')),
+          findsOneWidget,
         );
-        expect(field.minLines, 2);
-        expect(field.maxLines, isNull);
-        expect(field.scrollPhysics, isA<NeverScrollableScrollPhysics>());
 
         final context = tester.element(find.byType(CapturePage));
         final ctaFinder = find.text(
           context.messages.dailyOsNextCaptureReconcileCta,
         );
+        // On viewports below the anchored minimum the body scrolls; the CTA
+        // must still be reachable.
         await tester.ensureVisible(ctaFinder);
         await tester.pump();
-
         expect(tester.getBottomLeft(ctaFinder).dy, lessThan(568));
       },
     );
@@ -988,12 +1002,12 @@ void main() {
         await tester.pump();
 
         final messages = tester.element(find.byType(CapturePage)).messages;
+        // The personalised greeting is merged into the single greeting line
+        // ("<Hi Alex 👋> · <greeting word>").
         expect(
-          find.text(messages.dailyOsNextGreetingHiName('Alex')),
+          find.textContaining(messages.dailyOsNextGreetingHiName('Alex')),
           findsOneWidget,
         );
-        // The anonymous greeting is replaced by the personalised one.
-        expect(find.text(messages.dailyOsNextGreetingHi), findsNothing);
 
         await harness.dispose();
       },
@@ -1243,7 +1257,14 @@ void main() {
       final messages = tester
           .element(find.byType(CaptureModalContent))
           .messages;
-      expect(find.text(messages.dailyOsNextCaptureListening), findsOneWidget);
+      expect(
+        find.text(messages.dailyOsNextCaptureHeadlineListening),
+        findsOneWidget,
+      );
+      expect(
+        find.text(messages.dailyOsNextCaptureListeningStatus),
+        findsOneWidget,
+      );
 
       await harness.dispose();
     });
@@ -1287,77 +1308,120 @@ void main() {
     }
   });
 
-  group('CaptureLayoutMetrics', () {
-    final tokens = resolveTestTheme().extension<DsTokens>()!;
+  group('anchored orb stability', () {
+    // The core layout contract of the redesigned capture surface: the orb
+    // never moves while the phase changes under the user's finger. Pump
+    // the modal content through every phase at a fixed viewport and
+    // assert the orb's global center is pixel-identical.
+    const phasesWithStates = <CapturePhase, CaptureState>{
+      CapturePhase.idle: CaptureState.idle(),
+      CapturePhase.listening: CaptureState(
+        phase: CapturePhase.listening,
+        transcript: '',
+        partialTranscript:
+            'Tomorrow I want to start with two hours of deep work on the '
+            'planner before any meetings, then a check-in with the design '
+            'team about the new layout.',
+        amplitudes: [0.2, 0.6, 0.4, 0.8, 0.3],
+        dbfs: -18,
+      ),
+      CapturePhase.transcribing: CaptureState(
+        phase: CapturePhase.transcribing,
+        transcript: '',
+        partialTranscript: 'Tomorrow I want to start with deep work',
+        amplitudes: [0.2, 0.6, 0.4],
+      ),
+      CapturePhase.captured: CaptureState(
+        phase: CapturePhase.captured,
+        transcript: 'Two hours of deep work, then a design check-in.',
+        amplitudes: [],
+      ),
+      CapturePhase.error: CaptureState(
+        phase: CapturePhase.error,
+        transcript: '',
+        amplitudes: [],
+        error: CaptureError.transcriptionFailed,
+      ),
+    };
 
-    test('minimum review transcript line count per viewport band', () {
-      expect(CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(559), 2);
-      expect(CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(560), 3);
-      expect(CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(699), 3);
-      expect(CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(700), 4);
-      expect(CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(1200), 4);
-    });
+    for (final textScale in const [1.0, 1.3]) {
+      testWidgets(
+        'orb center is identical across all phases at ${textScale}x text',
+        (tester) async {
+          const size = Size(375, 700);
+          Offset? reference;
+          CapturePhase? referencePhase;
 
-    glados.Glados2<int, int>(
-      glados.IntAnys(glados.any).intInRange(280, 1600),
-      glados.IntAnys(glados.any).intInRange(0, CapturePhase.values.length),
-      glados.ExploreConfig(numRuns: 160),
-    ).test(
-      'resolve keeps slot height clamped and line counts in range',
-      (viewportSeed, phaseSeed) {
-        final viewportHeight = viewportSeed.toDouble();
-        final phase =
-            CapturePhase.values[phaseSeed % CapturePhase.values.length];
-
-        final layout = CaptureLayoutMetrics.resolve(
-          tokens,
-          phase: phase,
-          viewportHeight: viewportHeight,
-        );
-
-        final minLines =
-            CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(
-              viewportHeight,
+          for (final entry in phasesWithStates.entries) {
+            await tester.pumpWidget(
+              _wrap(
+                SizedBox(
+                  width: size.width,
+                  height: size.height,
+                  child: const CaptureModalContent(),
+                ),
+                overrides: [
+                  captureControllerProvider.overrideWith(
+                    _StubCaptureController.factory(entry.value),
+                  ),
+                ],
+                mediaQueryData: MediaQueryData(
+                  size: size,
+                  textScaler: TextScaler.linear(textScale),
+                ),
+              ),
             );
-        final minSlot = CaptureLayoutMetrics.minimumSlotHeightFor(
-          tokens,
-          phase,
-          minimumReviewTranscriptLineCount: minLines,
-        );
-        final maxSlot = CaptureLayoutMetrics.maximumSlotHeightFor(tokens);
-        final reason = 'viewport=$viewportHeight phase=$phase';
+            await tester.pump(const Duration(milliseconds: 300));
 
-        // (1) slot height stays within the clamp bounds.
-        expect(
-          layout.stateSlotHeight,
-          greaterThanOrEqualTo(minSlot),
-          reason: reason,
-        );
-        expect(
-          layout.stateSlotHeight,
-          lessThanOrEqualTo(math.max(minSlot, maxSlot)),
-          reason: reason,
-        );
-        // (2) live transcript line count is always within [3, 7].
-        expect(
-          layout.liveTranscriptLineCount,
-          inInclusiveRange(3, 7),
-          reason: reason,
-        );
-        // (3) review transcript line count honors the viewport-band minimum.
-        expect(
-          layout.reviewTranscriptLineCount,
-          greaterThanOrEqualTo(minLines),
-          reason: reason,
-        );
-        expect(
-          layout.reviewTranscriptLineCount,
-          lessThanOrEqualTo(math.max(6, minLines)),
-          reason: reason,
-        );
-      },
-      tags: 'glados',
-    );
+            final center = tester.getCenter(
+              find.byKey(VoiceButton.coreButtonKey),
+            );
+            if (reference == null) {
+              reference = center;
+              referencePhase = entry.key;
+            } else {
+              expect(
+                center,
+                reference,
+                reason:
+                    'orb moved between $referencePhase and ${entry.key} '
+                    'at ${textScale}x text scale',
+              );
+            }
+          }
+        },
+      );
+    }
+
+    testWidgets('long live transcript never overflows at 1.3x on a mini', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const SizedBox(
+            width: 375,
+            height: 560,
+            child: CaptureModalContent(),
+          ),
+          overrides: [
+            captureControllerProvider.overrideWith(
+              _StubCaptureController.factory(
+                phasesWithStates[CapturePhase.listening]!,
+              ),
+            ),
+          ],
+          mediaQueryData: const MediaQueryData(
+            size: Size(375, 812),
+            textScaler: TextScaler.linear(1.3),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+      // The old metric-driven layout overflowed here; the anchored layout
+      // absorbs the pressure in the transcript zone. No exception = pass.
+      expect(tester.takeException(), isNull);
+      expect(find.byKey(VoiceButton.coreButtonKey), findsOneWidget);
+    });
   });
 
   group('capturedAtForSelectedDate', () {

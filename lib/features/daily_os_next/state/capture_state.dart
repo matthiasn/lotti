@@ -106,4 +106,37 @@ class CaptureState {
       error: error ?? this.error,
     );
   }
+
+  /// This state minus the audio-meter fields ([amplitudes], [dbfs]).
+  ///
+  /// The meter streams many updates per second while listening; widgets
+  /// that don't render the waveform/orb should watch this projection
+  /// (`provider.select((s) => s.withoutMeter)`) so those ticks don't
+  /// rebuild whole pages. Only the orb/waveform consumers watch the
+  /// meter fields themselves.
+  CaptureState get withoutMeter =>
+      copyWith(amplitudes: const [], dbfs: defaultDbfs);
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CaptureState &&
+          other.phase == phase &&
+          other.transcript == transcript &&
+          other.partialTranscript == partialTranscript &&
+          listEquals(other.amplitudes, amplitudes) &&
+          other.dbfs == dbfs &&
+          other.audioId == audioId &&
+          other.error == error;
+
+  @override
+  int get hashCode => Object.hash(
+    phase,
+    transcript,
+    partialTranscript,
+    Object.hashAll(amplitudes),
+    dbfs,
+    audioId,
+    error,
+  );
 }

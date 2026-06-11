@@ -132,7 +132,9 @@ void main() {
           matching: find.byType(AnimatedOpacity),
         ),
       );
-      expect(pencilOpacity().opacity, 0.25);
+      // Hover-reveal only: at rest the pencil is invisible (the whole
+      // title is the tap target; Semantics announces editability).
+      expect(pencilOpacity().opacity, 0.0);
 
       final gesture = await tester.createGesture(
         kind: PointerDeviceKind.mouse,
@@ -148,10 +150,10 @@ void main() {
 
       expect(pencilOpacity().opacity, 0.6);
 
-      // Leaving the title dims the pencil back to its resting state.
+      // Leaving the title hides the pencil again.
       await gesture.moveTo(Offset.zero);
       await tester.pump();
-      expect(pencilOpacity().opacity, 0.25);
+      expect(pencilOpacity().opacity, 0.0);
     });
   });
 }

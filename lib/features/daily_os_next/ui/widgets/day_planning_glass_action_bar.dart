@@ -33,6 +33,12 @@ class DayPlanningGlassActionBar extends StatelessWidget {
   @visibleForTesting
   static const Key topSlotKey = ValueKey('day-planning-action-bar-top-slot');
 
+  /// Action rows are capped to the planning surfaces' content width so a
+  /// wide host (the desktop side sheet) doesn't stretch pills into
+  /// full-width slabs.
+  @visibleForTesting
+  static const double actionsMaxWidth = 560;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -55,7 +61,12 @@ class DayPlanningGlassActionBar extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (topSlot != null) KeyedSubtree(key: topSlotKey, child: topSlot!),
-            actions,
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: actionsMaxWidth),
+                child: actions,
+              ),
+            ),
           ],
         ),
       ),

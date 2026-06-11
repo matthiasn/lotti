@@ -5229,19 +5229,19 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextAgendaCapacityComfortable.
   ///
   /// In en, this message translates to:
-  /// **'COMFORTABLE'**
+  /// **'Comfortable'**
   String get dailyOsNextAgendaCapacityComfortable;
 
   /// No description provided for @dailyOsNextAgendaCapacityNearFull.
   ///
   /// In en, this message translates to:
-  /// **'NEAR FULL'**
+  /// **'Near full'**
   String get dailyOsNextAgendaCapacityNearFull;
 
   /// No description provided for @dailyOsNextAgendaCapacityNoPlan.
   ///
   /// In en, this message translates to:
-  /// **'NO PLAN YET'**
+  /// **'No plan yet'**
   String get dailyOsNextAgendaCapacityNoPlan;
 
   /// No description provided for @dailyOsNextAgendaCapacityOf.
@@ -5253,8 +5253,32 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextAgendaCapacityOver.
   ///
   /// In en, this message translates to:
-  /// **'OVER CAPACITY'**
+  /// **'Over capacity'**
   String get dailyOsNextAgendaCapacityOver;
+
+  /// No description provided for @dailyOsNextAgendaDonutLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'left'**
+  String get dailyOsNextAgendaDonutLeft;
+
+  /// No description provided for @dailyOsNextAgendaDonutOver.
+  ///
+  /// In en, this message translates to:
+  /// **'over'**
+  String get dailyOsNextAgendaDonutOver;
+
+  /// No description provided for @dailyOsNextAgendaHeadlineLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} left'**
+  String dailyOsNextAgendaHeadlineLeft(String duration);
+
+  /// No description provided for @dailyOsNextAgendaHeadlineOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} over'**
+  String dailyOsNextAgendaHeadlineOver(String duration);
 
   /// No description provided for @dailyOsNextAgendaNoPlanBody.
   ///
@@ -5316,6 +5340,12 @@ abstract class AppLocalizations {
   /// **'Got it.'**
   String get dailyOsNextCaptureCaptured;
 
+  /// No description provided for @dailyOsNextCaptureDoneCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get dailyOsNextCaptureDoneCta;
+
   /// No description provided for @dailyOsNextCaptureErrorMicrophonePermissionDenied.
   ///
   /// In en, this message translates to:
@@ -5358,16 +5388,28 @@ abstract class AppLocalizations {
   /// **'Transcription failed.'**
   String get dailyOsNextCaptureErrorTranscriptionFailed;
 
+  /// No description provided for @dailyOsNextCaptureHeadlineCaptured.
+  ///
+  /// In en, this message translates to:
+  /// **'Does this look right?'**
+  String get dailyOsNextCaptureHeadlineCaptured;
+
   /// No description provided for @dailyOsNextCaptureHeadlineLead.
   ///
   /// In en, this message translates to:
-  /// **'What\'s on your mind'**
+  /// **'What’s on your mind'**
   String get dailyOsNextCaptureHeadlineLead;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineListening.
+  ///
+  /// In en, this message translates to:
+  /// **'I’m listening.'**
+  String get dailyOsNextCaptureHeadlineListening;
 
   /// No description provided for @dailyOsNextCaptureHeadlineTail.
   ///
   /// In en, this message translates to:
-  /// **'for today?'**
+  /// **'for today?'**
   String get dailyOsNextCaptureHeadlineTail;
 
   /// No description provided for @dailyOsNextCaptureHeadlineTailForDate.
@@ -5379,14 +5421,32 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextCaptureHeadlineTailTomorrow.
   ///
   /// In en, this message translates to:
-  /// **'for tomorrow?'**
+  /// **'for tomorrow?'**
   String get dailyOsNextCaptureHeadlineTailTomorrow;
 
   /// No description provided for @dailyOsNextCaptureHeadlineTailYesterday.
   ///
   /// In en, this message translates to:
-  /// **'for yesterday?'**
+  /// **'for yesterday?'**
   String get dailyOsNextCaptureHeadlineTailYesterday;
+
+  /// No description provided for @dailyOsNextCaptureHeadlineTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing that down…'**
+  String get dailyOsNextCaptureHeadlineTranscribing;
+
+  /// No description provided for @dailyOsNextCaptureIdleClick.
+  ///
+  /// In en, this message translates to:
+  /// **'Click to talk'**
+  String get dailyOsNextCaptureIdleClick;
+
+  /// No description provided for @dailyOsNextCaptureIdleExample.
+  ///
+  /// In en, this message translates to:
+  /// **'“Deep work this morning, a walk after lunch, emails before five.”'**
+  String get dailyOsNextCaptureIdleExample;
 
   /// No description provided for @dailyOsNextCaptureIdleHint.
   ///
@@ -5400,11 +5460,11 @@ abstract class AppLocalizations {
   /// **'Tap to talk'**
   String get dailyOsNextCaptureIdleTalk;
 
-  /// No description provided for @dailyOsNextCaptureListening.
+  /// No description provided for @dailyOsNextCaptureListeningStatus.
   ///
   /// In en, this message translates to:
-  /// **'LISTENING'**
-  String get dailyOsNextCaptureListening;
+  /// **'Listening…'**
+  String get dailyOsNextCaptureListeningStatus;
 
   /// No description provided for @dailyOsNextCapturePastPrompt.
   ///
@@ -5415,7 +5475,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextCaptureReconcileCta.
   ///
   /// In en, this message translates to:
-  /// **'Reconcile'**
+  /// **'Review'**
   String get dailyOsNextCaptureReconcileCta;
 
   /// No description provided for @dailyOsNextCapturesPanelTitle.
@@ -5423,6 +5483,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Captures'**
   String get dailyOsNextCapturesPanelTitle;
+
+  /// No description provided for @dailyOsNextCaptureTranscribing.
+  ///
+  /// In en, this message translates to:
+  /// **'Transcribing…'**
+  String get dailyOsNextCaptureTranscribing;
 
   /// No description provided for @dailyOsNextCaptureTranscriptHint.
   ///
@@ -5643,13 +5709,13 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextDayRefineCta.
   ///
   /// In en, this message translates to:
-  /// **'Refine by voice'**
+  /// **'Refine'**
   String get dailyOsNextDayRefineCta;
 
   /// No description provided for @dailyOsNextDayRefineFooterHint.
   ///
   /// In en, this message translates to:
-  /// **'Talk to reshape the plan — moves, drops, and buffers are shown as a diff before they stick.'**
+  /// **'Talk to reshape the plan — you\'ll see every change before anything is saved.'**
   String get dailyOsNextDayRefineFooterHint;
 
   /// No description provided for @dailyOsNextDayTitle.
@@ -5694,17 +5760,59 @@ abstract class AppLocalizations {
   /// **'✦ REASONING'**
   String get dailyOsNextDraftingReasoningOverline;
 
+  /// No description provided for @dailyOsNextDraftingStatusAfternoon.
+  ///
+  /// In en, this message translates to:
+  /// **'Sequencing the afternoon…'**
+  String get dailyOsNextDraftingStatusAfternoon;
+
+  /// No description provided for @dailyOsNextDraftingStatusAlmost.
+  ///
+  /// In en, this message translates to:
+  /// **'Almost there…'**
+  String get dailyOsNextDraftingStatusAlmost;
+
+  /// No description provided for @dailyOsNextDraftingStatusBreathing.
+  ///
+  /// In en, this message translates to:
+  /// **'Leaving room to breathe…'**
+  String get dailyOsNextDraftingStatusBreathing;
+
+  /// No description provided for @dailyOsNextDraftingStatusDeepWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Placing deep work first…'**
+  String get dailyOsNextDraftingStatusDeepWork;
+
+  /// No description provided for @dailyOsNextDraftingStatusMatching.
+  ///
+  /// In en, this message translates to:
+  /// **'Matching tasks to your day…'**
+  String get dailyOsNextDraftingStatusMatching;
+
+  /// No description provided for @dailyOsNextDraftingStatusReading.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading your check-in…'**
+  String get dailyOsNextDraftingStatusReading;
+
+  /// No description provided for @dailyOsNextDraftingStatusTimings.
+  ///
+  /// In en, this message translates to:
+  /// **'Double-checking timings…'**
+  String get dailyOsNextDraftingStatusTimings;
+
+  /// No description provided for @dailyOsNextDraftingStatusYesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Looking at yesterday\'s rhythm…'**
+  String get dailyOsNextDraftingStatusYesterday;
+
   /// No description provided for @dailyOsNextEditTitleHint.
   ///
   /// In en, this message translates to:
   /// **'Edit title'**
   String get dailyOsNextEditTitleHint;
-
-  /// No description provided for @dailyOsNextEstimateMinutes.
-  ///
-  /// In en, this message translates to:
-  /// **'{minutes}m'**
-  String dailyOsNextEstimateMinutes(int minutes);
 
   /// No description provided for @dailyOsNextGenericError.
   ///
@@ -5723,12 +5831,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Good evening.'**
   String get dailyOsNextGreetingEvening;
-
-  /// No description provided for @dailyOsNextGreetingHi.
-  ///
-  /// In en, this message translates to:
-  /// **'Hi 👋'**
-  String get dailyOsNextGreetingHi;
 
   /// No description provided for @dailyOsNextGreetingHiName.
   ///
@@ -5789,6 +5891,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing yet — I\'ll remember what you tell me.'**
   String get dailyOsNextKnowledgeEmpty;
+
+  /// No description provided for @dailyOsNextKnowledgeNudge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 thing I noticed — review} other{{count} things I noticed — review}}'**
+  String dailyOsNextKnowledgeNudge(int count);
 
   /// No description provided for @dailyOsNextKnowledgeProposedHeader.
   ///
@@ -5874,6 +5982,12 @@ abstract class AppLocalizations {
   /// **'Something went wrong: {detail}'**
   String dailyOsNextReconcileError(String detail);
 
+  /// No description provided for @dailyOsNextReconcileHeadline.
+  ///
+  /// In en, this message translates to:
+  /// **'Here’s what I heard.'**
+  String get dailyOsNextReconcileHeadline;
+
   /// No description provided for @dailyOsNextReconcileHeardEmpty.
   ///
   /// In en, this message translates to:
@@ -5883,7 +5997,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextReconcileHeardOverline.
   ///
   /// In en, this message translates to:
-  /// **'HERE\'S WHAT I HEARD'**
+  /// **'HEARD'**
   String get dailyOsNextReconcileHeardOverline;
 
   /// No description provided for @dailyOsNextReconcileLowConfidence.
@@ -5910,6 +6024,12 @@ abstract class AppLocalizations {
   /// **'Accept'**
   String get dailyOsNextRefineAccept;
 
+  /// No description provided for @dailyOsNextRefineCurrentPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'CURRENT PLAN'**
+  String get dailyOsNextRefineCurrentPlan;
+
   /// No description provided for @dailyOsNextRefineDiffAdded.
   ///
   /// In en, this message translates to:
@@ -5928,11 +6048,35 @@ abstract class AppLocalizations {
   /// **'MOVED'**
   String get dailyOsNextRefineDiffMoved;
 
+  /// No description provided for @dailyOsNextRefineHeadlineDiffReady.
+  ///
+  /// In en, this message translates to:
+  /// **'Here’s what I’d change.'**
+  String get dailyOsNextRefineHeadlineDiffReady;
+
+  /// No description provided for @dailyOsNextRefineHeadlineIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'What should change?'**
+  String get dailyOsNextRefineHeadlineIdle;
+
+  /// No description provided for @dailyOsNextRefineHeadlineThinking.
+  ///
+  /// In en, this message translates to:
+  /// **'Reworking your plan…'**
+  String get dailyOsNextRefineHeadlineThinking;
+
   /// No description provided for @dailyOsNextRefineKeepTalking.
   ///
   /// In en, this message translates to:
   /// **'Keep talking'**
   String get dailyOsNextRefineKeepTalking;
+
+  /// No description provided for @dailyOsNextRefineLooksGood.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks good'**
+  String get dailyOsNextRefineLooksGood;
 
   /// No description provided for @dailyOsNextRefineNoChanges.
   ///
@@ -6125,12 +6269,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'✦ FOR TOMORROW'**
   String get dailyOsNextShutdownTomorrowOverline;
-
-  /// No description provided for @dailyOsNextStandaloneTag.
-  ///
-  /// In en, this message translates to:
-  /// **'Time block'**
-  String get dailyOsNextStandaloneTag;
 
   /// No description provided for @dailyOsNextStateDueOnDate.
   ///

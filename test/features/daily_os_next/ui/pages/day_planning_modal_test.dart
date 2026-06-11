@@ -227,7 +227,7 @@ void main() {
     ) async {
       await _openCreate(tester);
       expect(find.byType(DsGlassPill), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_alt_outlined), findsOneWidget);
       expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
     });
 
@@ -238,7 +238,7 @@ void main() {
       expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
     });
 
-    testWidgets('listening bar shows no action pills and no shader', (
+    testWidgets('listening bar mirrors the orb stop action as a Done pill', (
       tester,
     ) async {
       await _openCreate(
@@ -249,7 +249,13 @@ void main() {
           amplitudes: [],
         ),
       );
-      expect(find.byType(DsGlassPill), findsNothing);
+      final messages = _l10n(tester);
+      // The bar is never empty: stopping must be reachable in the thumb
+      // zone without reaching back up to the orb.
+      expect(
+        find.widgetWithText(DsGlassPill, messages.dailyOsNextCaptureDoneCta),
+        findsOneWidget,
+      );
       expect(find.byKey(DayPlanningThinkingShader.indicatorKey), findsNothing);
     });
 
@@ -262,7 +268,13 @@ void main() {
           amplitudes: [],
         ),
       );
-      expect(find.byType(DsGlassPill), findsNothing);
+      // One honest action while working: a quiet Cancel that discards the
+      // in-flight transcription.
+      final messages = _l10n(tester);
+      expect(
+        find.widgetWithText(DsGlassPill, messages.cancelButton),
+        findsOneWidget,
+      );
       expect(
         find.byKey(DayPlanningThinkingShader.indicatorKey),
         findsOneWidget,
@@ -279,14 +291,14 @@ void main() {
           error: CaptureError.noAudioRecorded,
         ),
       );
-      expect(find.byIcon(Icons.keyboard_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_alt_outlined), findsOneWidget);
     });
 
     testWidgets('"type instead" flips capture into the captured editor', (
       tester,
     ) async {
       await _openCreate(tester);
-      await tester.tap(find.byIcon(Icons.keyboard_rounded));
+      await tester.tap(find.byIcon(Icons.keyboard_alt_outlined));
       await tester.pump();
       expect(find.byType(DsGlassPill), findsNWidgets(2));
     });
@@ -299,7 +311,7 @@ void main() {
       await tester.tap(find.widgetWithIcon(DsGlassPill, Icons.mic_rounded));
       await tester.pump();
       // Reset → the idle bar offers only the type-instead pill.
-      expect(find.byIcon(Icons.keyboard_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_alt_outlined), findsOneWidget);
       expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
     });
 
@@ -376,8 +388,10 @@ void main() {
       await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
       await _tapPill(tester, messages.dailyOsNextReconcileBuildDayCta);
       expect(find.byType(DraftingModalContent), findsOneWidget);
+      // The drafting step carries its own hero thinking shader in the body
+      // (no sticky bar on this step — it offers no actions).
       expect(
-        find.byKey(DayPlanningThinkingShader.indicatorKey),
+        find.byKey(DraftingModalContent.thinkingShaderKey),
         findsOneWidget,
       );
     });
@@ -475,7 +489,7 @@ void main() {
   });
 
   group('showDayPlanningModal — adapt (refine)', () {
-    testWidgets('opens the Refine step with its title, body and glass bar', (
+    testWidgets('opens the Refine step with its headline, body and glass bar', (
       tester,
     ) async {
       final draft = DraftPlan.emptyForDay(DateTime(2024, 3, 15));
@@ -509,7 +523,13 @@ void main() {
       final messages = _l10n(tester);
       expect(find.byType(RefineModalContent), findsOneWidget);
       expect(find.byType(DayPlanningGlassActionBar), findsOneWidget);
-      expect(find.text(messages.dailyOsNextRefineTitle), findsWidgets);
+      // The conversational body headline is the step's only title — no
+      // duplicate nav-bar label.
+      expect(
+        find.text(messages.dailyOsNextRefineHeadlineIdle),
+        findsOneWidget,
+      );
+      expect(find.text(messages.dailyOsNextRefineTitle), findsNothing);
     });
   });
 
@@ -530,7 +550,7 @@ void main() {
       expect(width, closeTo(420, 2));
     });
 
-    testWidgets('wide viewport renders a width-bounded centered dialog', (
+    testWidgets('wide viewport renders a full-height right side panel', (
       tester,
     ) async {
       tester.view
@@ -541,11 +561,13 @@ void main() {
 
       await _openCreate(tester, size: const Size(1280, 900));
       expect(find.byType(CaptureModalContent), findsOneWidget);
-      // The dialog branch constrains the content to the configured width —
-      // wider than the phone content but well below the full 1280 screen.
-      final width = tester.getSize(find.byType(CaptureModalContent)).width;
-      expect(width, lessThan(1280));
-      expect(width, greaterThan(700));
+      // The side-sheet branch gives the interaction a substantial
+      // right-anchored column: 45% of 1280 = 576, full window height.
+      final content = tester.getRect(find.byType(CaptureModalContent));
+      expect(content.width, lessThan(1280));
+      expect(content.width, greaterThan(480));
+      // Right-anchored: the panel's right edge hugs the window edge.
+      expect(content.right, greaterThan(1270));
     });
   });
 }

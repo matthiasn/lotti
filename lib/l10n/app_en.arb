@@ -1715,9 +1715,9 @@
   "dailyOsFold": "Fold",
   "dailyOsInvalidTimeRange": "Invalid time range",
   "dailyOsNearLimit": "Near limit",
-  "dailyOsNextAgendaCapacityComfortable": "COMFORTABLE",
-  "dailyOsNextAgendaCapacityNearFull": "NEAR FULL",
-  "dailyOsNextAgendaCapacityNoPlan": "NO PLAN YET",
+  "dailyOsNextAgendaCapacityComfortable": "Comfortable",
+  "dailyOsNextAgendaCapacityNearFull": "Near full",
+  "dailyOsNextAgendaCapacityNoPlan": "No plan yet",
   "dailyOsNextAgendaCapacityOf": "of {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1727,7 +1727,27 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "OVER CAPACITY",
+  "dailyOsNextAgendaCapacityOver": "Over capacity",
+  "dailyOsNextAgendaDonutLeft": "left",
+  "dailyOsNextAgendaDonutOver": "over",
+  "dailyOsNextAgendaHeadlineLeft": "{duration} left",
+  "@dailyOsNextAgendaHeadlineLeft": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "15m"
+      }
+    }
+  },
+  "dailyOsNextAgendaHeadlineOver": "{duration} over",
+  "@dailyOsNextAgendaHeadlineOver": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1h"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanBody": "Your tracked time is here either way — speak a check-in and I'll draft a day around it.",
   "dailyOsNextAgendaNoPlanSummary": "{duration} tracked so far. Speak a check-in and I'll draft a day around it.",
   "@dailyOsNextAgendaNoPlanSummary": {
@@ -1770,6 +1790,7 @@
     }
   },
   "dailyOsNextCaptureCaptured": "Got it.",
+  "dailyOsNextCaptureDoneCta": "Done",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Microphone permission was denied.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "No active realtime session.",
   "dailyOsNextCaptureErrorNoAudioRecorded": "No audio was recorded.",
@@ -1777,8 +1798,10 @@
   "dailyOsNextCaptureErrorRealtimeTranscriptionStartFailed": "Realtime transcription could not start.",
   "dailyOsNextCaptureErrorRecordingStartFailed": "Recording could not start.",
   "dailyOsNextCaptureErrorTranscriptionFailed": "Transcription failed.",
-  "dailyOsNextCaptureHeadlineLead": "What's on your mind",
-  "dailyOsNextCaptureHeadlineTail": "for today?",
+  "dailyOsNextCaptureHeadlineCaptured": "Does this look right?",
+  "dailyOsNextCaptureHeadlineLead": "What’s on your mind",
+  "dailyOsNextCaptureHeadlineListening": "I’m listening.",
+  "dailyOsNextCaptureHeadlineTail": "for today?",
   "dailyOsNextCaptureHeadlineTailForDate": "for {date}?",
   "@dailyOsNextCaptureHeadlineTailForDate": {
     "placeholders": {
@@ -1787,11 +1810,14 @@
       }
     }
   },
-  "dailyOsNextCaptureHeadlineTailTomorrow": "for tomorrow?",
-  "dailyOsNextCaptureHeadlineTailYesterday": "for yesterday?",
+  "dailyOsNextCaptureHeadlineTailTomorrow": "for tomorrow?",
+  "dailyOsNextCaptureHeadlineTailYesterday": "for yesterday?",
+  "dailyOsNextCaptureHeadlineTranscribing": "Writing that down…",
+  "dailyOsNextCaptureIdleClick": "Click to talk",
+  "dailyOsNextCaptureIdleExample": "“Deep work this morning, a walk after lunch, emails before five.”",
   "dailyOsNextCaptureIdleHint": "Tap to talk · type instead",
   "dailyOsNextCaptureIdleTalk": "Tap to talk",
-  "dailyOsNextCaptureListening": "LISTENING",
+  "dailyOsNextCaptureListeningStatus": "Listening…",
   "dailyOsNextCapturePastPrompt": "Anything you still want to track from {date}?",
   "@dailyOsNextCapturePastPrompt": {
     "placeholders": {
@@ -1800,8 +1826,9 @@
       }
     }
   },
-  "dailyOsNextCaptureReconcileCta": "Reconcile",
+  "dailyOsNextCaptureReconcileCta": "Review",
   "dailyOsNextCapturesPanelTitle": "Captures",
+  "dailyOsNextCaptureTranscribing": "Transcribing…",
   "dailyOsNextCaptureTranscriptHint": "Fix anything the transcript got wrong before planning.",
   "dailyOsNextCaptureTranscriptLabel": "Review transcript",
   "dailyOsNextCaptureTypeInstead": "Type instead",
@@ -1850,8 +1877,8 @@
   "dailyOsNextDayMenuDeletePlan": "Delete plan",
   "dailyOsNextDayMenuInspectAgent": "Inspect agent",
   "dailyOsNextDayMoreTooltip": "More",
-  "dailyOsNextDayRefineCta": "Refine by voice",
-  "dailyOsNextDayRefineFooterHint": "Talk to reshape the plan — moves, drops, and buffers are shown as a diff before they stick.",
+  "dailyOsNextDayRefineCta": "Refine",
+  "dailyOsNextDayRefineFooterHint": "Talk to reshape the plan — you'll see every change before anything is saved.",
   "dailyOsNextDayTitle": "Your day",
   "dailyOsNextDayWhyChipLabel": "WHY",
   "dailyOsNextDayWrapUpCta": "Wrap up",
@@ -1859,20 +1886,18 @@
   "dailyOsNextDraftingNudgeAccept": "Yes, protect mornings",
   "dailyOsNextDraftingNudgeDecline": "Not today",
   "dailyOsNextDraftingReasoningOverline": "✦ REASONING",
+  "dailyOsNextDraftingStatusAfternoon": "Sequencing the afternoon…",
+  "dailyOsNextDraftingStatusAlmost": "Almost there…",
+  "dailyOsNextDraftingStatusBreathing": "Leaving room to breathe…",
+  "dailyOsNextDraftingStatusDeepWork": "Placing deep work first…",
+  "dailyOsNextDraftingStatusMatching": "Matching tasks to your day…",
+  "dailyOsNextDraftingStatusReading": "Reading your check-in…",
+  "dailyOsNextDraftingStatusTimings": "Double-checking timings…",
+  "dailyOsNextDraftingStatusYesterday": "Looking at yesterday's rhythm…",
   "dailyOsNextEditTitleHint": "Edit title",
-  "dailyOsNextEstimateMinutes": "{minutes}m",
-  "@dailyOsNextEstimateMinutes": {
-    "placeholders": {
-      "minutes": {
-        "type": "int",
-        "example": "45"
-      }
-    }
-  },
   "dailyOsNextGenericError": "Something went wrong. Try again in a moment.",
   "dailyOsNextGreetingAfternoon": "Good afternoon.",
   "dailyOsNextGreetingEvening": "Good evening.",
-  "dailyOsNextGreetingHi": "Hi 👋",
   "dailyOsNextGreetingHiName": "Hi {name} 👋",
   "@dailyOsNextGreetingHiName": {
     "placeholders": {
@@ -1890,6 +1915,14 @@
   "dailyOsNextKnowledgeEditSave": "Save",
   "dailyOsNextKnowledgeEditStatementHint": "What should I remember?",
   "dailyOsNextKnowledgeEmpty": "Nothing yet — I'll remember what you tell me.",
+  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 thing I noticed — review} other{{count} things I noticed — review}}",
+  "@dailyOsNextKnowledgeNudge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextKnowledgeProposedHeader": "Awaiting your confirmation",
   "dailyOsNextKnowledgeRetract": "Forget",
   "dailyOsNextKnowledgeStale": "Still true?",
@@ -1912,16 +1945,22 @@
       }
     }
   },
+  "dailyOsNextReconcileHeadline": "Here’s what I heard.",
   "dailyOsNextReconcileHeardEmpty": "Capture cards will appear here once parsing finishes.",
-  "dailyOsNextReconcileHeardOverline": "HERE'S WHAT I HEARD",
+  "dailyOsNextReconcileHeardOverline": "HEARD",
   "dailyOsNextReconcileLowConfidence": "low confidence",
   "dailyOsNextReconcileReRecord": "Re-record",
   "dailyOsNextReconcileVoiceHint": "Review decisions before building your day",
   "dailyOsNextRefineAccept": "Accept",
+  "dailyOsNextRefineCurrentPlan": "CURRENT PLAN",
   "dailyOsNextRefineDiffAdded": "ADDED",
   "dailyOsNextRefineDiffDropped": "DROPPED",
   "dailyOsNextRefineDiffMoved": "MOVED",
+  "dailyOsNextRefineHeadlineDiffReady": "Here’s what I’d change.",
+  "dailyOsNextRefineHeadlineIdle": "What should change?",
+  "dailyOsNextRefineHeadlineThinking": "Reworking your plan…",
   "dailyOsNextRefineKeepTalking": "Keep talking",
+  "dailyOsNextRefineLooksGood": "Looks good",
   "dailyOsNextRefineNoChanges": "No plan changes came back. Reword it and try again.",
   "dailyOsNextRefineOverline": "🎤 REFINEMENT",
   "dailyOsNextRefineRevert": "Revert",
@@ -1970,7 +2009,6 @@
   "dailyOsNextShutdownSaveAndClose": "Save & close",
   "dailyOsNextShutdownTitle": "Close out the day",
   "dailyOsNextShutdownTomorrowOverline": "✦ FOR TOMORROW",
-  "dailyOsNextStandaloneTag": "Time block",
   "dailyOsNextStateDueOnDate": "Due {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,17 +7,16 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
+import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/voice_orb_zone.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
-
-part 'capture_layout_metrics.dart';
 
 /// Max width for the centred capture column and the "Today so far" card so
 /// the calm single column reads comfortably on wide layouts. Defined once so
@@ -28,10 +25,12 @@ const double _captureContentMaxWidth = 560;
 
 /// Entry surface of the agentic Daily OS — voice-first check-in.
 ///
-/// Layout: vertically centred greeting → headline → voice button →
-/// state row (idle hint / waveform + transcript / "Got it." +
-/// Reconcile CTA). Plain, calm, no calendar or task list visible.
-/// Mirrors `prototype/screens/capture.jsx` variant A.
+/// Layout contract (shared with [CaptureModalContent] via the same body):
+/// the orb is **anchored to the bottom** of the surface, directly above the
+/// action area, and never moves between phases. The live transcript grows
+/// *upward* from just above the orb inside a bounded viewport; the header
+/// swaps copy per phase at the top. Nothing the user is touching ever
+/// shifts under their finger.
 class CapturePage extends ConsumerWidget {
   const CapturePage({
     this.forDate,
@@ -60,7 +59,6 @@ class CapturePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final state = ref.watch(captureControllerProvider);
     final bottomNavHeight = DesignSystemBottomNavigationBar.occupiedHeight(
       context,
     );
@@ -82,144 +80,23 @@ class CapturePage extends ConsumerWidget {
         child: Padding(
           key: const Key('daily_os_capture_bottom_nav_padding'),
           padding: EdgeInsets.only(bottom: bottomNavHeight),
-          child: Column(
-            children: [
-              // "Today so far" pins to the top of the column; the
-              // greeting + orb stay centred in the remaining space
-              // below (handoff v2 item 1 — no clipping, intentional
-              // rhythm).
-              if (actualBlocks.isNotEmpty)
-                Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    tokens.spacing.step5,
-                    tokens.spacing.step4,
-                    tokens.spacing.step5,
-                    0,
-                  ),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: _captureContentMaxWidth,
-                      ),
-                      child: TimeSpentCard(
-                        blocks: actualBlocks,
-                        title: _timeSpentTitle(context),
-                      ),
-                    ),
-                  ),
-                ),
-              Expanded(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final layout = CaptureLayoutMetrics.resolve(
-                      tokens,
-                      phase: state.phase,
-                      viewportHeight: constraints.maxHeight,
-                    );
-
-                    return SingleChildScrollView(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: constraints.maxHeight,
-                        ),
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              maxWidth: _captureContentMaxWidth,
-                            ),
-                            child: Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: tokens.spacing.step5,
-                                vertical: tokens.spacing.step6,
-                              ),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const _GreetingBlock(),
-                                  SizedBox(height: tokens.spacing.step6),
-                                  _Headline(forDate: forDate),
-                                  _PastTrackingPrompt(forDate: forDate),
-                                  SizedBox(height: tokens.spacing.step8),
-                                  VoiceButton(
-                                    phase: state.phase,
-                                    dbfs: state.dbfs,
-                                    semanticLabel: _voiceButtonLabel(
-                                      context,
-                                      state.phase,
-                                    ),
-                                    onTap: () => ref
-                                        .read(
-                                          captureControllerProvider.notifier,
-                                        )
-                                        .toggle(),
-                                  ),
-                                  SizedBox(height: tokens.spacing.step5),
-                                  _StateSlot(
-                                    state: state,
-                                    height: layout.stateSlotHeight,
-                                    liveTranscriptLineCount:
-                                        layout.liveTranscriptLineCount,
-                                    reviewTranscriptLineCount:
-                                        layout.reviewTranscriptLineCount,
-                                  ),
-                                  if (state.phase == CapturePhase.captured) ...[
-                                    SizedBox(height: tokens.spacing.step6),
-                                    _ReconcileCta(
-                                      state: state,
-                                      forDate: forDate,
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+          child: _CaptureSurface(
+            forDate: forDate,
+            actualBlocks: actualBlocks,
+            showInlineAdvanceCta: true,
           ),
         ),
       ),
     );
   }
-
-  /// "Today so far" for today; the date-neutral "Time spent" label for
-  /// any other day so the eyebrow never misleads.
-  String? _timeSpentTitle(BuildContext context) {
-    final date = forDate;
-    if (date == null) return null;
-    final now = clock.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final picked = DateTime(date.year, date.month, date.day);
-    if (picked.isAtSameMomentAs(today)) return null;
-    return context.messages.dailyOsNextTimeSpentTitlePast;
-  }
-
-  String _voiceButtonLabel(BuildContext context, CapturePhase phase) {
-    switch (phase) {
-      case CapturePhase.idle:
-      case CapturePhase.error:
-        return context.messages.dailyOsNextCaptureVoiceButtonStart;
-      case CapturePhase.listening:
-        return context.messages.dailyOsNextCaptureVoiceButtonStop;
-      case CapturePhase.transcribing:
-      case CapturePhase.captured:
-        return context.messages.dailyOsNextCaptureVoiceButtonReset;
-    }
-  }
 }
 
 /// Scaffold-free capture content for hosting inside the day-planning modal.
 ///
-/// Renders the same calm greeting → headline → voice orb → state row as the
-/// standalone capture surface, but without the page chrome (AppBar /
-/// bottom-nav padding / inline advance CTA) — the modal supplies a top bar
-/// and a sticky glass action bar instead. The voice orb stays the in-body
-/// hero recording control; advance/secondary actions live in the action bar.
-class CaptureModalContent extends ConsumerWidget {
+/// Same anchored body as the standalone page, but without page chrome or
+/// the inline advance CTA — the modal supplies a top bar and a sticky glass
+/// action bar that carries every clickable action instead.
+class CaptureModalContent extends StatelessWidget {
   const CaptureModalContent({
     this.forDate,
     this.actualBlocks = const [],
@@ -230,14 +107,43 @@ class CaptureModalContent extends ConsumerWidget {
   final List<TimeBlock> actualBlocks;
 
   @override
+  Widget build(BuildContext context) {
+    return _CaptureSurface(
+      forDate: forDate,
+      actualBlocks: actualBlocks,
+      showInlineAdvanceCta: false,
+    );
+  }
+}
+
+/// Shared capture surface: optional "Today so far" card pinned on top, the
+/// anchored capture body below.
+class _CaptureSurface extends ConsumerWidget {
+  const _CaptureSurface({
+    required this.forDate,
+    required this.actualBlocks,
+    required this.showInlineAdvanceCta,
+  });
+
+  final DateTime? forDate;
+  final List<TimeBlock> actualBlocks;
+
+  /// Whether the captured phase renders its own advance CTA inside the
+  /// body (standalone page) instead of relying on a host action bar
+  /// (modal).
+  final bool showInlineAdvanceCta;
+
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final state = ref.watch(captureControllerProvider);
+    // Meter ticks (amplitudes/dbfs, many per second while listening) only
+    // rebuild the orb zone, which watches those fields itself.
+    final state = ref.watch(
+      captureControllerProvider.select((s) => s.withoutMeter),
+    );
 
     return Column(
       children: [
-        // "Today so far" pins to the top; greeting + orb stay centred in
-        // the remaining space below (handoff v2 item 1).
         if (actualBlocks.isNotEmpty)
           Padding(
             padding: EdgeInsets.fromLTRB(
@@ -253,135 +159,309 @@ class CaptureModalContent extends ConsumerWidget {
                 ),
                 child: TimeSpentCard(
                   blocks: actualBlocks,
-                  title: _timeSpentTitle(context),
+                  title: _timeSpentTitle(context, forDate),
                 ),
               ),
             ),
           ),
         Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final layout = CaptureLayoutMetrics.resolve(
-                tokens,
-                phase: state.phase,
-                viewportHeight: constraints.maxHeight,
-              );
-
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: _captureContentMaxWidth,
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: tokens.spacing.step5,
-                          vertical: tokens.spacing.step6,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const _GreetingBlock(),
-                            SizedBox(height: tokens.spacing.step6),
-                            _Headline(forDate: forDate),
-                            _PastTrackingPrompt(forDate: forDate),
-                            SizedBox(height: tokens.spacing.step8),
-                            VoiceButton(
-                              phase: state.phase,
-                              dbfs: state.dbfs,
-                              semanticLabel: _voiceButtonLabel(
-                                context,
-                                state.phase,
-                              ),
-                              onTap: () => ref
-                                  .read(captureControllerProvider.notifier)
-                                  .toggle(),
-                            ),
-                            SizedBox(height: tokens.spacing.step5),
-                            _StateSlot(
-                              state: state,
-                              height: layout.stateSlotHeight,
-                              liveTranscriptLineCount:
-                                  layout.liveTranscriptLineCount,
-                              reviewTranscriptLineCount:
-                                  layout.reviewTranscriptLineCount,
-                              // The modal's sticky glass bar already offers a
-                              // "Type instead" pill, so drop the redundant
-                              // inline link from the idle hint.
-                              showInlineTypeInstead: false,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxWidth: _captureContentMaxWidth,
+              ),
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(
+                  tokens.spacing.step5,
+                  tokens.spacing.step6,
+                  tokens.spacing.step5,
+                  tokens.spacing.step5,
                 ),
-              );
-            },
+                child: _CaptureFlowBody(
+                  state: state,
+                  forDate: forDate,
+                  showInlineAdvanceCta: showInlineAdvanceCta,
+                ),
+              ),
+            ),
           ),
         ),
       ],
     );
   }
-
-  String? _timeSpentTitle(BuildContext context) {
-    final date = forDate;
-    if (date == null) return null;
-    final now = clock.now();
-    final today = DateTime(now.year, now.month, now.day);
-    final picked = DateTime(date.year, date.month, date.day);
-    if (picked.isAtSameMomentAs(today)) return null;
-    return context.messages.dailyOsNextTimeSpentTitlePast;
-  }
-
-  String _voiceButtonLabel(BuildContext context, CapturePhase phase) {
-    switch (phase) {
-      case CapturePhase.idle:
-      case CapturePhase.error:
-        return context.messages.dailyOsNextCaptureVoiceButtonStart;
-      case CapturePhase.listening:
-        return context.messages.dailyOsNextCaptureVoiceButtonStop;
-      case CapturePhase.transcribing:
-      case CapturePhase.captured:
-        return context.messages.dailyOsNextCaptureVoiceButtonReset;
-    }
-  }
 }
 
-class _GreetingBlock extends ConsumerWidget {
-  const _GreetingBlock();
+/// The anchored capture skeleton.
+///
+/// ```text
+/// header (greeting + per-phase headline)   ← top, copy swaps in place
+/// transcript zone                           ← Expanded, grows upward
+/// orb zone (waveform · orb · caption)       ← fixed height, fixed position
+/// [inline advance CTA]                      ← standalone page only
+/// ```
+///
+/// Stability contract: the orb zone's height is identical in every phase
+/// (the waveform slot is always reserved, the caption is a single fixed
+/// strut line), so the orb never moves while the user interacts with it.
+/// Phase-dependent header height differences are absorbed by the
+/// transcript zone, never by the orb.
+class _CaptureFlowBody extends ConsumerWidget {
+  const _CaptureFlowBody({
+    required this.state,
+    required this.forDate,
+    required this.showInlineAdvanceCta,
+  });
+
+  final CaptureState state;
+  final DateTime? forDate;
+  final bool showInlineAdvanceCta;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    final notifier = ref.read(captureControllerProvider.notifier);
+
+    // At very large accessibility text the headline can no longer share a
+    // pocket-phone viewport with the orb; remove it from layout entirely
+    // (never height-clip it — a partially visible glyph reads as a
+    // rendering defect) and let the zone + orb carry the screen.
+    final showHeader = dailyOsTextScaleOf(context) < kDailyOsHideHeaderScale;
+
+    final body = Column(
+      children: [
+        if (showHeader) ...[
+          _CaptureHeader(phase: state.phase, forDate: forDate),
+          SizedBox(height: tokens.spacing.step4),
+        ],
+        Expanded(
+          child: _TranscriptZone(state: state, notifier: notifier),
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        _OrbZone(state: state, onTap: notifier.toggle),
+        if (showInlineAdvanceCta) ...[
+          SizedBox(height: tokens.spacing.step5),
+          _InlineFooterSlot(state: state, forDate: forDate),
+        ],
+      ],
+    );
+
+    // Canonical fill-or-scroll pattern: on a normal viewport the column
+    // fills it exactly and the transcript zone takes the slack (orb pinned
+    // at the bottom). Under squeeze — huge accessibility text, tiny or
+    // split windows — the zone shrinks toward zero first, and only when
+    // the fixed parts alone (header, orb zone, footer slot) exceed the
+    // viewport does the body scroll. No height estimates: the fixed parts
+    // measure themselves via IntrinsicHeight.
+    //
+    // `reverse: true` so the scroll fallback anchors the BOTTOM: the orb,
+    // its caption, and the newest spoken words must stay on screen at any
+    // text scale — it is the headline that scrolls away, never the voice
+    // control (a 2x-text reviewer otherwise loses the orb entirely and
+    // cannot start the flow).
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        Widget scroll = SingleChildScrollView(
+          reverse: true,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            child: IntrinsicHeight(child: body),
+          ),
+        );
+        if (!showHeader) {
+          // Under squeeze the reverse scroll can cut content at the top
+          // edge; dissolve it instead of slicing glyphs mid-x-height.
+          final lineHeight = MediaQuery.textScalerOf(
+            context,
+          ).scale(tokens.typography.lineHeight.bodyMedium);
+          scroll = EdgeFade(
+            rampExtent: lineHeight * 1.2,
+            child: scroll,
+          );
+        }
+        return scroll;
+      },
+    );
+  }
+}
+
+/// Standalone-page footer slot below the orb zone. Hosts the phase's
+/// inline action — "Type instead" while idle, the advance CTA once
+/// captured — inside one reserved-height slot so the orb above never
+/// moves. (The modal host has no such slot; its sticky glass bar carries
+/// these actions.)
+class _InlineFooterSlot extends ConsumerWidget {
+  const _InlineFooterSlot({required this.state, this.forDate});
+
+  final CaptureState state;
+  final DateTime? forDate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    switch (state.phase) {
+      case CapturePhase.captured:
+        return _ReconcileCta(state: state, forDate: forDate);
+      case CapturePhase.idle:
+      case CapturePhase.error:
+        return SizedBox(
+          height: tokens.spacing.step9,
+          child: Center(
+            child: TextButton(
+              onPressed: () =>
+                  ref.read(captureControllerProvider.notifier).startTyping(),
+              style: TextButton.styleFrom(
+                foregroundColor: tokens.colors.interactive.enabled,
+              ),
+              child: Text(
+                context.messages.dailyOsNextCaptureTypeInstead,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.interactive.enabled,
+                ),
+              ),
+            ),
+          ),
+        );
+      case CapturePhase.listening:
+      case CapturePhase.transcribing:
+        return SizedBox(height: tokens.spacing.step9);
+    }
+  }
+}
+
+// ─────────────────────────────── Header ────────────────────────────────
+
+/// Quiet greeting line over a per-phase headline. The headline cross-fades
+/// when the phase changes; layout differences are absorbed below it.
+class _CaptureHeader extends ConsumerWidget {
+  const _CaptureHeader({required this.phase, required this.forDate});
+
+  final CapturePhase phase;
+  final DateTime? forDate;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
     final userName = ref.watch(
       dailyOsPreferencesControllerProvider.select((prefs) => prefs.userName),
     );
     final hour = clock.now().hour;
     final greetingWord = hour < 12
-        ? context.messages.dailyOsNextGreetingMorning
+        ? messages.dailyOsNextGreetingMorning
         : hour < 18
-        ? context.messages.dailyOsNextGreetingAfternoon
-        : context.messages.dailyOsNextGreetingEvening;
-    // Calm three-tier hierarchy: quiet greeting line over a 23/600
-    // page title — contrast carries the hierarchy, not size.
+        ? messages.dailyOsNextGreetingAfternoon
+        : messages.dailyOsNextGreetingEvening;
+    final greeting = userName.isEmpty
+        ? greetingWord
+        : '${messages.dailyOsNextGreetingHiName(userName)} · $greetingWord';
+
     return Column(
       children: [
         Text(
-          userName.isEmpty
-              ? context.messages.dailyOsNextGreetingHi
-              : context.messages.dailyOsNextGreetingHiName(userName),
+          greeting,
           style: calmGreetingStyle(tokens),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        SizedBox(height: tokens.spacing.step2),
-        Text(
-          greetingWord,
-          style: calmPageTitleStyle(tokens),
+        SizedBox(height: tokens.spacing.step3),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          layoutBuilder: (currentChild, previousChildren) => Stack(
+            alignment: Alignment.topCenter,
+            children: [...previousChildren, ?currentChild],
+          ),
+          child: KeyedSubtree(
+            key: ValueKey<CapturePhase>(_headlineGroup(phase)),
+            child: _Headline(phase: phase, forDate: forDate),
+          ),
         ),
+        _PastTrackingPrompt(forDate: forDate),
       ],
     );
+  }
+
+  /// Idle and error share the idle headline so an error doesn't flash a
+  /// new headline on top of the error message.
+  CapturePhase _headlineGroup(CapturePhase phase) =>
+      phase == CapturePhase.error ? CapturePhase.idle : phase;
+}
+
+class _Headline extends StatelessWidget {
+  const _Headline({required this.phase, this.forDate});
+
+  final CapturePhase phase;
+
+  /// When Capture is mounted for a non-today date, the trailing
+  /// "for today?" copy is swapped for `for <formatted date>?` so the
+  /// headline doesn't mislead.
+  final DateTime? forDate;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final style = calmDisplayStyle(tokens);
+
+    switch (phase) {
+      case CapturePhase.idle:
+      case CapturePhase.error:
+        // Text.rich (not RichText) so the ambient textScaler applies — the
+        // headline must grow with accessibility text sizes like everything
+        // else.
+        return Text.rich(
+          TextSpan(
+            style: style,
+            children: [
+              TextSpan(text: '${messages.dailyOsNextCaptureHeadlineLead} '),
+              TextSpan(
+                text: _resolveTail(context),
+                style: TextStyle(color: tokens.colors.text.lowEmphasis),
+              ),
+            ],
+          ),
+          textAlign: TextAlign.center,
+        );
+      case CapturePhase.listening:
+        return Text(
+          messages.dailyOsNextCaptureHeadlineListening,
+          textAlign: TextAlign.center,
+          style: style,
+        );
+      case CapturePhase.transcribing:
+        return Text(
+          messages.dailyOsNextCaptureHeadlineTranscribing,
+          textAlign: TextAlign.center,
+          style: style,
+        );
+      case CapturePhase.captured:
+        return Text(
+          messages.dailyOsNextCaptureHeadlineCaptured,
+          textAlign: TextAlign.center,
+          style: style,
+        );
+    }
+  }
+
+  String _resolveTail(BuildContext context) {
+    final messages = context.messages;
+    final date = forDate;
+    if (date == null) return messages.dailyOsNextCaptureHeadlineTail;
+    final now = clock.now();
+    final today = DateTime.utc(now.year, now.month, now.day);
+    final picked = DateTime.utc(date.year, date.month, date.day);
+    if (picked.isAtSameMomentAs(today)) {
+      return messages.dailyOsNextCaptureHeadlineTail;
+    }
+    final delta = picked.difference(today).inDays;
+    if (delta == 1) return messages.dailyOsNextCaptureHeadlineTailTomorrow;
+    if (delta == -1) return messages.dailyOsNextCaptureHeadlineTailYesterday;
+    final locale = Localizations.localeOf(context).toString();
+    // Weekday included everywhere a concrete date is planned — "Jun 8"
+    // forces a mental calendar lookup; "Wed, Jun 8" answers it.
+    final formatted = DateFormat.MMMEd(locale).format(date);
+    return messages.dailyOsNextCaptureHeadlineTailForDate(formatted);
   }
 }
 
@@ -401,7 +481,7 @@ class _PastTrackingPrompt extends StatelessWidget {
 
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toString();
-    final formatted = DateFormat.MMMd(locale).format(date);
+    final formatted = DateFormat.MMMEd(locale).format(date);
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step4),
       child: Text(
@@ -415,217 +495,151 @@ class _PastTrackingPrompt extends StatelessWidget {
   }
 }
 
-class _Headline extends StatelessWidget {
-  const _Headline({this.forDate});
+// ──────────────────────────── Transcript zone ──────────────────────────
 
-  /// When Capture is mounted for a non-today date, the trailing
-  /// "for today?" copy is swapped for `for <formatted date>?` so the
-  /// headline doesn't mislead.
-  final DateTime? forDate;
+/// Bounded area between the header and the orb where words materialise.
+///
+/// While listening/transcribing the live transcript is pinned to the
+/// *bottom* of the zone — text appears right above the orb and grows
+/// upward, the oldest words dissolving under a top fade once the zone is
+/// full. In the captured phase the same zone hosts the editable
+/// transcript. Idle shows a quiet example utterance where the live words
+/// will land; errors render here in place of text.
+class _TranscriptZone extends StatelessWidget {
+  const _TranscriptZone({required this.state, required this.notifier});
+
+  final CaptureState state;
+  final CaptureController notifier;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final tail = _resolveTail(context);
-    return RichText(
-      textAlign: TextAlign.center,
-      text: TextSpan(
-        // Calm hero — 34/500, the single large display line on this
-        // screen (was the louder 35/700 heading1).
-        style: calmHeroStyle(tokens),
-        children: [
-          TextSpan(
-            text: '${context.messages.dailyOsNextCaptureHeadlineLead} ',
-          ),
-          TextSpan(
-            text: tail,
-            style: TextStyle(color: tokens.colors.text.lowEmphasis),
-          ),
-        ],
-      ),
-    );
-  }
 
-  String _resolveTail(BuildContext context) {
-    final messages = context.messages;
-    final date = forDate;
-    if (date == null) return messages.dailyOsNextCaptureHeadlineTail;
-    final now = clock.now();
-    final today = DateTime.utc(now.year, now.month, now.day);
-    final picked = DateTime.utc(date.year, date.month, date.day);
-    if (picked.isAtSameMomentAs(today)) {
-      return messages.dailyOsNextCaptureHeadlineTail;
+    switch (state.phase) {
+      case CapturePhase.idle:
+        // Static content sits directly under the headline — pooling the
+        // flexible slack between question and content read as a dead band;
+        // the slack now lives between content and orb instead.
+        // Attached below the headline so greeting/headline/example read as
+        // one editorial block above the mic stage — not a quote floating
+        // unanchored in the middle of the void.
+        return Align(
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: EdgeInsets.only(top: tokens.spacing.step10),
+            child: Text(
+              context.messages.dailyOsNextCaptureIdleExample,
+              textAlign: TextAlign.center,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.55),
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        );
+      case CapturePhase.listening:
+        return LiveTranscriptView(
+          text: state.partialTranscript,
+          color: tokens.colors.text.mediumEmphasis,
+        );
+      case CapturePhase.transcribing:
+        return AnimatedOpacity(
+          opacity: 0.55,
+          duration: const Duration(milliseconds: 200),
+          child: LiveTranscriptView(
+            text: state.partialTranscript,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        );
+      case CapturePhase.captured:
+        return Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
+            child: TranscriptEditor(
+              fieldKey: const Key('daily_os_capture_transcript_editor'),
+              transcript: state.transcript,
+              lineCount: 3,
+              onChanged: notifier.updateTranscript,
+            ),
+          ),
+        );
+      case CapturePhase.error:
+        return Center(
+          child: Text(
+            _captureErrorMessage(context, state.error) ??
+                context.messages.dailyOsNextCaptureIdleHint,
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.alert.error.defaultColor,
+            ),
+          ),
+        );
     }
-    final delta = picked.difference(today).inDays;
-    if (delta == 1) return messages.dailyOsNextCaptureHeadlineTailTomorrow;
-    if (delta == -1) return messages.dailyOsNextCaptureHeadlineTailYesterday;
-    final locale = Localizations.localeOf(context).toString();
-    final formatted = DateFormat.MMMd(locale).format(date);
-    return messages.dailyOsNextCaptureHeadlineTailForDate(formatted);
   }
 }
 
-class _StateSlot extends StatelessWidget {
-  const _StateSlot({
-    required this.state,
-    required this.height,
-    required this.liveTranscriptLineCount,
-    required this.reviewTranscriptLineCount,
-    this.showInlineTypeInstead = true,
-  });
+// ─────────────────────────────── Orb zone ──────────────────────────────
+
+/// Capture's parameterisation of the shared [VoiceOrbZone]: resolves the
+/// status caption, its color, and the semantic label per [CapturePhase].
+/// The caption is status only — actions live on the orb and the host's
+/// action bar.
+///
+/// Watches the meter fields itself (the parent watches `withoutMeter`),
+/// so amplitude ticks rebuild only this zone.
+class _OrbZone extends ConsumerWidget {
+  const _OrbZone({required this.state, required this.onTap});
 
   final CaptureState state;
-  final double height;
-  final int liveTranscriptLineCount;
-  final int reviewTranscriptLineCount;
-
-  /// Whether the idle hint includes the inline "Type instead" link. The
-  /// modal host sets this false because its sticky glass bar carries the
-  /// same action.
-  final bool showInlineTypeInstead;
-
-  @override
-  Widget build(BuildContext context) {
-    final row = Align(
-      alignment: Alignment.topCenter,
-      child: _StateRow(
-        state: state,
-        height: height,
-        liveTranscriptLineCount: liveTranscriptLineCount,
-        reviewTranscriptLineCount: reviewTranscriptLineCount,
-        showInlineTypeInstead: showInlineTypeInstead,
-      ),
-    );
-
-    if (state.phase == CapturePhase.captured) {
-      return ConstrainedBox(
-        key: const Key('daily_os_capture_state_slot'),
-        constraints: BoxConstraints(minHeight: height),
-        child: row,
-      );
-    }
-
-    return SizedBox(
-      key: const Key('daily_os_capture_state_slot'),
-      height: height,
-      child: row,
-    );
-  }
-}
-
-class _StateRow extends ConsumerWidget {
-  const _StateRow({
-    required this.state,
-    required this.height,
-    required this.liveTranscriptLineCount,
-    required this.reviewTranscriptLineCount,
-    this.showInlineTypeInstead = true,
-  });
-
-  final CaptureState state;
-  final double height;
-  final int liveTranscriptLineCount;
-  final int reviewTranscriptLineCount;
-  final bool showInlineTypeInstead;
+  final Future<void> Function() onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final (amplitudes, dbfs) = ref.watch(
+      captureControllerProvider.select((s) => (s.amplitudes, s.dbfs)),
+    );
+    final (caption, captionColor) = switch (state.phase) {
+      CapturePhase.idle || CapturePhase.error => (
+        voiceIdleHint(context),
+        tokens.colors.text.lowEmphasis,
+      ),
+      CapturePhase.listening => (
+        messages.dailyOsNextCaptureListeningStatus,
+        tokens.colors.text.mediumEmphasis,
+      ),
+      CapturePhase.transcribing => (
+        messages.dailyOsNextCaptureTranscribing,
+        tokens.colors.text.mediumEmphasis,
+      ),
+      CapturePhase.captured => (
+        messages.dailyOsNextCaptureCaptured,
+        tokens.colors.text.mediumEmphasis,
+      ),
+    };
 
-    switch (state.phase) {
+    return VoiceOrbZone(
+      phase: state.phase,
+      caption: caption,
+      captionColor: captionColor,
+      semanticLabel: _voiceButtonLabel(context, state.phase),
+      amplitudes: amplitudes,
+      dbfs: dbfs,
+      onTap: onTap,
+    );
+  }
+
+  String _voiceButtonLabel(BuildContext context, CapturePhase phase) {
+    switch (phase) {
       case CapturePhase.idle:
-        return _IdleCaptureActions(
-          showTypeInstead: showInlineTypeInstead,
-          onTypeInstead: () =>
-              ref.read(captureControllerProvider.notifier).startTyping(),
-        );
-      case CapturePhase.listening:
-        return SizedBox(
-          key: const Key('daily_os_capture_listening_status_area'),
-          height: height,
-          child: Column(
-            children: [
-              SizedBox(height: tokens.spacing.step3),
-              Text(
-                messages.dailyOsNextCaptureListening,
-                style: calmEyebrowStyle(
-                  tokens,
-                  color: tokens.colors.interactive.enabled,
-                ),
-              ),
-              SizedBox(height: tokens.spacing.step4),
-              LiveWaveform(amplitudes: state.amplitudes),
-              SizedBox(height: tokens.spacing.step4),
-              _LiveTranscriptViewport(
-                text: state.partialTranscript,
-                color: tokens.colors.text.lowEmphasis,
-                visibleLineCount: liveTranscriptLineCount,
-              ),
-            ],
-          ),
-        );
-      case CapturePhase.transcribing:
-        return Column(
-          children: [
-            Text(
-              messages.dailyOsNextCaptureListening,
-              style: calmEyebrowStyle(
-                tokens,
-                color: tokens.colors.interactive.enabled,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  tokens.colors.interactive.enabled,
-                ),
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            Text(
-              messages.dailyOsNextCaptureIdleHint,
-              textAlign: TextAlign.center,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
-          ],
-        );
-      case CapturePhase.captured:
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              messages.dailyOsNextCaptureCaptured,
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                color: tokens.colors.interactive.enabled,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step5),
-            TranscriptEditor(
-              fieldKey: const Key('daily_os_capture_transcript_editor'),
-              transcript: state.transcript,
-              lineCount: reviewTranscriptLineCount,
-              onChanged: ref
-                  .read(captureControllerProvider.notifier)
-                  .updateTranscript,
-            ),
-          ],
-        );
       case CapturePhase.error:
-        return Text(
-          _captureErrorMessage(context, state.error) ??
-              messages.dailyOsNextCaptureIdleHint,
-          textAlign: TextAlign.center,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.alert.error.defaultColor,
-          ),
-        );
+        return context.messages.dailyOsNextCaptureVoiceButtonStart;
+      case CapturePhase.listening:
+        return context.messages.dailyOsNextCaptureVoiceButtonStop;
+      case CapturePhase.transcribing:
+      case CapturePhase.captured:
+        return context.messages.dailyOsNextCaptureVoiceButtonReset;
     }
   }
 }
@@ -651,177 +665,20 @@ String? _captureErrorMessage(BuildContext context, CaptureError? error) {
   };
 }
 
-class _IdleCaptureActions extends StatelessWidget {
-  const _IdleCaptureActions({
-    required this.onTypeInstead,
-    this.showTypeInstead = true,
-  });
-
-  final VoidCallback onTypeInstead;
-
-  /// When false, only the "Tap to talk" hint renders — the inline
-  /// "Type instead" link is dropped (the modal host carries it on its
-  /// sticky glass bar instead).
-  final bool showTypeInstead;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final dotStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.lowEmphasis,
-    );
-    final talkHint = Text(
-      context.messages.dailyOsNextCaptureIdleTalk,
-      style: dotStyle,
-    );
-    if (!showTypeInstead) {
-      return talkHint;
-    }
-    return Wrap(
-      alignment: WrapAlignment.center,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: tokens.spacing.step2,
-      children: [
-        talkHint,
-        Container(
-          width: tokens.spacing.step1,
-          height: tokens.spacing.step1,
-          decoration: BoxDecoration(
-            color: tokens.colors.text.lowEmphasis,
-            shape: BoxShape.circle,
-          ),
-        ),
-        _InlineCaptureAction(
-          label: context.messages.dailyOsNextCaptureTypeInstead,
-          onTap: onTypeInstead,
-        ),
-      ],
-    );
-  }
+String? _timeSpentTitle(BuildContext context, DateTime? forDate) {
+  final date = forDate;
+  if (date == null) return null;
+  final now = clock.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final picked = DateTime(date.year, date.month, date.day);
+  if (picked.isAtSameMomentAs(today)) return null;
+  return context.messages.dailyOsNextTimeSpentTitlePast;
 }
 
-class _InlineCaptureAction extends StatelessWidget {
-  const _InlineCaptureAction({
-    required this.label,
-    required this.onTap,
-  });
+// ───────────────────────── Inline advance CTA ──────────────────────────
 
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Semantics(
-      button: true,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step1,
-            vertical: tokens.spacing.step1,
-          ),
-          child: Text(
-            label,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.interactive.enabled,
-              decoration: TextDecoration.underline,
-              decorationColor: tokens.colors.interactive.enabled,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LiveTranscriptViewport extends StatelessWidget {
-  const _LiveTranscriptViewport({
-    required this.text,
-    required this.color,
-    required this.visibleLineCount,
-  });
-
-  final String text;
-  final Color color;
-  final int visibleLineCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final textStyle = _TranscriptText.resolveStyle(
-      tokens,
-      color: color,
-      italic: true,
-    );
-    final fontSize = textStyle.fontSize ?? tokens.typography.size.bodyMedium;
-    final lineHeight = textStyle.height == null
-        ? tokens.typography.lineHeight.bodyMedium
-        : fontSize * textStyle.height!;
-    final viewportHeight = lineHeight * visibleLineCount;
-    return SizedBox(
-      key: const Key('daily_os_capture_live_transcript_viewport'),
-      height: viewportHeight,
-      width: double.infinity,
-      child: SingleChildScrollView(
-        reverse: true,
-        physics: const NeverScrollableScrollPhysics(),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: viewportHeight),
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: _TranscriptText(
-              text: text,
-              italic: true,
-              color: color,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _TranscriptText extends StatelessWidget {
-  const _TranscriptText({
-    required this.text,
-    required this.italic,
-    required this.color,
-  });
-
-  final String text;
-  final bool italic;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    if (text.isEmpty) return const SizedBox.shrink();
-    final style = resolveStyle(tokens, color: color, italic: italic);
-    return Text(
-      text,
-      textAlign: TextAlign.center,
-      strutStyle: StrutStyle.fromTextStyle(
-        style,
-        forceStrutHeight: true,
-      ),
-      style: style,
-    );
-  }
-
-  static TextStyle resolveStyle(
-    DsTokens tokens, {
-    required Color color,
-    required bool italic,
-  }) {
-    return tokens.typography.styles.body.bodyMedium.copyWith(
-      color: color,
-      fontStyle: italic ? FontStyle.italic : FontStyle.normal,
-    );
-  }
-}
-
+/// Standalone-page advance CTA. Only built in the captured phase — the
+/// hosting [_InlineFooterSlot] reserves the space in every other phase.
 class _ReconcileCta extends ConsumerStatefulWidget {
   const _ReconcileCta({required this.state, this.forDate});
 
@@ -838,11 +695,6 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    if (widget.state.phase != CapturePhase.captured) {
-      // Reserve roughly the same vertical space so the surrounding
-      // layout does not jump when the CTA appears.
-      return SizedBox(height: tokens.spacing.step9);
-    }
     final hasTranscript = widget.state.transcript.trim().isNotEmpty;
     return FilledButton(
       onPressed: _submitting || !hasTranscript ? null : _onSubmit,

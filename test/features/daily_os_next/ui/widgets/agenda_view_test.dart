@@ -33,6 +33,18 @@ const _category = DayAgentCategory(
   colorHex: '5ED4B7',
 );
 
+List<TimeBlock> _blocksTotalling(int minutes) => [
+  TimeBlock(
+    id: 'b-total',
+    title: 'Planned work',
+    start: DateTime(2026, 5, 26, 9),
+    end: DateTime(2026, 5, 26, 9).add(Duration(minutes: minutes)),
+    type: TimeBlockType.ai,
+    state: TimeBlockState.drafted,
+    category: _category,
+  ),
+];
+
 DraftPlan _draft({String? taskId}) {
   final day = DateTime(2026, 5, 26);
   return DraftPlan(
@@ -77,6 +89,72 @@ void main() {
   tearDown(() => beamToNamedOverride = null);
 
   group('AgendaView', () {
+    testWidgets(
+      'stat strip derives one truth: headline, donut, and legend all use '
+      'the block-derived committed minutes, even when the stored '
+      'scheduledMinutes drifted',
+      (tester) async {
+        final day = DateTime(2026, 5, 26);
+        final drifted = DraftPlan(
+          dayDate: day,
+          // Blocks sum to 150m; the stored total lies (240m).
+          blocks: [
+            TimeBlock(
+              id: 'b1',
+              title: 'Deep work',
+              start: DateTime(2026, 5, 26, 9),
+              end: DateTime(2026, 5, 26, 10, 30),
+              type: TimeBlockType.ai,
+              state: TimeBlockState.drafted,
+              category: _category,
+            ),
+            TimeBlock(
+              id: 'b2',
+              title: 'Dropped — must not count',
+              start: DateTime(2026, 5, 26, 11),
+              end: DateTime(2026, 5, 26, 12),
+              type: TimeBlockType.ai,
+              state: TimeBlockState.dropped,
+              category: _category,
+            ),
+            TimeBlock(
+              id: 'b3',
+              title: 'Calls',
+              start: DateTime(2026, 5, 26, 13),
+              end: DateTime(2026, 5, 26, 14),
+              type: TimeBlockType.manual,
+              state: TimeBlockState.drafted,
+              category: _category,
+            ),
+          ],
+          bands: const [],
+          capacityMinutes: 480,
+          scheduledMinutes: 240,
+        );
+        await tester.pumpWidget(_wrap(AgendaView(draft: drifted)));
+        await tester.pump();
+
+        final messages = tester.element(find.byType(AgendaView)).messages;
+        // Remaining headline leads (480 - 150 = 5h 30m), derived from
+        // non-dropped blocks (not the 240m stored total).
+        expect(
+          find.text(messages.dailyOsNextAgendaHeadlineLeft('5h 30m')),
+          findsOneWidget,
+        );
+        // The committed/capacity summary demotes into the supporting line.
+        expect(
+          find.textContaining(
+            messages.dailyOsNextAgendaSummary('2h 30m', '8h'),
+          ),
+          findsOneWidget,
+        );
+        // Donut center: remaining = 480 - 150.
+        expect(find.text('5h 30m'), findsOneWidget);
+        // Legend agrees with both.
+        expect(find.textContaining('2h 30m'), findsWidgets);
+      },
+    );
+
     testWidgets('opens task-backed agenda items through app navigation', (
       tester,
     ) async {
@@ -249,15 +327,15 @@ void main() {
 
       final messages = tester.element(find.byType(AgendaView)).messages;
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityComfortable),
+        find.textContaining(messages.dailyOsNextAgendaCapacityComfortable),
         findsOneWidget,
       );
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityNearFull),
+        find.textContaining(messages.dailyOsNextAgendaCapacityNearFull),
         findsNothing,
       );
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityOver),
+        find.textContaining(messages.dailyOsNextAgendaCapacityOver),
         findsNothing,
       );
     });
@@ -267,17 +345,17 @@ void main() {
     ) async {
       final draft = DraftPlan(
         dayDate: DateTime(2026, 5, 26),
-        blocks: const [],
+        blocks: _blocksTotalling(570), // 95% of 600.
         bands: const [],
         capacityMinutes: 600,
-        scheduledMinutes: 570, // 95%.
+        scheduledMinutes: 570,
         agendaItems: const [],
       );
       await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
 
       final messages = tester.element(find.byType(AgendaView)).messages;
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityNearFull),
+        find.textContaining(messages.dailyOsNextAgendaCapacityNearFull),
         findsOneWidget,
       );
     });
@@ -285,17 +363,17 @@ void main() {
     testWidgets('over-capacity (> 100%) shows over overline', (tester) async {
       final draft = DraftPlan(
         dayDate: DateTime(2026, 5, 26),
-        blocks: const [],
+        blocks: _blocksTotalling(720), // 120% of 600.
         bands: const [],
         capacityMinutes: 600,
-        scheduledMinutes: 720, // 120%.
+        scheduledMinutes: 720,
         agendaItems: const [],
       );
       await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
 
       final messages = tester.element(find.byType(AgendaView)).messages;
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityOver),
+        find.textContaining(messages.dailyOsNextAgendaCapacityOver),
         findsOneWidget,
       );
     });
@@ -305,17 +383,17 @@ void main() {
     ) async {
       final draft = DraftPlan(
         dayDate: DateTime(2026, 5, 26),
-        blocks: const [],
+        blocks: _blocksTotalling(90), // 1h 30m of 4h.
         bands: const [],
         capacityMinutes: 240,
-        scheduledMinutes: 90, // 1h 30m of 4h.
+        scheduledMinutes: 90,
         agendaItems: const [],
       );
       await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
 
       final messages = tester.element(find.byType(AgendaView)).messages;
       expect(
-        find.text(messages.dailyOsNextAgendaSummary('1h 30m', '4h')),
+        find.textContaining(messages.dailyOsNextAgendaSummary('1h 30m', '4h')),
         findsOneWidget,
       );
       expect(find.byType(CapacityDonut), findsOneWidget);
@@ -474,9 +552,13 @@ void main() {
         );
         await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
 
-        // 90m of Work (dropped 60m excluded), 30m of Personal.
-        expect(find.text('Work · 1h 30m'), findsOneWidget);
-        expect(find.text('Personal · 30m'), findsOneWidget);
+        // 90m of Work (dropped 60m excluded), 30m of Personal. The legend
+        // is a micro-table: label leads, duration sits right-aligned as a
+        // bare ledger value.
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('1h 30m'), findsOneWidget);
+        expect(find.text('Personal'), findsOneWidget);
+        expect(find.text('30m'), findsOneWidget);
       },
     );
 

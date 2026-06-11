@@ -3131,13 +3131,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNearLimit => 'Proche de la limite';
 
   @override
-  String get dailyOsNextAgendaCapacityComfortable => 'CONFORTABLE';
+  String get dailyOsNextAgendaCapacityComfortable => 'Confortable';
 
   @override
-  String get dailyOsNextAgendaCapacityNearFull => 'PRESQUE PLEIN';
+  String get dailyOsNextAgendaCapacityNearFull => 'Presque plein';
 
   @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'PAS ENCORE DE PLAN';
+  String get dailyOsNextAgendaCapacityNoPlan => 'Pas encore de plan';
 
   @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
@@ -3145,7 +3145,23 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'SURCHARGE';
+  String get dailyOsNextAgendaCapacityOver => 'Surcharge';
+
+  @override
+  String get dailyOsNextAgendaDonutLeft => 'libre';
+
+  @override
+  String get dailyOsNextAgendaDonutOver => 'en trop';
+
+  @override
+  String dailyOsNextAgendaHeadlineLeft(String duration) {
+    return '$duration restant';
+  }
+
+  @override
+  String dailyOsNextAgendaHeadlineOver(String duration) {
+    return '$duration de trop';
+  }
 
   @override
   String get dailyOsNextAgendaNoPlanBody =>
@@ -3192,6 +3208,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextCaptureCaptured => 'C\'est noté.';
 
   @override
+  String get dailyOsNextCaptureDoneCta => 'Terminer';
+
+  @override
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
       'L’autorisation du micro a été refusée.';
 
@@ -3220,7 +3239,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'La transcription a échoué.';
 
   @override
+  String get dailyOsNextCaptureHeadlineCaptured => 'C\'est bien ça ?';
+
+  @override
   String get dailyOsNextCaptureHeadlineLead => 'Qu\'as-tu en tête';
+
+  @override
+  String get dailyOsNextCaptureHeadlineListening => 'Je t\'écoute.';
 
   @override
   String get dailyOsNextCaptureHeadlineTail => 'pour aujourd\'hui ?';
@@ -3237,13 +3262,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextCaptureHeadlineTailYesterday => 'pour hier ?';
 
   @override
+  String get dailyOsNextCaptureHeadlineTranscribing => 'Je note…';
+
+  @override
+  String get dailyOsNextCaptureIdleClick => 'Clique pour parler';
+
+  @override
+  String get dailyOsNextCaptureIdleExample =>
+      '« Travail de fond ce matin, une balade après le déjeuner, les mails avant 17 h. »';
+
+  @override
   String get dailyOsNextCaptureIdleHint => 'Tape pour parler · écris plutôt';
 
   @override
   String get dailyOsNextCaptureIdleTalk => 'Tape pour parler';
 
   @override
-  String get dailyOsNextCaptureListening => 'ÉCOUTE';
+  String get dailyOsNextCaptureListeningStatus => 'À l’écoute…';
 
   @override
   String dailyOsNextCapturePastPrompt(String date) {
@@ -3251,10 +3286,13 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextCaptureReconcileCta => 'Réconcilier';
+  String get dailyOsNextCaptureReconcileCta => 'Vérifier';
 
   @override
   String get dailyOsNextCapturesPanelTitle => 'Captures';
+
+  @override
+  String get dailyOsNextCaptureTranscribing => 'Transcription en cours…';
 
   @override
   String get dailyOsNextCaptureTranscriptHint =>
@@ -3376,11 +3414,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextDayMoreTooltip => 'Plus';
 
   @override
-  String get dailyOsNextDayRefineCta => 'Affiner à la voix';
+  String get dailyOsNextDayRefineCta => 'Ajuster';
 
   @override
   String get dailyOsNextDayRefineFooterHint =>
-      'Parle pour réorganiser le plan — les changements apparaissent en diff avant d\'être appliqués.';
+      'Parle pour réorganiser le plan — tu verras chaque changement avant qu\'il soit enregistré.';
 
   @override
   String get dailyOsNextDayTitle => 'Ta journée';
@@ -3404,12 +3442,35 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextDraftingReasoningOverline => '✦ RAISONNEMENT';
 
   @override
-  String get dailyOsNextEditTitleHint => 'Modifier le titre';
+  String get dailyOsNextDraftingStatusAfternoon => 'J\'organise l\'après-midi…';
 
   @override
-  String dailyOsNextEstimateMinutes(int minutes) {
-    return '${minutes}m';
-  }
+  String get dailyOsNextDraftingStatusAlmost => 'Presque fini…';
+
+  @override
+  String get dailyOsNextDraftingStatusBreathing =>
+      'Je laisse de l\'air dans le planning…';
+
+  @override
+  String get dailyOsNextDraftingStatusDeepWork =>
+      'Je place le travail de fond en premier…';
+
+  @override
+  String get dailyOsNextDraftingStatusMatching =>
+      'J\'associe les tâches à ta journée…';
+
+  @override
+  String get dailyOsNextDraftingStatusReading => 'Je lis ton point du jour…';
+
+  @override
+  String get dailyOsNextDraftingStatusTimings => 'Je vérifie les horaires…';
+
+  @override
+  String get dailyOsNextDraftingStatusYesterday =>
+      'Je regarde le rythme d\'hier…';
+
+  @override
+  String get dailyOsNextEditTitleHint => 'Modifier le titre';
 
   @override
   String get dailyOsNextGenericError =>
@@ -3420,9 +3481,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingEvening => 'Bonsoir.';
-
-  @override
-  String get dailyOsNextGreetingHi => 'Salut 👋';
 
   @override
   String dailyOsNextGreetingHiName(String name) {
@@ -3456,6 +3514,17 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get dailyOsNextKnowledgeEmpty =>
       'Rien pour l\'instant — je retiendrai ce que tu me dis.';
+
+  @override
+  String dailyOsNextKnowledgeNudge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count observations — à valider',
+      one: '1 observation — à valider',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dailyOsNextKnowledgeProposedHeader =>
@@ -3504,11 +3573,14 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get dailyOsNextReconcileHeadline => 'Voici ce que j’ai entendu.';
+
+  @override
   String get dailyOsNextReconcileHeardEmpty =>
       'Les cartes de capture apparaîtront ici une fois l\'analyse terminée.';
 
   @override
-  String get dailyOsNextReconcileHeardOverline => 'VOILÀ CE QUE J\'AI ENTENDU';
+  String get dailyOsNextReconcileHeardOverline => 'ENTENDU';
 
   @override
   String get dailyOsNextReconcileLowConfidence => 'confiance faible';
@@ -3524,6 +3596,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextRefineAccept => 'Accepter';
 
   @override
+  String get dailyOsNextRefineCurrentPlan => 'PLAN ACTUEL';
+
+  @override
   String get dailyOsNextRefineDiffAdded => 'AJOUTÉ';
 
   @override
@@ -3533,7 +3608,20 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextRefineDiffMoved => 'DÉPLACÉ';
 
   @override
+  String get dailyOsNextRefineHeadlineDiffReady =>
+      'Voilà ce que je changerais.';
+
+  @override
+  String get dailyOsNextRefineHeadlineIdle => 'Qu’est-ce qu’on change ?';
+
+  @override
+  String get dailyOsNextRefineHeadlineThinking => 'Je retravaille ton plan…';
+
+  @override
   String get dailyOsNextRefineKeepTalking => 'Continuer à parler';
+
+  @override
+  String get dailyOsNextRefineLooksGood => 'C’est bon';
 
   @override
   String get dailyOsNextRefineNoChanges =>
@@ -3639,9 +3727,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ POUR DEMAIN';
-
-  @override
-  String get dailyOsNextStandaloneTag => 'Bloc de temps';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {

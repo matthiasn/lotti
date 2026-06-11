@@ -231,7 +231,7 @@ const actualTimeBlockIdPrefix = 'actual:';
 
 /// A scheduled placement on a day. The agent emits these from
 /// `drafted_day_plan`; every `ai` block carries a verbatim `reason`
-/// string that the UI surfaces in the WhyChip popover.
+/// string that the UI surfaces in the agenda why tooltip.
 @immutable
 class TimeBlock {
   const TimeBlock({

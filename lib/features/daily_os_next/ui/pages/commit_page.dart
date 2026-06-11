@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/hold_to_confirm.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/lock_in_scene.dart';
@@ -38,6 +40,11 @@ class _CommitPageState extends ConsumerState<CommitPage> {
     final agent = ref.read(dayAgentProvider);
     final committed = await agent.commitDay(widget.draft);
     if (!mounted) return;
+    // First lock-in retires the day footer's coaching line for good —
+    // the promise has been experienced, the chrome stops narrating it.
+    ref
+        .read(dailyOsPreferencesControllerProvider.notifier)
+        .markDayFooterHintRetired();
     setState(() {
       _committed = committed;
       _locking = true;
@@ -204,9 +211,9 @@ class _RecapRow extends StatelessWidget {
             if (item.totalEstimateMinutes != null) ...[
               SizedBox(width: tokens.spacing.step3),
               Text(
-                context.messages.dailyOsNextEstimateMinutes(
-                  item.totalEstimateMinutes!,
-                ),
+                // One compact duration voice ("2h", "1h 30m") across the
+                // agenda, recap, and parsed cards.
+                formatMinutesCompact(item.totalEstimateMinutes!),
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.lowEmphasis,
                 ),
@@ -224,6 +231,10 @@ class _CapacityRecap extends StatelessWidget {
 
   final DraftPlan draft;
 
+  int get _committedMinutes => categoryTotalsFor(
+    draft,
+  ).fold(0, (sum, entry) => sum + entry.minutes);
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -236,8 +247,11 @@ class _CapacityRecap extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Same block-derived total as the agenda stat strip, so the
+          // commit recap can never tell a different numerical story than
+          // the surface that led here.
           CapacityDonut(
-            scheduledMinutes: draft.scheduledMinutes,
+            scheduledMinutes: _committedMinutes,
             capacityMinutes: draft.capacityMinutes,
             size: 62,
           ),
@@ -245,7 +259,7 @@ class _CapacityRecap extends StatelessWidget {
           Expanded(
             child: Text(
               context.messages.dailyOsNextCommitCapacityNote(
-                formatMinutesCompact(draft.scheduledMinutes),
+                formatMinutesCompact(_committedMinutes),
                 formatMinutesCompact(draft.capacityMinutes),
               ),
               style: tokens.typography.styles.body.bodySmall.copyWith(

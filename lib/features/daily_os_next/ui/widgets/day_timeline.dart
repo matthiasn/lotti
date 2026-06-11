@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:clock/clock.dart';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +11,6 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -41,6 +42,8 @@ class DayTimeline extends StatefulWidget {
     this.actualBlocks,
     this.onRenameBlock,
     this.clock,
+    this.showGestureHint = true,
+    this.onGesturesLearned,
     super.key,
   });
 
@@ -48,6 +51,16 @@ class DayTimeline extends StatefulWidget {
   final int startHour;
   final int endHour;
   final double pxPerMinute;
+
+  /// Whether the toolbar shows the one-shot "Swipe for actual · pinch to
+  /// zoom" coaching line. Hosts pass false once the user has demonstrated
+  /// the gestures (see [onGesturesLearned]); chrome should not keep
+  /// explaining what the hands already know.
+  final bool showGestureHint;
+
+  /// Fired once per widget lifetime on the first lane page, pinch zoom,
+  /// or lane-mode toggle — the host persists it and retires the hint.
+  final VoidCallback? onGesturesLearned;
 
   /// Recorded work sessions projected from the real journal. Falls back
   /// to [DraftPlan.actualBlocks] for tests and mock fixtures.
@@ -87,22 +100,38 @@ class _DayTimelineState extends State<DayTimeline> {
   _TimelineComparisonMode _lastAutoComparisonMode =
       _TimelineComparisonMode.paged;
 
+  /// Folding state from the most recent build, reused by [_centerOnNow]
+  /// (which runs post-frame) instead of recomputing it from the blocks.
+  TimelineFoldingState? _builtFoldingState;
+
+  /// Debounces [DayTimeline.onGesturesLearned] to one firing per lifetime.
+  bool _gesturesLearnedFired = false;
+
+  void _markGesturesLearned() {
+    if (_gesturesLearnedFired) return;
+    _gesturesLearnedFired = true;
+    widget.onGesturesLearned?.call();
+  }
+
   @override
   void initState() {
     super.initState();
     _pxPerMinute = widget.pxPerMinute;
     _pageController = PageController(
       viewportFraction: _horizontalPeekFraction,
-    );
+    )..addListener(_onLanePageScroll);
     _timelineScrollController = ScrollController()
       ..addListener(_recordTimelineScrollOffset);
     _pinchStartPxPerMinute = _pxPerMinute;
-    _now = (widget.clock ?? DateTime.now)();
+    _now = (widget.clock ?? clock.now)();
     if (widget.clock == null) {
-      // Re-render once per minute when using the real clock so the
-      // now-line tracks time. Skipped under test (fixed clock).
+      // Re-render once per minute when using the ambient clock so the
+      // now-line tracks time. Skipped under test (fixed clock param).
       _scheduleNextMinute();
     }
+    // Open with the now-line framed in the upper half of the viewport so
+    // "where am I in the day" needs no scrolling.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _centerOnNow());
   }
 
   @override
@@ -113,23 +142,69 @@ class _DayTimelineState extends State<DayTimeline> {
     }
   }
 
+  void _onLanePageScroll() {
+    final page = _pageController.hasClients ? _pageController.page : null;
+    // Half a page of travel = the swipe gesture has been demonstrated.
+    if (page != null && page > 0.5) _markGesturesLearned();
+  }
+
   void _scheduleNextMinute() {
-    final now = DateTime.now();
+    final now = clock.now();
     final delay = Duration(
       seconds: 60 - now.second,
       milliseconds: -now.millisecond,
     );
     _timer = Timer(delay, () {
       if (!mounted) return;
-      setState(() => _now = DateTime.now());
+      setState(() => _now = clock.now());
       _scheduleNextMinute();
     });
+  }
+
+  /// Scrolls the timeline so the now-line sits ~45% down the viewport.
+  /// No-op when now is outside the day's window or nothing scrolls.
+  ///
+  /// Runs post-frame, so [_builtFoldingState] from the build that just
+  /// laid out the scrollable is the geometry the viewport actually shows.
+  void _centerOnNow() {
+    if (!mounted || !_timelineScrollController.hasClients) return;
+    final foldingState = _builtFoldingState;
+    if (foldingState == null) return;
+    final position = _timelineScrollController.position;
+    if (position.maxScrollExtent <= 0) return;
+    final dayDate = widget.draft.dayDate;
+    final windowStart = DateTime(
+      dayDate.year,
+      dayDate.month,
+      dayDate.day,
+      widget.startHour,
+    );
+    final windowEnd = windowStart.add(
+      Duration(hours: widget.endHour - widget.startHour),
+    );
+    if (!_now.isAfter(windowStart) ||
+        !_now.isBefore(windowEnd) ||
+        !_isSameDay(_now, dayDate)) {
+      return;
+    }
+    final nowTop = foldingState.positionForDate(
+      _now,
+      windowStart: windowStart,
+      pxPerMinute: _pxPerMinute,
+    );
+    final target = (nowTop - position.viewportDimension * 0.45).clamp(
+      0.0,
+      position.maxScrollExtent,
+    );
+    _timelineScrollController.jumpTo(target);
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _pageController.dispose();
+    _pageController
+      ..removeListener(_onLanePageScroll)
+      ..dispose();
     _timelineScrollController
       ..removeListener(_recordTimelineScrollOffset)
       ..dispose();
@@ -149,6 +224,7 @@ class _DayTimelineState extends State<DayTimeline> {
       expandedRegionStarts: _expandedFoldRegionStarts,
       collapsedHourHeight: tokens.spacing.step3,
     );
+    _builtFoldingState = foldingState;
     final totalHeight = foldingState.totalHeight(_pxPerMinute);
 
     final windowStart = DateTime(
@@ -166,7 +242,12 @@ class _DayTimelineState extends State<DayTimeline> {
         tokens.typography.lineHeight.overline + tokens.spacing.step2;
     final timelineTopInset = paneLabelHeight + tokens.spacing.step3;
     final timelineContentHeight = totalHeight + tokens.spacing.step9;
-    final timeRailWidth = tokens.spacing.step10;
+    // Hour labels and the now-chip live on the rail; widen it with the
+    // user's text scale so "09:00" never clips at accessibility sizes.
+    final timeRailWidth = math.max(
+      tokens.spacing.step10,
+      MediaQuery.textScalerOf(context).scale(tokens.spacing.step10),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -175,6 +256,7 @@ class _DayTimelineState extends State<DayTimeline> {
           children: [
             _TimelineToolbar(
               mode: comparisonMode,
+              showHint: widget.showGestureHint,
               onToggleMode: _toggleComparisonMode,
             ),
             Expanded(
@@ -351,6 +433,8 @@ class _DayTimelineState extends State<DayTimeline> {
   }
 
   void _toggleComparisonMode() {
+    // Discovering the lane toggle teaches the same fact as the swipe.
+    _markGesturesLearned();
     final comparisonMode = _effectiveComparisonMode;
     setState(() {
       _comparisonModeOverride = comparisonMode == _TimelineComparisonMode.paged
@@ -435,6 +519,7 @@ class _DayTimelineState extends State<DayTimeline> {
       _maxPxPerMinute,
     );
     if ((next - currentPxPerMinute).abs() >= 0.01) {
+      _markGesturesLearned();
       final currentOffset = _currentTimelineScrollOffset();
       final scrollScale = next / currentPxPerMinute;
       setState(() {
@@ -511,10 +596,17 @@ enum _TimelineComparisonMode { paged, both }
 class _TimelineToolbar extends StatelessWidget {
   const _TimelineToolbar({
     required this.mode,
+    required this.showHint,
     required this.onToggleMode,
   });
 
   final _TimelineComparisonMode mode;
+
+  /// One-shot coaching line; retired by the host once the user has
+  /// demonstrated the gestures. The mode-toggle icon stays — it is an
+  /// affordance, not narration.
+  final bool showHint;
+
   final VoidCallback onToggleMode;
 
   @override
@@ -530,16 +622,18 @@ class _TimelineToolbar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              showingBoth
-                  ? messages.dailyOsNextTimelineBoth
-                  : messages.dailyOsNextTimelineSwipeHint,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
+            child: showHint
+                ? Text(
+                    showingBoth
+                        ? messages.dailyOsNextTimelineBoth
+                        : messages.dailyOsNextTimelineSwipeHint,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
           Tooltip(
             message: showingBoth
@@ -672,13 +766,36 @@ class _SharedHourRail extends StatelessWidget {
   final DateTime windowStart;
   final double topInset;
 
+  static const _nowDotSize = 6.0;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final textScaler = MediaQuery.textScalerOf(context);
     final hourLabelStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
-    final hourLabelCenterOffset = tokens.typography.lineHeight.caption / 2;
+    final hourLabelExtent = textScaler.scale(
+      tokens.typography.lineHeight.caption,
+    );
+    final hourLabelCenterOffset = hourLabelExtent / 2;
+    // The chip is one bodySmall line plus step1 padding top and bottom.
+    final nowChipExtent =
+        textScaler.scale(tokens.typography.lineHeight.bodySmall) +
+        tokens.spacing.step2;
+    // Labels whose center sits closer to the now-line than half the
+    // combined label+chip extents (plus a breathing gap) would be half
+    // occluded by the chip — a sheared "16:00" reads as a rendering bug
+    // on the rail's marquee element, so suppress those labels.
+    final hourLabelCollisionBand =
+        (hourLabelExtent + nowChipExtent) / 2 + tokens.spacing.step2;
+    final nowTop = now == null
+        ? null
+        : foldingState.positionForDate(
+            now!,
+            windowStart: windowStart,
+            pxPerMinute: pxPerMinute,
+          );
     return ClipRect(
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(
@@ -705,20 +822,7 @@ class _SharedHourRail extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               for (final segment in foldingState.segments)
-                if (segment is TimelineFoldRegion && !segment.isExpanded)
-                  Positioned(
-                    top:
-                        topInset +
-                        foldingState.positionForHour(
-                          segment.startHour,
-                          pxPerMinute,
-                        ),
-                    right: 0,
-                    width: tokens.spacing.step1 / 2,
-                    height: segment.height(pxPerMinute),
-                    child: const SizedBox.shrink(),
-                  )
-                else
+                if (segment is! TimelineFoldRegion || segment.isExpanded)
                   Positioned(
                     top:
                         topInset +
@@ -736,28 +840,41 @@ class _SharedHourRail extends StatelessWidget {
                     ),
                   ),
               for (final hour in foldingState.visibleHourLabels)
+                if (nowTop == null ||
+                    (foldingState.positionForHour(hour, pxPerMinute) - nowTop)
+                            .abs() >
+                        hourLabelCollisionBand)
+                  Positioned(
+                    top:
+                        topInset +
+                        foldingState.positionForHour(hour, pxPerMinute) -
+                        hourLabelCenterOffset,
+                    right: tokens.spacing.step6,
+                    child: Text(
+                      formatTimelineHourLabel(hour),
+                      style: hourLabelStyle,
+                    ),
+                  ),
+              if (nowTop != null) ...[
+                // The single now-dot lives on the rail (not per pane) so
+                // the peeking page in swipe mode never shows a stray
+                // second dot mid-screen; panes draw only the line.
                 Positioned(
-                  top:
-                      topInset +
-                      foldingState.positionForHour(hour, pxPerMinute) -
-                      hourLabelCenterOffset,
-                  right: tokens.spacing.step6,
-                  child: Text(
-                    formatTimelineHourLabel(hour),
-                    style: hourLabelStyle,
+                  top: topInset + nowTop - _nowDotSize / 2,
+                  right: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: _nowDotSize,
+                      height: _nowDotSize,
+                      decoration: BoxDecoration(
+                        color: tokens.colors.alert.error.defaultColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
                   ),
                 ),
-              if (now != null)
                 Positioned(
-                  top:
-                      topInset +
-                      foldingState.positionForDate(
-                        now!,
-                        windowStart: windowStart,
-                        pxPerMinute: pxPerMinute,
-                      ) -
-                      tokens.spacing.step3 -
-                      tokens.spacing.step1,
+                  top: topInset + nowTop - nowChipExtent / 2,
                   right: tokens.spacing.step5,
                   child: Container(
                     padding: EdgeInsets.symmetric(
@@ -777,6 +894,7 @@ class _SharedHourRail extends StatelessWidget {
                     ),
                   ),
                 ),
+              ],
             ],
           ),
         ),

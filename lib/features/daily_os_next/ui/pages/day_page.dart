@@ -4,17 +4,22 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
@@ -22,13 +27,14 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 part 'day_page_header.dart';
 
-enum _DayMenuAction { inspectAgent, deletePlan }
+enum _DayMenuAction { inspectAgent, knowledge, deletePlan }
 
 /// Hosts the two projections of the [DraftPlan] — Agenda (intent) and
 /// Day (mechanics) — with a pill toggle at the top.
@@ -203,6 +209,7 @@ class _DayPageState extends ConsumerState<DayPage> {
     final actualBlocks = ref
         .watch(dailyOsActualTimeBlocksProvider(widget.draft.dayDate))
         .value;
+    final prefs = ref.watch(dailyOsPreferencesControllerProvider);
     // Inline rename is only offered when a real plan backs the surface.
     final onRenameItem = widget.hasPlan
         ? (AgendaItem item, String title) => unawaited(_renameItem(item, title))
@@ -221,6 +228,7 @@ class _DayPageState extends ConsumerState<DayPage> {
             children: [
               _DayHeader(
                 dateStrip: widget.dateStrip,
+                date: widget.draft.dayDate,
                 selectedView: _view,
                 hasPlan: widget.hasPlan,
                 onViewChanged: (next) => setState(() => _view = next),
@@ -229,23 +237,49 @@ class _DayPageState extends ConsumerState<DayPage> {
                 onDeletePlan: () => unawaited(_confirmDeletePlan()),
               ),
               CapturesPanel(date: widget.draft.dayDate),
+              // Proposed learnings surface here on both views and both
+              // form factors; renders nothing when there is nothing to
+              // confirm.
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step5,
+                ),
+                child: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: KnowledgeNudge(),
+                ),
+              ),
               Expanded(
-                child: _view == PlanView.agenda
-                    ? AgendaView(
-                        draft: widget.draft,
-                        actualBlocks: actualBlocks ?? const [],
-                        hasPlan: widget.hasPlan,
-                        onRenameItem: onRenameItem,
-                      )
-                    : DayTimeline(
-                        draft: widget.draft,
-                        actualBlocks: actualBlocks,
-                        onRenameBlock: onRenameBlock,
-                      ),
+                // Rows meeting the fold dissolve instead of resting
+                // razor-cut against the footer's glass edge.
+                child: EdgeFade(
+                  rampExtent: 36,
+                  fadeTop: false,
+                  minFraction: 0.04,
+                  child: _view == PlanView.agenda
+                      ? AgendaView(
+                          draft: widget.draft,
+                          actualBlocks: actualBlocks ?? const [],
+                          hasPlan: widget.hasPlan,
+                          onRenameItem: onRenameItem,
+                        )
+                      : DayTimeline(
+                          draft: widget.draft,
+                          actualBlocks: actualBlocks,
+                          onRenameBlock: onRenameBlock,
+                          showGestureHint: !prefs.timelineGesturesLearned,
+                          onGesturesLearned: ref
+                              .read(
+                                dailyOsPreferencesControllerProvider.notifier,
+                              )
+                              .markTimelineGesturesLearned,
+                        ),
+                ),
               ),
               if (widget.hasPlan)
                 _DayFooter(
                   draft: widget.draft,
+                  showCoachHint: !prefs.dayFooterHintRetired,
                   onRefine: _openRefine,
                   onCommit: _openCommit,
                   onShutdown: _openShutdown,
@@ -263,12 +297,18 @@ class _DayPageState extends ConsumerState<DayPage> {
 class _DayFooter extends StatelessWidget {
   const _DayFooter({
     required this.draft,
+    required this.showCoachHint,
     required this.onRefine,
     required this.onCommit,
     required this.onShutdown,
   });
 
   final DraftPlan draft;
+
+  /// One-shot coaching line — retired permanently after the first
+  /// lock-in (the promise has been experienced; chrome stops narrating).
+  final bool showCoachHint;
+
   final VoidCallback onRefine;
   final VoidCallback onCommit;
   final VoidCallback onShutdown;
@@ -278,6 +318,12 @@ class _DayFooter extends StatelessWidget {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
     final isDesktop = isDesktopLayout(context);
+    // Coaching copy yields the fold to actionable rows at large
+    // accessibility text sizes, and retires for good after the first
+    // lock-in.
+    final showHint =
+        showCoachHint &&
+        dailyOsTextScaleOf(context) < kDailyOsHideCoachingScale;
     final hint = Text(
       context.messages.dailyOsNextDayRefineFooterHint,
       style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -299,18 +345,30 @@ class _DayFooter extends StatelessWidget {
           vertical: tokens.spacing.step4,
         ),
         child: isDesktop
-            ? Row(
-                children: [
-                  Expanded(child: hint),
-                  SizedBox(width: tokens.spacing.step4),
-                  actions,
-                ],
+            // Constrained to the agenda's reading width so the commit
+            // actions belong to the content column, not the page chrome.
+            ? Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Row(
+                    children: [
+                      if (showHint) ...[
+                        Expanded(child: hint),
+                        SizedBox(width: tokens.spacing.step4),
+                      ] else
+                        const Spacer(),
+                      actions,
+                    ],
+                  ),
+                ),
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  hint,
-                  SizedBox(height: tokens.spacing.step3),
+                  if (showHint) ...[
+                    hint,
+                    SizedBox(height: tokens.spacing.step3),
+                  ],
                   actions,
                 ],
               ),

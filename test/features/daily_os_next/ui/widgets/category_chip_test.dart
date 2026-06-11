@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -15,7 +16,7 @@ void main() {
     await tester.pump();
   }
 
-  testWidgets('renders the category name tinted with its hex color', (
+  testWidgets('only the swatch dot carries the category color', (
     tester,
   ) async {
     await pumpChip(
@@ -35,11 +36,16 @@ void main() {
         );
     expect(hasSwatch, isTrue);
 
+    // The label stays neutral: category colors are user data, so a tinted
+    // label/pill would collide with the fixed status-badge palette.
+    final context = tester.element(find.text('Work'));
+    final tokens = context.designTokens;
     final text = tester.widget<Text>(find.text('Work'));
-    expect(text.style?.color, const Color(0xFF4285F4));
+    expect(text.style?.color, tokens.colors.text.mediumEmphasis);
+    expect(text.style?.color, isNot(const Color(0xFF4285F4)));
   });
 
-  testWidgets('invalid hex falls back to grey without throwing', (
+  testWidgets('invalid hex falls back to a grey dot without throwing', (
     tester,
   ) async {
     await pumpChip(
@@ -48,8 +54,14 @@ void main() {
     );
 
     expect(find.text('Mystery'), findsOneWidget);
-    final text = tester.widget<Text>(find.text('Mystery'));
-    expect(text.style?.color, Colors.grey);
+    final hasGreySwatch = tester
+        .widgetList<Container>(find.byType(Container))
+        .any(
+          (c) =>
+              c.decoration is BoxDecoration &&
+              (c.decoration! as BoxDecoration).color == Colors.grey,
+        );
+    expect(hasGreySwatch, isTrue);
     expect(tester.takeException(), isNull);
   });
 }

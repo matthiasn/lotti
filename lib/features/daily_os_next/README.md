@@ -216,10 +216,12 @@ Runtime behavior:
   Capture → Reconcile → Drafting ritual runs inside a full-height
   **day-planning modal** (`showDayPlanningModal`,
   `ui/pages/day_planning_modal.dart`), a Wolt multi-page sheet pushed on the
-  root navigator (full-height bottom sheet on phones — covering the bottom nav
-  — dialog on wide). The modal is opened from the empty surface's footer CTA
-  (`DayPlanningCreate`) and from the Day surface's Refine CTA
-  (`DayPlanningAdapt`). Each step submits against the selected date for
+  root navigator — a full-height bottom sheet on phones (covering the bottom
+  nav) and a right-anchored full-height **side panel** on wide screens
+  (`SizedWoltSideSheetType`, 45% of the window clamped to 480–720 px), so the
+  day surface stays visible beside the conversation. The modal is opened from
+  the empty surface's footer CTA (`DayPlanningCreate`) and from the Day
+  surface's Refine CTA (`DayPlanningAdapt`). Each step submits against the selected date for
   day-agent routing; on create the Drafting step closes the whole modal once
   the plan is ready and invalidates `currentDraftPlanProvider` so the root
   re-renders the new plan. Background agent or sync updates reload the current
@@ -321,17 +323,67 @@ stateDiagram-v2
   realtime output looks truncated. Refine uses the same Mistral-preferred
   realtime path but disables the full-file batch verifier for that session so a
   reviewed Mistral transcript is not replaced by an MLX fallback.
+- Capture and Refine share one **anchored voice template**: a per-phase
+  headline at the top (the state narrator — "What's on your mind …", "I'm
+  listening.", "Writing that down…", "Does this look right?"), a flexible
+  middle zone, and a fixed-height `VoiceOrbZone`
+  (`ui/widgets/voice_orb_zone.dart`: always-reserved waveform slot + orb +
+  single-strut status caption) pinned directly above the sticky glass action
+  bar. The orb **never moves between phases** — the live transcript grows
+  *upward* from just above the orb inside the bounded middle zone
+  (`LiveTranscriptView`: bottom-pinned, reverse-scrolled, top fade), the
+  editable transcript takes the same zone after capture, and Refine's idle
+  zone shows the read-only current-plan rows. On viewports shorter than the
+  template's minimum the body scrolls instead of overflowing
+  (`_CaptureFlowBody._minBodyHeightFor`).
+
+  ```text
+  headline (state narrator)        ← copy cross-fades in place
+  middle zone                      ← transcript / editor / plan / diff rows
+  waveform slot · orb · caption    ← fixed height, orb stays put
+  sticky glass action bar          ← never empty; all actions live here
+  ```
+
 - `CaptureState` keeps two live audio signals while the mic is open:
   normalized `amplitudes` for the compact waveform bars and raw `dbfs` for the
   shader voice affordance. `VoiceButton` mounts the AI tension-loop shader only
-  during `listening`, wraps it around the fixed-size record button, and removes
-  the shader subtree for idle, transcribing, captured, and error phases.
+  during `listening`, wraps it around the record button, and removes the
+  shader subtree for the other phases. The glyph is bound to the state
+  machine — mic (idle/error), stop square (listening), dimmed mic
+  (transcribing), outlined mic (captured — demoted so the advance CTA carries
+  the primary weight). Presses scale the core down with an overshoot release
+  and the ink ripple paints *above* the gradient (via `Ink`), so taps read as
+  alive.
+- The modal's sticky glass bar is populated in every phase: idle/error →
+  "Type instead"; listening → a teal "Done" pill mirroring the orb's stop
+  action in the thumb zone; transcribing → a quiet "Cancel"; captured →
+  "Re-record" + "Review". On the desktop side panel the pills render at
+  intrinsic width aligned to the trailing edge instead of stretching
+  edge-to-edge, and bar content is capped at the 560 px content width.
+- The Drafting wait is carried by a hero thinking moment instead of skeleton
+  shimmer: the decoder-bars shader (`AiThinkingShaderPresence`) over a
+  `DraftingStatusTicker` — a deterministic ~21 s rotation of localized
+  narration lines ("Reading your check-in…", "Placing deep work first…") that
+  cross-fade in place — with yesterday's learning cards below as real content
+  to read while waiting. The drafting step has no sticky bar (it offers no
+  actions and auto-advances when the draft is ready).
+- The modal's Refine step (`RefineModalContent`) runs on the same anchored
+  template: idle shows the current plan (eyebrow + category-dot rows) where
+  the spoken words will land, the diff rows render in the middle zone with
+  inline accept/reject, and the bar carries "Revert" (enabled once a diff is
+  pending) and "Looks good" (closes the modal). The standalone `RefinePage`
+  keeps its two-pane timeline + side-panel layout for the route-level flow.
 - Agenda and Commit surfaces use the `CapacityDonut` ring (86 px on the Agenda
-  stat strip, 62 px on the Commit recap) per the design handoff: teal under
-  90% load, warning amber at 90–100%, error red above 100% with the
-  over-amount drawn as a half-alpha arc past the clamped end, and a
-  decimal-hours center label over an `of Nh` eyebrow. The honest no-plan strip
-  passes `neutral: true` so tracked hours never read as a false "Near full".
+  stat strip, 62 px on the Commit recap): a 5 px stacked **category ring**
+  whose slices mirror the legend dots (via `categoryTotalsFor`, shared by
+  both so they can't disagree) over a faint remainder track, with the
+  *remaining* capacity in the center over a LEFT/OVER eyebrow whose word is
+  always honest (days without a capacity show the scheduled total with no
+  eyebrow). Pressure wording lives in the stat card's overline; the ring
+  only changes color when the day is genuinely over capacity (error tone,
+  half-alpha over-arc). Callers without segments (Commit) get a single teal
+  arc. The honest no-plan strip passes `neutral: true`, which keeps the calm
+  color but never flips OVER into LEFT.
   UI projections derive scheduled minutes from the non-dropped blocks they
   render. Buffers count because they reserve real time; dropped blocks do not.
   This keeps stale persisted totals from making the capacity reading disagree
@@ -344,8 +396,24 @@ stateDiagram-v2
   rendering. `AgendaView` keeps draft/manual block timing as the source of truth,
   then passes the task title, status, estimate, category, `coverArtId`, and
   `coverArtCropX` into `AgendaCard`. The row uses `CoverArtThumbnail` for the
-  square task image when one exists and falls back to the numbered category badge
+  square task image when one exists and falls back to a bare order number
   when it does not, so the compact mobile list keeps a stable leading column.
+- Agenda rows use a quiet metadata grammar: a bare sparkle icon (reason in
+  the tooltip), bare clock+estimate text, a neutral "In progress" caption
+  (amber is reserved for overdue, the one state that earns a tinted pill),
+  a green check glyph for done, and a 2 px progress bar only while
+  genuinely mid-flight. Task-linked rows carry the `LinkBadge`; standalone
+  rows are the unmarked default. **Done items collapse to one-line receipt
+  rows** (number · title · check) so the first fold belongs to in-progress
+  and upcoming work mid-day. On desktop the agenda column is capped at a
+  760 px reading width.
+- Proposed planner knowledge surfaces on the Day page as the
+  `KnowledgeNudge` chip ("N things I noticed — review", rendered only when
+  proposals exist) between the captures panel and the plan view; tapping it
+  — or the header menu's permanent "What I've learned" entry — opens the
+  `KnowledgePanel` in the standard modal container (bottom sheet on phones,
+  dialog on desktop) where entries are confirmed, edited, or retracted. The
+  Shutdown page keeps its inline panel.
 - `parse_capture_to_items` persists `ParsedItemEntity` rows and links them to
   the source capture. High-confidence matches (`>= 0.75`) auto-link to tasks,
   medium-confidence matches (`0.5..0.75`) auto-link with `lowConfidence`, and
@@ -410,12 +478,20 @@ stateDiagram-v2
   pager with an Actual peek; desktop-width layouts default to side-by-side.
   Two-finger vertical pinch and trackpad pinch zoom both lanes together, while
   the toolbar/horizontal pinch toggles paged versus side-by-side comparison.
-  Blocks in the Actual lane render in the **tracked** treatment from the
-  handoff (v2 item 2): neutral fill and left border, a small category dot, a
-  green check when done, and a mono `HH:mm–HH:mm · tracked` subtitle — never
-  the dashed drafted outline, never a WhyChip. Drafted plan blocks carry a
-  dashed `DsDashedBorder` outline (a design-system primitive) so the whole frame reads provisional;
-  committed blocks render solid. `DayBlock` opens `/tasks/<taskId>` for any
+  Blocks follow the **paint-by-numbers** contract: planned blocks are the
+  faint sketch (5% category tint composited opaquely over the canvas, a
+  45%-alpha category stripe, muted titles, and — while drafted — a
+  category-tinted dashed `DsDashedBorder` outline); recorded sessions in
+  the Actual lane are the filled-in paint (full category stripe, 18% tint
+  dark / 30% light, strong titles, a green check when done) — doing is
+  what makes a block alive. Both lanes share one mono `HH:mm–HH:mm`
+  subtitle voice, and neither renders a why affordance (placement reasons
+  live on the agenda's sparkle tooltip). Block content is height-tiered so glyphs
+  never shear: micro blocks show fill+stripe only, short blocks one
+  centered title line, taller blocks add the subtitle and a second title
+  line. The timeline is clock-injectable (`package:clock` by default), and
+  on open it auto-centers the now-line at ~45% of the viewport when "now"
+  falls inside the day's window. `DayBlock` opens `/tasks/<taskId>` for any
   planned or actual block whose `TimeBlock.taskId` is present; standalone
   calendar and buffer blocks stay inert.
 - `surface_pending_decisions` intentionally limits overdue carryover to the
@@ -464,9 +540,9 @@ stateDiagram-v2
   `propose_plan_diff` so stale widget parameters cannot drop the user's edits.
   From Day, the Refine CTA opens the shared day-planning modal with a
   `DayPlanningAdapt` intent (`showDayPlanningModal`), whose Refine step hosts
-  `RefineModalContent` over the existing plan surface (bottom sheet on narrow
-  screens, dialog on wider screens); the full `RefinePage` remains as a
-  direct-route fallback. Failed or empty proposals
+  `RefineModalContent` on the anchored voice template (full-height bottom
+  sheet on narrow screens, right side panel on wide); the full `RefinePage`
+  remains as a direct-route fallback. Failed or empty proposals
   keep the review field open and show inline feedback instead of silently
   closing. Proposed changes render as independent suggestion cards, matching
   task-agent approval affordances: each row can be accepted or rejected, then
