@@ -93,6 +93,15 @@ It must bind both sides through `optionA` and `optionB` trace refs, including
 `peerVotesVisible`, `traceOrderRandomized`, `choice` (`optionA`, `optionB`, or
 `tie`), `rationale`, and `issues`.
 
+Write one vote per `<safeVoteId>.preference.json` file in the run directory.
+The safe vote id must use only letters, digits, dot, underscore, or dash. The
+ordinary verifier ignores these files; report mode reads them separately after
+normal trace/verdict verification and prints a diagnostic-only A/B section.
+Stale or orphaned trace bindings are rejected by the preference reader. Raw run
+directories are not blinded because trace filenames and payloads include profile
+names; for blinded review, prepare a separate prompt/export that hides profile
+and model identity while preserving the referenced trace digests.
+
 Run multiple independent reviewers with profile/model identity and peer votes
 hidden when possible. Randomize option order for each reviewer when the
 review protocol requires it, and record that in `traceOrderRandomized`. The

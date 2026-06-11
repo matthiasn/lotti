@@ -478,6 +478,17 @@ winning trace when there is a strict preference. These A/B outcomes are
 diagnostic and audit-friendly: they support the human-or-LLM quorum workflow
 for subjective summaries, but they are not `JudgeVerdict`s and do not affect
 profile promotion unless a future pre-registered policy explicitly opts them in.
+Store one vote per `<safeVoteId>.preference.json` file in the run directory.
+`TraceWriter.readRun` deliberately ignores these files so verification,
+readiness, calibration, and promotion gates remain driven only by the manifest,
+traces, and verdicts. Report mode reads preference files separately after normal
+verification and prints a `Subjective A/B preference votes (diagnostic only)`
+section when votes are present. The preference reader rejects stale or orphaned
+trace bindings by recomputing the referenced trace digests, and trace overwrite
+refuses to leave old preference votes behind unless explicitly told to delete
+them. Raw run directories are not a blinded review surface because trace
+filenames and payloads include profile names; blinded reviews need a separate
+export or prompt that hides those identities while preserving trace digests.
 Summary Wilson 95% confidence intervals cluster repeated trials at the scenario
 or scenario-profile-cell level by default; explicit trace-level estimates remain
 available only as diagnostics. Cascade wake traces are also diagnostics by

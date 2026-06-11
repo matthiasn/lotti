@@ -42,6 +42,26 @@ void main() {
     );
   });
 
+  test('rejects unsupported preference vote schema versions', () {
+    final vote = _vote(
+      voteId: 'vote-schema',
+      reviewerId: 'judge-a',
+      optionA: _ref(profileName: 'candidate', traceDigest: _digest('left')),
+      optionB: _ref(profileName: 'baseline', traceDigest: _digest('right')),
+    ).toJson()..['schemaVersion'] = 1.5;
+
+    expect(
+      () => EvalPairwisePreferenceVote.fromJson(vote),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('Unsupported EvalPairwisePreferenceVote schemaVersion 1.5'),
+        ),
+      ),
+    );
+  });
+
   test(
     'summarizes a quorum winner without treating it as scalar promotion',
     () {
@@ -88,7 +108,10 @@ void main() {
       expect(summary.optionAVoteCount, 1);
       expect(summary.optionBVoteCount, 2);
       expect(summary.quorumThreshold, 2);
-      expect(rendered, contains('Pairwise preference summary'));
+      expect(
+        rendered,
+        contains('Subjective A/B preference votes (diagnostic only)'),
+      );
       expect(rendered, contains('optionBWins'));
     },
   );

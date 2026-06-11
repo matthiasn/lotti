@@ -124,7 +124,7 @@ fvm dart analyze test/eval        # the analyzer GATE (see gotcha below)
 fvm dart format test/eval
 ```
 
-Current gate: 292 eval tests green, 8 expected skips without `EVAL_RUN` /
+Current gate: 296 eval tests green, 8 expected skips without `EVAL_RUN` /
 `EVAL_SCENARIOS` / `EVAL_CALIBRATION_TEMPLATE` / `EVAL_CALIBRATION` /
 `LOTTI_EVAL_LIVE`, analyzer clean.
 Latest active slice adds Level 2 run-manifest promotion-plan evidence plus a
@@ -199,6 +199,13 @@ digest; records reviewer and protocol blinding metadata; and lets
 `optionBWins`, `tie`, `noConsensus`, `incomplete`, or `invalid`). These
 pairwise preference records remain diagnostic and separate from `JudgeVerdict`
 and profile promotion until a future pre-registered policy opts them in.
+Current active slice also makes one vote per `<safeVoteId>.preference.json`
+a first-class run artifact. `TraceWriter.readRun` deliberately ignores those
+files so ordinary verification, readiness, calibration, and promotion gates stay
+trace/verdict-only; report mode reads them explicitly after verification and
+prints a diagnostic A/B section. The preference reader rejects stale or orphaned
+trace bindings by recomputing trace digests, and trace overwrite refuses to
+leave old preference votes behind unless the caller explicitly deletes them.
 Known limitation: the current cascade live runner is still a sidecar smoke
 entrypoint rather than part of the main `EvalMatrixRunner` run path.
 Current active slice adds provider response-side provenance: the real

@@ -145,7 +145,7 @@ class EvalPairwisePreferenceVote {
   });
 
   factory EvalPairwisePreferenceVote.fromJson(Map<String, dynamic> json) {
-    final schemaVersion = (json['schemaVersion'] as num).toInt();
+    final schemaVersion = json['schemaVersion'];
     if (schemaVersion != EvalPairwisePreferenceVote.schemaVersion) {
       throw FormatException(
         'Unsupported EvalPairwisePreferenceVote schemaVersion '
@@ -367,7 +367,10 @@ abstract final class EvalPairwisePreferenceReporter {
   static String render(List<EvalPairwisePreferenceSummary> summaries) {
     if (summaries.isEmpty) return 'No pairwise preferences to report.';
     final buffer = StringBuffer()
-      ..writeln('Pairwise preference summary (${summaries.length} pairs)')
+      ..writeln(
+        'Subjective A/B preference votes (diagnostic only): '
+        '${summaries.length} pairs',
+      )
       ..writeln(
         'option A profile  option B profile  scenario                           '
         'status        votes  valid  A/B/T  quorum  findings',

@@ -19,13 +19,11 @@ class EvalRunArtifacts {
   const EvalRunArtifacts({
     required this.manifest,
     required this.traces,
-    required this.pairwisePreferenceVotes,
     required this.artifactNames,
   });
 
   final EvalRunManifest manifest;
   final List<EvalTrace> traces;
-  final List<EvalPairwisePreferenceVote> pairwisePreferenceVotes;
   final List<String> artifactNames;
 }
 
@@ -97,6 +95,7 @@ class TraceWriter {
     EvalTrace trace, {
     bool overwrite = false,
     bool deleteVerdictOnOverwrite = false,
+    bool deletePairwisePreferencesOnOverwrite = false,
   }) async {
     final dir = Directory(runDir(trace.runId));
     await dir.create(recursive: true);
@@ -118,6 +117,22 @@ class TraceWriter {
         );
       }
       await verdictFile.delete();
+    }
+    if (file.existsSync()) {
+      final preferenceFiles = await _pairwisePreferenceFilesReferencingTrace(
+        trace,
+      );
+      if (preferenceFiles.isNotEmpty) {
+        if (!overwrite || !deletePairwisePreferencesOnOverwrite) {
+          throw StateError(
+            'Refusing to overwrite trace with existing pairwise preference '
+            'vote(s): ${file.path}',
+          );
+        }
+        for (final preferenceFile in preferenceFiles) {
+          await preferenceFile.delete();
+        }
+      }
     }
     await file.writeAsString(_encoder.convert(_traceJson(trace)));
     return file;
@@ -219,6 +234,15 @@ class TraceWriter {
       );
       votes.add(vote);
     }
+    final duplicateVoteIds = _duplicates(
+      votes.map((vote) => vote.voteId),
+    );
+    if (duplicateVoteIds.isNotEmpty) {
+      throw StateError(
+        'Duplicate pairwise preference vote id(s): '
+        '${(duplicateVoteIds.toList()..sort()).join(', ')}',
+      );
+    }
     votes.sort((a, b) {
       final comparisonOrder = a.comparisonKey.compareTo(b.comparisonKey);
       if (comparisonOrder != 0) return comparisonOrder;
@@ -278,14 +302,9 @@ class TraceWriter {
         );
       }
     }
-    final pairwisePreferenceVotes = await readPairwisePreferenceVotes(
-      runId,
-      traces: traces,
-    );
     return EvalRunArtifacts(
       manifest: manifest,
       traces: traces,
-      pairwisePreferenceVotes: pairwisePreferenceVotes,
       artifactNames: await artifactNames(runId),
     );
   }
@@ -403,6 +422,41 @@ class TraceWriter {
       refsByKey[ref.traceKey] = ref;
     }
     return refsByKey;
+  }
+
+  Future<List<File>> _pairwisePreferenceFilesReferencingTrace(
+    EvalTrace trace,
+  ) async {
+    final dir = Directory(runDir(trace.runId));
+    if (!dir.existsSync()) return const <File>[];
+    final traceKey = EvalPairwiseTraceRef.fromTrace(
+      trace,
+      traceDigest: EvalProvenance.digestText('trace-key-only'),
+    ).traceKey;
+    final files = <File>[];
+    await for (final entity in dir.list()) {
+      if (entity is! File || !entity.path.endsWith('.preference.json')) {
+        continue;
+      }
+      final json =
+          jsonDecode(await entity.readAsString()) as Map<String, dynamic>;
+      final vote = EvalPairwisePreferenceVote.fromJson(json);
+      if (vote.optionA.traceKey == traceKey ||
+          vote.optionB.traceKey == traceKey) {
+        files.add(entity);
+      }
+    }
+    files.sort((a, b) => a.path.compareTo(b.path));
+    return files;
+  }
+
+  Set<String> _duplicates(Iterable<String> values) {
+    final seen = <String>{};
+    final duplicates = <String>{};
+    for (final value in values) {
+      if (!seen.add(value)) duplicates.add(value);
+    }
+    return duplicates;
   }
 
   void _validatePreferenceTraceBindings(

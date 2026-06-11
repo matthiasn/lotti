@@ -283,7 +283,11 @@ scenario, and profile digests; records reviewer/protocol blinding metadata; and
 is summarized by quorum as `optionAWins`, `optionBWins`, `tie`, `noConsensus`,
 `incomplete`, or `invalid`. These records are diagnostic human/LLM preference
 evidence unless a future pre-registered promotion policy explicitly opts them
-in.
+in. Preference votes are stored as one `<safeVoteId>.preference.json` file per
+reviewer vote and are read only by the explicit preference reader/report path;
+`TraceWriter.readRun`, verification, readiness, calibration, and promotion do
+not depend on them. The preference reader recomputes referenced trace digests
+and rejects stale or orphaned bindings.
 `TraceWriter.readRun` rejects missing, stale, or
 tampered manifests and traces bound to a different manifest before reporting.
 `EvalRunVerifier` rejects traces whose embedded scenario/profile payload drifts

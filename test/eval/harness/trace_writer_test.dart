@@ -260,6 +260,227 @@ void main() {
     );
   });
 
+  test('writes and reads digest-bound pairwise preference artifacts', () async {
+    final dir = await Directory.systemTemp.createTemp(
+      'lotti-pairwise-preference-',
+    );
+    addTearDown(() async {
+      if (dir.existsSync()) await dir.delete(recursive: true);
+    });
+    final writer = TraceWriter(runsRoot: dir.path);
+    final manifest = _validManifest(
+      'run-1',
+      profiles: const [kFrontierFastProfile, kFrontierProfile],
+    );
+    await writer.writeManifest(manifest);
+    final baselineTrace = _validTrace(
+      'run-1',
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final candidateTrace = _validTrace(
+      'run-1',
+      profile: kFrontierProfile,
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final baselineFile = await writer.writeTrace(baselineTrace);
+    final candidateFile = await writer.writeTrace(candidateTrace);
+    final vote = _preferenceVote(
+      voteId: 'vote-1',
+      optionA: EvalPairwiseTraceRef.fromTrace(
+        candidateTrace,
+        traceDigest: await writer.traceDigest(candidateFile),
+      ),
+      optionB: EvalPairwiseTraceRef.fromTrace(
+        baselineTrace,
+        traceDigest: await writer.traceDigest(baselineFile),
+      ),
+    );
+
+    final preferenceFile = await writer.writePairwisePreferenceVote(vote);
+    final votes = await writer.readPairwisePreferenceVotes('run-1');
+    final run = await writer.readRun('run-1');
+    final summary = EvalPairwisePreferenceReporter.summarize(
+      votes,
+      policy: const EvalPairwisePreferencePolicy(minVotes: 1),
+    ).single;
+
+    expect(preferenceFile.uri.pathSegments.last, 'vote-1.preference.json');
+    expect(votes.map((vote) => vote.voteId), ['vote-1']);
+    expect(run.traces, hasLength(2));
+    expect(run.artifactNames, contains('vote-1.preference.json'));
+    expect(summary.status, EvalPairwisePreferenceStatus.optionBWins);
+    expect(summary.preferredTrace?.profileName, kFrontierProfile.name);
+  });
+
+  test('rejects stale pairwise preference trace bindings', () async {
+    final dir = await Directory.systemTemp.createTemp(
+      'lotti-stale-pairwise-preference-',
+    );
+    addTearDown(() async {
+      if (dir.existsSync()) await dir.delete(recursive: true);
+    });
+    final writer = TraceWriter(runsRoot: dir.path);
+    final manifest = _validManifest(
+      'run-1',
+      profiles: const [kFrontierFastProfile, kFrontierProfile],
+    );
+    await writer.writeManifest(manifest);
+    final baselineTrace = _validTrace(
+      'run-1',
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final candidateTrace = _validTrace(
+      'run-1',
+      profile: kFrontierProfile,
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final baselineFile = await writer.writeTrace(baselineTrace);
+    final candidateFile = await writer.writeTrace(candidateTrace);
+    final staleVote = _preferenceVote(
+      voteId: 'vote-stale',
+      optionA: EvalPairwiseTraceRef.fromTrace(
+        candidateTrace,
+        traceDigest: EvalProvenance.digestText('stale-candidate'),
+      ),
+      optionB: EvalPairwiseTraceRef.fromTrace(
+        baselineTrace,
+        traceDigest: await writer.traceDigest(baselineFile),
+      ),
+    );
+    final preferenceFile = writer.pairwisePreferenceFileFor(
+      runId: 'run-1',
+      voteId: staleVote.voteId,
+    );
+    await preferenceFile.writeAsString(
+      const JsonEncoder.withIndent('  ').convert(staleVote.toJson()),
+    );
+    expect(candidateFile.existsSync(), isTrue);
+
+    await expectLater(
+      writer.readPairwisePreferenceVotes('run-1'),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('Stale pairwise preference vote-stale'),
+        ),
+      ),
+    );
+  });
+
+  test('rejects orphan pairwise preference trace refs', () async {
+    final dir = await Directory.systemTemp.createTemp(
+      'lotti-orphan-pairwise-preference-',
+    );
+    addTearDown(() async {
+      if (dir.existsSync()) await dir.delete(recursive: true);
+    });
+    final writer = TraceWriter(runsRoot: dir.path);
+    final manifest = _validManifest(
+      'run-1',
+      profiles: const [kFrontierFastProfile, kFrontierProfile],
+    );
+    await writer.writeManifest(manifest);
+    final baselineTrace = _validTrace(
+      'run-1',
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final candidateTrace = _validTrace(
+      'run-1',
+      profile: kFrontierProfile,
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final baselineFile = await writer.writeTrace(baselineTrace);
+    final vote = _preferenceVote(
+      voteId: 'vote-orphan',
+      optionA: EvalPairwiseTraceRef.fromTrace(
+        candidateTrace,
+        traceDigest: EvalProvenance.digestText('missing-candidate'),
+      ),
+      optionB: EvalPairwiseTraceRef.fromTrace(
+        baselineTrace,
+        traceDigest: await writer.traceDigest(baselineFile),
+      ),
+    );
+    final preferenceFile = writer.pairwisePreferenceFileFor(
+      runId: 'run-1',
+      voteId: vote.voteId,
+    );
+    await preferenceFile.writeAsString(
+      const JsonEncoder.withIndent('  ').convert(vote.toJson()),
+    );
+
+    final run = await writer.readRun('run-1');
+    expect(run.traces, hasLength(1));
+    await expectLater(
+      writer.readPairwisePreferenceVotes('run-1', traces: run.traces),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('references missing optionA trace'),
+        ),
+      ),
+    );
+  });
+
+  test('trace overwrite protects pairwise preference bindings', () async {
+    final dir = await Directory.systemTemp.createTemp(
+      'lotti-overwrite-pairwise-preference-',
+    );
+    addTearDown(() async {
+      if (dir.existsSync()) await dir.delete(recursive: true);
+    });
+    final writer = TraceWriter(runsRoot: dir.path);
+    final manifest = _validManifest(
+      'run-1',
+      profiles: const [kFrontierFastProfile, kFrontierProfile],
+    );
+    await writer.writeManifest(manifest);
+    final baselineTrace = _validTrace(
+      'run-1',
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final candidateTrace = _validTrace(
+      'run-1',
+      profile: kFrontierProfile,
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final baselineFile = await writer.writeTrace(baselineTrace);
+    final candidateFile = await writer.writeTrace(candidateTrace);
+    final vote = _preferenceVote(
+      voteId: 'vote-1',
+      optionA: EvalPairwiseTraceRef.fromTrace(
+        candidateTrace,
+        traceDigest: await writer.traceDigest(candidateFile),
+      ),
+      optionB: EvalPairwiseTraceRef.fromTrace(
+        baselineTrace,
+        traceDigest: await writer.traceDigest(baselineFile),
+      ),
+    );
+    final preferenceFile = await writer.writePairwisePreferenceVote(vote);
+
+    await expectLater(
+      writer.writeTrace(candidateTrace, overwrite: true),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('existing pairwise preference vote'),
+        ),
+      ),
+    );
+
+    await writer.writeTrace(
+      candidateTrace,
+      overwrite: true,
+      deletePairwisePreferencesOnOverwrite: true,
+    );
+
+    expect(preferenceFile.existsSync(), isFalse);
+  });
+
   test('readRun rejects missing manifests', () async {
     final dir = await Directory.systemTemp.createTemp(
       'lotti-trace-missing-manifest-',
@@ -414,29 +635,32 @@ void main() {
   });
 }
 
-EvalRunManifest _validManifest(String runId) =>
-    EvalProvenance.captureRunManifest(
-      runId: runId,
-      targetName: 'trace-writer-test',
-      targetKind: 'test',
-      scenarios: [taskReleaseNotesScenario],
-      profiles: [kFrontierFastProfile],
-      createdAt: DateTime(2026, 6, 10, 12),
-      command: 'trace-writer-test',
-      environment: const <String, String>{},
-    );
+EvalRunManifest _validManifest(
+  String runId, {
+  List<EvalProfile> profiles = const [kFrontierFastProfile],
+}) => EvalProvenance.captureRunManifest(
+  runId: runId,
+  targetName: 'trace-writer-test',
+  targetKind: 'test',
+  scenarios: [taskReleaseNotesScenario],
+  profiles: profiles,
+  createdAt: DateTime(2026, 6, 10, 12),
+  command: 'trace-writer-test',
+  environment: const <String, String>{},
+);
 
 EvalTrace _validTrace(
   String runId, {
   String manifestDigest = EvalProvenance.unboundManifestDigest,
+  EvalProfile profile = kFrontierFastProfile,
   EvalTraceCascadeWake? cascadeWake,
 }) => EvalTrace(
   runId: runId,
   scenario: taskReleaseNotesScenario,
-  profile: kFrontierFastProfile,
+  profile: profile,
   provenance: EvalProvenance.capture(
     scenario: taskReleaseNotesScenario,
-    profile: kFrontierFastProfile,
+    profile: profile,
     manifestDigest: manifestDigest,
   ),
   cascadeWake: cascadeWake,
@@ -460,7 +684,7 @@ EvalTrace _validTrace(
         content: 'Handled.',
       ),
     ),
-    profile: kFrontierFastProfile,
+    profile: profile,
   ),
 );
 
@@ -484,4 +708,25 @@ JudgeVerdict _verdict({
     profileVisible: true,
     modelIdentityVisible: true,
   ),
+);
+
+EvalPairwisePreferenceVote _preferenceVote({
+  required String voteId,
+  required EvalPairwiseTraceRef optionA,
+  required EvalPairwiseTraceRef optionB,
+}) => EvalPairwisePreferenceVote(
+  voteId: voteId,
+  optionA: optionA,
+  optionB: optionB,
+  reviewerId: 'judge-a',
+  reviewerKind: EvalPairwiseReviewerKind.llmJudge,
+  reviewerModel: 'claude-code-test',
+  promptDigest: EvalProvenance.digestText('pairwise-prompt'),
+  calibrationSetVersion: 'pairwise-gold-v1',
+  profileVisible: false,
+  modelIdentityVisible: false,
+  peerVotesVisible: false,
+  traceOrderRandomized: true,
+  choice: EvalPairwisePreferenceChoice.optionA,
+  rationale: 'Option A is more faithful.',
 );

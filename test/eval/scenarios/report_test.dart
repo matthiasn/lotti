@@ -79,7 +79,8 @@ void main() {
   test(
     'renders eval run summary',
     () async {
-      final run = await TraceWriter(runsRoot: _runsRoot()).readRun(_runId);
+      final writer = TraceWriter(runsRoot: _runsRoot());
+      final run = await writer.readRun(_runId);
       final catalog = _loadScenarioCatalog();
       final profiles = _loadProfiles();
       expect(run.traces, isNotEmpty, reason: 'EVAL_RUN=$_runId has no traces');
@@ -133,15 +134,13 @@ void main() {
         // ignore: avoid_print
         print(promotionReport);
       }
-      if (run.pairwisePreferenceVotes.isNotEmpty) {
+      final pairwisePreferenceReport = await _pairwisePreferenceReport(
+        writer: writer,
+        run: run,
+      );
+      if (pairwisePreferenceReport != null) {
         // ignore: avoid_print
-        print(
-          EvalPairwisePreferenceReporter.render(
-            EvalPairwisePreferenceReporter.summarize(
-              run.pairwisePreferenceVotes,
-            ),
-          ),
-        );
+        print(pairwisePreferenceReport);
       }
       // ignore: avoid_print
       print(
@@ -757,6 +756,25 @@ void main() {
         ? 'Set EVAL_RUN=<runId> and EVAL_CALIBRATION=<json> to calibrate.'
         : false,
   );
+}
+
+Future<String?> _pairwisePreferenceReport({
+  required TraceWriter writer,
+  required EvalRunArtifacts run,
+}) async {
+  try {
+    final votes = await writer.readPairwisePreferenceVotes(
+      run.manifest.runId,
+      traces: run.traces,
+    );
+    if (votes.isEmpty) return null;
+    return EvalPairwisePreferenceReporter.render(
+      EvalPairwisePreferenceReporter.summarize(votes),
+    );
+  } catch (error) {
+    return 'Subjective A/B preference votes (diagnostic only) could not be '
+        'loaded: $error';
+  }
 }
 
 ProfilePromotionDecision? _profilePromotionDecisionFromConfig({
