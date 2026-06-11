@@ -377,12 +377,13 @@ stateDiagram-v2
   stat strip, 62 px on the Commit recap): a 5 px stacked **category ring**
   whose slices mirror the legend dots (via `categoryTotalsFor`, shared by
   both so they can't disagree) over a faint remainder track, with the
-  *remaining* capacity in the center over a LEFT eyebrow. Pressure wording
-  lives in the stat card's overline; the ring only changes color when the
-  day is genuinely over capacity (error tone, OVER eyebrow, half-alpha
-  over-arc). Callers without segments (Commit) get a single teal arc. The
-  honest no-plan strip passes `neutral: true` so tracked hours never read
-  as a false pressure signal.
+  *remaining* capacity in the center over a LEFT/OVER eyebrow whose word is
+  always honest (days without a capacity show the scheduled total with no
+  eyebrow). Pressure wording lives in the stat card's overline; the ring
+  only changes color when the day is genuinely over capacity (error tone,
+  half-alpha over-arc). Callers without segments (Commit) get a single teal
+  arc. The honest no-plan strip passes `neutral: true`, which keeps the calm
+  color but never flips OVER into LEFT.
   UI projections derive scheduled minutes from the non-dropped blocks they
   render. Buffers count because they reserve real time; dropped blocks do not.
   This keeps stale persisted totals from making the capacity reading disagree

@@ -63,6 +63,14 @@ class _ToggleItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
+    final selectedStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: teal,
+      fontWeight: FontWeight.w600,
+    );
+    final unselectedStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+      fontWeight: FontWeight.w500,
+    );
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -75,12 +83,23 @@ class _ToggleItem extends StatelessWidget {
           color: isSelected ? teal.withValues(alpha: 0.18) : Colors.transparent,
           borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
         ),
-        child: Text(
-          label,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: isSelected ? teal : tokens.colors.text.mediumEmphasis,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Invisible ghost at the selected weight reserves the width:
+            // the header decides inline-vs-stacked placement from the
+            // toggle's measured size, and a width that changed with the
+            // selection made the control jump rows when tapped at
+            // borderline header widths.
+            Opacity(
+              opacity: 0,
+              child: Text(label, style: selectedStyle),
+            ),
+            Text(
+              label,
+              style: isSelected ? selectedStyle : unselectedStyle,
+            ),
+          ],
         ),
       ),
     );

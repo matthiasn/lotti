@@ -313,9 +313,10 @@ void main() {
           );
           await tester.pump();
 
-          // Switch to the Day projection.
+          // Switch to the Day projection. `.last` skips the toggle's
+          // invisible width-reserving ghost label.
           final messages = tester.element(find.byType(DayPage)).messages;
-          await tester.tap(find.text(messages.dailyOsNextPlanViewDay));
+          await tester.tap(find.text(messages.dailyOsNextPlanViewDay).last);
           await tester.pump();
           await tester.pump();
 

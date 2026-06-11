@@ -1647,15 +1647,6 @@
   "dailyOsNextDraftingStatusTimings": "Se verifică orarele…",
   "dailyOsNextDraftingStatusYesterday": "Se analizează ritmul de ieri…",
   "dailyOsNextEditTitleHint": "Editați titlul",
-  "dailyOsNextEstimateMinutes": "{minutes}m",
-  "@dailyOsNextEstimateMinutes": {
-    "placeholders": {
-      "minutes": {
-        "type": "int",
-        "example": "45"
-      }
-    }
-  },
   "dailyOsNextGenericError": "Ceva nu a mers bine. Încercați din nou în câteva momente.",
   "dailyOsNextGreetingAfternoon": "Bună după-amiaza.",
   "dailyOsNextGreetingEvening": "Bună seara.",

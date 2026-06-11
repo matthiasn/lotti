@@ -62,7 +62,9 @@ DraftPlan _planWithItems() => DraftPlan(
       title: 'Review PRs',
       category: _category,
       linkedBlockIds: ['blk_2'],
-      totalEstimateMinutes: 60,
+      // 45m, not 60m: "1h" would collide with the recap donut's center
+      // label (60m remaining), making text asserts ambiguous.
+      totalEstimateMinutes: 45,
     ),
   ],
 );
@@ -148,16 +150,9 @@ void main() {
       // Numbered index labels.
       expect(find.text('1'), findsOneWidget);
       expect(find.text('2'), findsOneWidget);
-      // Estimate labels rendered through l10n placeholder.
-      final messages = tester.element(find.byType(CommitPage)).messages;
-      expect(
-        find.text(messages.dailyOsNextEstimateMinutes(120)),
-        findsOneWidget,
-      );
-      expect(
-        find.text(messages.dailyOsNextEstimateMinutes(60)),
-        findsOneWidget,
-      );
+      // Estimates share the compact duration voice ("2h", not "120m").
+      expect(find.text('2h'), findsOneWidget);
+      expect(find.text('45m'), findsOneWidget);
     });
 
     testWidgets('capacity donut and note reflect the draft', (tester) async {

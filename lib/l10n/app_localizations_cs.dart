@@ -3437,11 +3437,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextEditTitleHint => 'Upravit název';
 
   @override
-  String dailyOsNextEstimateMinutes(int minutes) {
-    return '${minutes}m';
-  }
-
-  @override
   String get dailyOsNextGenericError =>
       'Něco se pokazilo. Zkus to za chvíli znovu.';
 

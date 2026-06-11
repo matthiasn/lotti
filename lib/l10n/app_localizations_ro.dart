@@ -3470,11 +3470,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextEditTitleHint => 'Editați titlul';
 
   @override
-  String dailyOsNextEstimateMinutes(int minutes) {
-    return '${minutes}m';
-  }
-
-  @override
   String get dailyOsNextGenericError =>
       'Ceva nu a mers bine. Încercați din nou în câteva momente.';
 

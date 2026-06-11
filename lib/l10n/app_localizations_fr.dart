@@ -3463,11 +3463,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextEditTitleHint => 'Modifier le titre';
 
   @override
-  String dailyOsNextEstimateMinutes(int minutes) {
-    return '${minutes}m';
-  }
-
-  @override
   String get dailyOsNextGenericError =>
       'Une erreur est survenue. Réessaie dans un instant.';
 

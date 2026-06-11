@@ -1647,15 +1647,6 @@
   "dailyOsNextDraftingStatusTimings": "Revisando los horarios…",
   "dailyOsNextDraftingStatusYesterday": "Observando el ritmo de ayer…",
   "dailyOsNextEditTitleHint": "Editar título",
-  "dailyOsNextEstimateMinutes": "{minutes}m",
-  "@dailyOsNextEstimateMinutes": {
-    "placeholders": {
-      "minutes": {
-        "type": "int",
-        "example": "45"
-      }
-    }
-  },
   "dailyOsNextGenericError": "Algo salió mal. Inténtalo de nuevo en un momento.",
   "dailyOsNextGreetingAfternoon": "Buenas tardes.",
   "dailyOsNextGreetingEvening": "Buenas noches.",

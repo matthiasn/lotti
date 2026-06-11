@@ -88,8 +88,9 @@ class AgendaCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Same fixed leading gutter as the full cards so the ordinal
-                  // rail stays on one vertical line down the agenda.
+                  // Same fixed leading gutter AND gutter→title gap as the
+                  // full cards, so ordinals and titles each sit on one
+                  // shared vertical line down the whole agenda.
                   SizedBox(
                     width: tokens.spacing.step9,
                     child: Center(
@@ -102,6 +103,7 @@ class AgendaCard extends StatelessWidget {
                       ),
                     ),
                   ),
+                  SizedBox(width: tokens.spacing.step4),
                   Expanded(
                     child: Text(
                       item.title,

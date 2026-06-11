@@ -47,8 +47,11 @@ class RefineModalContent extends ConsumerWidget {
     );
     final captureNotifier = ref.read(captureControllerProvider.notifier);
 
+    // Pop only on the edge INTO accepted — later emissions while already
+    // accepted must not pop the route a second time.
     ref.listen<RefineState>(refineControllerProvider(draft), (previous, next) {
-      if (next.phase == RefinePhase.accepted) {
+      if (previous?.phase != RefinePhase.accepted &&
+          next.phase == RefinePhase.accepted) {
         Navigator.of(context).pop(next.currentPlan);
       }
     });
@@ -352,8 +355,11 @@ class RefinePage extends ConsumerWidget {
     final tokens = context.designTokens;
     final state = ref.watch(refineControllerProvider(draft));
 
+    // Pop only on the edge INTO accepted — later emissions while already
+    // accepted must not pop the route a second time.
     ref.listen<RefineState>(refineControllerProvider(draft), (previous, next) {
-      if (next.phase == RefinePhase.accepted) {
+      if (previous?.phase != RefinePhase.accepted &&
+          next.phase == RefinePhase.accepted) {
         Navigator.of(context).pop(next.currentPlan);
       }
     });

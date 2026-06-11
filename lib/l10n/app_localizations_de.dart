@@ -3441,11 +3441,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextEditTitleHint => 'Titel bearbeiten';
 
   @override
-  String dailyOsNextEstimateMinutes(int minutes) {
-    return '${minutes}m';
-  }
-
-  @override
   String get dailyOsNextGenericError =>
       'Etwas ist schiefgelaufen. Versuch es gleich noch mal.';
 

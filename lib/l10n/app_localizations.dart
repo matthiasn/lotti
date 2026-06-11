@@ -5802,12 +5802,6 @@ abstract class AppLocalizations {
   /// **'Edit title'**
   String get dailyOsNextEditTitleHint;
 
-  /// No description provided for @dailyOsNextEstimateMinutes.
-  ///
-  /// In en, this message translates to:
-  /// **'{minutes}m'**
-  String dailyOsNextEstimateMinutes(int minutes);
-
   /// No description provided for @dailyOsNextGenericError.
   ///
   /// In en, this message translates to:

@@ -48,6 +48,7 @@ class RefineState {
     this.diff,
     this.problem,
     this.problemDetail,
+    this.accepting = false,
   });
 
   final RefinePhase phase;
@@ -59,6 +60,12 @@ class RefineState {
   final RefineProblem? problem;
   final String? problemDetail;
 
+  /// True while the whole-diff [RefineController.accept] round-trip is in
+  /// flight. The action bar treats this as busy so a second tap can't
+  /// start a second accept (whose completion would re-emit `accepted`
+  /// and double-pop the host route).
+  final bool accepting;
+
   RefineState copyWith({
     RefinePhase? phase,
     String? transcript,
@@ -68,6 +75,7 @@ class RefineState {
     String? resolvingChangeId,
     RefineProblem? problem,
     String? problemDetail,
+    bool? accepting,
     bool clearDiff = false,
     bool clearResolvingChangeId = false,
     bool clearProblem = false,
@@ -85,6 +93,7 @@ class RefineState {
       problemDetail: clearProblem
           ? null
           : (problemDetail ?? this.problemDetail),
+      accepting: accepting ?? this.accepting,
     );
   }
 
@@ -172,20 +181,31 @@ class RefineController extends Notifier<RefineState> {
 
   Future<void> accept() async {
     final diff = state.diff;
-    if (diff == null) return;
+    // Re-entry guard: a second tap while the first round-trip is in
+    // flight would start a second future whose completion re-emits
+    // `accepted` and double-pops the host route.
+    if (diff == null || state.accepting) return;
     final agent = ref.read(dayAgentProvider);
     final itemIndices = _indicesForDecision(PlanDiffChangeDecision.pending);
     if (itemIndices.isEmpty) return;
-    final next = await agent.acceptDiff(diff, itemIndices: itemIndices);
-    if (!ref.mounted) return;
-    state = state.copyWith(
-      phase: RefinePhase.accepted,
-      currentPlan: next,
-      decisions: _resolveMany(
-        itemIndices,
-        PlanDiffChangeDecision.accepted,
-      ),
-    );
+    state = state.copyWith(accepting: true);
+    try {
+      final next = await agent.acceptDiff(diff, itemIndices: itemIndices);
+      if (!ref.mounted) return;
+      state = state.copyWith(
+        phase: RefinePhase.accepted,
+        accepting: false,
+        currentPlan: next,
+        decisions: _resolveMany(
+          itemIndices,
+          PlanDiffChangeDecision.accepted,
+        ),
+      );
+    } catch (_) {
+      // Re-arm the bar on failure instead of leaving it stuck busy.
+      if (ref.mounted) state = state.copyWith(accepting: false);
+      rethrow;
+    }
   }
 
   Future<void> acceptChange(String changeId) async {

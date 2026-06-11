@@ -513,7 +513,10 @@ AppLocalizations _messages(WidgetTester tester) =>
 
 Future<void> _switchToDayView(WidgetTester tester) async {
   await withClock(Clock.fixed(_now), () async {
-    await tester.tap(find.text(_messages(tester).dailyOsNextPlanViewDay));
+    // `.last` skips the toggle's invisible width-reserving ghost label.
+    await tester.tap(
+      find.text(_messages(tester).dailyOsNextPlanViewDay).last,
+    );
     await settleFrames(tester);
   });
 }

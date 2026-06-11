@@ -205,9 +205,9 @@ class _RecapRow extends StatelessWidget {
             if (item.totalEstimateMinutes != null) ...[
               SizedBox(width: tokens.spacing.step3),
               Text(
-                context.messages.dailyOsNextEstimateMinutes(
-                  item.totalEstimateMinutes!,
-                ),
+                // One compact duration voice ("2h", "1h 30m") across the
+                // agenda, recap, and parsed cards.
+                formatMinutesCompact(item.totalEstimateMinutes!),
                 style: tokens.typography.styles.others.caption.copyWith(
                   color: tokens.colors.text.lowEmphasis,
                 ),

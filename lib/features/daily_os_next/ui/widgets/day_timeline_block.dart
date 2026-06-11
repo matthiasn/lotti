@@ -178,7 +178,7 @@ class DayBlock extends ConsumerWidget {
       if (tracked)
         context.messages.dailyOsNextTimelineTracked
       else
-        context.messages.dailyOsNextPlanViewDay,
+        context.messages.dailyOsNextTimelinePlanned,
     ].join(', ');
 
     if (onTap == null) {
@@ -250,19 +250,25 @@ class _BlockContent extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         // Height-tiered content policy: never let text shear mid-glyph.
-        // Micro blocks (< one comfortable line) show fill + stripe only;
+        // Micro blocks (< one caption line) show fill + stripe only;
         // short blocks a single centered title line; the subtitle joins
-        // from ~44px; two title lines from 64px.
-        final lineHeight = MediaQuery.textScalerOf(
-          context,
-        ).scale(tokens.typography.lineHeight.bodySmall);
-        if (constraints.maxHeight < 14) {
-          // Too short for any glyph — fill + stripe only (the Semantics
-          // label on DayBlock still carries the title).
+        // from ~44px; two title lines from 64px. Both thresholds use
+        // SCALED line heights — at accessibility text sizes the text box
+        // grows, so the tier a block qualifies for must grow with it.
+        final textScaler = MediaQuery.textScalerOf(context);
+        final lineHeight = textScaler.scale(
+          tokens.typography.lineHeight.bodySmall,
+        );
+        final sliverLineHeight = textScaler.scale(
+          tokens.typography.lineHeight.caption,
+        );
+        if (constraints.maxHeight < sliverLineHeight) {
+          // Too short for even one caption line — fill + stripe only
+          // (the Semantics label on DayBlock still carries the title).
           return const SizedBox.shrink();
         }
         if (constraints.maxHeight < lineHeight + 2) {
-          // Sliver tier: one tiny centered line so short recorded sessions
+          // Sliver tier: one caption line so short recorded sessions
           // (the unplanned incident!) stay information, not just color.
           return Align(
             alignment: Alignment.centerLeft,
@@ -271,7 +277,6 @@ class _BlockContent extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: tokens.typography.styles.others.caption.copyWith(
-                fontSize: 10,
                 color: tracked
                     ? tokens.colors.text.highEmphasis
                     : tokens.colors.text.mediumEmphasis,

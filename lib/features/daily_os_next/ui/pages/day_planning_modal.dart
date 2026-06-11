@@ -611,11 +611,13 @@ class _RefineStepBar extends ConsumerWidget {
     final state = ref.watch(refineControllerProvider(draft));
     final notifier = ref.read(refineControllerProvider(draft).notifier);
     // Reviewing also blocks "Looks good": tapping it there would silently
-    // discard a recorded-but-unsubmitted transcript.
+    // discard a recorded-but-unsubmitted transcript. An in-flight accept
+    // blocks it too — a second tap would double-pop the host route.
     final busy =
         state.phase == RefinePhase.listening ||
         state.phase == RefinePhase.thinking ||
-        state.phase == RefinePhase.reviewing;
+        state.phase == RefinePhase.reviewing ||
+        state.accepting;
     final hasPendingDiff =
         state.diff != null && state.phase == RefinePhase.diffReady;
 
