@@ -18,6 +18,7 @@
 #   eval/run_level2.sh run [runId]
 #   eval/run_level2.sh grade [runId]
 #   eval/run_level2.sh verify [runId]
+#   eval/run_level2.sh diagnose [runId]
 #   EVAL_SCENARIOS=/private/path/scenarios.json eval/run_level2.sh catalog
 #   eval/run_level2.sh report [runId]
 #   EVAL_CALIBRATION_TEMPLATE=/private/tmp/judge_gold_v1.template.json EVAL_CALIBRATION_TEMPLATE_MAX_ROWS=24 eval/run_level2.sh template <runId>
@@ -54,7 +55,7 @@ latest_run_id() {
 }
 
 MODE="${1:-run}"
-if [[ "$MODE" != "plan" && "$MODE" != "run" && "$MODE" != "grade" && "$MODE" != "verify" && "$MODE" != "catalog" && "$MODE" != "report" && "$MODE" != "template" && "$MODE" != "calibrate" && "$MODE" != "all" ]]; then
+if [[ "$MODE" != "plan" && "$MODE" != "run" && "$MODE" != "grade" && "$MODE" != "verify" && "$MODE" != "diagnose" && "$MODE" != "catalog" && "$MODE" != "report" && "$MODE" != "template" && "$MODE" != "calibrate" && "$MODE" != "all" ]]; then
   RUN_ID="$MODE"
   MODE="run"
 else
@@ -73,7 +74,7 @@ else
       fi
       RUN_ID="$2"
       ;;
-    grade | verify | report | calibrate)
+    grade | verify | diagnose | report | calibrate)
       RUN_ID="${2:-$(latest_run_id)}"
       ;;
   esac
@@ -217,6 +218,14 @@ verify_run() {
     "${DART_DEFINES[@]}"
 }
 
+diagnose_run() {
+  echo "==> Rendering raw Level 1 diagnostics..."
+  fvm flutter test test/eval/scenarios/report_test.dart \
+    --plain-name "renders eval run diagnostics" \
+    --dart-define=EVAL_RUN="${RUN_ID}" \
+    "${DART_DEFINES[@]}"
+}
+
 report_run() {
   echo "==> Aggregating report..."
   local report_defines=("${DART_DEFINES[@]}")
@@ -286,6 +295,9 @@ case "$MODE" in
     ;;
   verify)
     verify_run
+    ;;
+  diagnose)
+    diagnose_run
     ;;
   catalog)
     catalog_preflight

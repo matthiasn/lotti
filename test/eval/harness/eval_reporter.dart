@@ -3,6 +3,7 @@
 // Pure (no IO) so it is unit-testable. The `run_level2.sh` reporter step loads
 // traces via `TraceWriter.readTraces` and passes them here.
 
+import 'dart:convert';
 import 'dart:math' as math;
 
 import 'eval_models.dart';
@@ -944,6 +945,84 @@ abstract final class EvalReporter {
       return a.scenarioId.compareTo(b.scenarioId);
     });
     return summaries;
+  }
+
+  /// Human-readable diagnostics for incomplete or failed raw trace runs.
+  ///
+  /// Unlike [render], this intentionally does not require judge verdicts. It is
+  /// meant for the immediate loop after a live run fails Level 1: inspect what
+  /// the model actually called, what durable proposals were written, and which
+  /// deterministic checks failed.
+  static String renderLevel1Diagnostics(
+    List<EvalTrace> traces, {
+    Iterable<String> verificationErrors = const <String>[],
+  }) {
+    final sorted = [...traces]..sort(_compareTraceIdentity);
+    final failing = sorted.where((trace) => !trace.level1Passed).toList();
+    final verifierErrors = verificationErrors.toList(growable: false);
+    final buffer = StringBuffer()
+      ..writeln(
+        'Level 1 diagnostics (${failing.length}/${traces.length} failing)',
+      );
+    if (verifierErrors.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('Verifier errors:');
+      for (final error in verifierErrors) {
+        buffer.writeln('  ${_clip(error, 240)}');
+      }
+    }
+    if (failing.isEmpty) {
+      buffer.writeln('All traces passed Level 1.');
+      return buffer.toString();
+    }
+
+    for (final trace in failing) {
+      final failedChecks = trace.level1Checks
+          .where((check) => !check.passed)
+          .toList(growable: false);
+      final provider = _traceProviderLabel(trace);
+      final report = trace.output.report;
+      buffer
+        ..writeln()
+        ..writeln('${_traceLabel(trace)}')
+        ..writeln('  provider: $provider')
+        ..writeln('  tools: ${_namesOrDash(trace.output.toolNames)}')
+        ..writeln(
+          '  proposals: '
+          '${_namesOrDash(trace.output.proposals.map((p) => p.toolName))}',
+        );
+      if (trace.output.toolCalls.isNotEmpty) {
+        buffer.writeln('  tool details:');
+        for (final call in trace.output.toolCalls.take(6)) {
+          buffer.writeln(
+            '    ${call.name} ${_clip(_compactJson(call.args), 180)}',
+          );
+        }
+      }
+      if (trace.output.proposals.isNotEmpty) {
+        buffer.writeln('  proposal details:');
+        for (final proposal in trace.output.proposals.take(6)) {
+          buffer.writeln(
+            '    ${proposal.toolName} target=${proposal.targetId} '
+            'status=${proposal.status} args='
+            '${_clip(_compactJson(proposal.args), 160)}',
+          );
+        }
+      }
+      if (report != null) {
+        buffer
+          ..writeln('  report: ${_clip(report.oneLiner, 96)}')
+          ..writeln('  tldr: ${_clip(report.tldr, 120)}');
+      }
+      buffer.writeln('  failed checks:');
+      for (final check in failedChecks) {
+        buffer.writeln(
+          '    ${check.name}: ${_clip(check.detail, 240)}',
+        );
+      }
+    }
+    return buffer.toString();
   }
 
   /// A human-readable summary table.
@@ -2310,6 +2389,53 @@ abstract final class EvalReporter {
 
   static String _scenarioProfileKey(String scenarioId, String profileName) =>
       '$scenarioId\n$profileName';
+
+  static int _compareTraceIdentity(EvalTrace a, EvalTrace b) {
+    final scenarioOrder = a.scenario.id.compareTo(b.scenario.id);
+    if (scenarioOrder != 0) return scenarioOrder;
+    final profileOrder = a.profile.name.compareTo(b.profile.name);
+    if (profileOrder != 0) return profileOrder;
+    final trialOrder = a.trialIndex.compareTo(b.trialIndex);
+    if (trialOrder != 0) return trialOrder;
+    return (a.cascadeWake?.wakeIndex ?? -1).compareTo(
+      b.cascadeWake?.wakeIndex ?? -1,
+    );
+  }
+
+  static String _traceLabel(EvalTrace trace) {
+    final wake = trace.cascadeWake;
+    return [
+      trace.scenario.id,
+      trace.profile.name,
+      'trial-${trace.trialIndex}',
+      if (wake != null) wake.keySuffix,
+    ].join('::');
+  }
+
+  static String _traceProviderLabel(EvalTrace trace) {
+    final invocation = trace.output.modelInvocations.isEmpty
+        ? null
+        : trace.output.modelInvocations.first;
+    if (invocation != null) {
+      return '${invocation.providerType} ${invocation.providerModelId}';
+    }
+    final resolved = trace.output.resolvedModel;
+    if (resolved != null) {
+      return '${resolved.providerType} ${resolved.providerModelId}';
+    }
+    return '${trace.profile.modelClass.name} ${trace.profile.modelId}';
+  }
+
+  static String _namesOrDash(Iterable<String> names) {
+    final list = names.toList(growable: false);
+    if (list.isEmpty) return '-';
+    return list.join(', ');
+  }
+
+  static String _compactJson(Map<String, dynamic> value) {
+    if (value.isEmpty) return '{}';
+    return jsonEncode(value);
+  }
 
   static double _mean(Iterable<double> values) {
     final list = values.toList(growable: false);

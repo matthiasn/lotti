@@ -85,6 +85,80 @@ void main() {
     expect(rendered, contains('50%'));
   });
 
+  test('renders raw Level 1 diagnostics without judge verdicts', () {
+    final rendered = EvalReporter.renderLevel1Diagnostics([
+      _trace(
+        scenario: taskWorkflowStructuredUpdateScenario,
+        profile: profile,
+        level1Passed: false,
+        judged: false,
+        level1Checks: const [
+          EvalCheck(
+            name: 'expected_tools',
+            passed: false,
+            detail: 'missing required: update_task_due_date',
+          ),
+        ],
+        toolCalls: const [ToolCallRecord(name: 'update_report')],
+        modelInvocations: const [
+          ModelInvocationRecord(
+            invocationIndex: 0,
+            providerModelId: 'LFM2.5-8B-A1B-MLX-8bit',
+            providerId: 'eval-provider-local',
+            providerType: 'openAi',
+            runtimePrompt: RuntimePromptRecord(toolCount: 19),
+          ),
+        ],
+      ),
+    ]);
+
+    expect(rendered, contains('Level 1 diagnostics (1/1 failing)'));
+    expect(
+      rendered,
+      contains('task_workflow_structured_update::repeatable-frontier::trial-0'),
+    );
+    expect(rendered, contains('provider: openAi LFM2.5-8B-A1B-MLX-8bit'));
+    expect(rendered, contains('tools: update_report'));
+    expect(rendered, contains('proposals: -'));
+    expect(rendered, contains('tool details:'));
+    expect(rendered, contains('update_report {}'));
+    expect(rendered, contains('expected_tools: missing required'));
+    expect(rendered, contains('report: Handled'));
+  });
+
+  test('renders cascade wake identities in Level 1 diagnostics', () {
+    final rendered = EvalReporter.renderLevel1Diagnostics([
+      for (var wakeIndex = 0; wakeIndex < 3; wakeIndex++)
+        _trace(
+          scenario: taskWorkflowChecklistTranscriptCascadeScenario,
+          profile: profile,
+          level1Passed: false,
+          judged: false,
+          level1Checks: [
+            EvalCheck(
+              name: 'expected_tools',
+              passed: false,
+              detail: 'wake $wakeIndex failed',
+            ),
+          ],
+          toolCalls: wakeIndex == 0
+              ? const [ToolCallRecord(name: 'update_report')]
+              : const <ToolCallRecord>[],
+          cascadeWake: EvalTraceCascadeWake(
+            cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+            wakeIndex: wakeIndex,
+            wakeCount: 3,
+          ),
+        ),
+    ]);
+
+    expect(rendered, contains('Level 1 diagnostics (3/3 failing)'));
+    expect(rendered, contains('cascade-task-log::wake-0-of-3'));
+    expect(rendered, contains('cascade-task-log::wake-1-of-3'));
+    expect(rendered, contains('wake 2 failed'));
+    expect(rendered.split('tools: -'), hasLength(greaterThanOrEqualTo(3)));
+  });
+
   test('summary Wilson estimates cluster repeated trials by scenario', () {
     final traces = [
       for (var trialIndex = 0; trialIndex < profile.trialCount; trialIndex++)
@@ -2354,6 +2428,11 @@ EvalTrace _trace({
   int? thoughtsTokens,
   List<ProviderRequestRecord> providerRequests =
       const <ProviderRequestRecord>[],
+  List<ToolCallRecord> toolCalls = const <ToolCallRecord>[],
+  List<ProposalRecord> proposals = const <ProposalRecord>[],
+  List<ModelInvocationRecord> modelInvocations =
+      const <ModelInvocationRecord>[],
+  List<EvalCheck>? level1Checks,
   EvalTraceCascadeWake? cascadeWake,
 }) {
   return EvalTrace(
@@ -2376,14 +2455,19 @@ EvalTrace _trace({
         tldr: 'The wake produced durable state.',
         content: 'Done.',
       ),
+      toolCalls: toolCalls,
+      proposals: proposals,
       providerRequests: providerRequests,
+      modelInvocations: modelInvocations,
     ),
-    level1Checks: [
-      if (level1Passed)
-        const EvalCheck(name: 'example', passed: true)
-      else
-        const EvalCheck(name: 'example', passed: false, detail: 'failed'),
-    ],
+    level1Checks:
+        level1Checks ??
+        [
+          if (level1Passed)
+            const EvalCheck(name: 'example', passed: true)
+          else
+            const EvalCheck(name: 'example', passed: false, detail: 'failed'),
+        ],
     verdict: judged
         ? JudgeVerdict(
             traceDigest: EvalProvenance.digestText('trace-$trialIndex'),

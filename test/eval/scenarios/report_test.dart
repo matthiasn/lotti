@@ -168,6 +168,42 @@ void main() {
   );
 
   test(
+    'renders eval run diagnostics',
+    () async {
+      final writer = TraceWriter(runsRoot: _runsRoot());
+      final run = await writer.readRun(_runId);
+      final catalog = _loadScenarioCatalog();
+      final profiles = _loadProfiles();
+      expect(run.traces, isNotEmpty, reason: 'EVAL_RUN=$_runId has no traces');
+      final verification = EvalRunVerifier.verify(
+        runId: _runId,
+        traces: run.traces,
+        scenarios: catalog.scenarios,
+        profiles: profiles,
+        manifest: run.manifest,
+        artifactNames: run.artifactNames,
+        requireVerdicts: false,
+      );
+      // ignore: avoid_print
+      print(
+        EvalReporter.renderLevel1Diagnostics(
+          run.traces,
+          verificationErrors: verification.errors,
+        ),
+      );
+      expect(
+        verification.errors,
+        isEmpty,
+        reason: verification.errors.join('\n'),
+      );
+    },
+    tags: 'eval-report',
+    skip: _runId.isEmpty
+        ? 'Set EVAL_RUN=<runId> to diagnose an eval run.'
+        : false,
+  );
+
+  test(
     'renders scenario catalog preflight',
     () {
       final catalog = _loadScenarioCatalog();

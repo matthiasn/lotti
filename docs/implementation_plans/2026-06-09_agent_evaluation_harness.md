@@ -197,6 +197,10 @@ matrix first, then exits non-zero when any `EvalTrace.level1Checks` entry
 failed. Artifact/provenance verification still runs in the same pass, so a
 failed live model attempt leaves debuggable traces without looking like a green
 eval run.
+`eval/run_level2.sh diagnose [runId]` now renders those failed raw traces
+without requiring judge verdicts: it checks manifest/trace consistency, then
+prints each failing trace's provider/model, tool calls, proposal tools, report
+snippet, and failed Level 1 check details for fast prompt/model tuning.
 Current active slice adds that comparative-review data model:
 `EvalPairwisePreferenceVote` binds two trace artifacts by run, scenario,
 profile, trial, cascade identity, trace digest, scenario digest, and profile
@@ -829,8 +833,9 @@ supplies real model behavior.
   run/thread IDs bound to the matrix cell, runtime prompt/tool digests, and
   per-`sendMessage` model invocation records.
 - `run_level2.sh`: mode-based shell (`run`, `grade`, `verify`, `report`, `all`).
-  `grade`/`verify`/`report` default to the latest timestamp-named run directory
-  when no run id is supplied. `report` never regenerates traces; it verifies
+  `grade`/`verify`/`diagnose`/`report` default to the latest timestamp-named run
+  directory when no run id is supplied. `diagnose` renders raw Level 1 failures
+  without requiring verdicts. `report` never regenerates traces; it verifies
   exact matrix coverage, digest-bound verdicts, recomputed Level 1 checks,
   scenario governance, trace provenance, runtime prompt/tool digest shape,
   model-invocation consistency, judge provenance, and verdict score/pass
