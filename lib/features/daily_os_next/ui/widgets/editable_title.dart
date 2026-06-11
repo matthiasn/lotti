@@ -6,10 +6,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// Click-to-edit title for standalone (no-task) agenda items and day
 /// blocks (`prototype/shared.jsx → EditableTitle`, handoff v2 item 3).
 ///
-/// Display mode shows the title with a pencil that brightens on hover
-/// (always faintly visible so touch users discover it). Tapping swaps
-/// in a text field: **Enter / blur saves, Esc cancels**. Task-linked
-/// titles must not use this — they are edited on the task itself.
+/// Display mode shows the title with a pencil revealed on hover only
+/// (the whole title is the tap target; Semantics announces editability,
+/// so touch users lose nothing). Tapping swaps in a text field:
+/// **Enter / blur saves, Esc cancels**. Task-linked titles must not use
+/// this — they are edited on the task itself.
 class EditableTitle extends StatefulWidget {
   const EditableTitle({
     required this.value,
@@ -168,7 +169,10 @@ class _EditableTitleState extends State<EditableTitle> {
               ),
               SizedBox(width: tokens.spacing.step2),
               AnimatedOpacity(
-                opacity: _hovering ? 0.6 : 0.25,
+                // Hover-reveal only: a resident pencil on every editable
+                // row is chrome noise; the whole title is the tap target
+                // and the Semantics label announces editability.
+                opacity: _hovering ? 0.6 : 0.0,
                 duration: const Duration(milliseconds: 120),
                 child: Icon(
                   Icons.edit_outlined,

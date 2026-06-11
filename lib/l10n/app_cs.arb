@@ -1328,9 +1328,9 @@
   "dailyOsFold": "Složit",
   "dailyOsInvalidTimeRange": "Neplatný časový rozsah",
   "dailyOsNearLimit": "Blízko limitu",
-  "dailyOsNextAgendaCapacityComfortable": "POHODOVÉ",
-  "dailyOsNextAgendaCapacityNearFull": "TÉMĚŘ PLNÉ",
-  "dailyOsNextAgendaCapacityNoPlan": "ZATÍM ŽÁDNÝ PLÁN",
+  "dailyOsNextAgendaCapacityComfortable": "Pohodové",
+  "dailyOsNextAgendaCapacityNearFull": "Téměř plné",
+  "dailyOsNextAgendaCapacityNoPlan": "Zatím žádný plán",
   "dailyOsNextAgendaCapacityOf": "z {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1340,9 +1340,27 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "PŘEPLNĚNO",
+  "dailyOsNextAgendaCapacityOver": "Přeplněno",
   "dailyOsNextAgendaDonutLeft": "volno",
   "dailyOsNextAgendaDonutOver": "navíc",
+  "dailyOsNextAgendaHeadlineLeft": "{duration} zbývá",
+  "@dailyOsNextAgendaHeadlineLeft": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "15m"
+      }
+    }
+  },
+  "dailyOsNextAgendaHeadlineOver": "{duration} navíc",
+  "@dailyOsNextAgendaHeadlineOver": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1h"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanBody": "Tvůj zaznamenaný čas tu je tak jako tak — namluv check-in a já kolem něj navrhnu den.",
   "dailyOsNextAgendaNoPlanSummary": "{duration} zatím zaznamenáno. Namluv check-in a já kolem toho navrhnu den.",
   "dailyOsNextAgendaNoPlanTitle": "Na dnešek zatím žádný plán.",

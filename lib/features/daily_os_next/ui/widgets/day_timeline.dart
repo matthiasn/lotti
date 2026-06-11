@@ -42,6 +42,8 @@ class DayTimeline extends StatefulWidget {
     this.actualBlocks,
     this.onRenameBlock,
     this.clock,
+    this.showGestureHint = true,
+    this.onGesturesLearned,
     super.key,
   });
 
@@ -49,6 +51,16 @@ class DayTimeline extends StatefulWidget {
   final int startHour;
   final int endHour;
   final double pxPerMinute;
+
+  /// Whether the toolbar shows the one-shot "Swipe for actual · pinch to
+  /// zoom" coaching line. Hosts pass false once the user has demonstrated
+  /// the gestures (see [onGesturesLearned]); chrome should not keep
+  /// explaining what the hands already know.
+  final bool showGestureHint;
+
+  /// Fired once per widget lifetime on the first lane page, pinch zoom,
+  /// or lane-mode toggle — the host persists it and retires the hint.
+  final VoidCallback? onGesturesLearned;
 
   /// Recorded work sessions projected from the real journal. Falls back
   /// to [DraftPlan.actualBlocks] for tests and mock fixtures.
@@ -92,13 +104,22 @@ class _DayTimelineState extends State<DayTimeline> {
   /// (which runs post-frame) instead of recomputing it from the blocks.
   TimelineFoldingState? _builtFoldingState;
 
+  /// Debounces [DayTimeline.onGesturesLearned] to one firing per lifetime.
+  bool _gesturesLearnedFired = false;
+
+  void _markGesturesLearned() {
+    if (_gesturesLearnedFired) return;
+    _gesturesLearnedFired = true;
+    widget.onGesturesLearned?.call();
+  }
+
   @override
   void initState() {
     super.initState();
     _pxPerMinute = widget.pxPerMinute;
     _pageController = PageController(
       viewportFraction: _horizontalPeekFraction,
-    );
+    )..addListener(_onLanePageScroll);
     _timelineScrollController = ScrollController()
       ..addListener(_recordTimelineScrollOffset);
     _pinchStartPxPerMinute = _pxPerMinute;
@@ -119,6 +140,12 @@ class _DayTimelineState extends State<DayTimeline> {
     if (oldWidget.pxPerMinute != widget.pxPerMinute) {
       _pxPerMinute = widget.pxPerMinute;
     }
+  }
+
+  void _onLanePageScroll() {
+    final page = _pageController.hasClients ? _pageController.page : null;
+    // Half a page of travel = the swipe gesture has been demonstrated.
+    if (page != null && page > 0.5) _markGesturesLearned();
   }
 
   void _scheduleNextMinute() {
@@ -175,7 +202,9 @@ class _DayTimelineState extends State<DayTimeline> {
   @override
   void dispose() {
     _timer?.cancel();
-    _pageController.dispose();
+    _pageController
+      ..removeListener(_onLanePageScroll)
+      ..dispose();
     _timelineScrollController
       ..removeListener(_recordTimelineScrollOffset)
       ..dispose();
@@ -227,6 +256,7 @@ class _DayTimelineState extends State<DayTimeline> {
           children: [
             _TimelineToolbar(
               mode: comparisonMode,
+              showHint: widget.showGestureHint,
               onToggleMode: _toggleComparisonMode,
             ),
             Expanded(
@@ -403,6 +433,8 @@ class _DayTimelineState extends State<DayTimeline> {
   }
 
   void _toggleComparisonMode() {
+    // Discovering the lane toggle teaches the same fact as the swipe.
+    _markGesturesLearned();
     final comparisonMode = _effectiveComparisonMode;
     setState(() {
       _comparisonModeOverride = comparisonMode == _TimelineComparisonMode.paged
@@ -487,6 +519,7 @@ class _DayTimelineState extends State<DayTimeline> {
       _maxPxPerMinute,
     );
     if ((next - currentPxPerMinute).abs() >= 0.01) {
+      _markGesturesLearned();
       final currentOffset = _currentTimelineScrollOffset();
       final scrollScale = next / currentPxPerMinute;
       setState(() {
@@ -563,10 +596,17 @@ enum _TimelineComparisonMode { paged, both }
 class _TimelineToolbar extends StatelessWidget {
   const _TimelineToolbar({
     required this.mode,
+    required this.showHint,
     required this.onToggleMode,
   });
 
   final _TimelineComparisonMode mode;
+
+  /// One-shot coaching line; retired by the host once the user has
+  /// demonstrated the gestures. The mode-toggle icon stays — it is an
+  /// affordance, not narration.
+  final bool showHint;
+
   final VoidCallback onToggleMode;
 
   @override
@@ -582,16 +622,18 @@ class _TimelineToolbar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              showingBoth
-                  ? messages.dailyOsNextTimelineBoth
-                  : messages.dailyOsNextTimelineSwipeHint,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
+            child: showHint
+                ? Text(
+                    showingBoth
+                        ? messages.dailyOsNextTimelineBoth
+                        : messages.dailyOsNextTimelineSwipeHint,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
+                  )
+                : const SizedBox.shrink(),
           ),
           Tooltip(
             message: showingBoth

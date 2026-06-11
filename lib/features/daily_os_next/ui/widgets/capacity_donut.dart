@@ -46,6 +46,7 @@ class CapacityDonut extends StatelessWidget {
     this.size = 86,
     this.neutral = false,
     this.segments = const [],
+    this.progressFraction,
     super.key,
   });
 
@@ -60,6 +61,12 @@ class CapacityDonut extends StatelessWidget {
   /// ring so it matches the category legend. Falls back to a single teal
   /// arc when empty.
   final List<CapacityDonutSegment> segments;
+
+  /// Optional 0..1 reality marker: a small radial tick on the ring at
+  /// this fraction (e.g. tracked-so-far over capacity) so one dial
+  /// encodes the plan AND how far through it the day actually is.
+  /// Null = no tick.
+  final double? progressFraction;
 
   /// `scheduled / capacity`, `0` when the capacity is unset.
   static double ratioFor(int scheduledMinutes, int capacityMinutes) {
@@ -104,6 +111,8 @@ class CapacityDonut extends StatelessWidget {
             ratio: ratio,
             color: over ? overColor : tokens.colors.interactive.enabled,
             trackColor: tokens.colors.background.level03,
+            tickFraction: progressFraction?.clamp(0.0, 1.0),
+            tickColor: tokens.colors.text.highEmphasis,
             // Over capacity the stacked ring would silently clip its last
             // slices; fall back to the explicit over state (error ring +
             // half-alpha over-arc) instead of lying by omission.
@@ -155,12 +164,16 @@ class _DonutPainter extends CustomPainter {
     required this.color,
     required this.trackColor,
     required this.segmentSweeps,
+    required this.tickFraction,
+    required this.tickColor,
   });
 
   final double ratio;
   final Color color;
   final Color trackColor;
   final List<({Color color, double sweep})> segmentSweeps;
+  final double? tickFraction;
+  final Color tickColor;
 
   static const _stroke = 5.0;
 
@@ -170,13 +183,38 @@ class _DonutPainter extends CustomPainter {
     final radius = size.shortestSide / 2 - _stroke / 2;
     final rect = Rect.fromCircle(center: center, radius: radius);
 
+    final clamped = ratio.clamp(0.0, 1.0);
+    final totalSegmentSweep = segmentSweeps.fold<double>(
+      0,
+      (sum, segment) => sum + segment.sweep,
+    );
+    // With a stacked ring the gray remainder is DATA (free capacity), so
+    // it gets notched off from the category arcs instead of running as a
+    // seamless circle beneath them — a deliberate gap reads as "remaining",
+    // a flush boundary reads as a rendering seam.
+    final notchedRemainder =
+        segmentSweeps.isNotEmpty && totalSegmentSweep < 1.0;
     final track = Paint()
       ..color = trackColor
       ..style = PaintingStyle.stroke
       ..strokeWidth = _stroke;
-    canvas.drawCircle(center, radius, track);
+    if (notchedRemainder) {
+      final gap = _stroke * 1.4 / radius;
+      final start = -math.pi / 2 + totalSegmentSweep * 2 * math.pi + gap;
+      final sweep = (1 - totalSegmentSweep) * 2 * math.pi - 2 * gap;
+      if (sweep > 0) {
+        canvas.drawArc(
+          rect,
+          start,
+          sweep,
+          false,
+          track..strokeCap = StrokeCap.round,
+        );
+      }
+    } else {
+      canvas.drawCircle(center, radius, track);
+    }
 
-    final clamped = ratio.clamp(0.0, 1.0);
     if (segmentSweeps.isNotEmpty) {
       // Stacked category arcs, butt-capped so the slices tile cleanly into
       // one ring that mirrors the legend.
@@ -212,6 +250,23 @@ class _DonutPainter extends CustomPainter {
       }
     }
 
+    // Reality marker: a short radial tick at the progress fraction.
+    final tick = tickFraction;
+    if (tick != null) {
+      final angle = -math.pi / 2 + tick * 2 * math.pi;
+      final direction = Offset(math.cos(angle), math.sin(angle));
+      final inner = center + direction * (radius - _stroke / 2 - 2);
+      final outer = center + direction * (radius + _stroke / 2 + 2);
+      canvas.drawLine(
+        inner,
+        outer,
+        Paint()
+          ..color = tickColor
+          ..strokeWidth = 2
+          ..strokeCap = StrokeCap.round,
+      );
+    }
+
     // Over-capacity amount continues past the clamped end at half alpha.
     if (ratio > 1.0) {
       final overPaint = Paint()
@@ -239,5 +294,7 @@ class _DonutPainter extends CustomPainter {
       old.ratio != ratio ||
       old.color != color ||
       old.trackColor != trackColor ||
+      old.tickFraction != tickFraction ||
+      old.tickColor != tickColor ||
       !listEquals(old.segmentSweeps, segmentSweeps);
 }

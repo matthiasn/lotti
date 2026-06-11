@@ -15,6 +15,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 /// Intent-first projection of the [DraftPlan]. One [AgendaCard] per
 /// task, top stat strip with capacity donut + summary + category mix.
@@ -50,7 +51,14 @@ class AgendaView extends StatelessWidget {
     final tokens = context.designTokens;
     final onRenameItem = this.onRenameItem;
     return SingleChildScrollView(
-      padding: EdgeInsets.all(tokens.spacing.step6),
+      // Extra bottom inset: the host fades the last ~36px at the fold, so
+      // the final row must be able to scroll fully clear of the band.
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step6,
+        tokens.spacing.step6,
+        tokens.spacing.step6,
+        tokens.spacing.step10,
+      ),
       // A reading-width column on desktop instead of a stretched phone
       // list; phones are unaffected.
       child: Center(
@@ -149,6 +157,11 @@ class _LiveAgendaCard extends ConsumerWidget {
   }
 }
 
+/// Whether the committed/capacity ratio is still in the calm band — the
+/// remaining headline only takes the error tone once the day is genuinely
+/// over capacity.
+bool ratioIsCalm(double ratio) => ratio <= 1.0;
+
 class _StatStrip extends StatelessWidget {
   const _StatStrip({
     required this.draft,
@@ -178,7 +191,10 @@ class _StatStrip extends StatelessWidget {
       committedMinutes,
       draft.capacityMinutes,
     );
-    final overline = !hasPlan
+    final hasCapacity = draft.capacityMinutes > 0;
+    final remaining = draft.capacityMinutes - committedMinutes;
+    final isOver = hasCapacity && remaining < 0;
+    final pressure = !hasPlan
         ? messages.dailyOsNextAgendaCapacityNoPlan
         : ratio < 0.9
         ? messages.dailyOsNextAgendaCapacityComfortable
@@ -192,6 +208,18 @@ class _StatStrip extends StatelessWidget {
           )
         : messages.dailyOsNextAgendaNoPlanSummary(
             formatMinutesCompact(trackedMinutes),
+          );
+    // One primary voice: the remainder leads ("15m left"), the committed
+    // total and the pressure word demote to a single supporting line —
+    // three competing headlines made the card read as prose, not an
+    // instrument.
+    final showRemainingHeadline = hasPlan && hasCapacity;
+    final headline = isOver
+        ? messages.dailyOsNextAgendaHeadlineOver(
+            formatMinutesCompact(remaining.abs()),
+          )
+        : messages.dailyOsNextAgendaHeadlineLeft(
+            formatMinutesCompact(remaining),
           );
 
     return Container(
@@ -207,6 +235,11 @@ class _StatStrip extends StatelessWidget {
             scheduledMinutes: hasPlan ? committedMinutes : trackedMinutes,
             capacityMinutes: draft.capacityMinutes,
             neutral: !hasPlan,
+            // Reality marker: where the recorded day stands against the
+            // same capacity dial the plan is drawn on.
+            progressFraction: hasPlan && hasCapacity && trackedMinutes > 0
+                ? (trackedMinutes / draft.capacityMinutes).clamp(0.0, 1.0)
+                : null,
             segments: [
               if (hasPlan)
                 for (final entry in categoryTotals)
@@ -221,14 +254,33 @@ class _StatStrip extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(overline, style: calmEyebrowStyle(tokens)),
-                SizedBox(height: tokens.spacing.step2),
-                Text(
-                  summary,
-                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+                if (showRemainingHeadline) ...[
+                  Text(
+                    headline,
+                    style: calmPageTitleStyle(
+                      tokens,
+                      color: !ratioIsCalm(ratio)
+                          ? tokens.colors.alert.error.defaultColor
+                          : null,
+                    ),
                   ),
-                ),
+                  SizedBox(height: tokens.spacing.step1),
+                  Text(
+                    '$summary · $pressure',
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
+                  ),
+                ] else ...[
+                  Text(pressure, style: calmEyebrowStyle(tokens)),
+                  SizedBox(height: tokens.spacing.step2),
+                  Text(
+                    summary,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ],
                 SizedBox(height: tokens.spacing.step3),
                 if (hasPlan)
                   _CategoryMix(entries: categoryTotals)
@@ -314,12 +366,19 @@ class _CategoryMix extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     if (entries.isEmpty) return const SizedBox.shrink();
-    return Wrap(
-      spacing: tokens.spacing.step3,
-      runSpacing: tokens.spacing.step2,
+    // Micro-table, not a Wrap: one full-width row per category so labels
+    // get the whole column before they ever truncate (at 2x text the old
+    // half-width Wrap cells degraded to "Dee…"/"Clien…"), and the
+    // durations set as a right-aligned ledger column.
+    return Column(
       children: [
-        for (final entry in entries)
-          _CategoryLegend(category: entry.category, minutes: entry.minutes),
+        for (var i = 0; i < entries.length; i++) ...[
+          if (i > 0) SizedBox(height: tokens.spacing.step2),
+          _CategoryLegend(
+            category: entries[i].category,
+            minutes: entries[i].minutes,
+          ),
+        ],
       ],
     );
   }
@@ -335,10 +394,10 @@ class _CategoryLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = categoryColorFromHex(category.colorHex);
-    // Bare dot + caption: the legend is reference information, not a set
-    // of actions, so pill containers only added bulk to the stat card.
+    // Receipt typesetting: dot + label lead, duration right-aligned in
+    // tabular figures so the column of values reads as one ledger. The
+    // duration is the data — protect it; the label truncates last.
     return Row(
-      mainAxisSize: MainAxisSize.min,
       children: [
         SizedBox.square(
           dimension: tokens.spacing.step2,
@@ -347,11 +406,7 @@ class _CategoryLegend extends StatelessWidget {
           ),
         ),
         SizedBox(width: tokens.spacing.step2),
-        // Flexible + ellipsis so long category names survive large
-        // accessibility text sizes inside the Wrap.
-        // The duration is the data — protect it; the category label is
-        // what truncates at large text scales.
-        Flexible(
+        Expanded(
           child: Text(
             category.name,
             maxLines: 1,
@@ -361,10 +416,12 @@ class _CategoryLegend extends StatelessWidget {
             ),
           ),
         ),
+        SizedBox(width: tokens.spacing.step3),
         Text(
-          ' · ${formatMinutesCompact(minutes)}',
+          formatMinutesCompact(minutes),
           style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
+            color: tokens.colors.text.mediumEmphasis,
+            fontFeatures: numericBadgeFontFeatures,
           ),
         ),
       ],

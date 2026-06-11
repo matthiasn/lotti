@@ -458,7 +458,9 @@ class _Headline extends StatelessWidget {
     if (delta == 1) return messages.dailyOsNextCaptureHeadlineTailTomorrow;
     if (delta == -1) return messages.dailyOsNextCaptureHeadlineTailYesterday;
     final locale = Localizations.localeOf(context).toString();
-    final formatted = DateFormat.MMMd(locale).format(date);
+    // Weekday included everywhere a concrete date is planned — "Jun 8"
+    // forces a mental calendar lookup; "Wed, Jun 8" answers it.
+    final formatted = DateFormat.MMMEd(locale).format(date);
     return messages.dailyOsNextCaptureHeadlineTailForDate(formatted);
   }
 }
@@ -479,7 +481,7 @@ class _PastTrackingPrompt extends StatelessWidget {
 
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toString();
-    final formatted = DateFormat.MMMd(locale).format(date);
+    final formatted = DateFormat.MMMEd(locale).format(date);
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step4),
       child: Text(

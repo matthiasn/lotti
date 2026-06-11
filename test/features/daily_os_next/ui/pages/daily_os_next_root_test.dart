@@ -104,7 +104,7 @@ void main() {
         // root chooses between Capture and the empty Day surface.
         await tester.pump();
 
-        expect(find.text('May 27, 2026'), findsOneWidget);
+        expect(find.text('Wed, May 27, 2026'), findsOneWidget);
         expect(requestedDates, contains(DateTime(2026, 5, 27)));
       });
     });
@@ -376,7 +376,7 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          expect(find.text('May 25, 2026'), findsOneWidget);
+          expect(find.text('Mon, May 25, 2026'), findsOneWidget);
           expect(requestedDates, contains(DateTime(2026, 5, 25)));
         });
       },
@@ -452,16 +452,16 @@ void main() {
           await tester.pump();
           await tester.pump();
           await tester.pump();
-          expect(find.text('May 27, 2026'), findsOneWidget);
+          expect(find.text('Wed, May 27, 2026'), findsOneWidget);
 
           // Long-press the date label → snaps back to "Today".
-          await tester.longPress(find.text('May 27, 2026'));
+          await tester.longPress(find.text('Wed, May 27, 2026'));
           await tester.pump();
           await tester.pump();
           await tester.pump();
 
           expect(find.text('Today'), findsOneWidget);
-          expect(find.text('May 27, 2026'), findsNothing);
+          expect(find.text('Wed, May 27, 2026'), findsNothing);
         });
       },
     );

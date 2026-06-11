@@ -1519,9 +1519,9 @@
   "dailyOsFold": "Réduire",
   "dailyOsInvalidTimeRange": "Plage horaire invalide",
   "dailyOsNearLimit": "Proche de la limite",
-  "dailyOsNextAgendaCapacityComfortable": "CONFORTABLE",
-  "dailyOsNextAgendaCapacityNearFull": "PRESQUE PLEIN",
-  "dailyOsNextAgendaCapacityNoPlan": "PAS ENCORE DE PLAN",
+  "dailyOsNextAgendaCapacityComfortable": "Confortable",
+  "dailyOsNextAgendaCapacityNearFull": "Presque plein",
+  "dailyOsNextAgendaCapacityNoPlan": "Pas encore de plan",
   "dailyOsNextAgendaCapacityOf": "sur {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1531,9 +1531,27 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "SURCHARGE",
+  "dailyOsNextAgendaCapacityOver": "Surcharge",
   "dailyOsNextAgendaDonutLeft": "libre",
   "dailyOsNextAgendaDonutOver": "en trop",
+  "dailyOsNextAgendaHeadlineLeft": "{duration} restant",
+  "@dailyOsNextAgendaHeadlineLeft": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "15m"
+      }
+    }
+  },
+  "dailyOsNextAgendaHeadlineOver": "{duration} de trop",
+  "@dailyOsNextAgendaHeadlineOver": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1h"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanBody": "Ton temps suivi est là quoi qu'il arrive — dicte un check-in et je construis ta journée autour.",
   "dailyOsNextAgendaNoPlanSummary": "{duration} suivi pour l'instant. Dicte un check-in et je construis ta journée autour.",
   "dailyOsNextAgendaNoPlanTitle": "Pas encore de plan pour aujourd'hui.",

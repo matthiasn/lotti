@@ -3071,13 +3071,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNearLimit => 'Near limit';
 
   @override
-  String get dailyOsNextAgendaCapacityComfortable => 'COMFORTABLE';
+  String get dailyOsNextAgendaCapacityComfortable => 'Comfortable';
 
   @override
-  String get dailyOsNextAgendaCapacityNearFull => 'NEAR FULL';
+  String get dailyOsNextAgendaCapacityNearFull => 'Near full';
 
   @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'NO PLAN YET';
+  String get dailyOsNextAgendaCapacityNoPlan => 'No plan yet';
 
   @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
@@ -3085,13 +3085,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'OVER CAPACITY';
+  String get dailyOsNextAgendaCapacityOver => 'Over capacity';
 
   @override
   String get dailyOsNextAgendaDonutLeft => 'left';
 
   @override
   String get dailyOsNextAgendaDonutOver => 'over';
+
+  @override
+  String dailyOsNextAgendaHeadlineLeft(String duration) {
+    return '$duration left';
+  }
+
+  @override
+  String dailyOsNextAgendaHeadlineOver(String duration) {
+    return '$duration over';
+  }
 
   @override
   String get dailyOsNextAgendaNoPlanBody =>

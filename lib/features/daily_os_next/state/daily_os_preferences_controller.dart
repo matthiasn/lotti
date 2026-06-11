@@ -9,16 +9,32 @@ import 'package:lotti/get_it.dart';
 
 const dailyOsUserNameSettingsKey = 'DAILY_OS_USER_NAME';
 const dailyOsExcludedCategoryIdsSettingsKey = 'DAILY_OS_EXCLUDED_CATEGORY_IDS';
+const dailyOsTimelineGesturesLearnedSettingsKey =
+    'DAILY_OS_TIMELINE_GESTURES_LEARNED';
+const dailyOsDayFooterHintRetiredSettingsKey =
+    'DAILY_OS_DAY_FOOTER_HINT_RETIRED';
 
 @immutable
 class DailyOsPreferences {
   DailyOsPreferences({
     this.userName = '',
     Set<String> excludedCategoryIds = const <String>{},
+    this.timelineGesturesLearned = false,
+    this.dayFooterHintRetired = false,
   }) : excludedCategoryIds = Set<String>.unmodifiable(excludedCategoryIds);
 
   final String userName;
   final Set<String> excludedCategoryIds;
+
+  /// One-shot coachmark: true once the user has paged the timeline lanes,
+  /// pinch-zoomed, or toggled the lane mode — the "Swipe for actual ·
+  /// pinch to zoom" hint retires permanently after the first use.
+  final bool timelineGesturesLearned;
+
+  /// One-shot coachmark: true once the user has locked in a day — the
+  /// footer's "Talk to reshape the plan…" explainer retires after the
+  /// promise has been experienced once.
+  final bool dayFooterHintRetired;
 
   bool get hasUserName => userName.trim().isNotEmpty;
 
@@ -31,10 +47,15 @@ class DailyOsPreferences {
   DailyOsPreferences copyWith({
     String? userName,
     Set<String>? excludedCategoryIds,
+    bool? timelineGesturesLearned,
+    bool? dayFooterHintRetired,
   }) {
     return DailyOsPreferences(
       userName: userName ?? this.userName,
       excludedCategoryIds: excludedCategoryIds ?? this.excludedCategoryIds,
+      timelineGesturesLearned:
+          timelineGesturesLearned ?? this.timelineGesturesLearned,
+      dayFooterHintRetired: dayFooterHintRetired ?? this.dayFooterHintRetired,
     );
   }
 }
@@ -55,6 +76,8 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
       const [
         dailyOsUserNameSettingsKey,
         dailyOsExcludedCategoryIdsSettingsKey,
+        dailyOsTimelineGesturesLearnedSettingsKey,
+        dailyOsDayFooterHintRetiredSettingsKey,
       ],
     );
     if (!ref.mounted) return;
@@ -72,7 +95,33 @@ class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
         ),
       );
     }
+    // The coachmark flags only ever go from false to true, so a stored
+    // true always wins — no edited-guard needed.
+    next = next.copyWith(
+      timelineGesturesLearned:
+          next.timelineGesturesLearned ||
+          values[dailyOsTimelineGesturesLearnedSettingsKey] == 'true',
+      dayFooterHintRetired:
+          next.dayFooterHintRetired ||
+          values[dailyOsDayFooterHintRetiredSettingsKey] == 'true',
+    );
     state = next;
+  }
+
+  /// Permanently retires the timeline's gesture hint — called the first
+  /// time the user pages the lanes, pinch-zooms, or toggles the lane mode.
+  void markTimelineGesturesLearned() {
+    if (state.timelineGesturesLearned) return;
+    state = state.copyWith(timelineGesturesLearned: true);
+    _save(dailyOsTimelineGesturesLearnedSettingsKey, 'true');
+  }
+
+  /// Permanently retires the day footer's coaching line — called on the
+  /// first successful lock-in.
+  void markDayFooterHintRetired() {
+    if (state.dayFooterHintRetired) return;
+    state = state.copyWith(dayFooterHintRetired: true);
+    _save(dailyOsDayFooterHintRetiredSettingsKey, 'true');
   }
 
   void setUserName(String value) {

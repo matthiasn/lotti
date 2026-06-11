@@ -3114,13 +3114,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNearLimit => 'Blízko limitu';
 
   @override
-  String get dailyOsNextAgendaCapacityComfortable => 'POHODOVÉ';
+  String get dailyOsNextAgendaCapacityComfortable => 'Pohodové';
 
   @override
-  String get dailyOsNextAgendaCapacityNearFull => 'TÉMĚŘ PLNÉ';
+  String get dailyOsNextAgendaCapacityNearFull => 'Téměř plné';
 
   @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'ZATÍM ŽÁDNÝ PLÁN';
+  String get dailyOsNextAgendaCapacityNoPlan => 'Zatím žádný plán';
 
   @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
@@ -3128,13 +3128,23 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'PŘEPLNĚNO';
+  String get dailyOsNextAgendaCapacityOver => 'Přeplněno';
 
   @override
   String get dailyOsNextAgendaDonutLeft => 'volno';
 
   @override
   String get dailyOsNextAgendaDonutOver => 'navíc';
+
+  @override
+  String dailyOsNextAgendaHeadlineLeft(String duration) {
+    return '$duration zbývá';
+  }
+
+  @override
+  String dailyOsNextAgendaHeadlineOver(String duration) {
+    return '$duration navíc';
+  }
 
   @override
   String get dailyOsNextAgendaNoPlanBody =>

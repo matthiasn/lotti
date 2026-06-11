@@ -1519,9 +1519,9 @@
   "dailyOsFold": "Contraer",
   "dailyOsInvalidTimeRange": "Rango de tiempo no válido",
   "dailyOsNearLimit": "Cerca del límite",
-  "dailyOsNextAgendaCapacityComfortable": "CÓMODO",
-  "dailyOsNextAgendaCapacityNearFull": "CASI LLENO",
-  "dailyOsNextAgendaCapacityNoPlan": "AÚN SIN PLAN",
+  "dailyOsNextAgendaCapacityComfortable": "Cómodo",
+  "dailyOsNextAgendaCapacityNearFull": "Casi lleno",
+  "dailyOsNextAgendaCapacityNoPlan": "Aún sin plan",
   "dailyOsNextAgendaCapacityOf": "de {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1531,9 +1531,27 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "SOBRECARGADO",
+  "dailyOsNextAgendaCapacityOver": "Sobrecargado",
   "dailyOsNextAgendaDonutLeft": "libre",
   "dailyOsNextAgendaDonutOver": "de más",
+  "dailyOsNextAgendaHeadlineLeft": "{duration} restantes",
+  "@dailyOsNextAgendaHeadlineLeft": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "15m"
+      }
+    }
+  },
+  "dailyOsNextAgendaHeadlineOver": "{duration} de más",
+  "@dailyOsNextAgendaHeadlineOver": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1h"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanBody": "Tu tiempo registrado está aquí de todos modos: habla un check-in y prepararé un día a tu alrededor.",
   "dailyOsNextAgendaNoPlanSummary": "{duration} registrado hasta ahora. Habla un check-in y prepararé un día a tu alrededor.",
   "dailyOsNextAgendaNoPlanTitle": "Aún no hay plan para hoy.",

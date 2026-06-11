@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
@@ -39,6 +40,11 @@ class _CommitPageState extends ConsumerState<CommitPage> {
     final agent = ref.read(dayAgentProvider);
     final committed = await agent.commitDay(widget.draft);
     if (!mounted) return;
+    // First lock-in retires the day footer's coaching line for good —
+    // the promise has been experienced, the chrome stops narrating it.
+    ref
+        .read(dailyOsPreferencesControllerProvider.notifier)
+        .markDayFooterHintRetired();
     setState(() {
       _committed = committed;
       _locking = true;

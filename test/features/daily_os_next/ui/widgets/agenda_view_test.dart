@@ -135,9 +135,17 @@ void main() {
         await tester.pump();
 
         final messages = tester.element(find.byType(AgendaView)).messages;
-        // Headline: 150m derived from non-dropped blocks (not 240m stored).
+        // Remaining headline leads (480 - 150 = 5h 30m), derived from
+        // non-dropped blocks (not the 240m stored total).
         expect(
-          find.text(messages.dailyOsNextAgendaSummary('2h 30m', '8h')),
+          find.text(messages.dailyOsNextAgendaHeadlineLeft('5h 30m')),
+          findsOneWidget,
+        );
+        // The committed/capacity summary demotes into the supporting line.
+        expect(
+          find.textContaining(
+            messages.dailyOsNextAgendaSummary('2h 30m', '8h'),
+          ),
           findsOneWidget,
         );
         // Donut center: remaining = 480 - 150.
@@ -319,15 +327,15 @@ void main() {
 
       final messages = tester.element(find.byType(AgendaView)).messages;
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityComfortable),
+        find.textContaining(messages.dailyOsNextAgendaCapacityComfortable),
         findsOneWidget,
       );
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityNearFull),
+        find.textContaining(messages.dailyOsNextAgendaCapacityNearFull),
         findsNothing,
       );
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityOver),
+        find.textContaining(messages.dailyOsNextAgendaCapacityOver),
         findsNothing,
       );
     });
@@ -347,7 +355,7 @@ void main() {
 
       final messages = tester.element(find.byType(AgendaView)).messages;
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityNearFull),
+        find.textContaining(messages.dailyOsNextAgendaCapacityNearFull),
         findsOneWidget,
       );
     });
@@ -365,7 +373,7 @@ void main() {
 
       final messages = tester.element(find.byType(AgendaView)).messages;
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityOver),
+        find.textContaining(messages.dailyOsNextAgendaCapacityOver),
         findsOneWidget,
       );
     });
@@ -385,7 +393,7 @@ void main() {
 
       final messages = tester.element(find.byType(AgendaView)).messages;
       expect(
-        find.text(messages.dailyOsNextAgendaSummary('1h 30m', '4h')),
+        find.textContaining(messages.dailyOsNextAgendaSummary('1h 30m', '4h')),
         findsOneWidget,
       );
       expect(find.byType(CapacityDonut), findsOneWidget);
@@ -544,13 +552,13 @@ void main() {
         );
         await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
 
-        // 90m of Work (dropped 60m excluded), 30m of Personal. Name and
-        // value are separate texts so the label can ellipsize at large
-        // text scales while the duration stays protected.
+        // 90m of Work (dropped 60m excluded), 30m of Personal. The legend
+        // is a micro-table: label leads, duration sits right-aligned as a
+        // bare ledger value.
         expect(find.text('Work'), findsOneWidget);
-        expect(find.text(' · 1h 30m'), findsOneWidget);
+        expect(find.text('1h 30m'), findsOneWidget);
         expect(find.text('Personal'), findsOneWidget);
-        expect(find.text(' · 30m'), findsOneWidget);
+        expect(find.text('30m'), findsOneWidget);
       },
     );
 

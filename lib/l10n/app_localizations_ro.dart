@@ -3137,13 +3137,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNearLimit => 'Aproape de limită';
 
   @override
-  String get dailyOsNextAgendaCapacityComfortable => 'CONFORTABIL';
+  String get dailyOsNextAgendaCapacityComfortable => 'Confortabil';
 
   @override
-  String get dailyOsNextAgendaCapacityNearFull => 'APROAPE PLIN';
+  String get dailyOsNextAgendaCapacityNearFull => 'Aproape plin';
 
   @override
-  String get dailyOsNextAgendaCapacityNoPlan => 'ÎNCĂ FĂRĂ PLAN';
+  String get dailyOsNextAgendaCapacityNoPlan => 'Încă fără plan';
 
   @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
@@ -3151,13 +3151,23 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextAgendaCapacityOver => 'PESTE CAPACITATE';
+  String get dailyOsNextAgendaCapacityOver => 'Peste capacitate';
 
   @override
   String get dailyOsNextAgendaDonutLeft => 'liber';
 
   @override
   String get dailyOsNextAgendaDonutOver => 'în plus';
+
+  @override
+  String dailyOsNextAgendaHeadlineLeft(String duration) {
+    return '$duration rămase';
+  }
+
+  @override
+  String dailyOsNextAgendaHeadlineOver(String duration) {
+    return '$duration peste';
+  }
 
   @override
   String get dailyOsNextAgendaNoPlanBody =>

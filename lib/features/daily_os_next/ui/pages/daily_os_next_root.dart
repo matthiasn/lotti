@@ -202,7 +202,8 @@ class _DateStrip extends StatelessWidget {
   }) {
     if (isToday) return todayLabel;
     final locale = Localizations.localeOf(context).toString();
-    return DateFormat.yMMMd(locale).format(date);
+    // Weekday included on every concrete date in the Daily OS.
+    return DateFormat.yMMMEd(locale).format(date);
   }
 }
 

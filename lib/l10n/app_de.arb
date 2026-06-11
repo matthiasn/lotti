@@ -1519,9 +1519,9 @@
   "dailyOsFold": "Einklappen",
   "dailyOsInvalidTimeRange": "Ungültiger Zeitbereich",
   "dailyOsNearLimit": "Fast am Limit",
-  "dailyOsNextAgendaCapacityComfortable": "ENTSPANNT",
-  "dailyOsNextAgendaCapacityNearFull": "FAST VOLL",
-  "dailyOsNextAgendaCapacityNoPlan": "NOCH KEIN PLAN",
+  "dailyOsNextAgendaCapacityComfortable": "Entspannt",
+  "dailyOsNextAgendaCapacityNearFull": "Fast voll",
+  "dailyOsNextAgendaCapacityNoPlan": "Noch kein Plan",
   "dailyOsNextAgendaCapacityOf": "von {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1531,9 +1531,27 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "ÜBERLASTET",
+  "dailyOsNextAgendaCapacityOver": "Überlastet",
   "dailyOsNextAgendaDonutLeft": "frei",
   "dailyOsNextAgendaDonutOver": "drüber",
+  "dailyOsNextAgendaHeadlineLeft": "{duration} übrig",
+  "@dailyOsNextAgendaHeadlineLeft": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "15m"
+      }
+    }
+  },
+  "dailyOsNextAgendaHeadlineOver": "{duration} drüber",
+  "@dailyOsNextAgendaHeadlineOver": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1h"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanBody": "Deine erfasste Zeit ist trotzdem hier — sprich ein Check-in ein und ich entwerfe einen Tag darum.",
   "dailyOsNextAgendaNoPlanSummary": "Bisher {duration} erfasst. Sprich ein Check-in ein und ich entwerfe einen Tag darum.",
   "dailyOsNextAgendaNoPlanTitle": "Noch kein Plan für heute.",

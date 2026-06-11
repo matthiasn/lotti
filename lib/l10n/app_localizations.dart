@@ -5229,19 +5229,19 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextAgendaCapacityComfortable.
   ///
   /// In en, this message translates to:
-  /// **'COMFORTABLE'**
+  /// **'Comfortable'**
   String get dailyOsNextAgendaCapacityComfortable;
 
   /// No description provided for @dailyOsNextAgendaCapacityNearFull.
   ///
   /// In en, this message translates to:
-  /// **'NEAR FULL'**
+  /// **'Near full'**
   String get dailyOsNextAgendaCapacityNearFull;
 
   /// No description provided for @dailyOsNextAgendaCapacityNoPlan.
   ///
   /// In en, this message translates to:
-  /// **'NO PLAN YET'**
+  /// **'No plan yet'**
   String get dailyOsNextAgendaCapacityNoPlan;
 
   /// No description provided for @dailyOsNextAgendaCapacityOf.
@@ -5253,7 +5253,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextAgendaCapacityOver.
   ///
   /// In en, this message translates to:
-  /// **'OVER CAPACITY'**
+  /// **'Over capacity'**
   String get dailyOsNextAgendaCapacityOver;
 
   /// No description provided for @dailyOsNextAgendaDonutLeft.
@@ -5267,6 +5267,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'over'**
   String get dailyOsNextAgendaDonutOver;
+
+  /// No description provided for @dailyOsNextAgendaHeadlineLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} left'**
+  String dailyOsNextAgendaHeadlineLeft(String duration);
+
+  /// No description provided for @dailyOsNextAgendaHeadlineOver.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} over'**
+  String dailyOsNextAgendaHeadlineOver(String duration);
 
   /// No description provided for @dailyOsNextAgendaNoPlanBody.
   ///

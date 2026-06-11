@@ -1715,9 +1715,9 @@
   "dailyOsFold": "Fold",
   "dailyOsInvalidTimeRange": "Invalid time range",
   "dailyOsNearLimit": "Near limit",
-  "dailyOsNextAgendaCapacityComfortable": "COMFORTABLE",
-  "dailyOsNextAgendaCapacityNearFull": "NEAR FULL",
-  "dailyOsNextAgendaCapacityNoPlan": "NO PLAN YET",
+  "dailyOsNextAgendaCapacityComfortable": "Comfortable",
+  "dailyOsNextAgendaCapacityNearFull": "Near full",
+  "dailyOsNextAgendaCapacityNoPlan": "No plan yet",
   "dailyOsNextAgendaCapacityOf": "of {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1727,9 +1727,27 @@
       }
     }
   },
-  "dailyOsNextAgendaCapacityOver": "OVER CAPACITY",
+  "dailyOsNextAgendaCapacityOver": "Over capacity",
   "dailyOsNextAgendaDonutLeft": "left",
   "dailyOsNextAgendaDonutOver": "over",
+  "dailyOsNextAgendaHeadlineLeft": "{duration} left",
+  "@dailyOsNextAgendaHeadlineLeft": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "15m"
+      }
+    }
+  },
+  "dailyOsNextAgendaHeadlineOver": "{duration} over",
+  "@dailyOsNextAgendaHeadlineOver": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "1h"
+      }
+    }
+  },
   "dailyOsNextAgendaNoPlanBody": "Your tracked time is here either way — speak a check-in and I'll draft a day around it.",
   "dailyOsNextAgendaNoPlanSummary": "{duration} tracked so far. Speak a check-in and I'll draft a day around it.",
   "@dailyOsNextAgendaNoPlanSummary": {

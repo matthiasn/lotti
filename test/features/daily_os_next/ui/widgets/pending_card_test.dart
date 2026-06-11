@@ -40,7 +40,7 @@ void main() {
 
       final messages = tester.element(find.byType(PendingCard)).messages;
       expect(
-        find.text(messages.dailyOsNextStateDueOnDate('May 30')),
+        find.text(messages.dailyOsNextStateDueOnDate('Sat, May 30')),
         findsOneWidget,
       );
       expect(find.text('Submit report'), findsOneWidget);
@@ -67,7 +67,7 @@ void main() {
 
       final messages = tester.element(find.byType(PendingCard)).messages;
       expect(
-        find.text(messages.dailyOsNextStateOverdueOnDate(5, 'May 30')),
+        find.text(messages.dailyOsNextStateOverdueOnDate(5, 'Sat, May 30')),
         findsOneWidget,
       );
       expect(find.text('Pay invoice'), findsOneWidget);
