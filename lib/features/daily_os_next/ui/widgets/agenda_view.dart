@@ -51,12 +51,14 @@ class AgendaView extends StatelessWidget {
     final tokens = context.designTokens;
     final onRenameItem = this.onRenameItem;
     return SingleChildScrollView(
-      // Extra bottom inset: the host fades the last ~36px at the fold, so
-      // the final row must be able to scroll fully clear of the band.
+      // step5 horizontal: the agenda shares the page's single left rail
+      // with the masthead, toggle, and nudge chip. Extra bottom inset:
+      // the host fades the last ~36px at the fold, so the final row must
+      // be able to scroll fully clear of the band.
       padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
         tokens.spacing.step6,
-        tokens.spacing.step6,
-        tokens.spacing.step6,
+        tokens.spacing.step5,
         tokens.spacing.step10,
       ),
       // A reading-width column on desktop instead of a stretched phone
