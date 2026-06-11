@@ -7,11 +7,10 @@
 // response scripted. result.success is the real signal that the whole pipeline
 // ran; the Level 1 suite then gates the (scripted) plan's quality.
 
-import 'dart:convert';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 
+import '../../features/daily_os_next/agents/prompt/day_agent_prompt_test_utils.dart';
 import '../../helpers/fallbacks.dart';
 import '../harness/eval_harness.dart';
 import '../harness/eval_profile_config.dart';
@@ -351,11 +350,11 @@ void main() {
       expect(output.plannedCapacityMinutes, scenario.appState.capacityMinutes);
       final prompt = userMessage;
       expect(prompt, isNotNull);
-      final promptJson = jsonDecode(prompt!) as Map<String, dynamic>;
-      final capture = promptJson['capture'] as Map<String, dynamic>;
+      final parsedPrompt = ParsedDayAgentPrompt(prompt!);
+      final capture = parsedPrompt.json('capture')! as Map<String, dynamic>;
       final taskCorpus = (capture['taskCorpus'] as List<dynamic>)
           .cast<Map<String, dynamic>>();
-      final drafting = promptJson['drafting'] as Map<String, dynamic>;
+      final drafting = parsedPrompt.json('drafting')! as Map<String, dynamic>;
       final baselinePlan = drafting['baselinePlan'] as Map<String, dynamic>;
       final baselineBlocks = (baselinePlan['blocks'] as List<dynamic>)
           .cast<Map<String, dynamic>>();
@@ -512,15 +511,16 @@ void main() {
 
       final prompt = userMessage;
       expect(prompt, isNotNull);
-      final promptJson = jsonDecode(prompt!) as Map<String, dynamic>;
-      expect(promptJson['dayId'], kPlannerCaptureOnlyDayId);
-      final triggerTokens = (promptJson['triggerTokens'] as List<dynamic>)
-          .cast<String>();
+      final parsedPrompt = ParsedDayAgentPrompt(prompt!);
+      expect(parsedPrompt.section('day_id'), kPlannerCaptureOnlyDayId);
+      final triggerTokens =
+          (parsedPrompt.json('trigger_tokens')! as List<dynamic>)
+              .cast<String>();
       expect(triggerTokens, [
         'capture_submitted:$kPlannerCaptureOnlyCaptureId',
       ]);
-      expect(promptJson.containsKey('drafting'), isFalse);
-      final capture = promptJson['capture'] as Map<String, dynamic>;
+      expect(parsedPrompt.has('drafting'), isFalse);
+      final capture = parsedPrompt.json('capture')! as Map<String, dynamic>;
       expect(capture['captureId'], kPlannerCaptureOnlyCaptureId);
       expect(capture['transcript'], contains('quick walk'));
       final taskCorpus = (capture['taskCorpus'] as List<dynamic>)
