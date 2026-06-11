@@ -17,7 +17,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 ///
 /// The button is deliberately "alive": presses scale the core down and
 /// release it with a slight overshoot, the ink ripple is painted *above*
-/// the fill so it is actually visible, and glyph changes cross-fade.
+/// the fill so it is actually visible, glyph changes cross-fade, and —
+/// while listening — the core itself breathes with the live voice level
+/// (it rests smaller inside the shader field and swells with the same
+/// dBFS signal the shader renders, so the inside and the outside of the
+/// orb move as one organism instead of a live ring around a dead disc).
 ///
 /// Pure presentation. The parent calls [onTap] which delegates to
 /// `CaptureController.toggle()`.
@@ -71,7 +75,19 @@ class VoiceButton extends StatefulWidget {
 
   /// Scale applied to the core while pressed.
   @visibleForTesting
-  static const pressedScale = 0.93;
+  static const pressedScale = 0.9;
+
+  /// Resting scale of the core while listening: the disc steps back so
+  /// the tension-loop shader owns the field and the core reads as its
+  /// responsive nucleus instead of a static plate.
+  @visibleForTesting
+  static const listeningCoreScale = 0.86;
+
+  /// How far the core swells from [listeningCoreScale] at full voice
+  /// level — the disc literally breathes with the same dBFS signal that
+  /// drives the shader, so inside and outside move as one organism.
+  @visibleForTesting
+  static const listeningBreathSpan = 0.10;
 
   /// The layout field reserves the listening frame plus a little clearance —
   /// the shader still overflows it via [OverflowBox], by design, so the
@@ -123,6 +139,21 @@ class _VoiceButtonState extends State<VoiceButton> {
   void _setPressed(bool value) {
     if (_pressed == value) return;
     setState(() => _pressed = value);
+  }
+
+  /// Voice-coupled core scale. While listening the disc rests at
+  /// [VoiceButton.listeningCoreScale] and swells toward
+  /// `listeningCoreScale + listeningBreathSpan` with the live dBFS —
+  /// the same signal the surrounding shader renders, so the core never
+  /// reads dead inside a live field. 1.0 in every other phase.
+  double get _voiceScale {
+    if (widget.phase != CapturePhase.listening) return 1;
+    final floor = widget.dbfsFloor;
+    final norm = floor >= 0
+        ? 0.0
+        : ((widget.dbfs - floor) / -floor).clamp(0.0, 1.0);
+    return VoiceButton.listeningCoreScale +
+        VoiceButton.listeningBreathSpan * norm;
   }
 
   IconData get _glyph => switch (widget.phase) {
@@ -223,14 +254,23 @@ class _VoiceButtonState extends State<VoiceButton> {
               ),
             // Press feedback: scale down while held, release with a soft
             // overshoot — paired with a visible ink ripple painted above
-            // the fill (via [Ink]), so a tap never reads as dead.
+            // the fill (via [Ink]), so a tap never reads as dead. While
+            // listening the same transform carries the voice-breathing
+            // scale: each dBFS tick re-targets the implicit animation, so
+            // the disc follows the voice with a short organic ease (no
+            // overshoot there — back-curves would jitter under the
+            // amplitude stream's retargeting).
             AnimatedScale(
               key: VoiceButton.pressScaleKey,
-              scale: _pressed ? VoiceButton.pressedScale : 1.0,
+              scale: (_pressed ? VoiceButton.pressedScale : 1.0) * _voiceScale,
               duration: _pressed
                   ? const Duration(milliseconds: 90)
+                  : widget.phase == CapturePhase.listening
+                  ? const Duration(milliseconds: 130)
                   : const Duration(milliseconds: 240),
-              curve: _pressed ? Curves.easeOutCubic : Curves.easeOutBack,
+              curve: _pressed || widget.phase == CapturePhase.listening
+                  ? Curves.easeOutCubic
+                  : Curves.easeOutBack,
               child: AnimatedOpacity(
                 opacity: dimmed ? 0.55 : 1.0,
                 duration: const Duration(milliseconds: 200),

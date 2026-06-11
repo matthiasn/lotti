@@ -189,6 +189,42 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
   });
 
+  testWidgets(
+    'while listening the core breathes with the voice level: rests '
+    'smaller at silence, swells with dBFS, full size in other phases',
+    (tester) async {
+      AnimatedScale pressScale() => tester.widget<AnimatedScale>(
+        find.byKey(VoiceButton.pressScaleKey),
+      );
+
+      // Silence (dbfs == floor): the disc rests at the listening scale so
+      // the shader owns the field.
+      await pumpVoiceButton(tester, phase: CapturePhase.listening);
+      expect(pressScale().scale, VoiceButton.listeningCoreScale);
+
+      // Loud speech (-8 dBFS over the -80 floor → norm 0.9): the disc
+      // swells with the same signal that drives the shader.
+      await pumpVoiceButton(
+        tester,
+        phase: CapturePhase.listening,
+        dbfs: -8,
+      );
+      expect(
+        pressScale().scale,
+        closeTo(
+          VoiceButton.listeningCoreScale +
+              VoiceButton.listeningBreathSpan * 0.9,
+          1e-9,
+        ),
+      );
+
+      // Outside listening the breathing transform is inert.
+      await pumpVoiceButton(tester, phase: CapturePhase.captured);
+      expect(pressScale().scale, 1.0);
+      await tester.pump(const Duration(milliseconds: 300));
+    },
+  );
+
   testWidgets('ink ripple is configured above the gradient surface', (
     tester,
   ) async {
