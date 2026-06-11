@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:async';
 
 import 'package:clock/clock.dart';
@@ -191,6 +193,7 @@ void main() {
         () => bench.planService.summarizeRecentPatterns(
           agentId: agentId,
           asOf: _asOf,
+          lookbackDays: 7,
         ),
       ).thenAnswer(
         (_) async => [

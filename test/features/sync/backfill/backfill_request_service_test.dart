@@ -385,6 +385,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
           ),
         ).thenAnswer((_) async => []);
 
@@ -401,6 +402,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
           ),
         ]);
       },
@@ -438,6 +440,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
           ),
         );
         verifyNever(
@@ -474,6 +477,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
           ),
         ).thenAnswer((_) async => []);
 
@@ -596,6 +600,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
           ),
         ).thenAnswer((_) async => []);
 
@@ -608,6 +613,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
           ),
         ).called(1);
         verifyNever(
@@ -704,6 +710,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
           ),
         ).thenAnswer((invocation) async {
           final limit = invocation.namedArguments[#limit] as int;
@@ -1167,6 +1174,8 @@ void main() {
           () => mockSequenceService.getMissingEntries(
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
           ),
         ).thenAnswer((_) async => missingEntries);
 
@@ -1186,6 +1195,8 @@ void main() {
           () => mockSequenceService.getMissingEntries(
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
+            offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
           ),
         ).called(1);
 
@@ -1978,6 +1989,7 @@ void main() {
             limit: any(named: 'limit'),
             maxRequestCount: any(named: 'maxRequestCount'),
             offset: any(named: 'offset'),
+            minAge: any(named: 'minAge'),
           ),
         ).thenAnswer((_) async => missingItems);
         when(

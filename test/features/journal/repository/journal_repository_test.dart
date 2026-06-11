@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -139,6 +141,7 @@ void main() {
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
             categoryId: categoryId,
+            clearCategoryId: false,
           ),
         ).thenAnswer((_) async => updatedMeta);
 
@@ -162,6 +165,7 @@ void main() {
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
             categoryId: categoryId,
+            clearCategoryId: false,
           ),
         ).called(1);
         verify(() => mockPersistenceLogic.updateDbEntity(any())).called(1);
@@ -192,6 +196,7 @@ void main() {
           () => mockPersistenceLogic.updateMetadata(
             any(),
             categoryId: any(named: 'categoryId'),
+            clearCategoryId: any(named: 'clearCategoryId'),
           ),
         );
         verifyNever(() => mockPersistenceLogic.updateDbEntity(any()));
@@ -220,6 +225,7 @@ void main() {
         when(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
+            categoryId: categoryId,
             clearCategoryId: true,
           ),
         ).thenAnswer((_) async => updatedMeta);
@@ -243,6 +249,7 @@ void main() {
         verify(
           () => mockPersistenceLogic.updateMetadata(
             testEntity.meta,
+            categoryId: categoryId,
             clearCategoryId: true,
           ),
         ).called(1);

@@ -1,3 +1,5 @@
+// ignore_for_file: unnecessary_lambdas, avoid_redundant_argument_values
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -18,8 +20,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../features/agents/test_utils.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-
-// ignore_for_file: unnecessary_lambdas
 
 // ---------------------------------------------------------------------------
 // Declarations moved from backfill_response_handler_generated_test.dart
@@ -1943,7 +1943,6 @@ void main() {
           () => mockSequenceService.markOwnCounterUnresolvable(
             hostId: aliceHostId,
             counter: 3,
-            // ignore: avoid_redundant_argument_values
             payloadType: SyncSequencePayloadType.journalEntity,
           ),
         ).called(1);
@@ -2282,6 +2281,9 @@ void main() {
           hostId: aliceHostId,
           counter: 3,
           deleted: true,
+          unresolvable: false,
+          entryId: null,
+          payloadType: SyncSequencePayloadType.journalEntity,
         ),
       ).thenAnswer((_) async {});
 
@@ -2292,6 +2294,9 @@ void main() {
           hostId: aliceHostId,
           counter: 3,
           deleted: true,
+          unresolvable: false,
+          entryId: null,
+          payloadType: SyncSequencePayloadType.journalEntity,
         ),
       ).called(1);
     });
@@ -2309,7 +2314,9 @@ void main() {
           hostId: aliceHostId,
           counter: 3,
           deleted: false,
+          unresolvable: false,
           entryId: entryId,
+          payloadType: SyncSequencePayloadType.journalEntity,
         ),
       ).thenAnswer((_) async {});
 
@@ -2325,6 +2332,7 @@ void main() {
           counter: 3,
           entryId: entryId,
           entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: SyncSequencePayloadType.journalEntity,
         ),
       ).thenAnswer((_) async => true);
 
@@ -2336,7 +2344,9 @@ void main() {
           hostId: aliceHostId,
           counter: 3,
           deleted: false,
+          unresolvable: false,
           entryId: entryId,
+          payloadType: SyncSequencePayloadType.journalEntity,
         ),
       ).called(1);
 
@@ -2347,6 +2357,7 @@ void main() {
           counter: 3,
           entryId: entryId,
           entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: SyncSequencePayloadType.journalEntity,
         ),
       ).called(1);
     });
@@ -2366,7 +2377,9 @@ void main() {
             hostId: aliceHostId,
             counter: 3,
             deleted: false,
+            unresolvable: false,
             entryId: entryId,
+            payloadType: SyncSequencePayloadType.journalEntity,
           ),
         ).thenAnswer((_) async {});
 
@@ -2383,7 +2396,9 @@ void main() {
             hostId: aliceHostId,
             counter: 3,
             deleted: false,
+            unresolvable: false,
             entryId: entryId,
+            payloadType: SyncSequencePayloadType.journalEntity,
           ),
         ).called(1);
 
@@ -2394,6 +2409,7 @@ void main() {
             counter: any(named: 'counter'),
             entryId: any(named: 'entryId'),
             entryVectorClock: any(named: 'entryVectorClock'),
+            payloadType: any(named: 'payloadType'),
           ),
         );
       },
@@ -2412,6 +2428,9 @@ void main() {
           hostId: aliceHostId,
           counter: 3,
           deleted: false,
+          unresolvable: false,
+          entryId: null,
+          payloadType: SyncSequencePayloadType.journalEntity,
         ),
       ).thenAnswer((_) async {});
 
@@ -2423,6 +2442,9 @@ void main() {
           hostId: aliceHostId,
           counter: 3,
           deleted: false,
+          unresolvable: false,
+          entryId: null,
+          payloadType: SyncSequencePayloadType.journalEntity,
         ),
       ).called(1);
 
@@ -2443,7 +2465,9 @@ void main() {
           hostId: aliceHostId,
           counter: 3,
           deleted: false,
+          unresolvable: false,
           entryId: entryId,
+          payloadType: SyncSequencePayloadType.journalEntity,
         ),
       ).thenAnswer((_) async {});
 
@@ -2462,6 +2486,7 @@ void main() {
           counter: any(named: 'counter'),
           entryId: any(named: 'entryId'),
           entryVectorClock: any(named: 'entryVectorClock'),
+          payloadType: any(named: 'payloadType'),
         ),
       );
     });
@@ -2478,7 +2503,9 @@ void main() {
           hostId: any(named: 'hostId'),
           counter: any(named: 'counter'),
           deleted: any(named: 'deleted'),
+          unresolvable: any(named: 'unresolvable'),
           entryId: any(named: 'entryId'),
+          payloadType: any(named: 'payloadType'),
         ),
       ).thenThrow(Exception('Database error'));
 
@@ -2709,6 +2736,7 @@ void main() {
             hostId: any(named: 'hostId'),
             counter: any(named: 'counter'),
             deleted: any(named: 'deleted'),
+            unresolvable: any(named: 'unresolvable'),
             entryId: any(named: 'entryId'),
             payloadType: any(named: 'payloadType'),
           ),
@@ -2756,6 +2784,7 @@ void main() {
           hostId: any(named: 'hostId'),
           counter: any(named: 'counter'),
           deleted: any(named: 'deleted'),
+          unresolvable: any(named: 'unresolvable'),
           entryId: any(named: 'entryId'),
           payloadType: any(named: 'payloadType'),
         ),
@@ -2773,6 +2802,7 @@ void main() {
           hostId: aliceHostId,
           counter: 40,
           deleted: false,
+          unresolvable: false,
           entryId: 'missing-link-id',
           payloadType: SyncSequencePayloadType.entryLink,
         ),
@@ -2806,6 +2836,7 @@ void main() {
           hostId: any(named: 'hostId'),
           counter: any(named: 'counter'),
           deleted: any(named: 'deleted'),
+          unresolvable: any(named: 'unresolvable'),
           entryId: any(named: 'entryId'),
           payloadType: any(named: 'payloadType'),
         ),
@@ -3172,6 +3203,7 @@ void main() {
           hostId: any(named: 'hostId'),
           counter: any(named: 'counter'),
           deleted: any(named: 'deleted'),
+          unresolvable: any(named: 'unresolvable'),
           entryId: any(named: 'entryId'),
           payloadType: any(named: 'payloadType'),
         ),
@@ -3225,6 +3257,7 @@ void main() {
           hostId: any(named: 'hostId'),
           counter: any(named: 'counter'),
           deleted: any(named: 'deleted'),
+          unresolvable: any(named: 'unresolvable'),
           entryId: any(named: 'entryId'),
           payloadType: any(named: 'payloadType'),
         ),
@@ -3278,6 +3311,7 @@ void main() {
           hostId: any(named: 'hostId'),
           counter: any(named: 'counter'),
           deleted: any(named: 'deleted'),
+          unresolvable: any(named: 'unresolvable'),
           entryId: any(named: 'entryId'),
           payloadType: any(named: 'payloadType'),
         ),
