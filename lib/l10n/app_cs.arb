@@ -1385,7 +1385,6 @@
   "dailyOsNextCaptureIdleExample": "„Dopoledne hluboká práce, po obědě procházka, e-maily do pěti.“",
   "dailyOsNextCaptureIdleHint": "Klepni pro mluvení · místo toho napiš",
   "dailyOsNextCaptureIdleTalk": "Klepni pro mluvení",
-  "dailyOsNextCaptureListening": "POSLOUCHÁM",
   "dailyOsNextCaptureListeningStatus": "Poslouchám…",
   "dailyOsNextCapturePastPrompt": "Chceš ještě něco zapsat k {date}?",
   "dailyOsNextCaptureReconcileCta": "Zkontrolovat",
@@ -1440,7 +1439,7 @@
   "dailyOsNextDayMenuInspectAgent": "Prozkoumat agenta",
   "dailyOsNextDayMoreTooltip": "Více",
   "dailyOsNextDayRefineCta": "Upravit",
-  "dailyOsNextDayRefineFooterHint": "Mluv, aby ses k plánu vrátil — změny se zobrazí jako diff, než se uplatní.",
+  "dailyOsNextDayRefineFooterHint": "Mluv a přetvoř plán — každou změnu uvidíš, než se cokoli uloží.",
   "dailyOsNextDayTitle": "Tvůj den",
   "dailyOsNextDayWhyChipLabel": "PROČ",
   "dailyOsNextDayWrapUpCta": "Ukončit",
@@ -1469,7 +1468,6 @@
   "dailyOsNextGenericError": "Něco se pokazilo. Zkus to za chvíli znovu.",
   "dailyOsNextGreetingAfternoon": "Dobré odpoledne.",
   "dailyOsNextGreetingEvening": "Dobrý večer.",
-  "dailyOsNextGreetingHi": "Ahoj 👋",
   "dailyOsNextGreetingHiName": "Ahoj {name} 👋",
   "dailyOsNextGreetingMorning": "Dobré ráno.",
   "dailyOsNextKnowledgeConfirm": "Potvrdit",
@@ -1574,7 +1572,6 @@
   "dailyOsNextShutdownSaveAndClose": "Uložit a zavřít",
   "dailyOsNextShutdownTitle": "Uzavřít den",
   "dailyOsNextShutdownTomorrowOverline": "✦ NA ZÍTŘEK",
-  "dailyOsNextStandaloneTag": "Časový blok",
   "dailyOsNextStateDueOnDate": "Splatné {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

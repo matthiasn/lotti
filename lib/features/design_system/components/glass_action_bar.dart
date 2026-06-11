@@ -25,6 +25,10 @@ const double kDsGlassFillAlpha = 0.55;
 /// action-row layout thresholds.
 const double kDsGlassBorderAlpha = 0.45;
 
+/// Multiplier applied to a pill's fill alpha while disabled, dimming the
+/// fill in place so the pill reads as a quieter version of itself.
+const double kDsGlassDisabledFillFactor = 0.45;
+
 /// Translucent fill used by glass chips when the caller supplies no solid
 /// background colour.
 Color dsGlassChipFill(DsTokens tokens) =>
@@ -175,7 +179,9 @@ class DsGlassPill extends StatelessWidget {
     // treatment as before.
     final effectiveFill = enabled
         ? fillColor
-        : fillColor?.withValues(alpha: fillColor!.a * 0.45);
+        : fillColor?.withValues(
+            alpha: fillColor!.a * kDsGlassDisabledFillFactor,
+          );
     final isTranslucent = effectiveFill == null;
     final foreground = enabled
         ? (foregroundColor ?? tokens.colors.text.highEmphasis)

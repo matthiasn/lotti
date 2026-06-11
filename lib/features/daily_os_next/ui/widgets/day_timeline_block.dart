@@ -103,24 +103,24 @@ class DayBlock extends ConsumerWidget {
             beamToNamed('/tasks/$taskId');
           };
 
-    // Recorded tint needs more chroma in light mode to keep the
-    // filled-in/sketch contrast legible on a white canvas.
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final trackedTint = isLight ? 0.30 : 0.18;
-    // Composite the tint over the canvas so the fill is opaque: hour
-    // gridlines must read as the empty canvas, not through the cards.
     final canvas = tokens.colors.background.level01;
     final fill = isBuffer
         ? Colors.transparent
         : Color.alphaBlend(
-            category.withValues(alpha: tracked ? trackedTint : 0.05),
+            category.withValues(
+              alpha: timelineBlockTintAlpha(
+                tracked: tracked,
+                isLight: isLight,
+              ),
+            ),
             canvas,
           );
     final leftStripeColor = isBuffer
         ? tokens.colors.text.lowEmphasis.withValues(alpha: 0.32)
         : tracked
         ? category
-        : category.withValues(alpha: 0.45);
+        : category.withValues(alpha: kTimelinePlannedAccentAlpha);
 
     final borderRadius = BorderRadius.circular(tokens.radii.m);
     final card = Ink(
@@ -162,21 +162,38 @@ class DayBlock extends ConsumerWidget {
     // and tracked blocks read solid.
     final outlined = isDrafted
         ? DsDashedBorder(
-            color: category.withValues(alpha: 0.30),
+            color: category.withValues(alpha: kTimelinePlannedAccentAlpha),
             radius: tokens.radii.m,
             child: card,
           )
         : card;
 
+    // Recorded-vs-planned is otherwise purely chromatic; the semantics
+    // label keeps the distinction for screen readers, and gives micro
+    // blocks (whose visual content collapses to fill+stripe) an
+    // accessible name at all.
+    final semanticsLabel = [
+      block.title,
+      '${_clock(block.start)}–${_clock(block.end)}',
+      if (tracked)
+        context.messages.dailyOsNextTimelineTracked
+      else
+        context.messages.dailyOsNextPlanViewDay,
+    ].join(', ');
+
     if (onTap == null) {
-      return Material(
-        type: MaterialType.transparency,
-        child: outlined,
+      return Semantics(
+        label: semanticsLabel,
+        child: Material(
+          type: MaterialType.transparency,
+          child: outlined,
+        ),
       );
     }
 
     return Semantics(
       button: true,
+      label: semanticsLabel,
       child: Material(
         type: MaterialType.transparency,
         child: InkWell(
@@ -189,6 +206,12 @@ class DayBlock extends ConsumerWidget {
   }
 
   Color _categoryColor() => categoryColorFromHex(block.category.colorHex);
+}
+
+String _clock(DateTime t) {
+  final h = t.hour.toString().padLeft(2, '0');
+  final m = t.minute.toString().padLeft(2, '0');
+  return '$h:$m';
 }
 
 class _BlockContent extends StatelessWidget {
@@ -233,8 +256,28 @@ class _BlockContent extends StatelessWidget {
         final lineHeight = MediaQuery.textScalerOf(
           context,
         ).scale(tokens.typography.lineHeight.bodySmall);
-        if (constraints.maxHeight < lineHeight + 2) {
+        if (constraints.maxHeight < 14) {
+          // Too short for any glyph — fill + stripe only (the Semantics
+          // label on DayBlock still carries the title).
           return const SizedBox.shrink();
+        }
+        if (constraints.maxHeight < lineHeight + 2) {
+          // Sliver tier: one tiny centered line so short recorded sessions
+          // (the unplanned incident!) stay information, not just color.
+          return Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              block.title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.caption.copyWith(
+                fontSize: 10,
+                color: tracked
+                    ? tokens.colors.text.highEmphasis
+                    : tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          );
         }
         final compact = constraints.maxHeight < 44;
         final showSubtitle = !isBuffer && !compact;
@@ -334,12 +377,6 @@ class _BlockContent extends StatelessWidget {
   String _formatRange(TimeBlock block) {
     return '${_clock(block.start)}–${_clock(block.end)}';
   }
-
-  String _clock(DateTime t) {
-    final h = t.hour.toString().padLeft(2, '0');
-    final m = t.minute.toString().padLeft(2, '0');
-    return '$h:$m';
-  }
 }
 
 class _NowLine extends StatelessWidget {
@@ -364,23 +401,15 @@ class _NowLine extends StatelessWidget {
       windowStart: windowStart,
       pxPerMinute: pxPerMinute,
     );
+    // Just the line — the single anchoring dot lives on the shared hour
+    // rail so swipe mode's peeking page never shows a stray second dot.
     return Positioned(
       top: top - 0.75,
       left: 0,
       right: 0,
+      height: 1.5,
       child: IgnorePointer(
-        child: Row(
-          children: [
-            Container(
-              width: 6,
-              height: 6,
-              decoration: BoxDecoration(color: red, shape: BoxShape.circle),
-            ),
-            Expanded(
-              child: Container(height: 1.5, color: red),
-            ),
-          ],
-        ),
+        child: ColoredBox(color: red),
       ),
     );
   }

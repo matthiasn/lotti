@@ -4,6 +4,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/hold_to_confirm.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/lock_in_scene.dart';
@@ -224,6 +225,10 @@ class _CapacityRecap extends StatelessWidget {
 
   final DraftPlan draft;
 
+  int get _committedMinutes => categoryTotalsFor(
+    draft,
+  ).fold(0, (sum, entry) => sum + entry.minutes);
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -236,8 +241,11 @@ class _CapacityRecap extends StatelessWidget {
       ),
       child: Row(
         children: [
+          // Same block-derived total as the agenda stat strip, so the
+          // commit recap can never tell a different numerical story than
+          // the surface that led here.
           CapacityDonut(
-            scheduledMinutes: draft.scheduledMinutes,
+            scheduledMinutes: _committedMinutes,
             capacityMinutes: draft.capacityMinutes,
             size: 62,
           ),
@@ -245,7 +253,7 @@ class _CapacityRecap extends StatelessWidget {
           Expanded(
             child: Text(
               context.messages.dailyOsNextCommitCapacityNote(
-                formatMinutesCompact(draft.scheduledMinutes),
+                formatMinutesCompact(_committedMinutes),
                 formatMinutesCompact(draft.capacityMinutes),
               ),
               style: tokens.typography.styles.body.bodySmall.copyWith(

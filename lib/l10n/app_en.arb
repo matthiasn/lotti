@@ -1799,7 +1799,6 @@
   "dailyOsNextCaptureIdleExample": "“Deep work this morning, a walk after lunch, emails before five.”",
   "dailyOsNextCaptureIdleHint": "Tap to talk · type instead",
   "dailyOsNextCaptureIdleTalk": "Tap to talk",
-  "dailyOsNextCaptureListening": "LISTENING",
   "dailyOsNextCaptureListeningStatus": "Listening…",
   "dailyOsNextCapturePastPrompt": "Anything you still want to track from {date}?",
   "@dailyOsNextCapturePastPrompt": {
@@ -1861,7 +1860,7 @@
   "dailyOsNextDayMenuInspectAgent": "Inspect agent",
   "dailyOsNextDayMoreTooltip": "More",
   "dailyOsNextDayRefineCta": "Refine",
-  "dailyOsNextDayRefineFooterHint": "Talk to reshape the plan — moves, drops, and buffers are shown as a diff before they stick.",
+  "dailyOsNextDayRefineFooterHint": "Talk to reshape the plan — you'll see every change before anything is saved.",
   "dailyOsNextDayTitle": "Your day",
   "dailyOsNextDayWhyChipLabel": "WHY",
   "dailyOsNextDayWrapUpCta": "Wrap up",
@@ -1890,7 +1889,6 @@
   "dailyOsNextGenericError": "Something went wrong. Try again in a moment.",
   "dailyOsNextGreetingAfternoon": "Good afternoon.",
   "dailyOsNextGreetingEvening": "Good evening.",
-  "dailyOsNextGreetingHi": "Hi 👋",
   "dailyOsNextGreetingHiName": "Hi {name} 👋",
   "@dailyOsNextGreetingHiName": {
     "placeholders": {
@@ -2002,7 +2000,6 @@
   "dailyOsNextShutdownSaveAndClose": "Save & close",
   "dailyOsNextShutdownTitle": "Close out the day",
   "dailyOsNextShutdownTomorrowOverline": "✦ FOR TOMORROW",
-  "dailyOsNextStandaloneTag": "Time block",
   "dailyOsNextStateDueOnDate": "Due {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

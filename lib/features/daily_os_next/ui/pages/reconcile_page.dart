@@ -19,7 +19,9 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 /// Width at/above which the reconcile surface lays the Heard / Decide
 /// columns side by side; below it they stack. Shared by the page, the modal
 /// content, and the footer so the breakpoint can't drift between them.
-const double _reconcileTwoColumnBreakpoint = 720;
+// 640 keeps the side-by-side Heard/Decide layout reachable inside the
+// desktop side sheet (max 720px minus gutters).
+const double _reconcileTwoColumnBreakpoint = 640;
 
 /// Flex weights for the side-by-side Heard / Decide columns — the Heard
 /// column (parsed items) gets slightly more room than the Decide column.

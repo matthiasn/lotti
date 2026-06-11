@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -162,22 +163,12 @@ class LiveTranscriptView extends StatelessWidget {
         constraints: BoxConstraints(
           maxHeight: lineHeight * _maxVisibleLines,
         ),
-        // The mask wraps the capped text box itself so the dissolve sits on
-        // the oldest visible line; the ramp covers at least one full
-        // (scaled) text line, or that line gets sliced flat instead of
-        // fading out.
-        child: ShaderMask(
-          shaderCallback: (bounds) {
-            final ramp = bounds.height <= 0
-                ? 0.22
-                : ((lineHeight * 1.4) / bounds.height).clamp(0.12, 0.5);
-            return LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
-              stops: [0, ramp],
-            ).createShader(bounds);
-          },
+        // The fade wraps the capped text box itself so the dissolve sits
+        // on the oldest visible line.
+        child: EdgeFade(
+          rampExtent: lineHeight * 1.4,
+          minFraction: 0.12,
+          maxFraction: 0.5,
           child: SizedBox(
             key: viewportKey,
             width: double.infinity,

@@ -3244,9 +3244,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextCaptureIdleTalk => 'Klepni pro mluvení';
 
   @override
-  String get dailyOsNextCaptureListening => 'POSLOUCHÁM';
-
-  @override
   String get dailyOsNextCaptureListeningStatus => 'Poslouchám…';
 
   @override
@@ -3386,7 +3383,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRefineFooterHint =>
-      'Mluv, aby ses k plánu vrátil — změny se zobrazí jako diff, než se uplatní.';
+      'Mluv a přetvoř plán — každou změnu uvidíš, než se cokoli uloží.';
 
   @override
   String get dailyOsNextDayTitle => 'Tvůj den';
@@ -3453,9 +3450,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingEvening => 'Dobrý večer.';
-
-  @override
-  String get dailyOsNextGreetingHi => 'Ahoj 👋';
 
   @override
   String dailyOsNextGreetingHiName(String name) {
@@ -3700,9 +3694,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ NA ZÍTŘEK';
-
-  @override
-  String get dailyOsNextStandaloneTag => 'Časový blok';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {

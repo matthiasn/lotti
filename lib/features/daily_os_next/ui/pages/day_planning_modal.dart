@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
+import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_glass_action_bar.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
@@ -127,10 +129,20 @@ double _stepViewportHeight(BuildContext context, {bool hasBar = true}) {
   // sheet; the side sheet starts at the window's top edge. Steps without a
   // sticky bar (Drafting) reclaim its allowance so their content reaches
   // the sheet edge instead of stopping short of it.
-  final chrome = isBottomSheet
-      ? (hasBar ? 250.0 : 170.0)
-      : (hasBar ? 180.0 : 100.0);
-  return math.max(420, size.height - chrome);
+  // At large text scales the bar stacks its pills vertically, so its
+  // allowance grows.
+  final stackedBarExtra =
+      hasBar && dailyOsTextScaleOf(context) >= kDailyOsStackBarPillsScale
+      ? 64.0
+      : 0.0;
+  final chrome =
+      (isBottomSheet ? (hasBar ? 250.0 : 170.0) : (hasBar ? 180.0 : 100.0)) +
+      stackedBarExtra;
+  // A low floor: the step bodies handle squeeze themselves (the capture
+  // template falls back to a reverse scroll that keeps the orb above the
+  // fold) — a tall floor would instead shove the bottom-anchored orb
+  // under the sticky bar on short windows.
+  return math.max(280, size.height - chrome);
 }
 
 DateTime _capturedAtForDay(DateTime day) {
@@ -150,28 +162,38 @@ DateTime _capturedAtForDay(DateTime day) {
 /// the thumb.
 Widget _layoutBarPills(BuildContext context, List<Widget> pills) {
   final tokens = context.designTokens;
-  final wide =
-      MediaQuery.sizeOf(context).width >= WoltModalConfig.pageBreakpoint;
-  final textScale = MediaQuery.textScalerOf(context).scale(100) / 100;
-  if (!wide && pills.length > 1 && textScale >= 1.5) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        for (var i = 0; i < pills.length; i++) ...[
-          if (i > 0) SizedBox(height: tokens.spacing.step3),
-          pills[i],
+  final textScale = dailyOsTextScaleOf(context);
+  return LayoutBuilder(
+    builder: (context, constraints) {
+      // Decide from the bar's own width, not the screen: the desktop side
+      // sheet is 480–720px wide on an arbitrarily wide screen.
+      final wide = constraints.maxWidth >= WoltModalConfig.pageBreakpoint;
+      // Large accessibility text stacks multi-pill rows on ANY host —
+      // intrinsic side-by-side pills overflow narrow panels and verbose
+      // locales alike.
+      if (pills.length > 1 && textScale >= kDailyOsStackBarPillsScale) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            for (var i = 0; i < pills.length; i++) ...[
+              if (i > 0) SizedBox(height: tokens.spacing.step3),
+              pills[i],
+            ],
+          ],
+        );
+      }
+      return Row(
+        mainAxisAlignment: wide
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        children: [
+          for (var i = 0; i < pills.length; i++) ...[
+            if (i > 0) SizedBox(width: tokens.spacing.step3),
+            if (wide) Flexible(child: pills[i]) else Expanded(child: pills[i]),
+          ],
         ],
-      ],
-    );
-  }
-  return Row(
-    mainAxisAlignment: wide ? MainAxisAlignment.end : MainAxisAlignment.start,
-    children: [
-      for (var i = 0; i < pills.length; i++) ...[
-        if (i > 0) SizedBox(width: tokens.spacing.step3),
-        if (wide) pills[i] else Expanded(child: pills[i]),
-      ],
-    ],
+      );
+    },
   );
 }
 
@@ -263,7 +285,11 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final state = ref.watch(captureControllerProvider);
+    // The bar only cares about phase/transcript; meter ticks (amplitudes
+    // at stream rate) must not rebuild the sticky bar.
+    final state = ref.watch(
+      captureControllerProvider.select((s) => s.withoutMeter),
+    );
 
     final Widget actions;
     switch (state.phase) {
@@ -584,9 +610,14 @@ class _RefineStepBar extends ConsumerWidget {
     final messages = context.messages;
     final state = ref.watch(refineControllerProvider(draft));
     final notifier = ref.read(refineControllerProvider(draft).notifier);
+    // Reviewing also blocks "Looks good": tapping it there would silently
+    // discard a recorded-but-unsubmitted transcript.
     final busy =
         state.phase == RefinePhase.listening ||
-        state.phase == RefinePhase.thinking;
+        state.phase == RefinePhase.thinking ||
+        state.phase == RefinePhase.reviewing;
+    final hasPendingDiff =
+        state.diff != null && state.phase == RefinePhase.diffReady;
 
     return DayPlanningGlassActionBar(
       topSlot: DayPlanningThinkingShader(
@@ -597,7 +628,7 @@ class _RefineStepBar extends ConsumerWidget {
           icon: Icons.undo_rounded,
           label: messages.dailyOsNextRefineRevert,
           fillColor: tokens.colors.surface.focusPressed,
-          enabled: state.diff != null && state.phase == RefinePhase.diffReady,
+          enabled: hasPendingDiff,
           onTap: notifier.revert,
         ),
         DsGlassPill(
@@ -606,7 +637,13 @@ class _RefineStepBar extends ConsumerWidget {
           fillColor: tokens.colors.interactive.enabled,
           foregroundColor: tokens.colors.text.onInteractiveAlert,
           enabled: !busy,
-          onTap: () => Navigator.of(context).pop(),
+          // With a pending diff on screen, "Looks good" must PERSIST it —
+          // accept() resolves all pending rows via the agent and flips to
+          // accepted, whose listener pops with the final plan. A bare pop
+          // would silently discard everything the user just approved.
+          onTap: hasPendingDiff
+              ? () => unawaited(notifier.accept())
+              : () => Navigator.of(context).pop(),
         ),
       ]),
     );

@@ -66,7 +66,7 @@ abstract class DayAgentInterface {
   ///
   /// Returns the placed blocks, the day's energy bands, and capacity
   /// metadata. Every block of [TimeBlockType.ai] carries a verbatim
-  /// `reason` string — surfaced in the WhyChip popover.
+  /// `reason` string — surfaced in the agenda why tooltip.
   ///
   /// [isCancelled] lets long-running implementations (the real agent
   /// polls the DB for up to a minute waiting for the drafting wake to

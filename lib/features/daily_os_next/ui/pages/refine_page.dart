@@ -7,6 +7,8 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/refine_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/refine_voice_sync.dart';
+import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/diff_row.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
@@ -38,34 +40,19 @@ class RefineModalContent extends ConsumerWidget {
     final tokens = context.designTokens;
     final state = ref.watch(refineControllerProvider(draft));
     final notifier = ref.read(refineControllerProvider(draft).notifier);
-    final captureState = ref.watch(captureControllerProvider);
+    // Only the phase here — the orb zone below watches the meter fields
+    // itself so amplitude ticks don't rebuild the plan list.
+    final capturePhase = ref.watch(
+      captureControllerProvider.select((s) => s.phase),
+    );
     final captureNotifier = ref.read(captureControllerProvider.notifier);
 
-    ref
-      ..listen<RefineState>(refineControllerProvider(draft), (previous, next) {
-        if (next.phase == RefinePhase.accepted) {
-          Navigator.of(context).pop(next.currentPlan);
-        }
-      })
-      ..listen<CaptureState>(captureControllerProvider, (previous, next) {
-        final refineNotifier = ref.read(
-          refineControllerProvider(draft).notifier,
-        );
-        if (next.phase == CapturePhase.listening ||
-            next.phase == CapturePhase.transcribing) {
-          if (next.partialTranscript.trim().isNotEmpty) {
-            refineNotifier.updateActiveTranscript(next.partialTranscript);
-          }
-          return;
-        }
-        if (next.phase == CapturePhase.captured) {
-          refineNotifier.reviewTranscript(next.transcript);
-          return;
-        }
-        if (next.phase == CapturePhase.error) {
-          refineNotifier.cancelListening();
-        }
-      });
+    ref.listen<RefineState>(refineControllerProvider(draft), (previous, next) {
+      if (next.phase == RefinePhase.accepted) {
+        Navigator.of(context).pop(next.currentPlan);
+      }
+    });
+    listenCaptureForRefine(ref, draft);
 
     return Center(
       child: ConstrainedBox(
@@ -79,7 +66,7 @@ class RefineModalContent extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              if (MediaQuery.textScalerOf(context).scale(100) < 180) ...[
+              if (dailyOsTextScaleOf(context) < kDailyOsHideHeaderScale) ...[
                 // Reserved eyebrow slot mirrors the capture header anatomy
                 // so the headline baseline sits at the same height on
                 // every step.
@@ -92,18 +79,27 @@ class RefineModalContent extends ConsumerWidget {
                 child: _RefineZone(draft: draft, state: state),
               ),
               SizedBox(height: tokens.spacing.step4),
-              VoiceOrbZone(
-                phase: _capturePhaseFor(state.phase, captureState.phase),
-                caption: _caption(context, state.phase),
-                captionColor: _captionColor(tokens, state.phase),
-                semanticLabel: _voiceLabel(context, state.phase),
-                amplitudes: captureState.amplitudes,
-                dbfs: captureState.dbfs,
-                onTap: () => _handleVoiceTap(
-                  refineState: state,
-                  refineNotifier: notifier,
-                  captureNotifier: captureNotifier,
-                ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final (amplitudes, dbfs) = ref.watch(
+                    captureControllerProvider.select(
+                      (s) => (s.amplitudes, s.dbfs),
+                    ),
+                  );
+                  return VoiceOrbZone(
+                    phase: refineOrbPhaseFor(state.phase, capturePhase),
+                    caption: _caption(context, state.phase),
+                    captionColor: _captionColor(tokens, state.phase),
+                    semanticLabel: refineVoiceLabel(context, state.phase),
+                    amplitudes: amplitudes,
+                    dbfs: dbfs,
+                    onTap: () => handleRefineVoiceTap(
+                      refineState: state,
+                      refineNotifier: notifier,
+                      captureNotifier: captureNotifier,
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -139,62 +135,6 @@ class RefineModalContent extends ConsumerWidget {
       RefinePhase.idle ||
       RefinePhase.diffReady => tokens.colors.text.lowEmphasis,
     };
-  }
-
-  void _handleVoiceTap({
-    required RefineState refineState,
-    required RefineController refineNotifier,
-    required CaptureController captureNotifier,
-  }) {
-    switch (refineState.phase) {
-      case RefinePhase.idle:
-      case RefinePhase.reviewing:
-      case RefinePhase.diffReady:
-        captureNotifier.reset();
-        captureNotifier.skipRealtimeTranscriptVerificationForNextCapture();
-        refineNotifier.beginListening(
-          resetTranscript: refineState.phase != RefinePhase.diffReady,
-        );
-        unawaited(captureNotifier.toggle());
-      case RefinePhase.listening:
-        unawaited(captureNotifier.toggle());
-      case RefinePhase.thinking:
-      case RefinePhase.accepted:
-        break;
-    }
-  }
-
-  CapturePhase _capturePhaseFor(RefinePhase phase, CapturePhase capturePhase) {
-    switch (phase) {
-      case RefinePhase.idle:
-      case RefinePhase.accepted:
-        return CapturePhase.idle;
-      case RefinePhase.thinking:
-        return CapturePhase.transcribing;
-      case RefinePhase.reviewing:
-        return CapturePhase.captured;
-      case RefinePhase.listening:
-        return capturePhase == CapturePhase.listening
-            ? CapturePhase.listening
-            : CapturePhase.idle;
-      case RefinePhase.diffReady:
-        return CapturePhase.captured;
-    }
-  }
-
-  String _voiceLabel(BuildContext context, RefinePhase phase) {
-    switch (phase) {
-      case RefinePhase.idle:
-      case RefinePhase.diffReady:
-        return context.messages.dailyOsNextCaptureVoiceButtonStart;
-      case RefinePhase.reviewing:
-        return context.messages.dailyOsNextCaptureVoiceButtonReset;
-      case RefinePhase.listening:
-        return context.messages.dailyOsNextCaptureVoiceButtonStop;
-      case RefinePhase.thinking:
-      case RefinePhase.accepted:
-        return context.messages.dailyOsNextCaptureVoiceButtonReset;
-    }
   }
 }
 
@@ -479,29 +419,15 @@ class _RefinementPanel extends ConsumerWidget {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
     final notifier = ref.read(refineControllerProvider(draft).notifier);
-    final captureState = ref.watch(captureControllerProvider);
+    // Only the phase here — orb and waveform watch the meter fields
+    // themselves so amplitude ticks don't rebuild the whole panel.
+    final capturePhase = ref.watch(
+      captureControllerProvider.select((s) => s.phase),
+    );
     final captureNotifier = ref.read(captureControllerProvider.notifier);
     final messages = context.messages;
 
-    ref.listen<CaptureState>(captureControllerProvider, (previous, next) {
-      final refineNotifier = ref.read(refineControllerProvider(draft).notifier);
-      if (next.phase == CapturePhase.listening ||
-          next.phase == CapturePhase.transcribing) {
-        if (next.partialTranscript.trim().isNotEmpty) {
-          refineNotifier.updateActiveTranscript(next.partialTranscript);
-        }
-        return;
-      }
-
-      if (next.phase == CapturePhase.captured) {
-        refineNotifier.reviewTranscript(next.transcript);
-        return;
-      }
-
-      if (next.phase == CapturePhase.error) {
-        refineNotifier.cancelListening();
-      }
-    });
+    listenCaptureForRefine(ref, draft);
 
     final content = SingleChildScrollView(
       child: Column(
@@ -512,23 +438,33 @@ class _RefinementPanel extends ConsumerWidget {
             messages.dailyOsNextRefineOverline,
             style: calmEyebrowStyle(tokens, color: teal),
           ),
-          SizedBox(height: tokens.spacing.step4),
+          // step6 clearance: the listening shader spills past the orb's
+          // layout field (which no longer reserves the old +128 padding),
+          // so the neighbours need room for it to breathe.
+          SizedBox(height: tokens.spacing.step6),
           Center(
-            child: VoiceButton(
-              phase: _capturePhaseFor(state.phase, captureState.phase),
-              dbfs: captureState.dbfs,
-              semanticLabel: _voiceLabel(context, state.phase),
-              size: 88,
-              onTap: () {
-                _handleVoiceTap(
-                  refineState: state,
-                  refineNotifier: notifier,
-                  captureNotifier: captureNotifier,
+            child: Consumer(
+              builder: (context, ref, _) {
+                final dbfs = ref.watch(
+                  captureControllerProvider.select((s) => s.dbfs),
+                );
+                return VoiceButton(
+                  phase: refineOrbPhaseFor(state.phase, capturePhase),
+                  dbfs: dbfs,
+                  semanticLabel: refineVoiceLabel(context, state.phase),
+                  size: 88,
+                  onTap: () {
+                    handleRefineVoiceTap(
+                      refineState: state,
+                      refineNotifier: notifier,
+                      captureNotifier: captureNotifier,
+                    );
+                  },
                 );
               },
             ),
           ),
-          SizedBox(height: tokens.spacing.step4),
+          SizedBox(height: tokens.spacing.step6),
           _StatusLine(state: state),
           if (state.problem != null) ...[
             SizedBox(height: tokens.spacing.step3),
@@ -539,10 +475,17 @@ class _RefinementPanel extends ConsumerWidget {
           if (state.phase == RefinePhase.listening) ...[
             SizedBox(height: tokens.spacing.step3),
             Center(
-              child: LiveWaveform(
-                amplitudes: captureState.amplitudes,
-                width: 180,
-                height: 22,
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final amplitudes = ref.watch(
+                    captureControllerProvider.select((s) => s.amplitudes),
+                  );
+                  return LiveWaveform(
+                    amplitudes: amplitudes,
+                    width: 180,
+                    height: 22,
+                  );
+                },
               ),
             ),
           ],
@@ -584,61 +527,6 @@ class _RefinementPanel extends ConsumerWidget {
       padding: EdgeInsets.all(tokens.spacing.step5),
       child: content,
     );
-  }
-
-  void _handleVoiceTap({
-    required RefineState refineState,
-    required RefineController refineNotifier,
-    required CaptureController captureNotifier,
-  }) {
-    switch (refineState.phase) {
-      case RefinePhase.idle:
-      case RefinePhase.reviewing:
-      case RefinePhase.diffReady:
-        captureNotifier.reset();
-        captureNotifier.skipRealtimeTranscriptVerificationForNextCapture();
-        refineNotifier.beginListening(
-          resetTranscript: refineState.phase != RefinePhase.diffReady,
-        );
-        unawaited(captureNotifier.toggle());
-      case RefinePhase.listening:
-        unawaited(captureNotifier.toggle());
-      case RefinePhase.thinking:
-      case RefinePhase.accepted:
-        break;
-    }
-  }
-
-  CapturePhase _capturePhaseFor(RefinePhase phase, CapturePhase capturePhase) {
-    switch (phase) {
-      case RefinePhase.idle:
-      case RefinePhase.thinking:
-      case RefinePhase.accepted:
-        return CapturePhase.idle;
-      case RefinePhase.reviewing:
-        return CapturePhase.captured;
-      case RefinePhase.listening:
-        return capturePhase == CapturePhase.listening
-            ? CapturePhase.listening
-            : CapturePhase.idle;
-      case RefinePhase.diffReady:
-        return CapturePhase.captured;
-    }
-  }
-
-  String _voiceLabel(BuildContext context, RefinePhase phase) {
-    switch (phase) {
-      case RefinePhase.idle:
-      case RefinePhase.diffReady:
-        return context.messages.dailyOsNextCaptureVoiceButtonStart;
-      case RefinePhase.reviewing:
-        return context.messages.dailyOsNextCaptureVoiceButtonReset;
-      case RefinePhase.listening:
-        return context.messages.dailyOsNextCaptureVoiceButtonStop;
-      case RefinePhase.thinking:
-      case RefinePhase.accepted:
-        return context.messages.dailyOsNextCaptureVoiceButtonReset;
-    }
   }
 }
 

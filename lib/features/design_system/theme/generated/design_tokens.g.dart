@@ -16,8 +16,8 @@ const DsTokens dsTokensLight = DsTokens(
       enabled: Color(0x0F000000),
       hover: Color(0x1F000000),
       focusPressed: Color(0x29000000),
-      selected: Color(0x292BA184),
-      active: Color(0x3D2BA184),
+      selected: Color(0x291F7963),
+      active: Color(0x3D1F7963),
     ),
     alert: DsColorsAlert(
       error: DsColorsAlertError(
@@ -60,10 +60,10 @@ const DsTokens dsTokensLight = DsTokens(
       background: Color(0xFFE1EEF7),
       backgroundRaised: Color(0xFFFFFFFF),
       row: Color(0xB3FFFFFF),
-      border: Color(0x382BA184),
-      borderSoft: Color(0x242BA184),
-      accent: Color(0xFF2BA184),
-      accentSoft: Color(0x242BA184),
+      border: Color(0x381F7963),
+      borderSoft: Color(0x241F7963),
+      accent: Color(0xFF1F7963),
+      accentSoft: Color(0x241F7963),
       footerWash: Color(0x0A000000),
       footerWashOpen: Color(0x05000000),
       rowBorder: Color(0x14000000),
@@ -112,8 +112,8 @@ const DsTokens dsTokensLight = DsTokens(
     ),
     conflict: DsColorsConflict(
       local: DsColorsConflictLocal(
-        color: Color(0xFF2BA184),
-        surface: Color(0x0F2BA184),
+        color: Color(0xFF1F7963),
+        surface: Color(0x0F1F7963),
       ),
       remote: DsColorsConflictRemote(
         color: Color(0xFF1CA3E3),
@@ -140,8 +140,8 @@ const DsTokens dsTokensLight = DsTokens(
     ),
     aiProvider: DsColorsAiProvider(
       gemini: DsColorsAiProviderGemini(
-        color: Color(0xFF2BA184),
-        surface: Color(0x242BA184),
+        color: Color(0xFF1F7963),
+        surface: Color(0x241F7963),
       ),
       openAi: DsColorsAiProviderOpenAi(
         color: Color(0xFFC97A55),

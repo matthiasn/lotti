@@ -160,7 +160,7 @@ void main() {
         expect(plan.bands, hasLength(3));
 
         // Every AI-placed block carries a reason — that's the contract
-        // the WhyChip popover relies on.
+        // the agenda why tooltip relies on.
         final aiBlocks = plan.blocks
             .where((b) => b.type == TimeBlockType.ai)
             .toList();

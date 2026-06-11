@@ -1576,7 +1576,6 @@
   "dailyOsNextCaptureIdleExample": "« Travail de fond ce matin, une balade après le déjeuner, les mails avant 17 h. »",
   "dailyOsNextCaptureIdleHint": "Tape pour parler · écris plutôt",
   "dailyOsNextCaptureIdleTalk": "Tape pour parler",
-  "dailyOsNextCaptureListening": "ÉCOUTE",
   "dailyOsNextCaptureListeningStatus": "À l’écoute…",
   "dailyOsNextCapturePastPrompt": "Tu veux encore suivre quelque chose du {date} ?",
   "dailyOsNextCaptureReconcileCta": "Vérifier",
@@ -1631,7 +1630,7 @@
   "dailyOsNextDayMenuInspectAgent": "Inspecter l'agent",
   "dailyOsNextDayMoreTooltip": "Plus",
   "dailyOsNextDayRefineCta": "Ajuster",
-  "dailyOsNextDayRefineFooterHint": "Parle pour réorganiser le plan — les changements apparaissent en diff avant d'être appliqués.",
+  "dailyOsNextDayRefineFooterHint": "Parle pour réorganiser le plan — tu verras chaque changement avant qu'il soit enregistré.",
   "dailyOsNextDayTitle": "Ta journée",
   "dailyOsNextDayWhyChipLabel": "POURQUOI",
   "dailyOsNextDayWrapUpCta": "Clore",
@@ -1660,7 +1659,6 @@
   "dailyOsNextGenericError": "Une erreur est survenue. Réessaie dans un instant.",
   "dailyOsNextGreetingAfternoon": "Bon après-midi.",
   "dailyOsNextGreetingEvening": "Bonsoir.",
-  "dailyOsNextGreetingHi": "Salut 👋",
   "dailyOsNextGreetingHiName": "Salut {name} 👋",
   "dailyOsNextGreetingMorning": "Bonjour.",
   "dailyOsNextKnowledgeConfirm": "Confirmer",
@@ -1765,7 +1763,6 @@
   "dailyOsNextShutdownSaveAndClose": "Enregistrer et fermer",
   "dailyOsNextShutdownTitle": "Clore la journée",
   "dailyOsNextShutdownTomorrowOverline": "✦ POUR DEMAIN",
-  "dailyOsNextStandaloneTag": "Bloc de temps",
   "dailyOsNextStateDueOnDate": "À rendre le {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

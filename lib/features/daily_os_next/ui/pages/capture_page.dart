@@ -7,6 +7,8 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
+import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
@@ -134,7 +136,11 @@ class _CaptureSurface extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final state = ref.watch(captureControllerProvider);
+    // Meter ticks (amplitudes/dbfs, many per second while listening) only
+    // rebuild the orb zone, which watches those fields itself.
+    final state = ref.watch(
+      captureControllerProvider.select((s) => s.withoutMeter),
+    );
 
     return Column(
       children: [
@@ -219,8 +225,7 @@ class _CaptureFlowBody extends ConsumerWidget {
     // pocket-phone viewport with the orb; remove it from layout entirely
     // (never height-clip it — a partially visible glyph reads as a
     // rendering defect) and let the zone + orb carry the screen.
-    final textScale = MediaQuery.textScalerOf(context).scale(100) / 100;
-    final showHeader = textScale < 1.8;
+    final showHeader = dailyOsTextScaleOf(context) < kDailyOsHideHeaderScale;
 
     final body = Column(
       children: [
@@ -265,21 +270,11 @@ class _CaptureFlowBody extends ConsumerWidget {
         if (!showHeader) {
           // Under squeeze the reverse scroll can cut content at the top
           // edge; dissolve it instead of slicing glyphs mid-x-height.
-          scroll = ShaderMask(
-            shaderCallback: (bounds) {
-              final lineHeight = MediaQuery.textScalerOf(
-                context,
-              ).scale(tokens.typography.lineHeight.bodyMedium);
-              final ramp = bounds.height <= 0
-                  ? 0.08
-                  : ((lineHeight * 1.2) / bounds.height).clamp(0.05, 0.3);
-              return LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
-                stops: [0, ramp],
-              ).createShader(bounds);
-            },
+          final lineHeight = MediaQuery.textScalerOf(
+            context,
+          ).scale(tokens.typography.lineHeight.bodyMedium);
+          scroll = EdgeFade(
+            rampExtent: lineHeight * 1.2,
             child: scroll,
           );
         }
@@ -587,16 +582,22 @@ class _TranscriptZone extends StatelessWidget {
 /// status caption, its color, and the semantic label per [CapturePhase].
 /// The caption is status only — actions live on the orb and the host's
 /// action bar.
-class _OrbZone extends StatelessWidget {
+///
+/// Watches the meter fields itself (the parent watches `withoutMeter`),
+/// so amplitude ticks rebuild only this zone.
+class _OrbZone extends ConsumerWidget {
   const _OrbZone({required this.state, required this.onTap});
 
   final CaptureState state;
   final Future<void> Function() onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final (amplitudes, dbfs) = ref.watch(
+      captureControllerProvider.select((s) => (s.amplitudes, s.dbfs)),
+    );
     final (caption, captionColor) = switch (state.phase) {
       CapturePhase.idle || CapturePhase.error => (
         voiceIdleHint(context),
@@ -621,8 +622,8 @@ class _OrbZone extends StatelessWidget {
       caption: caption,
       captionColor: captionColor,
       semanticLabel: _voiceButtonLabel(context, state.phase),
-      amplitudes: state.amplitudes,
-      dbfs: state.dbfs,
+      amplitudes: amplitudes,
+      dbfs: dbfs,
       onTap: onTap,
     );
   }

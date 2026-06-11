@@ -12,6 +12,7 @@ import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.d
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
@@ -291,6 +292,9 @@ class _DayFooter extends StatelessWidget {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
     final isDesktop = isDesktopLayout(context);
+    // Coaching copy yields the fold to actionable rows at large
+    // accessibility text sizes.
+    final showHint = dailyOsTextScaleOf(context) < kDailyOsHideCoachingScale;
     final hint = Text(
       context.messages.dailyOsNextDayRefineFooterHint,
       style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -319,8 +323,11 @@ class _DayFooter extends StatelessWidget {
                   constraints: const BoxConstraints(maxWidth: 760),
                   child: Row(
                     children: [
-                      Expanded(child: hint),
-                      SizedBox(width: tokens.spacing.step4),
+                      if (showHint) ...[
+                        Expanded(child: hint),
+                        SizedBox(width: tokens.spacing.step4),
+                      ] else
+                        const Spacer(),
                       actions,
                     ],
                   ),
@@ -329,8 +336,10 @@ class _DayFooter extends StatelessWidget {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  hint,
-                  SizedBox(height: tokens.spacing.step3),
+                  if (showHint) ...[
+                    hint,
+                    SizedBox(height: tokens.spacing.step3),
+                  ],
                   actions,
                 ],
               ),

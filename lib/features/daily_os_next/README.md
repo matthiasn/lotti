@@ -484,8 +484,8 @@ stateDiagram-v2
   the Actual lane are the filled-in paint (full category stripe, 18% tint
   dark / 30% light, strong titles, a green check when done) — doing is
   what makes a block alive. Both lanes share one mono `HH:mm–HH:mm`
-  subtitle voice, and neither renders WhyChips (placement reasons live on
-  the agenda's sparkle tooltip). Block content is height-tiered so glyphs
+  subtitle voice, and neither renders a why affordance (placement reasons
+  live on the agenda's sparkle tooltip). Block content is height-tiered so glyphs
   never shear: micro blocks show fill+stripe only, short blocks one
   centered title line, taller blocks add the subtitle and a second title
   line. The timeline is clock-injectable (`package:clock` by default), and

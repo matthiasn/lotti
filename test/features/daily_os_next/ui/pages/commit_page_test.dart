@@ -22,7 +22,29 @@ const _category = DayAgentCategory(
 
 DraftPlan _planWithItems() => DraftPlan(
   dayDate: DateTime(2026, 5, 26),
-  blocks: const [],
+  // The recap donut/note derive their total from the blocks (the stored
+  // scheduledMinutes can drift), so the fixture carries real placements:
+  // 120m + 60m = 180m of the 240m capacity.
+  blocks: [
+    TimeBlock(
+      id: 'blk_1',
+      title: 'Focus block',
+      start: DateTime(2026, 5, 26, 9),
+      end: DateTime(2026, 5, 26, 11),
+      type: TimeBlockType.ai,
+      state: TimeBlockState.drafted,
+      category: _category,
+    ),
+    TimeBlock(
+      id: 'blk_2',
+      title: 'Review block',
+      start: DateTime(2026, 5, 26, 11),
+      end: DateTime(2026, 5, 26, 12),
+      type: TimeBlockType.ai,
+      state: TimeBlockState.drafted,
+      category: _category,
+    ),
+  ],
   bands: const [],
   capacityMinutes: 240,
   scheduledMinutes: 180,

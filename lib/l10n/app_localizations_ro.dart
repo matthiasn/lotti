@@ -3276,9 +3276,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureIdleTalk => 'Apăsați pentru a vorbi';
 
   @override
-  String get dailyOsNextCaptureListening => 'ASCULT';
-
-  @override
   String get dailyOsNextCaptureListeningStatus => 'Se ascultă…';
 
   @override
@@ -3419,7 +3416,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRefineFooterHint =>
-      'Vorbește pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.';
+      'Vorbiți pentru a reorganiza planul — vedeți fiecare schimbare înainte ca ceva să fie salvat.';
 
   @override
   String get dailyOsNextDayTitle => 'Ziua dvs.';
@@ -3486,9 +3483,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingEvening => 'Bună seara.';
-
-  @override
-  String get dailyOsNextGreetingHi => 'Salut 👋';
 
   @override
   String dailyOsNextGreetingHiName(String name) {
@@ -3734,9 +3728,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ PENTRU MÂINE';
-
-  @override
-  String get dailyOsNextStandaloneTag => 'Bloc de timp';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {

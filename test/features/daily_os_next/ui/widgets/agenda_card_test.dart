@@ -88,7 +88,8 @@ void main() {
         find.text('Deck reviewed by Sarah, sent to leadership.'),
         findsOneWidget,
       );
-      expect(find.text('120m'), findsOneWidget);
+      // Estimates share the compact duration voice ("2h", not "120m").
+      expect(find.text('2h'), findsOneWidget);
       expect(find.text('Open'), findsNothing);
     });
 

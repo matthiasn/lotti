@@ -185,6 +185,15 @@ DraftPlan _plan() {
     scheduledMinutes: 525,
     agendaItems: const [
       AgendaItem(
+        id: 'ag-review',
+        title: 'Morning review',
+        category: _admin,
+        linkedBlockIds: ['blk-review'],
+        totalEstimateMinutes: 30,
+        progress: 1,
+        state: AgendaItemState.done,
+      ),
+      AgendaItem(
         id: 'ag-deep',
         title: 'Planner deep work',
         category: _deepWork,
@@ -204,13 +213,25 @@ DraftPlan _plan() {
         state: AgendaItemState.done,
       ),
       AgendaItem(
+        id: 'ag-lunch',
+        title: 'Lunch + walk',
+        category: _health,
+        linkedBlockIds: ['blk-lunch'],
+        totalEstimateMinutes: 60,
+        progress: 1,
+        state: AgendaItemState.done,
+      ),
+      // The 13:05–14:55 recording on the timeline closed this out — the
+      // agenda must agree with the lane (no cross-view contradictions).
+      AgendaItem(
         id: 'ag-followup',
         title: 'Client follow-up + invoices',
         category: _client,
         linkedBlockIds: ['blk-followup'],
         totalEstimateMinutes: 90,
-        progress: 0.8,
-        state: AgendaItemState.inProgress,
+        progress: 1,
+        state: AgendaItemState.done,
+        outcome: 'Invoices out, follow-up notes in the thread',
       ),
       AgendaItem(
         id: 'ag-slides',
@@ -497,6 +518,18 @@ Future<void> _switchToDayView(WidgetTester tester) async {
   });
 }
 
+/// Pages the phone timeline to the recorded lane via the controller — a
+/// gesture drag is text-scale-dependent (at 2x the same offset no longer
+/// crosses the snap threshold and silently leaves the planned lane in
+/// frame, producing a duplicate shot).
+Future<void> _showRecordedLane(WidgetTester tester) async {
+  await withClock(Clock.fixed(_now), () async {
+    final pageView = tester.widget<PageView>(find.byType(PageView));
+    pageView.controller!.jumpToPage(1);
+    await settleFrames(tester);
+  });
+}
+
 void main() {
   if (!screenshotCaptureEnabled) {
     test(
@@ -531,10 +564,7 @@ void main() {
     await _pumpDayPage(tester, device: miniDevice);
     await _switchToDayView(tester);
     // Mobile timeline pages between planned and recorded lanes.
-    await withClock(Clock.fixed(_now), () async {
-      await tester.drag(find.byType(PageView), const Offset(-340, 0));
-      await settleFrames(tester);
-    });
+    await _showRecordedLane(tester);
     await captureScreenshot(tester, 'day_mini_03_timeline_recorded_dark');
   });
 
@@ -560,5 +590,26 @@ void main() {
   testWidgets('mini agenda — dark, 1.3x text', (tester) async {
     await _pumpDayPage(tester, device: miniDevice, textScale: 1.3);
     await captureScreenshot(tester, 'day_mini_06_agenda_dark_ts13');
+  });
+
+  // 2.0x — the upper end of common accessibility text sizes.
+  testWidgets('mini agenda — dark, 2.0x text', (tester) async {
+    await _pumpDayPage(tester, device: miniDevice, textScale: 2);
+    await captureScreenshot(tester, 'day_mini_07_agenda_dark_ts20');
+  });
+
+  testWidgets('mini timeline — dark, 2.0x text', (tester) async {
+    await _pumpDayPage(tester, device: miniDevice, textScale: 2);
+    await _switchToDayView(tester);
+    await captureScreenshot(tester, 'day_mini_08_timeline_dark_ts20');
+  });
+
+  testWidgets('mini timeline recorded lane — dark, 2.0x text', (
+    tester,
+  ) async {
+    await _pumpDayPage(tester, device: miniDevice, textScale: 2);
+    await _switchToDayView(tester);
+    await _showRecordedLane(tester);
+    await captureScreenshot(tester, 'day_mini_09_timeline_recorded_ts20');
   });
 }

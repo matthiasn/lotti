@@ -5448,12 +5448,6 @@ abstract class AppLocalizations {
   /// **'Tap to talk'**
   String get dailyOsNextCaptureIdleTalk;
 
-  /// No description provided for @dailyOsNextCaptureListening.
-  ///
-  /// In en, this message translates to:
-  /// **'LISTENING'**
-  String get dailyOsNextCaptureListening;
-
   /// No description provided for @dailyOsNextCaptureListeningStatus.
   ///
   /// In en, this message translates to:
@@ -5709,7 +5703,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextDayRefineFooterHint.
   ///
   /// In en, this message translates to:
-  /// **'Talk to reshape the plan — moves, drops, and buffers are shown as a diff before they stick.'**
+  /// **'Talk to reshape the plan — you\'ll see every change before anything is saved.'**
   String get dailyOsNextDayRefineFooterHint;
 
   /// No description provided for @dailyOsNextDayTitle.
@@ -5831,12 +5825,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Good evening.'**
   String get dailyOsNextGreetingEvening;
-
-  /// No description provided for @dailyOsNextGreetingHi.
-  ///
-  /// In en, this message translates to:
-  /// **'Hi 👋'**
-  String get dailyOsNextGreetingHi;
 
   /// No description provided for @dailyOsNextGreetingHiName.
   ///
@@ -6275,12 +6263,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'✦ FOR TOMORROW'**
   String get dailyOsNextShutdownTomorrowOverline;
-
-  /// No description provided for @dailyOsNextStandaloneTag.
-  ///
-  /// In en, this message translates to:
-  /// **'Time block'**
-  String get dailyOsNextStandaloneTag;
 
   /// No description provided for @dailyOsNextStateDueOnDate.
   ///

@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/learning_cards.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -134,18 +135,10 @@ class DraftingModalContent extends StatelessWidget {
 
     // Content scrolling past the sheet edge dissolves over the last ~36px
     // instead of being razor-cut at full brightness.
-    return ShaderMask(
-      shaderCallback: (bounds) {
-        final ramp = bounds.height <= 0
-            ? 0.06
-            : (36.0 / bounds.height).clamp(0.04, 0.3);
-        return LinearGradient(
-          begin: Alignment.bottomCenter,
-          end: Alignment.topCenter,
-          colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
-          stops: [0, ramp],
-        ).createShader(bounds);
-      },
+    return EdgeFade(
+      rampExtent: 36,
+      fadeTop: false,
+      minFraction: 0.04,
       child: SingleChildScrollView(
         // Extra bottom padding so the last learning-card line clears the
         // fade band when scrolled to the end.

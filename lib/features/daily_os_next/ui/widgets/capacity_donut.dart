@@ -67,24 +67,27 @@ class CapacityDonut extends StatelessWidget {
     return scheduledMinutes / capacityMinutes;
   }
 
-  /// Compact decimal-hour label, e.g. `5.3h`, `4h`.
-  static String formatDecimalHours(int minutes) {
-    final hours = minutes / 60;
-    final rounded = (hours * 10).round() / 10;
-    if (rounded == rounded.roundToDouble()) return '${rounded.round()}h';
-    return '${rounded.toStringAsFixed(1)}h';
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ratio = ratioFor(scheduledMinutes, capacityMinutes);
+    final hasCapacity = capacityMinutes > 0;
+    final remaining = capacityMinutes - scheduledMinutes;
+    // The WORD must always be honest — [neutral] only suppresses the
+    // alarm color, never flips "over" into "left" (a no-plan evening with
+    // 9h tracked against an 8h day is over, not "1h LEFT").
+    final isOver = hasCapacity && remaining < 0;
     final over = !neutral && ratio > 1.0;
     final overColor = tokens.colors.alert.error.defaultColor;
 
-    final remaining = capacityMinutes - scheduledMinutes;
-    final centerLabel = formatMinutesCompact(remaining.abs());
-    final eyebrow = over
+    // Without a meaningful capacity there is no remainder to narrate —
+    // show the scheduled total with no eyebrow word.
+    final centerLabel = hasCapacity
+        ? formatMinutesCompact(remaining.abs())
+        : formatMinutesCompact(scheduledMinutes);
+    final eyebrow = !hasCapacity
+        ? ''
+        : isOver
         ? context.messages.dailyOsNextAgendaDonutOver
         : context.messages.dailyOsNextAgendaDonutLeft;
 
@@ -119,18 +122,24 @@ class CapacityDonut extends StatelessWidget {
               children: [
                 Text(
                   centerLabel,
+                  maxLines: 1,
                   style: calmDisplayStyle(tokens).copyWith(
-                    fontSize: size > 100 ? 22 : 18,
+                    fontSize: size > 100
+                        ? 22
+                        : size >= 80
+                        ? 18
+                        : 13,
                     color: over ? overColor : tokens.colors.text.highEmphasis,
                   ),
                 ),
-                Text(
-                  eyebrow.toUpperCase(),
-                  style: calmEyebrowStyle(
-                    tokens,
-                    color: over ? overColor : tokens.colors.text.lowEmphasis,
-                  ).copyWith(fontSize: 10),
-                ),
+                if (eyebrow.isNotEmpty)
+                  Text(
+                    eyebrow.toUpperCase(),
+                    style: calmEyebrowStyle(
+                      tokens,
+                      color: over ? overColor : tokens.colors.text.lowEmphasis,
+                    ).copyWith(fontSize: 10),
+                  ),
               ],
             ),
           ),

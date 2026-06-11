@@ -3247,9 +3247,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextCaptureIdleTalk => 'Tippen zum Sprechen';
 
   @override
-  String get dailyOsNextCaptureListening => 'HÖRE ZU';
-
-  @override
   String get dailyOsNextCaptureListeningStatus => 'Höre zu…';
 
   @override
@@ -3390,7 +3387,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextDayRefineFooterHint =>
-      'Sprich, um den Plan zu verschieben — Änderungen erscheinen als Diff, bevor sie übernommen werden.';
+      'Sprich, um den Plan umzubauen — du siehst jede Änderung, bevor etwas gespeichert wird.';
 
   @override
   String get dailyOsNextDayTitle => 'Dein Tag';
@@ -3457,9 +3454,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextGreetingEvening => 'Guten Abend.';
-
-  @override
-  String get dailyOsNextGreetingHi => 'Hallo 👋';
 
   @override
   String dailyOsNextGreetingHiName(String name) {
@@ -3706,9 +3700,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ FÜR MORGEN';
-
-  @override
-  String get dailyOsNextStandaloneTag => 'Zeitblock';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {

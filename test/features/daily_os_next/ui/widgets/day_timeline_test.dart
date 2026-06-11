@@ -8,7 +8,6 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -360,7 +359,7 @@ void main() {
       },
     );
 
-    testWidgets('timeline blocks never render WhyChips (agenda owns why)', (
+    testWidgets('timeline blocks never render a why affordance', (
       tester,
     ) async {
       _setView(tester, const Size(1280, 1200));
@@ -377,7 +376,7 @@ void main() {
 
       // Placement reasons surface on the agenda's sparkle tooltip; the
       // duration-sized timeline boxes stay text-light.
-      expect(find.byType(WhyChip), findsNothing);
+      expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
     });
 
     testWidgets('now-line renders inside the visible window', (tester) async {
@@ -924,7 +923,7 @@ void main() {
 
     testWidgets(
       'tracked blocks are the alive treatment: full category stripe and '
-      'fill, green check when done, mono time range, no WhyChip',
+      'fill, green check when done, mono time range, no why affordance',
       (tester) async {
         _setView(tester, const Size(1280, 900));
 
@@ -942,7 +941,7 @@ void main() {
                   type: TimeBlockType.manual,
                   state: TimeBlockState.completed,
                   category: _work,
-                  reason: 'should never surface as a WhyChip',
+                  reason: 'should never surface a why affordance',
                 ),
               ],
               clock: () => DateTime(2026, 5, 25, 9, 15),
@@ -977,7 +976,7 @@ void main() {
         // Done sessions get the green check.
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
         // Tracked blocks never surface agent reasoning.
-        expect(find.byType(WhyChip), findsNothing);
+        expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
         // The mono time range carries the recorded voice (no suffix —
         // the lane header already says Actual).
         final subtitle = tester.widget<Text>(find.text('09:00\u201310:30'));

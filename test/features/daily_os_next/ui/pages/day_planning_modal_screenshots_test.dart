@@ -20,14 +20,10 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
-import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -45,30 +41,10 @@ import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:path/path.dart' as p;
 
-const ValueKey<String> _boundaryKey = ValueKey<String>('day-planning-shot');
+import '../../screenshot_harness.dart';
+
 final DateTime _now = DateTime(2026, 6, 7, 9, 41);
-
-/// Review-design device matrix. Logical sizes of real hardware so layout
-/// verdicts transfer to devices; capture stays at pixelRatio 2 for sane
-/// file sizes.
-class _Device {
-  const _Device(this.name, this.size, this.devicePixelRatio);
-
-  final String name;
-  final Size size;
-  final double devicePixelRatio;
-
-  bool get isPhone => size.width < 560;
-}
-
-const _mini = _Device('mini', Size(375, 812), 3);
-const _pro = _Device('pro', Size(402, 874), 3);
-const _proMax = _Device('promax', Size(440, 956), 3);
-const _desktop = _Device('desktop', Size(1440, 900), 2);
-
-const List<_Device> _allDevices = [_mini, _pro, _proMax, _desktop];
 
 const String _shortUtterance = 'Tomorrow I want to start with deep work';
 
@@ -229,7 +205,7 @@ Widget _app({
   double textScale = 1.0,
 }) {
   return RepaintBoundary(
-    key: _boundaryKey,
+    key: screenshotBoundaryKey,
     child: ProviderScope(
       overrides: overrides,
       child: MediaQuery(
@@ -256,35 +232,6 @@ Widget _app({
   );
 }
 
-Future<void> _capture(WidgetTester tester, String name) async {
-  final boundary =
-      tester.element(find.byKey(_boundaryKey)).findRenderObject()!
-          as RenderRepaintBoundary;
-  await tester.runAsync(() async {
-    final image = await boundary.toImage(pixelRatio: 2);
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    final dir =
-        Platform.environment['LOTTI_SCREENSHOT_DIR'] ??
-        p.join('screenshots', 'daily_os_next');
-    final file = File(p.join(dir, '$name.png'));
-    await file.parent.create(recursive: true);
-    await file.writeAsBytes(
-      byteData!.buffer.asUint8List(
-        byteData.offsetInBytes,
-        byteData.lengthInBytes,
-      ),
-      flush: true,
-    );
-    stdout.writeln('wrote screenshot: ${file.path}');
-  });
-}
-
-Future<void> _settle(WidgetTester tester) async {
-  for (var i = 0; i < 14; i++) {
-    await tester.pump(const Duration(milliseconds: 80));
-  }
-}
-
 AppLocalizations _messages(WidgetTester tester) =>
     tester.element(find.byType(DayPlanningGlassActionBar)).messages;
 
@@ -293,17 +240,13 @@ AppLocalizations _messages(WidgetTester tester) =>
 Future<void> _openModal(
   WidgetTester tester, {
   required DayPlanningIntent intent,
-  required _Device device,
+  required ScreenshotDevice device,
   CaptureState capture = const CaptureState.idle(),
   MockDayAgent? agent,
   Brightness brightness = Brightness.dark,
   double textScale = 1.0,
 }) async {
-  tester.view
-    ..physicalSize = device.size * device.devicePixelRatio
-    ..devicePixelRatio = device.devicePixelRatio;
-  addTearDown(tester.view.resetPhysicalSize);
-  addTearDown(tester.view.resetDevicePixelRatio);
+  applyScreenshotDevice(tester, device);
 
   await withClock(Clock.fixed(_now), () async {
     await tester.pumpWidget(
@@ -340,14 +283,14 @@ Future<void> _openModal(
       ),
     );
     await tester.tap(find.text('open'));
-    await _settle(tester);
+    await settleFrames(tester);
   });
 }
 
 Future<void> _tapPill(WidgetTester tester, String label) async {
   await withClock(Clock.fixed(_now), () async {
     await tester.tap(find.widgetWithText(DsGlassPill, label));
-    await _settle(tester);
+    await settleFrames(tester);
   });
 }
 
@@ -356,10 +299,7 @@ void main() {
   // registers them process-wide with no way to unload — under very_good's
   // single-isolate optimizer that changes text metrics for unrelated tests.
   // So it only runs when explicitly requested for design review.
-  final captureEnabled =
-      Platform.environment['LOTTI_CAPTURE_SCREENSHOTS'] == 'true' ||
-      Platform.environment.containsKey('LOTTI_SCREENSHOT_DIR');
-  if (!captureEnabled) {
+  if (!screenshotCaptureEnabled) {
     test(
       'day-planning screenshot harness (opt-in)',
       () {},
@@ -371,64 +311,11 @@ void main() {
     return;
   }
 
-  setUpAll(() async {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    Future<ByteData> fontBytes(String path) async {
-      final bytes = await File(path).readAsBytes();
-      return ByteData.view(bytes.buffer);
-    }
-
-    final inter = FontLoader('Inter')
-      ..addFont(
-        fontBytes('assets/fonts/Inter/Inter-VariableFont_opsz,wght.ttf'),
-      );
-    final inconsolata = FontLoader('Inconsolata')
-      ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Regular.ttf'))
-      ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Medium.ttf'));
-    await inter.load();
-    await inconsolata.load();
-
-    final flutterRoot =
-        Platform.environment['FLUTTER_ROOT'] ?? '.fvm/flutter_sdk';
-    final iconFont = File(
-      p.join(
-        flutterRoot,
-        'bin',
-        'cache',
-        'artifacts',
-        'material_fonts',
-        'MaterialIcons-Regular.otf',
-      ),
-    );
-    if (iconFont.existsSync()) {
-      final icons = FontLoader('MaterialIcons')
-        ..addFont(fontBytes(iconFont.path));
-      await icons.load();
-    }
-
-    // The voice orb's mic glyph comes from the MDI webfont (package font →
-    // prefixed family). Without it the orb renders a tofu box.
-    final mdiFont = _findMdiFont(
-      Directory(
-        p.join(
-          Platform.environment['HOME'] ?? '',
-          '.pub-cache',
-          'hosted',
-          'pub.dev',
-        ),
-      ),
-    );
-    if (mdiFont != null) {
-      final mdi = FontLoader(
-        'packages/flutter_material_design_icons/Material Design Icons',
-      )..addFont(fontBytes(mdiFont.path));
-      await mdi.load();
-    }
-  });
+  setUpAll(loadScreenshotFonts);
 
   // ───────────────────────── Create ritual, per device ─────────────────────
 
-  for (final device in _allDevices) {
+  for (final device in allScreenshotDevices) {
     testWidgets('${device.name} capture idle — dark', (tester) async {
       await _openModal(
         tester,
@@ -436,7 +323,7 @@ void main() {
         device: device,
       );
       expect(find.byType(CaptureModalContent), findsOneWidget);
-      await _capture(tester, '${device.name}_01_capture_idle_dark');
+      await captureScreenshot(tester, '${device.name}_01_capture_idle_dark');
     });
 
     testWidgets('${device.name} capture listening (short) — dark', (
@@ -448,7 +335,7 @@ void main() {
         device: device,
         capture: _listening(partial: _shortUtterance),
       );
-      await _capture(tester, '${device.name}_02_listening_short_dark');
+      await captureScreenshot(tester, '${device.name}_02_listening_short_dark');
     });
 
     testWidgets('${device.name} capture listening (long) — dark', (
@@ -460,7 +347,7 @@ void main() {
         device: device,
         capture: _listening(partial: _longUtterance),
       );
-      await _capture(tester, '${device.name}_03_listening_long_dark');
+      await captureScreenshot(tester, '${device.name}_03_listening_long_dark');
     });
 
     testWidgets('${device.name} capture transcribing — dark', (tester) async {
@@ -470,7 +357,7 @@ void main() {
         device: device,
         capture: _transcribing,
       );
-      await _capture(tester, '${device.name}_04_transcribing_dark');
+      await captureScreenshot(tester, '${device.name}_04_transcribing_dark');
     });
 
     testWidgets('${device.name} capture captured — dark', (tester) async {
@@ -481,7 +368,7 @@ void main() {
         capture: _captured,
       );
       expect(find.byType(DsGlassPill), findsNWidgets(2));
-      await _capture(tester, '${device.name}_05_captured_dark');
+      await captureScreenshot(tester, '${device.name}_05_captured_dark');
     });
 
     testWidgets('${device.name} reconcile — dark', (tester) async {
@@ -493,7 +380,7 @@ void main() {
         agent: _fastAgent(),
       );
       await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
-      await _capture(tester, '${device.name}_06_reconcile_dark');
+      await captureScreenshot(tester, '${device.name}_06_reconcile_dark');
     });
 
     testWidgets('${device.name} drafting — dark', (tester) async {
@@ -506,7 +393,7 @@ void main() {
       );
       await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
       await _tapPill(tester, _messages(tester).dailyOsNextReconcileBuildDayCta);
-      await _capture(tester, '${device.name}_07_drafting_dark');
+      await captureScreenshot(tester, '${device.name}_07_drafting_dark');
     });
 
     testWidgets('${device.name} refine — dark', (tester) async {
@@ -516,7 +403,7 @@ void main() {
         device: device,
         agent: _fastAgent(),
       );
-      await _capture(tester, '${device.name}_08_refine_dark');
+      await captureScreenshot(tester, '${device.name}_08_refine_dark');
     });
   }
 
@@ -526,53 +413,53 @@ void main() {
     await _openModal(
       tester,
       intent: const DayPlanningCreate(),
-      device: _mini,
+      device: miniDevice,
       brightness: Brightness.light,
     );
-    await _capture(tester, 'mini_09_capture_idle_light');
+    await captureScreenshot(tester, 'mini_09_capture_idle_light');
   });
 
   testWidgets('mini captured — light', (tester) async {
     await _openModal(
       tester,
       intent: const DayPlanningCreate(),
-      device: _mini,
+      device: miniDevice,
       capture: _captured,
       brightness: Brightness.light,
     );
-    await _capture(tester, 'mini_10_captured_light');
+    await captureScreenshot(tester, 'mini_10_captured_light');
   });
 
   testWidgets('mini capture idle — dark, 1.3x text', (tester) async {
     await _openModal(
       tester,
       intent: const DayPlanningCreate(),
-      device: _mini,
+      device: miniDevice,
       textScale: 1.3,
     );
-    await _capture(tester, 'mini_11_capture_idle_dark_ts13');
+    await captureScreenshot(tester, 'mini_11_capture_idle_dark_ts13');
   });
 
   testWidgets('mini listening (long) — dark, 1.3x text', (tester) async {
     await _openModal(
       tester,
       intent: const DayPlanningCreate(),
-      device: _mini,
+      device: miniDevice,
       capture: _listening(partial: _longUtterance),
       textScale: 1.3,
     );
-    await _capture(tester, 'mini_12_listening_long_dark_ts13');
+    await captureScreenshot(tester, 'mini_12_listening_long_dark_ts13');
   });
 
   testWidgets('mini captured — dark, 1.3x text', (tester) async {
     await _openModal(
       tester,
       intent: const DayPlanningCreate(),
-      device: _mini,
+      device: miniDevice,
       capture: _captured,
       textScale: 1.3,
     );
-    await _capture(tester, 'mini_13_captured_dark_ts13');
+    await captureScreenshot(tester, 'mini_13_captured_dark_ts13');
   });
 
   // 2.0x — the upper end of common accessibility text sizes. The layout
@@ -587,11 +474,11 @@ void main() {
       await _openModal(
         tester,
         intent: const DayPlanningCreate(),
-        device: _mini,
+        device: miniDevice,
         capture: capture,
         textScale: 2,
       );
-      await _capture(tester, 'mini_20_${name}_dark_ts20');
+      await captureScreenshot(tester, 'mini_20_${name}_dark_ts20');
     });
   }
 
@@ -599,24 +486,24 @@ void main() {
     await _openModal(
       tester,
       intent: const DayPlanningCreate(),
-      device: _mini,
+      device: miniDevice,
       capture: _captured,
       agent: _fastAgent(),
       textScale: 2,
     );
     await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
-    await _capture(tester, 'mini_21_reconcile_dark_ts20');
+    await captureScreenshot(tester, 'mini_21_reconcile_dark_ts20');
   });
 
   testWidgets('mini refine — dark, 2.0x text', (tester) async {
     await _openModal(
       tester,
       intent: DayPlanningAdapt(_refineDraft()),
-      device: _mini,
+      device: miniDevice,
       agent: _fastAgent(),
       textScale: 2,
     );
-    await _capture(tester, 'mini_22_refine_dark_ts20');
+    await captureScreenshot(tester, 'mini_22_refine_dark_ts20');
   });
 
   testWidgets('capture with "Today so far" card — mini dark', (tester) async {
@@ -629,17 +516,13 @@ void main() {
       state: TimeBlockState.completed,
       category: _category,
     );
-    tester.view
-      ..physicalSize = _mini.size * _mini.devicePixelRatio
-      ..devicePixelRatio = _mini.devicePixelRatio;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
+    applyScreenshotDevice(tester, miniDevice);
 
     await withClock(Clock.fixed(_now), () async {
       await tester.pumpWidget(
         _app(
           brightness: Brightness.dark,
-          size: _mini.size,
+          size: miniDevice.size,
           overrides: [
             captureControllerProvider.overrideWith(
               () => _FakeCaptureController(const CaptureState.idle()),
@@ -653,32 +536,9 @@ void main() {
           ),
         ),
       );
-      await _settle(tester);
+      await settleFrames(tester);
     });
     expect(find.text('Client follow-up'), findsOneWidget);
-    await _capture(tester, 'mini_14_capture_today_so_far_dark');
+    await captureScreenshot(tester, 'mini_14_capture_today_so_far_dark');
   });
-}
-
-/// Locates the Material Design Icons webfont inside the pub cache without
-/// hard-coding the package version.
-File? _findMdiFont(Directory pubHosted) {
-  if (!pubHosted.existsSync()) return null;
-  final dirs =
-      pubHosted
-          .listSync()
-          .whereType<Directory>()
-          .where(
-            (d) =>
-                p.basename(d.path).startsWith('flutter_material_design_icons-'),
-          )
-          .toList()
-        ..sort((a, b) => b.path.compareTo(a.path));
-  for (final dir in dirs) {
-    final font = File(
-      p.join(dir.path, 'assets', 'materialdesignicons-webfont.ttf'),
-    );
-    if (font.existsSync()) return font;
-  }
-  return null;
 }

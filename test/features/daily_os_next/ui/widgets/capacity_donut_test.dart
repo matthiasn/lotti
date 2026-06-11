@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -20,30 +19,6 @@ void main() {
       expect(CapacityDonut.ratioFor(60, 0), 0);
       expect(CapacityDonut.ratioFor(60, -10), 0);
     });
-
-    test('formatDecimalHours rounds to one decimal and drops trailing .0', () {
-      expect(CapacityDonut.formatDecimalHours(480), '8h');
-      expect(CapacityDonut.formatDecimalHours(315), '5.3h');
-      expect(CapacityDonut.formatDecimalHours(276), '4.6h');
-      expect(CapacityDonut.formatDecimalHours(0), '0h');
-      expect(CapacityDonut.formatDecimalHours(30), '0.5h');
-    });
-
-    glados.Glados(
-      glados.IntAnys(glados.any).intInRange(0, 24 * 60),
-      glados.ExploreConfig(numRuns: 120),
-    ).test('formatDecimalHours stays within 0.05h of the true duration', (
-      minutes,
-    ) {
-      final label = CapacityDonut.formatDecimalHours(minutes);
-      expect(label.endsWith('h'), isTrue, reason: label);
-      final value = double.parse(label.substring(0, label.length - 1));
-      expect(
-        (value - minutes / 60).abs(),
-        lessThanOrEqualTo(0.05 + 1e-9),
-        reason: '"$label" drifts from $minutes minutes',
-      );
-    }, tags: 'glados');
   });
 
   group('CapacityDonut widget', () {
@@ -97,27 +72,59 @@ void main() {
       },
     );
 
-    testWidgets('neutral mode keeps the teal reading even when over', (
-      tester,
-    ) async {
+    testWidgets(
+      'neutral mode stays honest about OVER but keeps the calm tone',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          _wrap(
+            const CapacityDonut(
+              scheduledMinutes: 540,
+              capacityMinutes: 480,
+              neutral: true,
+            ),
+          ),
+        );
+
+        final context = tester.element(find.byType(CapacityDonut));
+        final messages = context.messages;
+        final tokens = context.designTokens;
+        // The WORD is always honest — 60m over is OVER even in neutral mode
+        // (a "1h LEFT" reading here would be a lie). Neutral only keeps the
+        // calm color instead of the error tone.
+        expect(find.text('1h'), findsOneWidget);
+        final eyebrow = tester.widget<Text>(
+          find.text(messages.dailyOsNextAgendaDonutOver.toUpperCase()),
+        );
+        expect(eyebrow.style?.color, tokens.colors.text.lowEmphasis);
+      },
+    );
+
+    testWidgets('without a capacity the center shows the scheduled total '
+        'and no eyebrow word', (tester) async {
       await tester.pumpWidget(
         _wrap(
           const CapacityDonut(
-            scheduledMinutes: 540,
-            capacityMinutes: 480,
+            scheduledMinutes: 135,
+            capacityMinutes: 0,
             neutral: true,
           ),
         ),
       );
 
-      final context = tester.element(find.byType(CapacityDonut));
-      final messages = context.messages;
-      final tokens = context.designTokens;
-      // Neutral mode never flips to the OVER error narration.
-      final eyebrow = tester.widget<Text>(
+      final messages = tester.element(find.byType(CapacityDonut)).messages;
+      // No capacity → no remainder to narrate; LEFT/OVER would both be
+      // meaningless, so the ring just reports what is scheduled.
+      expect(find.text('2h 15m'), findsOneWidget);
+      expect(
         find.text(messages.dailyOsNextAgendaDonutLeft.toUpperCase()),
+        findsNothing,
       );
-      expect(eyebrow.style?.color, tokens.colors.text.lowEmphasis);
+      expect(
+        find.text(messages.dailyOsNextAgendaDonutOver.toUpperCase()),
+        findsNothing,
+      );
     });
 
     testWidgets('semantics expose the scheduled/capacity summary and percent', (

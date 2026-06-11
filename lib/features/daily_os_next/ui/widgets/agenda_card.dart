@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/link_badge.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
@@ -67,58 +68,63 @@ class AgendaCard extends StatelessWidget {
     // one quiet receipt row so in-progress and upcoming cards own the
     // viewport.
     if (item.state == AgendaItemState.done) {
+      // Material+InkWell INSIDE the decorated surface so the tap ripple
+      // paints above the opaque fill instead of invisibly beneath it.
       final doneRow = DecoratedBox(
         decoration: BoxDecoration(
           color: tokens.colors.surface.enabled,
           borderRadius: borderRadius,
         ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step5,
-            vertical: tokens.spacing.step3,
-          ),
-          child: Row(
-            children: [
-              SizedBox(
-                width: tokens.spacing.step6,
-                child: Text(
-                  '$index',
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: category,
-                    fontWeight: tokens.typography.weight.bold,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Icon(
-                Icons.check_rounded,
-                size: 14,
-                color: tokens.colors.alert.success.defaultColor,
-              ),
-            ],
-          ),
-        ),
-      );
-      final callback = onTap;
-      if (callback == null) return doneRow;
-      return Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: callback,
+        child: Material(
+          type: MaterialType.transparency,
           borderRadius: borderRadius,
-          child: doneRow,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: borderRadius,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step5,
+                vertical: tokens.spacing.step3,
+              ),
+              child: Row(
+                children: [
+                  // Same fixed leading gutter as the full cards so the ordinal
+                  // rail stays on one vertical line down the agenda.
+                  SizedBox(
+                    width: tokens.spacing.step9,
+                    child: Center(
+                      child: Text(
+                        '$index',
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: category,
+                          fontWeight: tokens.typography.weight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      item.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Icon(
+                    Icons.check_rounded,
+                    size: 14,
+                    color: tokens.colors.alert.success.defaultColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       );
+      return doneRow;
     }
     final card = ClipRRect(
       borderRadius: borderRadius,
@@ -479,11 +485,23 @@ class _AgendaMetaRow extends StatelessWidget {
     ];
     if (children.isEmpty) return const SizedBox.shrink();
 
+    final dot = Text(
+      '·',
+      style: tokens.typography.styles.others.caption.copyWith(
+        color: tokens.colors.text.lowEmphasis,
+      ),
+    );
     return Wrap(
       spacing: tokens.spacing.step2,
       runSpacing: tokens.spacing.step2,
       crossAxisAlignment: WrapCrossAlignment.center,
-      children: children,
+      children: [
+        // House interpunct between metadata items.
+        for (var i = 0; i < children.length; i++) ...[
+          if (i > 0) dot,
+          children[i],
+        ],
+      ],
     );
   }
 }
@@ -533,7 +551,8 @@ class _EstimateMeta extends StatelessWidget {
         ),
         SizedBox(width: tokens.spacing.step1),
         Text(
-          context.messages.dailyOsNextEstimateMinutes(minutes),
+          // House duration grammar ("3h", "1h 30m") instead of raw "180m".
+          formatMinutesCompact(minutes),
           style: tokens.typography.styles.others.caption.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),

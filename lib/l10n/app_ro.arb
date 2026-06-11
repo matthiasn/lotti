@@ -1576,7 +1576,6 @@
   "dailyOsNextCaptureIdleExample": "„Dimineață muncă concentrată, o plimbare după prânz, e-mailuri până la cinci.”",
   "dailyOsNextCaptureIdleHint": "Apăsați pentru a vorbi · tastați în schimb",
   "dailyOsNextCaptureIdleTalk": "Apăsați pentru a vorbi",
-  "dailyOsNextCaptureListening": "ASCULT",
   "dailyOsNextCaptureListeningStatus": "Se ascultă…",
   "dailyOsNextCapturePastPrompt": "Mai doriți să înregistrați ceva din {date}?",
   "dailyOsNextCaptureReconcileCta": "Verificați",
@@ -1631,7 +1630,7 @@
   "dailyOsNextDayMenuInspectAgent": "Inspectare agent",
   "dailyOsNextDayMoreTooltip": "Mai mult",
   "dailyOsNextDayRefineCta": "Ajustați",
-  "dailyOsNextDayRefineFooterHint": "Vorbește pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.",
+  "dailyOsNextDayRefineFooterHint": "Vorbiți pentru a reorganiza planul — vedeți fiecare schimbare înainte ca ceva să fie salvat.",
   "dailyOsNextDayTitle": "Ziua dvs.",
   "dailyOsNextDayWhyChipLabel": "DE CE",
   "dailyOsNextDayWrapUpCta": "Încheie",
@@ -1660,7 +1659,6 @@
   "dailyOsNextGenericError": "Ceva nu a mers bine. Încercați din nou în câteva momente.",
   "dailyOsNextGreetingAfternoon": "Bună după-amiaza.",
   "dailyOsNextGreetingEvening": "Bună seara.",
-  "dailyOsNextGreetingHi": "Salut 👋",
   "dailyOsNextGreetingHiName": "Bună, {name} 👋",
   "dailyOsNextGreetingMorning": "Bună dimineața.",
   "dailyOsNextKnowledgeConfirm": "Confirmați",
@@ -1765,7 +1763,6 @@
   "dailyOsNextShutdownSaveAndClose": "Salvează și închide",
   "dailyOsNextShutdownTitle": "Închideți ziua",
   "dailyOsNextShutdownTomorrowOverline": "✦ PENTRU MÂINE",
-  "dailyOsNextStandaloneTag": "Bloc de timp",
   "dailyOsNextStateDueOnDate": "Scadent pe {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {

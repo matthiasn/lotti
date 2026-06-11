@@ -88,6 +88,10 @@ class _DayTimelineState extends State<DayTimeline> {
   _TimelineComparisonMode _lastAutoComparisonMode =
       _TimelineComparisonMode.paged;
 
+  /// Folding state from the most recent build, reused by [_centerOnNow]
+  /// (which runs post-frame) instead of recomputing it from the blocks.
+  TimelineFoldingState? _builtFoldingState;
+
   @override
   void initState() {
     super.initState();
@@ -132,8 +136,13 @@ class _DayTimelineState extends State<DayTimeline> {
 
   /// Scrolls the timeline so the now-line sits ~45% down the viewport.
   /// No-op when now is outside the day's window or nothing scrolls.
+  ///
+  /// Runs post-frame, so [_builtFoldingState] from the build that just
+  /// laid out the scrollable is the geometry the viewport actually shows.
   void _centerOnNow() {
     if (!mounted || !_timelineScrollController.hasClients) return;
+    final foldingState = _builtFoldingState;
+    if (foldingState == null) return;
     final position = _timelineScrollController.position;
     if (position.maxScrollExtent <= 0) return;
     final dayDate = widget.draft.dayDate;
@@ -151,18 +160,6 @@ class _DayTimelineState extends State<DayTimeline> {
         !_isSameDay(_now, dayDate)) {
       return;
     }
-    final tokens = context.designTokens;
-    final foldingState = TimelineFoldingState.fromBlocks(
-      blocks: [
-        ...widget.draft.blocks,
-        ...(widget.actualBlocks ?? widget.draft.actualBlocks),
-      ],
-      dayDate: dayDate,
-      startHour: widget.startHour,
-      endHour: widget.endHour,
-      expandedRegionStarts: _expandedFoldRegionStarts,
-      collapsedHourHeight: tokens.spacing.step3,
-    );
     final nowTop = foldingState.positionForDate(
       _now,
       windowStart: windowStart,
@@ -198,6 +195,7 @@ class _DayTimelineState extends State<DayTimeline> {
       expandedRegionStarts: _expandedFoldRegionStarts,
       collapsedHourHeight: tokens.spacing.step3,
     );
+    _builtFoldingState = foldingState;
     final totalHeight = foldingState.totalHeight(_pxPerMinute);
 
     final windowStart = DateTime(
@@ -215,7 +213,12 @@ class _DayTimelineState extends State<DayTimeline> {
         tokens.typography.lineHeight.overline + tokens.spacing.step2;
     final timelineTopInset = paneLabelHeight + tokens.spacing.step3;
     final timelineContentHeight = totalHeight + tokens.spacing.step9;
-    final timeRailWidth = tokens.spacing.step10;
+    // Hour labels and the now-chip live on the rail; widen it with the
+    // user's text scale so "09:00" never clips at accessibility sizes.
+    final timeRailWidth = math.max(
+      tokens.spacing.step10,
+      MediaQuery.textScalerOf(context).scale(tokens.spacing.step10),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -721,13 +724,36 @@ class _SharedHourRail extends StatelessWidget {
   final DateTime windowStart;
   final double topInset;
 
+  static const _nowDotSize = 6.0;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final textScaler = MediaQuery.textScalerOf(context);
     final hourLabelStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
-    final hourLabelCenterOffset = tokens.typography.lineHeight.caption / 2;
+    final hourLabelExtent = textScaler.scale(
+      tokens.typography.lineHeight.caption,
+    );
+    final hourLabelCenterOffset = hourLabelExtent / 2;
+    // The chip is one bodySmall line plus step1 padding top and bottom.
+    final nowChipExtent =
+        textScaler.scale(tokens.typography.lineHeight.bodySmall) +
+        tokens.spacing.step2;
+    // Labels whose center sits closer to the now-line than half the
+    // combined label+chip extents (plus a breathing gap) would be half
+    // occluded by the chip — a sheared "16:00" reads as a rendering bug
+    // on the rail's marquee element, so suppress those labels.
+    final hourLabelCollisionBand =
+        (hourLabelExtent + nowChipExtent) / 2 + tokens.spacing.step2;
+    final nowTop = now == null
+        ? null
+        : foldingState.positionForDate(
+            now!,
+            windowStart: windowStart,
+            pxPerMinute: pxPerMinute,
+          );
     return ClipRect(
       child: BackdropFilter(
         filter: ui.ImageFilter.blur(
@@ -754,20 +780,7 @@ class _SharedHourRail extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               for (final segment in foldingState.segments)
-                if (segment is TimelineFoldRegion && !segment.isExpanded)
-                  Positioned(
-                    top:
-                        topInset +
-                        foldingState.positionForHour(
-                          segment.startHour,
-                          pxPerMinute,
-                        ),
-                    right: 0,
-                    width: tokens.spacing.step1 / 2,
-                    height: segment.height(pxPerMinute),
-                    child: const SizedBox.shrink(),
-                  )
-                else
+                if (segment is! TimelineFoldRegion || segment.isExpanded)
                   Positioned(
                     top:
                         topInset +
@@ -785,19 +798,10 @@ class _SharedHourRail extends StatelessWidget {
                     ),
                   ),
               for (final hour in foldingState.visibleHourLabels)
-                // Skip hour labels the now-chip would half-occlude — a
-                // sheared "16:00" under the 15:45 chip reads as a
-                // rendering bug on the rail's marquee element.
-                if (now == null ||
-                    (foldingState.positionForHour(hour, pxPerMinute) -
-                                foldingState.positionForDate(
-                                  now!,
-                                  windowStart: windowStart,
-                                  pxPerMinute: pxPerMinute,
-                                ))
+                if (nowTop == null ||
+                    (foldingState.positionForHour(hour, pxPerMinute) - nowTop)
                             .abs() >
-                        tokens.typography.lineHeight.caption +
-                            tokens.spacing.step2)
+                        hourLabelCollisionBand)
                   Positioned(
                     top:
                         topInset +
@@ -809,17 +813,26 @@ class _SharedHourRail extends StatelessWidget {
                       style: hourLabelStyle,
                     ),
                   ),
-              if (now != null)
+              if (nowTop != null) ...[
+                // The single now-dot lives on the rail (not per pane) so
+                // the peeking page in swipe mode never shows a stray
+                // second dot mid-screen; panes draw only the line.
                 Positioned(
-                  top:
-                      topInset +
-                      foldingState.positionForDate(
-                        now!,
-                        windowStart: windowStart,
-                        pxPerMinute: pxPerMinute,
-                      ) -
-                      tokens.spacing.step3 -
-                      tokens.spacing.step1,
+                  top: topInset + nowTop - _nowDotSize / 2,
+                  right: 0,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: _nowDotSize,
+                      height: _nowDotSize,
+                      decoration: BoxDecoration(
+                        color: tokens.colors.alert.error.defaultColor,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: topInset + nowTop - nowChipExtent / 2,
                   right: tokens.spacing.step5,
                   child: Container(
                     padding: EdgeInsets.symmetric(
@@ -839,6 +852,7 @@ class _SharedHourRail extends StatelessWidget {
                     ),
                   ),
                 ),
+              ],
             ],
           ),
         ),

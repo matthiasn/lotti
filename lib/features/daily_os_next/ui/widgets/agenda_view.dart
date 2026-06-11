@@ -231,7 +231,7 @@ class _StatStrip extends StatelessWidget {
                 ),
                 SizedBox(height: tokens.spacing.step3),
                 if (hasPlan)
-                  _CategoryMix(draft: draft)
+                  _CategoryMix(entries: categoryTotals)
                 else
                   _TrackedLegend(blocks: actualBlocks),
               ],
@@ -266,13 +266,17 @@ class _TrackedLegend extends StatelessWidget {
           ),
         ),
         SizedBox(width: tokens.spacing.step2),
-        Text(
-          context.messages.dailyOsNextAgendaTrackedLegend(
-            formatMinutesCompact(blocks.totalMinutes),
-            blocks.completedCount,
-          ),
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
+        Flexible(
+          child: Text(
+            context.messages.dailyOsNextAgendaTrackedLegend(
+              formatMinutesCompact(blocks.totalMinutes),
+              blocks.completedCount,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
           ),
         ),
       ],
@@ -300,14 +304,15 @@ List<({DayAgentCategory category, int minutes})> categoryTotalsFor(
 }
 
 class _CategoryMix extends StatelessWidget {
-  const _CategoryMix({required this.draft});
+  const _CategoryMix({required this.entries});
 
-  final DraftPlan draft;
+  /// Shared with the donut by the stat strip so legend and ring cannot
+  /// disagree (and the per-build aggregation runs once, not twice).
+  final List<({DayAgentCategory category, int minutes})> entries;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final entries = categoryTotalsFor(draft);
     if (entries.isEmpty) return const SizedBox.shrink();
     return Wrap(
       spacing: tokens.spacing.step3,
@@ -342,8 +347,22 @@ class _CategoryLegend extends StatelessWidget {
           ),
         ),
         SizedBox(width: tokens.spacing.step2),
+        // Flexible + ellipsis so long category names survive large
+        // accessibility text sizes inside the Wrap.
+        // The duration is the data — protect it; the category label is
+        // what truncates at large text scales.
+        Flexible(
+          child: Text(
+            category.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+        ),
         Text(
-          '${category.name} · ${formatMinutesCompact(minutes)}',
+          ' · ${formatMinutesCompact(minutes)}',
           style: tokens.typography.styles.others.caption.copyWith(
             color: tokens.colors.text.lowEmphasis,
           ),

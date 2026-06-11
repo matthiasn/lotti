@@ -544,9 +544,13 @@ void main() {
         );
         await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
 
-        // 90m of Work (dropped 60m excluded), 30m of Personal.
-        expect(find.text('Work · 1h 30m'), findsOneWidget);
-        expect(find.text('Personal · 30m'), findsOneWidget);
+        // 90m of Work (dropped 60m excluded), 30m of Personal. Name and
+        // value are separate texts so the label can ellipsize at large
+        // text scales while the duration stays protected.
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text(' · 1h 30m'), findsOneWidget);
+        expect(find.text('Personal'), findsOneWidget);
+        expect(find.text(' · 30m'), findsOneWidget);
       },
     );
 
