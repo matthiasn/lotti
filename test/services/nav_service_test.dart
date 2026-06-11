@@ -81,10 +81,12 @@ class _GeneratedNavScenario {
   final bool dashboards;
   final List<_GeneratedNavPath> paths;
 
+  // Mirrors `NavService._tabSpecs`: Daily OS right after Tasks, then
+  // Projects and the remaining flag-gated tabs.
   List<String> get enabledRoots => [
     '/tasks',
-    if (projects) '/projects',
     if (dailyOs) '/calendar',
+    if (projects) '/projects',
     if (habits) '/habits',
     if (dashboards) '/dashboards',
     '/journal',
@@ -331,15 +333,15 @@ void main() {
       expect(navService.currentPath, '/habits');
     });
 
-    test('orders Projects directly after Tasks when enabled', () {
+    test('orders Daily OS directly after Tasks when enabled', () {
       final navService = getIt<NavService>();
 
       expect(
         navService.beamerDelegates,
         [
           navService.tasksDelegate,
-          navService.projectsDelegate,
           navService.calendarDelegate,
+          navService.projectsDelegate,
           navService.habitsDelegate,
           navService.dashboardsDelegate,
           navService.journalDelegate,
@@ -371,8 +373,8 @@ void main() {
 
         final expectedDelegates = [
           navService.tasksDelegate,
-          if (scenario.projects) navService.projectsDelegate,
           if (scenario.dailyOs) navService.calendarDelegate,
+          if (scenario.projects) navService.projectsDelegate,
           if (scenario.habits) navService.habitsDelegate,
           if (scenario.dashboards) navService.dashboardsDelegate,
           navService.journalDelegate,
@@ -452,15 +454,15 @@ void main() {
         navService.beamerDelegates,
         [
           navService.tasksDelegate,
-          navService.projectsDelegate,
           navService.calendarDelegate,
+          navService.projectsDelegate,
           navService.habitsDelegate,
           navService.dashboardsDelegate,
           navService.journalDelegate,
           navService.settingsDelegate,
         ],
       );
-      expect(navService.projectsIndex, 1);
+      expect(navService.projectsIndex, 2);
     });
 
     test(

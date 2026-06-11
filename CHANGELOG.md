@@ -72,6 +72,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   reads those notes back later — so after an overworked stretch it plans a
   gentler day instead of piling on. Sustainability over throughput.
 
+### Changed
+- Mobile: the bottom navigation bar no longer crams every destination into
+  one row with shrinking labels. It now shows Tasks, DailyOS (when
+  enabled), and Logbook plus a "More" slot; Settings and the remaining
+  flag-gated destinations (Projects, Habits, Insights) open from a More
+  bottom sheet instead — that's also where newly toggled pages appear.
+  While one of them is on screen, the More slot takes its name and the
+  active highlight so you can always see where you are. Daily OS also
+  moved directly after Tasks across mobile and the desktop sidebar. The
+  bar docks flush against the bottom screen edge — full width, no floating
+  gap — with the home-indicator inset absorbed into the bar surface, and
+  its top corners now use the gentler card radius (matched by the settings
+  header's bottom corners).
+
 ## [0.9.1017]
 ### Added
 - New desktop "Time Analysis" dashboard under Daily OS, opened from a

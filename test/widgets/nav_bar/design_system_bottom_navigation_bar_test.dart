@@ -1,88 +1,82 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 import '../../widget_test_utils.dart';
 
 void main() {
+  const items = [
+    DesignSystemFiveSlotNavBarItem(
+      label: 'Tasks',
+      icon: Icon(Icons.check_circle_outline),
+      active: true,
+    ),
+    DesignSystemFiveSlotNavBarItem(
+      label: 'Journal',
+      icon: Icon(Icons.book_outlined),
+    ),
+    DesignSystemFiveSlotNavBarItem(
+      label: 'Settings',
+      icon: Icon(Icons.settings_outlined),
+    ),
+    DesignSystemFiveSlotNavBarItem(
+      label: 'More',
+      icon: Icon(Icons.more_horiz_rounded),
+    ),
+  ];
+
   group('DesignSystemBottomNavigationBar', () {
-    testWidgets('centers the tab bar within the bottom nav row', (
+    testWidgets('adds no gap or inset of its own around the bar', (
       tester,
     ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const SizedBox(
-            width: 402,
-            child: DesignSystemBottomNavigationBar(
-              items: [
-                DesignSystemNavigationTabBarItem(
-                  label: 'Tasks',
-                  icon: Icon(Icons.check_circle_outline),
-                  active: true,
-                ),
-                DesignSystemNavigationTabBarItem(
-                  label: 'Projects',
-                  icon: Icon(Icons.folder_outlined),
-                ),
-              ],
-            ),
+            width: 390,
+            child: DesignSystemBottomNavigationBar(items: items),
           ),
           theme: DesignSystemTheme.light(),
         ),
       );
 
-      final align = tester.widget<Align>(
-        find.descendant(
-          of: find.byType(DesignSystemBottomNavigationBar),
-          matching: find.byType(Align),
+      final containerRect = tester.getRect(
+        find.byType(DesignSystemBottomNavigationBar),
+      );
+      final barRect = tester.getRect(find.byType(DesignSystemFiveSlotNavBar));
+
+      // The container contributes zero padding: when the shell pins it to
+      // the screen's bottom edge the bar surface is flush with that edge
+      // and spans the full width.
+      expect(barRect.bottom, containerRect.bottom);
+      expect(barRect.left, containerRect.left);
+      expect(barRect.right, containerRect.right);
+    });
+
+    testWidgets('occupiedHeight matches the rendered bar extent', (
+      tester,
+    ) async {
+      const noInset = MediaQueryData(size: Size(390, 844));
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemBottomNavigationBar(items: items),
+          theme: DesignSystemTheme.light(),
+          mediaQueryData: noInset,
         ),
       );
 
-      expect(align.alignment, Alignment.center);
-      expect(find.byType(DesignSystemNavigationTabBar), findsOneWidget);
+      final renderedHeight = tester
+          .getSize(find.byType(DesignSystemBottomNavigationBar))
+          .height;
+      final occupiedHeight = DesignSystemBottomNavigationBar.occupiedHeight(
+        tester.element(find.byType(DesignSystemBottomNavigationBar)),
+      );
+
+      expect(occupiedHeight, renderedHeight);
     });
-
-    testWidgets(
-      'reserves enough bottom breathing room to clear the screen edge on '
-      'devices without a home-indicator inset',
-      (tester) async {
-        // Pump with an explicitly zero bottom inset (Android with gesture
-        // nav off, simulators without a configured home indicator). The
-        // SafeArea around the pill contributes nothing here, so whatever
-        // gap exists below the last button row must come from padding().
-        const noInset = MediaQueryData(size: Size(390, 844));
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const DesignSystemBottomNavigationBar(
-              items: [
-                DesignSystemNavigationTabBarItem(
-                  label: 'Settings',
-                  icon: Icon(Icons.settings_outlined),
-                  active: true,
-                ),
-              ],
-            ),
-            theme: DesignSystemTheme.light(),
-            mediaQueryData: noInset,
-          ),
-        );
-
-        final pillBottom = tester
-            .getRect(find.byType(DesignSystemNavigationTabBar))
-            .bottom;
-        final navBarBottom = tester
-            .getRect(find.byType(DesignSystemBottomNavigationBar))
-            .bottom;
-
-        // 20 logical px ≈ the smallest tap-edge clearance that still reads
-        // as deliberate breathing room rather than a flush bar; the actual
-        // value is driven by a design-system spacing token.
-        expect(navBarBottom - pillBottom, greaterThanOrEqualTo(20));
-      },
-    );
 
     testWidgets('includes the bottom safe-area inset in occupied height', (
       tester,
@@ -119,7 +113,17 @@ void main() {
         tester.element(find.byType(Scaffold)),
       );
 
-      expect(withInsetHeight - withoutInsetHeight, withInset.padding.bottom);
+      // The bar absorbs bottomInsetFraction of the inset, which replaces
+      // (not stacks onto) its internal step2 bottom padding — so occupied
+      // height grows by the trimmed inset minus the padding it displaced.
+      expect(
+        withInsetHeight - withoutInsetHeight,
+        moreOrLessEquals(
+          withInset.padding.bottom *
+                  DesignSystemFiveSlotNavBar.bottomInsetFraction -
+              dsTokensLight.spacing.step2,
+        ),
+      );
     });
 
     testWidgets(
@@ -175,7 +179,7 @@ void main() {
     });
 
     testWidgets(
-      'renders the overlay above the pill in the same Column when provided',
+      'renders the overlay above the bar in the same Column when provided',
       (tester) async {
         const overlayKey = ValueKey('overlay');
 
@@ -184,17 +188,7 @@ void main() {
             const SizedBox(
               width: 402,
               child: DesignSystemBottomNavigationBar(
-                items: [
-                  DesignSystemNavigationTabBarItem(
-                    label: 'Tasks',
-                    icon: Icon(Icons.check_circle_outline),
-                    active: true,
-                  ),
-                  DesignSystemNavigationTabBarItem(
-                    label: 'Projects',
-                    icon: Icon(Icons.folder_outlined),
-                  ),
-                ],
+                items: items,
                 overlay: SizedBox(key: overlayKey, height: 24),
               ),
             ),
@@ -202,11 +196,9 @@ void main() {
           ),
         );
 
-        // Overlay is mounted.
+        // Overlay is mounted and shares the bar's Column, so it stays tied
+        // to the rendered nav bar.
         expect(find.byKey(overlayKey), findsOneWidget);
-
-        // It shares the same Column as the pill (so it scales/centers
-        // with the pill via the FittedBox + IntrinsicWidth above it).
         final column = tester.widget<Column>(
           find
               .ancestor(
@@ -218,19 +210,88 @@ void main() {
         expect(column.crossAxisAlignment, CrossAxisAlignment.stretch);
         expect(column.mainAxisSize, MainAxisSize.min);
         expect(
-          column.children.whereType<DesignSystemNavigationTabBar>(),
+          column.children.whereType<DesignSystemFiveSlotNavBar>(),
           hasLength(1),
         );
 
-        // Overlay is the first child, pill is the second — overlay is
-        // visually above the pill.
+        // Overlay is the first child — visually above the bar.
         final overlayCenter = tester.getCenter(find.byKey(overlayKey));
-        final pillCenter = tester.getCenter(
-          find.byType(DesignSystemNavigationTabBar),
+        final barCenter = tester.getCenter(
+          find.byType(DesignSystemFiveSlotNavBar),
         );
-        expect(overlayCenter.dy, lessThan(pillCenter.dy));
+        expect(overlayCenter.dy, lessThan(barCenter.dy));
       },
     );
+
+    testWidgets('occupiedHeight adds the published overlay height', (
+      tester,
+    ) async {
+      const noInset = MediaQueryData(size: Size(390, 844));
+      const scopedChildKey = ValueKey('scoped-child');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemBottomNavigationOverlayHeight(
+            height: 24,
+            child: SizedBox.shrink(key: scopedChildKey),
+          ),
+          theme: DesignSystemTheme.light(),
+          mediaQueryData: noInset,
+        ),
+      );
+
+      // The Scaffold sits above the scope, the keyed child below it — the
+      // difference is exactly the published overlay height.
+      final outsideScope = DesignSystemBottomNavigationBar.occupiedHeight(
+        tester.element(find.byType(Scaffold)),
+      );
+      final insideScope = DesignSystemBottomNavigationBar.occupiedHeight(
+        tester.element(find.byKey(scopedChildKey)),
+      );
+
+      expect(insideScope - outsideScope, 24);
+    });
+
+    testWidgets('FabPadding tracks published overlay height changes', (
+      tester,
+    ) async {
+      Future<void> pump(double height) {
+        return tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemBottomNavigationOverlayHeight(
+              height: height,
+              child: const DesignSystemBottomNavigationFabPadding(
+                child: SizedBox.square(dimension: 56),
+              ),
+            ),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          ),
+        );
+      }
+
+      double bottomPadding() {
+        final padding = tester.widget<Padding>(
+          find.descendant(
+            of: find.byType(DesignSystemBottomNavigationFabPadding),
+            matching: find.byType(Padding),
+          ),
+        );
+        return (padding.padding as EdgeInsets).bottom;
+      }
+
+      await pump(0);
+      final barOnly = bottomPadding();
+
+      // An indicator appears above the bar: the padding grows by exactly
+      // its height so the indicator row never covers the lifted child.
+      await pump(24);
+      expect(bottomPadding() - barOnly, 24);
+
+      // Indicator gone again: padding shrinks back to the bar alone.
+      await pump(0);
+      expect(bottomPadding(), barOnly);
+    });
 
     testWidgets('omits the overlay slot when none is provided', (
       tester,
@@ -239,22 +300,14 @@ void main() {
         makeTestableWidgetWithScaffold(
           const SizedBox(
             width: 402,
-            child: DesignSystemBottomNavigationBar(
-              items: [
-                DesignSystemNavigationTabBarItem(
-                  label: 'Tasks',
-                  icon: Icon(Icons.check_circle_outline),
-                  active: true,
-                ),
-              ],
-            ),
+            child: DesignSystemBottomNavigationBar(items: items),
           ),
           theme: DesignSystemTheme.light(),
         ),
       );
 
       // The outermost Column inside the nav bar is the one that hosts the
-      // pill (and would host the overlay if provided). Inner Columns belong
+      // bar (and would host the overlay if provided). Inner Columns belong
       // to each tab item.
       final column = tester
           .widgetList<Column>(
@@ -264,9 +317,9 @@ void main() {
             ),
           )
           .first;
-      // Only the pill — no overlay child contributes to the Column.
+      // Only the bar — no overlay child contributes to the Column.
       expect(column.children, hasLength(1));
-      expect(column.children.first, isA<DesignSystemNavigationTabBar>());
+      expect(column.children.first, isA<DesignSystemFiveSlotNavBar>());
     });
   });
 }

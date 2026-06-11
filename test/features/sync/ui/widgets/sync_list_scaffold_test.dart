@@ -77,6 +77,9 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
 
   await tester.pumpWidget(
     MaterialApp(
+      // The scaffold's SettingsPageHeader reads context.designTokens, so the
+      // theme must carry the DsTokens extension.
+      theme: resolveTestTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: useViewSize
@@ -405,6 +408,7 @@ void main() {
         // Initial pump with both filters, select error
         await tester.pumpWidget(
           MaterialApp(
+            theme: resolveTestTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: MediaQuery(
@@ -456,6 +460,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            theme: resolveTestTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: MediaQuery(

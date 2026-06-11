@@ -2290,10 +2290,12 @@
     }
   },
   "multiSelectNoItemsFound": "Žádné položky nenalezeny",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Více, 1 další sekce} few{Více, {count} další sekce} other{Více, {count} dalších sekcí}}",
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleHabits": "Zvyky",
   "navTabTitleInsights": "Přehledy",
   "navTabTitleJournal": "Zápisník",
+  "navTabTitleMore": "Více",
   "navTabTitleProjects": "Projekty",
   "navTabTitleSettings": "Nastavení",
   "navTabTitleTasks": "Úkoly",

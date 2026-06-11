@@ -9700,6 +9700,12 @@ abstract class AppLocalizations {
   /// **'No items found'**
   String get multiSelectNoItemsFound;
 
+  /// No description provided for @navTabMoreSemanticsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{More, 1 additional destination} other{More, {count} additional destinations}}'**
+  String navTabMoreSemanticsLabel(int count);
+
   /// No description provided for @navTabTitleCalendar.
   ///
   /// In en, this message translates to:
@@ -9723,6 +9729,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Logbook'**
   String get navTabTitleJournal;
+
+  /// No description provided for @navTabTitleMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get navTabTitleMore;
 
   /// No description provided for @navTabTitleProjects.
   ///

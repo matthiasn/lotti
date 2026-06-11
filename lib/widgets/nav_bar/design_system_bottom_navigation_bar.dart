@@ -1,10 +1,11 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Mobile bottom-navigation container: hosts the five-slot bar
+/// ([DesignSystemFiveSlotNavBar]) docked flush against the screen's bottom
+/// edge, plus an optional overlay row (time/audio recording indicators)
+/// riding above it.
 class DesignSystemBottomNavigationBar extends StatelessWidget {
   const DesignSystemBottomNavigationBar({
     required this.items,
@@ -12,84 +13,72 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
     super.key,
   });
 
-  final List<DesignSystemNavigationTabBarItem> items;
+  /// The bar's slots (at most five — overflow destinations live in the
+  /// More sheet, represented here by their More slot item).
+  final List<DesignSystemFiveSlotNavBarItem> items;
 
-  /// Optional widget rendered immediately above the pill, sized to the same
-  /// width as the pill. The overlay scales with the pill via the same
-  /// `FittedBox`, so its position stays tied to the rendered nav bar
-  /// regardless of how many tabs are visible.
+  /// Optional widget rendered immediately above the bar, stretched to the
+  /// same width so indicator rows stay tied to the rendered nav bar.
   final Widget? overlay;
 
-  static EdgeInsets padding(BuildContext context) {
-    final tokens = context.designTokens;
-    // Asymmetric vertical insets are intentional: top sits under the page
-    // content so step3 is enough, while the bottom must give the last
-    // button row a visible gap above the screen edge on platforms without
-    // a home-indicator inset (e.g. Android with 3-button nav). The
-    // SafeArea wrapping this padding stacks the home-indicator inset on
-    // top of step6 where one exists.
-    return EdgeInsets.fromLTRB(
-      tokens.spacing.step5,
-      tokens.spacing.step3,
-      tokens.spacing.step5,
-      tokens.spacing.step6,
-    );
-  }
-
-  /// Intrinsic height of a single nav-bar item row (icon + caption with the
-  /// design-system minimum), shared by the height calculations below so the
-  /// numbers can't drift apart.
-  static double _itemHeight(BuildContext context) {
-    final tokens = context.designTokens;
-    return math.max(
-      DesignSystemNavigationTabBar.defaultItemMinHeight,
-      tokens.spacing.step3 * 2 +
-          DesignSystemNavigationTabBar.defaultIconSize +
-          tokens.spacing.step1 +
-          tokens.typography.lineHeight.caption,
-    );
-  }
-
+  /// Vertical screen estate the docked bottom stack occupies: the bar
+  /// (including the bottom safe-area inset it absorbs into its surface)
+  /// plus the rendered height of the [overlay] row, published by the app
+  /// shell via [DesignSystemBottomNavigationOverlayHeight]. Content
+  /// scrolling behind the bar pads by this amount (see
+  /// [DesignSystemBottomNavigationFabPadding]).
   static double occupiedHeight(BuildContext context) {
     // In desktop layout the bottom navigation bar is not shown;
     // the sidebar replaces it, so no bottom inset is needed.
     if (isDesktopLayout(context)) return 0;
 
-    final tokens = context.designTokens;
-    final bottomSafeInset = MediaQuery.paddingOf(context).bottom;
-
-    return bottomSafeInset +
-        padding(context).vertical +
-        tokens.spacing.step2 * 2 +
-        _itemHeight(context);
+    return DesignSystemFiveSlotNavBar.barHeight(context) +
+        DesignSystemBottomNavigationOverlayHeight.of(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: padding(context),
-        child: Align(
-          child: FittedBox(
-            fit: BoxFit.scaleDown,
-            // IntrinsicWidth bounds the inner Column so the overlay row can
-            // stretch to the pill's natural width.
-            child: IntrinsicWidth(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ?overlay,
-                  DesignSystemNavigationTabBar(items: items),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ?overlay,
+        DesignSystemFiveSlotNavBar(items: items),
+      ],
     );
   }
+}
+
+/// Publishes the rendered height of the nav bar's
+/// [DesignSystemBottomNavigationBar.overlay] row (the time/audio recording
+/// indicators) to the page stack. The app shell wraps the pages with this
+/// scope and updates [height] as indicators appear and disappear, so
+/// [DesignSystemBottomNavigationBar.occupiedHeight] — and everything padding
+/// by it — matches the full rendered bottom stack, not just the bar.
+class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
+  const DesignSystemBottomNavigationOverlayHeight({
+    required this.height,
+    required super.child,
+    super.key,
+  });
+
+  /// Rendered height of the overlay row; 0 while no indicator is visible.
+  final double height;
+
+  /// Overlay height published by the nearest enclosing scope, or 0 when
+  /// none exists (previews and tests that render pages without the shell).
+  static double of(BuildContext context) {
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<
+          DesignSystemBottomNavigationOverlayHeight
+        >();
+    return scope?.height ?? 0;
+  }
+
+  @override
+  bool updateShouldNotify(
+    DesignSystemBottomNavigationOverlayHeight oldWidget,
+  ) => height != oldWidget.height;
 }
 
 class DesignSystemBottomNavigationFabPadding extends StatelessWidget {

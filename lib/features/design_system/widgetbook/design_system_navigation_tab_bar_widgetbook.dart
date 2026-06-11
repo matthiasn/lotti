@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/widgetbook/widgetbook_helpers.dart';
@@ -113,43 +114,30 @@ class _BottomNavigationShellShowcase extends StatelessWidget {
     );
   }
 
-  List<DesignSystemNavigationTabBarItem> _shellItems(BuildContext context) {
+  /// The mobile shell caps the bar at the always-visible destinations
+  /// (Tasks, Journal, Settings) plus a More slot for the flag-gated
+  /// destinations.
+  List<DesignSystemFiveSlotNavBarItem> _shellItems(BuildContext context) {
     return [
-      DesignSystemNavigationTabBarItem(
+      DesignSystemFiveSlotNavBarItem(
         label: context.messages.navTabTitleTasks,
         icon: const Icon(Icons.check_circle_outline_rounded),
         activeIcon: const Icon(Icons.check_circle_rounded),
         active: true,
       ),
-      DesignSystemNavigationTabBarItem(
-        label: context.messages.navTabTitleProjects,
-        icon: const Icon(Icons.folder_outlined),
-        activeIcon: const Icon(Icons.folder_rounded),
-      ),
-      DesignSystemNavigationTabBarItem(
-        label: context.messages.navTabTitleCalendar,
-        icon: const Icon(Icons.calendar_today_outlined),
-        activeIcon: const Icon(Icons.calendar_today_rounded),
-      ),
-      DesignSystemNavigationTabBarItem(
-        label: context.messages.navTabTitleHabits,
-        icon: const Icon(Icons.checklist_rtl_outlined),
-        activeIcon: const Icon(Icons.checklist_rtl_rounded),
-      ),
-      DesignSystemNavigationTabBarItem(
-        label: context.messages.navTabTitleInsights,
-        icon: const Icon(Icons.bar_chart_outlined),
-        activeIcon: const Icon(Icons.bar_chart_rounded),
-      ),
-      DesignSystemNavigationTabBarItem(
+      DesignSystemFiveSlotNavBarItem(
         label: context.messages.navTabTitleJournal,
         icon: const Icon(Icons.book_outlined),
         activeIcon: const Icon(Icons.book_rounded),
       ),
-      DesignSystemNavigationTabBarItem(
+      DesignSystemFiveSlotNavBarItem(
         label: context.messages.navTabTitleSettings,
         icon: const Icon(Icons.settings_outlined),
         activeIcon: const Icon(Icons.settings_rounded),
+      ),
+      DesignSystemFiveSlotNavBarItem(
+        label: context.messages.navTabTitleMore,
+        icon: const Icon(Icons.more_horiz_rounded),
       ),
     ];
   }

@@ -2498,10 +2498,12 @@
     }
   },
   "multiSelectNoItemsFound": "Keine Einträge gefunden",
+  "navTabMoreSemanticsLabel": "{count, plural, =1{Mehr, 1 weiterer Bereich} other{Mehr, {count} weitere Bereiche}}",
   "navTabTitleCalendar": "DailyOS",
   "navTabTitleHabits": "Gewohnheiten",
   "navTabTitleInsights": "Einblicke",
   "navTabTitleJournal": "Logbuch",
+  "navTabTitleMore": "Mehr",
   "navTabTitleProjects": "Projekte",
   "navTabTitleSettings": "Einstellungen",
   "navTabTitleTasks": "Aufgaben",

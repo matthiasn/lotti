@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_header_dimensions.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -180,8 +181,13 @@ class SettingsPageHeader extends StatelessWidget {
                   colorScheme.surface.withValues(alpha: 0.93),
                 ],
               ),
-              borderRadius: const BorderRadius.vertical(
-                bottom: Radius.circular(24),
+              // Same radius as the bottom nav bar's top corners
+              // (DesignSystemFiveSlotNavBar), so docked chrome at both
+              // screen edges rounds identically.
+              borderRadius: BorderRadius.vertical(
+                bottom: Radius.circular(
+                  context.designTokens.radii.sectionCards,
+                ),
               ),
               boxShadow: [
                 BoxShadow(

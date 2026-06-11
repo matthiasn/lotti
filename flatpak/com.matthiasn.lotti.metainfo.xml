@@ -49,6 +49,7 @@
     <release version="0.9.1018" date="2026-06-10">
       <description>
           <p>The Daily OS planner now sees the last week in context when drafting a day: planned-vs-recorded time per category, missed sessions by name, and upcoming plans plus deadlines for the next five days. It also keeps a short note on how each day actually went, written as the day closes, and reads those notes back later — so after an overworked stretch it plans a gentler day instead of piling on. Sustainability over throughput.</p>
+          <p>Mobile: the bottom navigation bar no longer crams every destination into one row with shrinking labels. It now shows Tasks, DailyOS (when enabled), and Logbook plus a "More" slot; Settings and the remaining flag-gated destinations (Projects, Habits, Insights) open from a More bottom sheet instead — that's also where newly toggled pages appear — and the More slot takes the active destination's name and highlight while one of them is on screen. Daily OS moved directly after Tasks across mobile and the desktop sidebar. The bar docks flush against the bottom screen edge with the home-indicator inset absorbed into the bar surface, and its top corners use the gentler card radius.</p>
       </description>
     </release>
     <release version="0.9.1017" date="2026-06-07">

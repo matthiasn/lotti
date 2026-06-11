@@ -19,6 +19,13 @@ class DesignSystemNavigationTabBarItem {
   final VoidCallback? onTap;
 }
 
+/// Content-hugging pill tab bar from the design handoff.
+///
+/// No longer the app's mobile bottom navigation — the shell uses
+/// `DesignSystemFiveSlotNavBar` (fixed slot count, equal flex, docked)
+/// instead, because this pill shrinks via `FittedBox` when too many tabs
+/// are visible. It survives for the design-handoff showcase mockups and
+/// the widgetbook artboards that depict the original handoff spec.
 class DesignSystemNavigationTabBar extends StatelessWidget {
   const DesignSystemNavigationTabBar({
     required this.items,
@@ -65,6 +72,14 @@ class DesignSystemNavigationFrostedSurface extends StatelessWidget {
     this.padding = EdgeInsets.zero,
     super.key,
   });
+
+  /// Width of the hairline border drawn around the surface (`Border.all`'s
+  /// default below). `Container` stacks it onto [padding] on every side,
+  /// so height math that depends on this surface (e.g. the bottom nav's
+  /// occupied height) must account for it through this constant rather
+  /// than a magic number. Keep in sync with the `Border.all` call in
+  /// [build] if an explicit width is ever introduced there.
+  static const double borderWidth = 1;
 
   final Widget child;
   final BorderRadius borderRadius;
