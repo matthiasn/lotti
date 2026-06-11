@@ -272,7 +272,7 @@ class _ColumnHeader extends StatelessWidget {
             vertical: 2,
           ),
           decoration: BoxDecoration(
-            color: tokens.colors.background.level02,
+            color: tokens.colors.surface.enabled,
             borderRadius: BorderRadius.circular(tokens.radii.s),
           ),
           child: Text(
@@ -364,9 +364,14 @@ class ReconcileModalContent extends StatelessWidget {
     final decideColumn = _DecideColumn(params: params, items: data.pending);
 
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step6,
-        vertical: tokens.spacing.step5,
+      // Same 16pt gutter and 24pt top inset as the capture/refine steps so
+      // the headline band and content edge hold one position across the
+      // whole ritual.
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step6,
+        tokens.spacing.step5,
+        tokens.spacing.step5,
       ),
       // Decide two-column vs stacked from the actual available width (the
       // modal/dialog box), not the screen size — the dialog can be far

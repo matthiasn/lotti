@@ -29,7 +29,7 @@ class ParsedCard extends StatelessWidget {
     final tokens = context.designTokens;
     return Container(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+        color: tokens.colors.surface.enabled,
         borderRadius: BorderRadius.circular(tokens.radii.l),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),

@@ -523,9 +523,13 @@ class _TranscriptZone extends StatelessWidget {
         // Static content sits directly under the headline — pooling the
         // flexible slack between question and content read as a dead band;
         // the slack now lives between content and orb instead.
-        return Center(
+        // Attached below the headline so greeting/headline/example read as
+        // one editorial block above the mic stage — not a quote floating
+        // unanchored in the middle of the void.
+        return Align(
+          alignment: Alignment.topCenter,
           child: Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
+            padding: EdgeInsets.only(top: tokens.spacing.step10),
             child: Text(
               context.messages.dailyOsNextCaptureIdleExample,
               textAlign: TextAlign.center,

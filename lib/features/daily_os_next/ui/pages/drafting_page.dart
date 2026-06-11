@@ -150,9 +150,9 @@ class DraftingModalContent extends StatelessWidget {
         // Extra bottom padding so the last learning-card line clears the
         // fade band when scrolled to the end.
         padding: EdgeInsets.fromLTRB(
+          tokens.spacing.step5,
           tokens.spacing.step6,
-          tokens.spacing.step6,
-          tokens.spacing.step6,
+          tokens.spacing.step5,
           tokens.spacing.step10,
         ),
         child: Center(
@@ -161,7 +161,6 @@ class DraftingModalContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                SizedBox(height: tokens.spacing.step6),
                 // Reserved eyebrow slot keeps the headline baseline at the
                 // same height as the other steps.
                 Text(' ', style: calmGreetingStyle(tokens)),

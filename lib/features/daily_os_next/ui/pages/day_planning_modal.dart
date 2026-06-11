@@ -183,7 +183,6 @@ SliverWoltModalSheetPage _captureStepPage(
 ) {
   return ModalUtils.sliverModalSheetPage(
     context: context,
-    backgroundColor: context.designTokens.colors.background.level01,
     slivers: [
       SliverToBoxAdapter(
         child: SizedBox(
@@ -291,7 +290,7 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
       case CapturePhase.error:
         actions = _layoutBarPills(context, [
           DsGlassPill(
-            icon: Icons.keyboard_rounded,
+            icon: Icons.keyboard_alt_outlined,
             label: messages.dailyOsNextCaptureTypeInstead,
             fillColor: tokens.colors.surface.focusPressed,
             onTap: () =>
@@ -345,7 +344,6 @@ SliverWoltModalSheetPage _reconcileStepPage(
   final params = ReconcileParams(captureId: captureId, dayDate: day);
   return ModalUtils.sliverModalSheetPage(
     context: context,
-    backgroundColor: context.designTokens.colors.background.level01,
     onTapBack: onBack,
     slivers: [
       SliverToBoxAdapter(child: _ReconcileStepContent(params: params)),
@@ -474,7 +472,6 @@ SliverWoltModalSheetPage _draftingStepPage(
   // shader — a bar would be a dead strip duplicating that signal.
   return ModalUtils.sliverModalSheetPage(
     context: context,
-    backgroundColor: context.designTokens.colors.background.level01,
     onTapBack: onBack,
     showCloseButton: false,
     slivers: [
@@ -562,7 +559,6 @@ SliverWoltModalSheetPage _refineStepPage(
   // the nav bar reads as a double header.
   return ModalUtils.sliverModalSheetPage(
     context: context,
-    backgroundColor: context.designTokens.colors.background.level01,
     slivers: [
       // Same anchored voice template as Capture: a bounded viewport pins
       // the orb above the sticky bar while the refine zone breathes.

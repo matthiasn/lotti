@@ -31,7 +31,7 @@ class PendingCard extends StatelessWidget {
       opacity: decided ? 0.55 : 1.0,
       child: Container(
         decoration: BoxDecoration(
-          color: tokens.colors.background.level02,
+          color: tokens.colors.surface.enabled,
           borderRadius: BorderRadius.circular(tokens.radii.l),
           border: Border.all(color: tokens.colors.decorative.level01),
         ),

@@ -227,7 +227,7 @@ void main() {
     ) async {
       await _openCreate(tester);
       expect(find.byType(DsGlassPill), findsOneWidget);
-      expect(find.byIcon(Icons.keyboard_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_alt_outlined), findsOneWidget);
       expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
     });
 
@@ -291,14 +291,14 @@ void main() {
           error: CaptureError.noAudioRecorded,
         ),
       );
-      expect(find.byIcon(Icons.keyboard_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_alt_outlined), findsOneWidget);
     });
 
     testWidgets('"type instead" flips capture into the captured editor', (
       tester,
     ) async {
       await _openCreate(tester);
-      await tester.tap(find.byIcon(Icons.keyboard_rounded));
+      await tester.tap(find.byIcon(Icons.keyboard_alt_outlined));
       await tester.pump();
       expect(find.byType(DsGlassPill), findsNWidgets(2));
     });
@@ -311,7 +311,7 @@ void main() {
       await tester.tap(find.widgetWithIcon(DsGlassPill, Icons.mic_rounded));
       await tester.pump();
       // Reset → the idle bar offers only the type-instead pill.
-      expect(find.byIcon(Icons.keyboard_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_alt_outlined), findsOneWidget);
       expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
     });
 

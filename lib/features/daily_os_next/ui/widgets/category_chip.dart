@@ -3,8 +3,9 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
-/// Small tinted chip that shows the category name in the category's
-/// own colour.
+/// Category tag: a neutral pill in which only the leading dot carries the
+/// category colour. Category colours are user data, so a tinted pill would
+/// collide with the fixed status-badge palette on the same cards.
 ///
 /// `colorHex` on [DayAgentCategory] is intentionally a plain hex
 /// string so the agent layer stays platform-agnostic; this widget is
@@ -20,7 +21,7 @@ class CategoryChip extends StatelessWidget {
     final color = _parseHex(category.colorHex);
     return Container(
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
+        color: tokens.colors.surface.enabled,
         borderRadius: BorderRadius.circular(tokens.radii.s),
       ),
       padding: EdgeInsets.symmetric(
@@ -42,7 +43,7 @@ class CategoryChip extends StatelessWidget {
           Text(
             category.name,
             style: tokens.typography.styles.others.caption.copyWith(
-              color: color,
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
         ],

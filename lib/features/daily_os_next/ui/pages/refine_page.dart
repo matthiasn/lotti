@@ -332,19 +332,24 @@ class _CurrentPlanList extends StatelessWidget {
     return Center(
       child: SingleChildScrollView(
         padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              context.messages.dailyOsNextRefineCurrentPlan,
-              style: calmEyebrowStyle(tokens),
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            for (final block in plan.blocks) ...[
-              _PlanRow(block: block, timeFormat: timeFormat),
-              SizedBox(height: tokens.spacing.step2),
+        // Centered as a block on the panel axis (left-aligned text inside)
+        // so wide hosts don't strand the list on the leading edge.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                context.messages.dailyOsNextRefineCurrentPlan,
+                style: calmEyebrowStyle(tokens),
+              ),
+              SizedBox(height: tokens.spacing.step3),
+              for (final block in plan.blocks) ...[
+                _PlanRow(block: block, timeFormat: timeFormat),
+                SizedBox(height: tokens.spacing.step2),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );
