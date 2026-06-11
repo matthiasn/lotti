@@ -3088,6 +3088,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextAgendaCapacityOver => 'OVER CAPACITY';
 
   @override
+  String get dailyOsNextAgendaDonutLeft => 'left';
+
+  @override
+  String get dailyOsNextAgendaDonutOver => 'over';
+
+  @override
   String get dailyOsNextAgendaNoPlanBody =>
       'Your tracked time is here either way — speak a check-in and I\'ll draft a day around it.';
 
@@ -3332,7 +3338,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDayMoreTooltip => 'More';
 
   @override
-  String get dailyOsNextDayRefineCta => 'Refine by voice';
+  String get dailyOsNextDayRefineCta => 'Refine';
 
   @override
   String get dailyOsNextDayRefineFooterHint =>
@@ -3437,6 +3443,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get dailyOsNextKnowledgeEmpty =>
       'Nothing yet — I\'ll remember what you tell me.';
+
+  @override
+  String dailyOsNextKnowledgeNudge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count things I noticed — review',
+      one: '1 thing I noticed — review',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dailyOsNextKnowledgeProposedHeader => 'Awaiting your confirmation';

@@ -40,6 +40,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   jargon "Reconcile", a real headline on the review step, typographic
   apostrophes, and large accessibility text sizes no longer overflow the
   capture sheet on small phones.
+- The Daily OS day view now reads as paint-by-numbers: planned blocks are
+  a faint sketch of their category color (dashed while still drafted) and
+  recorded sessions carry the full, alive color — doing fills the day in.
+  The timeline opens centered on the now-line, which spans both the plan
+  and actual lanes, and short blocks no longer clip text mid-letter.
+- The day's agenda is much calmer: finished items collapse into one-line
+  receipt rows so what's next owns the screen, metadata became quiet
+  icon+text instead of a row of pills, "in progress" is no longer painted
+  amber, and the capacity ring is now a thin stacked category ring that
+  matches the legend, with the remaining time in the center.
+- Learnings the planner wants you to confirm now surface right on the day
+  page as a quiet "things I noticed — review" chip (plus a permanent
+  "What I've learned" entry in the day menu) on both mobile and desktop,
+  instead of being reachable only from the evening wrap-up screen.
 - Light theme contrast: secondary "low emphasis" text and the teal accent
   were too faint to read for low-vision users (about 2.2:1 against the
   background). Light-mode secondary text is darker now, and the light

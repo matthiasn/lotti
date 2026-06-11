@@ -47,7 +47,7 @@ void main() {
   });
 
   group('CapacityDonut widget', () {
-    testWidgets('renders center hours label and the capacity eyebrow', (
+    testWidgets('renders the remaining capacity over a LEFT eyebrow', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -59,10 +59,12 @@ void main() {
         ),
       );
 
-      expect(find.text('5.3h'), findsOneWidget);
+      // 480 - 315 = 165m remaining; the headline summary already shows
+      // the scheduled/capacity pair, so the center answers "what's left".
+      expect(find.text('2h 45m'), findsOneWidget);
       final messages = tester.element(find.byType(CapacityDonut)).messages;
       expect(
-        find.text(messages.dailyOsNextAgendaCapacityOf('8h').toUpperCase()),
+        find.text(messages.dailyOsNextAgendaDonutLeft.toUpperCase()),
         findsOneWidget,
       );
     });
@@ -82,8 +84,11 @@ void main() {
         final context = tester.element(find.byType(CapacityDonut));
         final messages = context.messages;
         final tokens = context.designTokens;
+        // 540 of 480 → 60m over, narrated by the OVER eyebrow in the
+        // error tone.
+        expect(find.text('1h'), findsOneWidget);
         final eyebrow = tester.widget<Text>(
-          find.text(messages.dailyOsNextAgendaCapacityOf('8h').toUpperCase()),
+          find.text(messages.dailyOsNextAgendaDonutOver.toUpperCase()),
         );
         expect(
           eyebrow.style?.color,
@@ -108,10 +113,10 @@ void main() {
       final context = tester.element(find.byType(CapacityDonut));
       final messages = context.messages;
       final tokens = context.designTokens;
+      // Neutral mode never flips to the OVER error narration.
       final eyebrow = tester.widget<Text>(
-        find.text(messages.dailyOsNextAgendaCapacityOf('8h').toUpperCase()),
+        find.text(messages.dailyOsNextAgendaDonutLeft.toUpperCase()),
       );
-      // Neutral mode never flips the eyebrow to the error tone.
       expect(eyebrow.style?.color, tokens.colors.text.lowEmphasis);
     });
 

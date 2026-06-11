@@ -1728,6 +1728,8 @@
     }
   },
   "dailyOsNextAgendaCapacityOver": "OVER CAPACITY",
+  "dailyOsNextAgendaDonutLeft": "left",
+  "dailyOsNextAgendaDonutOver": "over",
   "dailyOsNextAgendaNoPlanBody": "Your tracked time is here either way — speak a check-in and I'll draft a day around it.",
   "dailyOsNextAgendaNoPlanSummary": "{duration} tracked so far. Speak a check-in and I'll draft a day around it.",
   "@dailyOsNextAgendaNoPlanSummary": {
@@ -1858,7 +1860,7 @@
   "dailyOsNextDayMenuDeletePlan": "Delete plan",
   "dailyOsNextDayMenuInspectAgent": "Inspect agent",
   "dailyOsNextDayMoreTooltip": "More",
-  "dailyOsNextDayRefineCta": "Refine by voice",
+  "dailyOsNextDayRefineCta": "Refine",
   "dailyOsNextDayRefineFooterHint": "Talk to reshape the plan — moves, drops, and buffers are shown as a diff before they stick.",
   "dailyOsNextDayTitle": "Your day",
   "dailyOsNextDayWhyChipLabel": "WHY",
@@ -1906,6 +1908,14 @@
   "dailyOsNextKnowledgeEditSave": "Save",
   "dailyOsNextKnowledgeEditStatementHint": "What should I remember?",
   "dailyOsNextKnowledgeEmpty": "Nothing yet — I'll remember what you tell me.",
+  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 thing I noticed — review} other{{count} things I noticed — review}}",
+  "@dailyOsNextKnowledgeNudge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextKnowledgeProposedHeader": "Awaiting your confirmation",
   "dailyOsNextKnowledgeRetract": "Forget",
   "dailyOsNextKnowledgeStale": "Still true?",

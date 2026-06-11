@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/link_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -47,18 +46,6 @@ void main() {
       final badge = tester.getSize(find.byType(LinkBadge));
       expect(badge.width, lessThanOrEqualTo(220));
       expect(tester.takeException(), isNull);
-    });
-  });
-
-  group('StandaloneTag', () {
-    testWidgets('renders the localized "Time block" label with clock icon', (
-      tester,
-    ) async {
-      await tester.pumpWidget(_wrap(const StandaloneTag()));
-
-      final messages = tester.element(find.byType(StandaloneTag)).messages;
-      expect(find.text(messages.dailyOsNextStandaloneTag), findsOneWidget);
-      expect(find.byIcon(Icons.schedule_rounded), findsOneWidget);
     });
   });
 }

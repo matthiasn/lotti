@@ -55,11 +55,12 @@ class _BlockPosition extends StatelessWidget {
 
 /// A single placed block on the Day timeline.
 ///
-/// Planned blocks carry their category color; [tracked] blocks (recorded
-/// sessions) render in the neutral treatment from handoff v2 item 2 —
-/// faint neutral fill, neutral left border, a small category dot, a green
-/// check when done, a mono time range, and a "· tracked" suffix. They
-/// never read as drafted: they already happened.
+/// Paint-by-numbers contract: PLANNED blocks are the faint outline waiting
+/// to be filled in — a whisper of category color (5% fill, tinted dashed
+/// outline while drafted) — and [tracked] blocks (recorded sessions) are
+/// the filled-in paint: full-strength category stripe, an 18% category
+/// fill, a green check when done, and a mono time range. Doing is what
+/// makes a block alive, so the recorded lane carries the color.
 class DayBlock extends ConsumerWidget {
   const DayBlock({
     required this.block,
@@ -102,16 +103,24 @@ class DayBlock extends ConsumerWidget {
             beamToNamed('/tasks/$taskId');
           };
 
+    // Recorded tint needs more chroma in light mode to keep the
+    // filled-in/sketch contrast legible on a white canvas.
+    final isLight = Theme.of(context).brightness == Brightness.light;
+    final trackedTint = isLight ? 0.30 : 0.18;
+    // Composite the tint over the canvas so the fill is opaque: hour
+    // gridlines must read as the empty canvas, not through the cards.
+    final canvas = tokens.colors.background.level01;
     final fill = isBuffer
         ? Colors.transparent
-        : tracked
-        ? tokens.colors.surface.enabled
-        : category.withValues(alpha: 0.12);
+        : Color.alphaBlend(
+            category.withValues(alpha: tracked ? trackedTint : 0.05),
+            canvas,
+          );
     final leftStripeColor = isBuffer
         ? tokens.colors.text.lowEmphasis.withValues(alpha: 0.32)
         : tracked
-        ? tokens.colors.decorative.level02
-        : category;
+        ? category
+        : category.withValues(alpha: 0.45);
 
     final borderRadius = BorderRadius.circular(tokens.radii.m);
     final card = Ink(
@@ -153,7 +162,7 @@ class DayBlock extends ConsumerWidget {
     // and tracked blocks read solid.
     final outlined = isDrafted
         ? DsDashedBorder(
-            color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.20),
+            color: category.withValues(alpha: 0.30),
             radius: tokens.radii.m,
             child: card,
           )
@@ -196,7 +205,6 @@ class _BlockContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final category = categoryColorFromHex(block.category.colorHex);
     final isBuffer = block.type == TimeBlockType.buffer;
     final isCal = block.type == TimeBlockType.cal;
     final isTaskLinked =
@@ -206,110 +214,103 @@ class _BlockContent extends StatelessWidget {
     // else (cal events, buffers, task-linked, tracked) is read-only.
     final editable =
         !tracked && !isBuffer && !isCal && !isTaskLinked && onRename != null;
+    // Recorded titles read at full strength; planned ones recede a step —
+    // the plan is the sketch, the recording is the ink.
     final titleStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.highEmphasis,
+      color: tracked
+          ? tokens.colors.text.highEmphasis
+          : tokens.colors.text.mediumEmphasis,
       fontWeight: FontWeight.w600,
       fontStyle: isBuffer ? FontStyle.italic : FontStyle.normal,
     );
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Per the prototype: blocks shorter than 36 px collapse to the
-        // title row only. The sub-title row would otherwise overflow
-        // the block on 30-min cal events.
-        final compact = constraints.maxHeight < 36;
+        // Height-tiered content policy: never let text shear mid-glyph.
+        // Micro blocks (< one comfortable line) show fill + stripe only;
+        // short blocks a single centered title line; the subtitle joins
+        // from ~44px; two title lines from 64px.
+        final lineHeight = MediaQuery.textScalerOf(
+          context,
+        ).scale(tokens.typography.lineHeight.bodySmall);
+        if (constraints.maxHeight < lineHeight + 2) {
+          return const SizedBox.shrink();
+        }
+        final compact = constraints.maxHeight < 44;
         final showSubtitle = !isBuffer && !compact;
-        final titleMaxLines = constraints.maxHeight >= 56 ? 2 : 1;
+        final titleMaxLines = constraints.maxHeight >= 64 ? 2 : 1;
+        // OverflowBox + ClipRect: duration-sized boxes clip content
+        // gracefully at the block edge instead of throwing RenderFlex
+        // overflows when a height lands between the visibility thresholds.
         return ClipRect(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (tracked) ...[
-                    Padding(
-                      padding: EdgeInsets.only(top: tokens.spacing.step1),
-                      child: SizedBox.square(
-                        dimension: tokens.spacing.step2,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: category,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
+          child: OverflowBox(
+            alignment: compact ? Alignment.centerLeft : Alignment.topLeft,
+            minHeight: 0,
+            maxHeight: double.infinity,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (isCal) ...[
+                      Icon(
+                        Icons.event_rounded,
+                        size: 12,
+                        color: tokens.colors.text.mediumEmphasis,
                       ),
+                      SizedBox(width: tokens.spacing.step1),
+                    ],
+                    if (!tracked && isTaskLinked) ...[
+                      Icon(
+                        Icons.link_rounded,
+                        size: 12,
+                        color: tokens.colors.alert.info.defaultColor,
+                      ),
+                      SizedBox(width: tokens.spacing.step1),
+                    ],
+                    Expanded(
+                      child: editable && !compact
+                          ? EditableTitle(
+                              value: block.title,
+                              onSubmitted: onRename!,
+                              style: titleStyle,
+                            )
+                          : Text(
+                              block.title,
+                              style: titleStyle,
+                              maxLines: titleMaxLines,
+                              overflow: TextOverflow.fade,
+                              softWrap: true,
+                            ),
                     ),
-                    SizedBox(width: tokens.spacing.step2),
+                    if (tracked && isDone) ...[
+                      SizedBox(width: tokens.spacing.step1),
+                      Icon(
+                        Icons.check_rounded,
+                        size: 12,
+                        color: tokens.colors.alert.success.defaultColor,
+                      ),
+                    ],
                   ],
-                  if (isCal) ...[
-                    Icon(
-                      Icons.event_rounded,
-                      size: 12,
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                    SizedBox(width: tokens.spacing.step1),
-                  ],
-                  if (!tracked && isTaskLinked) ...[
-                    Icon(
-                      Icons.link_rounded,
-                      size: 12,
-                      color: tokens.colors.alert.info.defaultColor,
-                    ),
-                    SizedBox(width: tokens.spacing.step1),
-                  ],
-                  Expanded(
-                    child: editable && !compact
-                        ? EditableTitle(
-                            value: block.title,
-                            onSubmitted: onRename!,
-                            style: titleStyle,
-                          )
-                        : Text(
-                            block.title,
-                            style: titleStyle,
-                            maxLines: titleMaxLines,
-                            overflow: TextOverflow.fade,
-                            softWrap: true,
-                          ),
-                  ),
-                  if (tracked && isDone && !compact) ...[
-                    SizedBox(width: tokens.spacing.step1),
-                    Icon(
-                      Icons.check_rounded,
-                      size: 12,
-                      color: tokens.colors.alert.success.defaultColor,
-                    ),
-                  ],
-                ],
-              ),
-              if (block.reason != null &&
-                  block.type == TimeBlockType.ai &&
-                  !tracked &&
-                  constraints.maxHeight >= 72) ...[
-                SizedBox(height: tokens.spacing.step1),
-                WhyChip(reason: block.reason!),
-              ],
-              if (showSubtitle)
-                Padding(
-                  padding: EdgeInsets.only(top: tokens.spacing.step1),
-                  child: Text(
-                    _subTitle(context, block),
-                    style: tracked
-                        ? monoMetaStyle(
-                            tokens,
-                            tokens.colors,
-                          ).copyWith(fontSize: 10)
-                        : tokens.typography.styles.others.caption.copyWith(
-                            color: tokens.colors.text.lowEmphasis,
-                            fontSize: 10,
-                          ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
                 ),
-            ],
+                if (showSubtitle)
+                  Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.step1),
+                    child: Text(
+                      _subTitle(context, block),
+                      // One mono voice for time metadata in both lanes.
+                      style: monoMetaStyle(
+                        tokens,
+                        tokens.colors,
+                      ).copyWith(fontSize: 10),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -327,7 +328,6 @@ class _BlockContent extends StatelessWidget {
       );
     }
     if (block.location != null) parts.add(block.location!);
-    if (tracked) parts.add(context.messages.dailyOsNextTimelineTracked);
     return parts.join(' · ');
   }
 

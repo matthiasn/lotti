@@ -14,10 +14,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// One row on the Agenda view.
 ///
 /// The row keeps the category stripe and order number visible while using a
-/// compact task-list rhythm: title first, then reason, estimate, and state
-/// metadata as DS pills. Task-linked items carry a [LinkBadge] that opens
-/// the task; standalone items carry a [StandaloneTag] and a click-to-edit
-/// title (handoff v2 item 3).
+/// compact task-list rhythm: title first, then quiet bare-icon metadata
+/// (reason sparkle, estimate, state). Task-linked items carry a [LinkBadge]
+/// that opens the task; standalone items are the unmarked default with a
+/// click-to-edit title (handoff v2 item 3).
 class AgendaCard extends StatelessWidget {
   const AgendaCard({
     required this.index,
@@ -63,6 +63,63 @@ class AgendaCard extends StatelessWidget {
     final category = _categoryColor();
     final progress = item.progress;
     final borderRadius = BorderRadius.circular(tokens.radii.m);
+    // Mid-day the fold belongs to what's next: finished items collapse to
+    // one quiet receipt row so in-progress and upcoming cards own the
+    // viewport.
+    if (item.state == AgendaItemState.done) {
+      final doneRow = DecoratedBox(
+        decoration: BoxDecoration(
+          color: tokens.colors.surface.enabled,
+          borderRadius: borderRadius,
+        ),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step5,
+            vertical: tokens.spacing.step3,
+          ),
+          child: Row(
+            children: [
+              SizedBox(
+                width: tokens.spacing.step6,
+                child: Text(
+                  '$index',
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: category,
+                    fontWeight: tokens.typography.weight.bold,
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  item.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Icon(
+                Icons.check_rounded,
+                size: 14,
+                color: tokens.colors.alert.success.defaultColor,
+              ),
+            ],
+          ),
+        ),
+      );
+      final callback = onTap;
+      if (callback == null) return doneRow;
+      return Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: callback,
+          borderRadius: borderRadius,
+          child: doneRow,
+        ),
+      );
+    }
     final card = ClipRRect(
       borderRadius: borderRadius,
       child: DecoratedBox(
@@ -101,7 +158,7 @@ class AgendaCard extends StatelessWidget {
                     onOpenTask: onTap,
                     onRename: onRename,
                   ),
-                  if (progress != null) ...[
+                  if (progress != null && progress > 0 && progress < 1) ...[
                     SizedBox(height: tokens.spacing.step4),
                     _ProgressBar(progress: progress, color: category),
                   ],
@@ -240,17 +297,16 @@ class _AgendaContent extends StatelessWidget {
             meta,
           ],
         ],
-        SizedBox(height: tokens.spacing.step3),
-        // The task-linked / standalone distinction is always visible:
-        // a blue link badge that opens the task, or a neutral
-        // "Time block" tag.
-        if (isTaskLinked)
+        // Only the exception is marked: task-linked items carry the badge
+        // that opens the task; standalone blocks are the calm default and
+        // carry nothing.
+        if (isTaskLinked) ...[
+          SizedBox(height: tokens.spacing.step3),
           LinkBadge(
             label: displayTitle ?? item.title,
             onTap: onOpenTask,
-          )
-        else
-          const StandaloneTag(),
+          ),
+        ],
         if (item.outcome != null) ...[
           SizedBox(height: tokens.spacing.step3),
           Text(
@@ -348,21 +404,36 @@ class _NumberedCircle extends StatelessWidget {
       first: tokens.colors.text.highEmphasis,
       second: tokens.colors.text.onInteractiveAlert,
     );
+    // The bare order number is enough on the card surface; a plated ring
+    // on every row was decoration without function. The solid plate stays
+    // for the cover-art overlay where the number needs its own contrast.
+    if (!solid) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Center(
+          child: Text(
+            '$index',
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: color,
+              fontWeight: tokens.typography.weight.bold,
+            ),
+          ),
+        ),
+      );
+    }
     return Container(
       width: size,
       height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: solid ? color : tokens.colors.surface.enabled,
+        color: color,
         shape: BoxShape.circle,
-        border: solid
-            ? null
-            : Border.all(color: tokens.colors.decorative.level01),
       ),
       child: Text(
         '$index',
         style: tokens.typography.styles.others.caption.copyWith(
-          color: solid ? solidForeground : color,
+          color: solidForeground,
           fontWeight: tokens.typography.weight.bold,
         ),
       ),
@@ -426,16 +497,17 @@ class _WhyMeta extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = tokens.colors.aiCard.accent;
+    // A bare sparkle carries "the agent placed this for a reason"; the
+    // reason itself lives in the tooltip. A labelled tinted pill on every
+    // AI row out-shouted the titles.
     return Tooltip(
       message: reason,
-      child: DsPill(
-        variant: DsPillVariant.tinted,
-        color: color,
+      child: Semantics(
         label: context.messages.dailyOsNextDayWhyChipLabel,
-        leading: Icon(
+        child: Icon(
           Icons.auto_awesome_rounded,
           size: tokens.typography.size.caption,
-          color: color,
+          color: color.withValues(alpha: 0.8),
         ),
       ),
     );
@@ -451,15 +523,22 @@ class _EstimateMeta extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = tokens.colors.text.lowEmphasis;
-    return DsPill(
-      variant: DsPillVariant.filled,
-      label: context.messages.dailyOsNextEstimateMinutes(minutes),
-      labelColor: tokens.colors.text.mediumEmphasis,
-      leading: Icon(
-        Icons.schedule_rounded,
-        size: tokens.typography.size.caption,
-        color: color,
-      ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.schedule_rounded,
+          size: tokens.typography.size.caption,
+          color: color,
+        ),
+        SizedBox(width: tokens.spacing.step1),
+        Text(
+          context.messages.dailyOsNextEstimateMinutes(minutes),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -477,8 +556,10 @@ class _StateMeta extends StatelessWidget {
         tokens.colors.text.lowEmphasis,
         context.messages.dailyOsNextAgendaStateOpen,
       ),
+      // Neutral: in-progress is the normal mid-day condition, not a
+      // warning — amber is reserved for overdue.
       AgendaItemState.inProgress => (
-        tokens.colors.alert.warning.defaultColor,
+        tokens.colors.text.mediumEmphasis,
         context.messages.dailyOsNextAgendaStateInProgress,
       ),
       AgendaItemState.overdue => (
@@ -490,12 +571,24 @@ class _StateMeta extends StatelessWidget {
         context.messages.dailyOsNextAgendaStateDone,
       ),
     };
-    return DsPill(
-      variant: DsPillVariant.tinted,
-      color: color,
-      label: label,
-      labelColor: color,
-    );
+    // Done is a glyph, in-progress a quiet colored caption; only the
+    // overdue alarm earns a tinted container.
+    return switch (state) {
+      AgendaItemState.done => Semantics(
+        label: label,
+        child: Icon(Icons.check_rounded, size: 14, color: color),
+      ),
+      AgendaItemState.overdue => DsPill(
+        variant: DsPillVariant.tinted,
+        color: color,
+        label: label,
+        labelColor: color,
+      ),
+      _ => Text(
+        label,
+        style: tokens.typography.styles.others.caption.copyWith(color: color),
+      ),
+    };
   }
 }
 
@@ -511,7 +604,7 @@ class _ProgressBar extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.xs),
       child: SizedBox(
-        height: tokens.spacing.step2,
+        height: tokens.spacing.step1,
         child: LinearProgressIndicator(
           value: progress.clamp(0.0, 1.0),
           valueColor: AlwaysStoppedAnimation<Color>(color),

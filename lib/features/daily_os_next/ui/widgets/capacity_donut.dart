@@ -1,28 +1,51 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Ring donut for the day's planned load — `prototype/screens/plan.jsx →
-/// CapacityDonut`.
+/// One category slice of the capacity ring.
+@immutable
+class CapacityDonutSegment {
+  const CapacityDonutSegment({required this.color, required this.minutes});
+
+  final Color color;
+  final int minutes;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CapacityDonutSegment &&
+      other.color == color &&
+      other.minutes == minutes;
+
+  @override
+  int get hashCode => Object.hash(color, minutes);
+}
+
+/// Ring donut for the day's planned load.
 ///
-/// 10 px stroke over a faint background ring. Ring color flips with
-/// pressure: `< 90%` teal, `90–100%` warning, `> 100%` error with the
-/// over-amount drawn as a second half-alpha arc continuing past the
-/// clamped end. Center label shows `{scheduled}h` over an `of {N}h`
-/// eyebrow whose color matches the ring when over capacity.
+/// 5 px stroke over a faint background track. When [segments] are given
+/// the ring is the stacked category mix matching the legend dots beside it
+/// (the gray remainder = free capacity); otherwise a single teal arc. The
+/// center shows the *remaining* capacity ("45m" over a LEFT eyebrow) —
+/// pressure wording lives in the stat card's overline, so the ring stays
+/// calm until the day is genuinely over capacity (error color + OVER
+/// eyebrow, with the over-amount drawn as a half-alpha arc continuing
+/// past the clamped end).
 ///
-/// [neutral] forces the teal ring regardless of ratio — the honest
+/// [neutral] keeps the calm treatment regardless of ratio — the honest
 /// "No plan yet" strip uses this to show tracked hours without a false
-/// "Near full" reading.
+/// pressure reading.
 class CapacityDonut extends StatelessWidget {
   const CapacityDonut({
     required this.scheduledMinutes,
     required this.capacityMinutes,
     this.size = 86,
     this.neutral = false,
+    this.segments = const [],
     super.key,
   });
 
@@ -30,8 +53,13 @@ class CapacityDonut extends StatelessWidget {
   final int capacityMinutes;
   final double size;
 
-  /// Render the ring in neutral teal regardless of the ratio.
+  /// Render the ring in the calm treatment regardless of the ratio.
   final bool neutral;
+
+  /// Optional per-category slices (color + minutes) that stack into the
+  /// ring so it matches the category legend. Falls back to a single teal
+  /// arc when empty.
+  final List<CapacityDonutSegment> segments;
 
   /// `scheduled / capacity`, `0` when the capacity is unset.
   static double ratioFor(int scheduledMinutes, int capacityMinutes) {
@@ -52,21 +80,18 @@ class CapacityDonut extends StatelessWidget {
     final tokens = context.designTokens;
     final ratio = ratioFor(scheduledMinutes, capacityMinutes);
     final over = !neutral && ratio > 1.0;
-    final ringColor = neutral || ratio < 0.9
-        ? tokens.colors.interactive.enabled
-        : ratio <= 1.0
-        ? tokens.colors.alert.warning.defaultColor
-        : tokens.colors.alert.error.defaultColor;
+    final overColor = tokens.colors.alert.error.defaultColor;
 
-    final centerLabel = formatDecimalHours(scheduledMinutes);
-    final eyebrow = context.messages.dailyOsNextAgendaCapacityOf(
-      formatDecimalHours(capacityMinutes),
-    );
+    final remaining = capacityMinutes - scheduledMinutes;
+    final centerLabel = formatMinutesCompact(remaining.abs());
+    final eyebrow = over
+        ? context.messages.dailyOsNextAgendaDonutOver
+        : context.messages.dailyOsNextAgendaDonutLeft;
 
     return Semantics(
       label: context.messages.dailyOsNextAgendaSummary(
-        formatDecimalHours(scheduledMinutes),
-        formatDecimalHours(capacityMinutes),
+        formatMinutesCompact(scheduledMinutes),
+        formatMinutesCompact(capacityMinutes),
       ),
       value: '${(ratio * 100).round()}%',
       child: SizedBox.square(
@@ -74,8 +99,19 @@ class CapacityDonut extends StatelessWidget {
         child: CustomPaint(
           painter: _DonutPainter(
             ratio: ratio,
-            color: ringColor,
+            color: over ? overColor : tokens.colors.interactive.enabled,
             trackColor: tokens.colors.background.level03,
+            // Over capacity the stacked ring would silently clip its last
+            // slices; fall back to the explicit over state (error ring +
+            // half-alpha over-arc) instead of lying by omission.
+            segmentSweeps: [
+              if (capacityMinutes > 0 && !over)
+                for (final segment in segments)
+                  (
+                    color: segment.color,
+                    sweep: (segment.minutes / capacityMinutes).clamp(0.0, 1.0),
+                  ),
+            ],
           ),
           child: Center(
             child: Column(
@@ -85,15 +121,14 @@ class CapacityDonut extends StatelessWidget {
                   centerLabel,
                   style: calmDisplayStyle(tokens).copyWith(
                     fontSize: size > 100 ? 22 : 18,
+                    color: over ? overColor : tokens.colors.text.highEmphasis,
                   ),
                 ),
                 Text(
                   eyebrow.toUpperCase(),
                   style: calmEyebrowStyle(
                     tokens,
-                    color: over
-                        ? tokens.colors.alert.error.defaultColor
-                        : tokens.colors.text.lowEmphasis,
+                    color: over ? overColor : tokens.colors.text.lowEmphasis,
                   ).copyWith(fontSize: 10),
                 ),
               ],
@@ -110,13 +145,15 @@ class _DonutPainter extends CustomPainter {
     required this.ratio,
     required this.color,
     required this.trackColor,
+    required this.segmentSweeps,
   });
 
   final double ratio;
   final Color color;
   final Color trackColor;
+  final List<({Color color, double sweep})> segmentSweeps;
 
-  static const _stroke = 10.0;
+  static const _stroke = 5.0;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -131,7 +168,21 @@ class _DonutPainter extends CustomPainter {
     canvas.drawCircle(center, radius, track);
 
     final clamped = ratio.clamp(0.0, 1.0);
-    if (clamped > 0) {
+    if (segmentSweeps.isNotEmpty) {
+      // Stacked category arcs, butt-capped so the slices tile cleanly into
+      // one ring that mirrors the legend.
+      var startAngle = -math.pi / 2;
+      for (final segment in segmentSweeps) {
+        final sweep = segment.sweep * 2 * math.pi;
+        if (sweep <= 0) continue;
+        final paint = Paint()
+          ..color = segment.color
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = _stroke;
+        canvas.drawArc(rect, startAngle, sweep, false, paint);
+        startAngle += sweep;
+      }
+    } else if (clamped > 0) {
       final ring = Paint()
         ..color = color
         ..style = PaintingStyle.stroke
@@ -176,5 +227,8 @@ class _DonutPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _DonutPainter old) =>
-      old.ratio != ratio || old.color != color || old.trackColor != trackColor;
+      old.ratio != ratio ||
+      old.color != color ||
+      old.trackColor != trackColor ||
+      !listEquals(old.segmentSweeps, segmentSweeps);
 }

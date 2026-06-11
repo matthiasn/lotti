@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:clock/clock.dart';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,7 +11,6 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -97,12 +98,15 @@ class _DayTimelineState extends State<DayTimeline> {
     _timelineScrollController = ScrollController()
       ..addListener(_recordTimelineScrollOffset);
     _pinchStartPxPerMinute = _pxPerMinute;
-    _now = (widget.clock ?? DateTime.now)();
+    _now = (widget.clock ?? clock.now)();
     if (widget.clock == null) {
-      // Re-render once per minute when using the real clock so the
-      // now-line tracks time. Skipped under test (fixed clock).
+      // Re-render once per minute when using the ambient clock so the
+      // now-line tracks time. Skipped under test (fixed clock param).
       _scheduleNextMinute();
     }
+    // Open with the now-line framed in the upper half of the viewport so
+    // "where am I in the day" needs no scrolling.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _centerOnNow());
   }
 
   @override
@@ -114,16 +118,61 @@ class _DayTimelineState extends State<DayTimeline> {
   }
 
   void _scheduleNextMinute() {
-    final now = DateTime.now();
+    final now = clock.now();
     final delay = Duration(
       seconds: 60 - now.second,
       milliseconds: -now.millisecond,
     );
     _timer = Timer(delay, () {
       if (!mounted) return;
-      setState(() => _now = DateTime.now());
+      setState(() => _now = clock.now());
       _scheduleNextMinute();
     });
+  }
+
+  /// Scrolls the timeline so the now-line sits ~45% down the viewport.
+  /// No-op when now is outside the day's window or nothing scrolls.
+  void _centerOnNow() {
+    if (!mounted || !_timelineScrollController.hasClients) return;
+    final position = _timelineScrollController.position;
+    if (position.maxScrollExtent <= 0) return;
+    final dayDate = widget.draft.dayDate;
+    final windowStart = DateTime(
+      dayDate.year,
+      dayDate.month,
+      dayDate.day,
+      widget.startHour,
+    );
+    final windowEnd = windowStart.add(
+      Duration(hours: widget.endHour - widget.startHour),
+    );
+    if (!_now.isAfter(windowStart) ||
+        !_now.isBefore(windowEnd) ||
+        !_isSameDay(_now, dayDate)) {
+      return;
+    }
+    final tokens = context.designTokens;
+    final foldingState = TimelineFoldingState.fromBlocks(
+      blocks: [
+        ...widget.draft.blocks,
+        ...(widget.actualBlocks ?? widget.draft.actualBlocks),
+      ],
+      dayDate: dayDate,
+      startHour: widget.startHour,
+      endHour: widget.endHour,
+      expandedRegionStarts: _expandedFoldRegionStarts,
+      collapsedHourHeight: tokens.spacing.step3,
+    );
+    final nowTop = foldingState.positionForDate(
+      _now,
+      windowStart: windowStart,
+      pxPerMinute: _pxPerMinute,
+    );
+    final target = (nowTop - position.viewportDimension * 0.45).clamp(
+      0.0,
+      position.maxScrollExtent,
+    );
+    _timelineScrollController.jumpTo(target);
   }
 
   @override
@@ -736,17 +785,30 @@ class _SharedHourRail extends StatelessWidget {
                     ),
                   ),
               for (final hour in foldingState.visibleHourLabels)
-                Positioned(
-                  top:
-                      topInset +
-                      foldingState.positionForHour(hour, pxPerMinute) -
-                      hourLabelCenterOffset,
-                  right: tokens.spacing.step6,
-                  child: Text(
-                    formatTimelineHourLabel(hour),
-                    style: hourLabelStyle,
+                // Skip hour labels the now-chip would half-occlude — a
+                // sheared "16:00" under the 15:45 chip reads as a
+                // rendering bug on the rail's marquee element.
+                if (now == null ||
+                    (foldingState.positionForHour(hour, pxPerMinute) -
+                                foldingState.positionForDate(
+                                  now!,
+                                  windowStart: windowStart,
+                                  pxPerMinute: pxPerMinute,
+                                ))
+                            .abs() >
+                        tokens.typography.lineHeight.caption +
+                            tokens.spacing.step2)
+                  Positioned(
+                    top:
+                        topInset +
+                        foldingState.positionForHour(hour, pxPerMinute) -
+                        hourLabelCenterOffset,
+                    right: tokens.spacing.step6,
+                    child: Text(
+                      formatTimelineHourLabel(hour),
+                      style: hourLabelStyle,
+                    ),
                   ),
-                ),
               if (now != null)
                 Positioned(
                   top:

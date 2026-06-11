@@ -48,6 +48,8 @@ class _DayHeader extends StatelessWidget {
                 switch (action) {
                   case _DayMenuAction.inspectAgent:
                     onInspectAgent();
+                  case _DayMenuAction.knowledge:
+                    unawaited(showKnowledgePanelModal(context));
                   case _DayMenuAction.deletePlan:
                     onDeletePlan();
                 }
@@ -59,6 +61,16 @@ class _DayHeader extends StatelessWidget {
                     leading: const Icon(Icons.psychology_alt_outlined),
                     title: Text(
                       popupContext.messages.dailyOsNextDayMenuInspectAgent,
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ),
+                PopupMenuItem<_DayMenuAction>(
+                  value: _DayMenuAction.knowledge,
+                  child: ListTile(
+                    leading: const Icon(Icons.auto_awesome_outlined),
+                    title: Text(
+                      popupContext.messages.dailyOsNextKnowledgeTitle,
                     ),
                     contentPadding: EdgeInsets.zero,
                   ),

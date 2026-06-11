@@ -5256,6 +5256,18 @@ abstract class AppLocalizations {
   /// **'OVER CAPACITY'**
   String get dailyOsNextAgendaCapacityOver;
 
+  /// No description provided for @dailyOsNextAgendaDonutLeft.
+  ///
+  /// In en, this message translates to:
+  /// **'left'**
+  String get dailyOsNextAgendaDonutLeft;
+
+  /// No description provided for @dailyOsNextAgendaDonutOver.
+  ///
+  /// In en, this message translates to:
+  /// **'over'**
+  String get dailyOsNextAgendaDonutOver;
+
   /// No description provided for @dailyOsNextAgendaNoPlanBody.
   ///
   /// In en, this message translates to:
@@ -5691,7 +5703,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextDayRefineCta.
   ///
   /// In en, this message translates to:
-  /// **'Refine by voice'**
+  /// **'Refine'**
   String get dailyOsNextDayRefineCta;
 
   /// No description provided for @dailyOsNextDayRefineFooterHint.
@@ -5885,6 +5897,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Nothing yet — I\'ll remember what you tell me.'**
   String get dailyOsNextKnowledgeEmpty;
+
+  /// No description provided for @dailyOsNextKnowledgeNudge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 thing I noticed — review} other{{count} things I noticed — review}}'**
+  String dailyOsNextKnowledgeNudge(int count);
 
   /// No description provided for @dailyOsNextKnowledgeProposedHeader.
   ///

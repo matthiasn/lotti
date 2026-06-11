@@ -1532,6 +1532,8 @@
     }
   },
   "dailyOsNextAgendaCapacityOver": "SOBRECARGADO",
+  "dailyOsNextAgendaDonutLeft": "libre",
+  "dailyOsNextAgendaDonutOver": "de más",
   "dailyOsNextAgendaNoPlanBody": "Tu tiempo registrado está aquí de todos modos: habla un check-in y prepararé un día a tu alrededor.",
   "dailyOsNextAgendaNoPlanSummary": "{duration} registrado hasta ahora. Habla un check-in y prepararé un día a tu alrededor.",
   "dailyOsNextAgendaNoPlanTitle": "Aún no hay plan para hoy.",
@@ -1628,7 +1630,7 @@
   "dailyOsNextDayMenuDeletePlan": "Eliminar plan",
   "dailyOsNextDayMenuInspectAgent": "Inspeccionar agente",
   "dailyOsNextDayMoreTooltip": "Más",
-  "dailyOsNextDayRefineCta": "Refinar con voz",
+  "dailyOsNextDayRefineCta": "Ajustar",
   "dailyOsNextDayRefineFooterHint": "Habla para reformar el plan — los cambios aparecen como diff antes de aplicarse.",
   "dailyOsNextDayTitle": "Tu día",
   "dailyOsNextDayWhyChipLabel": "POR QUÉ",
@@ -1669,6 +1671,14 @@
   "dailyOsNextKnowledgeEditSave": "Guardar",
   "dailyOsNextKnowledgeEditStatementHint": "¿Qué debo recordar?",
   "dailyOsNextKnowledgeEmpty": "Nada aún — recordaré lo que me digas.",
+  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 cosa que noté — revisar} other{{count} cosas que noté — revisar}}",
+  "@dailyOsNextKnowledgeNudge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextKnowledgeProposedHeader": "Esperando tu confirmación",
   "dailyOsNextKnowledgeRetract": "Olvidar",
   "dailyOsNextKnowledgeStale": "¿Sigue siendo así?",

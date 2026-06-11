@@ -3131,6 +3131,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextAgendaCapacityOver => 'PŘEPLNĚNO';
 
   @override
+  String get dailyOsNextAgendaDonutLeft => 'volno';
+
+  @override
+  String get dailyOsNextAgendaDonutOver => 'navíc';
+
+  @override
   String get dailyOsNextAgendaNoPlanBody =>
       'Tvůj zaznamenaný čas tu je tak jako tak — namluv check-in a já kolem něj navrhnu den.';
 
@@ -3376,7 +3382,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextDayMoreTooltip => 'Více';
 
   @override
-  String get dailyOsNextDayRefineCta => 'Upravit hlasem';
+  String get dailyOsNextDayRefineCta => 'Upravit';
 
   @override
   String get dailyOsNextDayRefineFooterHint =>
@@ -3483,6 +3489,18 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get dailyOsNextKnowledgeEmpty =>
       'Zatím nic — zapamatuji si, co mi řekneš.';
+
+  @override
+  String dailyOsNextKnowledgeNudge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count postřehů — zkontrolovat',
+      few: '$count postřehy — zkontrolovat',
+      one: '1 postřeh — zkontrolovat',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dailyOsNextKnowledgeProposedHeader => 'Čeká na tvé potvrzení';

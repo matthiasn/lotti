@@ -374,11 +374,15 @@ stateDiagram-v2
   pending) and "Looks good" (closes the modal). The standalone `RefinePage`
   keeps its two-pane timeline + side-panel layout for the route-level flow.
 - Agenda and Commit surfaces use the `CapacityDonut` ring (86 px on the Agenda
-  stat strip, 62 px on the Commit recap) per the design handoff: teal under
-  90% load, warning amber at 90–100%, error red above 100% with the
-  over-amount drawn as a half-alpha arc past the clamped end, and a
-  decimal-hours center label over an `of Nh` eyebrow. The honest no-plan strip
-  passes `neutral: true` so tracked hours never read as a false "Near full".
+  stat strip, 62 px on the Commit recap): a 5 px stacked **category ring**
+  whose slices mirror the legend dots (via `categoryTotalsFor`, shared by
+  both so they can't disagree) over a faint remainder track, with the
+  *remaining* capacity in the center over a LEFT eyebrow. Pressure wording
+  lives in the stat card's overline; the ring only changes color when the
+  day is genuinely over capacity (error tone, OVER eyebrow, half-alpha
+  over-arc). Callers without segments (Commit) get a single teal arc. The
+  honest no-plan strip passes `neutral: true` so tracked hours never read
+  as a false pressure signal.
   UI projections derive scheduled minutes from the non-dropped blocks they
   render. Buffers count because they reserve real time; dropped blocks do not.
   This keeps stale persisted totals from making the capacity reading disagree
@@ -391,8 +395,24 @@ stateDiagram-v2
   rendering. `AgendaView` keeps draft/manual block timing as the source of truth,
   then passes the task title, status, estimate, category, `coverArtId`, and
   `coverArtCropX` into `AgendaCard`. The row uses `CoverArtThumbnail` for the
-  square task image when one exists and falls back to the numbered category badge
+  square task image when one exists and falls back to a bare order number
   when it does not, so the compact mobile list keeps a stable leading column.
+- Agenda rows use a quiet metadata grammar: a bare sparkle icon (reason in
+  the tooltip), bare clock+estimate text, a neutral "In progress" caption
+  (amber is reserved for overdue, the one state that earns a tinted pill),
+  a green check glyph for done, and a 2 px progress bar only while
+  genuinely mid-flight. Task-linked rows carry the `LinkBadge`; standalone
+  rows are the unmarked default. **Done items collapse to one-line receipt
+  rows** (number · title · check) so the first fold belongs to in-progress
+  and upcoming work mid-day. On desktop the agenda column is capped at a
+  760 px reading width.
+- Proposed planner knowledge surfaces on the Day page as the
+  `KnowledgeNudge` chip ("N things I noticed — review", rendered only when
+  proposals exist) between the captures panel and the plan view; tapping it
+  — or the header menu's permanent "What I've learned" entry — opens the
+  `KnowledgePanel` in the standard modal container (bottom sheet on phones,
+  dialog on desktop) where entries are confirmed, edited, or retracted. The
+  Shutdown page keeps its inline panel.
 - `parse_capture_to_items` persists `ParsedItemEntity` rows and links them to
   the source capture. High-confidence matches (`>= 0.75`) auto-link to tasks,
   medium-confidence matches (`0.5..0.75`) auto-link with `lowConfidence`, and
@@ -457,12 +477,20 @@ stateDiagram-v2
   pager with an Actual peek; desktop-width layouts default to side-by-side.
   Two-finger vertical pinch and trackpad pinch zoom both lanes together, while
   the toolbar/horizontal pinch toggles paged versus side-by-side comparison.
-  Blocks in the Actual lane render in the **tracked** treatment from the
-  handoff (v2 item 2): neutral fill and left border, a small category dot, a
-  green check when done, and a mono `HH:mm–HH:mm · tracked` subtitle — never
-  the dashed drafted outline, never a WhyChip. Drafted plan blocks carry a
-  dashed `DsDashedBorder` outline (a design-system primitive) so the whole frame reads provisional;
-  committed blocks render solid. `DayBlock` opens `/tasks/<taskId>` for any
+  Blocks follow the **paint-by-numbers** contract: planned blocks are the
+  faint sketch (5% category tint composited opaquely over the canvas, a
+  45%-alpha category stripe, muted titles, and — while drafted — a
+  category-tinted dashed `DsDashedBorder` outline); recorded sessions in
+  the Actual lane are the filled-in paint (full category stripe, 18% tint
+  dark / 30% light, strong titles, a green check when done) — doing is
+  what makes a block alive. Both lanes share one mono `HH:mm–HH:mm`
+  subtitle voice, and neither renders WhyChips (placement reasons live on
+  the agenda's sparkle tooltip). Block content is height-tiered so glyphs
+  never shear: micro blocks show fill+stripe only, short blocks one
+  centered title line, taller blocks add the subtitle and a second title
+  line. The timeline is clock-injectable (`package:clock` by default), and
+  on open it auto-centers the now-line at ~45% of the viewport when "now"
+  falls inside the day's window. `DayBlock` opens `/tasks/<taskId>` for any
   planned or actual block whose `TimeBlock.taskId` is present; standalone
   calendar and buffer blocks stay inert.
 - `surface_pending_decisions` intentionally limits overdue carryover to the

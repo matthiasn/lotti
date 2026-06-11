@@ -40,6 +40,9 @@
           <p>Daily OS Next: the drafting wait replaced its shimmer placeholders with the AI thinking animation over a rotating narration of what the agent is doing, alongside yesterday's learning cards.</p>
           <p>Daily OS Next: the Refine step was rebuilt on the same layout as Capture — it shows the current plan you are about to change, streams your words above the orb, and offers Revert / Looks good on the bottom bar.</p>
           <p>Daily OS Next: copy and typography polish — a "Review" CTA instead of "Reconcile", a real headline on the review step, typographic apostrophes, and large accessibility text sizes no longer overflow the capture sheet on small phones.</p>
+          <p>Daily OS Next: the day view reads as paint-by-numbers — planned blocks are a faint sketch of their category color (dashed while drafted) and recorded sessions carry the full, alive color; the timeline opens centered on the now-line, which spans both lanes, and short blocks no longer clip text.</p>
+          <p>Daily OS Next: a calmer agenda — finished items collapse into one-line receipt rows, metadata became quiet icon+text instead of pill rows, and the capacity ring is a thin stacked category ring matching the legend with remaining time in the center.</p>
+          <p>Daily OS Next: learnings the planner wants confirmed now surface on the day page as a quiet "things I noticed — review" chip plus a permanent "What I've learned" menu entry, on both mobile and desktop.</p>
           <p>Light theme contrast: secondary text and the teal accent were too faint to read (about 2.2:1); light-mode secondary text is darker now and the teal accent chain is deeper, so captions, hints, and white-on-teal buttons meet accessibility contrast. Dark mode is unchanged.</p>
       </description>
     </release>

@@ -9,7 +9,6 @@ import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/link_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../widget_test_utils.dart';
@@ -114,8 +113,10 @@ void main() {
       );
       await tester.pump();
 
+      // Bare sparkle icon with the reason in the tooltip — no labelled
+      // pill out-shouting the title.
       expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);
-      expect(find.text('WHY'), findsOneWidget);
+      expect(find.text('WHY'), findsNothing);
       expect(find.byTooltip('High-energy window 8–10:30.'), findsOneWidget);
     });
 
@@ -217,10 +218,9 @@ void main() {
         await tester.pump();
         expect(opened, 1);
 
-        // Standalone item carries the neutral tag instead.
-        expect(find.byType(StandaloneTag), findsOneWidget);
-        final messages = tester.element(find.byType(StandaloneTag)).messages;
-        expect(find.text(messages.dailyOsNextStandaloneTag), findsOneWidget);
+        // Standalone items are the unmarked default: exactly one badge on
+        // the linked card, nothing on the standalone one.
+        expect(find.byType(LinkBadge), findsOneWidget);
       },
     );
 
@@ -404,7 +404,7 @@ void main() {
       },
     );
 
-    testWidgets('renders progress metadata alongside a state pill', (
+    testWidgets('renders the thin progress bar only while mid-flight', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -417,7 +417,7 @@ void main() {
                 title: 'Close out shipped work',
                 category: _category,
                 linkedBlockIds: ['b1'],
-                state: AgendaItemState.done,
+                state: AgendaItemState.inProgress,
                 progress: 0.75,
               ),
             ),
@@ -433,23 +433,48 @@ void main() {
       expect(indicator.value, 0.75);
     });
 
-    // Drives the non-open branches of `_StateMeta`'s switch: each state maps to
-    // a distinct alert color token and localized label, rendered as the state
-    // pill's label text. The `open` state is intentionally absent: the meta row
-    // only builds `_StateMeta` when `state != open`, so that branch is
-    // unreachable through the widget.
+    testWidgets('omits the progress bar once an item is complete', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const Material(
+            child: AgendaCard(
+              index: 4,
+              item: AgendaItem(
+                id: 'a1',
+                title: 'Close out shipped work',
+                category: _category,
+                linkedBlockIds: ['b1'],
+                state: AgendaItemState.done,
+                progress: 1,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // The check glyph already says done; a full bar would be redundant.
+      expect(find.byType(LinearProgressIndicator), findsNothing);
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    });
+
+    // State grammar after the declutter pass: in-progress is a bare
+    // colored caption, only the overdue alarm earns a tinted pill, and
+    // done collapses to the green check glyph.
     final alertColors = dsTokensLight.colors.alert;
-    final stateCases = <(AgendaItemState, String, Color)>[
+    final labelledStateCases = <(AgendaItemState, String, Color)>[
+      // In progress is the normal mid-day condition — neutral, not amber.
       (
         AgendaItemState.inProgress,
         'In progress',
-        alertColors.warning.defaultColor,
+        dsTokensLight.colors.text.mediumEmphasis,
       ),
       (AgendaItemState.overdue, 'Overdue', alertColors.error.defaultColor),
-      (AgendaItemState.done, 'Done', alertColors.success.defaultColor),
     ];
 
-    for (final (state, label, expectedColor) in stateCases) {
+    for (final (state, label, expectedColor) in labelledStateCases) {
       testWidgets('maps $state to its alert color and "$label" label', (
         tester,
       ) async {
@@ -477,6 +502,32 @@ void main() {
         expect(labelText.style?.color, expectedColor);
       });
     }
+
+    testWidgets('done renders as the bare check glyph, no label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          const Material(
+            child: AgendaCard(
+              index: 4,
+              item: AgendaItem(
+                id: 'a1',
+                title: 'Close out shipped work',
+                category: _category,
+                linkedBlockIds: ['b1'],
+                state: AgendaItemState.done,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Done'), findsNothing);
+      final check = tester.widget<Icon>(find.byIcon(Icons.check_rounded));
+      expect(check.color, dsTokensLight.colors.alert.success.defaultColor);
+    });
 
     testWidgets('omits the state pill for the open state', (tester) async {
       await tester.pumpWidget(

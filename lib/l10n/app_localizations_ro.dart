@@ -3154,6 +3154,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextAgendaCapacityOver => 'PESTE CAPACITATE';
 
   @override
+  String get dailyOsNextAgendaDonutLeft => 'liber';
+
+  @override
+  String get dailyOsNextAgendaDonutOver => 'în plus';
+
+  @override
   String get dailyOsNextAgendaNoPlanBody =>
       'Timpul dvs. înregistrat este oricum aici — rostiți un check-in și voi schița o zi în jurul lui.';
 
@@ -3409,7 +3415,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDayMoreTooltip => 'Mai mult';
 
   @override
-  String get dailyOsNextDayRefineCta => 'Reglare prin voce';
+  String get dailyOsNextDayRefineCta => 'Ajustați';
 
   @override
   String get dailyOsNextDayRefineFooterHint =>
@@ -3516,6 +3522,18 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dailyOsNextKnowledgeEmpty =>
       'Încă nimic — voi reține ce îmi spuneți.';
+
+  @override
+  String dailyOsNextKnowledgeNudge(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de observații — de verificat',
+      few: '$count observații — de verificat',
+      one: '1 observație — de verificat',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get dailyOsNextKnowledgeProposedHeader => 'Așteaptă confirmarea dvs.';

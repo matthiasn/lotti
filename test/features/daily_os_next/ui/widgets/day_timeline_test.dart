@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
@@ -359,7 +360,7 @@ void main() {
       },
     );
 
-    testWidgets('AI blocks render a WhyChip; cal and buffer blocks do not', (
+    testWidgets('timeline blocks never render WhyChips (agenda owns why)', (
       tester,
     ) async {
       _setView(tester, const Size(1280, 1200));
@@ -374,8 +375,9 @@ void main() {
       );
       await tester.pump();
 
-      // The mock draft has exactly one ai block; only that one gets a chip.
-      expect(find.byType(WhyChip), findsOneWidget);
+      // Placement reasons surface on the agenda's sparkle tooltip; the
+      // duration-sized timeline boxes stay text-light.
+      expect(find.byType(WhyChip), findsNothing);
     });
 
     testWidgets('now-line renders inside the visible window', (tester) async {
@@ -517,7 +519,9 @@ void main() {
         _wrap(
           DayTimeline(
             draft: _draft(),
-            clock: () => DateTime(2026, 5, 25, 9, 15),
+            // Mid-hour so the now-chip doesn't (correctly) suppress the
+            // adjacent hour labels this test asserts on.
+            clock: () => DateTime(2026, 5, 25, 9, 35),
           ),
           size: const Size(1280, 900),
         ),
@@ -539,6 +543,28 @@ void main() {
         hourLabel.style?.fontWeight,
         tokens.typography.styles.others.caption.fontWeight,
       );
+    });
+
+    testWidgets('now-chip suppresses the hour label it would occlude', (
+      tester,
+    ) async {
+      _setView(tester, const Size(1280, 900));
+
+      await tester.pumpWidget(
+        _wrap(
+          DayTimeline(
+            draft: _draft(),
+            // :55 — the chip's rect overlaps the 10:00 gutter label.
+            clock: () => DateTime(2026, 5, 25, 9, 55),
+          ),
+          size: const Size(1280, 900),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('09:55'), findsAtLeastNWidgets(1));
+      expect(find.text('10:00'), findsNothing);
+      expect(find.text('09:00'), findsOneWidget);
     });
 
     testWidgets('folded timelines still span midnight to midnight', (
@@ -897,8 +923,8 @@ void main() {
     });
 
     testWidgets(
-      'tracked blocks render the neutral treatment: category dot, green '
-      'check when done, mono time range with a tracked suffix, no WhyChip',
+      'tracked blocks are the alive treatment: full category stripe and '
+      'fill, green check when done, mono time range, no WhyChip',
       (tester) async {
         _setView(tester, const Size(1280, 900));
 
@@ -926,20 +952,35 @@ void main() {
         );
         await tester.pump();
 
-        final messages = tester.element(find.byType(DayTimeline)).messages;
-        // "09:00–10:30 · tracked" subtitle suffix.
-        expect(
-          find.textContaining(messages.dailyOsNextTimelineTracked),
-          findsOneWidget,
+        // Recorded sessions carry the color: an 18% category tint
+        // composited opaquely over the canvas (paint-by-numbers — doing
+        // fills the block in; gridlines never bleed through).
+        final ink = tester.widget<Ink>(
+          find.descendant(
+            of: find.byKey(const Key('daily_os_day_block_tracked-1')),
+            matching: find.byType(Ink),
+          ),
         );
+        final fill = (ink.decoration! as BoxDecoration).color!;
+        final tokens = tester.element(find.byType(DayTimeline)).designTokens;
+        final isLight =
+            Theme.of(tester.element(find.byType(DayTimeline))).brightness ==
+            Brightness.light;
+        final expected = Color.alphaBlend(
+          categoryColorFromHex(
+            _work.colorHex,
+          ).withValues(alpha: isLight ? 0.30 : 0.18),
+          tokens.colors.background.level01,
+        );
+        expect(fill, expected);
+        expect(fill.a, 1.0);
         // Done sessions get the green check.
         expect(find.byIcon(Icons.check_rounded), findsOneWidget);
         // Tracked blocks never surface agent reasoning.
         expect(find.byType(WhyChip), findsNothing);
-        // The subtitle is mono (Inconsolata) per the handoff.
-        final subtitle = tester.widget<Text>(
-          find.textContaining(messages.dailyOsNextTimelineTracked),
-        );
+        // The mono time range carries the recorded voice (no suffix —
+        // the lane header already says Actual).
+        final subtitle = tester.widget<Text>(find.text('09:00\u201310:30'));
         expect(subtitle.style?.fontFamily, 'Inconsolata');
       },
     );

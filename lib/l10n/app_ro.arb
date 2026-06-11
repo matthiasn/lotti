@@ -1532,6 +1532,8 @@
     }
   },
   "dailyOsNextAgendaCapacityOver": "PESTE CAPACITATE",
+  "dailyOsNextAgendaDonutLeft": "liber",
+  "dailyOsNextAgendaDonutOver": "în plus",
   "dailyOsNextAgendaNoPlanBody": "Timpul dvs. înregistrat este oricum aici — rostiți un check-in și voi schița o zi în jurul lui.",
   "dailyOsNextAgendaNoPlanSummary": "{duration} înregistrat până acum. Rostiți un check-in și voi schița o zi în jurul lui.",
   "dailyOsNextAgendaNoPlanTitle": "Încă nu există un plan pentru azi.",
@@ -1628,7 +1630,7 @@
   "dailyOsNextDayMenuDeletePlan": "Ștergere plan",
   "dailyOsNextDayMenuInspectAgent": "Inspectare agent",
   "dailyOsNextDayMoreTooltip": "Mai mult",
-  "dailyOsNextDayRefineCta": "Reglare prin voce",
+  "dailyOsNextDayRefineCta": "Ajustați",
   "dailyOsNextDayRefineFooterHint": "Vorbește pentru a reorganiza planul — schimbările apar ca diff înainte de a fi aplicate.",
   "dailyOsNextDayTitle": "Ziua dvs.",
   "dailyOsNextDayWhyChipLabel": "DE CE",
@@ -1669,6 +1671,14 @@
   "dailyOsNextKnowledgeEditSave": "Salvați",
   "dailyOsNextKnowledgeEditStatementHint": "Ce ar trebui să rețin?",
   "dailyOsNextKnowledgeEmpty": "Încă nimic — voi reține ce îmi spuneți.",
+  "dailyOsNextKnowledgeNudge": "{count, plural, one{1 observație — de verificat} few{{count} observații — de verificat} other{{count} de observații — de verificat}}",
+  "@dailyOsNextKnowledgeNudge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "dailyOsNextKnowledgeProposedHeader": "Așteaptă confirmarea dvs.",
   "dailyOsNextKnowledgeRetract": "Uită",
   "dailyOsNextKnowledgeStale": "Mai este valabil?",

@@ -15,6 +15,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
@@ -28,7 +29,7 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 part 'day_page_header.dart';
 
-enum _DayMenuAction { inspectAgent, deletePlan }
+enum _DayMenuAction { inspectAgent, knowledge, deletePlan }
 
 /// Hosts the two projections of the [DraftPlan] — Agenda (intent) and
 /// Day (mechanics) — with a pill toggle at the top.
@@ -229,6 +230,18 @@ class _DayPageState extends ConsumerState<DayPage> {
                 onDeletePlan: () => unawaited(_confirmDeletePlan()),
               ),
               CapturesPanel(date: widget.draft.dayDate),
+              // Proposed learnings surface here on both views and both
+              // form factors; renders nothing when there is nothing to
+              // confirm.
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step5,
+                ),
+                child: const Align(
+                  alignment: Alignment.centerLeft,
+                  child: KnowledgeNudge(),
+                ),
+              ),
               Expanded(
                 child: _view == PlanView.agenda
                     ? AgendaView(
@@ -299,12 +312,19 @@ class _DayFooter extends StatelessWidget {
           vertical: tokens.spacing.step4,
         ),
         child: isDesktop
-            ? Row(
-                children: [
-                  Expanded(child: hint),
-                  SizedBox(width: tokens.spacing.step4),
-                  actions,
-                ],
+            // Constrained to the agenda's reading width so the commit
+            // actions belong to the content column, not the page chrome.
+            ? Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Row(
+                    children: [
+                      Expanded(child: hint),
+                      SizedBox(width: tokens.spacing.step4),
+                      actions,
+                    ],
+                  ),
+                ),
               )
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
