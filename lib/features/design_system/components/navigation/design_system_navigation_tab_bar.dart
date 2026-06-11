@@ -73,12 +73,12 @@ class DesignSystemNavigationFrostedSurface extends StatelessWidget {
     super.key,
   });
 
-  /// Width of the hairline border drawn around the surface (`Border.all`'s
-  /// default below). `Container` stacks it onto [padding] on every side,
+  /// Width of the hairline border drawn around the surface.
+  /// `Container` stacks it onto [padding] on every side,
   /// so height math that depends on this surface (e.g. the bottom nav's
   /// occupied height) must account for it through this constant rather
-  /// than a magic number. Keep in sync with the `Border.all` call in
-  /// [build] if an explicit width is ever introduced there.
+  /// than a magic number. [build] passes it to `Border.all` explicitly,
+  /// so the rendered width and the height math cannot drift apart.
   static const double borderWidth = 1;
 
   final Widget child;
@@ -107,6 +107,12 @@ class DesignSystemNavigationFrostedSurface extends StatelessWidget {
             borderRadius: borderRadius,
             border: Border.all(
               color: tokens.colors.decorative.level01.withValues(alpha: 0.4),
+              // Deliberately explicit even though it matches the default:
+              // [borderWidth] feeds the bottom nav's occupied-height math,
+              // and relying on the framework default would let the two
+              // silently drift apart.
+              // ignore: avoid_redundant_argument_values
+              width: borderWidth,
             ),
             boxShadow: [
               BoxShadow(

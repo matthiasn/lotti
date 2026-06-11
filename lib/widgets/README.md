@@ -248,9 +248,21 @@ Mobile bottom-navigation shell that hosts the design-system five-slot bar
 (`DesignSystemFiveSlotNavBar`), docked flush against the screen's bottom
 edge with zero gap. The bar shows Tasks, DailyOS (when its flag is
 enabled — it never overflows), and Logbook plus a More slot; the bottom
-safe-area inset is absorbed into the bar surface itself. An optional
-`overlay` slot renders the time/audio recording indicators directly above
-the bar.
+safe-area inset is absorbed into the bar surface itself. The time/audio
+recording indicators that ride above the bar are owned by the mobile shell
+(`lib/beamer/beamer_app.dart`), not by this container, so they stay
+visible when the shell hides the bar.
+
+Visibility is owned by the same shell as a pure function of router state:
+on task detail routes (`/tasks/<uuid>`) the bar is unmounted so the
+page-owned `TaskActionBar` can dock flush against the home indicator, and
+inside settings entity-definition sections (the categories / habits /
+labels / dashboards / measurables list, detail, and create pages plus
+per-project editors, see `isSettingsEntityDefinitionRoute`) it slides below
+the screen edge with an animated, pointer- and semantics-inert transition
+instead of popping out, and slides back in on leaving the section. While
+the bar is slid away the recording indicators animate down to the bottom
+safe-area edge in the same motion.
 
 ### showMobileNavMoreSheet / MobileNavMoreSheetItem
 `WoltModalSheet`-based overflow sheet listing the destinations without a
@@ -261,7 +273,11 @@ name with the active tint.
 
 ### DesignSystemBottomNavigationFabPadding
 Padding helper that lifts floating action buttons clear of the shared bottom
-navigation shell (`DesignSystemBottomNavigationBar.occupiedHeight`).
+navigation shell (`DesignSystemBottomNavigationBar.occupiedHeight`). The
+occupied height covers the bar plus the recording-indicator row riding above
+it — the shell publishes the row's rendered height to the page stack via the
+`DesignSystemBottomNavigationOverlayHeight` inherited widget, so padded
+content reflows when an indicator appears or disappears.
 
 ## Search Widgets
 

@@ -85,6 +85,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   gap — with the home-indicator inset absorbed into the bar surface, and
   its top corners now use the gentler card radius (matched by the settings
   header's bottom corners).
+- Mobile: entering a settings entity-definition section — categories,
+  habits, labels, dashboards, or measurables, including their detail and
+  create pages, plus project editors — now slides the bottom navigation
+  bar smoothly below the screen edge, giving those surfaces the full
+  height, and slides it back in when you leave. A running timer or audio
+  recording indicator stays visible throughout, dropping to the screen's
+  bottom edge while the bar is away.
 
 ## [0.9.1017]
 ### Added

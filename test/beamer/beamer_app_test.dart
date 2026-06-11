@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
+import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -138,6 +139,24 @@ class _AppScreenLocation extends BeamLocation<BeamState> {
   List<Pattern> get pathPatterns => ['/'];
 }
 
+/// A [SettingsLocation] whose pages are inert stubs: route matching (and
+/// therefore [isSettingsEntityDefinitionRoute]) behaves exactly like
+/// production, but no real settings page — with its getIt dependency
+/// fan-out — is ever built.
+class _TestSettingsLocation extends SettingsLocation {
+  _TestSettingsLocation(super.routeInformation);
+
+  @override
+  List<BeamPage> buildPages(BuildContext context, BeamState state) {
+    return [
+      BeamPage(
+        key: ValueKey('test-settings-${state.uri.path}'),
+        child: const SizedBox.shrink(),
+      ),
+    ];
+  }
+}
+
 Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
   final delegate = BeamerDelegate(
     setBrowserTabTitle: false,
@@ -158,6 +177,7 @@ Future<void> _stubNavService(
   required bool Function() isDailyOsEnabled,
   required bool Function() isHabitsEnabled,
   required bool Function() isDashboardsEnabled,
+  BeamerDelegate? settingsDelegate,
 }) async {
   final tasksDelegate = await _createEmptyDelegate('/tasks');
   final projectsDelegate = await _createEmptyDelegate('/projects');
@@ -165,7 +185,7 @@ Future<void> _stubNavService(
   final habitsDelegate = await _createEmptyDelegate('/habits');
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
   final journalDelegate = await _createEmptyDelegate('/journal');
-  final settingsDelegate = await _createEmptyDelegate('/settings');
+  settingsDelegate ??= await _createEmptyDelegate('/settings');
 
   // Real NavService.getIndexStream returns a broadcast stream (multiple
   // listeners — e.g. AppScreen + SidebarTimerSection — subscribe). Wrap
@@ -578,6 +598,52 @@ void main() {
         await tester.pump();
       },
     );
+
+    testWidgets(
+      'More sheet row tapped after its flag was disabled closes the sheet '
+      'without routing',
+      (tester) async {
+        final mockNavService = MockNavService();
+        final indexController = StreamController<int>.broadcast();
+        addTearDown(indexController.close);
+
+        var isProjectsEnabled = true;
+        await _stubNavService(
+          mockNavService,
+          indexStream: indexController.stream,
+          isProjectsEnabled: () => isProjectsEnabled,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+
+        // Open the More sheet while Projects is still enabled.
+        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+          find.byType(DesignSystemBottomNavigationBar),
+        );
+        navBar.items.last.onTap?.call();
+        await tester.pumpAndSettle();
+        expect(find.text('Projects'), findsOneWidget);
+
+        // The flag flips (e.g. synced from another device) while the sheet
+        // is open. The row is still visible, but its tap-time index
+        // resolution now returns null: the sheet closes and the tap is
+        // dropped instead of routing through a stale index.
+        isProjectsEnabled = false;
+        await tester.tap(find.text('Projects'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Projects'), findsNothing);
+        verifyNever(() => mockNavService.tapIndex(any()));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
   });
 
   group('Flatpak audio indicator gating', () {
@@ -698,14 +764,16 @@ void main() {
           ['Tasks', 'DailyOS', 'Logbook', moreLabel],
         );
         // The More slot lights up exactly while an overflow destination is
-        // the active route, and its accessible name follows the visual
-        // label swap (a screen reader hears the active destination, not
-        // the overflow count).
+        // the active route. Its accessible name keeps the More affordance
+        // alongside the destination name — activating the slot opens the
+        // sheet, not the destination, and that must stay discoverable.
         final isOverflowActive = (index >= 2 && index <= 4) || index == 6;
         expect(navBar.items.last.active, isOverflowActive);
         expect(
           navBar.items.last.semanticsLabel,
-          isOverflowActive ? moreLabel : 'More, 4 additional destinations',
+          isOverflowActive
+              ? '$moreLabel — More, 4 additional destinations'
+              : 'More, 4 additional destinations',
         );
 
         // Docked with zero gap: the bar's surface is flush with the
@@ -721,7 +789,7 @@ void main() {
       });
     }
 
-    testWidgets('renders recording indicators inside the nav bar overlay', (
+    testWidgets('renders recording indicators directly above the nav bar', (
       tester,
     ) async {
       final mockNavService = MockNavService();
@@ -742,26 +810,38 @@ void main() {
         navService: mockNavService,
       );
 
-      // The indicators are passed in as the nav bar's `overlay` so they
-      // share the same FittedBox/Column as the pill — sized to the pill's
-      // width and stacked above it via spaceBetween.
-      final navBar = tester.widget<DesignSystemBottomNavigationBar>(
-        find.byType(DesignSystemBottomNavigationBar),
-      );
-      expect(navBar.overlay, isNotNull);
-
-      // The TimeRecordingIndicator must be inside the nav bar widget, not
-      // in a separate Positioned.
+      // The indicators are shell-owned and live OUTSIDE the bar widget, so
+      // they stay visible when the bar slides away in settings definition
+      // surfaces.
       expect(
         find.descendant(
           of: find.byType(DesignSystemBottomNavigationBar),
           matching: find.byType(TimeRecordingIndicator),
         ),
-        findsOneWidget,
+        findsNothing,
+      );
+      expect(find.byType(TimeRecordingIndicator), findsOneWidget);
+
+      // They sit in an AnimatedPositioned pinned to the bar's top edge —
+      // the same height contract the bar itself renders with.
+      final positioned = tester.widget<AnimatedPositioned>(
+        find
+            .ancestor(
+              of: find.byType(TimeRecordingIndicator),
+              matching: find.byType(AnimatedPositioned),
+            )
+            .first,
+      );
+      final barContext = tester.element(
+        find.byType(DesignSystemFiveSlotNavBar),
+      );
+      expect(
+        positioned.bottom,
+        DesignSystemFiveSlotNavBar.barHeight(barContext),
       );
 
       // The closest enclosing Row uses center so the indicators meet in
-      // the middle of the pill rather than spreading to its edges.
+      // the middle of the bar rather than spreading to its edges.
       final overlayRow = tester.widget<Row>(
         find
             .ancestor(
@@ -1267,6 +1347,231 @@ void main() {
       );
       expect(isTaskDetailRoute(location, 0), isTrue);
     });
+  });
+
+  group('isSettingsEntityDefinitionRoute', () {
+    SettingsLocation settingsLocationFor(String path) =>
+        SettingsLocation(RouteInformation(uri: Uri.parse(path)));
+
+    test('returns false for null and non-settings locations', () {
+      expect(isSettingsEntityDefinitionRoute(null), isFalse);
+      expect(
+        isSettingsEntityDefinitionRoute(
+          _ArbitraryLocation(
+            RouteInformation(uri: Uri.parse('/settings/categories/abc')),
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    test('returns true everywhere inside an entity-definition section', () {
+      for (final path in <String>[
+        '/settings/categories',
+        '/settings/categories/some-category-id',
+        '/settings/categories/create',
+        '/settings/labels',
+        '/settings/labels/some-label-id',
+        '/settings/labels/create',
+        '/settings/dashboards',
+        '/settings/dashboards/some-dashboard-id',
+        '/settings/dashboards/create',
+        '/settings/measurables',
+        '/settings/measurables/some-measurable-id',
+        '/settings/measurables/create',
+        '/settings/habits',
+        '/settings/habits/search/morning',
+        '/settings/habits/by_id/some-habit-id',
+        '/settings/habits/create',
+        '/settings/projects/some-project-id',
+      ]) {
+        expect(
+          isSettingsEntityDefinitionRoute(settingsLocationFor(path)),
+          isTrue,
+          reason: path,
+        );
+      }
+    });
+
+    test('returns false for the root and non-definition settings pages', () {
+      for (final path in <String>[
+        '/settings',
+        '/settings/definitions',
+        '/settings/flags',
+        '/settings/theming',
+        '/settings/advanced/maintenance',
+        '/settings/sync',
+        '/settings/ai/provider/some-provider-id',
+        '/settings/agents/templates/some-template-id',
+        // SettingsLocation deliberately renders no editor for the reserved
+        // `create` slug under projects (creation lives at /projects/create),
+        // so a stale deep link must not hide the bar over the settings root.
+        '/settings/projects/create',
+      ]) {
+        expect(
+          isSettingsEntityDefinitionRoute(settingsLocationFor(path)),
+          isFalse,
+          reason: path,
+        );
+      }
+    });
+  });
+
+  group('AppScreen settings entity-definition nav hiding', () {
+    testWidgets(
+      'slides the bar away inside an entity editor and back on the list',
+      (tester) async {
+        final mockNavService = MockNavService();
+        final indexController = StreamController<int>.broadcast();
+        addTearDown(indexController.close);
+
+        final settingsDelegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/settings',
+          locationBuilder: (routeInformation, _) =>
+              _TestSettingsLocation(routeInformation),
+        );
+        addTearDown(settingsDelegate.dispose);
+        await settingsDelegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/settings')),
+        );
+
+        await _stubNavService(
+          mockNavService,
+          indexStream: indexController.stream,
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+          settingsDelegate: settingsDelegate,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+
+        // Activate the Settings tab (destinations: Tasks, Journal,
+        // Settings).
+        indexController.add(2);
+        await tester.pump();
+
+        AnimatedSlide slide() => tester.widget<AnimatedSlide>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(AnimatedSlide),
+              )
+              .first,
+        );
+        IgnorePointer ignorePointer() => tester.widget<IgnorePointer>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(IgnorePointer),
+              )
+              .first,
+        );
+
+        AnimatedPositioned indicators() => tester.widget<AnimatedPositioned>(
+          find
+              .ancestor(
+                of: find.byType(TimeRecordingIndicator),
+                matching: find.byType(AnimatedPositioned),
+              )
+              .first,
+        );
+
+        // On the settings root the bar sits in place and accepts taps.
+        expect(slide().offset, Offset.zero);
+        expect(ignorePointer().ignoring, isFalse);
+
+        // Entering the categories section keeps the bar mounted (so the
+        // move can animate) but slides it down by its own height and makes
+        // it inert. The recording indicators stay mounted outside the
+        // sliding subtree and drop to the bottom safe-area edge.
+        settingsDelegate.beamToNamed('/settings/categories');
+        await tester.pump();
+        expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
+        expect(slide().offset, const Offset(0, 1));
+        expect(ignorePointer().ignoring, isTrue);
+        expect(find.byType(TimeRecordingIndicator), findsOneWidget);
+        final barContext = tester.element(
+          find.byType(DesignSystemFiveSlotNavBar),
+        );
+        expect(
+          indicators().bottom,
+          MediaQuery.paddingOf(barContext).bottom,
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // A category editor deeper in the same section stays hidden.
+        settingsDelegate.beamToNamed('/settings/categories/some-category-id');
+        await tester.pump();
+        expect(slide().offset, const Offset(0, 1));
+
+        // Leaving the section slides the bar back into place and lifts
+        // the indicators back above it.
+        settingsDelegate.beamToNamed('/settings');
+        await tester.pump();
+        expect(slide().offset, Offset.zero);
+        expect(ignorePointer().ignoring, isFalse);
+        expect(
+          indicators().bottom,
+          DesignSystemFiveSlotNavBar.barHeight(barContext),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'keeps the bar in place inside editors when another tab is active',
+      (tester) async {
+        final mockNavService = MockNavService();
+
+        final settingsDelegate = BeamerDelegate(
+          setBrowserTabTitle: false,
+          initialPath: '/settings/habits/create',
+          locationBuilder: (routeInformation, _) =>
+              _TestSettingsLocation(routeInformation),
+        );
+        addTearDown(settingsDelegate.dispose);
+        await settingsDelegate.setNewRoutePath(
+          RouteInformation(uri: Uri.parse('/settings/habits/create')),
+        );
+
+        await _stubNavService(
+          mockNavService,
+          // Tasks tab active; the settings delegate's editor route is
+          // background state and must not hide the bar.
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => false,
+          isDailyOsEnabled: () => false,
+          isHabitsEnabled: () => false,
+          isDashboardsEnabled: () => false,
+          settingsDelegate: settingsDelegate,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(tester, navService: mockNavService);
+
+        final slide = tester.widget<AnimatedSlide>(
+          find
+              .ancestor(
+                of: find.byType(DesignSystemBottomNavigationBar),
+                matching: find.byType(AnimatedSlide),
+              )
+              .first,
+        );
+        expect(slide.offset, Offset.zero);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
   });
 
   group('AppScreen mobile nav item taps', () {
