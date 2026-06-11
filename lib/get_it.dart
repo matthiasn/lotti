@@ -98,7 +98,18 @@ Future<void> registerSingletons() async {
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
     ..registerSingleton<VectorClockService>(VectorClockService())
-    ..registerSingleton<TimeService>(TimeService());
+    ..registerSingleton<TimeService>(
+      // When a new timer replaces a still-running one, persist the outgoing
+      // entry's real stop time so it is not left with the stale dateTo it
+      // was created with (≈ its start time). Existing entry text is
+      // preserved — only the end time is written.
+      TimeService(
+        (entry) => getIt<PersistenceLogic>().updateJournalEntry(
+          journalEntityId: entry.meta.id,
+          dateTo: DateTime.now(),
+        ),
+      ),
+    );
 
   // Initialize config flags before constructing services that depend on them.
   await initConfigFlags(getIt<JournalDb>(), inMemoryDatabase: false);
