@@ -222,6 +222,56 @@ void main() {
       },
     );
 
+    test(
+      'a failing accept surfaces the problem notice and re-arms the bar',
+      () async {
+        final throwingAgent = _ThrowingAcceptAgent();
+        final container = makeContainer(overrideAgent: throwingAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+
+        await notifier.accept();
+
+        final state = container.read(refineControllerProvider(draft));
+        // The diff survives, the bar is re-armed, and the failure is
+        // narrated in the problem notice — accept() is fired unawaited
+        // from the bar, so a silent re-enable would read as a dead tap.
+        expect(state.phase, RefinePhase.diffReady);
+        expect(state.accepting, isFalse);
+        expect(state.problem, RefineProblem.proposalFailed);
+        expect(state.diff, isNotNull);
+      },
+    );
+
+    test(
+      'revert and per-row resolves are no-ops while an accept is in '
+      'flight (no last-write-wins race on currentPlan)',
+      () async {
+        final gate = Completer<void>();
+        final gatedAgent = _GatedAcceptAgent(gate: gate);
+        final container = makeContainer(overrideAgent: gatedAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+        final diff = container.read(refineControllerProvider(draft)).diff!;
+
+        final accept = notifier.accept();
+        await notifier.revert();
+        await notifier.rejectChange(diff.changes.first.id);
+        gate.complete();
+        await accept;
+
+        final state = container.read(refineControllerProvider(draft));
+        // Neither competing round-trip ran: the accept owns the plan.
+        expect(gatedAgent.revertCalls, 0);
+        expect(state.phase, RefinePhase.accepted);
+        expect(state.currentPlan, state.diff!.updatedPlan);
+      },
+    );
+
     test('resolves individual diff changes with item indices', () async {
       final acceptedPlan = draft.copyWith(scheduledMinutes: 360);
       final agent = _RecordingRefineAgent(
@@ -864,6 +914,21 @@ class _GatedAcceptAgent extends MockDayAgent {
 
   final Completer<void> gate;
   int acceptCalls = 0;
+  int revertCalls = 0;
+
+  @override
+  Future<DraftPlan> revertDiff({
+    required PlanDiff diff,
+    required DraftPlan originalPlan,
+    List<int>? itemIndices,
+  }) {
+    revertCalls++;
+    return super.revertDiff(
+      diff: diff,
+      originalPlan: originalPlan,
+      itemIndices: itemIndices,
+    );
+  }
 
   @override
   Future<DraftPlan> acceptDiff(

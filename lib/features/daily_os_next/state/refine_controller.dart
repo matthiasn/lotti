@@ -255,6 +255,9 @@ class RefineController extends Notifier<RefineState> {
       clearDiff: true,
       decisions: const {},
       clearResolvingChangeId: true,
+      // A notice from a failed accept refers to the diff being discarded
+      // here — don't let it outlive the plan it described.
+      clearProblem: true,
     );
   }
 
@@ -411,6 +414,8 @@ class RefineController extends Notifier<RefineState> {
       currentPlan: next,
       decisions: decisions,
       clearResolvingChangeId: true,
+      // A successful resolve supersedes any earlier failure notice.
+      clearProblem: true,
     );
   }
 

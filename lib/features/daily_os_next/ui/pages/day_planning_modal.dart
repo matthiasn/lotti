@@ -630,7 +630,9 @@ class _RefineStepBar extends ConsumerWidget {
           icon: Icons.undo_rounded,
           label: messages.dailyOsNextRefineRevert,
           fillColor: tokens.colors.surface.focusPressed,
-          enabled: hasPendingDiff,
+          // Disabled during an in-flight accept too — the controller
+          // no-ops the race anyway; the pill shouldn't look tappable.
+          enabled: hasPendingDiff && !state.accepting,
           onTap: notifier.revert,
         ),
         DsGlassPill(
