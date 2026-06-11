@@ -298,6 +298,7 @@ abstract final class TaskAgentEvalBench {
     required MockAgentSyncService syncService,
     required MockAiInputRepository aiInputRepository,
     required MockJournalDb journalDb,
+    required MockJournalRepository journalRepository,
     required MockChecklistRepository checklistRepository,
     required MockAgentTemplateService templateService,
     required AgentTemplateEntity testTemplate,
@@ -460,6 +461,13 @@ abstract final class TaskAgentEvalBench {
     when(() => journalDb.journalEntityById(any())).thenAnswer((invocation) {
       final id = invocation.positionalArguments.single as String;
       return Future.value(journalEntities[id]);
+    });
+    when(
+      () => journalRepository.updateJournalEntity(any()),
+    ).thenAnswer((invocation) async {
+      final entity = invocation.positionalArguments.single as JournalEntity;
+      journalEntities[entity.meta.id] = entity;
+      return true;
     });
     when(() => journalDb.getAllLabelDefinitions()).thenAnswer(
       (_) async => labels,
@@ -1327,6 +1335,7 @@ class _TaskAgentEvalSession {
       syncService: syncService,
       aiInputRepository: aiInputRepository,
       journalDb: journalDb,
+      journalRepository: journalRepository,
       checklistRepository: checklistRepository,
       templateService: templateService,
       testTemplate: testTemplate,

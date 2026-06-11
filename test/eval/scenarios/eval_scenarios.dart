@@ -1248,6 +1248,13 @@ final EvalScenario taskWorkflowChecklistTranscriptCascadeScenario =
           cascadeWakes: [
             ExpectedCascadeWakeState(
               wakeIndex: 0,
+              mustCallTools: {'update_task_estimate'},
+              requiredToolCalls: [
+                ExpectedToolCallState(
+                  toolName: 'update_task_estimate',
+                  argsContain: {'minutes': 120},
+                ),
+              ],
               durableState: ExpectedDurableState(
                 requiredProposals: [
                   ExpectedProposalState(
