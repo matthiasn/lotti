@@ -18,7 +18,19 @@ class EdgeFade extends StatelessWidget {
     this.minFraction = 0.05,
     this.maxFraction = 0.3,
     super.key,
-  });
+  }) : assert(rampExtent >= 0, 'rampExtent must be non-negative'),
+       assert(
+         minFraction >= 0 && minFraction <= 1,
+         'minFraction must be within [0, 1]',
+       ),
+       assert(
+         maxFraction >= 0 && maxFraction <= 1,
+         'maxFraction must be within [0, 1]',
+       ),
+       assert(
+         minFraction <= maxFraction,
+         'minFraction must not exceed maxFraction',
+       );
 
   /// Logical pixels the dissolve should span before content reads as
   /// fully opaque.

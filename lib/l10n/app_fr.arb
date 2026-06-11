@@ -1574,7 +1574,7 @@
   },
   "dailyOsNextAgendaTrackedLegend": "Suivi · {duration} · {completedCount, plural, =1{1 terminée} other{{completedCount} terminées}}",
   "dailyOsNextCaptureCaptured": "C'est noté.",
-  "dailyOsNextCaptureDoneCta": "Terminé",
+  "dailyOsNextCaptureDoneCta": "Terminer",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "L’autorisation du micro a été refusée.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Aucune session en temps réel active.",
   "dailyOsNextCaptureErrorNoAudioRecorded": "Aucun audio n’a été enregistré.",

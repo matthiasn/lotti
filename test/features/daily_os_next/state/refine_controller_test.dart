@@ -272,6 +272,47 @@ void main() {
       },
     );
 
+    test(
+      'toggleListening and keepTalking are no-ops while an accept is in '
+      'flight (a new listening flow would race acceptDiff completion)',
+      () async {
+        final gate = Completer<void>();
+        final gatedAgent = _GatedAcceptAgent(gate: gate);
+        final container = makeContainer(overrideAgent: gatedAgent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('move client review later');
+        expect(
+          container.read(refineControllerProvider(draft)).phase,
+          RefinePhase.diffReady,
+        );
+
+        final accept = notifier.accept();
+        expect(
+          container.read(refineControllerProvider(draft)).accepting,
+          isTrue,
+        );
+        // Both listening entry points must be inert while accepting: from
+        // diffReady each would otherwise call beginListening and flip the
+        // phase to listening mid-accept.
+        notifier
+          ..toggleListening()
+          ..keepTalking();
+        expect(
+          container.read(refineControllerProvider(draft)).phase,
+          RefinePhase.diffReady,
+        );
+
+        gate.complete();
+        await accept;
+
+        final state = container.read(refineControllerProvider(draft));
+        expect(state.phase, RefinePhase.accepted);
+        expect(state.accepting, isFalse);
+      },
+    );
+
     test('resolves individual diff changes with item indices', () async {
       final acceptedPlan = draft.copyWith(scheduledMinutes: 360);
       final agent = _RecordingRefineAgent(

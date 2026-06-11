@@ -262,6 +262,12 @@ class RefineController extends Notifier<RefineState> {
   }
 
   void beginListening({required bool resetTranscript}) {
+    // `accepting` guard: starting a listening flow while a whole-diff
+    // accept round-trip is in flight would race `acceptDiff`'s completion
+    // (last-write-wins on `phase`/`transcript`). This is the choke point
+    // for every listening entry (toggleListening, keepTalking), mirroring
+    // the guards in accept()/revert()/_resolveChange().
+    if (state.accepting) return;
     _transcriptPrefix = resetTranscript ? '' : state.transcript.trim();
     state = state.copyWith(
       phase: RefinePhase.listening,

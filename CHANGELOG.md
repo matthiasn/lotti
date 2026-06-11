@@ -4,27 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1018]
-### Added
-- The Daily OS planner now sees the last week in context when drafting a
-  day: planned-vs-recorded time per category, missed sessions by name, and
-  upcoming plans plus deadlines for the next five days. It also keeps a
-  short note on how each day actually went, written as the day closes, and
-  reads those notes back later — so after an overworked stretch it plans a
-  gentler day instead of piling on. Sustainability over throughput.
-
+## [0.9.1019]
 ### Changed
 - The Daily OS day-planning conversation was redesigned around a stable
   voice orb: the orb now stays put directly above the action bar in every
   state while the live transcript grows upward above it (no more layout
   jumping under your finger mid-recording), the orb is smaller and reacts
-  to presses with a visible ripple and a press-scale animation, recording
-  shows a stop glyph, and after capture the orb steps back so the Review
-  action carries the weight. Every action lives on the sticky bottom bar
-  in every state — including a Done pill while recording and a Cancel
-  while transcribing — and the per-state headline narrates what is
-  happening ("I'm listening.", "Writing that down…", "Does this look
-  right?").
+  to presses with a visible ripple and a press-scale animation, and while
+  recording its core breathes with your voice — swelling with the level
+  and keeping a slow idle pulse between words — under a stop glyph; after
+  capture the orb steps back so the Review action carries the weight.
+  Every action lives on the sticky bottom bar in every state — including a
+  Done pill while recording and a Cancel while transcribing — and the
+  per-state headline narrates what is happening ("I'm listening.",
+  "Writing that down…", "Does this look right?").
 - On desktop, day planning now opens in a full-height side panel on the
   right (45% of the window) instead of a centered dialog, so the day stays
   visible while you talk; panel buttons size to their content instead of
@@ -50,6 +43,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   icon+text instead of a row of pills, "in progress" is no longer painted
   amber, and the capacity ring is now a thin stacked category ring that
   matches the legend, with the remaining time in the center.
+- The Daily OS day page gained an Apple-style large-title header — a quiet
+  back chevron on its own line, "Your day" with a weekday-first date
+  overline, and the toggle, nudge chip, and cards all aligned to one left
+  rail. First-run gesture and lock-in coaching now retire after you use
+  them once instead of lingering, and content dissolves softly at the fold
+  under the glass bar instead of being cut off. The capacity card leads
+  with the time you have left (e.g. "15m left"), demotes the
+  committed/capacity detail to a supporting line, and turns the category
+  legend into a right-aligned receipt table; every concrete date across
+  the Daily OS now carries its weekday.
 - Learnings the planner wants you to confirm now surface right on the day
   page as a quiet "things I noticed — review" chip (plus a permanent
   "What I've learned" entry in the day menu) on both mobile and desktop,
@@ -59,6 +62,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   background). Light-mode secondary text is darker now, and the light
   teal accent chain is deeper, so captions, hints, and white-on-teal
   buttons all meet accessibility contrast. Dark mode is unchanged.
+
+## [0.9.1018]
+### Added
+- The Daily OS planner now sees the last week in context when drafting a
+  day: planned-vs-recorded time per category, missed sessions by name, and
+  upcoming plans plus deadlines for the next five days. It also keeps a
+  short note on how each day actually went, written as the day closes, and
+  reads those notes back later — so after an overworked stretch it plans a
+  gentler day instead of piling on. Sustainability over throughput.
 
 ## [0.9.1017]
 ### Added

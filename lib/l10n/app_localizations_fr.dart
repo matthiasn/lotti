@@ -3208,7 +3208,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextCaptureCaptured => 'C\'est noté.';
 
   @override
-  String get dailyOsNextCaptureDoneCta => 'Terminé';
+  String get dailyOsNextCaptureDoneCta => 'Terminer';
 
   @override
   String get dailyOsNextCaptureErrorMicrophonePermissionDenied =>
