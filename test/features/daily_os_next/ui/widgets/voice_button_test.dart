@@ -105,9 +105,18 @@ void main() {
       VoiceButton.listeningFrameSizeFor(buttonSize),
       greaterThan(VoiceButton.shaderHoleSizeFor(buttonSize)),
     );
+    // While listening the core rests back inside the field and swells
+    // with the voice: −18 dBFS over the −72 floor → norm 0.75, with the
+    // slow idle breath (±listeningIdleBreath) riding on top.
+    await tester.pump(const Duration(milliseconds: 300));
     expect(
-      tester.getSize(find.byKey(VoiceButton.coreButtonKey)),
-      const Size.square(buttonSize),
+      tester.getSize(find.byKey(VoiceButton.coreButtonKey)).width,
+      closeTo(
+        buttonSize *
+            (VoiceButton.listeningCoreScale +
+                VoiceButton.listeningBreathSpan * 0.75),
+        buttonSize * VoiceButton.listeningIdleBreath + 0.01,
+      ),
     );
   });
 
@@ -170,21 +179,24 @@ void main() {
   ) async {
     await pumpVoiceButton(tester);
 
-    AnimatedScale pressScale() => tester.widget<AnimatedScale>(
-      find.byKey(VoiceButton.pressScaleKey),
-    );
+    double scaleTarget() => tester
+        .widget<TweenAnimationBuilder<double>>(
+          find.byKey(VoiceButton.pressScaleKey),
+        )
+        .tween
+        .end!;
 
-    expect(pressScale().scale, 1.0);
+    expect(scaleTarget(), 1.0);
 
     final gesture = await tester.press(
       find.byKey(VoiceButton.coreButtonKey),
     );
     await tester.pump();
-    expect(pressScale().scale, VoiceButton.pressedScale);
+    expect(scaleTarget(), VoiceButton.pressedScale);
 
     await gesture.up();
     await tester.pump();
-    expect(pressScale().scale, 1.0);
+    expect(scaleTarget(), 1.0);
     // Let the release animation (with overshoot) finish cleanly.
     await tester.pump(const Duration(milliseconds: 300));
   });
@@ -193,14 +205,18 @@ void main() {
     'while listening the core breathes with the voice level: rests '
     'smaller at silence, swells with dBFS, full size in other phases',
     (tester) async {
-      AnimatedScale pressScale() => tester.widget<AnimatedScale>(
-        find.byKey(VoiceButton.pressScaleKey),
-      );
+      double scaleTarget() => tester
+          .widget<TweenAnimationBuilder<double>>(
+            find.byKey(VoiceButton.pressScaleKey),
+          )
+          .tween
+          .end!;
 
       // Silence (dbfs == floor): the disc rests at the listening scale so
-      // the shader owns the field.
+      // the shader owns the field. (The slow idle-breath sine multiplies
+      // in OUTSIDE this tween, so the target stays exact.)
       await pumpVoiceButton(tester, phase: CapturePhase.listening);
-      expect(pressScale().scale, VoiceButton.listeningCoreScale);
+      expect(scaleTarget(), VoiceButton.listeningCoreScale);
 
       // Loud speech (-8 dBFS over the -80 floor → norm 0.9): the disc
       // swells with the same signal that drives the shader.
@@ -210,7 +226,7 @@ void main() {
         dbfs: -8,
       );
       expect(
-        pressScale().scale,
+        scaleTarget(),
         closeTo(
           VoiceButton.listeningCoreScale +
               VoiceButton.listeningBreathSpan * 0.9,
@@ -218,9 +234,9 @@ void main() {
         ),
       );
 
-      // Outside listening the breathing transform is inert.
+      // Outside listening the breathing is inert and the ticker stops.
       await pumpVoiceButton(tester, phase: CapturePhase.captured);
-      expect(pressScale().scale, 1.0);
+      expect(scaleTarget(), 1.0);
       await tester.pump(const Duration(milliseconds: 300));
     },
   );

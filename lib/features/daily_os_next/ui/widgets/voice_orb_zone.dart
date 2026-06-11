@@ -120,8 +120,9 @@ class VoiceOrbZone extends StatelessWidget {
 }
 
 /// Live transcript pinned above the orb: bottom-aligned, auto-following
-/// the newest words, fading out toward the top edge of its zone.
-class LiveTranscriptView extends StatelessWidget {
+/// the newest words, fading out toward the top edge of its zone once —
+/// and only once — lines have actually been pushed past the visible cap.
+class LiveTranscriptView extends StatefulWidget {
   const LiveTranscriptView({
     required this.text,
     required this.color,
@@ -146,43 +147,77 @@ class LiveTranscriptView extends StatelessWidget {
   static const double _maxVisibleLines = 6;
 
   @override
+  State<LiveTranscriptView> createState() => _LiveTranscriptViewState();
+}
+
+class _LiveTranscriptViewState extends State<LiveTranscriptView> {
+  /// Whether the transcript has outgrown the visible cap. Sourced from
+  /// the viewport's own scroll metrics (a `LayoutBuilder` + TextPainter
+  /// re-measure is forbidden here — the capture template wraps this zone
+  /// in `IntrinsicHeight`).
+  bool _overflows = false;
+
+  void _onMetrics(ScrollMetrics metrics) {
+    final next = metrics.maxScrollExtent > 0.5;
+    if (next == _overflows) return;
+    // Metrics arrive during layout; re-entering build there is illegal.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _overflows != next) setState(() => _overflows = next);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final text = widget.text;
     if (text.isEmpty) return const SizedBox.expand();
-    final isProse = text.length > _proseThreshold;
+    final isProse = text.length > LiveTranscriptView._proseThreshold;
     final style = tokens.typography.styles.body.bodyMedium.copyWith(
-      color: color,
+      color: widget.color,
     );
     final lineHeight = MediaQuery.textScalerOf(
       context,
     ).scale(tokens.typography.lineHeight.bodyMedium);
 
+    final viewport = SizedBox(
+      key: LiveTranscriptView.viewportKey,
+      width: double.infinity,
+      child: NotificationListener<ScrollMetricsNotification>(
+        onNotification: (notification) {
+          _onMetrics(notification.metrics);
+          return false;
+        },
+        child: SingleChildScrollView(
+          reverse: true,
+          physics: const NeverScrollableScrollPhysics(),
+          child: Text(
+            text,
+            textAlign: isProse ? TextAlign.start : TextAlign.center,
+            style: style,
+          ),
+        ),
+      ),
+    );
+
     return Align(
       alignment: Alignment.bottomCenter,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxHeight: lineHeight * _maxVisibleLines,
+          maxHeight: lineHeight * LiveTranscriptView._maxVisibleLines,
         ),
         // The fade wraps the capped text box itself so the dissolve sits
-        // on the oldest visible line.
-        child: EdgeFade(
-          rampExtent: lineHeight * 1.4,
-          minFraction: 0.12,
-          maxFraction: 0.5,
-          child: SizedBox(
-            key: viewportKey,
-            width: double.infinity,
-            child: SingleChildScrollView(
-              reverse: true,
-              physics: const NeverScrollableScrollPhysics(),
-              child: Text(
-                text,
-                textAlign: isProse ? TextAlign.start : TextAlign.center,
-                style: style,
-              ),
-            ),
-          ),
-        ),
+        // on the oldest visible line — and only once a line has actually
+        // been pushed past the cap. While everything still fits, the
+        // first line renders at full strength (a fade over un-clipped
+        // text reads as a rendering bug).
+        child: _overflows
+            ? EdgeFade(
+                rampExtent: lineHeight * 1.4,
+                minFraction: 0.12,
+                maxFraction: 0.5,
+                child: viewport,
+              )
+            : viewport,
       ),
     );
   }

@@ -763,8 +763,12 @@ void main() {
           ),
         );
 
-        expect(listening, idle);
-        expect(longTranscript, idle);
+        // The core's diameter breathes while listening, but its CENTER —
+        // the position under the finger — must not move. Sub-pixel float
+        // tolerance: centering an odd breathing diameter inside the fixed
+        // field shifts the computed center by < 1e-3.
+        expect((listening - idle).distance, lessThan(0.01));
+        expect((longTranscript - idle).distance, lessThan(0.01));
       },
     );
 

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
@@ -89,6 +91,12 @@ class VoiceButton extends StatefulWidget {
   @visibleForTesting
   static const listeningBreathSpan = 0.10;
 
+  /// Amplitude of the slow idle breath while listening (sine, one cycle
+  /// per [_VoiceButtonState.breathPeriod]). Keeps the core alive in the
+  /// pauses BETWEEN words, under the voice-level swell.
+  @visibleForTesting
+  static const listeningIdleBreath = 0.02;
+
   /// The layout field reserves the listening frame plus a little clearance —
   /// the shader still overflows it via [OverflowBox], by design, so the
   /// field no longer inflates the layout the way the old `+128` padding
@@ -133,8 +141,48 @@ class VoiceButton extends StatefulWidget {
   State<VoiceButton> createState() => _VoiceButtonState();
 }
 
-class _VoiceButtonState extends State<VoiceButton> {
+class _VoiceButtonState extends State<VoiceButton>
+    with SingleTickerProviderStateMixin {
   bool _pressed = false;
+
+  /// One slow organic cycle for the idle breath while listening.
+  @visibleForTesting
+  static const breathPeriod = Duration(milliseconds: 2400);
+
+  late final AnimationController _breath = AnimationController(
+    vsync: this,
+    duration: breathPeriod,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _syncBreath();
+  }
+
+  @override
+  void didUpdateWidget(covariant VoiceButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.phase != widget.phase) _syncBreath();
+  }
+
+  /// The breath ticker runs ONLY while listening — every other phase is
+  /// static, so no frames are burned on an invisible animation.
+  void _syncBreath() {
+    if (widget.phase == CapturePhase.listening) {
+      _breath.repeat();
+    } else {
+      _breath
+        ..stop()
+        ..value = 0;
+    }
+  }
+
+  @override
+  void dispose() {
+    _breath.dispose();
+    super.dispose();
+  }
 
   void _setPressed(bool value) {
     if (_pressed == value) return;
@@ -252,25 +300,50 @@ class _VoiceButtonState extends State<VoiceButton> {
                   color: teal,
                 ),
               ),
-            // Press feedback: scale down while held, release with a soft
-            // overshoot — paired with a visible ink ripple painted above
-            // the fill (via [Ink]), so a tap never reads as dead. While
-            // listening the same transform carries the voice-breathing
-            // scale: each dBFS tick re-targets the implicit animation, so
-            // the disc follows the voice with a short organic ease (no
-            // overshoot there — back-curves would jitter under the
-            // amplitude stream's retargeting).
-            AnimatedScale(
-              key: VoiceButton.pressScaleKey,
-              scale: (_pressed ? VoiceButton.pressedScale : 1.0) * _voiceScale,
-              duration: _pressed
-                  ? const Duration(milliseconds: 90)
-                  : widget.phase == CapturePhase.listening
-                  ? const Duration(milliseconds: 130)
-                  : const Duration(milliseconds: 240),
-              curve: _pressed || widget.phase == CapturePhase.listening
-                  ? Curves.easeOutCubic
-                  : Curves.easeOutBack,
+            // Press + breathing feedback, all SIZE-based: the disc's
+            // painted diameter animates (crisp anti-aliased circle at
+            // every size) instead of raster-scaling a fixed circle via a
+            // transform, which shimmered at the edges while breathing.
+            // The implicit tween carries press dips and the dBFS voice
+            // swell (each tick re-targets it with a short ease — no
+            // overshoot there, back-curves jitter under the amplitude
+            // stream); the AnimatedBuilder multiplies in the slow idle
+            // breath so the core stays alive between words. The glyph
+            // keeps a fixed size — the disc breathes around it.
+            AnimatedBuilder(
+              animation: _breath,
+              builder: (context, child) {
+                final idleBreath = widget.phase == CapturePhase.listening
+                    ? 1 +
+                          VoiceButton.listeningIdleBreath *
+                              math.sin(2 * math.pi * _breath.value)
+                    : 1.0;
+                return TweenAnimationBuilder<double>(
+                  key: VoiceButton.pressScaleKey,
+                  tween: Tween<double>(
+                    end:
+                        (_pressed ? VoiceButton.pressedScale : 1.0) *
+                        _voiceScale,
+                  ),
+                  duration: _pressed
+                      ? const Duration(milliseconds: 90)
+                      : widget.phase == CapturePhase.listening
+                      ? const Duration(milliseconds: 130)
+                      : const Duration(milliseconds: 240),
+                  curve: _pressed || widget.phase == CapturePhase.listening
+                      ? Curves.easeOutCubic
+                      : Curves.easeOutBack,
+                  builder: (context, target, inner) {
+                    final diameter = size * target * idleBreath;
+                    return SizedBox(
+                      width: diameter,
+                      height: diameter,
+                      child: inner,
+                    );
+                  },
+                  child: child,
+                );
+              },
               child: AnimatedOpacity(
                 opacity: dimmed ? 0.55 : 1.0,
                 duration: const Duration(milliseconds: 200),
@@ -279,8 +352,6 @@ class _VoiceButtonState extends State<VoiceButton> {
                   shape: const CircleBorder(),
                   clipBehavior: Clip.antiAlias,
                   child: Ink(
-                    width: size,
-                    height: size,
                     decoration: coreDecoration,
                     child: InkWell(
                       key: VoiceButton.coreButtonKey,
