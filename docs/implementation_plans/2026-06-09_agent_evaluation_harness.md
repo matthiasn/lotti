@@ -917,9 +917,11 @@ supplies real model behavior.
   existed. Direct profile env vars remain descriptive unless they match such a
   plan.
 - Judge calibration: `EvalJudgeCalibration` loads non-secret human-label sets
-  keyed by `(scenarioId, profileName, trialIndex)` and bound to
-  `scenarioDigest`, `profileDigest`, `JudgeVerdict.traceDigest`, and a
-  parsed-verdict digest in completed calibration files. It keeps the human
+  keyed by
+  `(scenarioId, profileName, agentDirectiveVariantName, trialIndex)` and bound
+  to `scenarioDigest`, `profileDigest`, `agentDirectiveVariantDigest`,
+  `JudgeVerdict.traceDigest`, and a parsed-verdict digest in completed
+  calibration files. It keeps the human
   gold-label set `version` separate from the verdicts'
   `judgeCalibrationSetVersion`, so a first `human-gold-v1` set can audit
   verdicts produced while the judge was explicitly `uncalibrated`. It compares
@@ -942,9 +944,10 @@ supplies real model behavior.
   `eval/run_level2.sh template <runId>` can optionally receive
   `EVAL_CALIBRATION_TEMPLATE_MAX_ROWS=<n>` to emit a deterministic bounded
   review queue after validating the complete judged run. The selector covers
-  agent kind, model class, judge pass/fail, protected/non-protected bucket, and
-  primary-capability strata, then records only aggregate selection coverage and
-  digest metadata so protected scenario IDs are not written into the template.
+  agent kind, model class, prompt variant, judge pass/fail,
+  protected/non-protected bucket, and primary-capability strata, then records
+  only aggregate selection coverage and digest metadata so protected scenario
+  IDs are not written into the template.
 - Tuning readiness: `EvalTuningReadiness` evaluates a run against an explicit
   policy after artifact verification. `developmentSmoke` can pass small
   diagnostic matrices; `modelClassTuning` requires a live manifest, canonical

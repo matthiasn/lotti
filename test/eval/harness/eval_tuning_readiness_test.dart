@@ -1684,6 +1684,8 @@ JudgeCalibrationSet _calibrationSetFor(
           key: EvalTraceKey.fromTrace(trace),
           scenarioDigest: trace.provenance.scenarioDigest,
           profileDigest: trace.provenance.profileDigest,
+          agentDirectiveVariantDigest:
+              trace.provenance.agentDirectiveVariantDigest,
           traceDigest: trace.verdict!.traceDigest,
           verdictDigest: EvalProvenance.digestJson(trace.verdict!.toJson()),
           expectedPass: trace.verdict!.pass,

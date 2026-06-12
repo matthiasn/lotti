@@ -459,8 +459,8 @@ performance, and human calibration labels are checked later by `report`.
 5. `template` first performs the same manifest/catalog verification as
    `report`, requires verdict-bound traces, and writes a non-secret human-label
    template to `EVAL_CALIBRATION_TEMPLATE`. The template includes trace keys,
-   scenario/profile digests, `JudgeVerdict.traceDigest`, a digest of the
-   parsed `JudgeVerdict` JSON, the verdicts'
+   scenario/profile/prompt-variant digests, `JudgeVerdict.traceDigest`, a
+   digest of the parsed `JudgeVerdict` JSON, the verdicts'
    `judge.calibrationSetVersion`, and blank human pass/score fields. It uses
    `labelTemplates`, not `labels`, so `calibrate` rejects it until a human fills
    the fields, clears `needs_review`, and converts it into a completed
@@ -472,20 +472,22 @@ performance, and human calibration labels are checked later by `report`.
    By default the template includes every judged trace. Set
    `EVAL_CALIBRATION_TEMPLATE_MAX_ROWS` to create a deterministic bounded review
    queue: the selector validates the full judged run first, then covers
-   marginal strata for agent kind, model class, judge pass/fail, protected vs.
-   non-protected traces, and primary capability before topping up by stable
-   trace key. The template records aggregate selection counts, cross-cell
-   counts, and digests, not raw scenario text or protected catalog metadata.
+   marginal strata for agent kind, model class, prompt variant, judge
+   pass/fail, protected vs. non-protected traces, and primary capability before
+   topping up by stable trace key. The template records aggregate selection
+   counts, cross-cell counts, and digests, not raw scenario text or protected
+   catalog metadata.
    This is calibration coverage planning only; a sampled queue is not
    tuning-ready unless the completed labels still satisfy the calibration and
    readiness gates.
 6. `calibrate` first performs the same manifest/catalog verification as
    `report`, then loads a human-label JSON file through `EVAL_CALIBRATION` and
    compares the run's `JudgeVerdict`s against those labels. Calibration labels
-   key into `(scenarioId, profileName, trialIndex)` plus optional
-   `cascadeWake` identity, bind the reviewed artifact to `scenarioDigest`,
-   `profileDigest`, and the verdict's `traceDigest`, bind the reviewed verdict
-   through `verdictDigest`, and record
+   key into `(scenarioId, profileName, agentDirectiveVariantName, trialIndex)`
+   plus optional `cascadeWake` identity, bind the reviewed artifact to
+   `scenarioDigest`, `profileDigest`, `agentDirectiveVariantDigest`, and the
+   verdict's `traceDigest`, bind the reviewed verdict through `verdictDigest`,
+   and record
    inclusive human score bands plus expected pass. Completed calibration files
    must carry non-empty reviewer provenance (`labeler`, `rationale`, terminal
    `adjudicationStatus`, and `labelerCount >= 1`) and are blocked inside the

@@ -38,10 +38,144 @@ void main() {
     expect(
       key.id,
       'task_workflow_checklist_transcript_cascade::frontier-calibration::'
-      'trial-2::cascade-task-log::wake-1-of-3',
+      'prompt-default::trial-2::cascade-task-log::wake-1-of-3',
     );
     expect(roundTripped.id, key.id);
+    expect(roundTripped.agentDirectiveVariantName, 'default');
     expect(roundTripped.cascadeWake?.wakeIndex, 1);
+  });
+
+  test('trace keys include prompt variant identity', () {
+    const variant = EvalAgentDirectiveVariant(
+      name: 'metadata-first-v2',
+      generalDirective: 'Write durable metadata before summaries.',
+    );
+    final key = EvalTraceKey.fromTrace(
+      _trace(
+        scenario: taskReleaseNotesScenario,
+        profile: frontierProfile,
+        agentDirectiveVariant: variant,
+      ),
+    );
+    final roundTripped = EvalTraceKey.fromJson(key.toJson());
+
+    expect(
+      key.id,
+      'task_release_notes::frontier-calibration::'
+      'prompt-metadata-first-v2::trial-0',
+    );
+    expect(roundTripped.id, key.id);
+    expect(roundTripped.agentDirectiveVariantName, 'metadata-first-v2');
+  });
+
+  test('calibration templates distinguish prompt variants', () {
+    const variant = EvalAgentDirectiveVariant(
+      name: 'metadata-first-v2',
+      generalDirective: 'Write durable metadata before summaries.',
+    );
+    final traces = [
+      _trace(
+        scenario: taskReleaseNotesScenario,
+        profile: frontierProfile,
+        verdict: _verdict(
+          pass: true,
+          goalAttainment: 5,
+          quality: 4,
+          efficiency: 3,
+        ),
+      ),
+      _trace(
+        scenario: taskReleaseNotesScenario,
+        profile: frontierProfile,
+        agentDirectiveVariant: variant,
+        verdict: _verdict(
+          pass: true,
+          goalAttainment: 4,
+          quality: 4,
+          efficiency: 4,
+        ),
+      ),
+    ];
+
+    final template = EvalJudgeCalibration.labelTemplateJson(
+      version: 'human-gold-v1',
+      traces: traces,
+      manifest: _manifestFor(traces),
+    );
+    final labels = template['labelTemplates']! as List<Map<String, dynamic>>;
+    final ids = [
+      for (final label in labels)
+        EvalTraceKey.fromJson(label['key']! as Map<String, dynamic>).id,
+    ];
+
+    expect(
+      ids,
+      [
+        'task_release_notes::frontier-calibration::'
+            'prompt-default::trial-0',
+        'task_release_notes::frontier-calibration::'
+            'prompt-metadata-first-v2::trial-0',
+      ],
+    );
+    expect(
+      labels.map((label) => label['agentDirectiveVariantDigest']),
+      everyElement(startsWith('sha256:')),
+    );
+  });
+
+  test('prompt variant labels do not bind default prompt traces', () {
+    const variant = EvalAgentDirectiveVariant(
+      name: 'metadata-first-v2',
+      generalDirective: 'Write durable metadata before summaries.',
+    );
+    final defaultTrace = _trace(
+      scenario: taskReleaseNotesScenario,
+      profile: frontierProfile,
+      verdict: _verdict(
+        pass: true,
+        goalAttainment: 5,
+        quality: 4,
+        efficiency: 3,
+      ),
+    );
+
+    final report = EvalJudgeCalibration.evaluate(
+      traces: [defaultTrace],
+      calibrationSet: JudgeCalibrationSet(
+        version: 'human-gold-v1',
+        labels: [
+          _label(
+            scenario: taskReleaseNotesScenario,
+            profile: frontierProfile,
+            agentDirectiveVariant: variant,
+            expectedPass: true,
+            goalAttainment: 5,
+            quality: 4,
+            efficiency: 3,
+          ),
+        ],
+      ),
+    );
+
+    expect(report.evaluatedCount, 0);
+    expect(report.missingTraceCount, 1);
+    expect(report.unlabeledVerdictCount, 1);
+    expect(
+      report.findings.map((finding) => finding.kind),
+      containsAll([
+        JudgeCalibrationFindingKind.missingTrace,
+        JudgeCalibrationFindingKind.unlabeledVerdict,
+      ]),
+    );
+    expect(
+      report.findings
+          .singleWhere(
+            (finding) =>
+                finding.kind == JudgeCalibrationFindingKind.missingTrace,
+          )
+          .key,
+      contains('prompt-metadata-first-v2'),
+    );
   });
 
   test('reports judge agreement and calibration coverage gaps', () {
@@ -324,6 +458,58 @@ void main() {
     );
   });
 
+  test('stale prompt variant digest is not evaluated', () {
+    const variant = EvalAgentDirectiveVariant(
+      name: 'metadata-first-v2',
+      generalDirective: 'Write durable metadata before summaries.',
+    );
+    final report = EvalJudgeCalibration.evaluate(
+      traces: [
+        _trace(
+          scenario: taskReleaseNotesScenario,
+          profile: frontierProfile,
+          agentDirectiveVariant: variant,
+          verdict: _verdict(
+            pass: true,
+            goalAttainment: 5,
+            quality: 4,
+            efficiency: 3,
+          ),
+        ),
+      ],
+      calibrationSet: JudgeCalibrationSet(
+        version: 'human-gold-v1',
+        labels: [
+          _label(
+            scenario: taskReleaseNotesScenario,
+            profile: frontierProfile,
+            agentDirectiveVariant: variant,
+            expectedPass: true,
+            goalAttainment: 5,
+            quality: 4,
+            efficiency: 3,
+            agentDirectiveVariantDigest: EvalProvenance.digestText(
+              'old-prompt-variant',
+            ),
+          ),
+        ],
+      ),
+    );
+
+    expect(report.evaluatedCount, 0);
+    expect(report.staleLabelCount, 1);
+    expect(report.passAgreementCount, 0);
+    expect(
+      report.findings
+          .singleWhere(
+            (finding) =>
+                finding.kind == JudgeCalibrationFindingKind.staleGoldLabel,
+          )
+          .detail,
+      contains('agent directive variant digest mismatch'),
+    );
+  });
+
   test('reports independent human review reliability', () {
     final agreeingVerdict = _verdict(
       pass: true,
@@ -563,7 +749,7 @@ void main() {
     );
     final labels = template['labelTemplates']! as List<Map<String, dynamic>>;
 
-    expect(template['calibrationTemplateSchemaVersion'], 1);
+    expect(template['calibrationTemplateSchemaVersion'], 2);
     expect(template['version'], 'human-gold-v1');
     expect(template['judgeCalibrationSetVersion'], 'human-gold-v1');
     expect(template, isNot(contains('calibrationTemplateSelection')));
@@ -572,17 +758,19 @@ void main() {
     expect(sourceRun['manifestDigest'], startsWith('sha256:'));
     expect(sourceRun['scenarioSetDigest'], startsWith('sha256:'));
     expect(sourceRun['profileSetDigest'], startsWith('sha256:'));
+    expect(sourceRun['agentDirectiveVariantSetDigest'], startsWith('sha256:'));
     expect(sourceRun['promptDigest'], startsWith('sha256:'));
     expect(sourceRun['toolSchemaDigest'], startsWith('sha256:'));
     expect(sourceRun['traceSchemaVersion'], EvalTrace.schemaVersion);
     expect(
       labels.map((label) {
         final key = label['key']! as Map<String, dynamic>;
-        return '${key['scenarioId']}::${key['profileName']}';
+        return EvalTraceKey.fromJson(key).id;
       }),
       [
-        'task_release_notes::frontier-calibration',
-        'task_workflow_release_notes::local-calibration',
+        'task_release_notes::frontier-calibration::prompt-default::trial-0',
+        'task_workflow_release_notes::local-calibration::prompt-default::'
+            'trial-0',
       ],
     );
     expect(labels.first['traceDigest'], _traceDigest(5, 4, 3));
@@ -714,7 +902,7 @@ void main() {
             as Map<String, dynamic>;
 
     expect(labels, hasLength(4));
-    expect(selection['policy'], 'stratified-v1');
+    expect(selection['policy'], 'stratified-v2');
     expect(selection['maxRows'], 4);
     expect(selection['candidateTraceCount'], 5);
     expect(selection['selectedTraceCount'], 4);
@@ -725,6 +913,7 @@ void main() {
     expect(selection['candidateCoverage'], {
       'agentKinds': 2,
       'modelClasses': 2,
+      'promptVariants': 1,
       'verdictOutcomes': 2,
       'protectionBuckets': 2,
       'primaryCapabilities': 4,
@@ -732,6 +921,7 @@ void main() {
     expect(selection['selectedCoverage'], {
       'agentKinds': 2,
       'modelClasses': 2,
+      'promptVariants': 1,
       'verdictOutcomes': 2,
       'protectionBuckets': 2,
       'primaryCapabilities': 4,
@@ -749,30 +939,103 @@ void main() {
     expect(
       labels.map((label) {
         final key = label['key']! as Map<String, dynamic>;
-        return '${key['scenarioId']}::${key['profileName']}';
+        return EvalTraceKey.fromJson(key).id;
       }),
       [
-        'planner_capture_ambiguous_person::local-calibration',
-        'task_release_notes::frontier-calibration',
-        'planner_workflow_focus_boundary::frontier-calibration',
-        'task_workflow_release_notes::local-calibration',
+        'planner_capture_ambiguous_person::local-calibration::'
+            'prompt-default::trial-0',
+        'task_release_notes::frontier-calibration::prompt-default::trial-0',
+        'planner_workflow_focus_boundary::frontier-calibration::'
+            'prompt-default::trial-0',
+        'task_workflow_release_notes::local-calibration::prompt-default::'
+            'trial-0',
       ],
     );
     expect(
       reversedLabels.map((label) {
         final key = label['key']! as Map<String, dynamic>;
-        return '${key['scenarioId']}::${key['profileName']}';
+        return EvalTraceKey.fromJson(key).id;
       }),
       [
-        'planner_capture_ambiguous_person::local-calibration',
-        'task_release_notes::frontier-calibration',
-        'planner_workflow_focus_boundary::frontier-calibration',
-        'task_workflow_release_notes::local-calibration',
+        'planner_capture_ambiguous_person::local-calibration::'
+            'prompt-default::trial-0',
+        'task_release_notes::frontier-calibration::prompt-default::trial-0',
+        'planner_workflow_focus_boundary::frontier-calibration::'
+            'prompt-default::trial-0',
+        'task_workflow_release_notes::local-calibration::prompt-default::'
+            'trial-0',
       ],
     );
     expect(reversedSelection, selection);
     expect(selection.toString(), isNot(contains('private-catalog')));
     expect(selection.toString(), isNot(contains('planner_workflow')));
+  });
+
+  test('stratified template selection covers prompt variants', () {
+    const variant = EvalAgentDirectiveVariant(
+      name: 'metadata-first-v2',
+      generalDirective: 'Write durable metadata before summaries.',
+    );
+    final traces = [
+      _trace(
+        scenario: plannerCaptureAmbiguousPersonScenario,
+        profile: localProfile,
+        verdict: _verdict(
+          pass: true,
+          goalAttainment: 4,
+          quality: 4,
+          efficiency: 4,
+        ),
+      ),
+      _trace(
+        scenario: taskReleaseNotesScenario,
+        profile: frontierProfile,
+        verdict: _verdict(
+          pass: true,
+          goalAttainment: 5,
+          quality: 4,
+          efficiency: 3,
+        ),
+      ),
+      _trace(
+        scenario: taskReleaseNotesScenario,
+        profile: frontierProfile,
+        agentDirectiveVariant: variant,
+        verdict: _verdict(
+          pass: true,
+          goalAttainment: 4,
+          quality: 4,
+          efficiency: 4,
+        ),
+      ),
+    ];
+
+    final template = EvalJudgeCalibration.labelTemplateJson(
+      version: 'human-gold-v1',
+      traces: traces,
+      manifest: _manifestFor(traces),
+      maxRows: 2,
+    );
+    final labels = template['labelTemplates']! as List<Map<String, dynamic>>;
+    final selection =
+        template['calibrationTemplateSelection']! as Map<String, dynamic>;
+
+    expect(labels, hasLength(2));
+    expect(selection['policy'], 'stratified-v2');
+    expect(selection['requiredCoverageRows'], 2);
+    expect(selection['selectedCoverage'], containsPair('promptVariants', 2));
+    expect(
+      labels.map((label) {
+        final key = label['key']! as Map<String, dynamic>;
+        return EvalTraceKey.fromJson(key).id;
+      }),
+      [
+        'planner_capture_ambiguous_person::local-calibration::'
+            'prompt-default::trial-0',
+        'task_release_notes::frontier-calibration::'
+            'prompt-metadata-first-v2::trial-0',
+      ],
+    );
   });
 
   test('stratified template selection rejects too-small budgets', () {
@@ -809,7 +1072,7 @@ void main() {
         isA<ArgumentError>().having(
           (error) => error.message,
           'message',
-          contains('too small for calibration template stratified-v1'),
+          contains('too small for calibration template stratified-v2'),
         ),
       ),
     );
@@ -981,7 +1244,7 @@ void main() {
     );
     expect(
       () => JudgeCalibrationSet.fromJson(const {
-        'calibrationTemplateSchemaVersion': 1,
+        'calibrationTemplateSchemaVersion': 2,
         'version': 'human-gold-v1',
         'labelTemplates': <Map<String, dynamic>>[],
       }),
@@ -1161,10 +1424,12 @@ void main() {
       'key': const EvalTraceKey(
         scenarioId: 'task_release_notes',
         profileName: 'frontier-calibration',
+        agentDirectiveVariantName: 'default',
         trialIndex: 0,
       ).toJson(),
       'scenarioDigest': provenance.scenarioDigest,
       'profileDigest': provenance.profileDigest,
+      'agentDirectiveVariantDigest': provenance.agentDirectiveVariantDigest,
       'traceDigest': _traceDigest(5, 4, 3),
       'verdictDigest': EvalProvenance.digestText('reviewed-verdict'),
       'expectedPass': true,
@@ -1194,10 +1459,12 @@ void main() {
       'key': const EvalTraceKey(
         scenarioId: 'task_release_notes',
         profileName: 'frontier-calibration',
+        agentDirectiveVariantName: 'default',
         trialIndex: 0,
       ).toJson(),
       'scenarioDigest': provenance.scenarioDigest,
       'profileDigest': provenance.profileDigest,
+      'agentDirectiveVariantDigest': provenance.agentDirectiveVariantDigest,
       'traceDigest': _traceDigest(5, 4, 3),
       'verdictDigest': EvalProvenance.digestText('reviewed-verdict'),
       'expectedPass': true,
@@ -1217,6 +1484,24 @@ void main() {
         ...valid,
         'scenarioDigest': 'sha256:not-a-digest',
       }),
+      throwsFormatException,
+    );
+    final keyWithoutPromptVariant = <String, dynamic>{
+      ...(valid['key']! as Map<String, dynamic>),
+    }..remove('agentDirectiveVariantName');
+    expect(
+      () => JudgeCalibrationLabel.fromJson({
+        ...valid,
+        'key': keyWithoutPromptVariant,
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => JudgeCalibrationLabel.fromJson(
+        {
+          ...valid,
+        }..remove('agentDirectiveVariantDigest'),
+      ),
       throwsFormatException,
     );
     expect(
@@ -1287,13 +1572,20 @@ EvalTrace _trace({
   required EvalProfile profile,
   JudgeVerdict? verdict,
   int trialIndex = 0,
+  EvalAgentDirectiveVariant agentDirectiveVariant =
+      const EvalAgentDirectiveVariant(),
   EvalTraceCascadeWake? cascadeWake,
 }) {
   return EvalTrace(
     runId: 'run-1',
     scenario: scenario,
     profile: profile,
-    provenance: EvalProvenance.capture(scenario: scenario, profile: profile),
+    agentDirectiveVariant: agentDirectiveVariant,
+    provenance: EvalProvenance.capture(
+      scenario: scenario,
+      profile: profile,
+      agentDirectiveVariant: agentDirectiveVariant,
+    ),
     trialIndex: trialIndex,
     cascadeWake: cascadeWake,
     output: const AgentRunOutput(
@@ -1318,12 +1610,16 @@ EvalRunManifest _manifestFor(
     runId: 'run-1',
     targetName: 'calibration-test',
     targetKind: 'live',
-    scenarios: [
-      for (final trace in traces) trace.scenario,
-    ],
-    profiles: [
-      for (final trace in traces) trace.profile,
-    ],
+    scenarios: {
+      for (final trace in traces) trace.scenario.id: trace.scenario,
+    }.values.toList(),
+    profiles: {
+      for (final trace in traces) trace.profile.name: trace.profile,
+    }.values.toList(),
+    agentDirectiveVariants: {
+      for (final trace in traces)
+        trace.agentDirectiveVariant.name: trace.agentDirectiveVariant,
+    }.values.toList(),
     createdAt: DateTime(2026, 6, 10, 12),
     command: 'calibration-test',
     environment: const <String, String>{},
@@ -1338,8 +1634,11 @@ JudgeCalibrationLabel _label({
   required int goalAttainment,
   required int quality,
   required int efficiency,
+  EvalAgentDirectiveVariant agentDirectiveVariant =
+      const EvalAgentDirectiveVariant(),
   String? scenarioDigest,
   String? profileDigest,
+  String? agentDirectiveVariantDigest,
   String? traceDigest,
   String? verdictDigest,
   String labeler = 'reviewer-a',
@@ -1352,15 +1651,19 @@ JudgeCalibrationLabel _label({
   final provenance = EvalProvenance.capture(
     scenario: scenario,
     profile: profile,
+    agentDirectiveVariant: agentDirectiveVariant,
   );
   return JudgeCalibrationLabel(
     key: EvalTraceKey(
       scenarioId: scenario.id,
       profileName: profile.name,
+      agentDirectiveVariantName: agentDirectiveVariant.name,
       trialIndex: 0,
     ),
     scenarioDigest: scenarioDigest ?? provenance.scenarioDigest,
     profileDigest: profileDigest ?? provenance.profileDigest,
+    agentDirectiveVariantDigest:
+        agentDirectiveVariantDigest ?? provenance.agentDirectiveVariantDigest,
     traceDigest:
         traceDigest ?? _traceDigest(goalAttainment, quality, efficiency),
     verdictDigest:
@@ -1389,15 +1692,20 @@ JudgeCalibrationLabel _label({
 JudgeCalibrationLabel _missingTraceLabel({
   required String scenarioId,
   required String profileName,
+  String agentDirectiveVariantName = 'default',
 }) {
   return JudgeCalibrationLabel(
     key: EvalTraceKey(
       scenarioId: scenarioId,
       profileName: profileName,
+      agentDirectiveVariantName: agentDirectiveVariantName,
       trialIndex: 0,
     ),
     scenarioDigest: EvalProvenance.digestText('missing-scenario'),
     profileDigest: EvalProvenance.digestText(profileName),
+    agentDirectiveVariantDigest: EvalProvenance.digestText(
+      'missing-agent-directive-variant',
+    ),
     traceDigest: EvalProvenance.digestText('missing-trace'),
     verdictDigest: EvalProvenance.digestText('missing-verdict'),
     expectedPass: false,

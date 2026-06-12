@@ -1,9 +1,9 @@
 # Judge Calibration Sets
 
 Human calibration labels live outside trace artifacts. They identify a trace
-cell, bind that label to the scenario/profile digests that were reviewed, and
-record the expected human judgment. They must not copy prompt text, model
-output, transcripts, tool arguments, or secret values.
+cell, bind that label to the scenario/profile/prompt-variant digests that were
+reviewed, and record the expected human judgment. They must not copy prompt
+text, model output, transcripts, tool arguments, or secret values.
 
 Use a JSON file with this shape:
 
@@ -16,10 +16,12 @@ Use a JSON file with this shape:
       "key": {
         "scenarioId": "task_release_notes",
         "profileName": "frontier-fast",
+        "agentDirectiveVariantName": "default",
         "trialIndex": 0
       },
       "scenarioDigest": "sha256:<digest from trace.provenance.scenarioDigest>",
       "profileDigest": "sha256:<digest from trace.provenance.profileDigest>",
+      "agentDirectiveVariantDigest": "sha256:<digest from trace.provenance.agentDirectiveVariantDigest>",
       "traceDigest": "sha256:<digest copied from JudgeVerdict.traceDigest>",
       "verdictDigest": "sha256:<digest of parsed JudgeVerdict JSON>",
       "expectedPass": true,
@@ -85,11 +87,12 @@ from overwriting a completed gold-label file.
 By default, template generation includes every judged trace. For a smaller but
 coverage-aware human queue, set `EVAL_CALIBRATION_TEMPLATE_MAX_ROWS=<n>`.
 Sampling is deterministic and validates the full judged run before selecting
-rows. The selector covers agent kinds, model classes, judge pass/fail outcomes,
-protected vs. non-protected traces, and primary capabilities before topping up
-by stable trace key. If `<n>` is too small to cover those strata, template
-generation fails instead of writing a misleading review queue. The template
-records aggregate selection counts, cross-cell counts, and digests; it does not
+rows. The `stratified-v2` selector covers agent kinds, model classes, prompt
+variants, judge pass/fail outcomes, protected vs. non-protected traces, and
+primary capabilities before topping up by stable trace key. If `<n>` is too
+small to cover those strata, template generation fails instead of writing a
+misleading review queue. The template records aggregate selection counts,
+cross-cell counts, and digests; it does not
 store raw prompt text, model output, protected catalog ids, or protected
 scenario-id lists in selection metadata. A bounded template is only a review
 queue. The completed labels must still pass calibration coverage/agreement and
@@ -99,7 +102,7 @@ Template files use a separate schema:
 
 ```json
 {
-  "calibrationTemplateSchemaVersion": 1,
+  "calibrationTemplateSchemaVersion": 2,
   "version": "human-gold-v1",
   "judgeCalibrationSetVersion": "uncalibrated",
   "sourceRun": {
@@ -107,6 +110,7 @@ Template files use a separate schema:
     "manifestDigest": "sha256:<manifest digest>",
     "scenarioSetDigest": "sha256:<scenario-set digest>",
     "profileSetDigest": "sha256:<profile-set digest>",
+    "agentDirectiveVariantSetDigest": "sha256:<prompt-variant-set digest>",
     "scenarioCatalogEvidence": {
       "scenarioSetDigest": "sha256:<scenario-set digest>",
       "publicScenarioCount": 0,
@@ -121,10 +125,12 @@ Template files use a separate schema:
       "key": {
         "scenarioId": "task_release_notes",
         "profileName": "frontier-fast",
+        "agentDirectiveVariantName": "default",
         "trialIndex": 0
       },
       "scenarioDigest": "sha256:<trace.provenance.scenarioDigest>",
       "profileDigest": "sha256:<trace.provenance.profileDigest>",
+      "agentDirectiveVariantDigest": "sha256:<trace.provenance.agentDirectiveVariantDigest>",
       "traceDigest": "sha256:<JudgeVerdict.traceDigest>",
       "verdictDigest": "sha256:<digest of JudgeVerdict JSON>",
       "expectedPass": null,
@@ -173,12 +179,14 @@ has intentionally resolved that disagreement.
 The score bands are inclusive. Use a wider band when human reviewers agree the
 rubric permits more than one reasonable score; keep `expectedPass` strict.
 
-Completed calibration files must include `traceDigest` and `verdictDigest` for
-every label. `traceDigest` binds the label to the trace reviewed by the judge;
-`verdictDigest` binds the human label to the parsed `JudgeVerdict` JSON that
-was reviewed. A label whose scenario/profile digest, trace digest, or verdict
-digest no longer matches the run is reported as `staleGoldLabel` and is not
-counted as judge disagreement.
+Completed calibration files must include `traceDigest`, `verdictDigest`, and
+`agentDirectiveVariantDigest` for every label, and each key must include
+`agentDirectiveVariantName`. `traceDigest` binds the label to the trace
+reviewed by the judge; `verdictDigest` binds the human label to the parsed
+`JudgeVerdict` JSON that was reviewed; `agentDirectiveVariantDigest` binds the
+label to the exact prompt/directive arm. A label whose scenario/profile/prompt
+variant digest, trace digest, or verdict digest no longer matches the run is
+reported as `staleGoldLabel` and is not counted as judge disagreement.
 Every digest field must use the full `sha256:` plus 64 lowercase hex shape.
 Passing labels must allow a passing score in every dimension.
 

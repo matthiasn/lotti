@@ -36,8 +36,9 @@ is operator audit material, not judge input.
 ## Inputs
 
 - `<runsRoot>/<runId>/*.trace.json` — one `EvalTrace` per
-  `(scenario, profile, trialIndex)`, or per explicit `cascadeWake` inside that
-  trial for cascade sidecar runs, written by the Level 2 runner.
+  `(scenario, profile, prompt variant, trialIndex)`, or per explicit
+  `cascadeWake` inside that trial for cascade sidecar runs, written by the
+  Level 2 runner.
 - For blinded review only:
   `<exportDir>/judge/traces/*.blinded-trace.json` plus
   `<exportDir>/judge/manifest.json`. These hide exact profile/model/provider
@@ -192,7 +193,8 @@ gates unless a future pre-registered policy explicitly says so.
 - Be specific and skeptical. The point of the eval is to find real problems
   before users do, not to confirm the agent is fine.
 - Keep verdicts reproducible: the verdict file plus the trace file are the audit
-  record for that `(scenario, profile, trialIndex[, cascadeWake])` at that
+  record for that
+  `(scenario, profile, prompt variant, trialIndex[, cascadeWake])` at that
   `runId`. The verdict must name the judge runner/model, prompt digest, judge
   calibration set version, and whether profile/model identity was visible.
 - Keep exact provider/model identity hidden for blinded comparison exports when

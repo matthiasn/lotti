@@ -7,6 +7,9 @@ import 'eval_models.dart';
 import 'eval_provenance.dart';
 import 'eval_statistics.dart';
 
+const _calibrationTemplateSchemaVersion = 2;
+const _calibrationTemplateSelectionPolicy = 'stratified-v2';
+
 /// One independent human review captured before final gold-label adjudication.
 ///
 /// Reviews intentionally store only rubric outcomes and reviewer provenance.
@@ -76,6 +79,7 @@ class EvalTraceKey {
   const EvalTraceKey({
     required this.scenarioId,
     required this.profileName,
+    required this.agentDirectiveVariantName,
     required this.trialIndex,
     this.cascadeWake,
   });
@@ -83,6 +87,7 @@ class EvalTraceKey {
   factory EvalTraceKey.fromTrace(EvalTrace trace) => EvalTraceKey(
     scenarioId: trace.scenario.id,
     profileName: trace.profile.name,
+    agentDirectiveVariantName: trace.agentDirectiveVariant.name,
     trialIndex: trace.trialIndex,
     cascadeWake: trace.cascadeWake,
   );
@@ -90,6 +95,9 @@ class EvalTraceKey {
   factory EvalTraceKey.fromJson(Map<String, dynamic> json) => EvalTraceKey(
     scenarioId: json['scenarioId'] as String,
     profileName: json['profileName'] as String,
+    agentDirectiveVariantName:
+        (json['agentDirectiveVariantName'] as String?) ??
+        const EvalAgentDirectiveVariant().name,
     trialIndex: (json['trialIndex'] as num).toInt(),
     cascadeWake: json['cascadeWake'] == null
         ? null
@@ -100,17 +108,20 @@ class EvalTraceKey {
 
   final String scenarioId;
   final String profileName;
+  final String agentDirectiveVariantName;
   final int trialIndex;
   final EvalTraceCascadeWake? cascadeWake;
 
   String get id {
     final suffix = cascadeWake == null ? '' : '::${cascadeWake!.keySuffix}';
-    return '$scenarioId::$profileName::trial-$trialIndex$suffix';
+    return '$scenarioId::$profileName::prompt-$agentDirectiveVariantName::'
+        'trial-$trialIndex$suffix';
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'scenarioId': scenarioId,
     'profileName': profileName,
+    'agentDirectiveVariantName': agentDirectiveVariantName,
     'trialIndex': trialIndex,
     if (cascadeWake != null) 'cascadeWake': cascadeWake!.toJson(),
   };
@@ -126,6 +137,7 @@ class JudgeCalibrationLabel {
     required this.key,
     required this.scenarioDigest,
     required this.profileDigest,
+    required this.agentDirectiveVariantDigest,
     required this.expectedPass,
     required this.goalAttainmentMin,
     required this.goalAttainmentMax,
@@ -143,11 +155,25 @@ class JudgeCalibrationLabel {
   });
 
   factory JudgeCalibrationLabel.fromJson(Map<String, dynamic> json) {
+    final rawKey = json['key'] as Map<String, dynamic>;
+    if (!rawKey.containsKey('agentDirectiveVariantName')) {
+      throw const FormatException(
+        'Completed labels must include key.agentDirectiveVariantName',
+      );
+    }
+    final agentDirectiveVariantDigest =
+        json['agentDirectiveVariantDigest'] as String?;
+    if (agentDirectiveVariantDigest == null) {
+      throw const FormatException(
+        'Completed labels must include agentDirectiveVariantDigest',
+      );
+    }
     final rawReviews = json['independentReviews'];
     final label = JudgeCalibrationLabel(
-      key: EvalTraceKey.fromJson(json['key'] as Map<String, dynamic>),
+      key: EvalTraceKey.fromJson(rawKey),
       scenarioDigest: json['scenarioDigest'] as String,
       profileDigest: json['profileDigest'] as String,
+      agentDirectiveVariantDigest: agentDirectiveVariantDigest,
       traceDigest: json['traceDigest'] as String?,
       verdictDigest: json['verdictDigest'] as String?,
       expectedPass: json['expectedPass'] as bool,
@@ -202,6 +228,7 @@ class JudgeCalibrationLabel {
   final EvalTraceKey key;
   final String scenarioDigest;
   final String profileDigest;
+  final String agentDirectiveVariantDigest;
   final String? traceDigest;
   final String? verdictDigest;
   final bool expectedPass;
@@ -220,6 +247,10 @@ class JudgeCalibrationLabel {
   void validateCompleted() {
     _validateDigest(label: 'scenarioDigest', value: scenarioDigest);
     _validateDigest(label: 'profileDigest', value: profileDigest);
+    _validateDigest(
+      label: 'agentDirectiveVariantDigest',
+      value: agentDirectiveVariantDigest,
+    );
     final traceDigest = this.traceDigest;
     if (traceDigest == null) {
       throw const FormatException('Completed labels must include traceDigest');
@@ -277,6 +308,7 @@ class JudgeCalibrationLabel {
     'key': key.toJson(),
     'scenarioDigest': scenarioDigest,
     'profileDigest': profileDigest,
+    'agentDirectiveVariantDigest': agentDirectiveVariantDigest,
     if (traceDigest != null) 'traceDigest': traceDigest,
     if (verdictDigest != null) 'verdictDigest': verdictDigest,
     'expectedPass': expectedPass,
@@ -601,7 +633,7 @@ abstract final class EvalJudgeCalibration {
         ),
     ];
     return <String, dynamic>{
-      'calibrationTemplateSchemaVersion': 1,
+      'calibrationTemplateSchemaVersion': _calibrationTemplateSchemaVersion,
       'version': version,
       'judgeCalibrationSetVersion': judgeCalibrationSetVersions.single,
       if (manifest != null) 'sourceRun': _sourceRunJson(manifest),
@@ -621,6 +653,8 @@ abstract final class EvalJudgeCalibration {
       'key': candidate.key.toJson(),
       'scenarioDigest': trace.provenance.scenarioDigest,
       'profileDigest': trace.provenance.profileDigest,
+      'agentDirectiveVariantDigest':
+          trace.provenance.agentDirectiveVariantDigest,
       'traceDigest': candidate.verdict.traceDigest,
       'verdictDigest': candidate.verdictDigest,
       'expectedPass': null,
@@ -644,6 +678,7 @@ abstract final class EvalJudgeCalibration {
         'manifestDigest': manifest.manifestDigest,
       'scenarioSetDigest': manifest.scenarioSetDigest,
       'profileSetDigest': manifest.profileSetDigest,
+      'agentDirectiveVariantSetDigest': manifest.agentDirectiveVariantSetDigest,
       'promptDigest': manifest.promptDigest,
       'toolSchemaDigest': manifest.toolSchemaDigest,
       'traceSchemaVersion': manifest.traceSchemaVersion,
@@ -1069,6 +1104,14 @@ abstract final class EvalJudgeCalibration {
         'trace=${trace.provenance.profileDigest}',
       );
     }
+    if (label.agentDirectiveVariantDigest !=
+        trace.provenance.agentDirectiveVariantDigest) {
+      reasons.add(
+        'agent directive variant digest mismatch: '
+        'label=${label.agentDirectiveVariantDigest}, '
+        'trace=${trace.provenance.agentDirectiveVariantDigest}',
+      );
+    }
     return reasons;
   }
 
@@ -1257,6 +1300,7 @@ class _CalibrationTemplateCandidate {
   Set<String> get requiredStrata => <String>{
     'agentKind:${trace.scenario.agentKind.name}',
     'modelClass:${trace.profile.modelClass.name}',
+    'promptVariant:${trace.agentDirectiveVariant.name}',
     'verdict:${verdict.pass ? 'pass' : 'fail'}',
     'protection:${protectedTrace ? 'protected' : 'nonProtected'}',
     'primaryCapability:${trace.scenario.metadata.primaryCapabilityId ?? 'uncategorized'}',
@@ -1370,7 +1414,8 @@ _CalibrationTemplateSelection _selectCalibrationTemplateCandidates({
       final missing = requiredStrata.difference(covered);
       throw ArgumentError(
         'maxRows $maxRows is too small for calibration template '
-        'stratified-v1 coverage; missing ${_strataFamilyCounts(missing)}',
+        '$_calibrationTemplateSelectionPolicy coverage; missing '
+        '${_strataFamilyCounts(missing)}',
       );
     }
     final token = (requiredStrata.difference(covered).toList()..sort()).first;
@@ -1412,7 +1457,7 @@ _CalibrationTemplateSelection _selectCalibrationTemplateCandidates({
   return _CalibrationTemplateSelection(
     candidates: selected,
     report: _CalibrationTemplateSelectionReport(
-      policy: 'stratified-v1',
+      policy: _calibrationTemplateSelectionPolicy,
       maxRows: maxRows,
       candidateTraceCount: candidates.length,
       selectedTraceCount: selected.length,
@@ -1433,12 +1478,14 @@ Map<String, int> _coverageCounts(
 ) {
   final agentKinds = <String>{};
   final modelClasses = <String>{};
+  final promptVariants = <String>{};
   final verdictOutcomes = <String>{};
   final protectionBuckets = <String>{};
   final primaryCapabilities = <String>{};
   for (final candidate in candidates) {
     agentKinds.add(candidate.trace.scenario.agentKind.name);
     modelClasses.add(candidate.trace.profile.modelClass.name);
+    promptVariants.add(candidate.trace.agentDirectiveVariant.name);
     verdictOutcomes.add(candidate.verdict.pass ? 'pass' : 'fail');
     protectionBuckets.add(
       candidate.protectedTrace ? 'protected' : 'nonProtected',
@@ -1450,6 +1497,7 @@ Map<String, int> _coverageCounts(
   return <String, int>{
     'agentKinds': agentKinds.length,
     'modelClasses': modelClasses.length,
+    'promptVariants': promptVariants.length,
     'verdictOutcomes': verdictOutcomes.length,
     'protectionBuckets': protectionBuckets.length,
     'primaryCapabilities': primaryCapabilities.length,

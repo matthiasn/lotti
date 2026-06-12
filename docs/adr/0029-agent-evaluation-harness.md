@@ -247,17 +247,18 @@ invariant is flagged even before the judge looks at quality.
 ### 5. Level 2 — traces on disk, Claude Code as judge
 
 `EvalMatrixRunner` writes `<runsRoot>/<runId>/manifest.json` first, then one
-`EvalTrace` JSON per `(scenario, profile, trialIndex)` under
+`EvalTrace` JSON per `(scenario, profile, prompt variant, trialIndex)` under
 `<runsRoot>/<runId>/`. Cascade sidecar runners may write one trace per wake,
 but those traces carry explicit `cascadeWake` metadata while preserving the real
 `trialIndex`. The manifest records the target name/kind, trace schema
 version, sanitized command/environment-key presence, git revision, dirty-state
-digest, scenario/profile set digests, prompt/rubric digest, tool-schema digest,
-`profileExecutionBindings`/`profileBindingSetDigest`, and a non-secret
-scenario-catalog evidence block. Profile execution bindings map each stable
-profile label to the concrete non-secret provider id/type, provider-native
-model id, model/profile config ids, normalized endpoint origin, base URL digest,
-and effective provider request temperature used for that run. The profile set
+digest, scenario/profile/prompt-variant set digests, prompt/rubric digest,
+tool-schema digest, `profileExecutionBindings`/`profileBindingSetDigest`, and
+a non-secret scenario-catalog evidence block. Profile execution bindings map
+each stable profile label to the concrete non-secret provider id/type,
+provider-native model id, model/profile config ids, normalized endpoint origin,
+base URL digest, and effective provider request temperature used for that run.
+The profile set
 can come from the built-in profile catalog or an external `EVAL_PROFILES` JSON
 catalog, so local/frontier model-class comparisons can be changed without
 editing Dart code. Scenario catalog evidence binds the run to the merged
@@ -468,13 +469,14 @@ graded traces. The human gold-label `version` is separate from
 `judgeCalibrationSetVersion`, which records the `judge.calibrationSetVersion`
 expected on the verdicts being audited; this allows the first gold set to audit
 explicitly `uncalibrated` judge verdicts without pretending the judge was already
-calibrated. Labels key by `(scenarioId, profileName, trialIndex)` plus optional
-`cascadeWake` identity, bind the
-reviewed artifact to `scenarioDigest`, `profileDigest`, and optionally
-`JudgeVerdict.traceDigest` plus an optional digest of the parsed `JudgeVerdict`
-JSON when constructed in memory; completed calibration files require both
-artifact-binding digests plus non-empty reviewer provenance. They record
-expected pass plus inclusive human score bands for goal/quality/efficiency.
+calibrated. Labels key by
+`(scenarioId, profileName, agentDirectiveVariantName, trialIndex)` plus
+optional `cascadeWake` identity, bind the reviewed artifact to
+`scenarioDigest`, `profileDigest`, `agentDirectiveVariantDigest`,
+`JudgeVerdict.traceDigest`, and the parsed `JudgeVerdict` JSON digest;
+completed calibration files require those artifact-binding digests plus
+non-empty reviewer provenance. They record expected pass plus inclusive human
+score bands for goal/quality/efficiency.
 Stale labels are reported separately and do not count as judge disagreement.
 For multiple human reviewers, the completed file still contains exactly one
 gold label per trace; pre-adjudication votes live inside that label as
@@ -485,15 +487,18 @@ judge verdict, exact model identity, and peer votes. Inter-rater reliability
 and review-protocol evidence therefore cannot be supplied as precomputed
 aggregates.
 The harness can generate a separate `labelTemplates` JSON
-skeleton from a verified judged run; templates include trace keys and digests,
-derive `judgeCalibrationSetVersion` from the verdicts, leave human pass/score
-fields null, and are rejected by the completed calibration-set parser until a
-human fills them and clears `needs_review`. Template generation can optionally
+skeleton from a verified judged run; templates include trace keys that identify
+scenario, profile, prompt variant, trial, and optional cascade wake, plus
+scenario/profile/prompt-variant, trace, and verdict digests. Templates derive
+`judgeCalibrationSetVersion` from the verdicts, leave human pass/score fields
+null, and are rejected by the completed calibration-set parser until a human
+fills them and clears `needs_review`. Template generation can optionally
 write a deterministic bounded review queue: it validates the full judged run
 first, then selects rows to cover marginal strata for agent kind, model class,
-judge pass/fail, protected vs. non-protected traces, and primary capability, and
-records aggregate coverage/cross-cell counts plus candidate/selected-key
-digests without storing raw trace content or protected catalog metadata. This is
+prompt variant, judge pass/fail, protected vs. non-protected traces, and
+primary capability, and records aggregate coverage/cross-cell counts plus
+candidate/selected-key digests without storing raw trace content or protected
+catalog metadata. This is
 calibration planning only; the completed label set must still pass the normal
 coverage/agreement readiness gates. The report tracks gold-label
 coverage, pass agreement, score agreement, Wilson intervals,
