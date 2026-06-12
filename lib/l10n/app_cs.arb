@@ -2037,7 +2037,7 @@
   "imagePromptGenerationFullPromptLabel": "Celý prompt obrázku:",
   "images": "Obrázky",
   "inactiveLabel": "Neaktivní",
-  "inactiveSwitchDescription": "Neaktivní položky se nezobrazují ve výběrových seznamech",
+  "inactiveSwitchDescription": "Zobrazuje se ve výběrových seznamech",
   "inferenceProfileDetailLoadError": "Profil se nepodařilo načíst: {error}",
   "@inferenceProfileDetailLoadError": {
     "placeholders": {

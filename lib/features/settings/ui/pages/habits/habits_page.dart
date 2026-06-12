@@ -113,7 +113,7 @@ class _HabitListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.favoriteLabel,
                 child: Icon(
-                  Icons.star_outline_rounded,
+                  Icons.star_rounded,
                   size: 18,
                   color: tokens.colors.text.mediumEmphasis,
                 ),

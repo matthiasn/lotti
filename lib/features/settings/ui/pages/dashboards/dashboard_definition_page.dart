@@ -375,7 +375,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             children: [
                               SettingsFormSection(
                                 title: messages.basicSettings,
-                                icon: Icons.settings_outlined,
                                 children: [
                                   SettingsFormTextField(
                                     key: const Key('dashboard_name_field'),
@@ -405,7 +404,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               ),
                               SettingsFormSection(
                                 title: messages.habitSectionOptionsTitle,
-                                icon: Icons.tune_rounded,
                                 children: [
                                   FormSwitch(
                                     name: 'private',
@@ -429,7 +427,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         ),
                         SettingsFormSection(
                           title: messages.dashboardAddChartsTitle,
-                          icon: Icons.insert_chart_outlined,
                           children: [
                             if (dashboardItems.isNotEmpty)
                               ReorderableListView(

@@ -417,7 +417,7 @@ void main() {
 
         // One icon weight across the trailing slot — the star is an
         // outline like lock/eye-off; amber carries the favorite signal.
-        final star = find.byIcon(Icons.star_outline_rounded);
+        final star = find.byIcon(Icons.star_rounded);
         expect(star, findsOneWidget);
         final tokens = tester.element(star).designTokens;
         expect(
@@ -439,7 +439,7 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.star_outline_rounded), findsNothing);
+        expect(find.byIcon(Icons.star_rounded), findsNothing);
       });
 
       testWidgets('shows fallback letter when no icon set', (tester) async {
@@ -685,7 +685,7 @@ void main() {
 
         expect(find.byIcon(Icons.lock_outline), findsOneWidget);
         expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.star_outline_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.star_rounded), findsOneWidget);
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       });
 
@@ -704,7 +704,7 @@ void main() {
 
         expect(find.byIcon(Icons.lock_outline), findsNothing);
         expect(find.byIcon(Icons.visibility_off_outlined), findsNothing);
-        expect(find.byIcon(Icons.star_outline_rounded), findsNothing);
+        expect(find.byIcon(Icons.star_rounded), findsNothing);
       });
     });
 

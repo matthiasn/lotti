@@ -114,7 +114,6 @@ class HabitDetailsPage extends ConsumerWidget {
             children: [
               SettingsFormSection(
                 title: messages.basicSettings,
-                icon: Icons.settings_outlined,
                 children: [
                   SettingsFormTextField(
                     key: const Key('habit_name_field'),
@@ -139,7 +138,6 @@ class HabitDetailsPage extends ConsumerWidget {
               ),
               SettingsFormSection(
                 title: messages.habitSectionOptionsTitle,
-                icon: Icons.tune_rounded,
                 children: [
                   FormSwitch(
                     name: 'priority',
@@ -168,7 +166,6 @@ class HabitDetailsPage extends ConsumerWidget {
               ),
               SettingsFormSection(
                 title: messages.habitSectionScheduleTitle,
-                icon: Icons.schedule_rounded,
                 children: [
                   SettingsDateTimeField(
                     dateTime: item.activeFrom,

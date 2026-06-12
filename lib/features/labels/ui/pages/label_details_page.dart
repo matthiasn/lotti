@@ -217,7 +217,6 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
       children: [
         SettingsFormSection(
           title: messages.basicSettings,
-          icon: Icons.settings_outlined,
           children: [
             DesignSystemTextInput(
               controller: _nameController,
@@ -242,7 +241,6 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
         ),
         SettingsFormSection(
           title: messages.habitSectionOptionsTitle,
-          icon: Icons.tune_rounded,
           children: [
             SettingsSwitchRow(
               title: messages.privateLabel,
@@ -256,7 +254,6 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
         ),
         SettingsFormSection(
           title: messages.settingsLabelsCategoriesHeading,
-          icon: Icons.category_outlined,
           children: [
             _buildApplicableCategories(context, controller, state),
           ],

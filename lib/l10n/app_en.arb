@@ -2494,7 +2494,7 @@
   "imagePromptGenerationFullPromptLabel": "Full Image Prompt:",
   "images": "Images",
   "inactiveLabel": "Inactive",
-  "inactiveSwitchDescription": "Inactive items are hidden from selection lists",
+  "inactiveSwitchDescription": "Appears in selection lists",
   "inferenceProfileCreateTitle": "Create Profile",
   "inferenceProfileDescriptionLabel": "Description",
   "inferenceProfileDesktopOnly": "Desktop Only",

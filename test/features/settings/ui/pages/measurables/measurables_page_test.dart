@@ -80,28 +80,16 @@ void main() {
         expect(find.text(measurableWater.unitName), findsNothing);
       });
 
-      testWidgets('falls back to the unit without a description', (
-        tester,
-      ) async {
+      testWidgets('omits subtitle without a description — a bare unit is '
+          'an orphan and never substitutes', (tester) async {
         final bare = measurableWater.copyWith(description: '');
         await pumpMeasurablesPage(tester, measurables: [bare]);
-
-        expect(find.text(measurableWater.unitName), findsOneWidget);
-      });
-
-      testWidgets('omits subtitle when unit and description are empty', (
-        tester,
-      ) async {
-        final unitless = measurableWater.copyWith(
-          unitName: '',
-          description: '',
-        );
-        await pumpMeasurablesPage(tester, measurables: [unitless]);
 
         final item = tester.widget<DesignSystemListItem>(
           find.byType(DesignSystemListItem),
         );
         expect(item.subtitle, isNull);
+        expect(find.text(measurableWater.unitName), findsNothing);
       });
 
       testWidgets(
@@ -168,13 +156,13 @@ void main() {
             (
               description: 'shows outlined star icon when favorite',
               measurable: measurableWater.copyWith(favorite: true),
-              icon: Icons.star_outline_rounded,
+              icon: Icons.star_rounded,
               expected: true,
             ),
             (
               description: 'hides star icon when not favorite',
               measurable: measurableWater,
-              icon: Icons.star_outline_rounded,
+              icon: Icons.star_rounded,
               expected: false,
             ),
           ];
@@ -204,7 +192,7 @@ void main() {
         // One icon weight across the trailing slot — the star is an
         // outline like its lock neighbor; amber carries the favorite
         // signal.
-        final star = find.byIcon(Icons.star_outline_rounded);
+        final star = find.byIcon(Icons.star_rounded);
         expect(star, findsOneWidget);
         final tokens = tester.element(star).designTokens;
         expect(

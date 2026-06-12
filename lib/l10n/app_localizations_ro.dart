@@ -4931,8 +4931,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inactiveLabel => 'Inactiv';
 
   @override
-  String get inactiveSwitchDescription =>
-      'Elementele inactive nu apar în listele de selecție';
+  String get inactiveSwitchDescription => 'Apare în listele de selecție';
 
   @override
   String get inferenceProfileCreateTitle => 'Creați un profil';

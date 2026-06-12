@@ -177,7 +177,7 @@ void main() {
         expect(rows[2].icon, Icons.visibility_outlined);
         expect(
           rows[2].subtitle,
-          'Inactive items are hidden from selection lists',
+          'Appears in selection lists',
         );
       },
     );

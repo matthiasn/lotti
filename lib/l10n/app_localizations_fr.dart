@@ -4931,7 +4931,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get inactiveSwitchDescription =>
-      'Les éléments inactifs n\'apparaissent pas dans les listes de sélection';
+      'Apparaît dans les listes de sélection';
 
   @override
   String get inferenceProfileCreateTitle => 'Créer un profil';

@@ -4,7 +4,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// Token-driven section card for settings definition forms.
 ///
 /// Replaces the legacy `LottiFormSection` on the definitions pages: a
-/// compact header (icon chip, title, optional description) above a grouped
+/// quiet overline header (title, optional description) above a grouped
 /// card that mirrors `DesignSystemGroupedList`'s surface (background
 /// level02, decorative hairline, radii.m), so detail forms and list pages
 /// share one visual language.
@@ -12,16 +12,12 @@ class SettingsFormSection extends StatelessWidget {
   const SettingsFormSection({
     required this.title,
     required this.children,
-    this.icon,
     this.description,
     super.key,
   });
 
   /// Section heading shown above the card.
   final String title;
-
-  /// Optional leading glyph rendered in a tinted chip next to the title.
-  final IconData? icon;
 
   /// Optional one-liner under the title explaining the section.
   final String? description;
@@ -39,53 +35,30 @@ class SettingsFormSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Quiet overline header flush with the card edge: one left
+          // rail, and the type itself grades section vs field (field
+          // labels are bold high-emphasis; this is small, spaced, and
+          // medium-emphasis).
           Padding(
-            padding: EdgeInsetsDirectional.only(
-              start: spacing.step2,
-              bottom: spacing.step3,
-            ),
-            child: Row(
+            padding: EdgeInsetsDirectional.only(bottom: spacing.step3),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (icon != null) ...[
-                  Container(
-                    padding: EdgeInsets.all(spacing.step2),
-                    decoration: BoxDecoration(
-                      color: tokens.colors.background.level03,
-                      borderRadius: BorderRadius.circular(tokens.radii.s),
-                    ),
-                    child: Icon(
-                      icon,
-                      size: spacing.step5,
+                Text(
+                  title,
+                  style: tokens.typography.styles.others.overline.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+                if (description != null) ...[
+                  SizedBox(height: spacing.step1),
+                  Text(
+                    description!,
+                    style: tokens.typography.styles.others.caption.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),
                   ),
-                  SizedBox(width: spacing.step3),
                 ],
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: tokens.typography.styles.subtitle.subtitle1
-                            .copyWith(
-                              color: tokens.colors.text.highEmphasis,
-                            ),
-                      ),
-                      if (description != null) ...[
-                        SizedBox(height: spacing.step1),
-                        Text(
-                          description!,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
               ],
             ),
           ),

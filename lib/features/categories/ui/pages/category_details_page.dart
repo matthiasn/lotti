@@ -115,7 +115,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         // edit page afterwards — no disabled placeholder controls.
         SettingsFormSection(
           title: context.messages.basicSettings,
-          icon: Icons.settings_outlined,
           children: [
             _buildNameField(),
             _buildColorPicker(),
@@ -255,7 +254,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         else if (category != null) ...[
           SettingsFormSection(
             title: context.messages.basicSettings,
-            icon: Icons.settings_outlined,
             children: [
               _buildNameField(),
               _buildColorPicker(),
@@ -264,14 +262,12 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           ),
           SettingsFormSection(
             title: context.messages.habitSectionOptionsTitle,
-            icon: Icons.tune_rounded,
             children: [
               _buildSwitchTiles(category),
             ],
           ),
           SettingsFormSection(
             title: context.messages.taskLanguageLabel,
-            icon: Icons.language_outlined,
             description: context.messages.categoryDefaultLanguageDescription,
             children: [
               _buildLanguageDropdown(category),
@@ -279,7 +275,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           ),
           SettingsFormSection(
             title: context.messages.categoryAiDefaultsTitle,
-            icon: Icons.smart_toy_outlined,
             description: context.messages.categoryAiDefaultsDescription,
             children: [
               _buildDefaultProfilePicker(category),
@@ -288,7 +283,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           ),
           SettingsFormSection(
             title: context.messages.speechDictionarySectionTitle,
-            icon: Icons.spellcheck_outlined,
             description: context.messages.speechDictionarySectionDescription,
             children: [
               _buildSpeechDictionary(category),
@@ -296,7 +290,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
           ),
           SettingsFormSection(
             title: context.messages.correctionExamplesSectionTitle,
-            icon: Icons.rule_rounded,
             description: context.messages.correctionExamplesSectionDescription,
             children: [
               _buildCorrectionExamples(category),

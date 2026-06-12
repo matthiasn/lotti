@@ -76,12 +76,10 @@ class _MeasurableListItem extends StatelessWidget {
 
     return DesignSystemListItem(
       title: item.displayName,
-      // Description first ("Morning weight, same scale every day"), the
-      // unit as fallback — a bare lowercase echo of the name reads like
-      // debug output.
-      subtitle: description.isNotEmpty
-          ? description
-          : (item.unitName.isNotEmpty ? item.unitName : null),
+      // Description or nothing: a bare unit ("ml") is an orphan and a
+      // lowercase echo of the name reads like a bug. Units live in the
+      // editor.
+      subtitle: description.isNotEmpty ? description : null,
       // Neutral first-letter chip: rows become distinguishable instead of
       // decorated with one repeated glyph.
       leading: DefinitionIconChip(
@@ -110,7 +108,7 @@ class _MeasurableListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.favoriteLabel,
                 child: Icon(
-                  Icons.star_outline_rounded,
+                  Icons.star_rounded,
                   size: 18,
                   color: tokens.colors.text.mediumEmphasis,
                 ),

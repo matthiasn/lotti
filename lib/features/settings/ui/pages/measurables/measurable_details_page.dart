@@ -184,7 +184,6 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
             children: [
               SettingsFormSection(
                 title: messages.basicSettings,
-                icon: Icons.settings_outlined,
                 children: [
                   SettingsFormTextField(
                     key: const Key('measurable_name_field'),
@@ -233,7 +232,6 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
               ),
               SettingsFormSection(
                 title: messages.habitSectionOptionsTitle,
-                icon: Icons.tune_rounded,
                 children: [
                   FormSwitch(
                     name: 'favorite',

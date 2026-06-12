@@ -4833,8 +4833,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inactiveLabel => 'Inactive';
 
   @override
-  String get inactiveSwitchDescription =>
-      'Inactive items are hidden from selection lists';
+  String get inactiveSwitchDescription => 'Appears in selection lists';
 
   @override
   String get inferenceProfileCreateTitle => 'Create Profile';

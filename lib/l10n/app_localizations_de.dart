@@ -4894,8 +4894,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inactiveLabel => 'Inaktiv';
 
   @override
-  String get inactiveSwitchDescription =>
-      'Inaktive Elemente erscheinen nicht in Auswahllisten';
+  String get inactiveSwitchDescription => 'Erscheint in Auswahllisten';
 
   @override
   String get inferenceProfileCreateTitle => 'Profil erstellen';

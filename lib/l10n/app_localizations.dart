@@ -8457,7 +8457,7 @@ abstract class AppLocalizations {
   /// No description provided for @inactiveSwitchDescription.
   ///
   /// In en, this message translates to:
-  /// **'Inactive items are hidden from selection lists'**
+  /// **'Appears in selection lists'**
   String get inactiveSwitchDescription;
 
   /// No description provided for @inferenceProfileCreateTitle.

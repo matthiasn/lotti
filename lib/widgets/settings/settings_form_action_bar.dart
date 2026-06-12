@@ -138,11 +138,13 @@ class SettingsFormActionBar extends StatelessWidget {
     );
   }
 
-  /// Quiet ghost pill: the escape hatch must never out-shine the commit
-  /// action, so Cancel gets the translucent glass treatment (hairline
-  /// outline, no fill).
+  /// Text-style escape hatch: no fill, no outline — Cancel must never
+  /// out-shine the commit action in any theme. (A transparent fillColor
+  /// takes DsGlassPill's solid path, which draws neither chip nor
+  /// hairline.)
   Widget _secondaryPill(DsTokens tokens) => DsGlassPill(
     label: secondaryLabel!,
+    fillColor: Colors.transparent,
     onTap: onSecondary!,
   );
 
@@ -155,7 +157,9 @@ class SettingsFormActionBar extends StatelessWidget {
     // foreground). Recognizably the commit action either way — never a
     // bare label that the ghost Cancel could outrank.
     final pill = DsGlassPill(
-      icon: primaryIcon,
+      // The check glyph is an affirmation cue — a disabled pill must not
+      // wear one.
+      icon: primaryEnabled ? primaryIcon : null,
       label: primaryLabel,
       fillColor: tokens.colors.interactive.enabled,
       foregroundColor: primaryEnabled

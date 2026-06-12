@@ -215,7 +215,7 @@ void main() {
         expect(rows[1].icon, Icons.visibility_outlined);
         expect(
           rows[1].subtitle,
-          'Inactive items are hidden from selection lists',
+          'Appears in selection lists',
         );
 
         // The toggles moved out of Basic settings entirely.

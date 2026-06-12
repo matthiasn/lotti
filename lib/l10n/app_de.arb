@@ -2228,7 +2228,7 @@
   "imagePromptGenerationFullPromptLabel": "Vollständiger Bild-Prompt:",
   "images": "Bilder",
   "inactiveLabel": "Inaktiv",
-  "inactiveSwitchDescription": "Inaktive Elemente erscheinen nicht in Auswahllisten",
+  "inactiveSwitchDescription": "Erscheint in Auswahllisten",
   "inferenceProfileCreateTitle": "Profil erstellen",
   "inferenceProfileDescriptionLabel": "Beschreibung",
   "inferenceProfileDesktopOnly": "Nur Desktop",

@@ -198,13 +198,13 @@ void main() {
             (
               description: 'shows outlined star icon when favorite',
               habit: habitFlossing.copyWith(priority: true),
-              icon: Icons.star_outline_rounded,
+              icon: Icons.star_rounded,
               expected: true,
             ),
             (
               description: 'hides star icon when not favorite',
               habit: habitFlossing,
-              icon: Icons.star_outline_rounded,
+              icon: Icons.star_rounded,
               expected: false,
             ),
           ];
@@ -233,7 +233,7 @@ void main() {
         // One icon weight across the trailing slot — the star is an
         // outline like its lock/eye-off neighbors; amber carries the
         // favorite signal.
-        final star = find.byIcon(Icons.star_outline_rounded);
+        final star = find.byIcon(Icons.star_rounded);
         expect(star, findsOneWidget);
         final tokens = tester.element(star).designTokens;
         expect(

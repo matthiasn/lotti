@@ -2228,7 +2228,7 @@
   "imagePromptGenerationFullPromptLabel": "Prompt de Imagen Completo:",
   "images": "Imágenes",
   "inactiveLabel": "Inactivo",
-  "inactiveSwitchDescription": "Los elementos inactivos no aparecen en las listas de selección",
+  "inactiveSwitchDescription": "Aparece en las listas de selección",
   "inferenceProfileCreateTitle": "Crear perfil",
   "inferenceProfileDescriptionLabel": "Descripción",
   "inferenceProfileDesktopOnly": "Solo escritorio",

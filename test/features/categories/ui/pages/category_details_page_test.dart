@@ -265,7 +265,7 @@ void main() {
         );
         expect(
           switchRows[2].subtitle,
-          'Inactive items are hidden from selection lists',
+          'Appears in selection lists',
         );
 
         // All switch rows live inside the Options card, not Basic settings.

@@ -113,7 +113,7 @@ class _CategoryListItem extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(right: 4),
               child: Icon(
-                Icons.star_outline_rounded,
+                Icons.star_rounded,
                 size: 18,
                 color: tokens.colors.text.mediumEmphasis,
               ),

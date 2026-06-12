@@ -4893,7 +4893,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get inactiveSwitchDescription =>
-      'Neaktivní položky se nezobrazují ve výběrových seznamech';
+      'Zobrazuje se ve výběrových seznamech';
 
   @override
   String get inferenceProfileCreateTitle => 'Create Profile';
