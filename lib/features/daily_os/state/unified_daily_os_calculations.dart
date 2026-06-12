@@ -1,4 +1,5 @@
-part of 'unified_daily_os_data_controller.dart';
+import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 
 /// The hour the timeline should start rendering at.
 ///
