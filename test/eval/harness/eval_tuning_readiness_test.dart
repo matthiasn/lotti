@@ -46,6 +46,83 @@ void main() {
     );
   });
 
+  test('rejects invalid tuning policy gates', () {
+    final report = EvalTuningReadiness.assess(
+      traces: const [],
+      scenarios: const [],
+      profiles: const [],
+      policy: const EvalTuningPolicy(
+        name: '',
+        minScenarioCount: -1,
+        minCalibrationEvaluatedPerPromptVariant: -1,
+        minCalibrationEvaluatedPerModelClassPromptVariant: -1,
+        minCalibrationPassAgreementPerPromptVariant: 1.1,
+        minCalibrationScoreAgreementPerPromptVariant: -0.1,
+        minCalibrationScoreAgreementLowerBound: double.nan,
+        requiredCalibrationSetVersion: ' ',
+        maxCalibrationFalsePassCount: -1,
+        maxCalibrationFalsePassRate: 1.01,
+        maxCalibrationFalseFailRate: -0.01,
+      ),
+    );
+
+    expect(report.ready, isFalse);
+    expect(report.failures, contains('policy name must not be empty'));
+    expect(
+      report.failures,
+      contains('policy minScenarioCount must be at least 0'),
+    );
+    expect(
+      report.failures,
+      contains(
+        'policy minCalibrationEvaluatedPerPromptVariant must be at least 0',
+      ),
+    );
+    expect(
+      report.failures,
+      contains(
+        'policy minCalibrationPassAgreementPerPromptVariant must be between '
+        '0 and 1',
+      ),
+    );
+    expect(
+      report.failures,
+      contains(
+        'policy minCalibrationEvaluatedPerModelClassPromptVariant must be at '
+        'least 0',
+      ),
+    );
+    expect(
+      report.failures,
+      contains(
+        'policy minCalibrationScoreAgreementPerPromptVariant must be between '
+        '0 and 1',
+      ),
+    );
+    expect(
+      report.failures,
+      contains(
+        'policy minCalibrationScoreAgreementLowerBound must be between 0 and 1',
+      ),
+    );
+    expect(
+      report.failures,
+      contains('policy requiredCalibrationSetVersion must not be empty'),
+    );
+    expect(
+      report.failures,
+      contains('policy maxCalibrationFalsePassCount must be at least 0'),
+    );
+    expect(
+      report.failures,
+      contains('policy maxCalibrationFalsePassRate must be between 0 and 1'),
+    );
+    expect(
+      report.failures,
+      contains('policy maxCalibrationFalseFailRate must be between 0 and 1'),
+    );
+  });
+
   test('development smoke policy passes a complete unjudged smoke run', () {
     final traces = [
       _trace(

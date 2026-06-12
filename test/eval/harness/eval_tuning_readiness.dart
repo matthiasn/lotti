@@ -322,6 +322,7 @@ abstract final class EvalTuningReadiness {
   }) {
     final failures = <String>[];
     final warnings = <String>[];
+    _validatePolicy(policy, failures);
     if (calibrationSet != null && calibrationReport != null) {
       failures.add(
         'judge calibration report must not be supplied with calibrationSet; '
@@ -481,6 +482,7 @@ abstract final class EvalTuningReadiness {
   }) {
     final failures = <String>[];
     final warnings = <String>[catalogPreflightScopeWarning];
+    _validatePolicy(policy, failures);
     final evidence = _collectEvidence(
       scenarios: scenarios,
       profiles: profiles,
@@ -1054,6 +1056,172 @@ abstract final class EvalTuningReadiness {
         );
       }
     }
+  }
+
+  static void _validatePolicy(
+    EvalTuningPolicy policy,
+    List<String> failures,
+  ) {
+    if (policy.name.trim().isEmpty) {
+      failures.add('policy name must not be empty');
+    }
+
+    void nonNegativeInt(String field, int value) {
+      if (value < 0) {
+        failures.add('policy $field must be at least 0');
+      }
+    }
+
+    void optionalNonNegativeInt(String field, int? value) {
+      if (value == null) return;
+      nonNegativeInt(field, value);
+    }
+
+    void rate(String field, double value) {
+      if (!value.isFinite || value < 0 || value > 1) {
+        failures.add('policy $field must be between 0 and 1');
+      }
+    }
+
+    void optionalNonEmptyString(String field, String? value) {
+      if (value != null && value.trim().isEmpty) {
+        failures.add('policy $field must not be empty');
+      }
+    }
+
+    nonNegativeInt('minScenarioCount', policy.minScenarioCount);
+    nonNegativeInt(
+      'minScenariosPerAgentKind',
+      policy.minScenariosPerAgentKind,
+    );
+    nonNegativeInt(
+      'minScenariosPerCapability',
+      policy.minScenariosPerCapability,
+    );
+    nonNegativeInt('minCapabilityCount', policy.minCapabilityCount);
+    nonNegativeInt(
+      'minAdversarialScenarioCount',
+      policy.minAdversarialScenarioCount,
+    );
+    nonNegativeInt(
+      'minAdversarialScenariosPerAgentKind',
+      policy.minAdversarialScenariosPerAgentKind,
+    );
+    nonNegativeInt(
+      'minAdversarialScenariosPerCapability',
+      policy.minAdversarialScenariosPerCapability,
+    );
+    nonNegativeInt(
+      'minProductionReplayHoldoutScenarios',
+      policy.minProductionReplayHoldoutScenarios,
+    );
+    nonNegativeInt(
+      'minProtectedHoldoutScenarios',
+      policy.minProtectedHoldoutScenarios,
+    );
+    nonNegativeInt(
+      'minProtectedHoldoutScenariosPerAgentKind',
+      policy.minProtectedHoldoutScenariosPerAgentKind,
+    );
+    nonNegativeInt('minProfilesPerModelClass', policy.minProfilesPerModelClass);
+    nonNegativeInt('minTrialsPerProfile', policy.minTrialsPerProfile);
+    nonNegativeInt(
+      'minCalibrationEvaluatedCount',
+      policy.minCalibrationEvaluatedCount,
+    );
+    nonNegativeInt(
+      'minCalibrationEvaluatedPerModelClass',
+      policy.minCalibrationEvaluatedPerModelClass,
+    );
+    nonNegativeInt(
+      'minCalibrationEvaluatedPerCapability',
+      policy.minCalibrationEvaluatedPerCapability,
+    );
+    nonNegativeInt(
+      'minCalibrationEvaluatedPerPromptVariant',
+      policy.minCalibrationEvaluatedPerPromptVariant,
+    );
+    nonNegativeInt(
+      'minCalibrationEvaluatedPerModelClassPromptVariant',
+      policy.minCalibrationEvaluatedPerModelClassPromptVariant,
+    );
+    nonNegativeInt(
+      'minCalibrationHumanReviewPairCount',
+      policy.minCalibrationHumanReviewPairCount,
+    );
+    optionalNonNegativeInt(
+      'maxCalibrationUnresolvedHumanDisagreementCount',
+      policy.maxCalibrationUnresolvedHumanDisagreementCount,
+    );
+    optionalNonNegativeInt(
+      'maxCalibrationFalsePassCount',
+      policy.maxCalibrationFalsePassCount,
+    );
+    optionalNonEmptyString(
+      'requiredCalibrationSetVersion',
+      policy.requiredCalibrationSetVersion,
+    );
+    optionalNonEmptyString(
+      'requiredHumanCalibrationSetVersion',
+      policy.requiredHumanCalibrationSetVersion,
+    );
+    optionalNonEmptyString('requiredTargetKind', policy.requiredTargetKind);
+    optionalNonEmptyString(
+      'expectedScenarioSetDigest',
+      policy.expectedScenarioSetDigest,
+    );
+    optionalNonEmptyString(
+      'expectedProfileSetDigest',
+      policy.expectedProfileSetDigest,
+    );
+
+    rate('minCalibrationCoverageRate', policy.minCalibrationCoverageRate);
+    rate(
+      'minCalibrationCoverageLowerBound',
+      policy.minCalibrationCoverageLowerBound,
+    );
+    rate(
+      'minCalibrationPassAgreementRate',
+      policy.minCalibrationPassAgreementRate,
+    );
+    rate(
+      'minCalibrationPassAgreementPerPromptVariant',
+      policy.minCalibrationPassAgreementPerPromptVariant,
+    );
+    rate(
+      'minCalibrationPassAgreementLowerBound',
+      policy.minCalibrationPassAgreementLowerBound,
+    );
+    rate(
+      'minCalibrationScoreAgreementRate',
+      policy.minCalibrationScoreAgreementRate,
+    );
+    rate(
+      'minCalibrationScoreAgreementPerPromptVariant',
+      policy.minCalibrationScoreAgreementPerPromptVariant,
+    );
+    rate(
+      'minCalibrationScoreAgreementLowerBound',
+      policy.minCalibrationScoreAgreementLowerBound,
+    );
+    rate(
+      'minCalibrationHumanPassAgreementRate',
+      policy.minCalibrationHumanPassAgreementRate,
+    );
+    rate(
+      'minCalibrationHumanPassAgreementLowerBound',
+      policy.minCalibrationHumanPassAgreementLowerBound,
+    );
+    rate(
+      'minCalibrationHumanScoreAgreementRate',
+      policy.minCalibrationHumanScoreAgreementRate,
+    );
+    rate(
+      'minCalibrationHumanScoreAgreementLowerBound',
+      policy.minCalibrationHumanScoreAgreementLowerBound,
+    );
+    rate('maxCalibrationFalsePassRate', policy.maxCalibrationFalsePassRate);
+    rate('maxCalibrationFalseFailRate', policy.maxCalibrationFalseFailRate);
   }
 
   static void _validateProfileCoverage(
