@@ -1,15 +1,71 @@
-part of 'change_set_confirmation_service.dart';
+import 'package:clock/clock.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:uuid/uuid.dart';
 
-/// Resolution side-effects for [ChangeSetConfirmationService]: sibling-id
-/// propagation, migration cascade-reject, decision persistence and the
-/// change-set-resolved notification. Split from the main file for size.
-extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
+/// Resolution state and side-effects for the change-set confirmation flow:
+/// placeholder→actual ID capture, sibling-id propagation, migration
+/// cascade-reject, decision persistence and the change-set-resolved
+/// notification.
+///
+/// Owned by `ChangeSetConfirmationService` as a standalone collaborator;
+/// it carries the in-memory placeholder→actual task-ID map that
+/// `create_follow_up_task` confirmations produce and subsequent
+/// `migrate_checklist_item` confirmations consume.
+class ChangeSetResolutionStore {
+  ChangeSetResolutionStore({
+    required this._syncService,
+    required this._subDomain,
+    this._domainLogger,
+  });
+
+  final AgentSyncService _syncService;
+  final String _subDomain;
+  final DomainLogger? _domainLogger;
+
+  static const _uuid = Uuid();
+
+  /// Maps placeholder task IDs (from `create_follow_up_task`) to actual
+  /// task IDs after successful dispatch. Persists across calls within the
+  /// same store instance.
+  final Map<String, String> _resolvedIds = {};
+
+  /// Returns the actual task ID captured for [placeholderId] in this store
+  /// instance, or `null` when the placeholder has not been resolved yet.
+  String? resolvedIdFor(String placeholderId) => _resolvedIds[placeholderId];
+
+  /// After a successful `create_follow_up_task` dispatch, captures the
+  /// placeholder→actual ID mapping.
+  void captureResolvedId(ChangeItem item, ToolExecutionResult result) {
+    if (item.toolName != TaskAgentToolNames.createFollowUpTask) return;
+    if (!result.success) return;
+
+    final placeholderId = item.args['_placeholderTaskId'];
+    final actualId = result.mutatedEntityId;
+    if (placeholderId is String && actualId != null && actualId.isNotEmpty) {
+      _resolvedIds[placeholderId] = actualId;
+      _domainLogger?.log(
+        LogDomain.agentWorkflow,
+        'Captured placeholder resolution: '
+        '${DomainLogger.sanitizeId(placeholderId)} → '
+        '${DomainLogger.sanitizeId(actualId)}',
+        subDomain: _subDomain,
+      );
+    }
+  }
+
   /// After a successful `create_follow_up_task` dispatch, updates sibling
   /// `migrate_checklist_item` items in the same change set so that their
   /// `targetTaskId` args point to the actual task ID instead of the
   /// placeholder. This persists the mapping into the DB so it survives
   /// service disposal / app restart.
-  Future<void> _persistResolvedIdToSiblings(
+  Future<void> persistResolvedIdToSiblings(
     ChangeItem item,
     ToolExecutionResult result,
     ChangeSetEntity changeSet,
@@ -24,7 +80,7 @@ extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
     }
 
     // Re-read the change set to get the latest item statuses.
-    final fresh = await _freshChangeSet(changeSet);
+    final fresh = await freshChangeSet(changeSet);
     var changed = false;
     final updatedItems = fresh.items.map((i) {
       if (i.toolName == TaskAgentToolNames.migrateChecklistItem &&
@@ -42,7 +98,7 @@ extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
         'Persisted resolved targetTaskId '
         '(${DomainLogger.sanitizeId(actualId)}) to sibling migration items '
         'in change set ${DomainLogger.sanitizeId(fresh.id)}',
-        subDomain: ChangeSetConfirmationService._sub,
+        subDomain: _subDomain,
       );
     }
   }
@@ -51,12 +107,12 @@ extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
   /// pending `migrate_checklist_item` siblings whose `targetTaskId` matches
   /// the placeholder. Without the target task, those migrations can never
   /// succeed.
-  Future<void> _cascadeRejectMigrationItems(
+  Future<void> cascadeRejectMigrationItems(
     ChangeSetEntity changeSet,
     String placeholderId,
     String? reason,
   ) async {
-    final fresh = await _freshChangeSet(changeSet);
+    final fresh = await freshChangeSet(changeSet);
     for (var i = 0; i < fresh.items.length; i++) {
       final sibling = fresh.items[i];
       if (sibling.toolName == TaskAgentToolNames.migrateChecklistItem &&
@@ -65,10 +121,10 @@ extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
         _domainLogger?.log(
           LogDomain.agentWorkflow,
           'Cascade-rejecting migration item $i — target task rejected',
-          subDomain: ChangeSetConfirmationService._sub,
+          subDomain: _subDomain,
         );
 
-        await _persistDecision(
+        await persistDecision(
           changeSet: fresh,
           itemIndex: i,
           toolName: sibling.toolName,
@@ -78,7 +134,7 @@ extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
           args: sibling.args,
         );
 
-        await _updateChangeSetItemStatus(
+        await updateChangeSetItemStatus(
           fresh,
           i,
           ChangeItemStatus.rejected,
@@ -87,35 +143,17 @@ extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
     }
   }
 
-  /// After a successful `create_follow_up_task` dispatch, captures the
-  /// placeholder→actual ID mapping.
-  void _captureResolvedId(ChangeItem item, ToolExecutionResult result) {
-    if (item.toolName != TaskAgentToolNames.createFollowUpTask) return;
-    if (!result.success) return;
-
-    final placeholderId = item.args['_placeholderTaskId'];
-    final actualId = result.mutatedEntityId;
-    if (placeholderId is String && actualId != null && actualId.isNotEmpty) {
-      _resolvedIds[placeholderId] = actualId;
-      _domainLogger?.log(
-        LogDomain.agentWorkflow,
-        'Captured placeholder resolution: '
-        '${DomainLogger.sanitizeId(placeholderId)} → '
-        '${DomainLogger.sanitizeId(actualId)}',
-        subDomain: ChangeSetConfirmationService._sub,
-      );
-    }
-  }
-
   /// Re-reads the change set from the repository to get the latest persisted
   /// state. Falls back to [fallback] if the entity is not found or has an
   /// unexpected type.
-  Future<ChangeSetEntity> _freshChangeSet(ChangeSetEntity fallback) async {
+  Future<ChangeSetEntity> freshChangeSet(ChangeSetEntity fallback) async {
     final latest = await _syncService.repository.getEntity(fallback.id);
     return latest is ChangeSetEntity ? latest : fallback;
   }
 
-  Future<ChangeDecisionEntity> _persistDecision({
+  /// Persists a [ChangeDecisionEntity] recording the [verdict] for the item
+  /// at [itemIndex] of [changeSet] and returns it.
+  Future<ChangeDecisionEntity> persistDecision({
     required ChangeSetEntity changeSet,
     required int itemIndex,
     required String toolName,
@@ -128,7 +166,7 @@ extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
   }) async {
     final decision =
         AgentDomainEntity.changeDecision(
-              id: ChangeSetConfirmationService._uuid.v4(),
+              id: _uuid.v4(),
               agentId: changeSet.agentId,
               changeSetId: changeSet.id,
               itemIndex: itemIndex,
@@ -149,7 +187,13 @@ extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
     return decision;
   }
 
-  Future<ChangeSetEntity?> _updateChangeSetItemStatus(
+  /// Sets the status of the item at [itemIndex] to [newStatus] on the latest
+  /// persisted state of [changeSet], derives the new set status and
+  /// `resolvedAt`, and upserts the result.
+  ///
+  /// Returns the updated entity, or `null` when [itemIndex] is out of range
+  /// for the latest persisted state.
+  Future<ChangeSetEntity?> updateChangeSetItemStatus(
     ChangeSetEntity changeSet,
     int itemIndex,
     ChangeItemStatus newStatus,
@@ -183,12 +227,16 @@ extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
     return updated;
   }
 
-  Future<void> _notifyChangeSetResolved(ChangeSetEntity fallback) async {
-    final callback = _onChangeSetResolved;
+  /// Invokes [callback] with the freshest persisted state of [fallback].
+  /// Callback errors are logged and swallowed; a `null` callback is a no-op.
+  Future<void> notifyChangeSetResolved(
+    ChangeSetEntity fallback,
+    Future<void> Function(ChangeSetEntity changeSet)? callback,
+  ) async {
     if (callback == null) return;
 
     try {
-      await callback(await _freshChangeSet(fallback));
+      await callback(await freshChangeSet(fallback));
     } catch (error, stackTrace) {
       _domainLogger?.error(
         LogDomain.agentWorkflow,
@@ -196,7 +244,7 @@ extension ChangeSetConfirmationResolution on ChangeSetConfirmationService {
         message:
             'Post-resolution notification sync failed for change set '
             '${DomainLogger.sanitizeId(fallback.id)}',
-        subDomain: ChangeSetConfirmationService._sub,
+        subDomain: _subDomain,
         stackTrace: stackTrace,
       );
     }

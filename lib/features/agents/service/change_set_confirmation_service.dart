@@ -1,18 +1,14 @@
-import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/service/change_set_resolution_store.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
-import 'package:uuid/uuid.dart';
-
-part 'change_set_confirmation_resolution.dart';
 
 typedef ConfirmedDecisionCallback =
     Future<void> Function({
@@ -43,8 +39,8 @@ typedef ChangeSetResolvedCallback =
 ///
 /// For task-split workflows, manages cross-item ID resolution:
 /// when `create_follow_up_task` succeeds, the placeholder→actual mapping
-/// is stored in [_resolvedIds] so subsequent `migrate_checklist_item`
-/// items can resolve the target task ID.
+/// is stored in the [ChangeSetResolutionStore] so subsequent
+/// `migrate_checklist_item` items can resolve the target task ID.
 class ChangeSetConfirmationService {
   ChangeSetConfirmationService({
     required this._syncService,
@@ -62,13 +58,16 @@ class ChangeSetConfirmationService {
   final ConfirmedDecisionCallback? _onConfirmedDecision;
   final ChangeSetResolvedCallback? _onChangeSetResolved;
 
-  static const _uuid = Uuid();
   static const _sub = 'ChangeSetConfirmation';
 
-  /// Maps placeholder task IDs (from `create_follow_up_task`) to actual
-  /// task IDs after successful dispatch. Persists across calls within the
-  /// same service instance.
-  final Map<String, String> _resolvedIds = {};
+  /// Resolution state and persistence side-effects (placeholder→actual ID
+  /// capture, sibling propagation, cascade-reject, decision persistence and
+  /// the resolved notification), extracted into a standalone collaborator.
+  late final ChangeSetResolutionStore _resolution = ChangeSetResolutionStore(
+    syncService: _syncService,
+    subDomain: _sub,
+    domainLogger: _domainLogger,
+  );
 
   /// Confirms a single change item at [itemIndex], dispatching its tool call
   /// and persisting the decision.
@@ -80,7 +79,7 @@ class ChangeSetConfirmationService {
   ) async {
     // Re-read persisted state to guard against stale snapshots from the
     // caller (e.g. rapid repeated taps or concurrent clients).
-    final current = await _freshChangeSet(changeSet);
+    final current = await _resolution.freshChangeSet(changeSet);
 
     if (itemIndex < 0 || itemIndex >= current.items.length) {
       return const ToolExecutionResult(
@@ -132,7 +131,7 @@ class ChangeSetConfirmationService {
     //    dispatching the tool. This ensures that if the process dies after
     //    a successful dispatch but before persistence, the item will not
     //    remain pending and be re-executed on retry.
-    final decision = await _persistDecision(
+    final decision = await _resolution.persistDecision(
       changeSet: current,
       itemIndex: itemIndex,
       toolName: item.toolName,
@@ -140,7 +139,7 @@ class ChangeSetConfirmationService {
       humanSummary: item.humanSummary,
       args: item.args,
     );
-    final confirmedSet = await _updateChangeSetItemStatus(
+    final confirmedSet = await _resolution.updateChangeSetItemStatus(
       current,
       itemIndex,
       ChangeItemStatus.confirmed,
@@ -194,7 +193,7 @@ class ChangeSetConfirmationService {
         subDomain: _sub,
       );
       if (shouldAutoRetract) {
-        await _persistDecision(
+        await _resolution.persistDecision(
           changeSet: current,
           itemIndex: itemIndex,
           toolName: item.toolName,
@@ -204,7 +203,7 @@ class ChangeSetConfirmationService {
           humanSummary: item.humanSummary,
           args: item.args,
         );
-        final retractedSet = await _updateChangeSetItemStatus(
+        final retractedSet = await _resolution.updateChangeSetItemStatus(
           confirmedSet,
           itemIndex,
           ChangeItemStatus.retracted,
@@ -223,9 +222,12 @@ class ChangeSetConfirmationService {
           );
         }
 
-        await _notifyChangeSetResolved(retractedSet);
+        await _resolution.notifyChangeSetResolved(
+          retractedSet,
+          _onChangeSetResolved,
+        );
       } else {
-        final revertedSet = await _updateChangeSetItemStatus(
+        final revertedSet = await _resolution.updateChangeSetItemStatus(
           confirmedSet,
           itemIndex,
           ChangeItemStatus.pending,
@@ -250,8 +252,8 @@ class ChangeSetConfirmationService {
     // 3. After successful create_follow_up_task, store the placeholder→actual
     //    mapping for subsequent migration items and persist the resolved ID
     //    into sibling migration items so a service restart doesn't lose it.
-    _captureResolvedId(item, result);
-    await _persistResolvedIdToSiblings(item, result, current);
+    _resolution.captureResolvedId(item, result);
+    await _resolution.persistResolvedIdToSiblings(item, result, current);
 
     if (_onConfirmedDecision != null) {
       try {
@@ -270,7 +272,7 @@ class ChangeSetConfirmationService {
           subDomain: _sub,
           stackTrace: s,
         );
-        await _updateChangeSetItemStatus(
+        await _resolution.updateChangeSetItemStatus(
           current,
           itemIndex,
           ChangeItemStatus.pending,
@@ -283,7 +285,10 @@ class ChangeSetConfirmationService {
       }
     }
 
-    await _notifyChangeSetResolved(confirmedSet);
+    await _resolution.notifyChangeSetResolved(
+      confirmedSet,
+      _onChangeSetResolved,
+    );
 
     return result;
   }
@@ -354,7 +359,7 @@ class ChangeSetConfirmationService {
     String? reason,
   }) async {
     // Re-read persisted state to guard against stale snapshots.
-    final current = await _freshChangeSet(changeSet);
+    final current = await _resolution.freshChangeSet(changeSet);
 
     if (itemIndex < 0 || itemIndex >= current.items.length) {
       return false;
@@ -380,7 +385,7 @@ class ChangeSetConfirmationService {
     );
 
     // 1. Persist the decision (no tool dispatch for rejections).
-    await _persistDecision(
+    await _resolution.persistDecision(
       changeSet: current,
       itemIndex: itemIndex,
       toolName: item.toolName,
@@ -391,7 +396,7 @@ class ChangeSetConfirmationService {
     );
 
     // 2. Update the change set item status and overall status.
-    final rejectedSet = await _updateChangeSetItemStatus(
+    final rejectedSet = await _resolution.updateChangeSetItemStatus(
       current,
       itemIndex,
       ChangeItemStatus.rejected,
@@ -418,11 +423,18 @@ class ChangeSetConfirmationService {
     if (item.toolName == TaskAgentToolNames.createFollowUpTask) {
       final placeholderId = item.args['_placeholderTaskId'];
       if (placeholderId is String) {
-        await _cascadeRejectMigrationItems(current, placeholderId, reason);
+        await _resolution.cascadeRejectMigrationItems(
+          current,
+          placeholderId,
+          reason,
+        );
       }
     }
 
-    await _notifyChangeSetResolved(rejectedSet);
+    await _resolution.notifyChangeSetResolved(
+      rejectedSet,
+      _onChangeSetResolved,
+    );
 
     return true;
   }
@@ -436,7 +448,7 @@ class ChangeSetConfirmationService {
 
     // Re-read the latest change set state before iterating so we don't
     // accidentally re-confirm already-resolved items.
-    var current = await _freshChangeSet(changeSet);
+    var current = await _resolution.freshChangeSet(changeSet);
 
     for (var i = 0; i < current.items.length; i++) {
       if (current.items[i].status == ChangeItemStatus.pending) {
@@ -465,8 +477,9 @@ class ChangeSetConfirmationService {
   /// 1. In-memory resolved → substitute with actual ID.
   /// 2. Known placeholder (a matching create_follow_up_task exists in the
   ///    change set) but not yet resolved → return `null` to block dispatch.
-  /// 3. Already a real ID (e.g. persisted by [_persistResolvedIdToSiblings]
-  ///    in a prior service instance) → return args as-is.
+  /// 3. Already a real ID (e.g. persisted by
+  ///    [ChangeSetResolutionStore.persistResolvedIdToSiblings] in a prior
+  ///    service instance) → return args as-is.
   Map<String, dynamic>? _resolveArgsIfNeeded(
     ChangeItem item,
     ChangeSetEntity changeSet,
@@ -483,7 +496,7 @@ class ChangeSetConfirmationService {
     }
 
     // Case 1: in-memory resolution from this service instance.
-    final resolved = _resolvedIds[targetTaskId];
+    final resolved = _resolution.resolvedIdFor(targetTaskId);
     if (resolved != null) {
       return {...contextualArgs, 'targetTaskId': resolved};
     }
@@ -500,7 +513,7 @@ class ChangeSetConfirmationService {
     }
 
     // Case 3: targetTaskId is a real ID (already resolved by a prior
-    // service instance via _persistResolvedIdToSiblings).
+    // service instance via ChangeSetResolutionStore.persistResolvedIdToSiblings).
     return contextualArgs;
   }
 
