@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -365,6 +366,34 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  group('retireConsolidatedSet', () {
+    test('retracts pending items, keeps other statuses, resolves the set', () {
+      final set = makeTestChangeSet(
+        items: [
+          _item('set_task_title', args: const {'title': 'A'}),
+          _item('set_task_title', status: ChangeItemStatus.confirmed),
+          _item('set_task_title', status: ChangeItemStatus.rejected),
+        ],
+      );
+
+      final retired = withClock(
+        Clock.fixed(DateTime(2026, 3, 15, 12)),
+        () => retireConsolidatedSet(set),
+      );
+
+      expect(retired.items.map((i) => i.status), [
+        ChangeItemStatus.retracted,
+        ChangeItemStatus.confirmed,
+        ChangeItemStatus.rejected,
+      ]);
+      expect(retired.status, ChangeSetStatus.resolved);
+      expect(retired.resolvedAt, DateTime(2026, 3, 15, 12));
+      // Everything else is preserved.
+      expect(retired.id, set.id);
+      expect(retired.items, hasLength(3));
+    });
   });
 }
 

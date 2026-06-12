@@ -17,8 +17,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
-part 'change_set_builder_dedup.dart';
-
 part 'change_set_batch_exploder.dart';
 
 /// Resolves a checklist item's current state from its ID.
@@ -365,7 +363,7 @@ class ChangeSetBuilder {
       for (final cs in existingPendingSets) {
         if (cs.id != survivor.id) {
           final current = currentExistingSetsById[cs.id] ?? cs;
-          await syncService.upsertEntity(_retireConsolidatedSet(current));
+          await syncService.upsertEntity(retireConsolidatedSet(current));
         }
       }
 

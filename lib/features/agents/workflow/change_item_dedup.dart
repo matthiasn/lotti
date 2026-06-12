@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -131,4 +132,19 @@ List<ChangeSetEntity> markItemsRetracted(
           ],
         ),
   ];
+}
+
+/// Returns a copy of [set] with every still-pending item retracted and the
+/// set itself marked resolved — used when a newer set consolidates it.
+ChangeSetEntity retireConsolidatedSet(ChangeSetEntity set) {
+  return set.copyWith(
+    items: [
+      for (final item in set.items)
+        item.status == ChangeItemStatus.pending
+            ? item.copyWith(status: ChangeItemStatus.retracted)
+            : item,
+    ],
+    status: ChangeSetStatus.resolved,
+    resolvedAt: clock.now(),
+  );
 }
