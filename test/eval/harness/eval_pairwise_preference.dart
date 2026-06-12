@@ -35,6 +35,12 @@ enum EvalPairwisePreferenceStatus {
   invalid,
 }
 
+enum EvalPairwiseComparisonAxis {
+  profile,
+  promptVariant,
+  invalid,
+}
+
 class EvalPairwiseTraceRef {
   const EvalPairwiseTraceRef({
     required this.runId,
@@ -119,13 +125,16 @@ class EvalPairwiseTraceRef {
 
   String get artifactKey => '$traceKey::$traceDigest';
 
-  String get comparableKey {
+  String get baseComparisonContextKey {
     final suffix = cascadeWake == null ? '' : '::${cascadeWake!.keySuffix}';
-    final variantSegment = agentDirectiveVariantName == 'default'
-        ? ''
-        : '::$agentDirectiveVariantName';
-    return '$runId::$scenarioId$variantSegment::trial-$trialIndex$suffix';
+    return '$runId::$scenarioId::trial-$trialIndex$suffix';
   }
+
+  String get profileComparisonContextKey =>
+      '$baseComparisonContextKey::prompt-$agentDirectiveVariantName';
+
+  String get promptVariantComparisonContextKey =>
+      '$baseComparisonContextKey::profile-$profileName';
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'runId': runId,
@@ -236,9 +245,32 @@ class EvalPairwisePreferenceVote {
     };
   }
 
+  EvalPairwiseComparisonAxis get comparisonAxis {
+    final profileDiffers = optionA.profileName != optionB.profileName;
+    final variantDiffers =
+        optionA.agentDirectiveVariantName != optionB.agentDirectiveVariantName;
+    if (profileDiffers && !variantDiffers) {
+      return EvalPairwiseComparisonAxis.profile;
+    }
+    if (!profileDiffers && variantDiffers) {
+      return EvalPairwiseComparisonAxis.promptVariant;
+    }
+    return EvalPairwiseComparisonAxis.invalid;
+  }
+
   String get comparisonKey =>
-      '${canonicalOptionA.comparableKey}::${canonicalOptionA.artifactKey}::'
+      '${comparisonAxis.name}::${_comparisonContextKey()}::'
+      '${canonicalOptionA.artifactKey}::'
       '${canonicalOptionB.artifactKey}';
+
+  String _comparisonContextKey() => switch (comparisonAxis) {
+    EvalPairwiseComparisonAxis.profile =>
+      canonicalOptionA.profileComparisonContextKey,
+    EvalPairwiseComparisonAxis.promptVariant =>
+      canonicalOptionA.promptVariantComparisonContextKey,
+    EvalPairwiseComparisonAxis.invalid =>
+      canonicalOptionA.baseComparisonContextKey,
+  };
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'schemaVersion': schemaVersion,
@@ -272,20 +304,38 @@ class EvalPairwisePreferenceVote {
     _requireDigest(failures, 'promptDigest', promptDigest);
     _validateTraceRef(failures, 'optionA', optionA);
     _validateTraceRef(failures, 'optionB', optionB);
-    if (optionA.profileName == optionB.profileName) {
-      failures.add('option A and option B profiles must differ');
-    }
-    if (optionA.comparableKey != optionB.comparableKey) {
+    if (optionA.baseComparisonContextKey != optionB.baseComparisonContextKey) {
       failures.add(
         'option A and option B traces must share scenario, trial, and '
         'cascade wake',
       );
+    }
+    if (optionA.scenarioDigest != optionB.scenarioDigest) {
+      failures.add('option A and option B traces must share scenarioDigest');
     }
     if (optionA.capabilityId != optionB.capabilityId) {
       failures.add('option A and option B traces must share capabilityId');
     }
     if (optionA.agentKind != optionB.agentKind) {
       failures.add('option A and option B traces must share agentKind');
+    }
+    switch (comparisonAxis) {
+      case EvalPairwiseComparisonAxis.profile:
+        if (optionA.agentDirectiveVariantDigest !=
+            optionB.agentDirectiveVariantDigest) {
+          failures.add(
+            'profile comparisons must share agentDirectiveVariantDigest',
+          );
+        }
+      case EvalPairwiseComparisonAxis.promptVariant:
+        if (optionA.profileDigest != optionB.profileDigest) {
+          failures.add('prompt variant comparisons must share profileDigest');
+        }
+      case EvalPairwiseComparisonAxis.invalid:
+        failures.add(
+          'option A and option B must differ by exactly one tuning axis: '
+          'profile or prompt variant',
+        );
     }
     if (policy.requireModelIdentityBlind && modelIdentityVisible) {
       failures.add('reviewer saw exact model identity');
@@ -319,6 +369,17 @@ class EvalPairwisePreferencePolicy {
   final bool requireProfileBlind;
   final bool requirePeerVoteBlind;
   final bool requireTraceOrderRandomized;
+
+  List<String> validate() {
+    final failures = <String>[];
+    if (minVotes < 1) {
+      failures.add('minVotes must be at least 1');
+    }
+    if (!quorumFraction.isFinite || quorumFraction <= 0 || quorumFraction > 1) {
+      failures.add('quorumFraction must be finite and in (0, 1]');
+    }
+    return failures;
+  }
 }
 
 class EvalPairwisePreferenceSummary {
@@ -335,6 +396,7 @@ class EvalPairwisePreferenceSummary {
     required this.tieVoteCount,
     required this.quorumThreshold,
     required this.findings,
+    required this.axis,
   });
 
   final String comparisonKey;
@@ -349,6 +411,7 @@ class EvalPairwisePreferenceSummary {
   final int tieVoteCount;
   final int quorumThreshold;
   final List<String> findings;
+  final EvalPairwiseComparisonAxis axis;
 
   bool get hasWinner =>
       status == EvalPairwisePreferenceStatus.optionAWins ||
@@ -372,6 +435,10 @@ abstract final class EvalPairwisePreferenceReporter {
     List<EvalPairwisePreferenceVote> votes, {
     EvalPairwisePreferencePolicy policy = const EvalPairwisePreferencePolicy(),
   }) {
+    final policyFailures = policy.validate();
+    if (policyFailures.isNotEmpty) {
+      throw ArgumentError.value(policy, 'policy', policyFailures.join('; '));
+    }
     final byComparison = <String, List<EvalPairwisePreferenceVote>>{};
     for (final vote in votes) {
       byComparison.putIfAbsent(vote.comparisonKey, () => []).add(vote);
@@ -391,17 +458,18 @@ abstract final class EvalPairwisePreferenceReporter {
         '${summaries.length} pairs',
       )
       ..writeln(
-        'option A profile  option B profile  scenario                           '
+        'axis           option A          option B          scenario                           '
         'status        votes  valid  A/B/T  quorum  findings',
       )
       ..writeln(
-        '----------------  ----------------  ---------------------------------  '
+        '-------------  ----------------  ----------------  ---------------------------------  '
         '------------  -----  -----  -----  ------  --------',
       );
     for (final summary in summaries) {
       buffer.writeln(
-        '${_clip(summary.optionA.profileName, 16).padRight(16)}  '
-        '${_clip(summary.optionB.profileName, 16).padRight(16)}  '
+        '${summary.axis.name.padRight(13)}  '
+        '${_clip(_optionLabel(summary.optionA, summary.axis), 16).padRight(16)}  '
+        '${_clip(_optionLabel(summary.optionB, summary.axis), 16).padRight(16)}  '
         '${_clip(summary.optionA.scenarioId, 33).padRight(33)}  '
         '${summary.status.name.padRight(12)}  '
         '${summary.voteCount.toString().padLeft(5)}  '
@@ -447,6 +515,20 @@ abstract final class EvalPairwisePreferenceReporter {
         if (duplicateReviewers.contains(vote.reviewerId)) {
           invalidVoteIds.add(vote.voteId);
         }
+      }
+    }
+    final protocolKeys = <String, List<EvalPairwisePreferenceVote>>{};
+    for (final vote in votes) {
+      if (invalidVoteIds.contains(vote.voteId)) continue;
+      protocolKeys.putIfAbsent(_reviewProtocolKey(vote), () => []).add(vote);
+    }
+    if (protocolKeys.length > 1) {
+      findings.add(
+        'mixed review protocol(s): '
+        '${(_reviewProtocolLabels(protocolKeys)..sort()).join(', ')}',
+      );
+      for (final vote in protocolKeys.values.expand((votes) => votes)) {
+        invalidVoteIds.add(vote.voteId);
       }
     }
 
@@ -495,6 +577,7 @@ abstract final class EvalPairwisePreferenceReporter {
       tieVoteCount: tieCount,
       quorumThreshold: quorumThreshold,
       findings: List.unmodifiable(findings),
+      axis: votes.first.comparisonAxis,
     );
   }
 
@@ -568,3 +651,37 @@ String _clip(String value, int width) {
   if (width <= 1) return value.substring(0, width);
   return '${value.substring(0, width - 1)}~';
 }
+
+String _optionLabel(
+  EvalPairwiseTraceRef ref,
+  EvalPairwiseComparisonAxis axis,
+) => switch (axis) {
+  EvalPairwiseComparisonAxis.profile => ref.profileName,
+  EvalPairwiseComparisonAxis.promptVariant => ref.agentDirectiveVariantName,
+  EvalPairwiseComparisonAxis.invalid => ref.profileName,
+};
+
+String _reviewProtocolKey(EvalPairwisePreferenceVote vote) => [
+  vote.reviewerKind.name,
+  vote.reviewerModel ?? '',
+  vote.promptDigest,
+  vote.calibrationSetVersion,
+  vote.profileVisible,
+  vote.modelIdentityVisible,
+  vote.peerVotesVisible,
+  vote.traceOrderRandomized,
+].join('\n');
+
+List<String> _reviewProtocolLabels(
+  Map<String, List<EvalPairwisePreferenceVote>> protocolKeys,
+) => [
+  for (final votes in protocolKeys.values)
+    '${votes.first.reviewerKind.name}/'
+        '${votes.first.reviewerModel ?? 'unmodeled'}/'
+        '${votes.first.calibrationSetVersion}/'
+        '${_clip(votes.first.promptDigest, 18)}/'
+        'profileVisible=${votes.first.profileVisible}/'
+        'modelVisible=${votes.first.modelIdentityVisible}/'
+        'peerVisible=${votes.first.peerVotesVisible}/'
+        'randomized=${votes.first.traceOrderRandomized}',
+];

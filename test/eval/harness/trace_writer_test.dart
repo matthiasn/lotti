@@ -312,6 +312,93 @@ void main() {
     expect(summary.preferredTrace?.profileName, kFrontierProfile.name);
   });
 
+  test('binds pairwise preferences for non-default prompt variants', () async {
+    final dir = await Directory.systemTemp.createTemp(
+      'lotti-pairwise-preference-variant-',
+    );
+    addTearDown(() async {
+      if (dir.existsSync()) await dir.delete(recursive: true);
+    });
+    const variant = EvalAgentDirectiveVariant(
+      name: 'metadata-first-v2',
+      generalDirective: 'Read metadata before editing.',
+      reportDirective: 'Report durable state changes.',
+    );
+    final writer = TraceWriter(runsRoot: dir.path);
+    final manifest = _validManifest(
+      'run-1',
+      profiles: const [kFrontierFastProfile, kFrontierProfile],
+      agentDirectiveVariants: const [EvalAgentDirectiveVariant(), variant],
+    );
+    await writer.writeManifest(manifest);
+    final defaultCandidateTrace = _validTrace(
+      'run-1',
+      profile: kFrontierProfile,
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final baselineTrace = _validTrace(
+      'run-1',
+      manifestDigest: manifest.manifestDigest!,
+      agentDirectiveVariant: variant,
+    );
+    final candidateTrace = _validTrace(
+      'run-1',
+      profile: kFrontierProfile,
+      manifestDigest: manifest.manifestDigest!,
+      agentDirectiveVariant: variant,
+    );
+    final defaultCandidateFile = await writer.writeTrace(defaultCandidateTrace);
+    final baselineFile = await writer.writeTrace(baselineTrace);
+    final candidateFile = await writer.writeTrace(candidateTrace);
+    final vote = _preferenceVote(
+      voteId: 'vote-variant',
+      optionA: EvalPairwiseTraceRef.fromTrace(
+        candidateTrace,
+        traceDigest: await writer.traceDigest(candidateFile),
+      ),
+      optionB: EvalPairwiseTraceRef.fromTrace(
+        baselineTrace,
+        traceDigest: await writer.traceDigest(baselineFile),
+      ),
+    );
+
+    await writer.writePairwisePreferenceVote(vote);
+    final votes = await writer.readPairwisePreferenceVotes('run-1');
+
+    expect(votes, hasLength(1));
+    expect(votes.single.optionA.agentDirectiveVariantName, variant.name);
+    expect(
+      votes.single.optionA.agentDirectiveVariantDigest,
+      EvalProvenance.agentDirectiveVariantDigest(variant),
+    );
+    expect(
+      votes.single.comparisonKey,
+      contains('prompt-${variant.name}'),
+    );
+    final staleVote = _preferenceVote(
+      voteId: 'vote-variant-stale',
+      optionA: EvalPairwiseTraceRef.fromTrace(
+        candidateTrace,
+        traceDigest: await writer.traceDigest(defaultCandidateFile),
+      ),
+      optionB: EvalPairwiseTraceRef.fromTrace(
+        baselineTrace,
+        traceDigest: await writer.traceDigest(baselineFile),
+      ),
+    );
+
+    await expectLater(
+      writer.writePairwisePreferenceVote(staleVote),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('Stale pairwise preference vote-variant-stale'),
+        ),
+      ),
+    );
+  });
+
   test('rejects stale pairwise preference trace bindings', () async {
     final dir = await Directory.systemTemp.createTemp(
       'lotti-stale-pairwise-preference-',
@@ -638,12 +725,16 @@ void main() {
 EvalRunManifest _validManifest(
   String runId, {
   List<EvalProfile> profiles = const [kFrontierFastProfile],
+  List<EvalAgentDirectiveVariant> agentDirectiveVariants = const [
+    EvalAgentDirectiveVariant(),
+  ],
 }) => EvalProvenance.captureRunManifest(
   runId: runId,
   targetName: 'trace-writer-test',
   targetKind: 'test',
   scenarios: [taskReleaseNotesScenario],
   profiles: profiles,
+  agentDirectiveVariants: agentDirectiveVariants,
   createdAt: DateTime(2026, 6, 10, 12),
   command: 'trace-writer-test',
   environment: const <String, String>{},
@@ -653,14 +744,18 @@ EvalTrace _validTrace(
   String runId, {
   String manifestDigest = EvalProvenance.unboundManifestDigest,
   EvalProfile profile = kFrontierFastProfile,
+  EvalAgentDirectiveVariant agentDirectiveVariant =
+      const EvalAgentDirectiveVariant(),
   EvalTraceCascadeWake? cascadeWake,
 }) => EvalTrace(
   runId: runId,
   scenario: taskReleaseNotesScenario,
   profile: profile,
+  agentDirectiveVariant: agentDirectiveVariant,
   provenance: EvalProvenance.capture(
     scenario: taskReleaseNotesScenario,
     profile: profile,
+    agentDirectiveVariant: agentDirectiveVariant,
     manifestDigest: manifestDigest,
   ),
   cascadeWake: cascadeWake,

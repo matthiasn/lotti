@@ -426,6 +426,7 @@ class TraceWriter {
         runId: trace.runId,
         scenarioId: trace.scenario.id,
         profileName: trace.profile.name,
+        agentDirectiveVariantName: trace.agentDirectiveVariant.name,
         trialIndex: trace.trialIndex,
         cascadeWake: trace.cascadeWake,
       );

@@ -538,15 +538,21 @@ profile, scenario, split, or capability still appears as zero-trace coverage.
 Free-text quality is handled separately from these scalar verdicts. Pairwise
 preference votes compare two digest-bound trace artifacts for the same run,
 scenario, trial, cascade wake, agent kind, and primary capability, with different
-profiles. Each vote records the reviewer kind/id, reviewer model when relevant,
+profiles under the same prompt variant, or different prompt variants under the
+same profile. Votes that change both profile and prompt variant at once are
+invalid because they confound the tuning axis. Each vote records the reviewer
+kind/id, reviewer model when relevant,
 prompt digest, calibration-set version, whether profile/model/peer-vote
 identity was visible, whether trace order was randomized, an `optionA` /
 `optionB` / `tie` choice, rationale, and issues.
 `EvalPairwisePreferenceReporter` then reports
 `optionAWins`, `optionBWins`, `tie`, `noConsensus`, `incomplete`, or `invalid`
 using a configurable minimum vote count and quorum fraction, canonicalizing
-reversed option order before counting votes; `preferredTrace` points at the
-winning trace when there is a strict preference. These A/B outcomes are
+reversed option order before counting votes. Votes for one pair must share the
+same review protocol: reviewer kind/model, prompt digest, calibration-set
+version, blinding flags, and trace-order randomization flag. Mixed-protocol
+votes are invalid instead of being pooled into one quorum. `preferredTrace`
+points at the winning trace when there is a strict preference. These A/B outcomes are
 diagnostic and audit-friendly: they support the human-or-LLM quorum workflow
 for subjective summaries, but they are not `JudgeVerdict`s and do not affect
 profile promotion unless a future pre-registered policy explicitly opts them in.

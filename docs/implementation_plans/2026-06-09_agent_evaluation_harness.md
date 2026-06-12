@@ -205,12 +205,20 @@ prints each failing trace's provider/model, tool calls, proposal tools, report
 snippet, and failed Level 1 check details for fast prompt/model tuning.
 Current active slice adds that comparative-review data model:
 `EvalPairwisePreferenceVote` binds two trace artifacts by run, scenario,
-profile, trial, cascade identity, trace digest, scenario digest, and profile
-digest; records reviewer and protocol blinding metadata; and lets
+profile, prompt variant, trial, cascade identity, trace digest, scenario
+digest, profile digest, and prompt-variant digest; records reviewer and
+protocol blinding metadata; and lets
 `EvalPairwisePreferenceReporter` derive quorum outcomes (`optionAWins`,
 `optionBWins`, `tie`, `noConsensus`, `incomplete`, or `invalid`). These
 pairwise preference records remain diagnostic and separate from `JudgeVerdict`
 and profile promotion until a future pre-registered policy opts them in.
+The reporter supports one tuning axis per comparison: profile/model-class A/B
+under the same prompt variant, or prompt-variant A/B under the same profile.
+Votes that change both axes in one comparison are invalid so subjective quorum
+results cannot hide a confounded experiment design.
+The quorum also rejects mixed review protocols: reviewer kind/model, prompt
+digest, calibration-set version, blinding flags, and trace-order randomization
+must match across pooled votes.
 Current active slice also makes one vote per `<safeVoteId>.preference.json`
 a first-class run artifact. `TraceWriter.readRun` deliberately ignores those
 files so ordinary verification, readiness, calibration, and promotion gates stay
