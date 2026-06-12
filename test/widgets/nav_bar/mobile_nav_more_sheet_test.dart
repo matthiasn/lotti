@@ -83,6 +83,48 @@ void main() {
       expect(find.byType(WoltModalSheet), findsNothing);
     });
 
+    testWidgets('renders the trailing widget between label and chevron', (
+      tester,
+    ) async {
+      await pumpAndOpenSheet(
+        tester,
+        items: [
+          MobileNavMoreSheetItem(
+            label: 'Settings',
+            icon: const Icon(Icons.settings_outlined),
+            trailing: const Text('42', key: Key('trailing-badge')),
+            onSelected: () {},
+          ),
+          MobileNavMoreSheetItem(
+            label: 'Habits',
+            icon: const Icon(Icons.checklist_outlined),
+            onSelected: () {},
+          ),
+        ],
+      );
+
+      // The trailing widget sits right of the label and left of the
+      // row's chevron — the desktop sidebar's trailing-slot contract.
+      final badgeRect = tester.getRect(find.byKey(const Key('trailing-badge')));
+      final labelRect = tester.getRect(find.text('Settings'));
+      final chevronRect = tester.getRect(
+        find
+            .descendant(
+              of: find.ancestor(
+                of: find.text('Settings'),
+                matching: find.byType(InkWell),
+              ),
+              matching: find.byIcon(Icons.chevron_right_rounded),
+            )
+            .first,
+      );
+      expect(badgeRect.left, greaterThan(labelRect.left));
+      expect(badgeRect.right, lessThan(chevronRect.left));
+
+      // Rows without a trailing widget render nothing extra.
+      expect(find.byKey(const Key('trailing-badge')), findsOneWidget);
+    });
+
     testWidgets('highlights the active destination with the accent tint', (
       tester,
     ) async {

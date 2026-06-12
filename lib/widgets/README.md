@@ -244,10 +244,16 @@ Custom `WoltDialogType` that renders at a configurable target width (`preferredW
 Located in `/lib/widgets/nav_bar/`
 
 ### DesignSystemBottomNavigationBar
-Mobile bottom-navigation shell that hosts the design-system five-slot bar
+Mobile bottom-navigation shell that hosts the design-system bar
 (`DesignSystemFiveSlotNavBar`), docked flush against the screen's bottom
-edge with zero gap. The bar shows Tasks, DailyOS (when its flag is
-enabled — it never overflows), and Logbook plus a More slot; the bottom
+edge with zero gap. The bar fills with as many destinations as fit
+comfortably at the current window width and text scale (measured via
+`DesignSystemFiveSlotNavBar.comfortableSlotWidth` against
+`availableRowWidth`): the base line-up is Tasks, DailyOS (when its flag is
+enabled — it never overflows), and Logbook plus a More slot; as space
+grows, overflow destinations are promoted out of the More sheet in nav
+order, each landing in its canonical position with More pinned last, and
+once everything fits the More slot disappears entirely. The bottom
 safe-area inset is absorbed into the bar surface itself. The time/audio
 recording indicators that ride above the bar are owned by the mobile shell
 (`lib/beamer/beamer_app.dart`), not by this container, so they stay
@@ -256,20 +262,23 @@ visible when the shell hides the bar.
 Visibility is owned by the same shell as a pure function of router state:
 on task detail routes (`/tasks/<uuid>`) the bar is unmounted so the
 page-owned `TaskActionBar` can dock flush against the home indicator, and
-inside settings entity-definition sections (the categories / habits /
-labels / dashboards / measurables list, detail, and create pages plus
-per-project editors, see `isSettingsEntityDefinitionRoute`) it slides below
-the screen edge with an animated, pointer- and semantics-inert transition
-instead of popping out, and slides back in on leaving the section. While
+inside settings entity-definition editors (the categories / habits /
+labels / dashboards / measurables detail and create pages plus per-project
+editors — not the list pages, see `isSettingsEntityDefinitionRoute`) it
+slides below the screen edge with an animated, pointer- and semantics-inert
+transition instead of popping out, and slides back in on leaving. While
 the bar is slid away the recording indicators animate down to the bottom
 safe-area edge in the same motion.
 
 ### showMobileNavMoreSheet / MobileNavMoreSheetItem
 `WoltModalSheet`-based overflow sheet listing the destinations without a
-bar slot: Settings always, plus the flag-gated Projects, Habits, and
-Insights — newly toggled pages surface here. Selecting a row dismisses the
-sheet and navigates; the bar's More slot then renders that destination's
-name with the active tint.
+bar slot: Settings, plus the flag-gated Projects, Habits, and Insights —
+newly toggled pages surface here, and rows disappear from the sheet as the
+window grows wide enough to promote them into the bar. Each row offers an
+optional trailing slot (mirroring the desktop sidebar rows) — Settings
+renders its outbox count pill there instead of badging the gear icon.
+Selecting a row dismisses the sheet and navigates; the bar's More slot
+then renders that destination's name with the active tint.
 
 ### DesignSystemBottomNavigationFabPadding
 Padding helper that lifts floating action buttons clear of the shared bottom

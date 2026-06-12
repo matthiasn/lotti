@@ -10,12 +10,18 @@ class MobileNavMoreSheetItem {
     required this.label,
     required this.icon,
     required this.onSelected,
+    this.trailing,
     this.active = false,
   });
 
   final String label;
   final Widget icon;
   final bool active;
+
+  /// Optional widget rendered between the label and the chevron — the
+  /// same trailing slot the desktop sidebar rows offer (e.g. the Settings
+  /// outbox count pill).
+  final Widget? trailing;
 
   /// Invoked after the sheet is dismissed; navigates to the destination.
   final VoidCallback onSelected;
@@ -100,6 +106,10 @@ class _MoreSheetRow extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (item.trailing != null) ...[
+                    item.trailing!,
+                    SizedBox(width: tokens.spacing.step3),
+                  ],
                   Icon(
                     Icons.chevron_right_rounded,
                     size: DesignSystemFiveSlotNavBar.iconSize,

@@ -406,11 +406,18 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: HabitsPage(),
         ),
 
+      // The habits sub-routes are two segments deep (`by_id/<id>`,
+      // `search/<term>`), but Beamer's default pathSegmentPop removes only
+      // ONE segment — landing on dead intermediate URIs like
+      // `/settings/habits/by_id` that render the list while the route
+      // state still looks like an editor. `popToNamed` skips straight to
+      // the list URI so a single back tap leaves the editor for real.
       if (pathContains('habits/search') && pathContainsKey('searchTerm'))
         BeamPage(
           key: ValueKey(
             'settings-habits-search-${state.pathParameters['searchTerm']}',
           ),
+          popToNamed: '/settings/habits',
           child: HabitsPage(
             initialSearchTerm: state.pathParameters['searchTerm'],
           ),
@@ -421,6 +428,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
           key: ValueKey(
             'settings-habits-${state.pathParameters['habitId']}',
           ),
+          popToNamed: '/settings/habits',
           child: EditHabitPage(
             habitId: state.pathParameters['habitId']!,
           ),

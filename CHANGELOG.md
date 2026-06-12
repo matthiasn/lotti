@@ -74,24 +74,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Mobile: the bottom navigation bar no longer crams every destination into
-  one row with shrinking labels. It now shows Tasks, DailyOS (when
-  enabled), and Logbook plus a "More" slot; Settings and the remaining
-  flag-gated destinations (Projects, Habits, Insights) open from a More
-  bottom sheet instead — that's also where newly toggled pages appear.
-  While one of them is on screen, the More slot takes its name and the
-  active highlight so you can always see where you are. Daily OS also
-  moved directly after Tasks across mobile and the desktop sidebar. The
-  bar docks flush against the bottom screen edge — full width, no floating
-  gap — with the home-indicator inset absorbed into the bar surface, and
-  its top corners now use the gentler card radius (matched by the settings
-  header's bottom corners).
-- Mobile: entering a settings entity-definition section — categories,
-  habits, labels, dashboards, or measurables, including their detail and
-  create pages, plus project editors — now slides the bottom navigation
-  bar smoothly below the screen edge, giving those surfaces the full
-  height, and slides it back in when you leave. A running timer or audio
-  recording indicator stays visible throughout, dropping to the screen's
-  bottom edge while the bar is away.
+  one row with shrinking labels. It fills with as many destinations as
+  comfortably fit your window and text size: on narrow screens it shows
+  Tasks, DailyOS (when enabled), and Logbook plus a "More" slot, with
+  Settings and the remaining flag-gated destinations (Projects, Habits,
+  Insights) in a More bottom sheet — that's also where newly toggled pages
+  appear, and the Settings row shows its pending-sync count on the right
+  like the desktop sidebar does. While a sheet destination is on screen,
+  the More slot takes its name and the active highlight so you can always
+  see where you are. As the window gets wider, destinations move out of
+  the sheet into their own slots one by one — always in the same order and
+  positions — until everything fits and the More slot disappears
+  entirely; a larger system font widens the labels and brings the
+  overflow back sooner. Daily OS also moved directly after Tasks across
+  mobile and the desktop sidebar. The bar docks flush against the bottom
+  screen edge — full width, no floating gap — with the home-indicator
+  inset absorbed into the bar surface, and its top corners now use the
+  gentler card radius (matched by the settings header's bottom corners).
+- Mobile: opening a settings entity-definition editor — the detail or
+  create page of a category, habit, label, dashboard, or measurable, or a
+  project editor — now slides the bottom navigation bar smoothly below the
+  screen edge, giving the editor the full height, and slides it back in
+  when you leave; the list pages keep the bar in place. A running timer or
+  audio recording indicator stays visible throughout, dropping to the
+  screen's bottom edge while the bar is away.
 
 ## [0.9.1017]
 ### Added

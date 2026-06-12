@@ -28,6 +28,8 @@ import 'package:lotti/features/design_system/components/navigation/resizable_div
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
+import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
+import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
@@ -594,6 +596,11 @@ void main() {
 
         expect(find.text('Projects'), findsOneWidget);
 
+        // Sheet rows use the desktop-style trailing slot for the Settings
+        // outbox count instead of cramming the badge over the gear icon.
+        expect(find.byType(OutboxTrailingBadge), findsOneWidget);
+        expect(find.byType(OutboxBadgeIcon), findsNothing);
+
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
       },
@@ -611,10 +618,12 @@ void main() {
         await _stubNavService(
           mockNavService,
           indexStream: indexController.stream,
+          // All flags on: seven destinations cannot fit the phone-width
+          // viewport, so the bar keeps the More overflow this test needs.
           isProjectsEnabled: () => isProjectsEnabled,
-          isDailyOsEnabled: () => false,
-          isHabitsEnabled: () => false,
-          isDashboardsEnabled: () => false,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
         );
         await _registerAppScreenGetIt(mockNavService);
         addTearDown(tearDownTestGetIt);
@@ -788,6 +797,154 @@ void main() {
         expect(barRect.right, screenSize.width);
       });
     }
+
+    testWidgets(
+      'gives every destination its own slot on wide windows — no More slot',
+      (tester) async {
+        final mockNavService = MockNavService();
+
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(6),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          // Wide mobile window: at/above kNavBarAllDestinationsBreakpoint
+          // but below the desktop breakpoint, so the bottom bar (not the
+          // sidebar) renders — with one slot per destination.
+          viewportSize: const Size(800, 1200),
+        );
+
+        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+          find.byType(DesignSystemBottomNavigationBar),
+        );
+        expect(
+          navBar.items.map((item) => item.label),
+          [
+            'Tasks',
+            'DailyOS',
+            'Projects',
+            'Habits',
+            'Insights',
+            'Logbook',
+            'Settings',
+          ],
+        );
+
+        // Settings — overflow-only on compact windows — owns a regular
+        // slot here: active tint on its own slot, no More semantics.
+        expect(navBar.items.last.active, isTrue);
+        expect(navBar.items.last.semanticsLabel, isNull);
+
+        // Taps route directly through the destination's full index
+        // instead of opening a sheet.
+        navBar.items[2].onTap?.call();
+        verify(() => mockNavService.tapIndex(2)).called(1);
+      },
+    );
+
+    testWidgets(
+      'promotes overflow destinations one by one as window width allows',
+      (tester) async {
+        final mockNavService = MockNavService();
+
+        await _stubNavService(
+          mockNavService,
+          // Projects is the active route AND the promoted destination —
+          // its own slot must light up while More stays plain.
+          indexStream: Stream.value(2),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          // Intermediate band: wider than the phone base line-up, too
+          // narrow for all seven destinations. Exactly one overflow
+          // destination (Projects, first in nav order) fits alongside
+          // the base slots and More.
+          viewportSize: const Size(520, 1200),
+        );
+
+        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+          find.byType(DesignSystemBottomNavigationBar),
+        );
+        // Promoted into its canonical position — between DailyOS and
+        // Logbook — with More pinned last.
+        expect(
+          navBar.items.map((item) => item.label),
+          ['Tasks', 'DailyOS', 'Projects', 'Logbook', 'More'],
+        );
+
+        // The promoted destination owns its highlight; the More slot must
+        // not take its name (it only ever represents what it still hides:
+        // Habits, Insights, and Settings).
+        expect(navBar.items[2].active, isTrue);
+        expect(navBar.items.last.active, isFalse);
+        expect(navBar.items.last.label, 'More');
+        expect(
+          navBar.items.last.semanticsLabel,
+          'More, 3 additional destinations',
+        );
+
+        // The promoted slot taps straight through to the destination.
+        navBar.items[2].onTap?.call();
+        verify(() => mockNavService.tapIndex(2)).called(1);
+      },
+    );
+
+    testWidgets(
+      'keeps the More overflow on a wide window when a large text scale '
+      'widens the labels past the available space',
+      (tester) async {
+        // The fit decision is text-scale-aware: the same 800px window that
+        // fits all seven destinations at scale 1.0 cannot fit their labels
+        // at 3.0, so the bar falls back to the compact More line-up
+        // instead of ellipsizing every caption.
+        tester.platformDispatcher.textScaleFactorTestValue = 3.0;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+
+        final mockNavService = MockNavService();
+
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: const Size(800, 1200),
+        );
+
+        final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+          find.byType(DesignSystemBottomNavigationBar),
+        );
+        expect(
+          navBar.items.map((item) => item.label),
+          ['Tasks', 'DailyOS', 'Logbook', 'More'],
+        );
+      },
+    );
 
     testWidgets('renders recording indicators directly above the nav bar', (
       tester,
@@ -1365,22 +1522,16 @@ void main() {
       );
     });
 
-    test('returns true everywhere inside an entity-definition section', () {
+    test('returns true on entity-definition detail and create pages', () {
       for (final path in <String>[
-        '/settings/categories',
         '/settings/categories/some-category-id',
         '/settings/categories/create',
-        '/settings/labels',
         '/settings/labels/some-label-id',
         '/settings/labels/create',
-        '/settings/dashboards',
         '/settings/dashboards/some-dashboard-id',
         '/settings/dashboards/create',
-        '/settings/measurables',
         '/settings/measurables/some-measurable-id',
         '/settings/measurables/create',
-        '/settings/habits',
-        '/settings/habits/search/morning',
         '/settings/habits/by_id/some-habit-id',
         '/settings/habits/create',
         '/settings/projects/some-project-id',
@@ -1393,7 +1544,8 @@ void main() {
       }
     });
 
-    test('returns false for the root and non-definition settings pages', () {
+    test('returns false for list pages, the root, and non-definition '
+        'settings pages', () {
       for (final path in <String>[
         '/settings',
         '/settings/definitions',
@@ -1403,6 +1555,18 @@ void main() {
         '/settings/sync',
         '/settings/ai/provider/some-provider-id',
         '/settings/agents/templates/some-template-id',
+        // List pages are browse surfaces — the bar stays; only the
+        // detail/create editors slide it away.
+        '/settings/categories',
+        '/settings/labels',
+        '/settings/dashboards',
+        '/settings/measurables',
+        '/settings/habits',
+        // Habits search is the list page with a filter applied.
+        '/settings/habits/search/morning',
+        // Bare `by_id` without an id renders the list page — it must not
+        // count as an editor.
+        '/settings/habits/by_id',
         // SettingsLocation deliberately renders no editor for the reserved
         // `create` slug under projects (creation lives at /projects/create),
         // so a stale deep link must not hide the bar over the settings root.
@@ -1485,11 +1649,18 @@ void main() {
         expect(slide().offset, Offset.zero);
         expect(ignorePointer().ignoring, isFalse);
 
-        // Entering the categories section keeps the bar mounted (so the
-        // move can animate) but slides it down by its own height and makes
-        // it inert. The recording indicators stay mounted outside the
-        // sliding subtree and drop to the bottom safe-area edge.
+        // The categories list page is a browse surface — the bar stays in
+        // place there.
         settingsDelegate.beamToNamed('/settings/categories');
+        await tester.pump();
+        expect(slide().offset, Offset.zero);
+        expect(ignorePointer().ignoring, isFalse);
+
+        // Entering a category editor keeps the bar mounted (so the move
+        // can animate) but slides it down by its own height and makes it
+        // inert. The recording indicators stay mounted outside the
+        // sliding subtree and drop to the bottom safe-area edge.
+        settingsDelegate.beamToNamed('/settings/categories/some-category-id');
         await tester.pump();
         expect(find.byType(DesignSystemBottomNavigationBar), findsOneWidget);
         expect(slide().offset, const Offset(0, 1));
@@ -1502,16 +1673,11 @@ void main() {
           indicators().bottom,
           MediaQuery.paddingOf(barContext).bottom,
         );
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 450));
 
-        // A category editor deeper in the same section stays hidden.
-        settingsDelegate.beamToNamed('/settings/categories/some-category-id');
-        await tester.pump();
-        expect(slide().offset, const Offset(0, 1));
-
-        // Leaving the section slides the bar back into place and lifts
+        // Popping back to the list slides the bar into place and lifts
         // the indicators back above it.
-        settingsDelegate.beamToNamed('/settings');
+        settingsDelegate.beamToNamed('/settings/categories');
         await tester.pump();
         expect(slide().offset, Offset.zero);
         expect(ignorePointer().ignoring, isFalse);
@@ -1519,7 +1685,7 @@ void main() {
           indicators().bottom,
           DesignSystemFiveSlotNavBar.barHeight(barContext),
         );
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 450));
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();

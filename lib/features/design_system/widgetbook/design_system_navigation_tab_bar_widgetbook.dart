@@ -114,9 +114,10 @@ class _BottomNavigationShellShowcase extends StatelessWidget {
     );
   }
 
-  /// The mobile shell caps the bar at the always-visible destinations
-  /// (Tasks, Journal, Settings) plus a More slot for the flag-gated
-  /// destinations.
+  /// The compact line-up: always-visible destinations plus a More slot
+  /// for the overflow. On windows where every destination's label fits
+  /// (see [DesignSystemFiveSlotNavBar.allSlotsFit]) the shell renders one
+  /// slot per destination instead.
   List<DesignSystemFiveSlotNavBarItem> _shellItems(BuildContext context) {
     return [
       DesignSystemFiveSlotNavBarItem(

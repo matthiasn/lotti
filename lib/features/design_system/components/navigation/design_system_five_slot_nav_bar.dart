@@ -26,15 +26,19 @@ class DesignSystemFiveSlotNavBarItem {
   final String? semanticsLabel;
 }
 
-/// Mobile bottom navigation bar capped at five slots, docked flush against
-/// the screen's bottom edge (`Tasks · DailyOS · Logbook · More`).
+/// Mobile bottom navigation bar docked flush against the screen's bottom
+/// edge (`Tasks · DailyOS · Logbook · More` on compact windows).
 ///
 /// Unlike [DesignSystemNavigationTabBar] — which hugs its content and gets
 /// scaled down by a `FittedBox` when too many tabs are visible, shrinking
-/// labels into illegibility — this bar fixes the slot count and gives every
-/// slot an equal flex share, so labels always render at the caption size.
-/// Destinations beyond the cap belong in a More overflow sheet owned by the
-/// caller.
+/// labels into illegibility — this bar gives every slot an equal flex
+/// share, so labels always render at the caption size (ellipsizing rather
+/// than scaling). The mobile shell budgets slots against
+/// [comfortableSlotWidth] and [availableRowWidth]: destinations that do
+/// not fit overflow into a More sheet and are promoted back into the bar
+/// one by one as window width allows; once everything fits
+/// ([allSlotsFit]) the More slot disappears. The slot row handles any of
+/// those line-ups.
 ///
 /// The bar spans the full width with only the top corners rounded, and pads
 /// the bottom safe-area inset *inside* its surface ([bottomInsetFraction]
@@ -48,21 +52,19 @@ class DesignSystemFiveSlotNavBar extends StatelessWidget {
   const DesignSystemFiveSlotNavBar({
     required this.items,
     super.key,
-  }) : assert(
-         items.length <= maxSlots,
-         'At most five slots fit the bar; move further destinations into '
-         'the More sheet.',
-       );
-
-  /// Hard cap on the number of slots — callers budgeting destinations
-  /// against the bar (e.g. the mobile shell's More-sheet overflow) share
-  /// this constant so the numbers cannot drift apart.
-  static const int maxSlots = 5;
+  });
 
   static const double iconSize = 22;
 
   /// Minimum tappable extent of every slot (accessibility floor).
   static const double minTapTarget = 44;
+
+  /// Minimum width a slot needs to read as comfortable rather than merely
+  /// tappable — Material's fixed bottom-navigation item minimum (80dp).
+  /// [allSlotsFit] uses this floor so the all-destinations line-up only
+  /// engages when every slot gets real breathing room, not as soon as the
+  /// labels technically squeeze in.
+  static const double comfortableMinSlotWidth = 80;
 
   static const Duration tintDuration = Duration(milliseconds: 240);
 
@@ -116,6 +118,58 @@ class DesignSystemFiveSlotNavBar extends StatelessWidget {
       tokens.spacing.step2,
       MediaQuery.paddingOf(context).bottom * bottomInsetFraction,
     );
+  }
+
+  /// Width one slot needs to render [label] comfortably: the caption line
+  /// laid out at the current text scale (so large system fonts demand
+  /// wider slots), or the icon if wider, plus `step3` breathing room per
+  /// side — floored at [comfortableMinSlotWidth], so short labels do not
+  /// shrink the demand below a comfortable slot.
+  static double comfortableSlotWidth(BuildContext context, String label) {
+    final tokens = context.designTokens;
+    final painter = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: tokens.typography.styles.others.caption.copyWith(
+          fontWeight: tokens.typography.weight.semiBold,
+        ),
+      ),
+      maxLines: 1,
+      textDirection: TextDirection.ltr,
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
+    final contentWidth = math.max(painter.width, iconSize);
+    painter.dispose();
+    return math.max(
+      contentWidth + tokens.spacing.step3 * 2,
+      comfortableMinSlotWidth,
+    );
+  }
+
+  /// Horizontal space the slot row gets inside the frosted surface: the
+  /// window width minus the surface's own horizontal padding and the
+  /// safe-area insets it absorbs. Callers budgeting slots against the bar
+  /// (see [comfortableSlotWidth]) measure against this.
+  static double availableRowWidth(BuildContext context) {
+    final tokens = context.designTokens;
+    final insets = MediaQuery.paddingOf(context);
+    return MediaQuery.sizeOf(context).width -
+        tokens.spacing.step2 * 2 -
+        insets.left -
+        insets.right;
+  }
+
+  /// True when one slot per [labels] entry fits the current window
+  /// comfortably — the caller can then give every destination its own
+  /// slot instead of overflowing into a More sheet. Adapts to both the
+  /// window width and the system text scale: a larger font widens every
+  /// label and flips this back to `false` sooner.
+  static bool allSlotsFit(BuildContext context, List<String> labels) {
+    var required = 0.0;
+    for (final label in labels) {
+      required += comfortableSlotWidth(context, label);
+    }
+    return required <= availableRowWidth(context);
   }
 
   @override

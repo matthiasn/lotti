@@ -89,28 +89,32 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
   return isUuid(location.state.pathParameters['taskId']);
 }
 
-/// True when the settings beamer location points anywhere inside an
-/// entity-definition section — the list, detail, and create pages of
-/// categories, habits, labels, dashboards, and measurables, plus the
-/// per-project editors drilled into from category pages. The mobile shell
-/// slides the bottom nav out of the way there so the definition surfaces
-/// get the whole bottom edge. Pure function of router state.
+/// True when the settings beamer location points at an entity-definition
+/// editor — the detail and create pages of categories, habits, labels,
+/// dashboards, and measurables, plus the per-project editors drilled into
+/// from category pages. The list pages keep the bar: they are ordinary
+/// browse surfaces, and only the editors need the whole bottom edge. The
+/// mobile shell slides the bottom nav out of the way on these routes.
+/// Pure function of router state.
 bool isSettingsEntityDefinitionRoute(BeamLocation<dynamic>? location) {
   if (location is! SettingsLocation) return false;
   final segments = location.state.uri.pathSegments;
-  if (segments.length < 2 || segments.first != 'settings') return false;
+  if (segments.length < 3 || segments.first != 'settings') return false;
   return switch (segments[1]) {
-    'categories' ||
-    'habits' ||
-    'labels' ||
-    'dashboards' ||
-    'measurables' => true,
+    'categories' || 'labels' || 'dashboards' || 'measurables' => true,
+    // `/settings/habits/search/<term>` is the habits list with a filter
+    // applied, not an editor — the bar stays. `by_id` only counts as an
+    // editor with an actual id: the bare `/settings/habits/by_id` (e.g. a
+    // truncated deep link) renders the list page.
+    'habits' =>
+      segments[2] == 'create' ||
+          (segments[2] == 'by_id' && segments.length >= 4),
     // Projects has no list page under settings — only `/settings/projects/
     // <projectId>` editors. The reserved `create` slug is deliberately not
     // rendered by [SettingsLocation] (creation lives under
     // `/projects/create`), so a stale deep link to it must not hide the
     // bar over the bare settings root.
-    'projects' => segments.length >= 3 && segments[2] != 'create',
+    'projects' => segments[2] != 'create',
     _ => false,
   };
 }
@@ -146,12 +150,14 @@ class _AppNavigationDestination {
   final _AppNavigationDestinationKind kind;
   final String label;
 
-  /// Whether this destination claims one of the mobile bar's destination
-  /// slots. Tasks and Daily OS are the most important pages — Daily OS
-  /// never overflows — and Journal keeps its slot alongside them.
-  /// Settings is always relegated to the More sheet, joined by the
-  /// flag-gated destinations, so the sheet is also where newly toggled
-  /// pages appear.
+  /// Whether this destination is part of the mobile bar's base line-up —
+  /// the slots that survive even the narrowest window. Tasks and Daily OS
+  /// are the most important pages — Daily OS never overflows — and
+  /// Journal keeps its slot alongside them. The remaining destinations
+  /// start out behind the More sheet (which is also where newly toggled
+  /// pages appear) and are promoted into their own slots as window width
+  /// allows (see [DesignSystemFiveSlotNavBar.comfortableSlotWidth]); once
+  /// everything fits, the More slot disappears.
   bool get isMobilePrimary => switch (kind) {
     _AppNavigationDestinationKind.tasks ||
     _AppNavigationDestinationKind.dailyOs ||
@@ -554,34 +560,80 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final showBottomNav = !_isTaskDetailRoute(index);
 
     // Settings entity-definition editors (category, habit, label,
-    // dashboard, measurable, project detail/create pages) slide the bar
-    // away instead of removing it: nothing replaces the bar there, so an
-    // instant unmount would read as a jumpy glitch rather than a handoff
-    // to a page-owned surface.
+    // dashboard, measurable, project detail/create pages — not the list
+    // pages) slide the bar away instead of removing it: nothing replaces
+    // the bar there, so an instant unmount would read as a jumpy glitch
+    // rather than a handoff to a page-owned surface.
     final slideNavAway =
         destinations[index].kind == _AppNavigationDestinationKind.settings &&
         isSettingsEntityDefinitionRoute(
           navService.settingsDelegate.currentBeamLocation,
         );
 
-    // Fixed bar line-up: Tasks, Daily OS (when enabled), Logbook, More.
-    // Everything else — Settings always, plus the flag-gated destinations
-    // — lives behind the More slot, which is where newly toggled pages
-    // surface. Entries carry their full destination index so taps route
+    // The bar fills with as many destinations as fit comfortably at the
+    // current window width and text scale. The base line-up is Tasks,
+    // Daily OS (when enabled), Logbook, plus More for everything else —
+    // that's also where newly toggled pages surface. As space grows,
+    // overflow destinations are promoted out of the More sheet in nav
+    // order, each landing in its canonical position with More pinned
+    // last, so resizing only ever adds or removes slots — nothing
+    // reshuffles. Once every destination fits, the More slot disappears
+    // entirely. Entries carry their full destination index so taps route
     // through the same NavService indices the IndexedStack uses. Built
     // lazily: on routes that suppress the bar entirely the slot config
     // (and its per-slot closures) is never constructed.
     DesignSystemBottomNavigationBar buildBottomNavigationBar() {
+      double slotWidth(String label) =>
+          DesignSystemFiveSlotNavBar.comfortableSlotWidth(context, label);
+      final availableWidth = DesignSystemFiveSlotNavBar.availableRowWidth(
+        context,
+      );
+      final showAllDestinations = DesignSystemFiveSlotNavBar.allSlotsFit(
+        context,
+        [for (final destination in destinations) destination.label],
+      );
+
+      // Greedy promotion in nav order, stopping at the first destination
+      // that no longer fits alongside the base line-up and the More slot.
+      // Stopping (rather than skipping ahead to a narrower label) keeps
+      // the promoted set a stable prefix: a given window width always
+      // shows the same line-up regardless of how it was reached.
+      final promoted = <int>{};
+      if (!showAllDestinations) {
+        var used = slotWidth(context.messages.navTabTitleMore);
+        for (final destination in destinations) {
+          if (destination.isMobilePrimary) {
+            used += slotWidth(destination.label);
+          }
+        }
+        for (var i = 0; i < destinations.length; i++) {
+          if (destinations[i].isMobilePrimary) continue;
+          final width = slotWidth(destinations[i].label);
+          if (used + width > availableWidth) break;
+          promoted.add(i);
+          used += width;
+        }
+      }
+
       final primaryEntries = <(int, _AppNavigationDestination)>[];
       final overflowEntries = <(int, _AppNavigationDestination)>[];
       for (var i = 0; i < destinations.length; i++) {
-        (destinations[i].isMobilePrimary ? primaryEntries : overflowEntries)
+        (showAllDestinations ||
+                    destinations[i].isMobilePrimary ||
+                    promoted.contains(i)
+                ? primaryEntries
+                : overflowEntries)
             .add((i, destinations[i]));
       }
 
-      final activeOverflowDestination = destinations[index].isMobilePrimary
-          ? null
-          : destinations[index];
+      // Only a destination actually living behind More may lend the More
+      // slot its name — a promoted destination lights up its own slot.
+      final activeOverflowDestination =
+          overflowEntries.any(
+            (entry) => entry.$1 == index,
+          )
+          ? destinations[index]
+          : null;
 
       return DesignSystemBottomNavigationBar(
         items: [
@@ -615,7 +667,14 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   for (final (i, destination) in overflowEntries)
                     MobileNavMoreSheetItem(
                       label: destination.label,
-                      icon: destination._mobileIcon(active: i == index),
+                      // The bare icon, not the badge-wrapped mobile one:
+                      // sheet rows have a trailing slot (like the desktop
+                      // sidebar), so a count pill there beats a badge
+                      // cramped over the icon.
+                      icon: destination.iconBuilder(active: i == index),
+                      trailing: destination.trailingBuilder?.call(
+                        active: i == index,
+                      ),
                       active: i == index,
                       // The index is resolved at tap time, not captured: a
                       // flag change (e.g. synced from another device) while
@@ -884,7 +943,7 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
 class _SlideAwayBottomNav extends StatelessWidget {
   const _SlideAwayBottomNav({required this.hidden, required this.child});
 
-  static const Duration slideDuration = Duration(milliseconds: 300);
+  static const Duration slideDuration = Duration(milliseconds: 450);
 
   /// Matches the five-slot bar's tint ease so nav transitions share one
   /// motion language (`cubic-bezier(0.25, 1, 0.5, 1)` — easeOutQuart).

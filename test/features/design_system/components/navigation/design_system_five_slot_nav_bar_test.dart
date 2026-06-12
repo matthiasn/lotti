@@ -77,6 +77,111 @@ void main() {
       expect(centers, List.of(centers)..sort());
     });
 
+    testWidgets('renders one equal-width slot per item beyond five', (
+      tester,
+    ) async {
+      // Wide mobile windows show every destination in its own slot — the
+      // bar imposes no slot cap; the overflow budget is the shell's call.
+      const labels = [
+        'Tasks',
+        'DailyOS',
+        'Projects',
+        'Habits',
+        'Insights',
+        'Logbook',
+        'Settings',
+      ];
+      await pumpBar(
+        tester,
+        width: 800,
+        items: [for (final label in labels) item(label)],
+        mediaQueryData: const MediaQueryData(size: Size(800, 1200)),
+      );
+
+      final widths = <double>[
+        for (final label in labels)
+          tester
+              .getSize(
+                find.ancestor(
+                  of: find.text(label),
+                  matching: find.byType(InkWell),
+                ),
+              )
+              .width,
+      ];
+      expect(widths.toSet(), hasLength(1));
+    });
+
+    testWidgets('allSlotsFit adapts to window width and text scale', (
+      tester,
+    ) async {
+      const sevenLabels = [
+        'Tasks',
+        'DailyOS',
+        'Projects',
+        'Habits',
+        'Insights',
+        'Logbook',
+        'Settings',
+      ];
+
+      Future<BuildContext> contextWith(MediaQueryData mediaQueryData) async {
+        late BuildContext captured;
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Builder(
+              builder: (context) {
+                captured = context;
+                return const SizedBox.shrink();
+              },
+            ),
+            theme: DesignSystemTheme.light(),
+            mediaQueryData: mediaQueryData,
+          ),
+        );
+        return captured;
+      }
+
+      // Wide window at default text scale: all seven destinations fit.
+      var context = await contextWith(
+        const MediaQueryData(size: Size(800, 1200)),
+      );
+      expect(
+        DesignSystemFiveSlotNavBar.allSlotsFit(context, sevenLabels),
+        isTrue,
+      );
+
+      // The same window at 3× text scale: the widened labels outgrow the
+      // row, so the caller must fall back to the More overflow.
+      context = await contextWith(
+        const MediaQueryData(
+          size: Size(800, 1200),
+          textScaler: TextScaler.linear(3),
+        ),
+      );
+      expect(
+        DesignSystemFiveSlotNavBar.allSlotsFit(context, sevenLabels),
+        isFalse,
+      );
+
+      // Phone width: seven destinations overflow…
+      context = await contextWith(
+        const MediaQueryData(size: Size(390, 844)),
+      );
+      expect(
+        DesignSystemFiveSlotNavBar.allSlotsFit(context, sevenLabels),
+        isFalse,
+      );
+      // …but a short line-up fits even there.
+      expect(
+        DesignSystemFiveSlotNavBar.allSlotsFit(
+          context,
+          const ['Tasks', 'Logbook', 'Settings'],
+        ),
+        isTrue,
+      );
+    });
+
     testWidgets('labels stay full-size on a 360px-wide device', (tester) async {
       await pumpBar(tester, width: 360, items: barItems());
 

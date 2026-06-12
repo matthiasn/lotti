@@ -674,6 +674,9 @@ void main() {
       expect(pages[1].child, isA<HabitsPage>());
       final habitsPage = pages[1].child as HabitsPage;
       expect(habitsPage.initialSearchTerm, 'test');
+      // Beamer's default pop walks one URI segment at a time, which would
+      // strand the route on the dead `/settings/habits/search` URI.
+      expect(pages[1].popToNamed, '/settings/habits');
     });
 
     test('buildPages builds EditHabitPage', () {
@@ -693,6 +696,11 @@ void main() {
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<HabitsPage>());
       expect(pages[2].child, isA<EditHabitPage>());
+      // Beamer's default pop walks one URI segment at a time, which would
+      // strand the route on the dead `/settings/habits/by_id` URI — the
+      // list page would render with the bottom nav still hidden, costing
+      // an extra back tap. Popping the editor must land on the list URI.
+      expect(pages[2].popToNamed, '/settings/habits');
     });
 
     test('buildPages builds CreateHabitPage', () {
