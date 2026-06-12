@@ -578,7 +578,7 @@ void main() {
       overrides: categoriesListOverrides(),
       home: const CategoriesListPage(),
     );
-    expect(find.text('No categories found'), findsOneWidget);
+    expect(find.text('No categories yet'), findsOneWidget);
     await captureScreenshot(
       tester,
       'mini_categories_list_empty_dark',
