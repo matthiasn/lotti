@@ -31,7 +31,6 @@ class SettingsFormActionBar extends StatelessWidget {
   const SettingsFormActionBar({
     required this.primaryLabel,
     required this.onPrimary,
-    this.primaryIcon = Icons.check_rounded,
     this.primaryEnabled = true,
     this.secondaryLabel,
     this.onSecondary,
@@ -49,9 +48,6 @@ class SettingsFormActionBar extends StatelessWidget {
   /// [primaryEnabled] so the pill renders its disabled affordance instead
   /// of disappearing.
   final VoidCallback onPrimary;
-
-  /// Leading glyph on the primary pill.
-  final IconData primaryIcon;
 
   /// Disables the primary pill (e.g. while saving or with no changes).
   final bool primaryEnabled;
@@ -156,10 +152,9 @@ class SettingsFormActionBar extends StatelessWidget {
     // (DsGlassPill applies the disabled fill factor and lowEmphasis
     // foreground). Recognizably the commit action either way — never a
     // bare label that the ghost Cancel could outrank.
+    // No glyph in either state: the pill's footprint stays stable when
+    // the form arms, and the accent fill alone carries the state.
     final pill = DsGlassPill(
-      // The check glyph is an affirmation cue — a disabled pill must not
-      // wear one.
-      icon: primaryEnabled ? primaryIcon : null,
       label: primaryLabel,
       fillColor: tokens.colors.interactive.enabled,
       foregroundColor: primaryEnabled

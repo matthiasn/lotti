@@ -35,10 +35,11 @@ class SettingsFormSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Quiet overline header flush with the card edge: one left
-          // rail, and the type itself grades section vs field (field
-          // labels are bold high-emphasis; this is small, spaced, and
-          // medium-emphasis).
+          // Quiet header flush with the card edge: one left rail; size
+          // and color grade section vs field (field labels are bold
+          // high-emphasis). Caption tracking — heavy letter-spacing on
+          // sentence case reads as a kerning bug, and a wrapped tracked
+          // overline reads as broken, so the title stays on one line.
           Padding(
             padding: EdgeInsetsDirectional.only(bottom: spacing.step3),
             child: Column(
@@ -46,7 +47,9 @@ class SettingsFormSection extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: tokens.typography.styles.others.overline.copyWith(
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),

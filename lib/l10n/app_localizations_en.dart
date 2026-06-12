@@ -2360,7 +2360,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryDefaultProfileHint => 'Select a profile';
 
   @override
-  String get categoryDefaultTemplateHint => 'Select a template…';
+  String get categoryDefaultTemplateHint => 'Select a template';
 
   @override
   String get categoryDefaultTemplateLabel => 'Default agent template';
@@ -2379,7 +2379,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryFavoriteDescription => 'Mark this category as a favorite';
 
   @override
-  String get categoryIconChooseHint => 'Choose an icon';
+  String get categoryIconChooseHint => 'Select an icon';
 
   @override
   String get categoryIconCreateHint => 'Select an icon';
@@ -4744,7 +4744,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitDashboardHint => 'Select a dashboard';
 
   @override
-  String get habitDashboardLabel => 'Dashboard';
+  String get habitDashboardLabel => 'Dashboard (optional)';
 
   @override
   String get habitDeleteConfirm => 'YES, DELETE THIS HABIT';
@@ -4833,7 +4833,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inactiveLabel => 'Inactive';
 
   @override
-  String get inactiveSwitchDescription => 'Appears in selection lists';
+  String get inactiveSwitchDescription => 'Shown in selection lists when on';
 
   @override
   String get inferenceProfileCreateTitle => 'Create Profile';
@@ -7965,7 +7965,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get habitDashboardHint => 'Select a dashboard';
 
   @override
-  String get habitDashboardLabel => 'Dashboard';
+  String get habitDashboardLabel => 'Dashboard (optional)';
 
   @override
   String get habitDeleteConfirm => 'YES, DELETE THIS HABIT';

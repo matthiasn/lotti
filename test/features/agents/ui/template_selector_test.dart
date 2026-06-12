@@ -57,7 +57,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Select a template…'), findsOneWidget);
+      expect(find.text('Select a template'), findsOneWidget);
       expect(find.text('Default agent template'), findsOneWidget);
     });
 
@@ -71,7 +71,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Task Helper'), findsOneWidget);
-      expect(find.text('Select a template…'), findsNothing);
+      expect(find.text('Select a template'), findsNothing);
     });
 
     testWidgets('shows clear button when template is selected', (tester) async {
@@ -149,7 +149,7 @@ void main() {
       await tester.pumpWidget(buildWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Select a template…'), findsOneWidget);
+      expect(find.text('Select a template'), findsOneWidget);
       // The field label renders exactly once; opening the modal would add
       // a second occurrence as the modal title.
       expect(find.text('Default agent template'), findsOneWidget);
@@ -199,7 +199,7 @@ void main() {
       await tester.pump();
 
       // Should show hint text (empty templates → disabled)
-      expect(find.text('Select a template…'), findsOneWidget);
+      expect(find.text('Select a template'), findsOneWidget);
     });
   });
 }

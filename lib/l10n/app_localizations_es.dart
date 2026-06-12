@@ -4829,7 +4829,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitDashboardHint => 'Seleccionar un panel';
 
   @override
-  String get habitDashboardLabel => 'Panel';
+  String get habitDashboardLabel => 'Panel (opcional)';
 
   @override
   String get habitDeleteConfirm => 'SÍ, BORRAR ESTE HÁBITO';
@@ -4919,7 +4919,8 @@ class AppLocalizationsEs extends AppLocalizations {
   String get inactiveLabel => 'Inactivo';
 
   @override
-  String get inactiveSwitchDescription => 'Aparece en las listas de selección';
+  String get inactiveSwitchDescription =>
+      'Se muestra en las listas de selección cuando está activo';
 
   @override
   String get inferenceProfileCreateTitle => 'Crear perfil';

@@ -4841,7 +4841,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitDashboardHint => 'Choisir un tableau de bord';
 
   @override
-  String get habitDashboardLabel => 'Tableau de bord';
+  String get habitDashboardLabel => 'Tableau de bord (facultatif)';
 
   @override
   String get habitDeleteConfirm => 'OUI, SUPPRIMER CETTE HABITUDE';
@@ -4931,7 +4931,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get inactiveSwitchDescription =>
-      'Apparaît dans les listes de sélection';
+      'Affiché dans les listes de sélection lorsque actif';
 
   @override
   String get inferenceProfileCreateTitle => 'Créer un profil';

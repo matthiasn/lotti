@@ -177,7 +177,7 @@ void main() {
         expect(rows[2].icon, Icons.visibility_outlined);
         expect(
           rows[2].subtitle,
-          'Appears in selection lists',
+          'Shown in selection lists when on',
         );
       },
     );

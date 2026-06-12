@@ -4803,7 +4803,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitDashboardHint => 'Dashboard auswählen';
 
   @override
-  String get habitDashboardLabel => 'Dashboard';
+  String get habitDashboardLabel => 'Dashboard (optional)';
 
   @override
   String get habitDeleteConfirm => 'JA, DIESE GEWOHNHEIT LÖSCHEN';
@@ -4894,7 +4894,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inactiveLabel => 'Inaktiv';
 
   @override
-  String get inactiveSwitchDescription => 'Erscheint in Auswahllisten';
+  String get inactiveSwitchDescription =>
+      'Wird in Auswahllisten angezeigt, wenn aktiv';
 
   @override
   String get inferenceProfileCreateTitle => 'Profil erstellen';

@@ -4803,7 +4803,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitDashboardHint => 'Vyberte panel';
 
   @override
-  String get habitDashboardLabel => 'Dashboard';
+  String get habitDashboardLabel => 'Panel (volitelné)';
 
   @override
   String get habitDeleteConfirm => 'ANO, SMAŽ TENTO ZVYK';
@@ -4893,7 +4893,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get inactiveSwitchDescription =>
-      'Zobrazuje se ve výběrových seznamech';
+      'Při zapnutí se zobrazuje ve výběrových seznamech';
 
   @override
   String get inferenceProfileCreateTitle => 'Create Profile';
@@ -6650,7 +6650,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get settingsDashboardsSearchHint => 'Hledat panely...';
+  String get settingsDashboardsSearchHint => 'Hledat panely';
 
   @override
   String get settingsDashboardsSubtitle => 'Přizpůsobit zobrazení panelu';
@@ -6715,7 +6715,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsHabitsSaveLabel => 'Uložit';
 
   @override
-  String get settingsHabitsSearchHint => 'Hledat návyky...';
+  String get settingsHabitsSearchHint => 'Hledat návyky';
 
   @override
   String get settingsHabitsSubtitle => 'Spravovat návyky a rutiny';
@@ -6814,7 +6814,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsLabelsPrivateTitle => 'Soukromé';
 
   @override
-  String get settingsLabelsSearchHint => 'Hledat štítky...';
+  String get settingsLabelsSearchHint => 'Hledat štítky';
 
   @override
   String get settingsLabelsSubtitle => 'Organizujte úkoly barevnými štítky';
@@ -7010,7 +7010,7 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get settingsMeasurablesSearchHint => 'Hledat měřitelné typy...';
+  String get settingsMeasurablesSearchHint => 'Hledat měřitelné typy';
 
   @override
   String get settingsMeasurablesSubtitle =>

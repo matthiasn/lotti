@@ -4072,7 +4072,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryDefaultTemplateHint.
   ///
   /// In en, this message translates to:
-  /// **'Select a template…'**
+  /// **'Select a template'**
   String get categoryDefaultTemplateHint;
 
   /// No description provided for @categoryDefaultTemplateLabel.
@@ -4108,7 +4108,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryIconChooseHint.
   ///
   /// In en, this message translates to:
-  /// **'Choose an icon'**
+  /// **'Select an icon'**
   String get categoryIconChooseHint;
 
   /// No description provided for @categoryIconCreateHint.
@@ -8301,7 +8301,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitDashboardLabel.
   ///
   /// In en, this message translates to:
-  /// **'Dashboard'**
+  /// **'Dashboard (optional)'**
   String get habitDashboardLabel;
 
   /// No description provided for @habitDeleteConfirm.
@@ -8457,7 +8457,7 @@ abstract class AppLocalizations {
   /// No description provided for @inactiveSwitchDescription.
   ///
   /// In en, this message translates to:
-  /// **'Appears in selection lists'**
+  /// **'Shown in selection lists when on'**
   String get inactiveSwitchDescription;
 
   /// No description provided for @inferenceProfileCreateTitle.

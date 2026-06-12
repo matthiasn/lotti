@@ -333,9 +333,11 @@ class _ToggleVariantSpec {
     return _ToggleVariantSpec(
       trackColor: trackColor,
       trackBorderColor: trackBorderColor,
-      thumbColor: value
-          ? tokens.colors.text.onInteractiveAlert
-          : tokens.colors.text.highEmphasis,
+      // Constant thumb across states: in dark mode an on-state thumb
+      // derived from on-accent text turns darker than the off thumb,
+      // making OFF rows the brightest thing on the card. The track
+      // alone communicates the state.
+      thumbColor: tokens.colors.text.highEmphasis,
       thumbBorderColor: tokens.colors.decorative.level02,
       labelColor: tokens.colors.text.highEmphasis,
       iconColor: tokens.colors.text.mediumEmphasis,

@@ -264,10 +264,13 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                         iconDisplayName,
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
-                      Text(
-                        context.messages.categoryIconCreateHint,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+                      // With no icon yet the main line already reads
+                      // "Select an icon" — no second instruction.
+                      if (_selectedIcon != null)
+                        Text(
+                          context.messages.categoryIconEditHint,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                     ],
                   ),
                 ),

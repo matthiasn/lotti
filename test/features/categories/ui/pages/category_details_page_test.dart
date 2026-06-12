@@ -265,7 +265,7 @@ void main() {
         );
         expect(
           switchRows[2].subtitle,
-          'Appears in selection lists',
+          'Shown in selection lists when on',
         );
 
         // All switch rows live inside the Options card, not Basic settings.
@@ -1242,14 +1242,14 @@ void main() {
 
           // Initially shows "Choose an icon" hint text
           expect(
-            find.text('Choose an icon'),
+            find.text('Select an icon'),
             findsOneWidget,
           );
 
           // Tap the icon picker row
           final inkWellFinder = find
               .ancestor(
-                of: find.text('Choose an icon'),
+                of: find.text('Select an icon'),
                 matching: find.byType(InkWell),
               )
               .first;
@@ -1271,7 +1271,7 @@ void main() {
 
           // The "Choose an icon" text should be replaced by the icon's display name
           expect(
-            find.text('Choose an icon'),
+            find.text('Select an icon'),
             findsNothing,
           );
           expect(find.text(firstIconName), findsOneWidget);
@@ -1285,14 +1285,14 @@ void main() {
           await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
           expect(
-            find.text('Choose an icon'),
+            find.text('Select an icon'),
             findsOneWidget,
           );
 
           // Open the icon picker dialog
           final inkWellFinder = find
               .ancestor(
-                of: find.text('Choose an icon'),
+                of: find.text('Select an icon'),
                 matching: find.byType(InkWell),
               )
               .first;
@@ -1310,7 +1310,7 @@ void main() {
 
           // Display name should remain the default
           expect(
-            find.text('Choose an icon'),
+            find.text('Select an icon'),
             findsOneWidget,
           );
         },
@@ -1335,7 +1335,7 @@ void main() {
 
           // Open the icon picker — with no icon set the row's main line
           // is the "Choose an icon" prompt (no secondary hint).
-          final iconSection = find.text('Choose an icon');
+          final iconSection = find.text('Select an icon');
           final inkWell = find
               .ancestor(
                 of: iconSection,
@@ -1378,7 +1378,7 @@ void main() {
 
           // With no icon on the category, "Choose an icon" is shown
           expect(
-            find.text('Choose an icon'),
+            find.text('Select an icon'),
             findsOneWidget,
           );
           // The secondary hint would only repeat the main line, so it is
@@ -1410,7 +1410,7 @@ void main() {
             findsOneWidget,
           );
           expect(
-            find.text('Choose an icon'),
+            find.text('Select an icon'),
             findsNothing,
           );
           // With an icon set, the secondary hint invites changing it.

@@ -2004,7 +2004,7 @@
   "habitCategoryHint": "Vyberte kategorii",
   "habitCategoryLabel": "Kategorie",
   "habitDashboardHint": "Vyberte panel",
-  "habitDashboardLabel": "Dashboard",
+  "habitDashboardLabel": "Panel (volitelné)",
   "habitDeleteConfirm": "ANO, SMAŽ TENTO ZVYK",
   "habitDeleteQuestion": "Chcete tento zvyk smazat?",
   "habitPriorityLabel": "Priorita",
@@ -2037,7 +2037,7 @@
   "imagePromptGenerationFullPromptLabel": "Celý prompt obrázku:",
   "images": "Obrázky",
   "inactiveLabel": "Neaktivní",
-  "inactiveSwitchDescription": "Zobrazuje se ve výběrových seznamech",
+  "inactiveSwitchDescription": "Při zapnutí se zobrazuje ve výběrových seznamech",
   "inferenceProfileDetailLoadError": "Profil se nepodařilo načíst: {error}",
   "@inferenceProfileDetailLoadError": {
     "placeholders": {
@@ -2735,7 +2735,7 @@
       }
     }
   },
-  "settingsDashboardsSearchHint": "Hledat panely...",
+  "settingsDashboardsSearchHint": "Hledat panely",
   "settingsDashboardsSubtitle": "Přizpůsobit zobrazení panelu",
   "settingsDashboardsTitle": "Panely",
   "settingsDefinitionsSubtitle": "Návyky, kategorie, štítky, panely a měřitelné údaje",
@@ -2762,7 +2762,7 @@
   },
   "settingsHabitsPrivateLabel": "Soukromé: ",
   "settingsHabitsSaveLabel": "Uložit",
-  "settingsHabitsSearchHint": "Hledat návyky...",
+  "settingsHabitsSearchHint": "Hledat návyky",
   "settingsHabitsSubtitle": "Spravovat návyky a rutiny",
   "settingsHabitsTitle": "Návyky",
   "settingsHealthImportFromDate": "Začátek",
@@ -2791,7 +2791,7 @@
   "settingsLabelsNoMatchQuery": "Žádný štítek neodpovídá \"{query}\"",
   "settingsLabelsPrivateDescription": "Viditelné pouze při zobrazení soukromých záznamů",
   "settingsLabelsPrivateTitle": "Soukromé",
-  "settingsLabelsSearchHint": "Hledat štítky...",
+  "settingsLabelsSearchHint": "Hledat štítky",
   "settingsLabelsSubtitle": "Organizujte úkoly barevnými štítky",
   "settingsLabelsTitle": "Štítky",
   "settingsLabelsUsageCount": "{count, plural, =1{1 úkol} few{{count} úkoly} other{{count} úkolů}}",
@@ -2872,7 +2872,7 @@
       }
     }
   },
-  "settingsMeasurablesSearchHint": "Hledat měřitelné typy...",
+  "settingsMeasurablesSearchHint": "Hledat měřitelné typy",
   "settingsMeasurablesSubtitle": "Konfigurace měřitelných datových typů",
   "settingsMeasurablesTitle": "Měřitelné typy",
   "settingsResetGeminiConfirm": "Obnovit",

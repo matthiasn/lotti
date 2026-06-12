@@ -4841,7 +4841,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitDashboardHint => 'Selectați un panou de bord';
 
   @override
-  String get habitDashboardLabel => 'Tablou de bord';
+  String get habitDashboardLabel => 'Panou de bord (opțional)';
 
   @override
   String get habitDeleteConfirm => 'DA, ȘTERGEȚI ACEST OBICEI';
@@ -4931,7 +4931,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inactiveLabel => 'Inactiv';
 
   @override
-  String get inactiveSwitchDescription => 'Apare în listele de selecție';
+  String get inactiveSwitchDescription =>
+      'Afișat în listele de selecție când este activ';
 
   @override
   String get inferenceProfileCreateTitle => 'Creați un profil';
