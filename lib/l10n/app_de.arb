@@ -2912,6 +2912,19 @@
   "settingsConflictsTitle": "Synchronisierungskonflikte",
   "settingsDashboardDetailsLabel": "Dashboard-Details",
   "settingsDashboardSaveLabel": "Speichern",
+  "settingsDashboardsCreateTitle": "Dashboard erstellen",
+  "settingsDashboardsEmptyState": "Noch keine Dashboards",
+  "settingsDashboardsEmptyStateHint": "Tippe auf +, um dein erstes Dashboard zu erstellen.",
+  "settingsDashboardsErrorLoading": "Fehler beim Laden der Dashboards",
+  "settingsDashboardsNoMatchQuery": "Keine Dashboards passend zu \"{query}\"",
+  "@settingsDashboardsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDashboardsSearchHint": "Dashboards durchsuchen…",
   "settingsDashboardsSubtitle": "Deine Dashboard-Ansichten anpassen",
   "settingsDashboardsTitle": "Dashboards",
   "settingsDefinitionsSubtitle": "Gewohnheiten, Kategorien, Labels, Dashboards und Messgrößen",
@@ -2920,12 +2933,25 @@
   "settingsFlagsSearchHint": "Flags durchsuchen",
   "settingsFlagsSubtitle": "Feature-Flags und Optionen konfigurieren",
   "settingsFlagsTitle": "Konfigurationsflags",
+  "settingsHabitsCreateTitle": "Gewohnheit erstellen",
   "settingsHabitsDeleteTooltip": "Gewohnheit löschen",
   "settingsHabitsDescriptionLabel": "Beschreibung (optional):",
   "settingsHabitsDetailsLabel": "Gewohnheitsdetails",
+  "settingsHabitsEmptyState": "Noch keine Gewohnheiten",
+  "settingsHabitsEmptyStateHint": "Tippe auf +, um deine erste Gewohnheit zu erstellen.",
+  "settingsHabitsErrorLoading": "Fehler beim Laden der Gewohnheiten",
   "settingsHabitsNameLabel": "Name der Gewohnheit:",
+  "settingsHabitsNoMatchQuery": "Keine Gewohnheiten passend zu \"{query}\"",
+  "@settingsHabitsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "settingsHabitsPrivateLabel": "Privat: ",
   "settingsHabitsSaveLabel": "Speichern",
+  "settingsHabitsSearchHint": "Gewohnheiten durchsuchen…",
   "settingsHabitsSubtitle": "Deine Gewohnheiten und Routinen verwalten",
   "settingsHabitsTitle": "Gewohnheiten",
   "settingsHealthImportFromDate": "Start",
@@ -3029,6 +3055,19 @@
   "settingsMeasurableNameLabel": "Name der Messgröße:",
   "settingsMeasurablePrivateLabel": "Privat: ",
   "settingsMeasurableSaveLabel": "Speichern",
+  "settingsMeasurablesCreateTitle": "Messgröße erstellen",
+  "settingsMeasurablesEmptyState": "Noch keine Messgrößen",
+  "settingsMeasurablesEmptyStateHint": "Tippe auf +, um deine erste Messgröße zu erstellen.",
+  "settingsMeasurablesErrorLoading": "Fehler beim Laden der Messgrößen",
+  "settingsMeasurablesNoMatchQuery": "Keine Messgrößen passend zu \"{query}\"",
+  "@settingsMeasurablesNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurablesSearchHint": "Messgrößen durchsuchen…",
   "settingsMeasurablesSubtitle": "Messbare Datentypen konfigurieren",
   "settingsMeasurablesTitle": "Messgrößen",
   "settingsMeasurableUnitLabel": "Einheitenabkürzung (optional):",

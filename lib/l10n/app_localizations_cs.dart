@@ -6573,6 +6573,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Uložit';
 
   @override
+  String get settingsDashboardsCreateTitle => 'Vytvořit panel';
+
+  @override
+  String get settingsDashboardsEmptyState => 'Zatím žádné panely';
+
+  @override
+  String get settingsDashboardsEmptyStateHint =>
+      'Klepněte na tlačítko + pro vytvoření prvního panelu.';
+
+  @override
+  String get settingsDashboardsErrorLoading => 'Chyba při načítání panelů';
+
+  @override
+  String settingsDashboardsNoMatchQuery(String query) {
+    return 'Žádný panel neodpovídá \"$query\"';
+  }
+
+  @override
+  String get settingsDashboardsSearchHint => 'Hledat panely...';
+
+  @override
   String get settingsDashboardsSubtitle => 'Přizpůsobit zobrazení panelu';
 
   @override
@@ -6599,6 +6620,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsFlagsTitle => 'Konfigurační příznaky';
 
   @override
+  String get settingsHabitsCreateTitle => 'Vytvořit návyk';
+
+  @override
   String get settingsHabitsDeleteTooltip => 'Smazat návyk';
 
   @override
@@ -6608,13 +6632,31 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsHabitsDetailsLabel => 'Detaily návyku';
 
   @override
+  String get settingsHabitsEmptyState => 'Zatím žádné návyky';
+
+  @override
+  String get settingsHabitsEmptyStateHint =>
+      'Klepněte na tlačítko + pro vytvoření prvního návyku.';
+
+  @override
+  String get settingsHabitsErrorLoading => 'Chyba při načítání návyků';
+
+  @override
   String get settingsHabitsNameLabel => 'Název návyku:';
+
+  @override
+  String settingsHabitsNoMatchQuery(String query) {
+    return 'Žádný návyk neodpovídá \"$query\"';
+  }
 
   @override
   String get settingsHabitsPrivateLabel => 'Soukromé: ';
 
   @override
   String get settingsHabitsSaveLabel => 'Uložit';
+
+  @override
+  String get settingsHabitsSearchHint => 'Hledat návyky...';
 
   @override
   String get settingsHabitsSubtitle => 'Spravovat návyky a rutiny';
@@ -6881,6 +6923,28 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMeasurableSaveLabel => 'Uložit';
+
+  @override
+  String get settingsMeasurablesCreateTitle => 'Vytvořit měřitelný typ';
+
+  @override
+  String get settingsMeasurablesEmptyState => 'Zatím žádné měřitelné typy';
+
+  @override
+  String get settingsMeasurablesEmptyStateHint =>
+      'Klepněte na tlačítko + pro vytvoření prvního měřitelného typu.';
+
+  @override
+  String get settingsMeasurablesErrorLoading =>
+      'Chyba při načítání měřitelných typů';
+
+  @override
+  String settingsMeasurablesNoMatchQuery(String query) {
+    return 'Žádný měřitelný typ neodpovídá \"$query\"';
+  }
+
+  @override
+  String get settingsMeasurablesSearchHint => 'Hledat měřitelné typy...';
 
   @override
   String get settingsMeasurablesSubtitle =>

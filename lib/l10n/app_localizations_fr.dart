@@ -6624,6 +6624,29 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Enregistrer';
 
   @override
+  String get settingsDashboardsCreateTitle => 'Créer un tableau de bord';
+
+  @override
+  String get settingsDashboardsEmptyState =>
+      'Aucun tableau de bord pour le moment';
+
+  @override
+  String get settingsDashboardsEmptyStateHint =>
+      'Appuie sur le bouton + pour créer ton premier tableau de bord.';
+
+  @override
+  String get settingsDashboardsErrorLoading =>
+      'Erreur lors du chargement des tableaux de bord';
+
+  @override
+  String settingsDashboardsNoMatchQuery(String query) {
+    return 'Aucun tableau de bord ne correspond à \"$query\"';
+  }
+
+  @override
+  String get settingsDashboardsSearchHint => 'Rechercher des tableaux de bord…';
+
+  @override
   String get settingsDashboardsSubtitle =>
       'Personnaliser tes vues de tableau de bord';
 
@@ -6651,6 +6674,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsFlagsTitle => 'Flags';
 
   @override
+  String get settingsHabitsCreateTitle => 'Créer une habitude';
+
+  @override
   String get settingsHabitsDeleteTooltip => 'Supprimer l\'habitude';
 
   @override
@@ -6660,13 +6686,32 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsHabitsDetailsLabel => 'Détails de l\'habitude';
 
   @override
+  String get settingsHabitsEmptyState => 'Aucune habitude pour le moment';
+
+  @override
+  String get settingsHabitsEmptyStateHint =>
+      'Appuie sur le bouton + pour créer ta première habitude.';
+
+  @override
+  String get settingsHabitsErrorLoading =>
+      'Erreur lors du chargement des habitudes';
+
+  @override
   String get settingsHabitsNameLabel => 'Nom de l\'habitude :';
+
+  @override
+  String settingsHabitsNoMatchQuery(String query) {
+    return 'Aucune habitude ne correspond à \"$query\"';
+  }
 
   @override
   String get settingsHabitsPrivateLabel => 'Privé : ';
 
   @override
   String get settingsHabitsSaveLabel => 'Enregistrer';
+
+  @override
+  String get settingsHabitsSearchHint => 'Rechercher des habitudes…';
 
   @override
   String get settingsHabitsSubtitle => 'Gérer tes habitudes et routines';
@@ -6937,6 +6982,30 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsMeasurableSaveLabel => 'Enregistrer';
+
+  @override
+  String get settingsMeasurablesCreateTitle => 'Créer un élément mesurable';
+
+  @override
+  String get settingsMeasurablesEmptyState =>
+      'Aucun élément mesurable pour le moment';
+
+  @override
+  String get settingsMeasurablesEmptyStateHint =>
+      'Appuie sur le bouton + pour créer ton premier élément mesurable.';
+
+  @override
+  String get settingsMeasurablesErrorLoading =>
+      'Erreur lors du chargement des éléments mesurables';
+
+  @override
+  String settingsMeasurablesNoMatchQuery(String query) {
+    return 'Aucun élément mesurable ne correspond à \"$query\"';
+  }
+
+  @override
+  String get settingsMeasurablesSearchHint =>
+      'Rechercher des éléments mesurables…';
 
   @override
   String get settingsMeasurablesSubtitle =>

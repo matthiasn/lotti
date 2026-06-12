@@ -2704,6 +2704,19 @@
   "settingsConflictsTitle": "Konflikty synchronizace",
   "settingsDashboardDetailsLabel": "Detaily panelu",
   "settingsDashboardSaveLabel": "Uložit",
+  "settingsDashboardsCreateTitle": "Vytvořit panel",
+  "settingsDashboardsEmptyState": "Zatím žádné panely",
+  "settingsDashboardsEmptyStateHint": "Klepněte na tlačítko + pro vytvoření prvního panelu.",
+  "settingsDashboardsErrorLoading": "Chyba při načítání panelů",
+  "settingsDashboardsNoMatchQuery": "Žádný panel neodpovídá \"{query}\"",
+  "@settingsDashboardsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDashboardsSearchHint": "Hledat panely...",
   "settingsDashboardsSubtitle": "Přizpůsobit zobrazení panelu",
   "settingsDashboardsTitle": "Panely",
   "settingsDefinitionsSubtitle": "Návyky, kategorie, štítky, panely a měřitelné údaje",
@@ -2712,12 +2725,25 @@
   "settingsFlagsSearchHint": "Hledat příznaky",
   "settingsFlagsSubtitle": "Konfigurace příznaků a možností",
   "settingsFlagsTitle": "Konfigurační příznaky",
+  "settingsHabitsCreateTitle": "Vytvořit návyk",
   "settingsHabitsDeleteTooltip": "Smazat návyk",
   "settingsHabitsDescriptionLabel": "Popis (volitelné):",
   "settingsHabitsDetailsLabel": "Detaily návyku",
+  "settingsHabitsEmptyState": "Zatím žádné návyky",
+  "settingsHabitsEmptyStateHint": "Klepněte na tlačítko + pro vytvoření prvního návyku.",
+  "settingsHabitsErrorLoading": "Chyba při načítání návyků",
   "settingsHabitsNameLabel": "Název návyku:",
+  "settingsHabitsNoMatchQuery": "Žádný návyk neodpovídá \"{query}\"",
+  "@settingsHabitsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "settingsHabitsPrivateLabel": "Soukromé: ",
   "settingsHabitsSaveLabel": "Uložit",
+  "settingsHabitsSearchHint": "Hledat návyky...",
   "settingsHabitsSubtitle": "Spravovat návyky a rutiny",
   "settingsHabitsTitle": "Návyky",
   "settingsHealthImportFromDate": "Začátek",
@@ -2813,6 +2839,19 @@
   "settingsMeasurableNameLabel": "Název měřitelného:",
   "settingsMeasurablePrivateLabel": "Soukromé: ",
   "settingsMeasurableSaveLabel": "Uložit",
+  "settingsMeasurablesCreateTitle": "Vytvořit měřitelný typ",
+  "settingsMeasurablesEmptyState": "Zatím žádné měřitelné typy",
+  "settingsMeasurablesEmptyStateHint": "Klepněte na tlačítko + pro vytvoření prvního měřitelného typu.",
+  "settingsMeasurablesErrorLoading": "Chyba při načítání měřitelných typů",
+  "settingsMeasurablesNoMatchQuery": "Žádný měřitelný typ neodpovídá \"{query}\"",
+  "@settingsMeasurablesNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurablesSearchHint": "Hledat měřitelné typy...",
   "settingsMeasurablesSubtitle": "Konfigurace měřitelných datových typů",
   "settingsMeasurablesTitle": "Typy měřitelných veličin",
   "settingsMeasurableUnitLabel": "Zkratka jednotky (volitelné):",

@@ -23,6 +23,7 @@ class SettingsPageHeader extends StatelessWidget {
     this.subtitle,
     this.pinned = true,
     this.showBackButton = false,
+    this.onBack,
     this.bottom,
     this.actions,
     super.key,
@@ -32,6 +33,12 @@ class SettingsPageHeader extends StatelessWidget {
   final String? subtitle;
   final bool pinned;
   final bool showBackButton;
+
+  /// Optional override for the back action; defaults to
+  /// `NavService.beamBack()` (see [BackWidget]). Detail pages that mount
+  /// inline in the desktop split pane pass an explicit beam target here.
+  final VoidCallback? onBack;
+
   final PreferredSizeWidget? bottom;
   final List<Widget>? actions;
 
@@ -220,9 +227,9 @@ class SettingsPageHeader extends StatelessWidget {
                     child: Row(
                       children: [
                         if (showBackButton)
-                          const Padding(
-                            padding: EdgeInsetsDirectional.only(end: 4),
-                            child: BackWidget(),
+                          Padding(
+                            padding: const EdgeInsetsDirectional.only(end: 4),
+                            child: BackWidget(onPressed: onBack),
                           ),
                         Flexible(
                           child: _HeaderText(

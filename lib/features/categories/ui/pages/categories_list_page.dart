@@ -5,18 +5,13 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
 import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/components/search/design_system_search.dart';
-import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// Embeddable body alias for the Settings V2 detail pane (plan
 /// step 8). The V1 page's internal `SettingsPageHeader` overlaps the
@@ -30,60 +25,38 @@ class CategoriesListBody extends StatelessWidget {
   Widget build(BuildContext context) => const CategoriesListPage();
 }
 
-/// Categories list page using [DesignSystemListItem] in a grouped container.
+/// Categories list on the shared [DefinitionsListPage] shell.
 ///
-/// Each category row shows an icon badge, category name, task count subtitle,
-/// optional status icons (lock, visibility_off, star), and a chevron.
-/// Above the list sits a [DesignSystemSearch] field that filters rows by
-/// name (case-insensitive substring); the trailing FAB opens
-/// [CategoryCreateModal] in a single-page modal so the create flow stays
-/// inside the active tab instead of beaming through `SettingsLocation`
-/// (which has no `projects`-style panel for the create route on desktop).
-class CategoriesListPage extends ConsumerStatefulWidget {
+/// Each category row shows an icon badge, category name, task count
+/// subtitle, optional status icons (lock, visibility_off, star), and a
+/// chevron. The create FAB opens [CategoryCreateModal] in a single-page
+/// modal so the create flow stays inside the active tab instead of
+/// beaming through `SettingsLocation` (which has no `projects`-style
+/// panel for the create route on desktop).
+class CategoriesListPage extends ConsumerWidget {
   const CategoriesListPage({super.key});
 
   @override
-  ConsumerState<CategoriesListPage> createState() => _CategoriesListPageState();
-}
-
-class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
-  /// Trimmed search query — empty when the field is clear. The
-  /// filter compares lower-cased on each rebuild; the trimmed form
-  /// also drives the no-match empty-state message.
-  String _query = '';
-
-  @override
-  Widget build(BuildContext context) {
-    final categoriesAsync = ref.watch(categoriesStreamProvider);
-
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SettingsPageHeader(
-            title: context.messages.settingsCategoriesTitle,
-            showBackButton: !isDesktopLayout(context),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messages = context.messages;
+    return DefinitionsListPage<CategoryDefinition>(
+      itemsAsync: ref.watch(categoriesStreamProvider),
+      title: messages.settingsCategoriesTitle,
+      searchHint: messages.settingsCategoriesSearchHint,
+      displayName: (category) => category.name,
+      emptyIcon: Icons.category_outlined,
+      emptyTitle: messages.settingsCategoriesEmptyState,
+      emptyHint: messages.settingsCategoriesEmptyStateHint,
+      noMatchMessage: messages.settingsCategoriesNoMatchQuery,
+      errorTitle: messages.settingsCategoriesErrorLoading,
+      createSemanticLabel: messages.settingsCategoriesCreateTitle,
+      onCreate: () => _showCreateCategoryModal(context),
+      itemBuilder: (context, category, {required bool showDivider}) =>
+          _CategoryListItem(
+            category: category,
+            showDivider: showDivider,
+            onTap: () => beamToNamed('/settings/categories/${category.id}'),
           ),
-          ...categoriesAsync.when(
-            data: (categories) => _buildContentSlivers(context, categories),
-            loading: () => [
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            ],
-            error: (error, stack) => [
-              SliverFillRemaining(
-                child: _buildErrorState(context, error),
-              ),
-            ],
-          ),
-        ],
-      ),
-      floatingActionButton: DesignSystemBottomNavigationFabPadding(
-        child: DesignSystemFloatingActionButton(
-          semanticLabel: context.messages.settingsCategoriesCreateTitle,
-          onPressed: () => _showCreateCategoryModal(context),
-        ),
-      ),
     );
   }
 
@@ -97,146 +70,6 @@ class _CategoriesListPageState extends ConsumerState<CategoriesListPage> {
           // Stream provider refreshes the list automatically once the
           // category is persisted; the modal pops itself on success.
         },
-      ),
-    );
-  }
-
-  List<Widget> _buildContentSlivers(
-    BuildContext context,
-    List<CategoryDefinition> categories,
-  ) {
-    final queryLower = _query.toLowerCase();
-    final filtered =
-        categories.where((category) {
-          if (queryLower.isEmpty) return true;
-          return category.name.toLowerCase().contains(queryLower);
-        }).toList()..sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
-
-    return [
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: DesignSystemSearch(
-            hintText: context.messages.settingsCategoriesSearchHint,
-            // DS search fires `onChanged('')` when the user taps the
-            // clear button, so the same setState path covers both the
-            // typing and clearing transitions — no separate `onClear`
-            // is needed.
-            onChanged: (value) => setState(() => _query = value.trim()),
-          ),
-        ),
-      ),
-      if (filtered.isEmpty)
-        _buildEmptySliver(context, categories.isEmpty)
-      else
-        SliverToBoxAdapter(
-          child: DesignSystemGroupedList(
-            children: [
-              for (final (index, category) in filtered.indexed)
-                _CategoryListItem(
-                  category: category,
-                  showDivider: index < filtered.length - 1,
-                  onTap: () => beamToNamed(
-                    '/settings/categories/${category.id}',
-                  ),
-                ),
-            ],
-          ),
-        ),
-    ];
-  }
-
-  /// Empty state. Two flavours: "no categories at all" (default) and
-  /// "search returned nothing" (a query is active and no row matches).
-  /// The search-empty flavour shows the active query so the user knows
-  /// what they typed — same affordance as the labels page.
-  Widget _buildEmptySliver(BuildContext context, bool noCategoriesAtAll) {
-    if (!noCategoriesAtAll && _query.isNotEmpty) {
-      return SliverFillRemaining(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.search_off_rounded,
-                  size: 64,
-                  color: Theme.of(context).disabledColor,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  context.messages.settingsCategoriesNoMatchQuery(_query),
-                  style: Theme.of(context).textTheme.titleMedium,
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    return SliverFillRemaining(child: _buildEmptyState(context));
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.category_outlined,
-            size: 64,
-            color: Theme.of(context).disabledColor,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            context.messages.settingsCategoriesEmptyState,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).disabledColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.messages.settingsCategoriesEmptyStateHint,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).disabledColor,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(BuildContext context, Object error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              context.messages.settingsCategoriesErrorLoading,
-              style: Theme.of(context).textTheme.titleMedium,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
       ),
     );
   }

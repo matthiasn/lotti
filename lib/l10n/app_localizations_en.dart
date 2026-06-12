@@ -6454,6 +6454,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Save';
 
   @override
+  String get settingsDashboardsCreateTitle => 'Create dashboard';
+
+  @override
+  String get settingsDashboardsEmptyState => 'No dashboards yet';
+
+  @override
+  String get settingsDashboardsEmptyStateHint =>
+      'Tap the + button to create your first dashboard.';
+
+  @override
+  String get settingsDashboardsErrorLoading => 'Error loading dashboards';
+
+  @override
+  String settingsDashboardsNoMatchQuery(String query) {
+    return 'No dashboards match \"$query\"';
+  }
+
+  @override
+  String get settingsDashboardsSearchHint => 'Search dashboards…';
+
+  @override
   String get settingsDashboardsSubtitle => 'Customize your dashboard views';
 
   @override
@@ -6479,6 +6500,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsFlagsTitle => 'Config Flags';
 
   @override
+  String get settingsHabitsCreateTitle => 'Create habit';
+
+  @override
   String get settingsHabitsDeleteTooltip => 'Delete Habit';
 
   @override
@@ -6488,13 +6512,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsHabitsDetailsLabel => 'Habit Details';
 
   @override
+  String get settingsHabitsEmptyState => 'No habits yet';
+
+  @override
+  String get settingsHabitsEmptyStateHint =>
+      'Tap the + button to create your first habit.';
+
+  @override
+  String get settingsHabitsErrorLoading => 'Error loading habits';
+
+  @override
   String get settingsHabitsNameLabel => 'Habit name:';
+
+  @override
+  String settingsHabitsNoMatchQuery(String query) {
+    return 'No habits match \"$query\"';
+  }
 
   @override
   String get settingsHabitsPrivateLabel => 'Private: ';
 
   @override
   String get settingsHabitsSaveLabel => 'Save';
+
+  @override
+  String get settingsHabitsSearchHint => 'Search habits…';
 
   @override
   String get settingsHabitsSubtitle => 'Manage your habits and routines';
@@ -6760,6 +6802,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMeasurableSaveLabel => 'Save';
+
+  @override
+  String get settingsMeasurablesCreateTitle => 'Create measurable';
+
+  @override
+  String get settingsMeasurablesEmptyState => 'No measurables yet';
+
+  @override
+  String get settingsMeasurablesEmptyStateHint =>
+      'Tap the + button to create your first measurable.';
+
+  @override
+  String get settingsMeasurablesErrorLoading => 'Error loading measurables';
+
+  @override
+  String settingsMeasurablesNoMatchQuery(String query) {
+    return 'No measurables match \"$query\"';
+  }
+
+  @override
+  String get settingsMeasurablesSearchHint => 'Search measurables…';
 
   @override
   String get settingsMeasurablesSubtitle => 'Configure measurable data types';

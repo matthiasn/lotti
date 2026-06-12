@@ -6611,6 +6611,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Salvează';
 
   @override
+  String get settingsDashboardsCreateTitle => 'Creare panou de bord';
+
+  @override
+  String get settingsDashboardsEmptyState => 'Niciun panou de bord încă';
+
+  @override
+  String get settingsDashboardsEmptyStateHint =>
+      'Apăsați butonul + pentru a crea primul panou de bord.';
+
+  @override
+  String get settingsDashboardsErrorLoading =>
+      'Eroare la încărcarea panourilor de bord';
+
+  @override
+  String settingsDashboardsNoMatchQuery(String query) {
+    return 'Niciun panou de bord nu corespunde cu \"$query\"';
+  }
+
+  @override
+  String get settingsDashboardsSearchHint => 'Caută panouri de bord…';
+
+  @override
   String get settingsDashboardsSubtitle =>
       'Personalizați vizualizările tabloului de bord';
 
@@ -6638,6 +6660,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsFlagsTitle => 'Marcaje';
 
   @override
+  String get settingsHabitsCreateTitle => 'Creare obicei';
+
+  @override
   String get settingsHabitsDeleteTooltip => 'Șterge Obiceiul';
 
   @override
@@ -6647,13 +6672,31 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsHabitsDetailsLabel => 'Detalii obicei';
 
   @override
+  String get settingsHabitsEmptyState => 'Niciun obicei încă';
+
+  @override
+  String get settingsHabitsEmptyStateHint =>
+      'Apăsați butonul + pentru a crea primul obicei.';
+
+  @override
+  String get settingsHabitsErrorLoading => 'Eroare la încărcarea obiceiurilor';
+
+  @override
   String get settingsHabitsNameLabel => 'Numele obiceiului:';
+
+  @override
+  String settingsHabitsNoMatchQuery(String query) {
+    return 'Niciun obicei nu corespunde cu \"$query\"';
+  }
 
   @override
   String get settingsHabitsPrivateLabel => 'Privat:';
 
   @override
   String get settingsHabitsSaveLabel => 'Salvează';
+
+  @override
+  String get settingsHabitsSearchHint => 'Caută obiceiuri…';
 
   @override
   String get settingsHabitsSubtitle =>
@@ -6922,6 +6965,28 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMeasurableSaveLabel => 'Salvare';
+
+  @override
+  String get settingsMeasurablesCreateTitle => 'Creare măsurătoare';
+
+  @override
+  String get settingsMeasurablesEmptyState => 'Nicio măsurătoare încă';
+
+  @override
+  String get settingsMeasurablesEmptyStateHint =>
+      'Apăsați butonul + pentru a crea prima măsurătoare.';
+
+  @override
+  String get settingsMeasurablesErrorLoading =>
+      'Eroare la încărcarea măsurătorilor';
+
+  @override
+  String settingsMeasurablesNoMatchQuery(String query) {
+    return 'Nicio măsurătoare nu corespunde cu \"$query\"';
+  }
+
+  @override
+  String get settingsMeasurablesSearchHint => 'Caută măsurători…';
 
   @override
   String get settingsMeasurablesSubtitle =>

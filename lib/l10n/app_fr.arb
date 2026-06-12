@@ -2912,6 +2912,19 @@
   "settingsConflictsTitle": "Conflits de synchronisation",
   "settingsDashboardDetailsLabel": "Détails du tableau de bord",
   "settingsDashboardSaveLabel": "Enregistrer",
+  "settingsDashboardsCreateTitle": "Créer un tableau de bord",
+  "settingsDashboardsEmptyState": "Aucun tableau de bord pour le moment",
+  "settingsDashboardsEmptyStateHint": "Appuie sur le bouton + pour créer ton premier tableau de bord.",
+  "settingsDashboardsErrorLoading": "Erreur lors du chargement des tableaux de bord",
+  "settingsDashboardsNoMatchQuery": "Aucun tableau de bord ne correspond à \"{query}\"",
+  "@settingsDashboardsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDashboardsSearchHint": "Rechercher des tableaux de bord…",
   "settingsDashboardsSubtitle": "Personnaliser tes vues de tableau de bord",
   "settingsDashboardsTitle": "Gestion du tableau de bord",
   "settingsDefinitionsSubtitle": "Habitudes, catégories, étiquettes, tableaux de bord et mesures",
@@ -2920,12 +2933,25 @@
   "settingsFlagsSearchHint": "Rechercher des indicateurs",
   "settingsFlagsSubtitle": "Configurer les indicateurs et options",
   "settingsFlagsTitle": "Flags",
+  "settingsHabitsCreateTitle": "Créer une habitude",
   "settingsHabitsDeleteTooltip": "Supprimer l'habitude",
   "settingsHabitsDescriptionLabel": "Description (facultatif) :",
   "settingsHabitsDetailsLabel": "Détails de l'habitude",
+  "settingsHabitsEmptyState": "Aucune habitude pour le moment",
+  "settingsHabitsEmptyStateHint": "Appuie sur le bouton + pour créer ta première habitude.",
+  "settingsHabitsErrorLoading": "Erreur lors du chargement des habitudes",
   "settingsHabitsNameLabel": "Nom de l'habitude :",
+  "settingsHabitsNoMatchQuery": "Aucune habitude ne correspond à \"{query}\"",
+  "@settingsHabitsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "settingsHabitsPrivateLabel": "Privé : ",
   "settingsHabitsSaveLabel": "Enregistrer",
+  "settingsHabitsSearchHint": "Rechercher des habitudes…",
   "settingsHabitsSubtitle": "Gérer tes habitudes et routines",
   "settingsHabitsTitle": "Habitudes",
   "settingsHealthImportFromDate": "Début",
@@ -3029,6 +3055,19 @@
   "settingsMeasurableNameLabel": "Nom de la mesure :",
   "settingsMeasurablePrivateLabel": "Privé :",
   "settingsMeasurableSaveLabel": "Enregistrer",
+  "settingsMeasurablesCreateTitle": "Créer un élément mesurable",
+  "settingsMeasurablesEmptyState": "Aucun élément mesurable pour le moment",
+  "settingsMeasurablesEmptyStateHint": "Appuie sur le bouton + pour créer ton premier élément mesurable.",
+  "settingsMeasurablesErrorLoading": "Erreur lors du chargement des éléments mesurables",
+  "settingsMeasurablesNoMatchQuery": "Aucun élément mesurable ne correspond à \"{query}\"",
+  "@settingsMeasurablesNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurablesSearchHint": "Rechercher des éléments mesurables…",
   "settingsMeasurablesSubtitle": "Configurer les types de données mesurables",
   "settingsMeasurablesTitle": "Types de données mesurables",
   "settingsMeasurableUnitLabel": "Abréviation d'unité :",

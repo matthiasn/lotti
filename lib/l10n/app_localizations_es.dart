@@ -6608,6 +6608,27 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Guardar';
 
   @override
+  String get settingsDashboardsCreateTitle => 'Crear panel';
+
+  @override
+  String get settingsDashboardsEmptyState => 'Aún no hay paneles';
+
+  @override
+  String get settingsDashboardsEmptyStateHint =>
+      'Toca el botón + para crear tu primer panel.';
+
+  @override
+  String get settingsDashboardsErrorLoading => 'Error al cargar paneles';
+
+  @override
+  String settingsDashboardsNoMatchQuery(String query) {
+    return 'Ningún panel coincide con \"$query\"';
+  }
+
+  @override
+  String get settingsDashboardsSearchHint => 'Buscar paneles…';
+
+  @override
   String get settingsDashboardsSubtitle => 'Personaliza tus vistas del panel';
 
   @override
@@ -6634,6 +6655,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsFlagsTitle => 'Configuración de indicadores';
 
   @override
+  String get settingsHabitsCreateTitle => 'Crear hábito';
+
+  @override
   String get settingsHabitsDeleteTooltip => 'Eliminar hábito';
 
   @override
@@ -6643,13 +6667,31 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsHabitsDetailsLabel => 'Detalles del hábito';
 
   @override
+  String get settingsHabitsEmptyState => 'Aún no hay hábitos';
+
+  @override
+  String get settingsHabitsEmptyStateHint =>
+      'Toca el botón + para crear tu primer hábito.';
+
+  @override
+  String get settingsHabitsErrorLoading => 'Error al cargar hábitos';
+
+  @override
   String get settingsHabitsNameLabel => 'Nombre del hábito:';
+
+  @override
+  String settingsHabitsNoMatchQuery(String query) {
+    return 'Ningún hábito coincide con \"$query\"';
+  }
 
   @override
   String get settingsHabitsPrivateLabel => 'Privado:';
 
   @override
   String get settingsHabitsSaveLabel => 'Guardar';
+
+  @override
+  String get settingsHabitsSearchHint => 'Buscar hábitos…';
 
   @override
   String get settingsHabitsSubtitle => 'Gestionar tus hábitos y rutinas';
@@ -6920,6 +6962,27 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsMeasurableSaveLabel => 'Guardar';
+
+  @override
+  String get settingsMeasurablesCreateTitle => 'Crear medible';
+
+  @override
+  String get settingsMeasurablesEmptyState => 'Aún no hay medibles';
+
+  @override
+  String get settingsMeasurablesEmptyStateHint =>
+      'Toca el botón + para crear tu primer medible.';
+
+  @override
+  String get settingsMeasurablesErrorLoading => 'Error al cargar medibles';
+
+  @override
+  String settingsMeasurablesNoMatchQuery(String query) {
+    return 'Ningún medible coincide con \"$query\"';
+  }
+
+  @override
+  String get settingsMeasurablesSearchHint => 'Buscar medibles…';
 
   @override
   String get settingsMeasurablesSubtitle =>

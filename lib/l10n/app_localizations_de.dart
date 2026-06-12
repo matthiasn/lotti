@@ -6537,6 +6537,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsDashboardSaveLabel => 'Speichern';
 
   @override
+  String get settingsDashboardsCreateTitle => 'Dashboard erstellen';
+
+  @override
+  String get settingsDashboardsEmptyState => 'Noch keine Dashboards';
+
+  @override
+  String get settingsDashboardsEmptyStateHint =>
+      'Tippe auf +, um dein erstes Dashboard zu erstellen.';
+
+  @override
+  String get settingsDashboardsErrorLoading =>
+      'Fehler beim Laden der Dashboards';
+
+  @override
+  String settingsDashboardsNoMatchQuery(String query) {
+    return 'Keine Dashboards passend zu \"$query\"';
+  }
+
+  @override
+  String get settingsDashboardsSearchHint => 'Dashboards durchsuchen…';
+
+  @override
   String get settingsDashboardsSubtitle => 'Deine Dashboard-Ansichten anpassen';
 
   @override
@@ -6563,6 +6585,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsFlagsTitle => 'Konfigurationsflags';
 
   @override
+  String get settingsHabitsCreateTitle => 'Gewohnheit erstellen';
+
+  @override
   String get settingsHabitsDeleteTooltip => 'Gewohnheit löschen';
 
   @override
@@ -6572,13 +6597,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsHabitsDetailsLabel => 'Gewohnheitsdetails';
 
   @override
+  String get settingsHabitsEmptyState => 'Noch keine Gewohnheiten';
+
+  @override
+  String get settingsHabitsEmptyStateHint =>
+      'Tippe auf +, um deine erste Gewohnheit zu erstellen.';
+
+  @override
+  String get settingsHabitsErrorLoading => 'Fehler beim Laden der Gewohnheiten';
+
+  @override
   String get settingsHabitsNameLabel => 'Name der Gewohnheit:';
+
+  @override
+  String settingsHabitsNoMatchQuery(String query) {
+    return 'Keine Gewohnheiten passend zu \"$query\"';
+  }
 
   @override
   String get settingsHabitsPrivateLabel => 'Privat: ';
 
   @override
   String get settingsHabitsSaveLabel => 'Speichern';
+
+  @override
+  String get settingsHabitsSearchHint => 'Gewohnheiten durchsuchen…';
 
   @override
   String get settingsHabitsSubtitle =>
@@ -6846,6 +6889,28 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsMeasurableSaveLabel => 'Speichern';
+
+  @override
+  String get settingsMeasurablesCreateTitle => 'Messgröße erstellen';
+
+  @override
+  String get settingsMeasurablesEmptyState => 'Noch keine Messgrößen';
+
+  @override
+  String get settingsMeasurablesEmptyStateHint =>
+      'Tippe auf +, um deine erste Messgröße zu erstellen.';
+
+  @override
+  String get settingsMeasurablesErrorLoading =>
+      'Fehler beim Laden der Messgrößen';
+
+  @override
+  String settingsMeasurablesNoMatchQuery(String query) {
+    return 'Keine Messgrößen passend zu \"$query\"';
+  }
+
+  @override
+  String get settingsMeasurablesSearchHint => 'Messgrößen durchsuchen…';
 
   @override
   String get settingsMeasurablesSubtitle => 'Messbare Datentypen konfigurieren';

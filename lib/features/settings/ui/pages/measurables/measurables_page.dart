@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -10,6 +11,18 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
 
+/// All measurable data types for the settings list. Co-located with its
+/// only consumer.
+final StreamProvider<List<MeasurableDataType>>
+measurableDataTypesStreamProvider =
+    StreamProvider.autoDispose<List<MeasurableDataType>>(
+      (ref) => notificationDrivenStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {measurablesNotification, privateToggleNotification},
+        fetcher: getIt<JournalDb>().getAllMeasurableDataTypes,
+      ),
+    );
+
 /// Embeddable body alias for the Settings V2 detail pane (plan
 /// step 8). See `CategoriesListBody` for the polish note about the
 /// duplicate header.
@@ -20,34 +33,26 @@ class MeasurablesBody extends StatelessWidget {
   Widget build(BuildContext context) => const MeasurablesPage();
 }
 
-class MeasurablesPage extends StatelessWidget {
+class MeasurablesPage extends ConsumerWidget {
   const MeasurablesPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messages = context.messages;
     return DefinitionsListPage<MeasurableDataType>(
-      stream: notificationDrivenStream(
-        notifications: getIt<UpdateNotifications>(),
-        notificationKeys: {measurablesNotification, privateToggleNotification},
-        fetcher: getIt<JournalDb>().getAllMeasurableDataTypes,
-      ),
-      floatingActionButton: FloatingAddIcon(
-        createFn: () => beamToNamed('/settings/measurables/create'),
-        semanticLabel: 'Add Measurable',
-      ),
-      title: context.messages.settingsMeasurablesTitle,
-      getName: (dataType) => dataType.displayName,
-      definitionCard:
-          (
-            int index,
-            MeasurableDataType item, {
-            required bool isLast,
-          }) {
-            return _MeasurableListItem(
-              item: item,
-              showDivider: !isLast,
-            );
-          },
+      itemsAsync: ref.watch(measurableDataTypesStreamProvider),
+      title: messages.settingsMeasurablesTitle,
+      searchHint: messages.settingsMeasurablesSearchHint,
+      displayName: (dataType) => dataType.displayName,
+      emptyIcon: Icons.trending_up_rounded,
+      emptyTitle: messages.settingsMeasurablesEmptyState,
+      emptyHint: messages.settingsMeasurablesEmptyStateHint,
+      noMatchMessage: messages.settingsMeasurablesNoMatchQuery,
+      errorTitle: messages.settingsMeasurablesErrorLoading,
+      createSemanticLabel: messages.settingsMeasurablesCreateTitle,
+      onCreate: () => beamToNamed('/settings/measurables/create'),
+      itemBuilder: (context, dataType, {required bool showDivider}) =>
+          _MeasurableListItem(item: dataType, showDivider: showDivider),
     );
   }
 }

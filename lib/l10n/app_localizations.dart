@@ -11170,6 +11170,42 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get settingsDashboardSaveLabel;
 
+  /// No description provided for @settingsDashboardsCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create dashboard'**
+  String get settingsDashboardsCreateTitle;
+
+  /// No description provided for @settingsDashboardsEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No dashboards yet'**
+  String get settingsDashboardsEmptyState;
+
+  /// No description provided for @settingsDashboardsEmptyStateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the + button to create your first dashboard.'**
+  String get settingsDashboardsEmptyStateHint;
+
+  /// No description provided for @settingsDashboardsErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading dashboards'**
+  String get settingsDashboardsErrorLoading;
+
+  /// No description provided for @settingsDashboardsNoMatchQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'No dashboards match \"{query}\"'**
+  String settingsDashboardsNoMatchQuery(String query);
+
+  /// No description provided for @settingsDashboardsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search dashboards…'**
+  String get settingsDashboardsSearchHint;
+
   /// No description provided for @settingsDashboardsSubtitle.
   ///
   /// In en, this message translates to:
@@ -11218,6 +11254,12 @@ abstract class AppLocalizations {
   /// **'Config Flags'**
   String get settingsFlagsTitle;
 
+  /// No description provided for @settingsHabitsCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create habit'**
+  String get settingsHabitsCreateTitle;
+
   /// No description provided for @settingsHabitsDeleteTooltip.
   ///
   /// In en, this message translates to:
@@ -11236,11 +11278,35 @@ abstract class AppLocalizations {
   /// **'Habit Details'**
   String get settingsHabitsDetailsLabel;
 
+  /// No description provided for @settingsHabitsEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No habits yet'**
+  String get settingsHabitsEmptyState;
+
+  /// No description provided for @settingsHabitsEmptyStateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the + button to create your first habit.'**
+  String get settingsHabitsEmptyStateHint;
+
+  /// No description provided for @settingsHabitsErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading habits'**
+  String get settingsHabitsErrorLoading;
+
   /// No description provided for @settingsHabitsNameLabel.
   ///
   /// In en, this message translates to:
   /// **'Habit name:'**
   String get settingsHabitsNameLabel;
+
+  /// No description provided for @settingsHabitsNoMatchQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'No habits match \"{query}\"'**
+  String settingsHabitsNoMatchQuery(String query);
 
   /// No description provided for @settingsHabitsPrivateLabel.
   ///
@@ -11253,6 +11319,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get settingsHabitsSaveLabel;
+
+  /// No description provided for @settingsHabitsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search habits…'**
+  String get settingsHabitsSearchHint;
 
   /// No description provided for @settingsHabitsSubtitle.
   ///
@@ -11712,6 +11784,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save'**
   String get settingsMeasurableSaveLabel;
+
+  /// No description provided for @settingsMeasurablesCreateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Create measurable'**
+  String get settingsMeasurablesCreateTitle;
+
+  /// No description provided for @settingsMeasurablesEmptyState.
+  ///
+  /// In en, this message translates to:
+  /// **'No measurables yet'**
+  String get settingsMeasurablesEmptyState;
+
+  /// No description provided for @settingsMeasurablesEmptyStateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the + button to create your first measurable.'**
+  String get settingsMeasurablesEmptyStateHint;
+
+  /// No description provided for @settingsMeasurablesErrorLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Error loading measurables'**
+  String get settingsMeasurablesErrorLoading;
+
+  /// No description provided for @settingsMeasurablesNoMatchQuery.
+  ///
+  /// In en, this message translates to:
+  /// **'No measurables match \"{query}\"'**
+  String settingsMeasurablesNoMatchQuery(String query);
+
+  /// No description provided for @settingsMeasurablesSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search measurables…'**
+  String get settingsMeasurablesSearchHint;
 
   /// No description provided for @settingsMeasurablesSubtitle.
   ///

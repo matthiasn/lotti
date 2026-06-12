@@ -2912,6 +2912,19 @@
   "settingsConflictsTitle": "Sync cu conflicte",
   "settingsDashboardDetailsLabel": "Detalii tablou de bord",
   "settingsDashboardSaveLabel": "Salvează",
+  "settingsDashboardsCreateTitle": "Creare panou de bord",
+  "settingsDashboardsEmptyState": "Niciun panou de bord încă",
+  "settingsDashboardsEmptyStateHint": "Apăsați butonul + pentru a crea primul panou de bord.",
+  "settingsDashboardsErrorLoading": "Eroare la încărcarea panourilor de bord",
+  "settingsDashboardsNoMatchQuery": "Niciun panou de bord nu corespunde cu \"{query}\"",
+  "@settingsDashboardsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDashboardsSearchHint": "Caută panouri de bord…",
   "settingsDashboardsSubtitle": "Personalizați vizualizările tabloului de bord",
   "settingsDashboardsTitle": "Panouri de bord",
   "settingsDefinitionsSubtitle": "Obiceiuri, categorii, etichete, panouri și unități măsurabile",
@@ -2920,12 +2933,25 @@
   "settingsFlagsSearchHint": "Căutați marcaje",
   "settingsFlagsSubtitle": "Configurați indicatoarele și opțiunile",
   "settingsFlagsTitle": "Marcaje",
+  "settingsHabitsCreateTitle": "Creare obicei",
   "settingsHabitsDeleteTooltip": "Șterge Obiceiul",
   "settingsHabitsDescriptionLabel": "Descriere (opțional):",
   "settingsHabitsDetailsLabel": "Detalii obicei",
+  "settingsHabitsEmptyState": "Niciun obicei încă",
+  "settingsHabitsEmptyStateHint": "Apăsați butonul + pentru a crea primul obicei.",
+  "settingsHabitsErrorLoading": "Eroare la încărcarea obiceiurilor",
   "settingsHabitsNameLabel": "Numele obiceiului:",
+  "settingsHabitsNoMatchQuery": "Niciun obicei nu corespunde cu \"{query}\"",
+  "@settingsHabitsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "settingsHabitsPrivateLabel": "Privat:",
   "settingsHabitsSaveLabel": "Salvează",
+  "settingsHabitsSearchHint": "Caută obiceiuri…",
   "settingsHabitsSubtitle": "Gestionați obiceiurile și rutinele dvs.",
   "settingsHabitsTitle": "Obiceiuri",
   "settingsHealthImportFromDate": "Început",
@@ -3029,6 +3055,19 @@
   "settingsMeasurableNameLabel": "Numele măsurătorii:",
   "settingsMeasurablePrivateLabel": "Privat: ",
   "settingsMeasurableSaveLabel": "Salvare",
+  "settingsMeasurablesCreateTitle": "Creare măsurătoare",
+  "settingsMeasurablesEmptyState": "Nicio măsurătoare încă",
+  "settingsMeasurablesEmptyStateHint": "Apăsați butonul + pentru a crea prima măsurătoare.",
+  "settingsMeasurablesErrorLoading": "Eroare la încărcarea măsurătorilor",
+  "settingsMeasurablesNoMatchQuery": "Nicio măsurătoare nu corespunde cu \"{query}\"",
+  "@settingsMeasurablesNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurablesSearchHint": "Caută măsurători…",
   "settingsMeasurablesSubtitle": "Configurați tipurile de date măsurabile",
   "settingsMeasurablesTitle": "Măsurători",
   "settingsMeasurableUnitLabel": "Unitatea abrevierii:",

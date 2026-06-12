@@ -2912,6 +2912,19 @@
   "settingsConflictsTitle": "Conflictos de Sincronización",
   "settingsDashboardDetailsLabel": "Detalles del panel",
   "settingsDashboardSaveLabel": "Guardar",
+  "settingsDashboardsCreateTitle": "Crear panel",
+  "settingsDashboardsEmptyState": "Aún no hay paneles",
+  "settingsDashboardsEmptyStateHint": "Toca el botón + para crear tu primer panel.",
+  "settingsDashboardsErrorLoading": "Error al cargar paneles",
+  "settingsDashboardsNoMatchQuery": "Ningún panel coincide con \"{query}\"",
+  "@settingsDashboardsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDashboardsSearchHint": "Buscar paneles…",
   "settingsDashboardsSubtitle": "Personaliza tus vistas del panel",
   "settingsDashboardsTitle": "Paneles",
   "settingsDefinitionsSubtitle": "Hábitos, categorías, etiquetas, paneles y medibles",
@@ -2920,12 +2933,25 @@
   "settingsFlagsSearchHint": "Buscar indicadores",
   "settingsFlagsSubtitle": "Configurar indicadores y opciones",
   "settingsFlagsTitle": "Configuración de indicadores",
+  "settingsHabitsCreateTitle": "Crear hábito",
   "settingsHabitsDeleteTooltip": "Eliminar hábito",
   "settingsHabitsDescriptionLabel": "Descripción (opcional):",
   "settingsHabitsDetailsLabel": "Detalles del hábito",
+  "settingsHabitsEmptyState": "Aún no hay hábitos",
+  "settingsHabitsEmptyStateHint": "Toca el botón + para crear tu primer hábito.",
+  "settingsHabitsErrorLoading": "Error al cargar hábitos",
   "settingsHabitsNameLabel": "Nombre del hábito:",
+  "settingsHabitsNoMatchQuery": "Ningún hábito coincide con \"{query}\"",
+  "@settingsHabitsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "settingsHabitsPrivateLabel": "Privado:",
   "settingsHabitsSaveLabel": "Guardar",
+  "settingsHabitsSearchHint": "Buscar hábitos…",
   "settingsHabitsSubtitle": "Gestionar tus hábitos y rutinas",
   "settingsHabitsTitle": "Hábitos",
   "settingsHealthImportFromDate": "Inicio",
@@ -3029,6 +3055,19 @@
   "settingsMeasurableNameLabel": "Nombre de la medición:",
   "settingsMeasurablePrivateLabel": "Privado: ",
   "settingsMeasurableSaveLabel": "Guardar",
+  "settingsMeasurablesCreateTitle": "Crear medible",
+  "settingsMeasurablesEmptyState": "Aún no hay medibles",
+  "settingsMeasurablesEmptyStateHint": "Toca el botón + para crear tu primer medible.",
+  "settingsMeasurablesErrorLoading": "Error al cargar medibles",
+  "settingsMeasurablesNoMatchQuery": "Ningún medible coincide con \"{query}\"",
+  "@settingsMeasurablesNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurablesSearchHint": "Buscar medibles…",
   "settingsMeasurablesSubtitle": "Configurar tipos de datos medibles",
   "settingsMeasurablesTitle": "Tipos de medición",
   "settingsMeasurableUnitLabel": "Abreviatura de la unidad (opcional):",

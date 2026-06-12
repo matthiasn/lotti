@@ -3229,6 +3229,19 @@
   "settingsConflictsTitle": "Sync Conflicts",
   "settingsDashboardDetailsLabel": "Dashboard Details",
   "settingsDashboardSaveLabel": "Save",
+  "settingsDashboardsCreateTitle": "Create dashboard",
+  "settingsDashboardsEmptyState": "No dashboards yet",
+  "settingsDashboardsEmptyStateHint": "Tap the + button to create your first dashboard.",
+  "settingsDashboardsErrorLoading": "Error loading dashboards",
+  "settingsDashboardsNoMatchQuery": "No dashboards match \"{query}\"",
+  "@settingsDashboardsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDashboardsSearchHint": "Search dashboards…",
   "settingsDashboardsSubtitle": "Customize your dashboard views",
   "settingsDashboardsTitle": "Dashboards",
   "settingsDefinitionsSubtitle": "Habits, categories, labels, dashboards, and measurables",
@@ -3237,12 +3250,25 @@
   "settingsFlagsSearchHint": "Search flags",
   "settingsFlagsSubtitle": "Configure feature flags and options",
   "settingsFlagsTitle": "Config Flags",
+  "settingsHabitsCreateTitle": "Create habit",
   "settingsHabitsDeleteTooltip": "Delete Habit",
   "settingsHabitsDescriptionLabel": "Description (optional):",
   "settingsHabitsDetailsLabel": "Habit Details",
+  "settingsHabitsEmptyState": "No habits yet",
+  "settingsHabitsEmptyStateHint": "Tap the + button to create your first habit.",
+  "settingsHabitsErrorLoading": "Error loading habits",
   "settingsHabitsNameLabel": "Habit name:",
+  "settingsHabitsNoMatchQuery": "No habits match \"{query}\"",
+  "@settingsHabitsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "settingsHabitsPrivateLabel": "Private: ",
   "settingsHabitsSaveLabel": "Save",
+  "settingsHabitsSearchHint": "Search habits…",
   "settingsHabitsSubtitle": "Manage your habits and routines",
   "settingsHabitsTitle": "Habits",
   "settingsHealthImportFromDate": "Start",
@@ -3360,6 +3386,19 @@
   "settingsMeasurableNameLabel": "Measurable name:",
   "settingsMeasurablePrivateLabel": "Private: ",
   "settingsMeasurableSaveLabel": "Save",
+  "settingsMeasurablesCreateTitle": "Create measurable",
+  "settingsMeasurablesEmptyState": "No measurables yet",
+  "settingsMeasurablesEmptyStateHint": "Tap the + button to create your first measurable.",
+  "settingsMeasurablesErrorLoading": "Error loading measurables",
+  "settingsMeasurablesNoMatchQuery": "No measurables match \"{query}\"",
+  "@settingsMeasurablesNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurablesSearchHint": "Search measurables…",
   "settingsMeasurablesSubtitle": "Configure measurable data types",
   "settingsMeasurablesTitle": "Measurable Types",
   "settingsMeasurableUnitLabel": "Unit abbreviation (optional):",
