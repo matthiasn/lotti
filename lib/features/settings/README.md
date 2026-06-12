@@ -268,6 +268,20 @@ inventing its own bottom offset.
 - [`ui/pages/habits/habit_details_page.dart`](ui/pages/habits/habit_details_page.dart)
 - [`ui/pages/measurables/measurable_details_page.dart`](ui/pages/measurables/measurable_details_page.dart)
 
+All detail editors render through the shared settings-detail kit
+([`lib/widgets/settings/settings_detail_scaffold.dart`](../../widgets/settings/settings_detail_scaffold.dart)):
+a `SettingsDetailScaffold` provides the header (back beams to the list
+route), the Cmd/Ctrl+S save shortcut, and a sticky `SettingsFormActionBar`
+with primary save (gated on the page's dirty state), secondary cancel, and —
+in edit mode — a destructive delete that reuses each page's confirm flow.
+Form rows are grouped into `SettingsFormSection` cards; the
+FormBuilder-driven pages bridge into the design system via
+[`ui/widgets/form/settings_form_text_field.dart`](ui/widgets/form/settings_form_text_field.dart)
+and [`ui/widgets/form/form_switch.dart`](ui/widgets/form/form_switch.dart).
+The dashboard editor keeps its chart machinery (`ChartMultiSelect` pickers,
+reorderable `DashboardItemCard` list with swipe-to-dismiss) inside the
+charts section, and exposes save-and-copy-to-clipboard as a header action.
+
 ### Persistence split
 
 - Dashboards and measurables save through [`lib/logic/persistence_logic.dart`](../../logic/persistence_logic.dart)

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 /// Data class for category switch settings
 class CategorySwitchSettings {
@@ -24,10 +24,10 @@ typedef SwitchFieldChanged =
 /// Enum to identify which switch was changed
 enum SwitchFieldType { private, active, favorite, availableForDayPlan }
 
-/// A widget that displays four switch tiles for category settings.
+/// A widget that displays four switch rows for category settings.
 ///
-/// This widget shows switches for private, active, favorite, and
-/// day-plan availability settings. It's designed to be independent of
+/// This widget shows [SettingsSwitchRow]s for private, active, favorite,
+/// and day-plan availability settings. It's designed to be independent of
 /// Riverpod for better testability.
 class CategorySwitchTiles extends StatelessWidget {
   const CategorySwitchTiles({
@@ -41,42 +41,48 @@ class CategorySwitchTiles extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final messages = context.messages;
+    final rows = <(SwitchFieldType, String, String, IconData, bool)>[
+      (
+        SwitchFieldType.private,
+        messages.privateLabel,
+        messages.categoryPrivateDescription,
+        Icons.lock_outline,
+        settings.isPrivate,
+      ),
+      (
+        SwitchFieldType.active,
+        messages.activeLabel,
+        messages.categoryActiveDescription,
+        Icons.visibility_outlined,
+        settings.isActive,
+      ),
+      (
+        SwitchFieldType.favorite,
+        messages.favoriteLabel,
+        messages.categoryFavoriteDescription,
+        Icons.star_outline,
+        settings.isFavorite,
+      ),
+      (
+        SwitchFieldType.availableForDayPlan,
+        messages.categoryDayPlanLabel,
+        messages.categoryDayPlanDescription,
+        Icons.today_outlined,
+        settings.isAvailableForDayPlan,
+      ),
+    ];
+
     return Column(
       children: [
-        LottiSwitchField(
-          title: context.messages.privateLabel,
-          subtitle: context.messages.categoryPrivateDescription,
-          value: settings.isPrivate,
-          onChanged: (value) =>
-              onChanged(SwitchFieldType.private, value: value),
-          icon: Icons.lock_outline,
-        ),
-        const SizedBox(height: 8),
-        LottiSwitchField(
-          title: context.messages.activeLabel,
-          subtitle: context.messages.categoryActiveDescription,
-          value: settings.isActive,
-          onChanged: (value) => onChanged(SwitchFieldType.active, value: value),
-          icon: Icons.visibility_outlined,
-        ),
-        const SizedBox(height: 8),
-        LottiSwitchField(
-          title: context.messages.favoriteLabel,
-          subtitle: context.messages.categoryFavoriteDescription,
-          value: settings.isFavorite,
-          onChanged: (value) =>
-              onChanged(SwitchFieldType.favorite, value: value),
-          icon: Icons.star_outline,
-        ),
-        const SizedBox(height: 8),
-        LottiSwitchField(
-          title: context.messages.categoryDayPlanLabel,
-          subtitle: context.messages.categoryDayPlanDescription,
-          value: settings.isAvailableForDayPlan,
-          onChanged: (value) =>
-              onChanged(SwitchFieldType.availableForDayPlan, value: value),
-          icon: Icons.today_outlined,
-        ),
+        for (final (field, title, subtitle, icon, value) in rows)
+          SettingsSwitchRow(
+            title: title,
+            subtitle: subtitle,
+            icon: icon,
+            value: value,
+            onChanged: (newValue) => onChanged(field, value: newValue),
+          ),
       ],
     );
   }

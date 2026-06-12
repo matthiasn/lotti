@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/template_selector.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
@@ -18,31 +16,31 @@ import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
-import 'package:lotti/features/projects/ui/widgets/category_projects_section.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
+import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
+import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
-import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
 part 'category_details_form_sections.dart';
 
-/// Category Details Page with AI Settings and Projects
+/// Category Details Page with AI Settings
 ///
 /// This page allows editing of category details including:
 /// - Basic settings (name, color, privacy, active status)
 /// - Default language selection
 /// - Allowed AI models/prompts
 /// - Automatic prompt configuration
-/// - Projects within this category
+///
+/// Both create and edit mode render inside the shared
+/// [SettingsDetailScaffold] (header with back affordance, Cmd/Ctrl+S,
+/// sticky glass [SettingsFormActionBar]).
 class CategoryDetailsPage extends ConsumerStatefulWidget {
   const CategoryDetailsPage({
     this.categoryId,
@@ -90,58 +88,34 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   Widget _buildCreateMode(BuildContext context) {
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyS, meta: true):
-            _handleCreate,
-      },
-      child: Scaffold(
-        backgroundColor: context.colorScheme.surface,
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              // Always show an explicit back arrow — V2's detail pane
-              // mounts the page inline (no Navigator.canPop), so the
-              // automatic leading would never appear there.
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_rounded),
-                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () => beamToNamed('/settings/categories'),
-              ),
-              title: Text(
-                context.messages.createCategoryTitle,
-                style: appBarTextStyleNewLarge.copyWith(
-                  color: Theme.of(context).primaryColor,
-                ),
-              ),
-              pinned: true,
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  // Basic Settings Section
-                  LottiFormSection(
-                    title: context.messages.basicSettings,
-                    icon: Icons.settings_outlined,
-                    children: [
-                      _buildNameField(),
-                      const SizedBox(height: 16),
-                      _buildColorPicker(),
-                      const SizedBox(height: 16),
-                      _buildIconPicker(),
-                      const SizedBox(height: 16),
-                      _buildCreateModeSwitchTiles(),
-                    ],
-                  ),
-                  const SizedBox(height: 80), // Space for bottom bar
-                ]),
-              ),
-            ),
+    return SettingsDetailScaffold(
+      title: context.messages.createCategoryTitle,
+      // Beam to the list URL rather than `Navigator.pop`. V2's desktop
+      // detail surface mounts the page inline (no Navigator route was
+      // pushed), so popping is a no-op there; on mobile the URL change
+      // still pops the detail page off the Beamer stack.
+      onBack: () => beamToNamed('/settings/categories'),
+      onSaveShortcut: _handleCreate,
+      actionBar: SettingsFormActionBar(
+        primaryLabel: context.messages.createButton,
+        onPrimary: _handleCreate,
+        secondaryLabel: context.messages.cancelButton,
+        onSecondary: () => beamToNamed('/settings/categories'),
+      ),
+      children: [
+        // Creation asks only for what `createCategory` persists: name,
+        // color, icon. Privacy/active/AI defaults are configured on the
+        // edit page afterwards — no disabled placeholder controls.
+        SettingsFormSection(
+          title: context.messages.basicSettings,
+          icon: Icons.settings_outlined,
+          children: [
+            _buildNameField(),
+            _buildColorPicker(),
+            _buildIconPicker(),
           ],
         ),
-        bottomNavigationBar: _buildCreateModeBottomBar(),
-      ),
+      ],
     );
   }
 
@@ -157,7 +131,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
 
     final repository = ref.read(categoryRepositoryProvider);
     try {
-      await repository.createCategory(
+      final created = await repository.createCategory(
         name: name,
         color: _selectedColor != null
             ? colorToCssHex(_selectedColor!)
@@ -166,10 +140,11 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       );
 
       if (mounted) {
-        // Beam back to the categories list — V2's desktop detail
-        // surface mounts inline (Navigator.pop would be a no-op);
-        // the URL change still pops the page on mobile.
-        beamToNamed('/settings/categories');
+        // Land in the new category's editor: creation only captures
+        // name/color/icon, everything else (privacy, language, AI
+        // defaults) lives on the edit page. Beaming (not pushing) keeps
+        // V2's inline desktop pane in sync.
+        beamToNamed('/settings/categories/${created.id}');
       }
     } catch (e) {
       if (mounted) {
@@ -179,51 +154,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         );
       }
     }
-  }
-
-  Widget _buildCreateModeSwitchTiles() {
-    return Column(
-      children: [
-        LottiSwitchField(
-          title: context.messages.privateLabel,
-          subtitle: context.messages.categoryPrivateDescription,
-          value: false,
-          onChanged: null,
-          // Will be set after creation
-          icon: Icons.lock_outline,
-          enabled: false,
-        ),
-        const SizedBox(height: 8),
-        LottiSwitchField(
-          title: context.messages.activeLabel,
-          subtitle: context.messages.categoryActiveDescription,
-          value: true,
-          onChanged: null,
-          // Will be set after creation
-          icon: Icons.visibility_outlined,
-          enabled: false,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCreateModeBottomBar() {
-    return FormBottomBar(
-      rightButtons: [
-        LottiSecondaryButton(
-          // Beam to the list URL rather than `Navigator.pop`. V2's desktop
-          // detail surface mounts the page inline (no Navigator route was
-          // pushed), so popping is a no-op there; on mobile the URL change
-          // still pops the detail page off the Beamer stack.
-          onPressed: () => beamToNamed('/settings/categories'),
-          label: context.messages.cancelButton,
-        ),
-        LottiPrimaryButton(
-          onPressed: _handleCreate,
-          label: context.messages.createButton,
-        ),
-      ],
-    );
   }
 
   Future<void> _handleSave() async {
@@ -269,23 +199,17 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     final state = ref.watch(
       categoryDetailsControllerProvider(widget.categoryId!),
     );
-    final enableProjects =
-        ref.watch(configFlagProvider(enableProjectsFlag)).value ?? false;
     final category = state.category;
 
     if (category == null && !state.isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_rounded),
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: () => beamToNamed('/settings/categories'),
+      return SettingsDetailScaffold(
+        title: context.messages.settingsCategoriesDetailsLabel,
+        onBack: () => beamToNamed('/settings/categories'),
+        children: [
+          Center(
+            child: Text(context.messages.categoryNotFound),
           ),
-          title: Text(context.messages.settingsCategoriesDetailsLabel),
-        ),
-        body: Center(
-          child: Text(context.messages.categoryNotFound),
-        ),
+        ],
       );
     }
 
@@ -293,120 +217,74 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       _syncFormWithCategory(category);
     }
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyS, meta: true): _handleSave,
+    final saveEnabled = !state.isSaving && state.hasChanges;
+
+    return SettingsDetailScaffold(
+      title: context.messages.settingsCategoriesDetailsLabel,
+      onBack: () => beamToNamed('/settings/categories'),
+      onSaveShortcut: () {
+        if (saveEnabled) _handleSave();
       },
-      child: Scaffold(
-        backgroundColor: context.colorScheme.surface,
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_rounded),
-                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () => beamToNamed('/settings/categories'),
-              ),
-              title: Text(
-                context.messages.settingsCategoriesDetailsLabel,
-                style: appBarTextStyleNewLarge.copyWith(
-                  color: Theme.of(context).primaryColor,
-                ),
-              ),
-              pinned: true,
-              // Save action intentionally removed; single Save lives in bottom bar.
-            ),
-            if (state.errorMessage != null)
-              SliverToBoxAdapter(
-                child: ErrorStateWidget(
-                  error: state.errorMessage!,
-                  mode: ErrorDisplayMode.inline,
-                ),
-              ),
-            if (state.isLoading && category == null)
-              const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            else if (category != null)
-              SliverPadding(
-                padding: const EdgeInsets.all(16),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    // Basic Settings Section
-                    LottiFormSection(
-                      title: context.messages.basicSettings,
-                      icon: Icons.settings_outlined,
-                      children: [
-                        _buildNameField(),
-                        const SizedBox(height: 16),
-                        _buildColorPicker(),
-                        const SizedBox(height: 16),
-                        _buildIconPicker(category: category),
-                        const SizedBox(height: 16),
-                        _buildSwitchTiles(category),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Language Settings Section
-                    LottiFormSection(
-                      title: context.messages.taskLanguageLabel,
-                      icon: Icons.language_outlined,
-                      description:
-                          context.messages.categoryDefaultLanguageDescription,
-                      children: [
-                        _buildLanguageDropdown(category),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // AI Defaults Section
-                    LottiFormSection(
-                      title: context.messages.categoryAiDefaultsTitle,
-                      icon: Icons.smart_toy_outlined,
-                      description:
-                          context.messages.categoryAiDefaultsDescription,
-                      children: [
-                        _buildDefaultProfilePicker(category),
-                        const SizedBox(height: 16),
-                        _buildDefaultTemplatePicker(category),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Projects Section
-                    if (enableProjects) ...[
-                      CategoryProjectsSection(
-                        categoryId: widget.categoryId!,
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Speech Dictionary Section
-                    LottiFormSection(
-                      title: context.messages.speechDictionarySectionTitle,
-                      icon: Icons.spellcheck_outlined,
-                      description:
-                          context.messages.speechDictionarySectionDescription,
-                      children: [
-                        _buildSpeechDictionary(category),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Correction Examples Section
-                    _buildCorrectionExamples(category),
-                    const SizedBox(height: 80), // Space for bottom bar
-                  ]),
-                ),
-              ),
-          ],
-        ),
-        bottomNavigationBar: _buildBottomBar(state),
+      actionBar: SettingsFormActionBar(
+        primaryLabel: context.messages.saveButton,
+        onPrimary: _handleSave,
+        primaryEnabled: saveEnabled,
+        secondaryLabel: context.messages.cancelButton,
+        onSecondary: () => beamToNamed('/settings/categories'),
+        destructiveLabel: context.messages.deleteButton,
+        onDestructive: _showDeleteDialog,
+        destructiveEnabled: !state.isSaving,
       ),
+      children: [
+        if (state.errorMessage != null)
+          ErrorStateWidget(
+            error: state.errorMessage!,
+            mode: ErrorDisplayMode.inline,
+          ),
+        if (state.isLoading && category == null)
+          const Center(
+            child: CircularProgressIndicator(),
+          )
+        else if (category != null) ...[
+          SettingsFormSection(
+            title: context.messages.basicSettings,
+            icon: Icons.settings_outlined,
+            children: [
+              _buildNameField(),
+              _buildColorPicker(),
+              _buildIconPicker(category: category),
+              _buildSwitchTiles(category),
+            ],
+          ),
+          SettingsFormSection(
+            title: context.messages.taskLanguageLabel,
+            icon: Icons.language_outlined,
+            description: context.messages.categoryDefaultLanguageDescription,
+            children: [
+              _buildLanguageDropdown(category),
+            ],
+          ),
+          SettingsFormSection(
+            title: context.messages.categoryAiDefaultsTitle,
+            icon: Icons.smart_toy_outlined,
+            description: context.messages.categoryAiDefaultsDescription,
+            children: [
+              _buildDefaultProfilePicker(category),
+              _buildDefaultTemplatePicker(category),
+            ],
+          ),
+          SettingsFormSection(
+            title: context.messages.speechDictionarySectionTitle,
+            icon: Icons.spellcheck_outlined,
+            description: context.messages.speechDictionarySectionDescription,
+            children: [
+              _buildSpeechDictionary(category),
+            ],
+          ),
+          // Correction examples render their own header + list chrome.
+          _buildCorrectionExamples(category),
+        ],
+      ],
     );
   }
 
@@ -445,6 +323,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   }
 
   Widget _buildIconPicker({CategoryDefinition? category}) {
+    final tokens = context.designTokens;
     final isCreateMode = category == null;
     final icon = isCreateMode ? _selectedIcon : category.icon;
     final color = isCreateMode
@@ -461,17 +340,19 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       children: [
         Text(
           CategoryIconStrings.iconLabel,
-          style: Theme.of(context).textTheme.titleMedium,
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: tokens.spacing.step2),
         InkWell(
           onTap: () => _showIconPicker(isCreateMode ? null : category.icon),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(tokens.radii.m),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(tokens.spacing.step5),
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: tokens.colors.decorative.level01),
+              borderRadius: BorderRadius.circular(tokens.radii.m),
             ),
             child: Row(
               children: [
@@ -483,7 +364,7 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                       shape: BoxShape.circle,
                       border: Border.all(
                         color: color,
-                        width: 2,
+                        width: CategoryIconConstants.borderWidth,
                       ),
                     ),
                     child: Center(
@@ -491,12 +372,12 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                           ? Icon(
                               icon.iconData,
                               color: color,
-                              size: 28,
+                              size: CategoryIconConstants.standardIconSize,
                             )
-                          : const Icon(
+                          : Icon(
                               Icons.category,
-                              color: Colors.grey,
-                              size: 28,
+                              color: tokens.colors.text.mediumEmphasis,
+                              size: CategoryIconConstants.standardIconSize,
                             ),
                     ),
                   )
@@ -504,23 +385,33 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                   CategoryIconDisplay(
                     category: category,
                   ),
-                const SizedBox(width: 16),
+                SizedBox(width: tokens.spacing.step5),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         iconDisplayName,
-                        style: Theme.of(context).textTheme.bodyLarge,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
                       ),
+                      SizedBox(height: tokens.spacing.step1),
                       Text(
                         hintText,
-                        style: Theme.of(context).textTheme.bodySmall,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
                       ),
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, size: 16),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: tokens.spacing.step6,
+                  color: tokens.colors.text.lowEmphasis,
+                ),
               ],
             ),
           ),
@@ -550,27 +441,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
             .updateFormField(icon: result);
       }
     }
-  }
-
-  Widget _buildBottomBar(CategoryDetailsState state) {
-    return FormBottomBar(
-      leftButton: LottiTertiaryButton(
-        onPressed: state.isSaving ? null : _showDeleteDialog,
-        icon: Icons.delete_outline,
-        label: context.messages.deleteButton,
-        isDestructive: true,
-      ),
-      rightButtons: [
-        LottiSecondaryButton(
-          onPressed: () => beamToNamed('/settings/categories'),
-          label: context.messages.cancelButton,
-        ),
-        LottiPrimaryButton(
-          onPressed: state.isSaving || !state.hasChanges ? null : _handleSave,
-          label: context.messages.saveButton,
-        ),
-      ],
-    );
   }
 
   void _showDeleteDialog() {

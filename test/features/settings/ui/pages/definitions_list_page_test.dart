@@ -1,399 +1,405 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
 import '../../../../widget_test_utils.dart';
 
-// Test data class
-class TestItem {
-  TestItem(this.name);
-  final String name;
+/// Pumps the generic template directly with plain [String] items — no
+/// providers needed because the template consumes a ready [AsyncValue].
+Future<void> _pumpPage(
+  WidgetTester tester, {
+  required AsyncValue<List<String>> itemsAsync,
+  String Function(String item)? searchText,
+  Widget Function(BuildContext context, String query)? noMatchActionBuilder,
+  String? initialSearchTerm,
+  ValueChanged<String>? searchCallback,
+  VoidCallback? onCreate,
+}) async {
+  await tester.pumpWidget(
+    makeTestableWidgetNoScroll(
+      DefinitionsListPage<String>(
+        title: 'Test Items',
+        itemsAsync: itemsAsync,
+        searchHint: 'Search test items',
+        displayName: (item) => item,
+        itemBuilder: (context, item, {required bool showDivider}) => ListTile(
+          key: ValueKey('row-$item-divider-$showDivider'),
+          title: Text(item),
+        ),
+        emptyIcon: Icons.inbox_outlined,
+        emptyTitle: 'Nothing here yet',
+        emptyHint: 'Tap create to add an item',
+        noMatchMessage: (query) => 'No items match "$query"',
+        errorTitle: 'Failed to load items',
+        createSemanticLabel: 'Create item',
+        onCreate: onCreate ?? () {},
+        searchText: searchText,
+        noMatchActionBuilder: noMatchActionBuilder,
+        initialSearchTerm: initialSearchTerm,
+        searchCallback: searchCallback,
+      ),
+    ),
+  );
+  // A plain pump() does not advance the test clock; the header's
+  // flutter_animate entrance schedules a zero-duration timer that must
+  // fire before the test ends, so advance the clock explicitly.
+  await tester.pump(const Duration(milliseconds: 100));
+}
+
+/// Row titles in render order (the template builds rows pre-sorted).
+List<String> _rowTitles(WidgetTester tester) => tester
+    .widgetList<ListTile>(find.byType(ListTile))
+    .map((tile) => (tile.title! as Text).data!)
+    .toList();
+
+Future<void> _enterQuery(WidgetTester tester, String query) async {
+  await tester.enterText(
+    find.descendant(
+      of: find.byType(DesignSystemSearch),
+      matching: find.byType(TextField),
+    ),
+    query,
+  );
+  await tester.pump();
 }
 
 void main() {
   group('DefinitionsListPage', () {
-    late StreamController<List<TestItem>> streamController;
+    group('data rendering', () {
+      testWidgets(
+        'renders header title and all items sorted case-insensitively '
+        'by display name inside a DesignSystemGroupedList',
+        (tester) async {
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(['banana', 'Cherry', 'Apple']),
+          );
 
-    setUp(() {
-      streamController = StreamController<List<TestItem>>();
-    });
-
-    tearDown(() {
-      streamController.close();
-    });
-
-    Widget createTestWidget({
-      required List<TestItem> items,
-      String? initialSearchTerm,
-      void Function(String)? searchCallback,
-    }) {
-      streamController.add(items);
-
-      return makeTestableWidgetWithScaffold(
-        DefinitionsListPage<TestItem>(
-          stream: streamController.stream,
-          title: 'Test Items',
-          getName: (item) => item.name,
-          definitionCard: (index, item, {required bool isLast}) => Card(
-            key: ValueKey('item_$index'),
-            child: ListTile(title: Text(item.name)),
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {},
-            child: const Icon(Icons.add),
-          ),
-          initialSearchTerm: initialSearchTerm,
-          searchCallback: searchCallback,
-        ),
+          expect(find.byType(SettingsPageHeader), findsOneWidget);
+          expect(find.text('Test Items'), findsOneWidget);
+          expect(find.byType(DesignSystemGroupedList), findsOneWidget);
+          expect(_rowTitles(tester), ['Apple', 'banana', 'Cherry']);
+        },
       );
-    }
 
-    group('Basic Rendering', () {
-      testWidgets('displays SettingsPageHeader with correct title', (
-        tester,
-      ) async {
-        await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+      testWidgets(
+        'passes showDivider=true to every row except the last in sorted order',
+        (tester) async {
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(['Zulu', 'Alpha', 'Mike']),
+          );
 
-        // Should have SettingsPageHeader
-        expect(find.byType(SettingsPageHeader), findsOneWidget);
+          expect(
+            find.byKey(const ValueKey('row-Alpha-divider-true')),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const ValueKey('row-Mike-divider-true')),
+            findsOneWidget,
+          );
+          expect(
+            find.byKey(const ValueKey('row-Zulu-divider-false')),
+            findsOneWidget,
+          );
+        },
+      );
 
-        // Should display correct title
-        expect(find.text('Test Items'), findsOneWidget);
-      });
+      testWidgets('a single row gets showDivider=false', (tester) async {
+        await _pumpPage(
+          tester,
+          itemsAsync: const AsyncValue.data(['Only']),
+        );
 
-      testWidgets('shows back button in SettingsPageHeader', (tester) async {
-        await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Should have back button (chevron_left icon)
-        expect(find.byIcon(Icons.chevron_left), findsOneWidget);
-      });
-
-      testWidgets('uses CustomScrollView with slivers', (tester) async {
-        await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Should use CustomScrollView for sliver structure
-        expect(find.byType(CustomScrollView), findsOneWidget);
-
-        // Should have SettingsPageHeader as a sliver
-        expect(find.byType(SettingsPageHeader), findsOneWidget);
-
-        // Should have SliverToBoxAdapter for search widget
-        expect(find.byType(SliverToBoxAdapter), findsWidgets);
-      });
-
-      testWidgets('displays search widget', (tester) async {
-        await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Should have search field
-        expect(find.byType(TextField), findsOneWidget);
-      });
-
-      testWidgets('displays floating action button', (tester) async {
-        await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Should have FAB
-        expect(find.byType(FloatingActionButton), findsOneWidget);
-        expect(find.byIcon(Icons.add), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('row-Only-divider-false')),
+          findsOneWidget,
+        );
       });
     });
 
-    group('Items Display', () {
-      testWidgets('displays items when stream emits data', (tester) async {
-        final items = [
-          TestItem('Alpha'),
-          TestItem('Beta'),
-          TestItem('Gamma'),
-        ];
+    group('search filtering', () {
+      testWidgets(
+        'filters rows by case-insensitive substring of the display name',
+        (tester) async {
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(
+              ['Apple', 'Banana', 'Apricot'],
+            ),
+          );
 
-        await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          await _enterQuery(tester, 'AP');
 
-        // Should display all items
-        expect(find.text('Alpha'), findsOneWidget);
-        expect(find.text('Beta'), findsOneWidget);
-        expect(find.text('Gamma'), findsOneWidget);
-      });
+          expect(_rowTitles(tester), ['Apple', 'Apricot']);
 
-      testWidgets('sorts items alphabetically', (tester) async {
-        final items = [
-          TestItem('Zulu'),
-          TestItem('Alpha'),
-          TestItem('Mike'),
-          TestItem('Bravo'),
-        ];
+          await _enterQuery(tester, 'banana');
 
-        await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          expect(_rowTitles(tester), ['Banana']);
+        },
+      );
 
-        // Find all list tiles
-        final tileFinder = find.byType(ListTile);
-        final tiles = tester.widgetList<ListTile>(tileFinder).toList();
+      testWidgets(
+        'a whitespace-only query keeps the full list visible',
+        (tester) async {
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(['Apple', 'Banana']),
+          );
 
-        // Should be sorted alphabetically
-        expect((tiles[0].title! as Text).data, 'Alpha');
-        expect((tiles[1].title! as Text).data, 'Bravo');
-        expect((tiles[2].title! as Text).data, 'Mike');
-        expect((tiles[3].title! as Text).data, 'Zulu');
-      });
+          await _enterQuery(tester, '   ');
 
-      testWidgets('displays empty list when no items', (tester) async {
-        await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          expect(_rowTitles(tester), ['Apple', 'Banana']);
+        },
+      );
 
-        // Should not display any items
-        expect(find.byKey(const ValueKey('item_0')), findsNothing);
-      });
+      testWidgets(
+        'searchText overrides the haystack while displayName keeps '
+        'driving labels and sort order',
+        (tester) async {
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(['Beta', 'Alpha']),
+            searchText: (item) =>
+                item == 'Alpha' ? 'Alpha fruity extras' : 'Beta plain',
+          );
+
+          await _enterQuery(tester, 'fruity');
+
+          expect(_rowTitles(tester), ['Alpha']);
+
+          // The display name itself still matches via the override haystack.
+          await _enterQuery(tester, 'beta');
+
+          expect(_rowTitles(tester), ['Beta']);
+        },
+      );
+
+      testWidgets(
+        'the clear button restores the full list and reports an empty '
+        'query through searchCallback',
+        (tester) async {
+          final queries = <String>[];
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(['Apple', 'Banana']),
+            searchCallback: queries.add,
+          );
+
+          await _enterQuery(tester, 'apple');
+          expect(_rowTitles(tester), ['Apple']);
+
+          await tester.tap(find.byIcon(Icons.cancel_rounded));
+          await tester.pump();
+
+          expect(_rowTitles(tester), ['Apple', 'Banana']);
+          expect(queries, ['apple', '']);
+        },
+      );
     });
 
-    group('Search Functionality', () {
-      testWidgets('filters items based on search query', (tester) async {
-        final items = [
-          TestItem('Apple'),
-          TestItem('Banana'),
-          TestItem('Cherry'),
-          TestItem('Apricot'),
-        ];
+    group('empty state', () {
+      testWidgets(
+        'shows empty icon, title, and hint when no definitions exist',
+        (tester) async {
+          await _pumpPage(tester, itemsAsync: const AsyncValue.data([]));
 
-        await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
+          expect(find.text('Nothing here yet'), findsOneWidget);
+          expect(find.text('Tap create to add an item'), findsOneWidget);
+          // The create affordance stays available from the empty state.
+          expect(
+            find.byType(DesignSystemFloatingActionButton),
+            findsOneWidget,
+          );
+        },
+      );
 
-        // All items visible initially
-        expect(find.text('Apple'), findsOneWidget);
-        expect(find.text('Banana'), findsOneWidget);
-        expect(find.text('Cherry'), findsOneWidget);
-        expect(find.text('Apricot'), findsOneWidget);
+      testWidgets(
+        'an active query over an entirely empty list still shows the '
+        'global empty state, not the no-match state',
+        (tester) async {
+          await _pumpPage(tester, itemsAsync: const AsyncValue.data([]));
 
-        // Search for "ap"
-        await tester.enterText(find.byType(TextField), 'ap');
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          await _enterQuery(tester, 'anything');
 
-        // Should only show items containing "ap"
-        expect(find.text('Apple'), findsOneWidget);
-        expect(find.text('Apricot'), findsOneWidget);
-        expect(find.text('Banana'), findsNothing);
-        expect(find.text('Cherry'), findsNothing);
-      });
+          expect(find.text('Nothing here yet'), findsOneWidget);
+          expect(find.byIcon(Icons.search_off_rounded), findsNothing);
+        },
+      );
+    });
 
-      testWidgets('search is case insensitive', (tester) async {
-        final items = [
-          TestItem('Apple'),
-          TestItem('banana'),
-          TestItem('CHERRY'),
-        ];
+    group('no-match state', () {
+      testWidgets(
+        'shows the no-match message with the trimmed query and no rows',
+        (tester) async {
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(['Apple']),
+          );
 
-        await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          await _enterQuery(tester, ' zzz ');
 
-        // Search with lowercase
-        await tester.enterText(find.byType(TextField), 'apple');
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          expect(find.byType(ListTile), findsNothing);
+          expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+          expect(find.text('No items match "zzz"'), findsOneWidget);
+        },
+      );
 
-        expect(find.text('Apple'), findsOneWidget);
-        expect(find.text('banana'), findsNothing);
-
-        // Search with uppercase
-        await tester.enterText(find.byType(TextField), 'BANANA');
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.text('banana'), findsOneWidget);
-        expect(find.text('Apple'), findsNothing);
-      });
-
-      testWidgets('calls searchCallback when provided', (tester) async {
-        String? capturedQuery;
-
-        final items = [TestItem('Test')];
-
-        await tester.pumpWidget(
-          createTestWidget(
-            items: items,
-            searchCallback: (query) {
-              capturedQuery = query;
+      testWidgets(
+        'renders the noMatchActionBuilder output for the query and '
+        'forwards taps to it',
+        (tester) async {
+          String? actionQuery;
+          var actionTapped = false;
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(['Apple']),
+            noMatchActionBuilder: (context, query) {
+              actionQuery = query;
+              return TextButton(
+                onPressed: () => actionTapped = true,
+                child: Text('Create "$query"'),
+              );
             },
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          );
 
-        // Enter search query
-        await tester.enterText(find.byType(TextField), 'test query');
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          await _enterQuery(tester, 'Pear');
 
-        // Callback should be called with query
-        expect(capturedQuery, 'test query');
-      });
+          expect(actionQuery, 'Pear');
+          expect(find.text('Create "Pear"'), findsOneWidget);
 
-      testWidgets('uses initialSearchTerm if provided', (tester) async {
-        final items = [
-          TestItem('Apple'),
-          TestItem('Banana'),
-          TestItem('Apricot'),
-        ];
+          await tester.tap(find.text('Create "Pear"'));
+          await tester.pump();
 
-        await tester.pumpWidget(
-          createTestWidget(
-            items: items,
-            initialSearchTerm: 'ap',
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          expect(actionTapped, isTrue);
+        },
+      );
 
-        // Should start with filtered results
-        expect(find.text('Apple'), findsOneWidget);
-        expect(find.text('Apricot'), findsOneWidget);
-        expect(find.text('Banana'), findsNothing);
-      });
+      testWidgets(
+        'omits the action area when no noMatchActionBuilder is given',
+        (tester) async {
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(['Apple']),
+          );
 
-      testWidgets('clears search when clear icon tapped', (tester) async {
-        final items = [
-          TestItem('Apple'),
-          TestItem('Banana'),
-        ];
+          await _enterQuery(tester, 'Pear');
 
-        await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Enter search query
-        await tester.enterText(find.byType(TextField), 'apple');
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.text('Apple'), findsOneWidget);
-        expect(find.text('Banana'), findsNothing);
-
-        // Clear search
-        await tester.enterText(find.byType(TextField), '');
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Should show all items again
-        expect(find.text('Apple'), findsOneWidget);
-        expect(find.text('Banana'), findsOneWidget);
-      });
+          expect(find.text('No items match "Pear"'), findsOneWidget);
+          expect(find.byType(TextButton), findsNothing);
+        },
+      );
     });
 
-    group('Dynamic Updates', () {
-      testWidgets('updates when stream emits new data', (tester) async {
-        await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+    group('error state', () {
+      testWidgets(
+        'shows the error title and the error itself instead of the list',
+        (tester) async {
+          await _pumpPage(
+            tester,
+            itemsAsync: AsyncValue.error(
+              Exception('boom'),
+              StackTrace.empty,
+            ),
+          );
 
-        // Initially no items
-        expect(find.byKey(const ValueKey('item_0')), findsNothing);
+          expect(find.byIcon(Icons.error_outline), findsOneWidget);
+          expect(find.text('Failed to load items'), findsOneWidget);
+          expect(find.textContaining('boom'), findsOneWidget);
+          // No search field or rows render alongside the error shell.
+          expect(find.byType(DesignSystemSearch), findsNothing);
+          expect(find.byType(ListTile), findsNothing);
+        },
+      );
+    });
 
-        // Add items to stream
-        streamController.add([TestItem('New Item')]);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Should display new item
-        expect(find.text('New Item'), findsOneWidget);
-      });
-
-      testWidgets('maintains search filter when stream updates', (
+    group('loading state', () {
+      testWidgets('shows a progress indicator without content slivers', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          createTestWidget(items: [TestItem('Apple'), TestItem('Banana')]),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await _pumpPage(tester, itemsAsync: const AsyncValue.loading());
 
-        // Set search filter
-        await tester.enterText(find.byType(TextField), 'ap');
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        expect(find.text('Apple'), findsOneWidget);
-        expect(find.text('Banana'), findsNothing);
-
-        // Update stream with new items
-        streamController.add([
-          TestItem('Apple'),
-          TestItem('Banana'),
-          TestItem('Apricot'),
-        ]);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Filter should still be applied
-        expect(find.text('Apple'), findsOneWidget);
-        expect(find.text('Apricot'), findsOneWidget);
-        expect(find.text('Banana'), findsNothing);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(DesignSystemSearch), findsNothing);
+        expect(find.byType(DesignSystemGroupedList), findsNothing);
       });
     });
 
-    group('Edge Cases', () {
-      testWidgets('handles items with empty names', (tester) async {
-        final items = [
-          TestItem(''),
-          TestItem('Valid'),
-        ];
+    group('create button', () {
+      testWidgets(
+        'renders the DS FAB with the given semantic label and invokes '
+        'onCreate when tapped',
+        (tester) async {
+          var created = false;
+          final semantics = tester.ensureSemantics();
 
-        await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(['Apple']),
+            onCreate: () => created = true,
+          );
 
-        // Should display both items (even with empty name)
-        expect(find.text('Valid'), findsOneWidget);
-        expect(find.byKey(const ValueKey('item_0')), findsOneWidget);
-      });
+          final fab = find.byType(DesignSystemFloatingActionButton);
+          expect(
+            find.descendant(
+              of: fab,
+              matching: find.bySemanticsLabel('Create item'),
+            ),
+            findsOneWidget,
+          );
 
-      testWidgets('handles very long item names', (tester) async {
-        final longName = 'A' * 100;
-        final items = [TestItem(longName)];
+          await tester.tap(fab);
+          await tester.pump();
 
-        await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+          expect(created, isTrue);
+          semantics.dispose();
+        },
+      );
+    });
 
-        // Should display item (text might be ellipsized)
-        expect(find.textContaining('AAA'), findsOneWidget);
-      });
+    group('initialSearchTerm', () {
+      testWidgets(
+        'seeds the search field text and pre-filters the list',
+        (tester) async {
+          await _pumpPage(
+            tester,
+            itemsAsync: const AsyncValue.data(
+              ['Apple', 'Banana', 'Apricot'],
+            ),
+            initialSearchTerm: 'ap',
+          );
 
-      testWidgets('handles special characters in search', (tester) async {
-        final items = [
-          TestItem('Test-Item'),
-          TestItem('Test_Item'),
-          TestItem('Test Item'),
-        ];
+          expect(_rowTitles(tester), ['Apple', 'Apricot']);
+          expect(
+            find.descendant(
+              of: find.byType(DesignSystemSearch),
+              matching: find.text('ap'),
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+    });
 
-        await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+    group('searchCallback', () {
+      testWidgets('is notified about every query edit', (tester) async {
+        final queries = <String>[];
+        await _pumpPage(
+          tester,
+          itemsAsync: const AsyncValue.data(['Apple']),
+          searchCallback: queries.add,
+        );
 
-        // Search with special characters
-        await tester.enterText(find.byType(TextField), 'test-');
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await _enterQuery(tester, 'a');
+        await _enterQuery(tester, 'ap');
 
-        expect(find.text('Test-Item'), findsOneWidget);
-        expect(find.text('Test_Item'), findsNothing);
-        expect(find.text('Test Item'), findsNothing);
+        expect(queries, ['a', 'ap']);
       });
     });
   });

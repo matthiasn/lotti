@@ -1,34 +1,48 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_category.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_dashboard.dart';
-import 'package:lotti/features/settings/ui/pages/form_text_field.dart';
-import 'package:lotti/features/settings/ui/widgets/entity_detail_card.dart';
 import 'package:lotti/features/settings/ui/widgets/form/form_switch.dart';
+import 'package:lotti/features/settings/ui/widgets/form/settings_form_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
+import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
+import 'package:lotti/widgets/settings/settings_form_section.dart';
 
+/// Habit definition editor on the shared settings-detail kit.
+///
+/// The form mechanics are unchanged: a `FormBuilder` keyed by the
+/// controller's `formKey` tracks dirty state via `onChanged`, and
+/// [HabitSettingsController.onSavePressed] reads the form values on save.
+/// Navigation (back, cancel, after save/delete) beams to
+/// `/settings/habits` rather than popping — V2's desktop detail surface
+/// mounts the page inline (no Navigator route to pop); on mobile the URL
+/// change still pops the page off the Beamer stack.
 class HabitDetailsPage extends ConsumerWidget {
   const HabitDetailsPage({
     required this.habitId,
+    this.isCreateMode = false,
     super.key,
   });
 
   final String habitId;
 
+  /// Create flow (`CreateHabitPage`) hides the destructive delete action
+  /// and uses the create title/label.
+  final bool isCreateMode;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final messages = context.messages;
     final state = ref.watch(habitSettingsControllerProvider(habitId));
     final controller = ref.read(
       habitSettingsControllerProvider(habitId).notifier,
@@ -41,166 +55,134 @@ class HabitDetailsPage extends ConsumerWidget {
       daily: (d) => d.alertAtTime,
     );
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: <Widget>[
-          SliverAppBar(
-            title: Text(
-              context.messages.settingsHabitsDetailsLabel,
-              style: appBarTextStyleNewLarge.copyWith(
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-            pinned: true,
-            actions: [
-              if (state.dirty)
-                LottiTertiaryButton(
-                  key: const Key('habit_save'),
-                  label: context.messages.settingsHabitsSaveLabel,
-                  onPressed: () async {
-                    final success = await controller.onSavePressed();
-                    if (success && context.mounted) {
-                      await Navigator.of(context).maybePop();
-                    }
-                  },
-                ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: EntityDetailCard(
-              contentPadding: const EdgeInsets.symmetric(
-                vertical: 20,
-                horizontal: 10,
-              ),
-              child: Column(
-                children: [
-                  FormBuilder(
-                    key: state.formKey,
-                    autovalidateMode: AutovalidateMode.onUserInteraction,
-                    onChanged: controller.setDirty,
-                    child: Column(
-                      children: <Widget>[
-                        FormTextField(
-                          key: const Key('habit_name_field'),
-                          initialValue: item.name,
-                          labelText: context.messages.settingsHabitsNameLabel,
-                          name: 'name',
-                          semanticsLabel: 'Habit name field',
-                        ),
-                        inputSpacerSmall,
-                        FormTextField(
-                          key: const Key(
-                            'habit_description_field',
-                          ),
-                          initialValue: item.description,
-                          labelText:
-                              context.messages.settingsHabitsDescriptionLabel,
-                          fieldRequired: false,
-                          name: 'description',
-                          semanticsLabel: 'Habit description field',
-                        ),
-                        inputSpacerSmall,
-                        SelectCategoryWidget(habitId: habitId),
-                        inputSpacerSmall,
-                        SelectDashboardWidget(habitId: habitId),
-                        inputSpacerSmall,
-                        FormSwitch(
-                          name: 'priority',
-                          key: const Key('habit_priority'),
-                          semanticsLabel: 'Habit priority',
-                          initialValue: state.habitDefinition.priority,
-                          title: context.messages.habitPriorityLabel,
-                          activeColor: starredGold,
-                        ),
-                        FormSwitch(
-                          name: 'private',
-                          initialValue: item.private,
-                          title: context.messages.settingsHabitsPrivateLabel,
-                          activeColor: context.colorScheme.error,
-                        ),
-                        FormSwitch(
-                          name: 'archived',
-                          key: const Key('habit_archived'),
-                          initialValue: !state.habitDefinition.active,
-                          title: context.messages.habitArchivedLabel,
-                          activeColor: context.colorScheme.outline,
-                        ),
-                        inputSpacerSmall,
-                        DateTimeField(
-                          dateTime: item.activeFrom,
-                          labelText: context.messages.habitActiveFromLabel,
-                          setDateTime: controller.setActiveFrom,
-                          mode: CupertinoDatePickerMode.date,
-                        ),
-                        inputSpacerSmall,
-                        if (isDaily) ...[
-                          DateTimeField(
-                            dateTime: showFrom,
-                            labelText: context.messages.habitShowFromLabel,
-                            setDateTime: controller.setShowFrom,
-                            mode: CupertinoDatePickerMode.time,
-                          ),
-                          inputSpacerSmall,
-                          DateTimeField(
-                            dateTime: alertAtTime,
-                            labelText: context.messages.habitShowAlertAtLabel,
-                            setDateTime: controller.setAlertAtTime,
-                            clear: controller.clearAlertAtTime,
-                            mode: CupertinoDatePickerMode.time,
-                          ),
-                          const SizedBox(
-                            height: 16,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Expanded(
-                          child: IconButton(
-                            icon: const Icon(MdiIcons.trashCanOutline),
-                            iconSize: settingsIconSize,
-                            tooltip:
-                                context.messages.settingsHabitsDeleteTooltip,
-                            color: context.colorScheme.outline,
-                            onPressed: () async {
-                              const deleteKey = 'deleteKey';
-                              final result = await showModalActionSheet<String>(
-                                context: context,
-                                title: context.messages.habitDeleteQuestion,
-                                actions: [
-                                  ModalSheetAction(
-                                    icon: Icons.warning,
-                                    label: context.messages.habitDeleteConfirm,
-                                    key: deleteKey,
-                                    isDestructiveAction: true,
-                                  ),
-                                ],
-                              );
+    Future<void> handleSave() async {
+      final success = await controller.onSavePressed();
+      if (success) {
+        beamToNamed('/settings/habits');
+      }
+    }
 
-                              if (result == deleteKey) {
-                                await controller.delete();
-                                if (context.mounted) {
-                                  await Navigator.of(context).maybePop();
-                                }
-                              }
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // const HabitAutocompleteWrapper(),
-                ],
-              ),
-            ),
+    Future<void> handleDelete() async {
+      const deleteKey = 'deleteKey';
+      final result = await showModalActionSheet<String>(
+        context: context,
+        title: messages.habitDeleteQuestion,
+        actions: [
+          ModalSheetAction(
+            icon: Icons.warning,
+            label: messages.habitDeleteConfirm,
+            key: deleteKey,
+            isDestructiveAction: true,
           ),
         ],
+      );
+
+      if (result == deleteKey) {
+        await controller.delete();
+        beamToNamed('/settings/habits');
+      }
+    }
+
+    final saveEnabled = state.dirty;
+
+    return SettingsDetailScaffold(
+      title: isCreateMode
+          ? messages.settingsHabitsCreateTitle
+          : messages.settingsHabitsDetailsLabel,
+      onBack: () => beamToNamed('/settings/habits'),
+      onSaveShortcut: () {
+        if (saveEnabled) handleSave();
+      },
+      actionBar: SettingsFormActionBar(
+        primaryLabel: isCreateMode
+            ? messages.createButton
+            : messages.saveButton,
+        onPrimary: handleSave,
+        primaryEnabled: saveEnabled,
+        secondaryLabel: messages.cancelButton,
+        onSecondary: () => beamToNamed('/settings/habits'),
+        destructiveLabel: isCreateMode ? null : messages.deleteButton,
+        onDestructive: isCreateMode ? null : handleDelete,
       ),
+      children: [
+        FormBuilder(
+          key: state.formKey,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          onChanged: controller.setDirty,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              SettingsFormSection(
+                title: messages.basicSettings,
+                icon: Icons.settings_outlined,
+                children: [
+                  SettingsFormTextField(
+                    key: const Key('habit_name_field'),
+                    initialValue: item.name,
+                    labelText: messages.settingsHabitsNameLabel,
+                    name: 'name',
+                    semanticsLabel: 'Habit name field',
+                    autofocus: isCreateMode,
+                  ),
+                  SettingsFormTextField(
+                    key: const Key('habit_description_field'),
+                    initialValue: item.description,
+                    labelText: messages.settingsHabitsDescriptionLabel,
+                    fieldRequired: false,
+                    multiline: true,
+                    name: 'description',
+                    semanticsLabel: 'Habit description field',
+                  ),
+                  SelectCategoryWidget(habitId: habitId),
+                  SelectDashboardWidget(habitId: habitId),
+                  FormSwitch(
+                    name: 'priority',
+                    key: const Key('habit_priority'),
+                    semanticsLabel: 'Habit priority',
+                    initialValue: item.priority,
+                    title: messages.habitPriorityLabel,
+                    icon: Icons.star_outline_rounded,
+                  ),
+                  FormSwitch(
+                    name: 'private',
+                    initialValue: item.private,
+                    title: messages.privateLabel,
+                    icon: Icons.lock_outline,
+                  ),
+                  FormSwitch(
+                    name: 'archived',
+                    key: const Key('habit_archived'),
+                    initialValue: !item.active,
+                    title: messages.habitArchivedLabel,
+                    icon: Icons.archive_outlined,
+                  ),
+                  DateTimeField(
+                    dateTime: item.activeFrom,
+                    labelText: messages.habitActiveFromLabel,
+                    setDateTime: controller.setActiveFrom,
+                    mode: CupertinoDatePickerMode.date,
+                  ),
+                  if (isDaily) ...[
+                    DateTimeField(
+                      dateTime: showFrom,
+                      labelText: messages.habitShowFromLabel,
+                      setDateTime: controller.setShowFrom,
+                      mode: CupertinoDatePickerMode.time,
+                    ),
+                    DateTimeField(
+                      dateTime: alertAtTime,
+                      labelText: messages.habitShowAlertAtLabel,
+                      setDateTime: controller.setAlertAtTime,
+                      clear: controller.clearAlertAtTime,
+                      mode: CupertinoDatePickerMode.time,
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

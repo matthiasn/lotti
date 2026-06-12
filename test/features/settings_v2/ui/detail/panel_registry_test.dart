@@ -22,7 +22,6 @@ import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_pag
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
-import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
@@ -203,15 +202,13 @@ void main() {
           isA<MatrixSyncMaintenanceBody>(),
         );
 
-        // Step 8 — dynamic lists. Categories / labels / dashboards /
-        // measurables are wrapped in `DetailIdDispatch` because the
-        // same panel slot also hosts their detail and create surfaces;
-        // the dispatch logic itself is exercised in the dedicated
-        // group below. Habits is the lone exception — it has its own
-        // internal navigation and doesn't need the dispatcher.
+        // Step 8 — dynamic lists. All five definition types are
+        // wrapped in `DetailIdDispatch` because the same panel slot
+        // also hosts their detail and create surfaces; the dispatch
+        // logic itself is exercised in the dedicated group below.
         expect(build('categories'), isA<DetailIdDispatch>());
         expect(build('labels'), isA<DetailIdDispatch>());
-        expect(build('habits'), isA<HabitsBody>());
+        expect(build('habits'), isA<DetailIdDispatch>());
         expect(build('dashboards'), isA<DetailIdDispatch>());
         expect(build('measurables'), isA<DetailIdDispatch>());
         // sync-conflicts moved from `advanced-conflicts` so it could

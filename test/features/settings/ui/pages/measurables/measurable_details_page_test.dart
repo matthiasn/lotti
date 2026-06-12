@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,277 +17,264 @@ import '../../../../../widget_test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  var mockJournalDb = MockJournalDb();
-  var mockPersistenceLogic = MockPersistenceLogic();
+  late MockPersistenceLogic mockPersistenceLogic;
+  String? beamedTo;
 
-  group('MeasurableDetailsPage Widget Tests - ', () {
-    setUpAll(() {
-      registerFallbackValue(FakeDashboardDefinition());
-    });
+  setUpAll(() {
+    registerFallbackValue(FakeMeasurableDataType());
+  });
 
-    setUp(() {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([
-        measurableWater,
-        measurableChocolate,
-      ]);
-      mockPersistenceLogic = MockPersistenceLogic();
+  setUp(() async {
+    mockPersistenceLogic = MockPersistenceLogic();
 
-      final mockUpdateNotifications = MockUpdateNotifications();
-      when(
-        () => mockUpdateNotifications.updateStream,
-      ).thenAnswer((_) => const Stream.empty());
+    await setUpTestGetIt(
+      additionalSetup: () {
+        // EditMeasurablePage resolves JournalDb at construction time, so
+        // replace the helper's bare mock with one stubbed for measurables.
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(
+            mockJournalDbWithMeasurableTypes([
+              measurableWater,
+              measurableChocolate,
+            ]),
+          )
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      },
+    );
 
-      getIt
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+    when(
+      () => mockPersistenceLogic.upsertEntityDefinition(any()),
+    ).thenAnswer((_) async => 1);
 
-      // Save / delete now beam to `/settings/measurables` rather than
-      // popping the navigator (V2's desktop detail surface mounts the
-      // page inline). Install a no-op override so the calls don't try
-      // to reach into an unregistered NavService.
-      beamToNamedOverride = (_) {};
-    });
-    tearDown(() async {
-      beamToNamedOverride = null;
-      await getIt.reset();
-    });
+    // Back/cancel/save/delete beam to the list route (V2's desktop detail
+    // surface mounts the page inline; there is no Navigator route to pop).
+    beamedTo = null;
+    beamToNamedOverride = (path) => beamedTo = path;
+  });
 
+  tearDown(() async {
+    beamToNamedOverride = null;
+    await tearDownTestGetIt();
+  });
+
+  /// Pumps [child] on a tall surface so the whole form including the
+  /// sticky action bar is hittable, then drains the initial frames.
+  Future<void> pumpPage(WidgetTester tester, Widget child) async {
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        child,
+        mediaQueryData: const MediaQueryData(size: Size(1200, 1600)),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  DsGlassPill saveAction(WidgetTester tester) => tester.widget<DsGlassPill>(
+    find.widgetWithText(DsGlassPill, 'Save'),
+  );
+
+  MeasurableDataType capturedUpsert() {
+    final captured = verify(
+      () => mockPersistenceLogic.upsertEntityDefinition(captureAny()),
+    ).captured;
+    return captured.last as MeasurableDataType;
+  }
+
+  group('MeasurableDetailsPage', () {
     testWidgets(
-      'app-bar back arrow beams to the measurables list (V2 desktop has '
-      'no Navigator.canPop fallback to auto-render the leading)',
+      'edit mode seeds fields, gates Save on dirty, persists edited values, '
+      'and beams to the measurables list',
       (tester) async {
-        String? beamedTo;
-        beamToNamedOverride = (path) => beamedTo = path;
-
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            MeasurableDetailsPage(dataType: measurableWater),
-          ),
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableWater),
         );
-        await tester.pumpAndSettle();
 
-        await tester.tap(
-          find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
+        // Seeded from the passed-in data type.
+        expect(find.text('Water'), findsOneWidget);
+        expect(find.text('H₂O, with or without bubbles'), findsOneWidget);
+        expect(find.text('ml'), findsOneWidget);
+
+        // Save pill renders disabled while the form is clean.
+        expect(saveAction(tester).enabled, isFalse);
+
+        await tester.enterText(
+          find.byKey(const Key('measurable_name_field')),
+          'Sparkling water',
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
+        expect(saveAction(tester).enabled, isTrue);
+
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final saved = capturedUpsert();
+        expect(saved.id, measurableWater.id);
+        expect(saved.displayName, 'Sparkling water');
+        // Untouched fields keep their seeded values through the save.
+        expect(saved.description, 'H₂O, with or without bubbles');
+        expect(saved.unitName, 'ml');
+        expect(saved.aggregationType, AggregationType.dailySum);
         expect(beamedTo, '/settings/measurables');
       },
     );
 
     testWidgets(
-      'measurable details page is displayed with type water & updated',
+      'toggling the private switch and picking another aggregation type '
+      'persists both',
       (tester) async {
-        when(
-          () => mockPersistenceLogic.upsertEntityDefinition(any()),
-        ).thenAnswer((_) async => 1);
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 1000,
-              ),
-              child: MeasurableDetailsPage(dataType: measurableWater),
-            ),
-          ),
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableWater),
         );
 
-        await tester.pumpAndSettle();
-
-        final nameFieldFinder = find.byKey(const Key('measurable_name_field'));
-        final descriptionFieldFinder = find.byKey(
-          const Key('measurable_description_field'),
-        );
-        final saveButtonFinder = find.byKey(const Key('measurable_save'));
-
-        expect(nameFieldFinder, findsOneWidget);
-        expect(descriptionFieldFinder, findsOneWidget);
-
-        // save button is invisible - no changes yet
-        expect(saveButtonFinder, findsNothing);
-
-        await tester.enterText(
-          nameFieldFinder,
-          'new name',
-        );
-        await tester.enterText(
-          descriptionFieldFinder,
-          'new description',
-        );
+        // The whole switch row is tappable; hit it via its title.
+        final switchFinder = find.text('Private');
+        await tester.ensureVisible(switchFinder);
+        await tester.pump();
+        await tester.tap(switchFinder);
         await tester.pump();
 
-        // save button is now visible
-        expect(saveButtonFinder, findsOneWidget);
+        final dropdownFinder = find.text('dailySum').last;
+        await tester.ensureVisible(dropdownFinder);
+        await tester.pump();
+        await tester.tap(dropdownFinder);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-        await tester.tap(saveButtonFinder);
+        await tester.tap(find.text('dailyMax').last);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+
+        final saved = capturedUpsert();
+        expect(saved.private, isTrue);
+        expect(saved.aggregationType, AggregationType.dailyMax);
       },
     );
 
     testWidgets(
-      'measurable details page is displayed with type water & deleted',
+      'delete flow confirms via the action sheet, soft-deletes the '
+      'measurable, and beams to the measurables list',
       (tester) async {
-        Future<int> mockUpsertEntity() {
-          return mockPersistenceLogic.upsertEntityDefinition(any());
-        }
-
-        when(mockUpsertEntity).thenAnswer((_) async => 1);
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 1000,
-              ),
-              child: MeasurableDetailsPage(dataType: measurableWater),
-            ),
-          ),
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableWater),
         );
 
-        await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-        // Find and scroll to the delete button
-        final deleteButtonFinder = find.byTooltip('Delete measurable type');
-        expect(deleteButtonFinder, findsOneWidget);
-
-        await tester.dragUntilVisible(
-          deleteButtonFinder,
-          find.byType(CustomScrollView),
-          const Offset(0, 50),
+        expect(
+          find.text('Do you want to delete this measurable data type?'),
+          findsOneWidget,
         );
 
-        // Tap the delete button
-        await tester.tap(deleteButtonFinder);
-        await tester.pumpAndSettle();
+        await tester.tap(find.text('YES, DELETE THIS MEASURABLE'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-        // Find the delete confirmation dialog
-        final deleteQuestionFinder = find.text(
-          'Do you want to delete this measurable data type?',
-        );
-        final confirmDeleteFinder = find.text('YES, DELETE THIS MEASURABLE');
-        expect(deleteQuestionFinder, findsOneWidget);
-        expect(confirmDeleteFinder, findsOneWidget);
-
-        await tester.tap(confirmDeleteFinder);
-        await tester.pumpAndSettle();
-
-        // delete button calls mocked function
-        verify(mockUpsertEntity).called(1);
+        final saved = capturedUpsert();
+        expect(saved.id, measurableWater.id);
+        expect(saved.deletedAt, isNotNull);
+        expect(beamedTo, '/settings/measurables');
       },
     );
 
     testWidgets(
-      'measurable details page is displayed with type water & updated',
+      'back arrow and Cancel beam to the measurables list without saving',
       (tester) async {
-        when(
-          () => mockPersistenceLogic.upsertEntityDefinition(any()),
-        ).thenAnswer((_) async => 1);
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 1000,
-              ),
-              child: CreateMeasurablePage(),
-            ),
-          ),
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableWater),
         );
 
-        await tester.pumpAndSettle();
-
-        final nameFieldFinder = find.byKey(const Key('measurable_name_field'));
-        final descriptionFieldFinder = find.byKey(
-          const Key('measurable_description_field'),
-        );
-        final saveButtonFinder = find.byKey(const Key('measurable_save'));
-
-        expect(nameFieldFinder, findsOneWidget);
-        expect(descriptionFieldFinder, findsOneWidget);
-
-        // save button is invisible - no changes yet
-        expect(saveButtonFinder, findsNothing);
-
-        await tester.enterText(
-          nameFieldFinder,
-          'new name',
-        );
-        await tester.enterText(
-          descriptionFieldFinder,
-          'new description',
-        );
+        await tester.tap(find.byIcon(Icons.chevron_left));
         await tester.pump();
+        expect(beamedTo, '/settings/measurables');
 
-        // save button is now visible
-        expect(saveButtonFinder, findsOneWidget);
+        beamedTo = null;
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Cancel'));
+        await tester.pump();
+        expect(beamedTo, '/settings/measurables');
 
-        await tester.tap(saveButtonFinder);
+        verifyNever(() => mockPersistenceLogic.upsertEntityDefinition(any()));
       },
     );
 
     testWidgets(
-      'measurable details page is displayed with type water & updated',
+      'Ctrl+S only saves once the form is dirty',
       (tester) async {
-        when(
-          () => mockPersistenceLogic.upsertEntityDefinition(any()),
-        ).thenAnswer((_) async => 1);
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxHeight: 1000,
-                maxWidth: 1000,
-              ),
-              child: EditMeasurablePage(
-                measurableId: measurableWater.id,
-              ),
-            ),
-          ),
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableWater),
         );
 
-        await tester.pumpAndSettle();
+        // Focus the form without changing any value.
+        await tester.tap(find.byKey(const Key('measurable_name_field')));
+        await tester.pump();
 
-        final nameFieldFinder = find.byKey(
-          const Key(
-            'measurable_name_field',
-          ),
-        );
-        final descriptionFieldFinder = find.byKey(
-          const Key(
-            'measurable_description_field',
-          ),
-        );
-        final saveButtonFinder = find.byKey(
-          const Key(
-            'measurable_save',
-          ),
-        );
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await tester.pump();
 
-        expect(nameFieldFinder, findsOneWidget);
-        expect(descriptionFieldFinder, findsOneWidget);
-
-        // save button is invisible - no changes yet
-        expect(saveButtonFinder, findsNothing);
+        verifyNever(() => mockPersistenceLogic.upsertEntityDefinition(any()));
 
         await tester.enterText(
-          nameFieldFinder,
-          'new name',
-        );
-        await tester.enterText(
-          descriptionFieldFinder,
-          'new description',
+          find.byKey(const Key('measurable_name_field')),
+          'Still water',
         );
         await tester.pump();
 
-        // save button is now visible
-        expect(saveButtonFinder, findsOneWidget);
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(saveButtonFinder);
+        expect(capturedUpsert().displayName, 'Still water');
+        expect(beamedTo, '/settings/measurables');
+      },
+    );
+
+    testWidgets(
+      'edit page resolves the measurable by id and seeds the form',
+      (tester) async {
+        await pumpPage(
+          tester,
+          EditMeasurablePage(measurableId: measurableWater.id),
+        );
+
+        expect(find.text('Water'), findsOneWidget);
+        expect(find.text('Edit measurable'), findsOneWidget);
+        // Delete affordance present in edit mode.
+        expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'edit page falls back to the not-found scaffold for an unknown id',
+      (tester) async {
+        await pumpPage(
+          tester,
+          EditMeasurablePage(measurableId: 'unknown-id'),
+        );
+
+        expect(find.text('Measurable not found'), findsOneWidget);
+        expect(find.byType(DsGlassPill), findsNothing);
       },
     );
   });

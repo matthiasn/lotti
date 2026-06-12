@@ -3000,7 +3000,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get createButton => 'Vytvořit';
 
   @override
-  String get createCategoryTitle => 'Vytvořit kategorii:';
+  String get createCategoryTitle => 'Vytvořit kategorii';
 
   @override
   String get createEntryLabel => 'Vytvořit novou položku';
@@ -3982,10 +3982,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsUncategorized => 'Nezařazeno';
 
   @override
-  String get dashboardActiveLabel => 'Aktivní:';
+  String get dashboardActiveLabel => 'Aktivní';
 
   @override
-  String get dashboardAddChartsTitle => 'Přidat grafy:';
+  String get dashboardAddChartsTitle => 'Grafy';
 
   @override
   String get dashboardAddHabitButton => 'Návykové grafy';
@@ -4037,16 +4037,16 @@ class AppLocalizationsCs extends AppLocalizations {
       'Opravdu chcete smazat tento dashboard?';
 
   @override
-  String get dashboardDescriptionLabel => 'Popis (volitelné):';
+  String get dashboardDescriptionLabel => 'Popis (volitelné)';
 
   @override
-  String get dashboardNameLabel => 'Název dashboardu:';
+  String get dashboardNameLabel => 'Název dashboardu';
 
   @override
   String get dashboardNotFound => 'Dashboard nenalezen';
 
   @override
-  String get dashboardPrivateLabel => 'Soukromý:';
+  String get dashboardPrivateLabel => 'Soukromý';
 
   @override
   String get defaultLanguage => 'Výchozí jazyk';
@@ -4755,7 +4755,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitActiveFromLabel => 'Datum začátku';
 
   @override
-  String get habitArchivedLabel => 'Archivováno:';
+  String get habitArchivedLabel => 'Archivováno';
 
   @override
   String get habitCategoryHint => 'Vyberte kategorii...';
@@ -4776,7 +4776,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitDeleteQuestion => 'Chcete tento zvyk smazat?';
 
   @override
-  String get habitPriorityLabel => 'Priorita:';
+  String get habitPriorityLabel => 'Priorita';
 
   @override
   String get habitsCompletedHeader => 'Dokončeno';
@@ -6522,7 +6522,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCategoriesCreateTitle => 'Vytvořit kategorii';
 
   @override
-  String get settingsCategoriesDetailsLabel => 'Detaily kategorie';
+  String get settingsCategoriesDetailsLabel => 'Upravit kategorii';
 
   @override
   String get settingsCategoriesEmptyState => 'Žádné kategorie nalezeny';
@@ -6567,7 +6567,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsConflictsTitle => 'Konflikty synchronizace';
 
   @override
-  String get settingsDashboardDetailsLabel => 'Detaily panelu';
+  String get settingsDashboardDetailsLabel => 'Upravit panel';
 
   @override
   String get settingsDashboardSaveLabel => 'Uložit';
@@ -6626,10 +6626,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsHabitsDeleteTooltip => 'Smazat návyk';
 
   @override
-  String get settingsHabitsDescriptionLabel => 'Popis (volitelné):';
+  String get settingsHabitsDescriptionLabel => 'Popis (volitelné)';
 
   @override
-  String get settingsHabitsDetailsLabel => 'Detaily návyku';
+  String get settingsHabitsDetailsLabel => 'Upravit návyk';
 
   @override
   String get settingsHabitsEmptyState => 'Zatím žádné návyky';
@@ -6642,7 +6642,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsHabitsErrorLoading => 'Chyba při načítání návyků';
 
   @override
-  String get settingsHabitsNameLabel => 'Název návyku:';
+  String get settingsHabitsNameLabel => 'Název návyku';
 
   @override
   String settingsHabitsNoMatchQuery(String query) {
@@ -6904,19 +6904,19 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMeasurableAggregationLabel =>
-      'Výchozí typ agregace (volitelné):';
+      'Výchozí typ agregace (volitelné)';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Smazat měřitelný typ';
 
   @override
-  String get settingsMeasurableDescriptionLabel => 'Popis (volitelné):';
+  String get settingsMeasurableDescriptionLabel => 'Popis (volitelné)';
 
   @override
-  String get settingsMeasurableDetailsLabel => 'Podrobnosti měřitelného';
+  String get settingsMeasurableDetailsLabel => 'Upravit měřitelný typ';
 
   @override
-  String get settingsMeasurableNameLabel => 'Název měřitelného:';
+  String get settingsMeasurableNameLabel => 'Název měřitelného';
 
   @override
   String get settingsMeasurablePrivateLabel => 'Soukromé: ';
@@ -6954,7 +6954,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMeasurablesTitle => 'Typy měřitelných veličin';
 
   @override
-  String get settingsMeasurableUnitLabel => 'Zkratka jednotky (volitelné):';
+  String get settingsMeasurableUnitLabel => 'Zkratka jednotky (volitelné)';
 
   @override
   String get settingsResetGeminiConfirm => 'Obnovit';

@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
-import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -21,13 +20,14 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
 /// Stubs the measurable lookups every dashboard-definition test needs:
 /// chocolate and water by id, with water as the any() fallback.
-void stubMeasurableDb(MockJournalDb mockJournalDb) {
+void _stubMeasurableDb(MockJournalDb mockJournalDb) {
   when(
     () => mockJournalDb.getMeasurableDataTypeById(
       'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
@@ -45,20 +45,74 @@ void stubMeasurableDb(MockJournalDb mockJournalDb) {
   ).thenAnswer((_) async => measurableWater);
 }
 
-void main() {
-  final binding = TestWidgetsFlutterBinding.ensureInitialized();
-  // ignore: deprecated_member_use
-  binding.window.physicalSizeTestValue = const Size(1000, 1000);
-  // ignore: deprecated_member_use
-  binding.window.devicePixelRatioTestValue = 1.0;
+/// Records the most recent dashboard handed to
+/// `upsertDashboardDefinition` so tests can assert on the persisted value.
+class _UpsertCapture {
+  DashboardDefinition? saved;
+}
 
+_UpsertCapture _stubUpsertCapture(MockPersistenceLogic logic) {
+  final capture = _UpsertCapture();
+  when(() => logic.upsertDashboardDefinition(any())).thenAnswer((
+    invocation,
+  ) async {
+    capture.saved = invocation.positionalArguments.first as DashboardDefinition;
+    return 1;
+  });
+  return capture;
+}
+
+/// Pumps [page] on a tall desktop-like surface so the form, the charts
+/// section, and the sticky action bar are all laid out without scrolling.
+Future<void> _pumpPage(WidgetTester tester, Widget page) async {
+  tester.view.physicalSize = const Size(1000, 2000);
+  tester.view.devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+
+  await tester.pumpWidget(makeTestableWidgetNoScroll(page));
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 300));
+}
+
+/// The action-bar pill carrying [label] ('Save', 'Cancel', ...).
+Finder _pill(String label) => find.widgetWithText(DsGlassPill, label);
+
+/// Whether the action-bar pill carrying [label] is currently enabled.
+bool _pillEnabled(WidgetTester tester, String label) =>
+    tester.widget<DsGlassPill>(_pill(label)).enabled;
+
+/// Opens a [ChartMultiSelect] modal deterministically by invoking the
+/// button InkWell's onTap directly: coordinate taps on content laid out
+/// near the glass action bar proved flaky in the batched suite.
+Future<void> _openChartSelect<T>(
+  WidgetTester tester,
+  String semanticsLabel,
+) async {
+  final inkWell = tester.widget<InkWell>(
+    find.descendant(
+      of: find.byWidgetPredicate(
+        (w) => w is ChartMultiSelect<T> && w.semanticsLabel == semanticsLabel,
+      ),
+      matching: find.byType(InkWell),
+    ),
+  );
+  inkWell.onTap!();
+  await tester.pumpAndSettle();
+}
+
+String _trimmed(Map<String, dynamic>? formData, String k) {
+  if (formData == null || formData[k] == null) {
+    return '';
+  }
+  return formData[k].toString().trim();
+}
+
+void main() {
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
 
   group('DashboardDefinitionPage Widget Tests - ', () {
-    setUpAll(() {
-      registerFallbackValue(FakeDashboardDefinition());
-    });
+    setUpAll(registerAllFallbackValues);
 
     setUp(() {
       mockJournalDb = mockJournalDbWithMeasurableTypes([
@@ -92,7 +146,7 @@ void main() {
       // Ensure ThemingController dependencies are registered
       ensureThemingServicesRegistered();
 
-      // The page now beams to `/settings/dashboards` after save / delete
+      // The page beams to `/settings/dashboards` after save / delete
       // (V2's desktop detail surface mounts inline, so Navigator.pop
       // would be a no-op). These tests don't register a NavService, so
       // install a no-op override.
@@ -104,444 +158,351 @@ void main() {
     });
 
     testWidgets(
-      'app-bar back arrow beams to the dashboards list (V2 desktop has '
-      'no Navigator.canPop fallback to auto-render the leading)',
+      'header shows the edit title and the back button beams to the '
+      'dashboards list',
       (tester) async {
         String? beamedTo;
         beamToNamedOverride = (path) => beamedTo = path;
-        final formKey = GlobalKey<FormBuilderState>();
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: testDashboardConfig,
-              formKey: formKey,
-            ),
-          ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(dashboard: testDashboardConfig),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(
-          find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
-        );
+        expect(find.text('Edit dashboard'), findsOneWidget);
+
+        await tester.tap(find.widgetWithIcon(IconButton, Icons.chevron_left));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         expect(beamedTo, '/settings/dashboards');
       },
     );
 
-    testWidgets('dashboard definition page is displayed with test item, '
-        'then save button becomes visible after entering text ', (
-      tester,
-    ) async {
-      final formKey = GlobalKey<FormBuilderState>();
+    testWidgets(
+      'save pill is disabled until the form is edited, then saving '
+      'persists the form values and beams back to the list',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
 
-      when(
-        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-      ).thenAnswer((_) async => 1);
+        final capture = _stubUpsertCapture(mockPersistenceLogic);
+        _stubMeasurableDb(mockJournalDb);
 
-      stubMeasurableDb(mockJournalDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
+        await _pumpPage(
+          tester,
           DashboardDefinitionPage(
             dashboard: testDashboardConfig.copyWith(description: ''),
             formKey: formKey,
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        // No changes yet: the primary action renders disabled.
+        expect(_pillEnabled(tester, 'Save'), isFalse);
 
-      await tester.pump(const Duration(milliseconds: 300));
+        formKey.currentState!.save();
+        expect(formKey.currentState!.isValid, isTrue);
 
-      final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
-      final descriptionFieldFinder = find.byKey(
-        const Key('dashboard_description_field'),
-      );
-      final saveButtonFinder = find.byKey(const Key('dashboard_save'));
+        // The form is seeded with the dashboard name and empty description.
+        expect(
+          _trimmed(formKey.currentState!.value, 'name'),
+          testDashboardName,
+        );
+        expect(_trimmed(formKey.currentState!.value, 'description'), '');
 
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
+        await tester.enterText(
+          find.byKey(const Key('dashboard_description_field')),
+          'Some test dashboard description',
+        );
+        await tester.pump();
 
-      final workoutChartButtonFinder = find.text('Workout Charts');
-      expect(workoutChartButtonFinder, findsOneWidget);
+        // The description is now tracked in the form state and the page
+        // is dirty, so the save pill becomes enabled.
+        expect(
+          _trimmed(formKey.currentState!.value, 'description'),
+          testDashboardDescription,
+        );
+        expect(_pillEnabled(tester, 'Save'), isTrue);
 
-      // Modal interaction is not tested here due to test environment limitations.
+        await tester.tap(_pill('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
+        expect(capture.saved, isNotNull);
+        expect(capture.saved!.name, testDashboardName);
+        expect(capture.saved!.description, testDashboardDescription);
+        expect(beamedTo, '/settings/dashboards');
+      },
+    );
 
-      formKey.currentState!.save();
-      expect(formKey.currentState!.isValid, isTrue);
-      final formData = formKey.currentState!.value;
+    testWidgets(
+      'Ctrl+S keyboard shortcut saves a dirty form and beams back',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
 
-      // form is filled with name and empty description
-      expect(getTrimmed(formData, 'name'), testDashboardName);
-      expect(getTrimmed(formData, 'description'), '');
+        final capture = _stubUpsertCapture(mockPersistenceLogic);
+        _stubMeasurableDb(mockJournalDb);
 
-      await tester.enterText(
-        descriptionFieldFinder,
-        'Some test dashboard description',
-      );
-      await tester.pump();
-
-      final formData2 = formKey.currentState!.value;
-      expect(formKey.currentState!.isValid, isTrue);
-
-      // form description is now filled and stored in formKey
-      expect(getTrimmed(formData2, 'name'), testDashboardName);
-      expect(getTrimmed(formData2, 'description'), testDashboardDescription);
-
-      // save button is visible as there are unsaved changes
-      expect(saveButtonFinder, findsOneWidget);
-
-      await tester.tap(saveButtonFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // save button calls mocked function
-      verify(
-        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-      ).called(1);
-    });
-
-    testWidgets('dashboard definition page is displayed with test item, '
-        'then updating aggregation type in one measurement ', (tester) async {
-      final formKey = GlobalKey<FormBuilderState>();
-
-      when(
-        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-      ).thenAnswer((_) async => 1);
-
-      stubMeasurableDb(mockJournalDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
+        await _pumpPage(
+          tester,
           DashboardDefinitionPage(
             dashboard: testDashboardConfig,
             formKey: formKey,
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('dashboard_name_field')),
+          'Renamed dashboard',
+        );
+        await tester.pump();
 
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
-      final descriptionFieldFinder = find.byKey(
-        const Key('dashboard_description_field'),
-      );
-      final saveButtonFinder = find.byKey(const Key('dashboard_save'));
+        expect(capture.saved, isNotNull);
+        expect(capture.saved!.name, 'Renamed dashboard');
+        expect(beamedTo, '/settings/dashboards');
+      },
+    );
 
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
+    testWidgets(
+      'cancel pill beams back to the list without persisting changes',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
 
-      // Interact with ChartMultiSelect for workout charts
-      final workoutChartButtonFinder = find.text('Workout Charts');
-      expect(workoutChartButtonFinder, findsOneWidget);
-
-      // Modal interaction is not tested here due to test environment limitations.
-
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
-
-      formKey.currentState!.save();
-      expect(formKey.currentState!.isValid, isTrue);
-      final formData = formKey.currentState!.value;
-
-      // form is filled with name and empty description
-      expect(getTrimmed(formData, 'name'), testDashboardName);
-      expect(getTrimmed(formData, 'description'), testDashboardDescription);
-
-      // Tap the measurable item card deterministically: a coordinate tap on
-      // the text proved flaky in the batched CI run (silent miss behind
-      // warnIfMissed: false when fonts/layout drift across the shared
-      // isolate). Invoke the card ListTile's onTap directly instead.
-      final chocolateTile = tester.widget<ListTile>(
-        find.ancestor(
-          of: find.descendant(
-            of: find.byType(MeasurableItemCard),
-            matching: find.textContaining(measurableChocolate.displayName),
-          ),
-          matching: find.byType(ListTile),
-        ),
-      );
-      chocolateTile.onTap!();
-      // Modal open is a route transition — settle until fully mounted.
-      await tester.pumpAndSettle();
-
-      // Tapping the measurement opens the DashboardItemModal with one
-      // ChoiceChip per aggregation type.
-      final context = tester.element(
-        find.byType(DashboardDefinitionPage),
-      );
-      expect(
-        find.text(context.messages.dashboardAggregationLabel),
-        findsOneWidget,
-      );
-
-      // Pick a different aggregation type. The modal pops, the item card
-      // title re-renders with the new aggregation suffix, and the dirty
-      // flag makes the save button appear.
-      await tester.tap(find.text('dailyMax'));
-      // Modal close is a route transition as well — settle it.
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('[dailyMax]'), findsOneWidget);
-      expect(saveButtonFinder, findsOneWidget);
-    });
-
-    testWidgets('dashboard definition page is displayed with test item, '
-        'then tapping delete', (tester) async {
-      final formKey = GlobalKey<FormBuilderState>();
-
-      when(
-        () => mockPersistenceLogic.deleteDashboardDefinition(any()),
-      ).thenAnswer((_) async => 1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
+        await _pumpPage(
+          tester,
           DashboardDefinitionPage(
             dashboard: testDashboardConfig,
             formKey: formKey,
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('dashboard_name_field')),
+          'Edited but discarded',
+        );
+        await tester.pump();
+        expect(_pillEnabled(tester, 'Save'), isTrue);
 
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(_pill('Cancel'));
+        await tester.pump();
 
-      // Find and scroll to the delete button
-      final deleteButtonFinder = find.byIcon(MdiIcons.trashCanOutline);
-      expect(
-        deleteButtonFinder,
-        findsWidgets,
-      ); // Multiple items have delete buttons
+        verifyNever(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        );
+        expect(beamedTo, '/settings/dashboards');
+      },
+    );
 
-      // Find the first delete button
-      final firstDeleteButton = deleteButtonFinder.first;
-      await tester.dragUntilVisible(
-        firstDeleteButton,
-        find.byType(SingleChildScrollView),
-        const Offset(0, 500), // Increased scroll offset to ensure visibility
-      );
+    testWidgets(
+      'tapping a measurable item opens the aggregation modal; picking a '
+      'different type re-renders the card and enables save',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
 
-      await tester.pump();
+        _stubUpsertCapture(mockPersistenceLogic);
+        _stubMeasurableDb(mockJournalDb);
 
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Tap the delete button
-      await tester.tap(firstDeleteButton);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // (Delete confirmation modal is not rendered in the test environment, so we do not assert on it here.)
-    });
-
-    testWidgets('dashboard definition page is displayed with test item, '
-        'then tapping copy icon', (tester) async {
-      final formKey = GlobalKey<FormBuilderState>();
-
-      when(
-        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-      ).thenAnswer((_) async => 1);
-
-      // Mock getMeasurableDataTypeById for all possible items
-      stubMeasurableDb(mockJournalDb);
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
+        await _pumpPage(
+          tester,
           DashboardDefinitionPage(
             dashboard: testDashboardConfig,
             formKey: formKey,
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        // No changes yet: the primary action renders disabled.
+        expect(_pillEnabled(tester, 'Save'), isFalse);
 
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Make a change to trigger dirty state
-      final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
-      await tester.enterText(
-        nameFieldFinder,
-        '${testDashboardConfig.name} modified',
-      );
-      await tester.pump();
-
-      // Find and scroll to the copy button
-      final copyButtonFinder = find.byIcon(Icons.copy);
-      expect(copyButtonFinder, findsOneWidget);
-
-      await tester.dragUntilVisible(
-        copyButtonFinder,
-        find.byType(SingleChildScrollView),
-        const Offset(0, 500), // Increased scroll offset to ensure visibility
-      );
-
-      await tester.pump();
-
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Tap the copy button
-      await tester.tap(copyButtonFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify that copy creates a new dashboard
-      verify(
-        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-      ).called(greaterThanOrEqualTo(1));
-    });
-
-    // Tests for CreateDashboardPage
-    testWidgets('empty dashboard creation page is displayed, '
-        'save button visible after entering data, '
-        'tap save calls persistence mock', (tester) async {
-      when(
-        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-      ).thenAnswer((_) async => 1);
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
+        // Tap the measurable item card deterministically: a coordinate tap
+        // on the text proved flaky in the batched CI run (silent miss
+        // behind warnIfMissed: false when fonts/layout drift across the
+        // shared isolate). Invoke the card ListTile's onTap directly.
+        final chocolateTile = tester.widget<ListTile>(
+          find.ancestor(
+            of: find.descendant(
+              of: find.byType(MeasurableItemCard),
+              matching: find.textContaining(measurableChocolate.displayName),
             ),
-            child: CreateDashboardPage(),
+            matching: find.byType(ListTile),
           ),
-        ),
-      );
+        );
+        chocolateTile.onTap!();
+        // Modal open is a route transition — settle until fully mounted.
+        await tester.pumpAndSettle();
 
-      await tester.pump();
+        // Tapping the measurement opens the DashboardItemModal with one
+        // ChoiceChip per aggregation type.
+        final context = tester.element(
+          find.byType(DashboardDefinitionPage),
+        );
+        expect(
+          find.text(context.messages.dashboardAggregationLabel),
+          findsOneWidget,
+        );
 
-      await tester.pump(const Duration(milliseconds: 300));
+        // Pick a different aggregation type. The modal pops, the item card
+        // title re-renders with the new aggregation suffix, and the dirty
+        // flag enables the save pill.
+        await tester.tap(find.text('dailyMax'));
+        // Modal close is a route transition as well — settle it.
+        await tester.pumpAndSettle();
 
-      final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
-      final descriptionFieldFinder = find.byKey(
-        const Key('dashboard_description_field'),
-      );
-      final saveButtonFinder = find.byKey(const Key('dashboard_save'));
+        expect(find.textContaining('[dailyMax]'), findsOneWidget);
+        expect(_pillEnabled(tester, 'Save'), isTrue);
+      },
+    );
 
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
+    testWidgets(
+      'header copy action saves the dashboard and copies its definitions',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
 
-      // save button is invisible as there are no changes yet
-      expect(saveButtonFinder, findsNothing);
+        _stubUpsertCapture(mockPersistenceLogic);
+        _stubMeasurableDb(mockJournalDb);
 
-      await tester.enterText(nameFieldFinder, testDashboardConfig.name);
-      await tester.pump();
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: testDashboardConfig,
+            formKey: formKey,
+          ),
+        );
 
-      // save button is now visible after text enter
-      expect(saveButtonFinder, findsOneWidget);
+        await tester.enterText(
+          find.byKey(const Key('dashboard_name_field')),
+          '${testDashboardConfig.name} modified',
+        );
+        await tester.pump();
 
-      await tester.tap(saveButtonFinder);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.byKey(const Key('dashboard_copy')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // save button calls mocked function
-      verify(
-        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-      ).called(1);
-    });
+        // Copy persists the dashboard before copying it to the clipboard.
+        verify(
+          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+        ).called(greaterThanOrEqualTo(1));
+      },
+    );
 
-    testWidgets('dashboard definitions page is displayed with one test item', (
+    testWidgets(
+      'destructive delete action opens the confirmation sheet; confirming '
+      'deletes the dashboard and beams back',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        when(
+          () => mockPersistenceLogic.deleteDashboardDefinition(any()),
+        ).thenAnswer((_) async => 1);
+
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: testDashboardConfig,
+            formKey: formKey,
+          ),
+        );
+
+        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The confirmation modal must be visible.
+        expect(
+          find.text('Do you want to delete this dashboard?'),
+          findsOneWidget,
+        );
+
+        await tester.tap(find.text('YES, DELETE THIS DASHBOARD'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(
+          () => mockPersistenceLogic.deleteDashboardDefinition(any()),
+        ).called(1);
+        expect(beamedTo, '/settings/dashboards');
+      },
+    );
+
+    testWidgets(
+      'dismissing the delete confirmation keeps the dashboard',
+      (tester) async {
+        final formKey = GlobalKey<FormBuilderState>();
+
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: testDashboardConfig,
+            formKey: formKey,
+          ),
+        );
+
+        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.text('Do you want to delete this dashboard?'),
+          findsOneWidget,
+        );
+
+        // Dismiss without confirming (tap the barrier above the sheet).
+        await tester.tapAt(const Offset(500, 100));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verifyNever(
+          () => mockPersistenceLogic.deleteDashboardDefinition(any()),
+        );
+      },
+    );
+
+    testWidgets('rendering an existing dashboard seeds the description field', (
       tester,
     ) async {
-      when(mockJournalDb.getAllDashboards).thenAnswer(
-        (_) async => [testDashboardConfig],
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: const DashboardSettingsPage(),
-          ),
+      await _pumpPage(
+        tester,
+        DashboardDefinitionPage(
+          dashboard: testDashboardConfig,
+          formKey: GlobalKey<FormBuilderState>(),
         ),
       );
 
-      await tester.pump();
-
-      await tester.pump(const Duration(milliseconds: 300));
-
-      verify(mockJournalDb.getAllDashboards).called(1);
-
-      // finds text in dashboard card
-      expect(find.text(testDashboardName), findsOneWidget);
-    });
-
-    testWidgets('dashboard definitions page is displayed with one test item', (
-      tester,
-    ) async {
-      when(mockJournalDb.getAllDashboards).thenAnswer(
-        (_) async => [testDashboardConfig],
-      );
-
-      when(
-        () => mockJournalDb.getDashboardById(testDashboardConfig.id),
-      ).thenAnswer(
-        (_) async => testDashboardConfig,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          DashboardDefinitionPage(
-            dashboard: testDashboardConfig,
-            formKey: GlobalKey<FormBuilderState>(),
-          ),
-        ),
-      );
-
-      await tester.pump();
-
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // finds text in dashboard card
       expect(find.text(testDashboardDescription), findsOneWidget);
-
-      // The dropdown doesn't have the expected key in the current structure
-      // so we skip that verification
+      // The destructive delete action is present in edit mode.
+      expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
     });
 
     testWidgets('dashboard definition page setCategory logs to DevLogger '
-        'when clearing category', (tester) async {
+        'and marks the page dirty when clearing the category', (tester) async {
       final formKey = GlobalKey<FormBuilderState>();
 
       // Clear DevLogger captured logs before test
       DevLogger.clear();
 
-      when(
-        () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-      ).thenAnswer((_) async => 1);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(any()),
-      ).thenAnswer((_) async => measurableWater);
+      _stubUpsertCapture(mockPersistenceLogic);
+      _stubMeasurableDb(mockJournalDb);
 
       // Use testDashboardConfig which has categoryId set
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          DashboardDefinitionPage(
-            dashboard: testDashboardConfig,
-            formKey: formKey,
-          ),
+      await _pumpPage(
+        tester,
+        DashboardDefinitionPage(
+          dashboard: testDashboardConfig,
+          formKey: formKey,
         ),
       );
-
-      await tester.pump();
-
-      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the category selector field
       final categoryFieldFinder = find.byKey(
@@ -549,7 +510,8 @@ void main() {
       );
       expect(categoryFieldFinder, findsOneWidget);
 
-      // The close button (clear category) must be visible since categoryId is set
+      // The close button (clear category) must be visible since categoryId
+      // is set.
       final clearCategoryButtonFinder = find.byIcon(Icons.close_rounded);
       expect(
         clearCategoryButtonFinder,
@@ -558,14 +520,8 @@ void main() {
             'Clear category button should be present when categoryId is set',
       );
 
-      // Scroll to make the clear button visible if needed
-      await tester.dragUntilVisible(
-        clearCategoryButtonFinder,
-        find.byType(SingleChildScrollView),
-        const Offset(0, -100),
-      );
+      await tester.ensureVisible(clearCategoryButtonFinder);
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the clear button to trigger setCategory(null)
       await tester.tap(clearCategoryButtonFinder);
@@ -582,46 +538,30 @@ void main() {
         isTrue,
         reason: 'setCategory should log to DevLogger',
       );
+
+      // Clearing the category marks the page dirty.
+      expect(_pillEnabled(tester, 'Save'), isTrue);
     });
 
     testWidgets(
-      'adding a habit chart via modal sets dirty and shows save button',
+      'adding a habit chart via modal sets dirty and enables save',
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((_) async => 1);
+        _stubUpsertCapture(mockPersistenceLogic);
 
         // Use an empty dashboard so we can clearly detect the addition.
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: emptyTestDashboardConfig,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: emptyTestDashboardConfig,
+            formKey: formKey,
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
-        // Save button must be hidden before any interaction.
-        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+        expect(_pillEnabled(tester, 'Save'), isFalse);
 
-        // Scroll to the "Habit Charts" button.
-        final habitButtonFinder = find.text('Habit Charts');
-        await tester.dragUntilVisible(
-          habitButtonFinder.first,
-          find.byType(SingleChildScrollView),
-          const Offset(0, 200),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Open the habit-selection modal.
-        await tester.tap(habitButtonFinder.first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await _openChartSelect<HabitDefinition>(tester, 'Add Habit Chart');
 
         // Select habitFlossing in the modal list.
         final habitItemFinder = find.widgetWithText(
@@ -637,49 +577,36 @@ void main() {
         final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
         expect(addButtonFinder, findsOneWidget);
         await tester.tap(addButtonFinder);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
 
-        // Dirty flag should now be set → save button visible.
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+        // Dirty flag is now set → the save pill is enabled and the item
+        // card was appended.
+        expect(find.byType(Dismissible), findsOneWidget);
+        expect(_pillEnabled(tester, 'Save'), isTrue);
       },
     );
 
     testWidgets(
-      'adding a measurable chart via modal sets dirty and shows save button',
+      'adding a measurable chart via modal sets dirty and enables save',
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((_) async => 1);
+        _stubUpsertCapture(mockPersistenceLogic);
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: emptyTestDashboardConfig,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: emptyTestDashboardConfig,
+            formKey: formKey,
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+        expect(_pillEnabled(tester, 'Save'), isFalse);
 
-        // Scroll to "Measurement Charts" button and open modal.
-        final measButtonFinder = find.text('Measurement Charts');
-        await tester.dragUntilVisible(
-          measButtonFinder.first,
-          find.byType(SingleChildScrollView),
-          const Offset(0, 200),
+        await _openChartSelect<MeasurableDataType>(
+          tester,
+          'Add Measurable Data Chart',
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(measButtonFinder.first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         // Select the first measurable (Water).
         final measItemFinder = find.widgetWithText(
@@ -694,48 +621,34 @@ void main() {
         final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
         expect(addButtonFinder, findsOneWidget);
         await tester.tap(addButtonFinder);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
 
-        // Item was added → dirty → save button visible.
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+        // Item was added → dirty → save pill enabled.
+        expect(_pillEnabled(tester, 'Save'), isTrue);
       },
     );
 
     testWidgets(
-      'adding a survey chart via modal sets dirty and shows save button',
+      'adding a survey chart via modal sets dirty and enables save',
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((_) async => 1);
+        _stubUpsertCapture(mockPersistenceLogic);
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: emptyTestDashboardConfig,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: emptyTestDashboardConfig,
+            formKey: formKey,
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+        expect(_pillEnabled(tester, 'Save'), isFalse);
 
-        final surveyButtonFinder = find.text('Survey Charts');
-        await tester.dragUntilVisible(
-          surveyButtonFinder.first,
-          find.byType(SingleChildScrollView),
-          const Offset(0, 200),
+        await _openChartSelect<DashboardSurveyItem>(
+          tester,
+          'Add Survey Chart',
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(surveyButtonFinder.first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         // Pick the first survey item in the modal.
         final firstSurveyItem = find.byType(CheckboxListTile).first;
@@ -746,10 +659,9 @@ void main() {
         final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
         expect(addButtonFinder, findsOneWidget);
         await tester.tap(addButtonFinder);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
 
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+        expect(_pillEnabled(tester, 'Save'), isTrue);
       },
     );
 
@@ -758,9 +670,7 @@ void main() {
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((_) async => 1);
+        _stubUpsertCapture(mockPersistenceLogic);
 
         // Use a dashboard with exactly one item so we can detect its removal.
         final singleItemDashboard = emptyTestDashboardConfig.copyWith(
@@ -772,12 +682,11 @@ void main() {
           ],
         );
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: singleItemDashboard,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: singleItemDashboard,
+            formKey: formKey,
           ),
         );
         await tester.pumpAndSettle();
@@ -787,114 +696,54 @@ void main() {
         expect(dismissibleFinder, findsOneWidget);
 
         // Drag to dismiss.
-        await tester.drag(dismissibleFinder, const Offset(-500, 0));
+        await tester.drag(dismissibleFinder, const Offset(-700, 0));
         await tester.pumpAndSettle();
 
         // After dismiss the item is gone.
         expect(find.byType(Dismissible), findsNothing);
 
-        // dirty → save button visible.
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+        // dirty → save pill enabled.
+        expect(_pillEnabled(tester, 'Save'), isTrue);
       },
     );
 
     testWidgets(
-      'delete confirmation modal calls deleteDashboardDefinition and navigates',
+      'save with invalid form (empty name) does not persist or navigate',
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
         String? beamedTo;
         beamToNamedOverride = (path) => beamedTo = path;
 
-        when(
-          () => mockPersistenceLogic.deleteDashboardDefinition(any()),
-        ).thenAnswer((_) async => 1);
-
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: testDashboardConfig,
-              formKey: formKey,
-            ),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Scroll to the delete icon button.
-        final deleteButtonFinder = find.byIcon(MdiIcons.trashCanOutline);
-        await tester.dragUntilVisible(
-          deleteButtonFinder.first,
-          find.byType(SingleChildScrollView),
-          const Offset(0, 500),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(deleteButtonFinder.first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // The confirmation modal must be visible.
-        expect(
-          find.text('Do you want to delete this dashboard?'),
-          findsOneWidget,
-        );
-
-        // Tap the destructive confirm button.
-        final confirmFinder = find.text('YES, DELETE THIS DASHBOARD');
-        expect(confirmFinder, findsOneWidget);
-        await tester.tap(confirmFinder);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Persistence mock must have been called.
-        verify(
-          () => mockPersistenceLogic.deleteDashboardDefinition(any()),
-        ).called(1);
-
-        // Navigation back to the dashboard list.
-        expect(beamedTo, '/settings/dashboards');
-      },
-    );
-
-    testWidgets(
-      'save with invalid form (empty name) does not call upsert',
-      (tester) async {
-        final formKey = GlobalKey<FormBuilderState>();
-
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((_) async => 1);
+        _stubUpsertCapture(mockPersistenceLogic);
 
         // Start with a dashboard that has a valid name.
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: testDashboardConfig,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: testDashboardConfig,
+            formKey: formKey,
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         // Clear the name field to make the form invalid.
-        final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
-        await tester.enterText(nameFieldFinder, '');
+        await tester.enterText(
+          find.byKey(const Key('dashboard_name_field')),
+          '',
+        );
         await tester.pump();
 
-        // The save button is visible because dirty = true.
-        final saveButtonFinder = find.byKey(const Key('dashboard_save'));
-        expect(saveButtonFinder, findsOneWidget);
+        // The save pill is enabled because dirty = true.
+        expect(_pillEnabled(tester, 'Save'), isTrue);
 
-        await tester.tap(saveButtonFinder);
+        await tester.tap(_pill('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Form is invalid → upsert must NOT be called.
+        // Form is invalid → upsert must NOT be called and the page stays.
         verifyNever(
           () => mockPersistenceLogic.upsertDashboardDefinition(any()),
         );
+        expect(beamedTo, isNull);
       },
     );
 
@@ -905,13 +754,10 @@ void main() {
           () => mockJournalDb.getDashboardById(any()),
         ).thenAnswer((_) async => null);
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            EditDashboardPage(dashboardId: 'nonexistent-id'),
-          ),
+        await _pumpPage(
+          tester,
+          EditDashboardPage(dashboardId: 'nonexistent-id'),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         // Stream fetches null → "Dashboard not found" scaffold.
         expect(find.text('Dashboard not found'), findsOneWidget);
@@ -925,53 +771,42 @@ void main() {
           () => mockJournalDb.getDashboardById(testDashboardConfig.id),
         ).thenAnswer((_) async => testDashboardConfig);
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            EditDashboardPage(dashboardId: testDashboardConfig.id),
-          ),
+        await _pumpPage(
+          tester,
+          EditDashboardPage(dashboardId: testDashboardConfig.id),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
-        // The DashboardDefinitionPage title text is rendered.
+        // The dashboard name is seeded into the name field.
         expect(find.text(testDashboardName), findsOneWidget);
+        expect(find.text('Edit dashboard'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'adding a health chart via modal appends a health item and sets dirty',
+      'adding a health chart appends a health item, sets dirty, and saving '
+      'persists it',
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        DashboardDefinition? saved;
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((invocation) async {
-          saved = invocation.positionalArguments.first as DashboardDefinition;
-          return 1;
-        });
+        final capture = _stubUpsertCapture(mockPersistenceLogic);
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: emptyTestDashboardConfig,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: emptyTestDashboardConfig,
+            formKey: formKey,
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
-        // No item cards and save button hidden before interaction.
+        // No item cards and save disabled before interaction.
         expect(find.byType(Dismissible), findsNothing);
-        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+        expect(_pillEnabled(tester, 'Save'), isFalse);
 
         // Invoke the health ChartMultiSelect's onConfirm directly with the
-        // WEIGHT health type. Driving the WoltModalSheet (open → select → Add)
-        // is non-deterministic in the batched suite because the modal flow
-        // depends on hit-testing/overlay timing; calling onConfirm exercises
-        // onConfirmAddHealthType deterministically. The health selector is the
-        // ChartMultiSelect<HealthTypeConfig> identified by its semantics label.
+        // WEIGHT health type. Driving the WoltModalSheet (open → select →
+        // Add) is non-deterministic in the batched suite because the modal
+        // flow depends on hit-testing/overlay timing; calling onConfirm
+        // exercises onConfirmAddHealthType deterministically.
         final healthSelect = tester.widget<ChartMultiSelect<HealthTypeConfig>>(
           find.byWidgetPredicate(
             (w) =>
@@ -983,16 +818,18 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // onConfirmAddHealthType appended a health item → dirty → save shown.
+        // onConfirmAddHealthType appended a health item → dirty → save
+        // enabled.
         expect(find.byType(Dismissible), findsOneWidget);
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+        expect(_pillEnabled(tester, 'Save'), isTrue);
 
-        // Saving persists exactly one DashboardHealthItem for the WEIGHT type.
-        await tester.tap(find.byKey(const Key('dashboard_save')));
+        // Saving persists exactly one DashboardHealthItem for WEIGHT.
+        await tester.tap(_pill('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final healthItems = saved!.items.whereType<DashboardHealthItem>();
+        final healthItems = capture.saved!.items
+            .whereType<DashboardHealthItem>();
         expect(healthItems, hasLength(1));
         expect(healthItems.first.healthType, 'HealthDataType.WEIGHT');
         expect(healthItems.first.color, 'color');
@@ -1000,38 +837,26 @@ void main() {
     );
 
     testWidgets(
-      'adding a workout chart via modal appends a workout item and sets dirty',
+      'adding a workout chart appends a workout item, sets dirty, and '
+      'saving persists it',
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        DashboardDefinition? saved;
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((invocation) async {
-          saved = invocation.positionalArguments.first as DashboardDefinition;
-          return 1;
-        });
+        final capture = _stubUpsertCapture(mockPersistenceLogic);
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: emptyTestDashboardConfig,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: emptyTestDashboardConfig,
+            formKey: formKey,
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(Dismissible), findsNothing);
-        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+        expect(_pillEnabled(tester, 'Save'), isFalse);
 
         // Invoke the workout ChartMultiSelect's onConfirm directly with a
-        // workout type. As with the health case above, driving the modal flow
-        // is flaky in the batched suite; calling onConfirm exercises
-        // onConfirmAddWorkoutType deterministically. The workout selector is
-        // the ChartMultiSelect<DashboardWorkoutItem> identified by its
-        // semantics label.
+        // workout type — same determinism rationale as the health case.
         final workoutType = workoutTypes['walking.duration'];
         final workoutSelect = tester
             .widget<ChartMultiSelect<DashboardWorkoutItem>>(
@@ -1045,16 +870,15 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // onConfirmAddWorkoutType appended a workout item → dirty → save shown.
         expect(find.byType(Dismissible), findsOneWidget);
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+        expect(_pillEnabled(tester, 'Save'), isTrue);
 
-        await tester.tap(find.byKey(const Key('dashboard_save')));
+        await tester.tap(_pill('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Exactly one workout item was persisted, with the chosen workout type.
-        final workoutItems = saved!.items
+        // Exactly one workout item was persisted, with the chosen type.
+        final workoutItems = capture.saved!.items
             .whereType<DashboardWorkoutItem>()
             .toList();
         expect(workoutItems, hasLength(1));
@@ -1067,9 +891,7 @@ void main() {
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((_) async => 1);
+        _stubUpsertCapture(mockPersistenceLogic);
 
         // A dashboard with a single measurable item whose card renders a
         // tappable ListTile (the measurable type resolves to Water).
@@ -1082,19 +904,16 @@ void main() {
           ],
         );
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: singleMeasurableDashboard,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: singleMeasurableDashboard,
+            formKey: formKey,
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         // Initially nothing is dirty.
-        expect(find.byKey(const Key('dashboard_save')), findsNothing);
+        expect(_pillEnabled(tester, 'Save'), isFalse);
 
         // The measurable item card title renders the resolved display name
         // with the aggregation suffix.
@@ -1108,8 +927,8 @@ void main() {
         await tester.tap(cardTitleFinder);
         await tester.pump();
 
-        // updateItem marked the page dirty → save button now visible.
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+        // updateItem marked the page dirty → save pill enabled.
+        expect(_pillEnabled(tester, 'Save'), isTrue);
       },
     );
 
@@ -1118,13 +937,7 @@ void main() {
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        DashboardDefinition? saved;
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((invocation) async {
-          saved = invocation.positionalArguments.first as DashboardDefinition;
-          return 1;
-        });
+        final capture = _stubUpsertCapture(mockPersistenceLogic);
 
         when(
           () => mockJournalDb.getHabitById(habitFlossing.id),
@@ -1138,16 +951,13 @@ void main() {
           ],
         );
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: habitDashboard,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: habitDashboard,
+            formKey: formKey,
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         // Mark dirty so the copy persists a meaningful, valid dashboard.
         await tester.enterText(
@@ -1156,16 +966,7 @@ void main() {
         );
         await tester.pump();
 
-        final copyButtonFinder = find.byIcon(Icons.copy);
-        await tester.dragUntilVisible(
-          copyButtonFinder,
-          find.byType(SingleChildScrollView),
-          const Offset(0, 500),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        await tester.tap(copyButtonFinder);
+        await tester.tap(find.byKey(const Key('dashboard_copy')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1177,14 +978,18 @@ void main() {
         // getMeasurableDataTypeById must NOT be queried: a habit item takes
         // the break branch, not the measurement branch.
         verifyNever(() => mockJournalDb.getMeasurableDataTypeById(any()));
-        expect(saved!.items.whereType<DashboardHabitItem>(), hasLength(1));
+        expect(
+          capture.saved!.items.whereType<DashboardHabitItem>(),
+          hasLength(1),
+        );
       },
     );
 
     // copyDashboard's switch sends DashboardHealthItem, DashboardWorkoutItem,
-    // and DashboardSurveyItem through the `break` arm: unlike measurement items
-    // they are NOT looked up in JournalDb. These cases prove the copy succeeds
-    // for each non-measurement item type without ever querying a measurable.
+    // and DashboardSurveyItem through the `break` arm: unlike measurement
+    // items they are NOT looked up in JournalDb. These cases prove the copy
+    // succeeds for each non-measurement item type without ever querying a
+    // measurable.
     final nonMeasurableCopyCases = <({String label, DashboardItem item})>[
       (
         label: 'health',
@@ -1222,28 +1027,19 @@ void main() {
         (tester) async {
           final formKey = GlobalKey<FormBuilderState>();
 
-          DashboardDefinition? saved;
-          when(
-            () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-          ).thenAnswer((invocation) async {
-            saved = invocation.positionalArguments.first as DashboardDefinition;
-            return 1;
-          });
+          final capture = _stubUpsertCapture(mockPersistenceLogic);
 
           final dashboard = testDashboardConfig.copyWith(
             items: [copyCase.item],
           );
 
-          await tester.pumpWidget(
-            makeTestableWidgetNoScroll(
-              DashboardDefinitionPage(
-                dashboard: dashboard,
-                formKey: formKey,
-              ),
+          await _pumpPage(
+            tester,
+            DashboardDefinitionPage(
+              dashboard: dashboard,
+              formKey: formKey,
             ),
           );
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
 
           // Mark dirty so copyDashboard persists a meaningful dashboard.
           await tester.enterText(
@@ -1252,25 +1048,17 @@ void main() {
           );
           await tester.pump();
 
-          final copyButtonFinder = find.byIcon(Icons.copy);
-          await tester.dragUntilVisible(
-            copyButtonFinder,
-            find.byType(SingleChildScrollView),
-            const Offset(0, 500),
-          );
+          await tester.tap(find.byKey(const Key('dashboard_copy')));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 300));
 
-          await tester.tap(copyButtonFinder);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-
-          // The dashboard was persisted and its single item survived the copy.
+          // The dashboard was persisted and its single item survived the
+          // copy.
           verify(
             () => mockPersistenceLogic.upsertDashboardDefinition(any()),
           ).called(1);
-          expect(saved!.items, hasLength(1));
-          expect(saved!.items.first, copyCase.item);
+          expect(capture.saved!.items, hasLength(1));
+          expect(capture.saved!.items.first, copyCase.item);
 
           // The break branch means NO measurable lookup happened for these
           // item types (only DashboardMeasurementItem hits getMeasurable…).
@@ -1284,16 +1072,10 @@ void main() {
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        DashboardDefinition? saved;
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((invocation) async {
-          saved = invocation.positionalArguments.first as DashboardDefinition;
-          return 1;
-        });
+        final capture = _stubUpsertCapture(mockPersistenceLogic);
 
         // Two health items render their titles synchronously from the
-        // healthTypes map (no DB dependency), giving us stable reorder targets.
+        // healthTypes map (no DB dependency), giving stable reorder targets.
         final twoHealthDashboard = testDashboardConfig.copyWith(
           items: const [
             DashboardHealthItem(
@@ -1307,16 +1089,13 @@ void main() {
           ],
         );
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: twoHealthDashboard,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: twoHealthDashboard,
+            formKey: formKey,
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         final handle = tester.ensureSemantics();
 
@@ -1351,16 +1130,16 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Reorder set dirty → save button visible.
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+        // Reorder set dirty → save pill enabled.
+        expect(_pillEnabled(tester, 'Save'), isTrue);
 
-        await tester.tap(find.byKey(const Key('dashboard_save')));
+        await tester.tap(_pill('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
         // The persisted item order reflects the reorder: Body Fat Percentage
         // (BODY_FAT_PERCENTAGE) now precedes Weight (WEIGHT).
-        final healthItems = saved!.items
+        final healthItems = capture.saved!.items
             .whereType<DashboardHealthItem>()
             .toList();
         expect(healthItems, hasLength(2));
@@ -1379,16 +1158,10 @@ void main() {
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
-        DashboardDefinition? saved;
-        when(
-          () => mockPersistenceLogic.upsertDashboardDefinition(any()),
-        ).thenAnswer((invocation) async {
-          saved = invocation.positionalArguments.first as DashboardDefinition;
-          return 1;
-        });
+        final capture = _stubUpsertCapture(mockPersistenceLogic);
 
         // Two health items render their titles synchronously from the
-        // healthTypes map (no DB dependency), giving us stable reorder targets.
+        // healthTypes map (no DB dependency), giving stable reorder targets.
         final twoHealthDashboard = testDashboardConfig.copyWith(
           items: const [
             DashboardHealthItem(
@@ -1402,21 +1175,18 @@ void main() {
           ],
         );
 
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            DashboardDefinitionPage(
-              dashboard: twoHealthDashboard,
-              formKey: formKey,
-            ),
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(
+            dashboard: twoHealthDashboard,
+            formKey: formKey,
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
 
         final handle = tester.ensureSemantics();
 
-        // Walk up from the first item's title text node to the reorderable node
-        // that actually carries the "Move down" custom action.
+        // Walk up from the first item's title text node to the reorderable
+        // node that actually carries the "Move down" custom action.
         final moveDownId = CustomSemanticsAction.getIdentifier(
           const CustomSemanticsAction(label: 'Move down'),
         );
@@ -1433,9 +1203,9 @@ void main() {
         );
 
         // "Move down" on the first item makes Flutter call
-        // onReorderItem(0, 1): newIndex(1) > oldIndex(0), so the handler takes
-        // the `newIndex - 1` branch (insertionIndex = 0) and the order is
-        // unchanged, but the previously-uncovered branch is exercised.
+        // onReorderItem(0, 1): newIndex(1) > oldIndex(0), so the handler
+        // takes the `newIndex - 1` branch (insertionIndex = 0) and the order
+        // is unchanged, but the previously-uncovered branch is exercised.
         // ignore: deprecated_member_use
         tester.binding.pipelineOwner.semanticsOwner!.performAction(
           node!.id,
@@ -1445,16 +1215,16 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Reorder set dirty → save button visible.
-        expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
+        // Reorder set dirty → save pill enabled.
+        expect(_pillEnabled(tester, 'Save'), isTrue);
 
-        await tester.tap(find.byKey(const Key('dashboard_save')));
+        await tester.tap(_pill('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Moving the first item down by one with the newIndex - 1 adjustment is
-        // an identity reorder: order is preserved but the branch ran.
-        final healthItems = saved!.items
+        // Moving the first item down by one with the newIndex - 1 adjustment
+        // is an identity reorder: order is preserved but the branch ran.
+        final healthItems = capture.saved!.items
             .whereType<DashboardHealthItem>()
             .toList();
         expect(healthItems, hasLength(2));
@@ -1468,11 +1238,4 @@ void main() {
       },
     );
   });
-}
-
-String getTrimmed(Map<String, dynamic>? formData, String k) {
-  if (formData == null || formData[k] == null) {
-    return '';
-  }
-  return formData[k].toString().trim();
 }

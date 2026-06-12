@@ -6,7 +6,6 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
-import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -106,7 +105,11 @@ void main() {
         await pumpCategoriesListPage(tester);
 
         expect(find.byIcon(Icons.category_outlined), findsOneWidget);
-        expect(find.byType(Text), findsAtLeastNWidgets(2));
+        expect(find.text('No categories found'), findsOneWidget);
+        expect(
+          find.text('Create a category to organize your entries'),
+          findsOneWidget,
+        );
       });
     });
 
@@ -129,6 +132,10 @@ void main() {
           final fab = find.byType(DesignSystemFloatingActionButton);
           expect(fab, findsOneWidget);
           expect(
+            tester.widget<DesignSystemFloatingActionButton>(fab).semanticLabel,
+            'Create category',
+          );
+          expect(
             find.descendant(of: fab, matching: find.byIcon(Icons.add_rounded)),
             findsOneWidget,
           );
@@ -137,85 +144,21 @@ void main() {
       );
 
       testWidgets(
-        'tapping the create FAB opens the CategoryCreateModal as a '
-        'single-page modal so the create flow stays inside this tab '
-        'instead of beaming through SettingsLocation (where there is no '
-        'projects-style panel for the /create route)',
+        'tapping the create FAB beams to the create page — the same '
+        'list-to-full-page flow as every other definition type',
         (tester) async {
           when(() => mockRepository.watchCategories()).thenAnswer(
             (_) => Stream.value([]),
           );
-
-          await pumpCategoriesListPage(tester);
-
-          // Sanity: the modal is not open before the user taps the FAB.
-          expect(find.byType(CategoryCreateModal), findsNothing);
-
-          await tester.tap(find.byType(DesignSystemFloatingActionButton));
-          await tester.pumpAndSettle();
-
-          // The FAB calls `_showCreateCategoryModal`, which routes
-          // through `ModalUtils.showSinglePageModal` and renders
-          // `CategoryCreateModal` inside the resulting WoltModalSheet.
-          expect(find.byType(CategoryCreateModal), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'create modal callback exits cleanly when a category is saved — '
-        'the underlying stream provider refreshes the list, so the page '
-        'does not need to navigate the user anywhere afterwards',
-        (tester) async {
-          final created = CategoryTestUtils.createTestCategory(
-            id: 'cat-new',
-            name: 'New',
-          );
-          when(() => mockRepository.watchCategories()).thenAnswer(
-            (_) => Stream.value([]),
-          );
-          when(
-            () => mockRepository.createCategory(
-              name: any(named: 'name'),
-              color: any(named: 'color'),
-              icon: any(named: 'icon'),
-            ),
-          ).thenAnswer((_) async => created);
+          String? beamedTo;
+          beamToNamedOverride = (path) => beamedTo = path;
 
           await pumpCategoriesListPage(tester);
 
           await tester.tap(find.byType(DesignSystemFloatingActionButton));
-          await tester.pumpAndSettle();
-
-          // Drive the modal's save path: type a name, tap Save.
-          await tester.enterText(find.byType(TextField).last, 'New');
           await tester.pump();
-          // The Wolt modal lays the action row out below the visible
-          // viewport on the default 800x600 mobile bench, so scroll
-          // the Save button into view before tapping. `warnIfMissed:
-          // false` because the WoltModalSheet hit-test wraps the
-          // button in custom semantics layers Flutter's tap finder
-          // doesn't recognise even after the button is on-screen.
-          final saveButton = find.text('Save');
-          await tester.ensureVisible(saveButton);
-          await tester.pumpAndSettle();
-          await tester.tap(saveButton, warnIfMissed: false);
-          // The modal pops itself once `createCategory` resolves; let
-          // the route exit animation settle so the modal widget is
-          // gone from the tree before we assert.
-          await tester.pumpAndSettle();
 
-          verify(
-            () => mockRepository.createCategory(
-              name: 'New',
-              color: any(named: 'color'),
-              icon: any(named: 'icon'),
-            ),
-          ).called(1);
-
-          // Modal closes; the user is left on the categories list which
-          // refreshes via `categoriesStreamProvider` independently.
-          expect(find.byType(CategoryCreateModal), findsNothing);
-          expect(find.byType(CategoriesListPage), findsOneWidget);
+          expect(beamedTo, '/settings/categories/create');
         },
       );
 

@@ -1,70 +1,84 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:lotti/services/nav_service.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() async {
+    await setUpTestGetIt(
+      additionalSetup: () {
+        // _DashboardListItem renders CategoryIconCompact, which resolves
+        // the dashboard's category through the cache; the unstubbed mock
+        // returns null and triggers the fallback icon, which is fine here.
+        getIt.registerSingleton<EntitiesCacheService>(
+          MockEntitiesCacheService(),
+        );
+      },
+    );
+    beamToNamedOverride = (_) {};
+  });
 
-  late MockJournalDb mockJournalDb;
-  final mockEntitiesCacheService = MockEntitiesCacheService();
+  tearDown(() async {
+    beamToNamedOverride = null;
+    await tearDownTestGetIt();
+  });
 
   Future<void> pumpDashboardsPage(
     WidgetTester tester, {
-    required List<DashboardDefinition> dashboards,
+    List<DashboardDefinition> dashboards = const [],
+    Object? error,
+    bool loading = false,
+    Widget child = const DashboardSettingsPage(),
   }) async {
-    mockJournalDb = MockJournalDb();
-    when(mockJournalDb.close).thenAnswer((_) async {});
-    when(mockJournalDb.getAllDashboards).thenAnswer((_) async => dashboards);
-
-    final mockUpdateNotifications = MockUpdateNotifications();
-    when(
-      () => mockUpdateNotifications.updateStream,
-    ).thenAnswer((_) => const Stream.empty());
-
-    await getIt.reset();
-    getIt
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
-    ensureThemingServicesRegistered();
-
     await tester.pumpWidget(
-      makeTestableWidget(
-        ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxHeight: 1000,
-            maxWidth: 1000,
+      makeTestableWidgetNoScroll(
+        child,
+        overrides: [
+          allDashboardsStreamProvider.overrideWith(
+            (ref) => loading
+                ? const Stream<List<DashboardDefinition>>.empty()
+                : error != null
+                ? Stream<List<DashboardDefinition>>.error(error)
+                : Stream.value(dashboards),
           ),
-          child: const DashboardSettingsPage(),
-        ),
+        ],
       ),
     );
-    await tester.pumpAndSettle();
+    // A plain pump() does not advance the test clock; the header's
+    // flutter_animate entrance schedules a zero-duration timer that must
+    // fire before the test ends, so advance the clock explicitly.
+    await tester.pump(const Duration(milliseconds: 100));
   }
 
-  tearDown(getIt.reset);
-
   group('DashboardSettingsPage', () {
-    group('basic rendering', () {
-      testWidgets('displays dashboard names', (tester) async {
+    group('data rendering', () {
+      testWidgets('displays dashboard names sorted alphabetically', (
+        tester,
+      ) async {
         await pumpDashboardsPage(
           tester,
-          dashboards: [testDashboardConfig, emptyTestDashboardConfig],
+          dashboards: [emptyTestDashboardConfig, testDashboardConfig],
         );
 
-        expect(find.text(testDashboardConfig.name), findsOneWidget);
-        expect(find.text(emptyTestDashboardConfig.name), findsOneWidget);
+        final items = find.byType(DesignSystemListItem);
+        expect(items, findsNWidgets(2));
+        expect(
+          [
+            tester.widget<DesignSystemListItem>(items.at(0)).title,
+            tester.widget<DesignSystemListItem>(items.at(1)).title,
+          ],
+          [testDashboardConfig.name, emptyTestDashboardConfig.name],
+        );
       });
 
       testWidgets('displays description as subtitle when non-empty', (
@@ -76,6 +90,16 @@ void main() {
         );
 
         expect(find.text(testDashboardConfig.description), findsOneWidget);
+      });
+
+      testWidgets('omits subtitle when description is empty', (tester) async {
+        final noDescription = testDashboardConfig.copyWith(description: '');
+        await pumpDashboardsPage(tester, dashboards: [noDescription]);
+
+        final item = tester.widget<DesignSystemListItem>(
+          find.byType(DesignSystemListItem),
+        );
+        expect(item.subtitle, isNull);
       });
 
       testWidgets('displays chevron trailing icon', (tester) async {
@@ -144,6 +168,156 @@ void main() {
           find.byType(DesignSystemListItem),
         );
         expect(item.showDivider, isFalse);
+      });
+    });
+
+    group('empty, error, and loading states', () {
+      testWidgets('shows localized empty state when no dashboards exist', (
+        tester,
+      ) async {
+        await pumpDashboardsPage(tester);
+
+        expect(find.byIcon(Icons.dashboard_customize_outlined), findsOneWidget);
+        expect(find.text('No dashboards yet'), findsOneWidget);
+        expect(
+          find.text('Tap the + button to create your first dashboard.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows localized error state when the stream errors', (
+        tester,
+      ) async {
+        await pumpDashboardsPage(tester, error: Exception('boards broke'));
+        // Riverpod 3 retries failed providers with backoff; the spinner
+        // keeps scheduling frames, so settling pumps virtual time through
+        // the retries until the terminal AsyncError renders.
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(find.text('Error loading dashboards'), findsOneWidget);
+        expect(find.textContaining('boards broke'), findsOneWidget);
+      });
+
+      testWidgets('shows progress indicator while loading', (tester) async {
+        await pumpDashboardsPage(tester, loading: true);
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(DesignSystemSearch), findsNothing);
+      });
+    });
+
+    group('search', () {
+      testWidgets('filters dashboards by name case-insensitively', (
+        tester,
+      ) async {
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [
+            testDashboardConfig.copyWith(id: 'dash-a', name: 'Alpha Board'),
+            testDashboardConfig.copyWith(id: 'dash-b', name: 'Beta Board'),
+          ],
+        );
+
+        await tester.enterText(find.byType(TextField), 'ALPHA');
+        await tester.pump();
+
+        expect(find.text('Alpha Board'), findsOneWidget);
+        expect(find.text('Beta Board'), findsNothing);
+      });
+
+      testWidgets('search also matches the dashboard description', (
+        tester,
+      ) async {
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [
+            testDashboardConfig.copyWith(
+              id: 'dash-a',
+              name: 'Alpha Board',
+              description: 'Tracks sleep',
+            ),
+            testDashboardConfig.copyWith(
+              id: 'dash-b',
+              name: 'Beta Board',
+              description: 'Tracks running',
+            ),
+          ],
+        );
+
+        await tester.enterText(find.byType(TextField), 'sleep');
+        await tester.pump();
+
+        expect(find.text('Alpha Board'), findsOneWidget);
+        expect(find.text('Beta Board'), findsNothing);
+      });
+
+      testWidgets('shows localized no-match message for unmatched query', (
+        tester,
+      ) async {
+        await pumpDashboardsPage(tester, dashboards: [testDashboardConfig]);
+
+        await tester.enterText(find.byType(TextField), 'zzz');
+        await tester.pump();
+
+        expect(find.byType(DesignSystemListItem), findsNothing);
+        expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+        expect(find.text('No dashboards match "zzz"'), findsOneWidget);
+      });
+    });
+
+    group('navigation', () {
+      testWidgets(
+        'FAB carries create-dashboard semantics and beams to create',
+        (tester) async {
+          String? beamedTo;
+          beamToNamedOverride = (path) => beamedTo = path;
+
+          await pumpDashboardsPage(tester, dashboards: [testDashboardConfig]);
+
+          final fab = find.byType(DesignSystemFloatingActionButton);
+          expect(
+            tester.widget<DesignSystemFloatingActionButton>(fab).semanticLabel,
+            'Create dashboard',
+          );
+
+          await tester.tap(fab);
+          await tester.pump();
+
+          expect(beamedTo, '/settings/dashboards/create');
+        },
+      );
+
+      testWidgets('tapping a dashboard row beams to its detail route', (
+        tester,
+      ) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [testDashboardConfig.copyWith(id: 'dash-42')],
+        );
+
+        await tester.tap(find.byType(DesignSystemListItem));
+        await tester.pump();
+
+        expect(beamedTo, '/settings/dashboards/dash-42');
+      });
+    });
+
+    group('DashboardsBody embedded alias', () {
+      testWidgets('renders a DashboardSettingsPage with its content', (
+        tester,
+      ) async {
+        await pumpDashboardsPage(
+          tester,
+          dashboards: [testDashboardConfig],
+          child: const DashboardsBody(),
+        );
+
+        expect(find.byType(DashboardSettingsPage), findsOneWidget);
+        expect(find.text(testDashboardConfig.name), findsOneWidget);
       });
     });
   });

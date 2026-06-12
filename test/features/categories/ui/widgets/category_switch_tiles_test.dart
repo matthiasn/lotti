@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 import '../../../../test_helper.dart';
 
@@ -47,9 +48,11 @@ Future<void> _pumpTiles(
   WidgetTester tester, {
   required CategorySwitchSettings settings,
   SwitchFieldChanged? onChanged,
+  ThemeData? theme,
 }) {
   return tester.pumpWidget(
     WidgetTestBench(
+      theme: theme,
       child: CategorySwitchTiles(
         settings: settings,
         onChanged: onChanged ?? (field, {required value}) {},
@@ -60,13 +63,13 @@ Future<void> _pumpTiles(
 
 void main() {
   group('CategorySwitchTiles', () {
-    testWidgets('displays every switch tile with title, subtitle, and icon', (
+    testWidgets('displays every switch row with title, subtitle, and icon', (
       tester,
     ) async {
       await _pumpTiles(tester, settings: _settings());
 
       expect(
-        find.byType(LottiSwitchField),
+        find.byType(SettingsSwitchRow),
         findsNWidgets(SwitchFieldType.values.length),
       );
 
@@ -88,18 +91,18 @@ void main() {
         ),
       );
 
-      final switchFields = tester
-          .widgetList<LottiSwitchField>(find.byType(LottiSwitchField))
+      final switchRows = tester
+          .widgetList<SettingsSwitchRow>(find.byType(SettingsSwitchRow))
           .toList();
 
-      expect(switchFields[0].value, isTrue); // Private
-      expect(switchFields[1].value, isFalse); // Active
-      expect(switchFields[2].value, isTrue); // Favorite
-      expect(switchFields[3].value, isTrue); // Day planning
+      expect(switchRows[0].value, isTrue); // Private
+      expect(switchRows[1].value, isFalse); // Active
+      expect(switchRows[2].value, isTrue); // Favorite
+      expect(switchRows[3].value, isTrue); // Day planning
     });
 
     testWidgets(
-      'tapping each switch emits its field with the toggled value',
+      'tapping each toggle emits its field with the toggled value',
       (tester) async {
         // Initial values: private=false, active=true, favorite=false,
         // availableForDayPlan=false — so toggling yields the inverse.
@@ -117,9 +120,9 @@ void main() {
           onChanged: (field, {required value}) => changes.add((field, value)),
         );
 
-        final switches = find.byType(Switch);
+        final toggles = find.byType(DesignSystemToggle);
         for (var i = 0; i < SwitchFieldType.values.length; i++) {
-          await tester.tap(switches.at(i));
+          await tester.tap(toggles.at(i));
         }
         await tester.pump();
 
@@ -135,41 +138,36 @@ void main() {
       },
     );
 
-    testWidgets('has spacing between consecutive switches', (tester) async {
-      await _pumpTiles(tester, settings: _settings());
+    testWidgets(
+      'tapping the row (not the toggle) also emits the toggled value',
+      (tester) async {
+        final changes = <(SwitchFieldType, bool)>[];
+        await _pumpTiles(
+          tester,
+          settings: _settings(),
+          onChanged: (field, {required value}) => changes.add((field, value)),
+        );
 
-      final sizedBoxes = tester.widgetList<SizedBox>(
-        find.descendant(
-          of: find.byType(CategorySwitchTiles),
-          matching: find.byType(SizedBox),
-        ),
-      );
+        // The whole SettingsSwitchRow is tappable; tap the Private title.
+        await tester.tap(find.text('Private'));
+        await tester.pump();
 
-      // N switches need N-1 spacers.
-      final spacingSizedBoxes = sizedBoxes.where((box) => box.height == 8);
-      expect(
-        spacingSizedBoxes.length,
-        SwitchFieldType.values.length - 1,
-      );
-    });
+        expect(changes, [(SwitchFieldType.private, true)]);
+      },
+    );
 
-    testWidgets('renders without errors in dark theme', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: WidgetTestBench(
-            child: CategorySwitchTiles(
-              settings: _settings(),
-              onChanged: (field, {required value}) {},
-            ),
-          ),
-        ),
+    testWidgets('renders all rows in dark theme', (tester) async {
+      await _pumpTiles(
+        tester,
+        settings: _settings(),
+        theme: ThemeData.dark(),
       );
 
       expect(
-        find.byType(LottiSwitchField),
+        find.byType(SettingsSwitchRow),
         findsNWidgets(SwitchFieldType.values.length),
       );
+      expect(tester.takeException(), isNull);
     });
   });
 }

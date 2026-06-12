@@ -5031,7 +5031,7 @@ abstract class AppLocalizations {
   /// No description provided for @createCategoryTitle.
   ///
   /// In en, this message translates to:
-  /// **'Create Category:'**
+  /// **'Create category'**
   String get createCategoryTitle;
 
   /// No description provided for @createEntryLabel.
@@ -6723,13 +6723,13 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardActiveLabel.
   ///
   /// In en, this message translates to:
-  /// **'Active:'**
+  /// **'Active'**
   String get dashboardActiveLabel;
 
   /// No description provided for @dashboardAddChartsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Add Charts:'**
+  /// **'Charts'**
   String get dashboardAddChartsTitle;
 
   /// No description provided for @dashboardAddHabitButton.
@@ -6831,13 +6831,13 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardDescriptionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Description (optional):'**
+  /// **'Description (optional)'**
   String get dashboardDescriptionLabel;
 
   /// No description provided for @dashboardNameLabel.
   ///
   /// In en, this message translates to:
-  /// **'Dashboard name:'**
+  /// **'Dashboard name'**
   String get dashboardNameLabel;
 
   /// No description provided for @dashboardNotFound.
@@ -6849,7 +6849,7 @@ abstract class AppLocalizations {
   /// No description provided for @dashboardPrivateLabel.
   ///
   /// In en, this message translates to:
-  /// **'Private:'**
+  /// **'Private'**
   String get dashboardPrivateLabel;
 
   /// No description provided for @defaultLanguage.
@@ -8199,13 +8199,13 @@ abstract class AppLocalizations {
   /// No description provided for @habitActiveFromLabel.
   ///
   /// In en, this message translates to:
-  /// **'Start Date'**
+  /// **'Start date'**
   String get habitActiveFromLabel;
 
   /// No description provided for @habitArchivedLabel.
   ///
   /// In en, this message translates to:
-  /// **'Archived:'**
+  /// **'Archived'**
   String get habitArchivedLabel;
 
   /// No description provided for @habitCategoryHint.
@@ -8247,7 +8247,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitPriorityLabel.
   ///
   /// In en, this message translates to:
-  /// **'Priority:'**
+  /// **'Priority'**
   String get habitPriorityLabel;
 
   /// No description provided for @habitsCompletedHeader.
@@ -11095,7 +11095,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsCategoriesDetailsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Category Details'**
+  /// **'Edit category'**
   String get settingsCategoriesDetailsLabel;
 
   /// No description provided for @settingsCategoriesEmptyState.
@@ -11161,7 +11161,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsDashboardDetailsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Dashboard Details'**
+  /// **'Edit dashboard'**
   String get settingsDashboardDetailsLabel;
 
   /// No description provided for @settingsDashboardSaveLabel.
@@ -11269,13 +11269,13 @@ abstract class AppLocalizations {
   /// No description provided for @settingsHabitsDescriptionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Description (optional):'**
+  /// **'Description (optional)'**
   String get settingsHabitsDescriptionLabel;
 
   /// No description provided for @settingsHabitsDetailsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Habit Details'**
+  /// **'Edit habit'**
   String get settingsHabitsDetailsLabel;
 
   /// No description provided for @settingsHabitsEmptyState.
@@ -11299,7 +11299,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsHabitsNameLabel.
   ///
   /// In en, this message translates to:
-  /// **'Habit name:'**
+  /// **'Habit name'**
   String get settingsHabitsNameLabel;
 
   /// No description provided for @settingsHabitsNoMatchQuery.
@@ -11746,7 +11746,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsMeasurableAggregationLabel.
   ///
   /// In en, this message translates to:
-  /// **'Default Aggregation Type (optional):'**
+  /// **'Default Aggregation Type (optional)'**
   String get settingsMeasurableAggregationLabel;
 
   /// No description provided for @settingsMeasurableDeleteTooltip.
@@ -11758,19 +11758,19 @@ abstract class AppLocalizations {
   /// No description provided for @settingsMeasurableDescriptionLabel.
   ///
   /// In en, this message translates to:
-  /// **'Description (optional):'**
+  /// **'Description (optional)'**
   String get settingsMeasurableDescriptionLabel;
 
   /// No description provided for @settingsMeasurableDetailsLabel.
   ///
   /// In en, this message translates to:
-  /// **'Measurable Details'**
+  /// **'Edit measurable'**
   String get settingsMeasurableDetailsLabel;
 
   /// No description provided for @settingsMeasurableNameLabel.
   ///
   /// In en, this message translates to:
-  /// **'Measurable name:'**
+  /// **'Measurable name'**
   String get settingsMeasurableNameLabel;
 
   /// No description provided for @settingsMeasurablePrivateLabel.
@@ -11836,7 +11836,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsMeasurableUnitLabel.
   ///
   /// In en, this message translates to:
-  /// **'Unit abbreviation (optional):'**
+  /// **'Unit abbreviation (optional)'**
   String get settingsMeasurableUnitLabel;
 
   /// No description provided for @settingsResetGeminiConfirm.

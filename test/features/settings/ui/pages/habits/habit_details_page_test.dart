@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/features/settings/ui/pages/habits/habit_create_page.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habit_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -16,295 +16,264 @@ import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
-  final binding = TestWidgetsFlutterBinding.ensureInitialized();
-  // ignore: deprecated_member_use
-  binding.window.physicalSizeTestValue = const Size(1000, 1000);
-  // ignore: deprecated_member_use
-  binding.window.devicePixelRatioTestValue = 1.0;
+  TestWidgetsFlutterBinding.ensureInitialized();
 
-  var mockJournalDb = MockJournalDb();
-  var mockPersistenceLogic = MockPersistenceLogic();
-  final mockEntitiesCacheService = MockEntitiesCacheService();
-  final mockNotificationService = MockNotificationService();
-  final mockUpdateNotifications = MockUpdateNotifications();
+  late TestGetItMocks mocks;
+  late MockPersistenceLogic mockPersistenceLogic;
+  late MockEntitiesCacheService mockEntitiesCacheService;
+  late MockNotificationService mockNotificationService;
+  String? beamedTo;
 
-  group('HabitDetailsPage Widget Tests - ', () {
-    setUpAll(() {
-      registerFallbackValue(FakeDashboardDefinition());
-      registerFallbackValue(FakeHabitDefinition());
-    });
+  setUpAll(() {
+    registerFallbackValue(FakeDashboardDefinition());
+    registerFallbackValue(FakeHabitDefinition());
+  });
 
-    setUp(() {
-      mockJournalDb = mockJournalDbWithHabits([habitFlossing]);
+  setUp(() async {
+    mockPersistenceLogic = MockPersistenceLogic();
+    mockEntitiesCacheService = MockEntitiesCacheService();
+    mockNotificationService = MockNotificationService();
 
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [categoryMindfulness],
-      );
+    mocks = await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+          ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+          ..registerSingleton<NotificationService>(mockNotificationService);
+      },
+    );
 
-      when(
-        () => mockNotificationService.scheduleHabitNotification(any()),
-      ).thenAnswer(
-        (_) => Future.value(),
-      );
+    when(
+      () => mocks.journalDb.getHabitById(any()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mocks.journalDb.getHabitById(habitFlossing.id),
+    ).thenAnswer((_) async => habitFlossing);
+    when(
+      mocks.journalDb.getAllDashboards,
+    ).thenAnswer((_) async => [testDashboardConfig]);
+    when(
+      () => mockEntitiesCacheService.sortedCategories,
+    ).thenReturn([categoryMindfulness]);
+    when(
+      () => mockNotificationService.scheduleHabitNotification(any()),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockPersistenceLogic.upsertEntityDefinition(any()),
+    ).thenAnswer((_) async => 1);
 
-      when(
-        mockJournalDb.getAllDashboards,
-      ).thenAnswer((_) async => [testDashboardConfig]);
+    // Back/cancel/save/delete beam to the list route (V2's desktop detail
+    // surface mounts the page inline; there is no Navigator route to pop).
+    beamedTo = null;
+    beamToNamedOverride = (path) => beamedTo = path;
+  });
 
-      when(
-        () => mockUpdateNotifications.updateStream,
-      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+  tearDown(() async {
+    beamToNamedOverride = null;
+    await tearDownTestGetIt();
+  });
 
-      mockPersistenceLogic = MockPersistenceLogic();
+  /// Pumps [child] on a tall surface so the whole form including the
+  /// sticky action bar is hittable, then drains the initial frames.
+  Future<void> pumpPage(WidgetTester tester, Widget child) async {
+    tester.view.physicalSize = const Size(1200, 1600);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
 
-      getIt
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<NotificationService>(mockNotificationService)
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
-    });
-    tearDown(getIt.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        child,
+        mediaQueryData: const MediaQueryData(size: Size(1200, 1600)),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
 
-    testWidgets('habit details page is displayed & updated', (tester) async {
-      when(
-        () => mockPersistenceLogic.upsertEntityDefinition(any()),
-      ).thenAnswer((_) async => 1);
+  DsGlassPill saveAction(WidgetTester tester) => tester.widget<DsGlassPill>(
+    find.widgetWithText(DsGlassPill, 'Save'),
+  );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: HabitDetailsPage(habitId: habitFlossing.id),
-          ),
-        ),
-      );
+  HabitDefinition capturedUpsert() {
+    final captured = verify(
+      () => mockPersistenceLogic.upsertEntityDefinition(captureAny()),
+    ).captured;
+    return captured.last as HabitDefinition;
+  }
 
-      await tester.pumpAndSettle();
+  group('HabitDetailsPage', () {
+    testWidgets(
+      'edit mode seeds fields, gates Save on dirty, persists edited values, '
+      'and beams to the habits list',
+      (tester) async {
+        await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
 
-      final nameFieldFinder = find.byKey(const Key('habit_name_field'));
-      final descriptionFieldFinder = find.byKey(
-        const Key('habit_description_field'),
-      );
-      final saveButtonFinder = find.byKey(const Key('habit_save'));
+        // Seeded from the loaded definition.
+        expect(find.text('Flossing'), findsOneWidget);
+        expect(find.text('Maintain healthy teeth and gums'), findsOneWidget);
+        // Daily schedule renders the daily-only time fields.
+        expect(find.text('Show from'), findsOneWidget);
+        expect(find.text('Show alert at'), findsOneWidget);
 
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
+        // Save pill renders disabled while the form is clean.
+        expect(saveAction(tester).enabled, isFalse);
 
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
+        await tester.enterText(
+          find.byKey(const Key('habit_name_field')),
+          'Flossing updated',
+        );
+        await tester.pump();
 
-      await tester.enterText(
-        nameFieldFinder,
-        'new name',
-      );
-      await tester.enterText(
-        descriptionFieldFinder,
-        'new description',
-      );
-      await tester.pump();
+        expect(saveAction(tester).enabled, isTrue);
 
-      // save button is now visible
-      expect(saveButtonFinder, findsOneWidget);
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.tap(saveButtonFinder);
-    });
+        final saved = capturedUpsert();
+        expect(saved.id, habitFlossing.id);
+        expect(saved.name, 'Flossing updated');
+        // Untouched fields keep their seeded values through the save.
+        expect(saved.description, 'Maintain healthy teeth and gums');
+        verify(
+          () => mockNotificationService.scheduleHabitNotification(any()),
+        ).called(1);
+        expect(beamedTo, '/settings/habits');
+      },
+    );
 
-    testWidgets('habit details page is displayed & deleted', (tester) async {
-      Future<int> mockUpsertEntity() {
-        return mockPersistenceLogic.upsertEntityDefinition(any());
-      }
+    testWidgets(
+      'toggling priority and archived switches persists priority=true and '
+      'active=false',
+      (tester) async {
+        await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
 
-      when(mockUpsertEntity).thenAnswer((_) async => 1);
+        final priorityFinder = find.byKey(const Key('habit_priority'));
+        await tester.ensureVisible(priorityFinder);
+        await tester.pump();
+        await tester.tap(priorityFinder);
+        await tester.pump();
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: HabitDetailsPage(habitId: habitFlossing.id),
-          ),
-        ),
-      );
+        final archivedFinder = find.byKey(const Key('habit_archived'));
+        await tester.ensureVisible(archivedFinder);
+        await tester.pump();
+        await tester.tap(archivedFinder);
+        await tester.pump();
 
-      await tester.pumpAndSettle();
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
 
-      // Scroll to the bottom to make sure the delete button is visible
-      await tester.fling(
-        find.byType(CustomScrollView),
-        const Offset(0, -300),
-        1000,
-      );
-      await tester.pumpAndSettle();
+        final saved = capturedUpsert();
+        expect(saved.priority, isTrue);
+        expect(saved.active, isFalse);
+      },
+    );
 
-      // Find the delete button by looking for the IconButton with trash icon
-      final deleteButtonFinder = find.descendant(
-        of: find.byType(IconButton),
-        matching: find.byIcon(MdiIcons.trashCanOutline),
-      );
+    testWidgets(
+      'delete flow confirms via the action sheet, soft-deletes the habit, '
+      'and beams to the habits list',
+      (tester) async {
+        await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
 
-      // Verify the button exists and is visible
-      expect(deleteButtonFinder, findsOneWidget);
+        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-      // Ensure the button is actually tappable
-      await tester.ensureVisible(deleteButtonFinder);
-      await tester.pumpAndSettle();
+        expect(
+          find.text('Do you want to delete this habit?'),
+          findsOneWidget,
+        );
 
-      // Tap the delete button
-      await tester.tap(deleteButtonFinder);
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('YES, DELETE THIS HABIT'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
-      // Wait for modal to appear and check for the delete question
-      final deleteQuestionFinder = find.text(
-        'Do you want to delete this habit?',
-      );
-      final confirmDeleteFinder = find.text('YES, DELETE THIS HABIT');
+        final saved = capturedUpsert();
+        expect(saved.id, habitFlossing.id);
+        expect(saved.deletedAt, isNotNull);
+        expect(beamedTo, '/settings/habits');
+      },
+    );
 
-      // Check if modal appeared
-      expect(deleteQuestionFinder, findsOneWidget);
-      expect(confirmDeleteFinder, findsOneWidget);
+    testWidgets(
+      'back arrow and Cancel beam to the habits list without saving',
+      (tester) async {
+        await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
 
-      await tester.tap(confirmDeleteFinder);
-      await tester.pumpAndSettle();
+        await tester.tap(find.byIcon(Icons.chevron_left));
+        await tester.pump();
+        expect(beamedTo, '/settings/habits');
 
-      // delete button calls mocked function
-      verify(mockUpsertEntity).called(1);
-    });
+        beamedTo = null;
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Cancel'));
+        await tester.pump();
+        expect(beamedTo, '/settings/habits');
 
-    testWidgets('create habit page is displayed & updated', (tester) async {
-      when(
-        () => mockPersistenceLogic.upsertEntityDefinition(any()),
-      ).thenAnswer((_) async => 1);
+        verifyNever(() => mockPersistenceLogic.upsertEntityDefinition(any()));
+      },
+    );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: CreateHabitPage(),
-          ),
-        ),
-      );
+    testWidgets(
+      'Ctrl+S only saves once the form is dirty',
+      (tester) async {
+        await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
 
-      await tester.pumpAndSettle();
+        // Focus the form without changing any value.
+        await tester.tap(find.byKey(const Key('habit_name_field')));
+        await tester.pump();
 
-      final nameFieldFinder = find.byKey(const Key('habit_name_field'));
-      final descriptionFieldFinder = find.byKey(
-        const Key('habit_description_field'),
-      );
-      final saveButtonFinder = find.byKey(const Key('habit_save'));
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await tester.pump();
 
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
+        verifyNever(() => mockPersistenceLogic.upsertEntityDefinition(any()));
 
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
+        await tester.enterText(
+          find.byKey(const Key('habit_name_field')),
+          'Flossing twice',
+        );
+        await tester.pump();
 
-      await tester.enterText(
-        nameFieldFinder,
-        'new name',
-      );
-      await tester.enterText(
-        descriptionFieldFinder,
-        'new description',
-      );
-      await tester.pump();
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      // save button is now visible
-      expect(saveButtonFinder, findsOneWidget);
+        expect(capturedUpsert().name, 'Flossing twice');
+        expect(beamedTo, '/settings/habits');
+      },
+    );
 
-      await tester.tap(saveButtonFinder);
-    });
+    testWidgets(
+      'create mode shows the create title and Create action and hides the '
+      'delete affordance',
+      (tester) async {
+        await pumpPage(
+          tester,
+          const HabitDetailsPage(habitId: 'new-habit-id', isCreateMode: true),
+        );
 
-    testWidgets('habit details page is displayed & date updated', (
-      tester,
-    ) async {
-      when(
-        () => mockPersistenceLogic.upsertEntityDefinition(any()),
-      ).thenAnswer((_) async => 1);
+        expect(find.text('Create habit'), findsOneWidget);
+        expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: CreateHabitPage(),
-          ),
-        ),
-      );
+        final createPill = tester.widget<DsGlassPill>(
+          find.widgetWithText(DsGlassPill, 'Create'),
+        );
+        expect(createPill.enabled, isFalse);
+      },
+    );
 
-      await tester.pumpAndSettle();
+    testWidgets(
+      'edit mode for an unknown habit renders the empty scaffold',
+      (tester) async {
+        await pumpPage(tester, const EditHabitPage(habitId: 'missing'));
 
-      final activeFromFieldFinder = find.byKey(const Key('habit_archived'));
-
-      final saveButtonFinder = find.byKey(const Key('habit_save'));
-
-      expect(activeFromFieldFinder, findsOneWidget);
-
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
-
-      await tester.tap(activeFromFieldFinder);
-
-      await tester.pumpAndSettle();
-    });
-
-    testWidgets('habit edit page is displayed', (tester) async {
-      when(
-        () => mockPersistenceLogic.upsertEntityDefinition(any()),
-      ).thenAnswer((_) async => 1);
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 1000,
-              maxWidth: 1000,
-            ),
-            child: EditHabitPage(
-              habitId: habitFlossing.id,
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final nameFieldFinder = find.byKey(const Key('habit_name_field'));
-      final descriptionFieldFinder = find.byKey(
-        const Key('habit_description_field'),
-      );
-      final saveButtonFinder = find.byKey(const Key('habit_save'));
-
-      expect(nameFieldFinder, findsOneWidget);
-      expect(descriptionFieldFinder, findsOneWidget);
-
-      // save button is invisible - no changes yet
-      expect(saveButtonFinder, findsNothing);
-
-      await tester.enterText(
-        nameFieldFinder,
-        'new name',
-      );
-      await tester.enterText(
-        descriptionFieldFinder,
-        'new description',
-      );
-      await tester.pump();
-
-      // save button is now visible
-      expect(saveButtonFinder, findsOneWidget);
-
-      await tester.tap(saveButtonFinder);
-    });
+        expect(find.byKey(const Key('habit_name_field')), findsNothing);
+        expect(find.byType(DsGlassPill), findsNothing);
+      },
+    );
   });
 }

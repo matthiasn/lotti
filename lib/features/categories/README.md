@@ -138,6 +138,8 @@ The list page behavior is:
 
 ### Category details and create mode
 
+Both modes of `CategoryDetailsPage` render inside the shared settings-detail kit (`lib/widgets/settings/`): `SettingsDetailScaffold` provides the header with a back affordance that beams to `/settings/categories`, binds Cmd/Ctrl+S to save, and mounts a sticky glass `SettingsFormActionBar` (primary save/create pill, cancel pill, and — in edit mode — a destructive delete button). Form sections are `SettingsFormSection` cards; the switch rows are `SettingsSwitchRow`s and the name input is the design-system `DesignSystemTextInput` (via `CategoryNameField`).
+
 `CategoryDetailsPage` has two distinct modes:
 
 - create mode
@@ -147,7 +149,6 @@ The list page behavior is:
   - basic settings
   - default language
   - AI defaults via `ProfileSelector` and `TemplateSelector`
-  - optional `CategoryProjectsSection` when `enableProjectsFlag` is enabled
   - speech dictionary
   - checklist correction examples
 

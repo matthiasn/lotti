@@ -3009,7 +3009,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createButton => 'Créer';
 
   @override
-  String get createCategoryTitle => 'Créer une catégorie :';
+  String get createCategoryTitle => 'Créer une catégorie';
 
   @override
   String get createEntryLabel => 'Créer une nouvelle entrée';
@@ -4013,10 +4013,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsUncategorized => 'Non catégorisé';
 
   @override
-  String get dashboardActiveLabel => 'Actif :';
+  String get dashboardActiveLabel => 'Actif';
 
   @override
-  String get dashboardAddChartsTitle => 'Ajouter des graphiques :';
+  String get dashboardAddChartsTitle => 'Graphiques';
 
   @override
   String get dashboardAddHabitButton => 'Tableaux des habitudes';
@@ -4069,16 +4069,16 @@ class AppLocalizationsFr extends AppLocalizations {
       'Veux-tu vraiment supprimer ce tableau de bord ?';
 
   @override
-  String get dashboardDescriptionLabel => 'Description :';
+  String get dashboardDescriptionLabel => 'Description';
 
   @override
-  String get dashboardNameLabel => 'Nom du tableau de bord :';
+  String get dashboardNameLabel => 'Nom du tableau de bord';
 
   @override
   String get dashboardNotFound => 'Tableau de bord non trouvé';
 
   @override
-  String get dashboardPrivateLabel => 'Privé :';
+  String get dashboardPrivateLabel => 'Privé';
 
   @override
   String get defaultLanguage => 'Langue par défaut';
@@ -4793,7 +4793,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitActiveFromLabel => 'Date de début';
 
   @override
-  String get habitArchivedLabel => 'Archivé :';
+  String get habitArchivedLabel => 'Archivé';
 
   @override
   String get habitCategoryHint => 'Sélectionner une catégorie...';
@@ -4814,7 +4814,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitDeleteQuestion => 'Veux-tu supprimer cette habitude ?';
 
   @override
-  String get habitPriorityLabel => 'Priorité :';
+  String get habitPriorityLabel => 'Priorité';
 
   @override
   String get habitsCompletedHeader => 'Terminées';
@@ -6573,7 +6573,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsCategoriesCreateTitle => 'Créer une catégorie';
 
   @override
-  String get settingsCategoriesDetailsLabel => 'Détails de la catégorie';
+  String get settingsCategoriesDetailsLabel => 'Modifier la catégorie';
 
   @override
   String get settingsCategoriesEmptyState => 'Aucune catégorie trouvée';
@@ -6618,7 +6618,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsConflictsTitle => 'Conflits de synchronisation';
 
   @override
-  String get settingsDashboardDetailsLabel => 'Détails du tableau de bord';
+  String get settingsDashboardDetailsLabel => 'Modifier le tableau de bord';
 
   @override
   String get settingsDashboardSaveLabel => 'Enregistrer';
@@ -6680,10 +6680,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsHabitsDeleteTooltip => 'Supprimer l\'habitude';
 
   @override
-  String get settingsHabitsDescriptionLabel => 'Description (facultatif) :';
+  String get settingsHabitsDescriptionLabel => 'Description (facultatif)';
 
   @override
-  String get settingsHabitsDetailsLabel => 'Détails de l\'habitude';
+  String get settingsHabitsDetailsLabel => 'Modifier l\'habitude';
 
   @override
   String get settingsHabitsEmptyState => 'Aucune habitude pour le moment';
@@ -6697,7 +6697,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Erreur lors du chargement des habitudes';
 
   @override
-  String get settingsHabitsNameLabel => 'Nom de l\'habitude :';
+  String get settingsHabitsNameLabel => 'Nom de l\'habitude';
 
   @override
   String settingsHabitsNoMatchQuery(String query) {
@@ -6963,19 +6963,19 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsMeasurableAggregationLabel =>
-      'Type d\'agrégation par défaut :';
+      'Type d\'agrégation par défaut';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Supprimer type mesurable';
 
   @override
-  String get settingsMeasurableDescriptionLabel => 'Description :';
+  String get settingsMeasurableDescriptionLabel => 'Description';
 
   @override
-  String get settingsMeasurableDetailsLabel => 'Détails du mesurable';
+  String get settingsMeasurableDetailsLabel => 'Modifier l\'élément mesurable';
 
   @override
-  String get settingsMeasurableNameLabel => 'Nom de la mesure :';
+  String get settingsMeasurableNameLabel => 'Nom de la mesure';
 
   @override
   String get settingsMeasurablePrivateLabel => 'Privé :';
@@ -7015,7 +7015,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMeasurablesTitle => 'Types de données mesurables';
 
   @override
-  String get settingsMeasurableUnitLabel => 'Abréviation d\'unité :';
+  String get settingsMeasurableUnitLabel => 'Abréviation d\'unité';
 
   @override
   String get settingsResetGeminiConfirm => 'Réinitialiser';

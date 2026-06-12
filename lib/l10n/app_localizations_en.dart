@@ -2953,7 +2953,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createButton => 'Create';
 
   @override
-  String get createCategoryTitle => 'Create Category:';
+  String get createCategoryTitle => 'Create category';
 
   @override
   String get createEntryLabel => 'Create new entry';
@@ -3929,10 +3929,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsUncategorized => 'Uncategorized';
 
   @override
-  String get dashboardActiveLabel => 'Active:';
+  String get dashboardActiveLabel => 'Active';
 
   @override
-  String get dashboardAddChartsTitle => 'Add Charts:';
+  String get dashboardAddChartsTitle => 'Charts';
 
   @override
   String get dashboardAddHabitButton => 'Habit Charts';
@@ -3983,16 +3983,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardDeleteQuestion => 'Do you want to delete this dashboard?';
 
   @override
-  String get dashboardDescriptionLabel => 'Description (optional):';
+  String get dashboardDescriptionLabel => 'Description (optional)';
 
   @override
-  String get dashboardNameLabel => 'Dashboard name:';
+  String get dashboardNameLabel => 'Dashboard name';
 
   @override
   String get dashboardNotFound => 'Dashboard not found';
 
   @override
-  String get dashboardPrivateLabel => 'Private:';
+  String get dashboardPrivateLabel => 'Private';
 
   @override
   String get defaultLanguage => 'Default Language';
@@ -4693,10 +4693,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Create image from voice description';
 
   @override
-  String get habitActiveFromLabel => 'Start Date';
+  String get habitActiveFromLabel => 'Start date';
 
   @override
-  String get habitArchivedLabel => 'Archived:';
+  String get habitArchivedLabel => 'Archived';
 
   @override
   String get habitCategoryHint => 'Select Category...';
@@ -4717,7 +4717,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitDeleteQuestion => 'Do you want to delete this habit?';
 
   @override
-  String get habitPriorityLabel => 'Priority:';
+  String get habitPriorityLabel => 'Priority';
 
   @override
   String get habitsCompletedHeader => 'Completed';
@@ -6404,7 +6404,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoriesCreateTitle => 'Create category';
 
   @override
-  String get settingsCategoriesDetailsLabel => 'Category Details';
+  String get settingsCategoriesDetailsLabel => 'Edit category';
 
   @override
   String get settingsCategoriesEmptyState => 'No categories found';
@@ -6448,7 +6448,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsConflictsTitle => 'Sync Conflicts';
 
   @override
-  String get settingsDashboardDetailsLabel => 'Dashboard Details';
+  String get settingsDashboardDetailsLabel => 'Edit dashboard';
 
   @override
   String get settingsDashboardSaveLabel => 'Save';
@@ -6506,10 +6506,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsHabitsDeleteTooltip => 'Delete Habit';
 
   @override
-  String get settingsHabitsDescriptionLabel => 'Description (optional):';
+  String get settingsHabitsDescriptionLabel => 'Description (optional)';
 
   @override
-  String get settingsHabitsDetailsLabel => 'Habit Details';
+  String get settingsHabitsDetailsLabel => 'Edit habit';
 
   @override
   String get settingsHabitsEmptyState => 'No habits yet';
@@ -6522,7 +6522,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsHabitsErrorLoading => 'Error loading habits';
 
   @override
-  String get settingsHabitsNameLabel => 'Habit name:';
+  String get settingsHabitsNameLabel => 'Habit name';
 
   @override
   String settingsHabitsNoMatchQuery(String query) {
@@ -6783,19 +6783,19 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMeasurableAggregationLabel =>
-      'Default Aggregation Type (optional):';
+      'Default Aggregation Type (optional)';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Delete measurable type';
 
   @override
-  String get settingsMeasurableDescriptionLabel => 'Description (optional):';
+  String get settingsMeasurableDescriptionLabel => 'Description (optional)';
 
   @override
-  String get settingsMeasurableDetailsLabel => 'Measurable Details';
+  String get settingsMeasurableDetailsLabel => 'Edit measurable';
 
   @override
-  String get settingsMeasurableNameLabel => 'Measurable name:';
+  String get settingsMeasurableNameLabel => 'Measurable name';
 
   @override
   String get settingsMeasurablePrivateLabel => 'Private: ';
@@ -6831,7 +6831,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMeasurablesTitle => 'Measurable Types';
 
   @override
-  String get settingsMeasurableUnitLabel => 'Unit abbreviation (optional):';
+  String get settingsMeasurableUnitLabel => 'Unit abbreviation (optional)';
 
   @override
   String get settingsResetGeminiConfirm => 'Reset';
@@ -7774,7 +7774,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get conflictsUnresolved => 'unresolved';
 
   @override
-  String get createCategoryTitle => 'Create Category:';
+  String get createCategoryTitle => 'Create category';
 
   @override
   String get createEntryLabel => 'Create new entry';
@@ -7789,10 +7789,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get dailyOsUncategorized => 'Uncategorised';
 
   @override
-  String get dashboardActiveLabel => 'Active:';
+  String get dashboardActiveLabel => 'Active';
 
   @override
-  String get dashboardAddChartsTitle => 'Add Charts:';
+  String get dashboardAddChartsTitle => 'Charts';
 
   @override
   String get dashboardAddHabitButton => 'Habit Charts';
@@ -7843,16 +7843,16 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get dashboardDeleteQuestion => 'Do you want to delete this dashboard?';
 
   @override
-  String get dashboardDescriptionLabel => 'Description (optional):';
+  String get dashboardDescriptionLabel => 'Description (optional)';
 
   @override
-  String get dashboardNameLabel => 'Dashboard name:';
+  String get dashboardNameLabel => 'Dashboard name';
 
   @override
   String get dashboardNotFound => 'Dashboard not found';
 
   @override
-  String get dashboardPrivateLabel => 'Private:';
+  String get dashboardPrivateLabel => 'Private';
 
   @override
   String get doneButton => 'Done';
@@ -7895,10 +7895,10 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get fileMenuTitle => 'File';
 
   @override
-  String get habitActiveFromLabel => 'Start Date';
+  String get habitActiveFromLabel => 'Start date';
 
   @override
-  String get habitArchivedLabel => 'Archived:';
+  String get habitArchivedLabel => 'Archived';
 
   @override
   String get habitCategoryHint => 'Select Category...';
@@ -7919,7 +7919,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get habitDeleteQuestion => 'Do you want to delete this habit?';
 
   @override
-  String get habitPriorityLabel => 'Priority:';
+  String get habitPriorityLabel => 'Priority';
 
   @override
   String get habitsCompletedHeader => 'Completed';

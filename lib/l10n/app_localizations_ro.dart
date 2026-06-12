@@ -3016,7 +3016,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get createButton => 'Creează';
 
   @override
-  String get createCategoryTitle => 'Creați categorie:';
+  String get createCategoryTitle => 'Creare categorie';
 
   @override
   String get createEntryLabel => 'Creați o intrare nouă';
@@ -4020,10 +4020,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsUncategorized => 'Necategorizat';
 
   @override
-  String get dashboardActiveLabel => 'Activ:';
+  String get dashboardActiveLabel => 'Activ';
 
   @override
-  String get dashboardAddChartsTitle => 'Adaugă diagramă:';
+  String get dashboardAddChartsTitle => 'Grafice';
 
   @override
   String get dashboardAddHabitButton => 'Diagrame de obiceiuri';
@@ -4075,16 +4075,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardDeleteQuestion => 'Vrei să ștergi acest tablou de bord?';
 
   @override
-  String get dashboardDescriptionLabel => 'Descriere:';
+  String get dashboardDescriptionLabel => 'Descriere';
 
   @override
-  String get dashboardNameLabel => 'Numele tabloului de bord:';
+  String get dashboardNameLabel => 'Numele tabloului de bord';
 
   @override
   String get dashboardNotFound => 'Tablou de bord negasit';
 
   @override
-  String get dashboardPrivateLabel => 'Privat:';
+  String get dashboardPrivateLabel => 'Privat';
 
   @override
   String get defaultLanguage => 'Limbă implicită';
@@ -4793,7 +4793,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitActiveFromLabel => 'Data de început';
 
   @override
-  String get habitArchivedLabel => 'Arhivat:';
+  String get habitArchivedLabel => 'Arhivat';
 
   @override
   String get habitCategoryHint => 'Selectați categoria...';
@@ -4814,7 +4814,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitDeleteQuestion => 'Doriți să ștergeți acest obicei?';
 
   @override
-  String get habitPriorityLabel => 'Prioritate:';
+  String get habitPriorityLabel => 'Prioritate';
 
   @override
   String get habitsCompletedHeader => 'Finalizate';
@@ -6559,7 +6559,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCategoriesCreateTitle => 'Creare categorie';
 
   @override
-  String get settingsCategoriesDetailsLabel => 'Detalii categorie';
+  String get settingsCategoriesDetailsLabel => 'Editare categorie';
 
   @override
   String get settingsCategoriesEmptyState => 'Nu s-au găsit categorii';
@@ -6605,7 +6605,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsConflictsTitle => 'Sync cu conflicte';
 
   @override
-  String get settingsDashboardDetailsLabel => 'Detalii tablou de bord';
+  String get settingsDashboardDetailsLabel => 'Editare panou de bord';
 
   @override
   String get settingsDashboardSaveLabel => 'Salvează';
@@ -6666,10 +6666,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsHabitsDeleteTooltip => 'Șterge Obiceiul';
 
   @override
-  String get settingsHabitsDescriptionLabel => 'Descriere (opțional):';
+  String get settingsHabitsDescriptionLabel => 'Descriere (opțional)';
 
   @override
-  String get settingsHabitsDetailsLabel => 'Detalii obicei';
+  String get settingsHabitsDetailsLabel => 'Editare obicei';
 
   @override
   String get settingsHabitsEmptyState => 'Niciun obicei încă';
@@ -6682,7 +6682,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsHabitsErrorLoading => 'Eroare la încărcarea obiceiurilor';
 
   @override
-  String get settingsHabitsNameLabel => 'Numele obiceiului:';
+  String get settingsHabitsNameLabel => 'Numele obiceiului';
 
   @override
   String settingsHabitsNoMatchQuery(String query) {
@@ -6946,19 +6946,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Verifică';
 
   @override
-  String get settingsMeasurableAggregationLabel => 'Tip Agregări:';
+  String get settingsMeasurableAggregationLabel => 'Tip Agregări';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Șterge tipul măsurătorii';
 
   @override
-  String get settingsMeasurableDescriptionLabel => 'Descriere:';
+  String get settingsMeasurableDescriptionLabel => 'Descriere';
 
   @override
-  String get settingsMeasurableDetailsLabel => 'Detalii măsurabil';
+  String get settingsMeasurableDetailsLabel => 'Editare măsurătoare';
 
   @override
-  String get settingsMeasurableNameLabel => 'Numele măsurătorii:';
+  String get settingsMeasurableNameLabel => 'Numele măsurătorii';
 
   @override
   String get settingsMeasurablePrivateLabel => 'Privat: ';
@@ -6996,7 +6996,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMeasurablesTitle => 'Măsurători';
 
   @override
-  String get settingsMeasurableUnitLabel => 'Unitatea abrevierii:';
+  String get settingsMeasurableUnitLabel => 'Unitatea abrevierii';
 
   @override
   String get settingsResetGeminiConfirm => 'Resetează';

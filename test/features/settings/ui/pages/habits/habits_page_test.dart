@@ -1,115 +1,158 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:mocktail/mocktail.dart';
+import 'package:lotti/services/nav_service.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
+  setUp(() async {
+    await setUpTestGetIt(
+      additionalSetup: () {
+        // _HabitListItem renders CategoryIconCompact, which resolves the
+        // habit's category through the cache; the unstubbed mock returns
+        // null and triggers the fallback icon, which is fine here.
+        getIt.registerSingleton<EntitiesCacheService>(
+          MockEntitiesCacheService(),
+        );
+      },
+    );
+    beamToNamedOverride = (_) {};
+  });
 
-  late MockJournalDb mockJournalDb;
-  final mockEntitiesCacheService = MockEntitiesCacheService();
+  tearDown(() async {
+    beamToNamedOverride = null;
+    await tearDownTestGetIt();
+  });
 
   Future<void> pumpHabitsPage(
     WidgetTester tester, {
-    required List<HabitDefinition> habits,
+    List<HabitDefinition> habits = const [],
+    Object? error,
+    bool loading = false,
+    String? initialSearchTerm,
+    Widget child = const HabitsPage(),
   }) async {
-    mockJournalDb = mockJournalDbWithHabits(habits);
-    when(mockJournalDb.getAllCategories).thenAnswer(
-      (_) async => [categoryMindfulness],
-    );
-
-    final mockUpdateNotifications = MockUpdateNotifications();
-    when(
-      () => mockUpdateNotifications.updateStream,
-    ).thenAnswer((_) => const Stream.empty());
-
-    await getIt.reset();
-    getIt
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
-    ensureThemingServicesRegistered();
-
     await tester.pumpWidget(
-      makeTestableWidget(
-        ConstrainedBox(
-          constraints: const BoxConstraints(
-            maxHeight: 1000,
-            maxWidth: 1000,
+      makeTestableWidgetNoScroll(
+        initialSearchTerm != null
+            ? HabitsPage(initialSearchTerm: initialSearchTerm)
+            : child,
+        overrides: [
+          habitDefinitionsStreamProvider.overrideWith(
+            (ref) => loading
+                ? const Stream<List<HabitDefinition>>.empty()
+                : error != null
+                ? Stream<List<HabitDefinition>>.error(error)
+                : Stream.value(habits),
           ),
-          child: const HabitsPage(),
-        ),
+        ],
       ),
     );
-    await tester.pumpAndSettle();
+    // A plain pump() does not advance the test clock; the header's
+    // flutter_animate entrance schedules a zero-duration timer that must
+    // fire before the test ends, so advance the clock explicitly.
+    await tester.pump(const Duration(milliseconds: 100));
   }
 
-  tearDown(getIt.reset);
-
   group('HabitsPage', () {
-    group('basic rendering', () {
-      testWidgets('displays habit name', (tester) async {
+    group('data rendering', () {
+      testWidgets('displays habit name with chevron', (tester) async {
         await pumpHabitsPage(tester, habits: [habitFlossing]);
 
         expect(find.text(habitFlossing.name), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       });
 
-      testWidgets('displays chevron trailing icon', (tester) async {
-        await pumpHabitsPage(tester, habits: [habitFlossing]);
+      testWidgets('sorts habits alphabetically by name', (tester) async {
+        await pumpHabitsPage(
+          tester,
+          habits: [
+            habitFlossing.copyWith(id: 'habit-y', name: 'Yoga'),
+            habitFlossing,
+            habitFlossing.copyWith(id: 'habit-m', name: 'Meditation'),
+          ],
+        );
 
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+        final items = find.byType(DesignSystemListItem);
+        expect(items, findsNWidgets(3));
+        expect(
+          [
+            tester.widget<DesignSystemListItem>(items.at(0)).title,
+            tester.widget<DesignSystemListItem>(items.at(1)).title,
+            tester.widget<DesignSystemListItem>(items.at(2)).title,
+          ],
+          ['Flossing', 'Meditation', 'Yoga'],
+        );
       });
     });
 
     group('status icons', () {
-      testWidgets('shows lock icon when private', (tester) async {
-        final privateHabit = habitFlossing.copyWith(private: true);
-        await pumpHabitsPage(tester, habits: [privateHabit]);
+      final cases =
+          <
+            ({
+              String description,
+              HabitDefinition habit,
+              IconData icon,
+              bool expected,
+            })
+          >[
+            (
+              description: 'shows lock icon when private',
+              habit: habitFlossing.copyWith(private: true),
+              icon: Icons.lock_outline,
+              expected: true,
+            ),
+            (
+              description: 'hides lock icon when not private',
+              habit: habitFlossing,
+              icon: Icons.lock_outline,
+              expected: false,
+            ),
+            (
+              description: 'shows inactive icon when not active',
+              habit: habitFlossing.copyWith(active: false),
+              icon: Icons.visibility_off_outlined,
+              expected: true,
+            ),
+            (
+              description: 'hides inactive icon when active',
+              habit: habitFlossing,
+              icon: Icons.visibility_off_outlined,
+              expected: false,
+            ),
+            (
+              description: 'shows star icon when favorite',
+              habit: habitFlossing.copyWith(priority: true),
+              icon: Icons.star,
+              expected: true,
+            ),
+            (
+              description: 'hides star icon when not favorite',
+              habit: habitFlossing,
+              icon: Icons.star,
+              expected: false,
+            ),
+          ];
 
-        expect(find.byIcon(Icons.lock_outline), findsOneWidget);
-      });
+      for (final testCase in cases) {
+        testWidgets(testCase.description, (tester) async {
+          await pumpHabitsPage(tester, habits: [testCase.habit]);
 
-      testWidgets('hides lock icon when not private', (tester) async {
-        await pumpHabitsPage(tester, habits: [habitFlossing]);
-
-        expect(find.byIcon(Icons.lock_outline), findsNothing);
-      });
-
-      testWidgets('shows inactive icon when not active', (tester) async {
-        final inactiveHabit = habitFlossing.copyWith(active: false);
-        await pumpHabitsPage(tester, habits: [inactiveHabit]);
-
-        expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-      });
-
-      testWidgets('hides inactive icon when active', (tester) async {
-        await pumpHabitsPage(tester, habits: [habitFlossing]);
-
-        expect(find.byIcon(Icons.visibility_off_outlined), findsNothing);
-      });
-
-      testWidgets('shows star icon when favorite', (tester) async {
-        final favoriteHabit = habitFlossing.copyWith(priority: true);
-        await pumpHabitsPage(tester, habits: [favoriteHabit]);
-
-        expect(find.byIcon(Icons.star), findsOneWidget);
-      });
-
-      testWidgets('hides star icon when not favorite', (tester) async {
-        await pumpHabitsPage(tester, habits: [habitFlossing]);
-
-        expect(find.byIcon(Icons.star), findsNothing);
-      });
+          expect(
+            find.byIcon(testCase.icon),
+            testCase.expected ? findsOneWidget : findsNothing,
+          );
+        });
+      }
 
       testWidgets('shows all status icons together', (tester) async {
         final fullHabit = habitFlossing.copyWith(
@@ -161,6 +204,136 @@ void main() {
           find.byType(DesignSystemListItem),
         );
         expect(item.showDivider, isFalse);
+      });
+    });
+
+    group('empty, error, and loading states', () {
+      testWidgets('shows localized empty state when no habits exist', (
+        tester,
+      ) async {
+        await pumpHabitsPage(tester);
+
+        expect(find.byIcon(Icons.repeat_rounded), findsOneWidget);
+        expect(find.text('No habits yet'), findsOneWidget);
+        expect(
+          find.text('Tap the + button to create your first habit.'),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('shows localized error state when the stream errors', (
+        tester,
+      ) async {
+        await pumpHabitsPage(tester, error: Exception('habits broke'));
+        // Riverpod 3 retries failed providers with backoff; the spinner
+        // keeps scheduling frames, so settling pumps virtual time through
+        // the retries until the terminal AsyncError renders.
+        await tester.pumpAndSettle();
+
+        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(find.text('Error loading habits'), findsOneWidget);
+        expect(find.textContaining('habits broke'), findsOneWidget);
+      });
+
+      testWidgets('shows progress indicator while loading', (tester) async {
+        await pumpHabitsPage(tester, loading: true);
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(DesignSystemSearch), findsNothing);
+      });
+    });
+
+    group('search', () {
+      testWidgets('filters habits by name case-insensitively', (tester) async {
+        await pumpHabitsPage(
+          tester,
+          habits: [
+            habitFlossing,
+            habitFlossing.copyWith(id: 'habit-2', name: 'Meditation'),
+          ],
+        );
+
+        await tester.enterText(find.byType(TextField), 'FLOSS');
+        await tester.pump();
+
+        expect(find.text('Flossing'), findsOneWidget);
+        expect(find.text('Meditation'), findsNothing);
+      });
+
+      testWidgets('shows localized no-match message for unmatched query', (
+        tester,
+      ) async {
+        await pumpHabitsPage(tester, habits: [habitFlossing]);
+
+        await tester.enterText(find.byType(TextField), 'zzz');
+        await tester.pump();
+
+        expect(find.byType(DesignSystemListItem), findsNothing);
+        expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
+        expect(find.text('No habits match "zzz"'), findsOneWidget);
+      });
+
+      testWidgets('initialSearchTerm pre-filters the list', (tester) async {
+        await pumpHabitsPage(
+          tester,
+          habits: [
+            habitFlossing,
+            habitFlossing.copyWith(id: 'habit-2', name: 'Meditation'),
+          ],
+          initialSearchTerm: 'medi',
+        );
+
+        expect(find.text('Meditation'), findsOneWidget);
+        expect(find.text('Flossing'), findsNothing);
+      });
+    });
+
+    group('navigation', () {
+      testWidgets('FAB carries create-habit semantics and beams to create', (
+        tester,
+      ) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        await pumpHabitsPage(tester, habits: [habitFlossing]);
+
+        final fab = find.byType(DesignSystemFloatingActionButton);
+        expect(
+          tester.widget<DesignSystemFloatingActionButton>(fab).semanticLabel,
+          'Create habit',
+        );
+
+        await tester.tap(fab);
+        await tester.pump();
+
+        expect(beamedTo, '/settings/habits/create');
+      });
+
+      testWidgets('tapping a habit row beams to its detail route', (
+        tester,
+      ) async {
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        await pumpHabitsPage(tester, habits: [habitFlossing]);
+
+        await tester.tap(find.byType(DesignSystemListItem));
+        await tester.pump();
+
+        expect(beamedTo, '/settings/habits/by_id/${habitFlossing.id}');
+      });
+    });
+
+    group('HabitsBody embedded alias', () {
+      testWidgets('renders a HabitsPage with its content', (tester) async {
+        await pumpHabitsPage(
+          tester,
+          habits: [habitFlossing],
+          child: const HabitsBody(),
+        );
+
+        expect(find.byType(HabitsPage), findsOneWidget);
+        expect(find.text(habitFlossing.name), findsOneWidget);
       });
     });
   });

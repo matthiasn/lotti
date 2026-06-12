@@ -1,41 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
 
-/// A text field widget for editing category names.
+/// A text field widget for editing category names, rendered with the
+/// design-system text input.
 ///
-/// This widget is designed to be independent of Riverpod for better testability.
-/// It accepts callbacks for handling name changes and validation.
+/// This widget is designed to be independent of Riverpod for better
+/// testability. The page owns the [controller] and change handling; in
+/// create mode the field autofocuses and changes are tracked via the
+/// controller only ([onChanged] is not invoked).
 class CategoryNameField extends StatelessWidget {
   const CategoryNameField({
     required this.controller,
     required this.isCreateMode,
     this.onChanged,
-    this.validator,
     super.key,
   });
 
   final TextEditingController controller;
   final bool isCreateMode;
   final ValueChanged<String>? onChanged;
-  final String? Function(String?)? validator;
 
   @override
   Widget build(BuildContext context) {
-    return LottiTextField(
+    return DesignSystemTextInput(
       controller: controller,
-      labelText: context.messages.settingsCategoriesNameLabel,
+      label: context.messages.settingsCategoriesNameLabel,
       hintText: context.messages.enterCategoryName,
-      prefixIcon: Icons.category_outlined,
+      leadingIcon: Icons.category_outlined,
+      autofocus: isCreateMode,
+      textCapitalization: TextCapitalization.sentences,
       onChanged: isCreateMode ? null : onChanged,
-      validator:
-          validator ??
-          (value) {
-            if (value == null || value.trim().isEmpty) {
-              return context.messages.categoryNameRequired;
-            }
-            return null;
-          },
     );
   }
 }

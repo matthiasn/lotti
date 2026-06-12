@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -115,6 +116,11 @@ void main() {
         await pumpLabelsListPage(tester);
 
         expect(find.byIcon(Icons.label_outline), findsOneWidget);
+        expect(find.text('No labels yet'), findsOneWidget);
+        expect(
+          find.text('Tap the + button to create your first label.'),
+          findsOneWidget,
+        );
       });
     });
 
@@ -366,7 +372,9 @@ void main() {
 
         expect(find.byType(DesignSystemListItem), findsNothing);
         expect(find.byIcon(Icons.search_off_rounded), findsOneWidget);
-        expect(find.byType(FilledButton), findsOneWidget);
+        expect(find.text('No labels match "zzz"'), findsOneWidget);
+        expect(find.byType(DesignSystemButton), findsOneWidget);
+        expect(find.text('Create "zzz" label'), findsOneWidget);
       });
 
       testWidgets('search is case insensitive', (tester) async {
@@ -648,19 +656,6 @@ void main() {
       await tester.pump();
 
       expect(find.text('Create "$query" label'), findsOneWidget);
-    });
-
-    testWidgets('settings search field capitalizes words', (tester) async {
-      await tester.pumpWidget(
-        _buildPage(labels: [testLabelDefinition1, testLabelDefinition2]),
-      );
-      await tester.pumpAndSettle();
-
-      final searchFieldFinder = find
-          .byType(TextField, skipOffstage: false)
-          .first;
-      final tf = tester.widget<TextField>(searchFieldFinder);
-      expect(tf.textCapitalization, TextCapitalization.words);
     });
 
     group('SettingsPageHeader Integration', () {

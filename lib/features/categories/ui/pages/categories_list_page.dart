@@ -4,14 +4,12 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
-import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Embeddable body alias for the Settings V2 detail pane (plan
 /// step 8). The V1 page's internal `SettingsPageHeader` overlaps the
@@ -29,10 +27,9 @@ class CategoriesListBody extends StatelessWidget {
 ///
 /// Each category row shows an icon badge, category name, task count
 /// subtitle, optional status icons (lock, visibility_off, star), and a
-/// chevron. The create FAB opens [CategoryCreateModal] in a single-page
-/// modal so the create flow stays inside the active tab instead of
-/// beaming through `SettingsLocation` (which has no `projects`-style
-/// panel for the create route on desktop).
+/// chevron. The create FAB beams to the create page — the same
+/// list → full-page flow as every other definition type (the V2 desktop
+/// pane dispatches `/settings/categories/create` inline).
 class CategoriesListPage extends ConsumerWidget {
   const CategoriesListPage({super.key});
 
@@ -50,27 +47,13 @@ class CategoriesListPage extends ConsumerWidget {
       noMatchMessage: messages.settingsCategoriesNoMatchQuery,
       errorTitle: messages.settingsCategoriesErrorLoading,
       createSemanticLabel: messages.settingsCategoriesCreateTitle,
-      onCreate: () => _showCreateCategoryModal(context),
+      onCreate: () => beamToNamed('/settings/categories/create'),
       itemBuilder: (context, category, {required bool showDivider}) =>
           _CategoryListItem(
             category: category,
             showDivider: showDivider,
             onTap: () => beamToNamed('/settings/categories/${category.id}'),
           ),
-    );
-  }
-
-  Future<void> _showCreateCategoryModal(BuildContext context) {
-    return ModalUtils.showSinglePageModal<void>(
-      context: context,
-      title: context.messages.createCategoryTitle,
-      builder: (modalContext) => CategoryCreateModal(
-        initialName: '',
-        onCategoryCreated: (_) {
-          // Stream provider refreshes the list automatically once the
-          // category is persisted; the modal pops itself on success.
-        },
-      ),
     );
   }
 }
