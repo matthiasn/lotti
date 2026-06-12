@@ -1,4 +1,5 @@
-part of 'evolution_chat_state.dart';
+import 'package:genui/genui.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 
 /// Holds the full state for an active evolution chat session.
 class EvolutionChatData {
