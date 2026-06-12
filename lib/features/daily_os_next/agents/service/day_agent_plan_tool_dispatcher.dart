@@ -9,9 +9,9 @@ mixin _DayAgentPlanToolDispatcher on _DayAgentPlanServiceBase {
     String agentId,
     Map<String, dynamic> args,
   ) async {
-    final dayId = _requiredString(args, 'dayId');
+    final dayId = requiredStringArg(args, 'dayId');
     final planDate =
-        _optionalDateTime(args['dayDate']) ?? _dateFromDayId(dayId);
+        optionalDateTimeArg(args['dayDate']) ?? dateFromDayId(dayId);
     if (planDate == null) {
       throw const DayAgentCaptureException(
         'dayDate must be a valid ISO-8601 date-time',
@@ -21,14 +21,14 @@ mixin _DayAgentPlanToolDispatcher on _DayAgentPlanServiceBase {
       agentId: agentId,
       dayId: dayId,
       planDate: planDate,
-      captureId: _optionalString(args['captureId']),
-      decidedTaskIds: _stringList(args['decidedTaskIds']),
-      rawBlocks: _objectList(args['blocks'], 'blocks'),
-      rawEnergyBands: _objectList(args['energyBands'], 'energyBands'),
-      capacityMinutes: _optionalInt(args['capacityMinutes']) ?? 480,
-      dayLabel: _optionalString(args['dayLabel']),
+      captureId: optionalStringArg(args['captureId']),
+      decidedTaskIds: stringListArg(args['decidedTaskIds']),
+      rawBlocks: objectListArg(args['blocks'], 'blocks'),
+      rawEnergyBands: objectListArg(args['energyBands'], 'energyBands'),
+      capacityMinutes: optionalIntArg(args['capacityMinutes']) ?? 480,
+      dayLabel: optionalStringArg(args['dayLabel']),
     );
-    return _planJson(plan);
+    return planJson(plan);
   }
 
   @override
@@ -36,11 +36,11 @@ mixin _DayAgentPlanToolDispatcher on _DayAgentPlanServiceBase {
     String agentId,
     Map<String, dynamic> args,
   ) async {
-    final asOf = _optionalDateTime(args['asOf']) ?? clock.now();
+    final asOf = optionalDateTimeArg(args['asOf']) ?? clock.now();
     final cards = await summarizeRecentPatterns(
       agentId: agentId,
       asOf: asOf,
-      lookbackDays: _optionalInt(args['lookbackDays']) ?? 7,
+      lookbackDays: optionalIntArg(args['lookbackDays']) ?? 7,
     );
     return {
       'cards': [for (final card in cards) card.toJson()],
@@ -54,15 +54,15 @@ mixin _DayAgentPlanToolDispatcher on _DayAgentPlanServiceBase {
     required String runKey,
     required Map<String, dynamic> args,
   }) async {
-    final dayId = _requiredString(args, 'dayId');
+    final dayId = requiredStringArg(args, 'dayId');
     final changeSet = await proposePlanDiff(
       agentId: agentId,
       threadId: threadId,
       runKey: runKey,
       dayId: dayId,
-      rawChanges: _objectList(args['changes'], 'changes'),
-      baselinePlanId: _optionalString(args['baselinePlanId']),
-      captureId: _optionalString(args['captureId']),
+      rawChanges: objectListArg(args['changes'], 'changes'),
+      baselinePlanId: optionalStringArg(args['baselinePlanId']),
+      captureId: optionalStringArg(args['captureId']),
     );
     return {
       'changeSetId': changeSet.id,

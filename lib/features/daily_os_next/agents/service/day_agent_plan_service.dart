@@ -13,12 +13,12 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_diff.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
-part 'day_agent_plan_diff.dart';
-part 'day_agent_plan_parser.dart';
 part 'day_agent_plan_tool_dispatcher.dart';
 
 part 'day_agent_plan_planning.dart';

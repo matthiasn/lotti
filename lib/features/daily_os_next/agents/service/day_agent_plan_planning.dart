@@ -192,7 +192,7 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
       if (entity is! Task) continue;
       if (entity.meta.deletedAt != null) continue;
       final categoryId = entity.meta.categoryId;
-      if (!_categoryAllowed(categoryId, allowedCategoryIds)) continue;
+      if (!categoryAllowed(categoryId, allowedCategoryIds)) continue;
       out.add(
         DecidedTaskRef(
           id: entity.id,
@@ -259,9 +259,11 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
     final blockById = <String, PlannedBlock>{
       for (final block in plan.data.plannedBlocks) block.id: block,
     };
-    final parsed = <_DiffChange>[];
+    final parsed = <PlanDiffChange>[];
     for (final raw in rawChanges) {
-      parsed.add(_parseDiffChange(raw: raw, plan: plan, blockById: blockById));
+      parsed.add(
+        parsePlanDiffChange(raw: raw, plan: plan, blockById: blockById),
+      );
     }
 
     final now = clock.now();
@@ -276,7 +278,7 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
         ChangeItem(
           toolName: change.toolName,
           args: args,
-          humanSummary: _formatChangeSummary(change, blockById),
+          humanSummary: formatPlanChangeSummary(change, blockById),
         ),
       );
     }

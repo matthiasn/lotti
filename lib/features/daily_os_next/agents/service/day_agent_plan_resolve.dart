@@ -18,14 +18,14 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
     final changeSet = loaded;
     final plan = await draftPlanForDay(
       agentId: agentId,
-      dayId: _dayIdFromPlanEntityId(changeSet.taskId),
+      dayId: dayIdFromPlanEntityId(changeSet.taskId),
     );
     if (plan == null) {
       throw DayAgentCaptureException(
         'plan ${changeSet.taskId} no longer exists',
       );
     }
-    final selected = _selectIndices(
+    final selected = selectIndices(
       itemIndices: itemIndices,
       itemCount: changeSet.items.length,
     );
@@ -45,7 +45,7 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
       // *resolving* agent's allowed categories so a synced ChangeItem
       // cannot smuggle an unauthorized category or out-of-day timestamp
       // past the apply path.
-      _validateApplicableBatch(
+      validateApplicablePlanDiffBatch(
         pendingByIndex.entries,
         plan,
         identity.allowedCategoryIds,
@@ -62,13 +62,13 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
     final newItemStatus = apply
         ? ChangeItemStatus.confirmed
         : ChangeItemStatus.rejected;
-    final addedBlockState = _stateForAcceptedAddedBlock(plan.data.status);
+    final addedBlockState = stateForAcceptedAddedBlock(plan.data.status);
 
     for (final entry in pendingByIndex.entries) {
       final index = entry.key;
       final item = entry.value;
       if (apply) {
-        mutatedBlocks = _applyItem(
+        mutatedBlocks = applyPlanDiffItem(
           item,
           mutatedBlocks,
           addedBlockState: addedBlockState,
@@ -111,8 +111,8 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
         if (byStart != 0) return byStart;
         return a.id.compareTo(b.id);
       });
-      final scheduledMinutes = _scheduledMinutesFor(mutatedBlocks);
-      final pinnedTasks = _pinnedTasksFor(mutatedBlocks);
+      final scheduledMinutes = scheduledMinutesFor(mutatedBlocks);
+      final pinnedTasks = pinnedTasksFor(mutatedBlocks);
       updatedPlan = plan.copyWith(
         data: plan.data.copyWith(
           plannedBlocks: mutatedBlocks,
@@ -195,7 +195,7 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
     final blocks = <PlannedBlock>[];
     for (final raw in rawBlocks) {
       blocks.add(
-        _parsePlannedBlock(
+        parsePlannedBlock(
           raw: raw,
           day: planDate,
           earliestDraftStart: earliestDraftStart,
@@ -218,10 +218,10 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
 
     final bands = [
       for (final raw in rawEnergyBands)
-        _parseEnergyBand(raw: raw, day: planDate),
+        parseEnergyBand(raw: raw, day: planDate),
     ];
-    final scheduledMinutes = _scheduledMinutesFor(blocks);
-    final pinnedTasks = _pinnedTasksFor(blocks);
+    final scheduledMinutes = scheduledMinutesFor(blocks);
+    final pinnedTasks = pinnedTasksFor(blocks);
     final existing = await draftPlanForDay(agentId: agentId, dayId: dayId);
     final plan =
         AgentDomainEntity.dayPlan(
@@ -233,7 +233,7 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
               data: DayPlanData(
                 planDate: localDay(planDate),
                 status: const DayPlanStatus.draft(),
-                dayLabel: _blankToNull(dayLabel),
+                dayLabel: blankToNull(dayLabel),
                 plannedBlocks: blocks,
                 pinnedTasks: pinnedTasks,
               ),
@@ -372,7 +372,7 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
     final referenced = <String>{};
     for (final raw in rawBlocks) {
       if (raw is! Map) continue;
-      final taskId = _optionalString(raw['taskId']);
+      final taskId = optionalStringArg(raw['taskId']);
       if (taskId != null) referenced.add(taskId);
     }
     if (referenced.isEmpty) return const <String>{};
@@ -384,7 +384,7 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
       for (final entry in entities.entries)
         if (entry.value is Task &&
             (entry.value as Task).meta.deletedAt == null &&
-            _categoryAllowed(
+            categoryAllowed(
               (entry.value as Task).meta.categoryId,
               allowedCategoryIds,
             ))
