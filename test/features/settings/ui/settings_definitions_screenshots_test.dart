@@ -635,6 +635,11 @@ void main() {
     );
     expect(find.text('Edit label'), findsOneWidget);
     expect(find.text('Urgent'), findsOneWidget);
+    // Edit the name so this capture demonstrates the ARMED state: the
+    // vivid primary Save against the ghost Cancel. The pristine
+    // (disabled-Save) state is covered by the other editor captures.
+    await tester.enterText(find.byType(TextField).first, 'Urgent!');
+    await settleFrames(tester, 4);
     await captureScreenshot(tester, 'mini_labels_detail_dark', subdir: _subdir);
   });
 
@@ -647,6 +652,9 @@ void main() {
       home: LabelDetailsPage(labelId: _urgent.id),
     );
     expect(find.text('Edit label'), findsOneWidget);
+    // Armed state in light mode too (see the dark variant above).
+    await tester.enterText(find.byType(TextField).first, 'Urgent!');
+    await settleFrames(tester, 4);
     await captureScreenshot(
       tester,
       'mini_labels_detail_light',

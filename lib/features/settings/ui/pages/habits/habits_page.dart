@@ -69,8 +69,11 @@ class _HabitListItem extends StatelessWidget {
     final isPrivate = habit.private;
     final isFavorite = habit.priority ?? false;
 
+    final description = habit.description.trim();
+
     return DesignSystemListItem(
       title: habit.name,
+      subtitle: description.isNotEmpty ? description : null,
       // Item letter on the category color: the initial matches the row's
       // name while the chip color carries the category.
       leading: CategoryIconChip.fromId(
@@ -111,8 +114,8 @@ class _HabitListItem extends StatelessWidget {
                 label: context.messages.favoriteLabel,
                 child: Icon(
                   Icons.star_outline_rounded,
-                  color: tokens.colors.alert.warning.defaultColor,
-                  size: 20,
+                  size: 18,
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
             ),

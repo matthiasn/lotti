@@ -217,7 +217,7 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
       children: [
         SettingsFormSection(
           title: messages.basicSettings,
-          icon: Icons.label_outline,
+          icon: Icons.settings_outlined,
           children: [
             DesignSystemTextInput(
               controller: _nameController,
@@ -235,6 +235,9 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
               minLines: 2,
               maxLines: 4,
             ),
+            // Color is a basic property, not a chapter — the categories
+            // editor places it here too.
+            _buildColorPicker(context, controller, state),
           ],
         ),
         SettingsFormSection(
@@ -249,13 +252,6 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
               onChanged: (value) =>
                   controller.setPrivate(isPrivateValue: value),
             ),
-          ],
-        ),
-        SettingsFormSection(
-          title: messages.settingsLabelsColorHeading,
-          icon: Icons.palette_outlined,
-          children: [
-            _buildColorPicker(context, controller, state),
           ],
         ),
         SettingsFormSection(
@@ -285,9 +281,9 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
     LabelEditorState state,
   ) {
     return SettingsColorPickerField(
-      // The hosting section header already says "Color" — repeating it
-      // as a field label reads as a stutter.
-      semanticsLabel: context.messages.colorLabel,
+      // Inside the multi-field Basic settings card the field needs its
+      // own label.
+      label: context.messages.colorLabel,
       color: colorFromCssHex(
         state.colorHex,
         substitute: Theme.of(context).colorScheme.primary,

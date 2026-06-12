@@ -17,9 +17,17 @@ void main() {
         ),
       );
 
-      // Renders as the design-system textarea with label and hint.
+      // Renders as the design-system textarea; the hosting section
+      // header names the field, so no visible in-field label — the name
+      // lives in semantics.
       expect(find.byType(DesignSystemTextarea), findsOneWidget);
-      expect(find.text('Speech Dictionary'), findsOneWidget);
+      expect(find.text('Speech Dictionary'), findsNothing);
+      expect(
+        tester
+            .widget<DesignSystemTextarea>(find.byType(DesignSystemTextarea))
+            .semanticsLabel,
+        'Speech Dictionary',
+      );
       expect(
         find.text('macOS; Kirkjubæjarklaustur; Claude Code'),
         findsOneWidget,

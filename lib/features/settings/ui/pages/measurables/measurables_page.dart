@@ -72,13 +72,16 @@ class _MeasurableListItem extends StatelessWidget {
     final tokens = context.designTokens;
     final isPrivate = item.private ?? false;
     final isFavorite = item.favorite ?? false;
+    final description = item.description.trim();
 
     return DesignSystemListItem(
       title: item.displayName,
-      // Stable subtitle semantics: always the unit (or nothing), never
-      // the description — every row's second line answers the same
-      // question.
-      subtitle: item.unitName.isNotEmpty ? item.unitName : null,
+      // Description first ("Morning weight, same scale every day"), the
+      // unit as fallback — a bare lowercase echo of the name reads like
+      // debug output.
+      subtitle: description.isNotEmpty
+          ? description
+          : (item.unitName.isNotEmpty ? item.unitName : null),
       // Neutral first-letter chip: rows become distinguishable instead of
       // decorated with one repeated glyph.
       leading: DefinitionIconChip(
@@ -108,8 +111,8 @@ class _MeasurableListItem extends StatelessWidget {
                 label: context.messages.favoriteLabel,
                 child: Icon(
                   Icons.star_outline_rounded,
-                  color: tokens.colors.alert.warning.defaultColor,
-                  size: 20,
+                  size: 18,
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
             ),

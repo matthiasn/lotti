@@ -212,7 +212,7 @@ class SettingsPageHeader extends StatelessWidget {
                             padding: const EdgeInsetsDirectional.only(end: 4),
                             child: BackWidget(onPressed: onBack),
                           ),
-                        Flexible(
+                        Expanded(
                           child: _HeaderText(
                             title: title,
                             subtitle: subtitle,

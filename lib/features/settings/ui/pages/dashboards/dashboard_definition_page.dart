@@ -375,7 +375,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                             children: [
                               SettingsFormSection(
                                 title: messages.basicSettings,
-                                icon: Icons.dashboard_customize_outlined,
+                                icon: Icons.settings_outlined,
                                 children: [
                                   SettingsFormTextField(
                                     key: const Key('dashboard_name_field'),

@@ -138,24 +138,26 @@ class SettingsFormActionBar extends StatelessWidget {
     );
   }
 
+  /// Quiet ghost pill: the escape hatch must never out-shine the commit
+  /// action, so Cancel gets the translucent glass treatment (hairline
+  /// outline, no fill).
   Widget _secondaryPill(DsTokens tokens) => DsGlassPill(
     label: secondaryLabel!,
-    fillColor: tokens.colors.surface.focusPressed,
     onTap: onSecondary!,
   );
 
   /// Primary pill. On pointer devices a tooltip surfaces the keyboard
   /// shortcut.
   Widget _primaryPill(BuildContext context, DsTokens tokens) {
-    // Disabled keeps a solid quiet surface (DsGlassPill dims it further
-    // and drops the foreground to lowEmphasis) so the dead pill recedes
-    // behind the enabled Cancel instead of out-shining it on glass.
+    // The primary slot keeps the accent in BOTH states: vivid mint when
+    // armed, the same mint dimmed to a tonal pill when disabled
+    // (DsGlassPill applies the disabled fill factor and lowEmphasis
+    // foreground). Recognizably the commit action either way — never a
+    // bare label that the ghost Cancel could outrank.
     final pill = DsGlassPill(
       icon: primaryIcon,
       label: primaryLabel,
-      fillColor: primaryEnabled
-          ? tokens.colors.interactive.enabled
-          : tokens.colors.background.level02,
+      fillColor: tokens.colors.interactive.enabled,
       foregroundColor: primaryEnabled
           ? tokens.colors.text.onInteractiveAlert
           : null,

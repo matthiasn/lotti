@@ -345,9 +345,12 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     final tokens = context.designTokens;
     final isCreateMode = category == null;
     final icon = isCreateMode ? _selectedIcon : category.icon;
+    // Neutral fallback before a color is chosen — an accent that
+    // corresponds to nothing reads as accidental.
+    final neutral = tokens.colors.text.lowEmphasis;
     final color = isCreateMode
-        ? (_selectedColor ?? Colors.blue)
-        : colorFromCssHex(category.color, substitute: Colors.blue);
+        ? (_selectedColor ?? neutral)
+        : colorFromCssHex(category.color, substitute: neutral);
     final iconDisplayName =
         icon?.displayName ?? context.messages.categoryIconChooseHint;
     // With no icon yet, the main line already says "Choose an icon" — a

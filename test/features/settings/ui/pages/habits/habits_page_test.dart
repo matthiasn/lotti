@@ -238,7 +238,7 @@ void main() {
         final tokens = tester.element(star).designTokens;
         expect(
           tester.widget<Icon>(star).color,
-          tokens.colors.alert.warning.defaultColor,
+          tokens.colors.text.mediumEmphasis,
         );
       });
     });

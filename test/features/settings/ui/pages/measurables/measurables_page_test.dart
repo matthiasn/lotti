@@ -71,17 +71,31 @@ void main() {
         );
       });
 
-      testWidgets('subtitle is always the unit, never the description', (
+      testWidgets('subtitle prefers the description over the raw unit', (
         tester,
       ) async {
         await pumpMeasurablesPage(tester, measurables: [measurableWater]);
 
-        expect(find.text(measurableWater.unitName), findsOneWidget);
-        expect(find.text(measurableWater.description), findsNothing);
+        expect(find.text(measurableWater.description), findsOneWidget);
+        expect(find.text(measurableWater.unitName), findsNothing);
       });
 
-      testWidgets('omits subtitle when the unit is empty', (tester) async {
-        final unitless = measurableWater.copyWith(unitName: '');
+      testWidgets('falls back to the unit without a description', (
+        tester,
+      ) async {
+        final bare = measurableWater.copyWith(description: '');
+        await pumpMeasurablesPage(tester, measurables: [bare]);
+
+        expect(find.text(measurableWater.unitName), findsOneWidget);
+      });
+
+      testWidgets('omits subtitle when unit and description are empty', (
+        tester,
+      ) async {
+        final unitless = measurableWater.copyWith(
+          unitName: '',
+          description: '',
+        );
         await pumpMeasurablesPage(tester, measurables: [unitless]);
 
         final item = tester.widget<DesignSystemListItem>(
@@ -195,7 +209,7 @@ void main() {
         final tokens = tester.element(star).designTokens;
         expect(
           tester.widget<Icon>(star).color,
-          tokens.colors.alert.warning.defaultColor,
+          tokens.colors.text.mediumEmphasis,
         );
       });
     });

@@ -111,9 +111,11 @@ class _CategorySpeechDictionaryState extends State<CategorySpeechDictionary> {
     final termCount = _parseDictionary(_controller.text).length;
     final showWarning = termCount > kDictionaryWarningThreshold;
 
+    // The hosting "Speech recognition" section header already names this
+    // sole field — an in-field Title Case label would repeat it.
     return DesignSystemTextarea(
       controller: _controller,
-      label: context.messages.speechDictionaryLabel,
+      semanticsLabel: context.messages.speechDictionaryLabel,
       hintText: context.messages.speechDictionaryHint,
       helperText: showWarning
           ? context.messages.speechDictionaryWarning(termCount)

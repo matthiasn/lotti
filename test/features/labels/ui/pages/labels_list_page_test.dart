@@ -715,7 +715,9 @@ void main() {
       });
 
       testWidgets('uses CustomScrollView with slivers', (tester) async {
-        await tester.pumpWidget(_buildPage(labels: []));
+        // A non-empty list: the search sliver only renders when there is
+        // something to search.
+        await tester.pumpWidget(_buildPage(labels: [testLabelDefinition1]));
         await tester.pumpAndSettle();
 
         expect(find.byType(CustomScrollView), findsOneWidget);

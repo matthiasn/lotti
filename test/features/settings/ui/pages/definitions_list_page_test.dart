@@ -220,13 +220,12 @@ void main() {
       );
 
       testWidgets(
-        'an active query over an entirely empty list still shows the '
-        'global empty state, not the no-match state',
+        'an entirely empty list hides the search field — search over '
+        'zero items is dead UI; the empty state owns the screen',
         (tester) async {
           await _pumpPage(tester, itemsAsync: const AsyncValue.data([]));
 
-          await _enterQuery(tester, 'anything');
-
+          expect(find.byType(DesignSystemSearch), findsNothing);
           expect(find.text('Nothing here yet'), findsOneWidget);
           expect(find.byIcon(Icons.search_off_rounded), findsNothing);
         },

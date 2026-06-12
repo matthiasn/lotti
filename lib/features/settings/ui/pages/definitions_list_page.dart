@@ -184,20 +184,23 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
         .toList();
 
     return [
-      SettingsContentSliver(
-        sliver: SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
-            child: DesignSystemSearch(
-              hintText: widget.searchHint,
-              initialText: widget.initialSearchTerm,
-              // DS search fires `onChanged('')` from its clear button, so
-              // one callback covers typing and clearing.
-              onChanged: _onQueryChanged,
+      // Search over zero items is dead UI — the empty state owns that
+      // screen entirely.
+      if (items.isNotEmpty)
+        SettingsContentSliver(
+          sliver: SliverToBoxAdapter(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+              child: DesignSystemSearch(
+                hintText: widget.searchHint,
+                initialText: widget.initialSearchTerm,
+                // DS search fires `onChanged('')` from its clear button,
+                // so one callback covers typing and clearing.
+                onChanged: _onQueryChanged,
+              ),
             ),
           ),
         ),
-      ),
       if (filtered.isEmpty)
         _buildEmptySliver(context, noItemsAtAll: items.isEmpty)
       else
