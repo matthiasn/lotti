@@ -1,4 +1,10 @@
-part of 'theme.dart';
+import 'package:flutter/material.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/theming/model/theme_definitions.dart';
+import 'package:lotti/themes/theme_constants.dart';
+import 'package:lotti/themes/theme_text_styles.dart';
+import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 ThemeData withOverrides(ThemeData themeData) {
   final isDark = themeData.brightness == Brightness.dark;

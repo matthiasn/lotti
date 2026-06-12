@@ -1,4 +1,4 @@
-part of 'theme.dart';
+import 'package:flutter/material.dart';
 
 const fontSizeSmall = 11.0;
 const fontSizeMedium = 15.0;
