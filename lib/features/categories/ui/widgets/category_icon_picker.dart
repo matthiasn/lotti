@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
 /// Modal dialog for selecting category icons from the available set.
@@ -45,7 +46,7 @@ class CategoryIconPicker extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      CategoryIconStrings.chooseIconTitle,
+                      context.messages.categoryIconPickerTitle,
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),

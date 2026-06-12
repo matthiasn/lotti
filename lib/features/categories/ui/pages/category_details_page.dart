@@ -330,16 +330,16 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         ? (_selectedColor ?? Colors.blue)
         : colorFromCssHex(category.color, substitute: Colors.blue);
     final iconDisplayName =
-        icon?.displayName ?? CategoryIconStrings.chooseIconText;
+        icon?.displayName ?? context.messages.categoryIconChooseHint;
     final hintText = isCreateMode
-        ? CategoryIconStrings.createModeIconHint
-        : CategoryIconStrings.iconSelectionHint;
+        ? context.messages.categoryIconCreateHint
+        : context.messages.categoryIconEditHint;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          CategoryIconStrings.iconLabel,
+          context.messages.categoryIconLabel,
           style: tokens.typography.styles.subtitle.subtitle2.copyWith(
             color: tokens.colors.text.highEmphasis,
           ),

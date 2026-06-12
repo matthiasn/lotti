@@ -4075,6 +4075,36 @@ abstract class AppLocalizations {
   /// **'Mark this category as a favorite'**
   String get categoryFavoriteDescription;
 
+  /// No description provided for @categoryIconChooseHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an icon'**
+  String get categoryIconChooseHint;
+
+  /// No description provided for @categoryIconCreateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to select an icon'**
+  String get categoryIconCreateHint;
+
+  /// No description provided for @categoryIconEditHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap to select a different icon'**
+  String get categoryIconEditHint;
+
+  /// No description provided for @categoryIconLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Icon'**
+  String get categoryIconLabel;
+
+  /// No description provided for @categoryIconPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose icon'**
+  String get categoryIconPickerTitle;
+
   /// No description provided for @categoryNameRequired.
   ///
   /// In en, this message translates to:
@@ -4402,7 +4432,7 @@ abstract class AppLocalizations {
   /// No description provided for @colorLabel.
   ///
   /// In en, this message translates to:
-  /// **'Color:'**
+  /// **'Color'**
   String get colorLabel;
 
   /// No description provided for @commonError.
@@ -8217,7 +8247,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitCategoryLabel.
   ///
   /// In en, this message translates to:
-  /// **'Category:'**
+  /// **'Category'**
   String get habitCategoryLabel;
 
   /// No description provided for @habitDashboardHint.
@@ -11119,7 +11149,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsCategoriesNameLabel.
   ///
   /// In en, this message translates to:
-  /// **'Category name:'**
+  /// **'Category name'**
   String get settingsCategoriesNameLabel;
 
   /// No description provided for @settingsCategoriesNoMatchQuery.
@@ -12670,7 +12700,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskLanguageLabel.
   ///
   /// In en, this message translates to:
-  /// **'Language:'**
+  /// **'Language'**
   String get taskLanguageLabel;
 
   /// No description provided for @taskLanguageLatvian.

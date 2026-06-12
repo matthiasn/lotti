@@ -2408,6 +2408,21 @@ class AppLocalizationsFr extends AppLocalizations {
       'Marquer cette catégorie comme favorite';
 
   @override
+  String get categoryIconChooseHint => 'Choisir une icône';
+
+  @override
+  String get categoryIconCreateHint => 'Appuie pour choisir une icône';
+
+  @override
+  String get categoryIconEditHint => 'Appuie pour changer d\'icône';
+
+  @override
+  String get categoryIconLabel => 'Icône';
+
+  @override
+  String get categoryIconPickerTitle => 'Choisir une icône';
+
+  @override
   String get categoryNameRequired => 'Le nom de la catégorie est obligatoire';
 
   @override
@@ -2592,7 +2607,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clearButton => 'Effacer';
 
   @override
-  String get colorLabel => 'Couleur :';
+  String get colorLabel => 'Couleur';
 
   @override
   String get commonError => 'Erreur';
@@ -4799,7 +4814,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitCategoryHint => 'Sélectionner une catégorie...';
 
   @override
-  String get habitCategoryLabel => 'Catégorie :';
+  String get habitCategoryLabel => 'Catégorie';
 
   @override
   String get habitDashboardHint => 'Sélectionner un tableau de bord...';
@@ -6587,7 +6602,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Erreur lors du chargement des catégories';
 
   @override
-  String get settingsCategoriesNameLabel => 'Nom de la catégorie :';
+  String get settingsCategoriesNameLabel => 'Nom de la catégorie';
 
   @override
   String settingsCategoriesNoMatchQuery(String query) {
@@ -7494,7 +7509,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskLanguageKorean => 'Coréen';
 
   @override
-  String get taskLanguageLabel => 'Langue :';
+  String get taskLanguageLabel => 'Langue';
 
   @override
   String get taskLanguageLatvian => 'Letton';

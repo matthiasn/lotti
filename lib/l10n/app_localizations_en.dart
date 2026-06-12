@@ -2364,6 +2364,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryFavoriteDescription => 'Mark this category as a favorite';
 
   @override
+  String get categoryIconChooseHint => 'Choose an icon';
+
+  @override
+  String get categoryIconCreateHint => 'Tap to select an icon';
+
+  @override
+  String get categoryIconEditHint => 'Tap to select a different icon';
+
+  @override
+  String get categoryIconLabel => 'Icon';
+
+  @override
+  String get categoryIconPickerTitle => 'Choose icon';
+
+  @override
   String get categoryNameRequired => 'Category name is required';
 
   @override
@@ -2543,7 +2558,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get clearButton => 'Clear';
 
   @override
-  String get colorLabel => 'Color:';
+  String get colorLabel => 'Color';
 
   @override
   String get commonError => 'Error';
@@ -4702,7 +4717,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitCategoryHint => 'Select Category...';
 
   @override
-  String get habitCategoryLabel => 'Category:';
+  String get habitCategoryLabel => 'Category';
 
   @override
   String get habitDashboardHint => 'Select Dashboard...';
@@ -6417,7 +6432,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoriesErrorLoading => 'Error loading categories';
 
   @override
-  String get settingsCategoriesNameLabel => 'Category name:';
+  String get settingsCategoriesNameLabel => 'Category name';
 
   @override
   String settingsCategoriesNoMatchQuery(String query) {
@@ -7298,7 +7313,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskLanguageKorean => 'Korean';
 
   @override
-  String get taskLanguageLabel => 'Language:';
+  String get taskLanguageLabel => 'Language';
 
   @override
   String get taskLanguageLatvian => 'Latvian';
@@ -7723,7 +7738,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get categoryFavoriteDescription => 'Mark this category as a favourite';
 
   @override
-  String get colorLabel => 'Colour:';
+  String get colorLabel => 'Colour';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -7904,7 +7919,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get habitCategoryHint => 'Select Category...';
 
   @override
-  String get habitCategoryLabel => 'Category:';
+  String get habitCategoryLabel => 'Category';
 
   @override
   String get habitDashboardHint => 'Select Dashboard...';

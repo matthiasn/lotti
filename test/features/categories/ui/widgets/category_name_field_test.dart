@@ -39,7 +39,7 @@ void main() {
       await pumpField(tester, isCreateMode: true);
 
       expect(find.byType(DesignSystemTextInput), findsOneWidget);
-      expect(find.text('Category name:'), findsOneWidget);
+      expect(find.text('Category name'), findsOneWidget);
       expect(find.text('Enter category name'), findsOneWidget);
       expect(find.byIcon(Icons.category_outlined), findsOneWidget);
     });
@@ -143,7 +143,7 @@ void main() {
       );
 
       expect(input.controller, equals(controller));
-      expect(input.label, 'Category name:');
+      expect(input.label, 'Category name');
       expect(input.hintText, 'Enter category name');
       expect(input.leadingIcon, Icons.category_outlined);
       expect(input.textCapitalization, TextCapitalization.sentences);

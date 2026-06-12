@@ -210,13 +210,13 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
 
   Widget _buildIconPicker() {
     final iconDisplayName =
-        _selectedIcon?.displayName ?? CategoryIconStrings.chooseIconText;
+        _selectedIcon?.displayName ?? context.messages.categoryIconChooseHint;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          CategoryIconStrings.iconLabel,
+          context.messages.categoryIconLabel,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: CategoryIconConstants.smallSectionSpacing),
@@ -265,7 +265,7 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
                       Text(
-                        CategoryIconStrings.createModeIconHint,
+                        context.messages.categoryIconCreateHint,
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],

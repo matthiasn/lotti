@@ -2403,6 +2403,21 @@ class AppLocalizationsCs extends AppLocalizations {
       'Označit tuto kategorii jako oblíbenou';
 
   @override
+  String get categoryIconChooseHint => 'Vyberte ikonu';
+
+  @override
+  String get categoryIconCreateHint => 'Klepněte pro výběr ikony';
+
+  @override
+  String get categoryIconEditHint => 'Klepněte pro změnu ikony';
+
+  @override
+  String get categoryIconLabel => 'Ikona';
+
+  @override
+  String get categoryIconPickerTitle => 'Vybrat ikonu';
+
+  @override
   String get categoryNameRequired => 'Název kategorie je povinný';
 
   @override
@@ -2584,7 +2599,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get clearButton => 'Vymazat';
 
   @override
-  String get colorLabel => 'Barva:';
+  String get colorLabel => 'Barva';
 
   @override
   String get commonError => 'Chyba';
@@ -4761,7 +4776,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitCategoryHint => 'Vyberte kategorii...';
 
   @override
-  String get habitCategoryLabel => 'Kategorie:';
+  String get habitCategoryLabel => 'Kategorie';
 
   @override
   String get habitDashboardHint => 'Vyberte panel...';
@@ -6535,7 +6550,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCategoriesErrorLoading => 'Chyba při načítání kategorií';
 
   @override
-  String get settingsCategoriesNameLabel => 'Název kategorie:';
+  String get settingsCategoriesNameLabel => 'Název kategorie';
 
   @override
   String settingsCategoriesNoMatchQuery(String query) {
@@ -7427,7 +7442,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskLanguageKorean => 'Korejština';
 
   @override
-  String get taskLanguageLabel => 'Jazyk:';
+  String get taskLanguageLabel => 'Jazyk';
 
   @override
   String get taskLanguageLatvian => 'Lotyština';

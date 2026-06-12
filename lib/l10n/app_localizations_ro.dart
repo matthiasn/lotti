@@ -2414,6 +2414,21 @@ class AppLocalizationsRo extends AppLocalizations {
       'Marcați această categorie ca favorită';
 
   @override
+  String get categoryIconChooseHint => 'Alegeți o pictogramă';
+
+  @override
+  String get categoryIconCreateHint => 'Apăsați pentru a alege o pictogramă';
+
+  @override
+  String get categoryIconEditHint => 'Apăsați pentru a schimba pictograma';
+
+  @override
+  String get categoryIconLabel => 'Pictogramă';
+
+  @override
+  String get categoryIconPickerTitle => 'Alegere pictogramă';
+
+  @override
   String get categoryNameRequired => 'Numele categoriei este obligatoriu';
 
   @override
@@ -2599,7 +2614,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get clearButton => 'Șterge';
 
   @override
-  String get colorLabel => 'Culoare:';
+  String get colorLabel => 'Culoare';
 
   @override
   String get commonError => 'Eroare';
@@ -4799,7 +4814,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitCategoryHint => 'Selectați categoria...';
 
   @override
-  String get habitCategoryLabel => 'Categorie:';
+  String get habitCategoryLabel => 'Categorie';
 
   @override
   String get habitDashboardHint => 'Selectați tabloul de bord...';
@@ -6573,7 +6588,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Eroare la încărcarea categoriilor';
 
   @override
-  String get settingsCategoriesNameLabel => 'Numele categoriei:';
+  String get settingsCategoriesNameLabel => 'Numele categoriei';
 
   @override
   String settingsCategoriesNoMatchQuery(String query) {
@@ -7476,7 +7491,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskLanguageKorean => 'Coreeană';
 
   @override
-  String get taskLanguageLabel => 'Limbă:';
+  String get taskLanguageLabel => 'Limbă';
 
   @override
   String get taskLanguageLatvian => 'Letonă';

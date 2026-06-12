@@ -940,7 +940,7 @@ void main() {
           expect(find.byType(SettingsSwitchRow), findsNothing);
           expect(find.byType(CategoryNameField), findsOneWidget);
           // Color and icon pickers are present.
-          expect(find.text(CategoryIconStrings.iconLabel), findsOneWidget);
+          expect(find.text('Icon'), findsOneWidget);
         },
       );
     });
@@ -1122,14 +1122,14 @@ void main() {
 
           // Initially shows "Choose an icon" hint text
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Choose an icon'),
             findsOneWidget,
           );
 
           // Tap the icon picker row
           final inkWellFinder = find
               .ancestor(
-                of: find.text(CategoryIconStrings.chooseIconText),
+                of: find.text('Choose an icon'),
                 matching: find.byType(InkWell),
               )
               .first;
@@ -1151,7 +1151,7 @@ void main() {
 
           // The "Choose an icon" text should be replaced by the icon's display name
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Choose an icon'),
             findsNothing,
           );
           expect(find.text(firstIconName), findsOneWidget);
@@ -1165,14 +1165,14 @@ void main() {
           await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Choose an icon'),
             findsOneWidget,
           );
 
           // Open the icon picker dialog
           final inkWellFinder = find
               .ancestor(
-                of: find.text(CategoryIconStrings.chooseIconText),
+                of: find.text('Choose an icon'),
                 matching: find.byType(InkWell),
               )
               .first;
@@ -1190,7 +1190,7 @@ void main() {
 
           // Display name should remain the default
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Choose an icon'),
             findsOneWidget,
           );
         },
@@ -1214,7 +1214,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 350));
 
           // Open the icon picker
-          final iconSection = find.text(CategoryIconStrings.iconSelectionHint);
+          final iconSection = find.text('Tap to select a different icon');
           final inkWell = find
               .ancestor(
                 of: iconSection,
@@ -1257,12 +1257,12 @@ void main() {
 
           // With no icon on the category, "Choose an icon" is shown
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Choose an icon'),
             findsOneWidget,
           );
           // And the hint says tap to change
           expect(
-            find.text(CategoryIconStrings.iconSelectionHint),
+            find.text('Tap to select a different icon'),
             findsOneWidget,
           );
         },
@@ -1287,7 +1287,7 @@ void main() {
             findsOneWidget,
           );
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Choose an icon'),
             findsNothing,
           );
         },

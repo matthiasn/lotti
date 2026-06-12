@@ -19,7 +19,7 @@ void main() {
       );
 
       // Verify title
-      expect(find.text('Color:'), findsOneWidget);
+      expect(find.text('Color'), findsOneWidget);
 
       // Verify default color is shown (primary color)
       final containers = tester.widgetList<Container>(find.byType(Container));

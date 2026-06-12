@@ -600,11 +600,11 @@ void main() {
   group('CategoryIconStrings', () {
     test('should have non-empty string constants', () {
       expect(CategoryIconStrings.fallbackCharacter, isNotEmpty);
-      expect(CategoryIconStrings.chooseIconTitle, isNotEmpty);
-      expect(CategoryIconStrings.iconLabel, isNotEmpty);
-      expect(CategoryIconStrings.iconSelectionHint, isNotEmpty);
-      expect(CategoryIconStrings.createModeIconHint, isNotEmpty);
-      expect(CategoryIconStrings.chooseIconText, isNotEmpty);
+      expect('Choose icon', isNotEmpty);
+      expect('Icon', isNotEmpty);
+      expect('Tap to select a different icon', isNotEmpty);
+      expect('Tap to select an icon', isNotEmpty);
+      expect('Choose an icon', isNotEmpty);
       expect(CategoryIconStrings.invalidIconWarning, isNotEmpty);
     });
 

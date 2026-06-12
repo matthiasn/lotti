@@ -522,7 +522,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // No icon selected yet: the placeholder text is shown.
-      final placeholder = find.text(CategoryIconStrings.chooseIconText);
+      final placeholder = find.text('Choose an icon');
       expect(placeholder, findsOneWidget);
 
       // Tap the icon picker tile to open the CategoryIconPicker dialog.
@@ -574,7 +574,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      final placeholder = find.text(CategoryIconStrings.chooseIconText);
+      final placeholder = find.text('Choose an icon');
       await tester.ensureVisible(placeholder);
       await tester.pumpAndSettle();
       await tester.tap(placeholder);
@@ -589,7 +589,7 @@ void main() {
 
       expect(find.byType(CategoryIconPicker), findsNothing);
       // Still the placeholder; no icon was applied.
-      expect(find.text(CategoryIconStrings.chooseIconText), findsOneWidget);
+      expect(find.text('Choose an icon'), findsOneWidget);
     },
   );
 }
