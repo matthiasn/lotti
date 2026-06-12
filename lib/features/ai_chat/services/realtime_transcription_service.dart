@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,17 +6,13 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
-import 'package:lotti/features/ai/util/audio_converter_channel.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
-import 'package:lotti/features/ai/util/pcm_amplitude.dart';
+import 'package:lotti/features/ai_chat/services/realtime_audio_buffer.dart';
+import 'package:lotti/features/ai_chat/services/realtime_audio_writer.dart';
+import 'package:lotti/features/ai_chat/services/realtime_transcript_merge.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:meta/meta.dart';
-
-part 'realtime_transcription_text_audio.dart';
-
-const _maxPcmBufferBytes = 3840000;
 
 enum _RealtimeBackendKind { mistral, mlxAudio }
 
@@ -38,21 +33,21 @@ class RealtimeTranscriptionService {
     this._ref, {
     MistralRealtimeTranscriptionRepository? repository,
     MlxAudioChannel? mlxAudioChannel,
+    RealtimeAudioBuffer? audioBuffer,
+    RealtimeAudioWriter? audioWriter,
     this._doneTimeout = const Duration(seconds: 10),
   }) : _repository = repository ?? MistralRealtimeTranscriptionRepository(),
-       _mlxAudioChannel = mlxAudioChannel ?? MlxAudioChannel();
+       _mlxAudioChannel = mlxAudioChannel ?? MlxAudioChannel(),
+       _audioBuffer = audioBuffer ?? RealtimeAudioBuffer(),
+       _audioWriter = audioWriter ?? RealtimeAudioWriter();
 
   final Ref _ref;
   final MistralRealtimeTranscriptionRepository _repository;
   final MlxAudioChannel _mlxAudioChannel;
   final Duration _doneTimeout;
-  final _pcmBuffer = BytesBuilder(copy: false);
-  final _amplitudeController = StreamController<double>.broadcast();
+  final RealtimeAudioBuffer _audioBuffer;
+  final RealtimeAudioWriter _audioWriter;
   final _deltaBuffer = StringBuffer();
-
-  /// Maximum PCM buffer size: ~2 minutes at 16kHz × 16-bit × mono = ~3.84 MB.
-  /// Beyond this, older audio is discarded (transcription still works via
-  /// WebSocket streaming — the buffer is only for the saved audio file).
 
   StreamSubscription<Uint8List>? _pcmSubscription;
   StreamSubscription<String>? _deltaSubscription;
@@ -65,7 +60,7 @@ class RealtimeTranscriptionService {
   bool _isActive = false;
 
   /// Stream of amplitude values (dBFS) computed from PCM chunks.
-  Stream<double> get amplitudeStream => _amplitudeController.stream;
+  Stream<double> get amplitudeStream => _audioBuffer.amplitudeStream;
 
   /// Whether a real-time transcription session is active.
   bool get isActive => _isActive;
@@ -147,7 +142,7 @@ class RealtimeTranscriptionService {
     }
 
     _isActive = true;
-    _pcmBuffer.clear();
+    _audioBuffer.clear();
     _deltaBuffer.clear();
     _detectedLanguage = null;
     _lastMlxConfirmedText = '';
@@ -172,7 +167,7 @@ class RealtimeTranscriptionService {
     _pcmSubscription = pcmStream.listen(
       (chunk) {
         _repository.sendAudioChunk(chunk);
-        _bufferPcmAndAmplitude(chunk);
+        _audioBuffer.addChunk(chunk);
       },
       onError: (Object error) {
         getIt<DomainLogger>().error(
@@ -256,7 +251,10 @@ class RealtimeTranscriptionService {
       // 4. Wait for transcription.done — timeout starts here so the full
       //    budget applies to waiting for the server, not recorder shutdown.
       final done = await doneCompleter.future.timeout(_doneTimeout);
-      transcript = _moreCompleteTranscript(done.text, _deltaBuffer.toString());
+      transcript = moreCompleteTranscript(
+        finalText: done.text,
+        accumulatedText: _deltaBuffer.toString(),
+      );
     } on TimeoutException {
       // Read delta buffer *after* the timeout so any late-arriving deltas
       // (from audio already in-flight when we cancelled the PCM subscription)
@@ -276,7 +274,10 @@ class RealtimeTranscriptionService {
     final detectedLanguage = _detectedLanguage;
 
     // 5. Write temp WAV and convert to M4A
-    final audioFilePath = await _saveAudio(outputPath);
+    final audioFilePath = await _audioWriter.saveAudio(
+      pcm: _audioBuffer.toBytes(),
+      outputPath: outputPath,
+    );
 
     // 6. Disconnect
     await _cleanup();
@@ -374,7 +375,7 @@ class RealtimeTranscriptionService {
             );
           }),
         );
-        _bufferPcmAndAmplitude(chunk);
+        _audioBuffer.addChunk(chunk);
       },
       onError: (Object error) {
         getIt<DomainLogger>().error(
@@ -404,7 +405,10 @@ class RealtimeTranscriptionService {
       await _mlxAudioChannel.stopRealtimeTranscription();
 
       final done = await doneCompleter.future.timeout(_doneTimeout);
-      transcript = _moreCompleteTranscript(done.text, _deltaBuffer.toString());
+      transcript = moreCompleteTranscript(
+        finalText: done.text,
+        accumulatedText: _deltaBuffer.toString(),
+      );
     } on TimeoutException {
       transcript = _deltaBuffer.toString();
       usedFallback = true;
@@ -425,7 +429,10 @@ class RealtimeTranscriptionService {
       );
     }
 
-    final audioFilePath = await _saveAudio(outputPath);
+    final audioFilePath = await _audioWriter.saveAudio(
+      pcm: _audioBuffer.toBytes(),
+      outputPath: outputPath,
+    );
     await _cleanup();
 
     return RealtimeStopResult(
@@ -444,7 +451,7 @@ class RealtimeTranscriptionService {
       return;
     }
 
-    final delta = _confirmedTextDelta(
+    final delta = confirmedTextDelta(
       previous: _lastMlxConfirmedText,
       next: text,
     );
@@ -454,22 +461,29 @@ class RealtimeTranscriptionService {
     onDelta(delta);
   }
 
-  String _moreCompleteTranscript(String finalText, String accumulatedText) {
-    final trimmedFinal = finalText.trim();
-    final trimmedAccumulated = accumulatedText.trim();
-    if (trimmedAccumulated.length > trimmedFinal.length) {
-      return accumulatedText;
+  /// Cancels backend subscriptions, resets per-session state, and
+  /// disconnects the active backend. The audio buffer is left intact —
+  /// `stop` reads it just before calling this, and the next
+  /// [startRealtimeTranscription] clears it.
+  Future<void> _cleanup() async {
+    _isActive = false;
+    await _deltaSubscription?.cancel();
+    _deltaSubscription = null;
+    await _languageSubscription?.cancel();
+    _languageSubscription = null;
+    await _mlxEventSubscription?.cancel();
+    _mlxEventSubscription = null;
+    _mlxDoneCompleter = null;
+    _lastMlxConfirmedText = '';
+    _detectedLanguage = null;
+    _deltaBuffer.clear();
+    if (_activeBackend == _RealtimeBackendKind.mlxAudio) {
+      await _mlxAudioChannel.cancelRealtimeTranscription();
+    } else {
+      await _repository.disconnect();
     }
-    return finalText;
+    _activeBackend = null;
   }
-
-  /// Test-only access to the MLX confirmed-text delta extraction, so its
-  /// algebra can be property-tested without driving the realtime pipeline.
-  @visibleForTesting
-  String debugConfirmedTextDelta({
-    required String previous,
-    required String next,
-  }) => _confirmedTextDelta(previous: previous, next: next);
 }
 
 bool _isMlxRealtimeModel(String providerModelId) =>

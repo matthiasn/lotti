@@ -43,7 +43,10 @@ lib/features/ai_chat/
 │   └── task_summary_repository.dart    # Task data retrieval for tool calls
 ├── services/
 │   ├── audio_transcription_service.dart    # Batch audio transcription
-│   ├── realtime_transcription_service.dart # Real-time transcription via WebSocket
+│   ├── realtime_audio_buffer.dart          # Capped PCM buffer + dBFS amplitude stream
+│   ├── realtime_audio_writer.dart          # WAV write + M4A conversion for captured audio
+│   ├── realtime_transcript_merge.dart      # Pure confirmed-delta/transcript-merge functions
+│   ├── realtime_transcription_service.dart # Real-time transcription orchestration
 │   └── system_message_service.dart        # System prompt construction
 ├── ui/
 │   ├── controllers/
@@ -317,10 +320,14 @@ It:
   local MLX Qwen3-ASR realtime model
 - opens the native MLX realtime session or Mistral WebSocket session
 - streams PCM audio chunks
-- computes local amplitude values from PCM
-- accumulates text deltas
-- on stop, waits for `transcription.done`
-- writes buffered audio to WAV and converts it to M4A
+- accumulates capped PCM audio and computes amplitude values via
+  `RealtimeAudioBuffer` (exposed through `amplitudeStream`)
+- accumulates text deltas, diffing MLX full-confirmed-text events into
+  deltas with `confirmedTextDelta` (`realtime_transcript_merge.dart`)
+- on stop, waits for `transcription.done` and picks the more complete of
+  the final text and the accumulated deltas (`moreCompleteTranscript`)
+- persists the buffered audio via `RealtimeAudioWriter` (temp WAV, then
+  M4A conversion, keeping the WAV as fallback)
 
 ```mermaid
 sequenceDiagram
