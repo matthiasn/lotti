@@ -77,8 +77,8 @@ Future<StreamController<List<_TestItem>>> _pumpScaffold(
 
   await tester.pumpWidget(
     MaterialApp(
-      // The scaffold's SettingsPageHeader reads context.designTokens, so the
-      // theme must carry the DsTokens extension.
+      // The scaffold header reads context.designTokens; the central
+      // helper attaches the DsTokens extension.
       theme: resolveTestTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,

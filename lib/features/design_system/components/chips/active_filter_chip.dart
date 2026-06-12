@@ -61,8 +61,11 @@ class ActiveFilterChip extends StatelessWidget {
           borderRadius: radius,
           onTap: onRemove,
           child: Padding(
+            // The leading edge gets step2 + step1 (6px): the trailing ✕ is
+            // a filled 20px glyph with generous internal margins, so a
+            // bare step2 on the left reads tighter than the right.
             padding: EdgeInsets.fromLTRB(
-              tokens.spacing.step2,
+              tokens.spacing.step2 + tokens.spacing.step1,
               tokens.spacing.step1,
               tokens.spacing.step1,
               tokens.spacing.step1,

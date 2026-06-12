@@ -180,11 +180,14 @@ Representative composite or feature-shaped components:
 
 - task filters
 - task list items
-- navigation tab bar and the mobile five-slot bottom nav bar
-  (`components/navigation/`) — the five-slot bar fixes the slot count
-  (primary destinations + More) with equal flex per slot so labels never
-  shrink, docks flush against the bottom edge, and absorbs the bottom
-  safe-area inset into its own surface
+- navigation tab bar and the mobile bottom nav bar
+  (`components/navigation/`) — the bar gives every slot an equal flex
+  share so labels never shrink, docks flush against the bottom edge, and
+  absorbs the bottom safe-area inset into its own surface; its
+  `comfortableSlotWidth` / `availableRowWidth` / `allSlotsFit` helpers
+  measure the labels at the current text scale so the shell can promote
+  destinations out of the More sheet one by one as window width allows,
+  dropping the More slot once everything fits
 - desktop navigation sidebar with a collapsible icon-only state and a
   resizable divider that disables drag input while the sidebar is
   collapsed, preserving the previous expanded width so re-expanding

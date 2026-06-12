@@ -178,51 +178,6 @@ void main() {
       );
     });
 
-    testWidgets(
-      'renders the overlay above the bar in the same Column when provided',
-      (tester) async {
-        const overlayKey = ValueKey('overlay');
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const SizedBox(
-              width: 402,
-              child: DesignSystemBottomNavigationBar(
-                items: items,
-                overlay: SizedBox(key: overlayKey, height: 24),
-              ),
-            ),
-            theme: DesignSystemTheme.light(),
-          ),
-        );
-
-        // Overlay is mounted and shares the bar's Column, so it stays tied
-        // to the rendered nav bar.
-        expect(find.byKey(overlayKey), findsOneWidget);
-        final column = tester.widget<Column>(
-          find
-              .ancestor(
-                of: find.byKey(overlayKey),
-                matching: find.byType(Column),
-              )
-              .first,
-        );
-        expect(column.crossAxisAlignment, CrossAxisAlignment.stretch);
-        expect(column.mainAxisSize, MainAxisSize.min);
-        expect(
-          column.children.whereType<DesignSystemFiveSlotNavBar>(),
-          hasLength(1),
-        );
-
-        // Overlay is the first child — visually above the bar.
-        final overlayCenter = tester.getCenter(find.byKey(overlayKey));
-        final barCenter = tester.getCenter(
-          find.byType(DesignSystemFiveSlotNavBar),
-        );
-        expect(overlayCenter.dy, lessThan(barCenter.dy));
-      },
-    );
-
     testWidgets('occupiedHeight adds the published overlay height', (
       tester,
     ) async {
@@ -291,35 +246,6 @@ void main() {
       // Indicator gone again: padding shrinks back to the bar alone.
       await pump(0);
       expect(bottomPadding(), barOnly);
-    });
-
-    testWidgets('omits the overlay slot when none is provided', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SizedBox(
-            width: 402,
-            child: DesignSystemBottomNavigationBar(items: items),
-          ),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
-
-      // The outermost Column inside the nav bar is the one that hosts the
-      // bar (and would host the overlay if provided). Inner Columns belong
-      // to each tab item.
-      final column = tester
-          .widgetList<Column>(
-            find.descendant(
-              of: find.byType(DesignSystemBottomNavigationBar),
-              matching: find.byType(Column),
-            ),
-          )
-          .first;
-      // Only the bar — no overlay child contributes to the Column.
-      expect(column.children, hasLength(1));
-      expect(column.children.first, isA<DesignSystemFiveSlotNavBar>());
     });
   });
 }

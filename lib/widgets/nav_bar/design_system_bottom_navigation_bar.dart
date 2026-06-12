@@ -4,12 +4,12 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 
 /// Mobile bottom-navigation container: hosts the five-slot bar
 /// ([DesignSystemFiveSlotNavBar]) docked flush against the screen's bottom
-/// edge, plus an optional overlay row (time/audio recording indicators)
-/// riding above it.
+/// edge. The time/audio recording indicators that ride above the bar are
+/// owned by the mobile shell (`lib/beamer/beamer_app.dart`), not by this
+/// container, so they stay visible when the shell slides the bar away.
 class DesignSystemBottomNavigationBar extends StatelessWidget {
   const DesignSystemBottomNavigationBar({
     required this.items,
-    this.overlay,
     super.key,
   });
 
@@ -17,15 +17,12 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
   /// More sheet, represented here by their More slot item).
   final List<DesignSystemFiveSlotNavBarItem> items;
 
-  /// Optional widget rendered immediately above the bar, stretched to the
-  /// same width so indicator rows stay tied to the rendered nav bar.
-  final Widget? overlay;
-
   /// Vertical screen estate the docked bottom stack occupies: the bar
   /// (including the bottom safe-area inset it absorbs into its surface)
-  /// plus the rendered height of the [overlay] row, published by the app
-  /// shell via [DesignSystemBottomNavigationOverlayHeight]. Content
-  /// scrolling behind the bar pads by this amount (see
+  /// plus the rendered height of the shell-owned indicator row riding
+  /// above it, published via
+  /// [DesignSystemBottomNavigationOverlayHeight]. Content scrolling
+  /// behind the bar pads by this amount (see
   /// [DesignSystemBottomNavigationFabPadding]).
   static double occupiedHeight(BuildContext context) {
     // In desktop layout the bottom navigation bar is not shown;
@@ -38,21 +35,14 @@ class DesignSystemBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        ?overlay,
-        DesignSystemFiveSlotNavBar(items: items),
-      ],
-    );
+    return DesignSystemFiveSlotNavBar(items: items);
   }
 }
 
-/// Publishes the rendered height of the nav bar's
-/// [DesignSystemBottomNavigationBar.overlay] row (the time/audio recording
-/// indicators) to the page stack. The app shell wraps the pages with this
-/// scope and updates [height] as indicators appear and disappear, so
+/// Publishes the rendered height of the shell-owned indicator row (the
+/// time/audio recording indicators) riding above the nav bar to the page
+/// stack. The app shell wraps the pages with this scope and updates
+/// [height] as indicators appear and disappear, so
 /// [DesignSystemBottomNavigationBar.occupiedHeight] — and everything padding
 /// by it — matches the full rendered bottom stack, not just the bar.
 class DesignSystemBottomNavigationOverlayHeight extends InheritedWidget {
