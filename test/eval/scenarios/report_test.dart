@@ -36,6 +36,22 @@ const _blindedImportPath = String.fromEnvironment('EVAL_BLINDED_IMPORT');
 const _blindedImportOverwrite = String.fromEnvironment(
   'EVAL_BLINDED_IMPORT_OVERWRITE',
 );
+const _pairwisePairsPath = String.fromEnvironment('EVAL_PAIRWISE_PAIRS');
+const _pairwiseBlindedExportPath = String.fromEnvironment(
+  'EVAL_PAIRWISE_BLINDED_EXPORT',
+);
+const _pairwiseBlindedExportOverwrite = String.fromEnvironment(
+  'EVAL_PAIRWISE_BLINDED_EXPORT_OVERWRITE',
+);
+const _pairwiseBlindedExportSeed = String.fromEnvironment(
+  'EVAL_PAIRWISE_BLINDED_EXPORT_SEED',
+);
+const _pairwiseBlindedImportPath = String.fromEnvironment(
+  'EVAL_PAIRWISE_BLINDED_IMPORT',
+);
+const _pairwiseBlindedImportOverwrite = String.fromEnvironment(
+  'EVAL_PAIRWISE_BLINDED_IMPORT_OVERWRITE',
+);
 const _promotionCandidateProfile = String.fromEnvironment(
   'EVAL_PROMOTION_CANDIDATE_PROFILE',
 );
@@ -418,6 +434,122 @@ void main() {
     skip: _runId.isEmpty || _blindedImportPath.isEmpty
         ? 'Set EVAL_RUN=<runId> and EVAL_BLINDED_IMPORT=<dir> to import '
               'blinded judge verdicts.'
+        : false,
+  );
+
+  test(
+    'writes blinded pairwise preference export',
+    () async {
+      final writer = TraceWriter(runsRoot: _runsRoot());
+      final run = await writer.readRun(_runId);
+      final catalog = _loadScenarioCatalog();
+      final profiles = _loadProfiles();
+      final promptVariants = _loadPromptVariants();
+      final verification = EvalRunVerifier.verify(
+        runId: _runId,
+        traces: run.traces,
+        scenarios: catalog.scenarios,
+        profiles: profiles,
+        agentDirectiveVariants: promptVariants,
+        manifest: run.manifest,
+        artifactNames: run.artifactNames,
+        requireVerdicts: false,
+      );
+      expect(
+        verification.errors,
+        isEmpty,
+        reason: verification.errors.join('\n'),
+      );
+
+      final pairsFile = File(_pairwisePairsPath);
+      _guardPairwisePairsInput(
+        manifestEvidence: run.manifest.scenarioCatalogEvidence,
+        loadedEvidence: catalog.evidence,
+        file: pairsFile,
+      );
+      final pairs = await _readPairwiseReviewPairs(
+        file: pairsFile,
+        run: run,
+        writer: writer,
+      );
+      final outputDir = Directory(_pairwiseBlindedExportPath);
+      _guardPairwiseBlindedExportOutput(
+        manifestEvidence: run.manifest.scenarioCatalogEvidence,
+        loadedEvidence: catalog.evidence,
+        directory: outputDir,
+      );
+      final result = await EvalBlindedPairwisePreference.writePairs(
+        run: run,
+        writer: writer,
+        outputDir: outputDir,
+        pairs: pairs,
+        overwrite: _pairwiseBlindedExportOverwrite == '1',
+        exportSeed: _pairwiseBlindedExportSeedValue(),
+      );
+      // ignore: avoid_print
+      print('Wrote blinded pairwise export: ${result.judgeDir.path}');
+      // ignore: avoid_print
+      print(
+        'Wrote private blinded pairwise key: ${result.privateKeyFile.path}',
+      );
+    },
+    tags: 'eval-report',
+    skip:
+        _runId.isEmpty ||
+            _pairwisePairsPath.isEmpty ||
+            _pairwiseBlindedExportPath.isEmpty
+        ? 'Set EVAL_RUN=<runId>, EVAL_PAIRWISE_PAIRS=<json>, and '
+              'EVAL_PAIRWISE_BLINDED_EXPORT=<dir> to write a blinded '
+              'pairwise export.'
+        : false,
+  );
+
+  test(
+    'imports blinded pairwise preferences',
+    () async {
+      final writer = TraceWriter(runsRoot: _runsRoot());
+      final run = await writer.readRun(_runId);
+      final catalog = _loadScenarioCatalog();
+      final profiles = _loadProfiles();
+      final promptVariants = _loadPromptVariants();
+      final preImportVerification = EvalRunVerifier.verify(
+        runId: _runId,
+        traces: run.traces,
+        scenarios: catalog.scenarios,
+        profiles: profiles,
+        agentDirectiveVariants: promptVariants,
+        manifest: run.manifest,
+        artifactNames: run.artifactNames,
+        requireVerdicts: false,
+      );
+      expect(
+        preImportVerification.errors,
+        isEmpty,
+        reason: preImportVerification.errors.join('\n'),
+      );
+
+      final importDir = Directory(_pairwiseBlindedImportPath);
+      _guardPairwiseBlindedImportInput(
+        manifestEvidence: run.manifest.scenarioCatalogEvidence,
+        loadedEvidence: catalog.evidence,
+        directory: importDir,
+      );
+      final result = await EvalBlindedPairwisePreference.importVotes(
+        run: run,
+        writer: writer,
+        exportDir: importDir,
+        overwrite: _pairwiseBlindedImportOverwrite == '1',
+      );
+      // ignore: avoid_print
+      print(
+        'Imported ${result.importedCount} blinded pairwise preference '
+        'vote(s) from ${importDir.path}',
+      );
+    },
+    tags: 'eval-report',
+    skip: _runId.isEmpty || _pairwiseBlindedImportPath.isEmpty
+        ? 'Set EVAL_RUN=<runId> and EVAL_PAIRWISE_BLINDED_IMPORT=<dir> '
+              'to import blinded pairwise preferences.'
         : false,
   );
 
@@ -1450,6 +1582,124 @@ String? _blindedExportSeedValue({
   return trimmed.isEmpty ? null : trimmed;
 }
 
+String? _pairwiseBlindedExportSeedValue({
+  String value = _pairwiseBlindedExportSeed,
+}) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+Future<List<EvalPairwiseReviewPair>> _readPairwiseReviewPairs({
+  required File file,
+  required EvalRunArtifacts run,
+  required TraceWriter writer,
+}) async {
+  if (!file.existsSync()) {
+    throw StateError('Missing pairwise review pairs file: ${file.path}');
+  }
+  final decoded = jsonDecode(await file.readAsString());
+  final entries = decoded is List
+      ? decoded
+      : decoded is Map<String, dynamic>
+      ? decoded['pairs']
+      : null;
+  if (entries is! List) {
+    throw StateError(
+      'EVAL_PAIRWISE_PAIRS must be a JSON list or object with a pairs list.',
+    );
+  }
+  return [
+    for (final entry in entries)
+      if (entry is Map<String, dynamic>)
+        EvalPairwiseReviewPair(
+          pairId: _requiredPairString(entry, 'pairId'),
+          optionA: await _pairwiseTraceRefFromJson(
+            json: _requiredPairObject(entry, 'optionA'),
+            run: run,
+            writer: writer,
+          ),
+          optionB: await _pairwiseTraceRefFromJson(
+            json: _requiredPairObject(entry, 'optionB'),
+            run: run,
+            writer: writer,
+          ),
+        )
+      else
+        throw StateError('EVAL_PAIRWISE_PAIRS entries must be objects.'),
+  ];
+}
+
+Future<EvalPairwiseTraceRef> _pairwiseTraceRefFromJson({
+  required Map<String, dynamic> json,
+  required EvalRunArtifacts run,
+  required TraceWriter writer,
+}) async {
+  final scenarioId = _requiredPairString(json, 'scenarioId');
+  final profileName = _requiredPairString(json, 'profileName');
+  final variantName =
+      (json['agentDirectiveVariantName'] as String?)?.trim().isNotEmpty == true
+      ? json['agentDirectiveVariantName'] as String
+      : 'default';
+  final trialIndex = (json['trialIndex'] as num?)?.toInt() ?? 0;
+  final cascadeWake = json['cascadeWake'] == null
+      ? null
+      : EvalTraceCascadeWake.fromJson(
+          json['cascadeWake'] as Map<String, dynamic>,
+        );
+  final matches = [
+    for (final trace in run.traces)
+      if (trace.scenario.id == scenarioId &&
+          trace.profile.name == profileName &&
+          trace.agentDirectiveVariant.name == variantName &&
+          trace.trialIndex == trialIndex &&
+          _sameCascadeWake(trace.cascadeWake, cascadeWake))
+        trace,
+  ];
+  if (matches.length != 1) {
+    throw StateError(
+      'Expected exactly one trace for pair ref '
+      '$scenarioId/$profileName/$variantName/trial-$trialIndex, '
+      'found ${matches.length}.',
+    );
+  }
+  final trace = matches.single;
+  final traceFile = writer.traceFileFor(
+    runId: trace.runId,
+    scenarioId: trace.scenario.id,
+    profileName: trace.profile.name,
+    agentDirectiveVariantName: trace.agentDirectiveVariant.name,
+    trialIndex: trace.trialIndex,
+    cascadeWake: trace.cascadeWake,
+  );
+  return EvalPairwiseTraceRef.fromTrace(
+    trace,
+    traceDigest: await writer.traceDigest(traceFile),
+  );
+}
+
+bool _sameCascadeWake(
+  EvalTraceCascadeWake? left,
+  EvalTraceCascadeWake? right,
+) {
+  if (left == null || right == null) return left == null && right == null;
+  return jsonEncode(left.toJson()) == jsonEncode(right.toJson());
+}
+
+String _requiredPairString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is String && value.trim().isNotEmpty) return value;
+  throw StateError('Expected non-empty string "$key" in EVAL_PAIRWISE_PAIRS.');
+}
+
+Map<String, dynamic> _requiredPairObject(
+  Map<String, dynamic> json,
+  String key,
+) {
+  final value = json[key];
+  if (value is Map<String, dynamic>) return value;
+  throw StateError('Expected object "$key" in EVAL_PAIRWISE_PAIRS.');
+}
+
 void _guardBlindedExportOutput({
   required EvalScenarioCatalogEvidence? manifestEvidence,
   required EvalScenarioCatalogEvidence loadedEvidence,
@@ -1461,6 +1711,51 @@ void _guardBlindedExportOutput({
     loadedEvidence: loadedEvidence,
     file: File(directory.path),
     artifactDescription: 'blinded trace exports',
+    protectedTraceAck: protectedTraceAck,
+  );
+}
+
+void _guardPairwisePairsInput({
+  required EvalScenarioCatalogEvidence? manifestEvidence,
+  required EvalScenarioCatalogEvidence loadedEvidence,
+  required File file,
+  String? protectedTraceAck,
+}) {
+  _guardExternalCatalogRepoPath(
+    manifestEvidence: manifestEvidence,
+    loadedEvidence: loadedEvidence,
+    file: file,
+    artifactDescription: 'pairwise review pair files',
+    protectedTraceAck: protectedTraceAck,
+  );
+}
+
+void _guardPairwiseBlindedExportOutput({
+  required EvalScenarioCatalogEvidence? manifestEvidence,
+  required EvalScenarioCatalogEvidence loadedEvidence,
+  required Directory directory,
+  String? protectedTraceAck,
+}) {
+  _guardExternalCatalogRepoPath(
+    manifestEvidence: manifestEvidence,
+    loadedEvidence: loadedEvidence,
+    file: File(directory.path),
+    artifactDescription: 'blinded pairwise exports',
+    protectedTraceAck: protectedTraceAck,
+  );
+}
+
+void _guardPairwiseBlindedImportInput({
+  required EvalScenarioCatalogEvidence? manifestEvidence,
+  required EvalScenarioCatalogEvidence loadedEvidence,
+  required Directory directory,
+  String? protectedTraceAck,
+}) {
+  _guardExternalCatalogRepoPath(
+    manifestEvidence: manifestEvidence,
+    loadedEvidence: loadedEvidence,
+    file: File(directory.path),
+    artifactDescription: 'blinded pairwise imports',
     protectedTraceAck: protectedTraceAck,
   );
 }

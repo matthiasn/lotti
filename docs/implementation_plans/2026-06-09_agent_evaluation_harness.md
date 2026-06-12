@@ -228,6 +228,9 @@ raw trace digests, packet contract, and missing/extra wrappers before writing
 raw `.preference.json` votes with `blindedImport` provenance. Pairwise results
 remain diagnostic; stricter policies can now require blinded-import provenance
 without promoting A/B outcomes automatically.
+`eval/run_level2.sh blind-pairwise` accepts an explicit `EVAL_PAIRWISE_PAIRS`
+JSON file and writes the blinded pair packet; `import-blind-pairwise` imports
+completed blinded preference wrappers.
 Current active slice also makes one vote per `<safeVoteId>.preference.json`
 a first-class run artifact. `TraceWriter.readRun` deliberately ignores those
 files so ordinary verification, readiness, calibration, and promotion gates stay

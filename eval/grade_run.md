@@ -177,10 +177,20 @@ directories are not blinded because trace filenames and payloads include profile
 names.
 
 For blinded A/B review, use the pairwise blinded packet workflow rather than
-the trace-verdict `blind` mode. `EvalBlindedPairwisePreference.writePairs`
-creates `judge/pairs/*.blinded-pair.json` review packets and a private
-`key.json`. Give reviewers only the `judge` directory. Reviewers should write a
-sibling `*.blinded-preference.json` wrapper:
+the trace-verdict `blind` mode. First create an explicit pair file containing
+`pairId`, `optionA`, and `optionB` entries. Each option identifies an existing
+trace by `scenarioId`, `profileName`, optional `agentDirectiveVariantName`
+(defaults to `default`), `trialIndex`, and optional `cascadeWake`. Then export:
+
+```bash
+EVAL_PAIRWISE_PAIRS=/private/tmp/pairs.json \
+EVAL_PAIRWISE_BLINDED_EXPORT=/private/tmp/lotti-pairwise-blind \
+  eval/run_level2.sh blind-pairwise <runId>
+```
+
+Give reviewers only `/private/tmp/lotti-pairwise-blind/judge`, not
+`private/key.json`. Reviewers should write a sibling
+`*.blinded-preference.json` wrapper:
 
 ```json
 {
@@ -206,6 +216,11 @@ The importer derives `profileVisible: false`, `modelIdentityVisible: false`,
 packet contract rather than trusting reviewer-supplied flags. It reconstructs
 raw `EvalPairwisePreferenceVote` refs from the private key and writes
 digest-bound `.preference.json` files with `blindedImport` provenance.
+
+```bash
+EVAL_PAIRWISE_BLINDED_IMPORT=/private/tmp/lotti-pairwise-blind \
+  eval/run_level2.sh import-blind-pairwise <runId>
+```
 
 Run multiple independent reviewers with profile/model identity and peer votes
 hidden when possible. Randomize option order for each reviewer when the

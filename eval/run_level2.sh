@@ -24,6 +24,8 @@
 #   EVAL_CALIBRATION_TEMPLATE=/private/tmp/judge_gold_v1.template.json EVAL_CALIBRATION_TEMPLATE_MAX_ROWS=24 eval/run_level2.sh template <runId>
 #   EVAL_BLINDED_EXPORT=/private/tmp/lotti-blind-review eval/run_level2.sh blind [runId]
 #   EVAL_BLINDED_IMPORT=/private/tmp/lotti-blind-review eval/run_level2.sh import-blind [runId]
+#   EVAL_PAIRWISE_PAIRS=/private/tmp/pairs.json EVAL_PAIRWISE_BLINDED_EXPORT=/private/tmp/lotti-pairwise-blind eval/run_level2.sh blind-pairwise [runId]
+#   EVAL_PAIRWISE_BLINDED_IMPORT=/private/tmp/lotti-pairwise-blind eval/run_level2.sh import-blind-pairwise [runId]
 #   EVAL_CALIBRATION=eval/calibration/judge_gold_v1.json eval/run_level2.sh calibrate [runId]
 #   EVAL_PROMOTION_PLAN=/private/tmp/promotion_plan.draft.json eval/run_level2.sh run [runId]
 #   EVAL_PROMOTION_PLAN=/private/tmp/promotion_plan.json EVAL_CALIBRATION=/private/tmp/judge_gold_v1.json eval/run_level2.sh report [runId]
@@ -58,7 +60,7 @@ latest_run_id() {
 }
 
 MODE="${1:-run}"
-if [[ "$MODE" != "plan" && "$MODE" != "run" && "$MODE" != "grade" && "$MODE" != "verify" && "$MODE" != "diagnose" && "$MODE" != "catalog" && "$MODE" != "report" && "$MODE" != "template" && "$MODE" != "blind" && "$MODE" != "import-blind" && "$MODE" != "calibrate" && "$MODE" != "all" ]]; then
+if [[ "$MODE" != "plan" && "$MODE" != "run" && "$MODE" != "grade" && "$MODE" != "verify" && "$MODE" != "diagnose" && "$MODE" != "catalog" && "$MODE" != "report" && "$MODE" != "template" && "$MODE" != "blind" && "$MODE" != "import-blind" && "$MODE" != "blind-pairwise" && "$MODE" != "import-blind-pairwise" && "$MODE" != "calibrate" && "$MODE" != "all" ]]; then
   RUN_ID="$MODE"
   MODE="run"
 else
@@ -77,7 +79,7 @@ else
       fi
       RUN_ID="$2"
       ;;
-    grade | verify | diagnose | report | blind | import-blind | calibrate)
+    grade | verify | diagnose | report | blind | import-blind | blind-pairwise | import-blind-pairwise | calibrate)
       RUN_ID="${2:-$(latest_run_id)}"
       ;;
   esac
@@ -93,6 +95,12 @@ BLINDED_EXPORT_OVERWRITE="${EVAL_BLINDED_EXPORT_OVERWRITE:-}"
 BLINDED_EXPORT_SEED="${EVAL_BLINDED_EXPORT_SEED:-}"
 BLINDED_IMPORT_PATH="${EVAL_BLINDED_IMPORT:-}"
 BLINDED_IMPORT_OVERWRITE="${EVAL_BLINDED_IMPORT_OVERWRITE:-}"
+PAIRWISE_PAIRS_PATH="${EVAL_PAIRWISE_PAIRS:-}"
+PAIRWISE_BLINDED_EXPORT_PATH="${EVAL_PAIRWISE_BLINDED_EXPORT:-}"
+PAIRWISE_BLINDED_EXPORT_OVERWRITE="${EVAL_PAIRWISE_BLINDED_EXPORT_OVERWRITE:-}"
+PAIRWISE_BLINDED_EXPORT_SEED="${EVAL_PAIRWISE_BLINDED_EXPORT_SEED:-}"
+PAIRWISE_BLINDED_IMPORT_PATH="${EVAL_PAIRWISE_BLINDED_IMPORT:-}"
+PAIRWISE_BLINDED_IMPORT_OVERWRITE="${EVAL_PAIRWISE_BLINDED_IMPORT_OVERWRITE:-}"
 SCENARIO_CATALOG_PATH="${EVAL_SCENARIOS:-}"
 SCENARIO_CATALOG_MODE="${EVAL_SCENARIOS_MODE:-}"
 SCENARIO_IDS="${EVAL_SCENARIO_IDS:-}"
@@ -187,6 +195,15 @@ if [[ -n "$BLINDED_EXPORT_PATH" ]]; then
 fi
 if [[ -n "$BLINDED_IMPORT_PATH" ]]; then
   echo "    blinded verdict import: ${BLINDED_IMPORT_PATH}"
+fi
+if [[ -n "$PAIRWISE_PAIRS_PATH" ]]; then
+  echo "    pairwise pairs: ${PAIRWISE_PAIRS_PATH}"
+fi
+if [[ -n "$PAIRWISE_BLINDED_EXPORT_PATH" ]]; then
+  echo "    blinded pairwise export: ${PAIRWISE_BLINDED_EXPORT_PATH}"
+fi
+if [[ -n "$PAIRWISE_BLINDED_IMPORT_PATH" ]]; then
+  echo "    blinded pairwise import: ${PAIRWISE_BLINDED_IMPORT_PATH}"
 fi
 
 catalog_preflight() {
@@ -353,6 +370,54 @@ import_blinded_verdicts() {
     "${import_defines[@]}"
 }
 
+blind_pairwise() {
+  if [[ -z "$PAIRWISE_PAIRS_PATH" ]]; then
+    echo "!!! Set EVAL_PAIRWISE_PAIRS=<json> to select pairwise comparisons." >&2
+    exit 15
+  fi
+  if [[ -z "$PAIRWISE_BLINDED_EXPORT_PATH" ]]; then
+    echo "!!! Set EVAL_PAIRWISE_BLINDED_EXPORT=<dir> to write a blinded pairwise export." >&2
+    exit 16
+  fi
+  local pairwise_defines=("${DART_DEFINES[@]}")
+  if [[ -n "$PAIRWISE_BLINDED_EXPORT_OVERWRITE" ]]; then
+    pairwise_defines+=(
+      "--dart-define=EVAL_PAIRWISE_BLINDED_EXPORT_OVERWRITE=${PAIRWISE_BLINDED_EXPORT_OVERWRITE}"
+    )
+  fi
+  if [[ -n "$PAIRWISE_BLINDED_EXPORT_SEED" ]]; then
+    pairwise_defines+=(
+      "--dart-define=EVAL_PAIRWISE_BLINDED_EXPORT_SEED=${PAIRWISE_BLINDED_EXPORT_SEED}"
+    )
+  fi
+  echo "==> Writing blinded pairwise preference export..."
+  fvm flutter test test/eval/scenarios/report_test.dart \
+    --plain-name "writes blinded pairwise preference export" \
+    --dart-define=EVAL_RUN="${RUN_ID}" \
+    --dart-define=EVAL_PAIRWISE_PAIRS="${PAIRWISE_PAIRS_PATH}" \
+    --dart-define=EVAL_PAIRWISE_BLINDED_EXPORT="${PAIRWISE_BLINDED_EXPORT_PATH}" \
+    "${pairwise_defines[@]}"
+}
+
+import_blinded_pairwise_preferences() {
+  if [[ -z "$PAIRWISE_BLINDED_IMPORT_PATH" ]]; then
+    echo "!!! Set EVAL_PAIRWISE_BLINDED_IMPORT=<dir> to import blinded pairwise preferences." >&2
+    exit 17
+  fi
+  local pairwise_import_defines=("${DART_DEFINES[@]}")
+  if [[ -n "$PAIRWISE_BLINDED_IMPORT_OVERWRITE" ]]; then
+    pairwise_import_defines+=(
+      "--dart-define=EVAL_PAIRWISE_BLINDED_IMPORT_OVERWRITE=${PAIRWISE_BLINDED_IMPORT_OVERWRITE}"
+    )
+  fi
+  echo "==> Importing blinded pairwise preferences..."
+  fvm flutter test test/eval/scenarios/report_test.dart \
+    --plain-name "imports blinded pairwise preferences" \
+    --dart-define=EVAL_RUN="${RUN_ID}" \
+    --dart-define=EVAL_PAIRWISE_BLINDED_IMPORT="${PAIRWISE_BLINDED_IMPORT_PATH}" \
+    "${pairwise_import_defines[@]}"
+}
+
 case "$MODE" in
   plan)
     plan_run
@@ -385,6 +450,12 @@ case "$MODE" in
     ;;
   import-blind)
     import_blinded_verdicts
+    ;;
+  blind-pairwise)
+    blind_pairwise
+    ;;
+  import-blind-pairwise)
+    import_blinded_pairwise_preferences
     ;;
   calibrate)
     verify_run

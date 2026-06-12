@@ -569,18 +569,53 @@ them.
 
 Raw run directories are not a blinded review surface because trace filenames
 and payloads include profile names. For model/profile-sensitive A/B review,
-`EvalBlindedPairwisePreference.writePairs` writes a separate
-`judge/pairs/*.blinded-pair.json` packet plus `private/key.json`. Public pair
-packets contain aliases, model-class context, redacted outputs, a
+write an explicit pair file and export it through the pairwise blinded mode:
+
+```json
+{
+  "pairs": [
+    {
+      "pairId": "task-update-frontier-vs-local-trial-0",
+      "optionA": {
+        "scenarioId": "task_workflow_structured_update",
+        "profileName": "frontier-gemini",
+        "agentDirectiveVariantName": "default",
+        "trialIndex": 0
+      },
+      "optionB": {
+        "scenarioId": "task_workflow_structured_update",
+        "profileName": "local-omlx-lfm25",
+        "agentDirectiveVariantName": "default",
+        "trialIndex": 0
+      }
+    }
+  ]
+}
+```
+
+```bash
+EVAL_PAIRWISE_PAIRS=/private/tmp/pairs.json \
+EVAL_PAIRWISE_BLINDED_EXPORT=/private/tmp/lotti-pairwise-blind \
+  eval/run_level2.sh blind-pairwise <runId>
+```
+
+The export writes `judge/pairs/*.blinded-pair.json` plus `private/key.json`.
+Public pair packets contain aliases, model-class context, redacted outputs, a
 `reviewPayloadDigest`, and a `preferenceContract`; they do not include raw
 profile names, model ids, provider ids, raw trace filenames, or raw trace
-digests. Reviewers write sibling `*.blinded-preference.json` wrappers.
+digests. Reviewers write sibling `*.blinded-preference.json` wrappers. Import
+them with:
+
+```bash
+EVAL_PAIRWISE_BLINDED_IMPORT=/private/tmp/lotti-pairwise-blind \
+  eval/run_level2.sh import-blind-pairwise <runId>
+```
+
 `EvalBlindedPairwisePreference.importVotes` validates the private key, judge
 manifest, pair payload digest, raw trace digests, missing/extra wrappers, and
 the packet contract before reconstructing raw `.preference.json` votes through
 `TraceWriter`. Imported votes carry `blindedImport` provenance, and stricter
-policies can set `requireBlindedImport: true` to reject self-attested
-blinding.
+policies can set `requireBlindedImport: true` to reject self-attested blinding.
 Summary Wilson 95% confidence intervals cluster repeated trials at the scenario
 or scenario-profile-cell level by default; explicit trace-level estimates remain
 available only as diagnostics. Cascade wake traces are also diagnostics by
