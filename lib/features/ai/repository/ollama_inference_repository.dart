@@ -1,38 +1,18 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:developer' as developer;
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:lotti/features/ai/repository/ollama_api_client.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-part 'ollama_image_analysis.dart';
-part 'ollama_model_management.dart';
-part 'ollama_chat_streaming.dart';
-
-/// Creates a single-choice stream chunk with the given [content].
-///
-/// Uses `DateTime.now().microsecondsSinceEpoch` for the id so chunks
-/// emitted within the same millisecond still receive distinct ids.
-CreateChatCompletionStreamResponse _contentChunk(String content) {
-  final now = DateTime.now();
-  return CreateChatCompletionStreamResponse(
-    id: '$ollamaResponseIdPrefix${now.microsecondsSinceEpoch}',
-    choices: [
-      ChatCompletionStreamResponseChoice(
-        delta: ChatCompletionStreamResponseDelta(content: content),
-        index: 0,
-      ),
-    ],
-    object: 'chat.completion.chunk',
-    created: now.millisecondsSinceEpoch ~/ 1000,
-  );
-}
+export 'package:lotti/features/ai/repository/ollama_api_client.dart'
+    show ModelNotInstalledException, OllamaPullProgress;
 
 /// Repository for Ollama-specific inference operations
 ///
@@ -46,24 +26,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     : _httpClient = httpClient ?? http.Client();
 
   final http.Client _httpClient;
-
-  /// Base delay used for exponential backoff between retry attempts.
-  ///
-  /// Tests may override this to `Duration.zero` to avoid consuming real time
-  /// while keeping retry logic intact. Production code should use the default.
-  static Duration retryBaseDelay = const Duration(seconds: 2);
-
-  /// Model prefix for Gemma 4 family (supports thinking mode).
-  static const String _gemma4Prefix = 'gemma4';
-
-  /// Returns true if the model supports Ollama's thinking mode.
-  ///
-  /// When enabled, Ollama returns chain-of-thought reasoning in a separate
-  /// `thinking` field. We wrap this in `<think>` tags so the downstream
-  /// response parser can extract it (same format as Gemini/OpenAI thinking).
-  static bool shouldEnableThinking(String model) {
-    return model.startsWith(_gemma4Prefix);
-  }
+  late final OllamaApiClient _api = OllamaApiClient(httpClient: _httpClient);
 
   /// Generate text using Ollama's API
   ///
@@ -85,7 +48,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     ChatCompletionToolChoiceOption? toolChoice, // Ignored for Ollama
   }) {
     // Validate inputs
-    _validateOllamaRequest(
+    _api.validateRequest(
       prompt: prompt,
       model: model,
       temperature: temperature,
@@ -93,7 +56,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     );
 
     // Always use chat endpoint for consistency
-    return _generateTextWithChat(
+    return _api.generateTextWithChat(
       prompt: prompt,
       model: model,
       temperature: temperature,
@@ -200,7 +163,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       },
     };
 
-    return _streamChatRequest(
+    return _api.streamChatRequest(
       requestBody: requestBody,
       timeout: const Duration(seconds: ollamaDefaultTimeoutSeconds),
       retryContext: 'Ollama chat with full conversation',
@@ -211,9 +174,8 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     );
   }
 
-  /// Image analysis. Thin delegator to
-  /// [OllamaImageAnalysis.generateWithImagesImpl] so the method remains a
-  /// mockable class member.
+  /// Image analysis. Thin delegator to [OllamaApiClient.generateWithImages]
+  /// so the method remains a mockable class member.
   Stream<CreateChatCompletionStreamResponse> generateWithImages({
     required String prompt,
     required String model,
@@ -222,7 +184,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
     String? systemMessage,
-  }) => generateWithImagesImpl(
+  }) => _api.generateWithImages(
     prompt: prompt,
     model: model,
     temperature: temperature,
@@ -232,35 +194,13 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     systemMessage: systemMessage,
   );
 
-  /// Model installation. Thin delegator to
-  /// [OllamaModelManagement.installModelImpl] (mockable class member).
+  /// Model installation. Thin delegator to [OllamaApiClient.installModel]
+  /// (mockable class member).
   Stream<OllamaPullProgress> installModel(String modelName, String baseUrl) =>
-      installModelImpl(modelName, baseUrl);
+      _api.installModel(modelName, baseUrl);
 
-  /// Model warm-up. Thin delegator to
-  /// [OllamaModelManagement.warmUpModelImpl] (mockable class member).
+  /// Model warm-up. Thin delegator to [OllamaApiClient.warmUpModel]
+  /// (mockable class member).
   Future<void> warmUpModel(String modelName, String baseUrl) =>
-      warmUpModelImpl(modelName, baseUrl);
-}
-
-/// Exception thrown when a model is not installed
-class ModelNotInstalledException implements Exception {
-  const ModelNotInstalledException(this.modelName);
-
-  final String modelName;
-
-  @override
-  String toString() =>
-      'Model "$modelName" is not installed. Please install it first.';
-}
-
-/// Progress information for model installation
-class OllamaPullProgress {
-  const OllamaPullProgress({
-    required this.status,
-    required this.progress,
-  });
-
-  final String status; // e.g., "pulling manifest", "downloading", "success"
-  final double progress; // Progress as a fraction (0.0 to 1.0)
+      _api.warmUpModel(modelName, baseUrl);
 }

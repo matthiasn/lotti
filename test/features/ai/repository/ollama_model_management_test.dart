@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/providers/gemini_inference_repository_provider
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_api_client.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -396,8 +397,8 @@ void main() {
 
       test('handles timeout for image analysis', () {
         // Ensure retryBaseDelay is always restored even if the test fails
-        final prevDelay = OllamaInferenceRepository.retryBaseDelay;
-        addTearDown(() => OllamaInferenceRepository.retryBaseDelay = prevDelay);
+        final prevDelay = OllamaApiClient.retryBaseDelay;
+        addTearDown(() => OllamaApiClient.retryBaseDelay = prevDelay);
         fakeAsync((async) {
           // Arrange
           const prompt = 'Analyze this image';
@@ -424,7 +425,7 @@ void main() {
           });
 
           // Remove backoff to keep time math simple under fake clock
-          OllamaInferenceRepository.retryBaseDelay = Duration.zero;
+          OllamaApiClient.retryBaseDelay = Duration.zero;
 
           final received = <dynamic>[];
           final errors = <Object>[];
@@ -455,7 +456,7 @@ void main() {
           final plan = buildRetryBackoffPlan(
             maxRetries: 3,
             timeout: const Duration(seconds: ollamaImageAnalysisTimeoutSeconds),
-            baseDelay: OllamaInferenceRepository.retryBaseDelay,
+            baseDelay: OllamaApiClient.retryBaseDelay,
             epsilon: const Duration(seconds: 1),
           );
           async.elapseRetryPlan(plan);
