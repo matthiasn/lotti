@@ -1,6 +1,7 @@
 import 'dart:developer' as developer show log;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/features/agents/classifier/feedback_item_classifiers.dart';
 import 'package:lotti/features/agents/classifier/feedback_text_classifier.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -10,20 +11,7 @@ import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
-import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/services/domain_logging.dart';
-
-part 'feedback_extraction_classifiers.dart';
-
-/// Well-known feedback source identifiers.
-abstract final class FeedbackSources {
-  static const decision = 'decision';
-  static const observation = 'observation';
-  static const metric = 'metric';
-  static const rating = 'rating';
-  static const evolutionSession = 'evolution_session';
-  static const directiveChurn = 'directive_churn';
-}
 
 /// Extracts and classifies feedback from agent observations and decisions.
 ///
@@ -183,7 +171,7 @@ class FeedbackExtractionService {
     // 3. Classify reports by confidence
     final windowReports = reports.where((r) => inWindow(r.createdAt));
     for (final report in windowReports) {
-      final classified = _classifyReport(report);
+      final classified = classifyReport(report);
       if (classified != null) {
         items.add(classified);
       }
@@ -192,7 +180,7 @@ class FeedbackExtractionService {
     // 4. Classify wake run ratings
     final windowRuns = wakeRuns.where((r) => inWindow(r.createdAt));
     for (final run in windowRuns) {
-      final classified = _classifyWakeRunRating(run);
+      final classified = classifyWakeRunRating(run);
       if (classified != null) {
         items.add(classified);
       }
@@ -300,7 +288,7 @@ class FeedbackExtractionService {
     AgentMessageEntity observation, {
     AgentMessagePayloadEntity? payload,
   }) {
-    final detail = _observationDetailText(payload);
+    final detail = observationDetailText(payload);
     final priority = _extractObservationPriority(payload);
     final obsCategory = _extractObservationCategory(payload);
 
@@ -419,5 +407,84 @@ class FeedbackExtractionService {
     return Map.fromEntries(
       results.whereType<MapEntry<String, ClassifiedFeedback>>(),
     );
+  }
+
+  /// Extract feedback from evolution sessions created by improver agents
+  /// governed by [templateId].
+  ///
+  /// This is the meta-feedback layer: when the target is an improver template,
+  /// the most meaningful signals come from how well those improver agents
+  /// performed their rituals (evolution session outcomes).
+
+  Future<List<ClassifiedFeedbackItem>> _extractEvolutionSessionFeedback({
+    required String templateId,
+    required DateTime since,
+    required DateTime until,
+  }) async {
+    // Get all agent instances governed by this template.
+    final agents = await templateService.getAgentsForTemplate(templateId);
+    if (agents.isEmpty) return [];
+
+    // Resolve each agent's target template ID (the template it improves).
+    final states = await Future.wait(
+      agents.map((agent) => agentRepository.getAgentState(agent.agentId)),
+    );
+    final targetTemplateIds = states
+        .map((state) => state?.slots.activeTemplateId)
+        .whereType<String>()
+        .toSet();
+    if (targetTemplateIds.isEmpty) return [];
+
+    // Query evolution sessions and versions for all target templates in
+    // parallel.
+    final results = await Future.wait(
+      targetTemplateIds.map((targetId) async {
+        final (sessions, versions) = await (
+          templateService.getEvolutionSessions(targetId, limit: 50),
+          templateService.getVersionHistory(targetId),
+        ).wait;
+        return (
+          targetId: targetId,
+          sessions: sessions,
+          versions: versions,
+        );
+      }),
+    );
+
+    final items = <ClassifiedFeedbackItem>[];
+
+    for (final result in results) {
+      final windowSessions = result.sessions.where(
+        (s) => isInWindow(s.createdAt, since, until),
+      );
+
+      for (final session in windowSessions) {
+        items.add(classifyEvolutionSession(session, result.targetId));
+      }
+
+      // Directive churn detection: count template versions created in window.
+      final windowVersions = result.versions.where(
+        (v) => isInWindow(v.createdAt, since, until),
+      );
+      final versionCount = windowVersions.length;
+      if (versionCount > ImproverSlotDefaults.maxDirectiveChurnVersions) {
+        items.add(
+          ClassifiedFeedbackItem(
+            sentiment: FeedbackSentiment.negative,
+            category: FeedbackCategory.general,
+            source: FeedbackSources.directiveChurn,
+            detail:
+                'Excessive directive churn: $versionCount versions '
+                'created for template ${result.targetId} in feedback window '
+                '(threshold: '
+                '${ImproverSlotDefaults.maxDirectiveChurnVersions})',
+            agentId: templateId,
+            confidence: 1,
+          ),
+        );
+      }
+    }
+
+    return items;
   }
 }
