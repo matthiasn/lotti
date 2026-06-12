@@ -32,6 +32,10 @@ const _blindedExportOverwrite = String.fromEnvironment(
   'EVAL_BLINDED_EXPORT_OVERWRITE',
 );
 const _blindedExportSeed = String.fromEnvironment('EVAL_BLINDED_EXPORT_SEED');
+const _blindedImportPath = String.fromEnvironment('EVAL_BLINDED_IMPORT');
+const _blindedImportOverwrite = String.fromEnvironment(
+  'EVAL_BLINDED_IMPORT_OVERWRITE',
+);
 const _promotionCandidateProfile = String.fromEnvironment(
   'EVAL_PROMOTION_CANDIDATE_PROFILE',
 );
@@ -353,6 +357,71 @@ void main() {
   );
 
   test(
+    'imports blinded judge verdicts',
+    () async {
+      final writer = TraceWriter(runsRoot: _runsRoot());
+      final run = await writer.readRun(_runId);
+      final catalog = _loadScenarioCatalog();
+      final profiles = _loadProfiles();
+      final promptVariants = _loadPromptVariants();
+      final preImportVerification = EvalRunVerifier.verify(
+        runId: _runId,
+        traces: run.traces,
+        scenarios: catalog.scenarios,
+        profiles: profiles,
+        agentDirectiveVariants: promptVariants,
+        manifest: run.manifest,
+        artifactNames: run.artifactNames,
+        requireVerdicts: false,
+      );
+      expect(
+        preImportVerification.errors,
+        isEmpty,
+        reason: preImportVerification.errors.join('\n'),
+      );
+
+      final importDir = Directory(_blindedImportPath);
+      _guardBlindedImportInput(
+        manifestEvidence: run.manifest.scenarioCatalogEvidence,
+        loadedEvidence: catalog.evidence,
+        directory: importDir,
+      );
+      final result = await EvalBlindedVerdictImporter.importRun(
+        run: run,
+        writer: writer,
+        exportDir: importDir,
+        overwrite: _blindedImportOverwrite == '1',
+      );
+      // ignore: avoid_print
+      print(
+        'Imported ${result.importedCount} blinded judge verdict(s) from '
+        '${importDir.path}',
+      );
+
+      final importedRun = await writer.readRun(_runId);
+      final postImportVerification = EvalRunVerifier.verify(
+        runId: _runId,
+        traces: importedRun.traces,
+        scenarios: catalog.scenarios,
+        profiles: profiles,
+        agentDirectiveVariants: promptVariants,
+        manifest: importedRun.manifest,
+        artifactNames: importedRun.artifactNames,
+      );
+      expect(
+        postImportVerification.errors,
+        isEmpty,
+        reason: postImportVerification.errors.join('\n'),
+      );
+    },
+    tags: 'eval-report',
+    skip: _runId.isEmpty || _blindedImportPath.isEmpty
+        ? 'Set EVAL_RUN=<runId> and EVAL_BLINDED_IMPORT=<dir> to import '
+              'blinded judge verdicts.'
+        : false,
+  );
+
+  test(
     'calibration template path must not look like a completed label file',
     () {
       expect(
@@ -488,6 +557,40 @@ void main() {
     );
     expect(
       () => _guardBlindedExportOutput(
+        manifestEvidence: evidence,
+        loadedEvidence: _publicCatalogEvidence(),
+        directory: directory,
+        protectedTraceAck: '1',
+      ),
+      returnsNormally,
+    );
+  });
+
+  test('external blinded verdict imports inside repo require ack', () {
+    final evidence = EvalScenarioCatalogEvidence(
+      scenarioSetDigest: EvalProvenance.digestText('external-scenarios'),
+      publicScenarioCount: 0,
+      externalScenarioCount: 1,
+      externalCatalogDigest: EvalProvenance.digestText('external-catalog'),
+      externalCatalogId: 'private-production-replay-v1',
+      externalSourceLabel: 'private_scenarios.json',
+      protectedHoldout: false,
+      protectedScenarioIds: const [],
+      protectedHoldoutScenarioIds: const [],
+    );
+    final directory = Directory('eval/blinded/private-run');
+
+    expect(
+      () => _guardBlindedImportInput(
+        manifestEvidence: evidence,
+        loadedEvidence: _publicCatalogEvidence(),
+        directory: directory,
+        protectedTraceAck: '0',
+      ),
+      throwsStateError,
+    );
+    expect(
+      () => _guardBlindedImportInput(
         manifestEvidence: evidence,
         loadedEvidence: _publicCatalogEvidence(),
         directory: directory,
@@ -1358,6 +1461,21 @@ void _guardBlindedExportOutput({
     loadedEvidence: loadedEvidence,
     file: File(directory.path),
     artifactDescription: 'blinded trace exports',
+    protectedTraceAck: protectedTraceAck,
+  );
+}
+
+void _guardBlindedImportInput({
+  required EvalScenarioCatalogEvidence? manifestEvidence,
+  required EvalScenarioCatalogEvidence loadedEvidence,
+  required Directory directory,
+  String? protectedTraceAck,
+}) {
+  _guardExternalCatalogRepoPath(
+    manifestEvidence: manifestEvidence,
+    loadedEvidence: loadedEvidence,
+    file: File(directory.path),
+    artifactDescription: 'blinded verdict imports',
     protectedTraceAck: protectedTraceAck,
   );
 }

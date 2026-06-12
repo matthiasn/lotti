@@ -980,10 +980,10 @@ supplies real model behavior.
   model-class tuning. The default model-class policy also rejects unblinded
   judge verdicts where exact provider/model identity was visible during grading.
   `eval/run_level2.sh blind` now creates a separate model-identity-redacted
-  review packet, but until blinded-verdict import/provenance is wired into the
-  verifier this remains a verdict-provenance protocol gate backed by retained
-  private export-key evidence rather than cryptographic proof that the raw trace
-  was hidden.
+  review packet, and `eval/run_level2.sh import-blind` validates the retained
+  private key, judge manifest digest, review payload digests, raw trace digests,
+  and blinded verdict wrappers before writing raw digest-bound sibling verdict
+  files with `blindedImport` audit provenance.
   The rendered readiness block now includes the
   evidence counts behind those gates: corpus by agent/split, primary capability
   count, model-class profile coverage, trial range, adversarial totals and

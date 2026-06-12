@@ -5,6 +5,7 @@
 
 export 'eval_assertions.dart';
 export 'eval_blinded_trace_export.dart';
+export 'eval_blinded_verdict_import.dart';
 export 'eval_judge_calibration.dart';
 export 'eval_matrix_runner.dart';
 export 'eval_models.dart';

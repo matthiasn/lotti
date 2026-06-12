@@ -90,6 +90,12 @@ Rules:
   exact `.trace.json` file, as `sha256:` followed by 64 lowercase hex
   characters. The reporter rejects verdicts with missing, stale, or malformed
   digests.
+- When grading a `*.blinded-trace.json` packet, return the wrapper documented in
+  `eval/grade_run.md`: top-level `kind:
+  "lotti.blindedTraceExport.verdict"`, copied `blindedTraceId`, copied
+  `reviewPayloadDigest`, and a nested `verdict` object. The nested verdict must
+  omit `traceDigest`; the importer binds the raw trace digest after validating
+  the private key and review payload digest.
 - `judge.promptDigest` must match `provenance.promptDigest` from the trace.
 - `judge.calibrationSetVersion` is mandatory. Use the current human-labeled
   calibration set version when one exists; otherwise write `"uncalibrated"` so

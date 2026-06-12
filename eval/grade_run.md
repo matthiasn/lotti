@@ -76,6 +76,10 @@ is operator audit material, not judge input.
       `provenance.promptDigest`. Set `judge.calibrationSetVersion` to the
       current human-labeled calibration set version; if no calibration set has
       been run yet, write `"uncalibrated"` explicitly.
+   6. For blinded traces, write a sibling `*.blinded-verdict.json` wrapper
+      instead of a raw `.verdict.json` file. Copy `blindedTraceId` and
+      `reviewPayloadDigest` from the blinded trace packet, omit
+      `verdict.traceDigest`, and set `judge.modelIdentityVisible: false`.
 4. After all traces are graded, run the reporter to print the summary:
 
    ```
@@ -100,12 +104,47 @@ and provider response metadata. A reviewer may set
 `judge.modelIdentityVisible: false` only when they graded from the `blind`
 mode's `judge/` packet and did not see the private key or raw run directory.
 
-The current reporter still consumes verdicts as sibling `.verdict.json` files
-next to raw traces. Until a blinded-verdict importer exists, an operator must
-use `private/key.json` to transfer blinded review scores back to the matching
-raw verdict files. The raw verdict's `traceDigest` must still cite the raw trace
-digest from the private key, while the review rationale should mention the
-blinded trace id and review payload digest used for grading.
+For blinded reviews, write one wrapper per blinded trace next to the blinded
+trace file:
+
+```json
+{
+  "schemaVersion": 1,
+  "kind": "lotti.blindedTraceExport.verdict",
+  "blindedTraceId": "blind-0001",
+  "reviewPayloadDigest": "sha256:<copy from blinded trace>",
+  "verdict": {
+    "schemaVersion": 1,
+    "judge": {
+      "judgeName": "claude-code",
+      "judgeModel": "<model shown by Claude Code for this grading run>",
+      "promptDigest": "sha256:<copy reviewPayload.promptDigest>",
+      "calibrationSetVersion": "<human calibration set version, or uncalibrated>",
+      "profileVisible": true,
+      "modelIdentityVisible": false
+    },
+    "goalAttainment": 4,
+    "quality": 5,
+    "efficiency": 3,
+    "pass": true,
+    "rationale": "One short paragraph citing the blinded trace id and specifics.",
+    "issues": []
+  }
+}
+```
+
+Then import the completed wrappers back to raw digest-bound verdicts:
+
+```
+EVAL_BLINDED_IMPORT=/private/tmp/lotti-blind-review \
+  eval/run_level2.sh import-blind <runId>
+```
+
+The importer validates `private/key.json`, the judge manifest digest, each
+blinded trace's recomputed review payload digest, the raw trace digest, and the
+wrapper provenance before writing raw sibling `.verdict.json` files with a
+`blindedImport` audit block. It refuses to overwrite existing raw verdicts
+unless `EVAL_BLINDED_IMPORT_OVERWRITE=1` is set.
 
 ## Optional Pairwise A/B Review
 

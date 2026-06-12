@@ -2896,6 +2896,56 @@ class JudgeProvenanceRecord {
   };
 }
 
+/// Audit binding proving a raw verdict was imported from a blinded judge packet.
+class BlindedVerdictImportRecord {
+  const BlindedVerdictImportRecord({
+    required this.blindedTraceId,
+    required this.reviewPayloadDigest,
+    required this.judgeManifestDigest,
+    required this.privateKeyDigest,
+    required this.sourceManifestDigest,
+    required this.rawTraceDigest,
+  });
+
+  factory BlindedVerdictImportRecord.fromJson(Map<String, dynamic> json) {
+    final rawVersion = json['schemaVersion'];
+    if (rawVersion != schemaVersion) {
+      throw FormatException(
+        'Unsupported BlindedVerdictImportRecord schemaVersion $rawVersion '
+        '(expected $schemaVersion)',
+      );
+    }
+    return BlindedVerdictImportRecord(
+      blindedTraceId: json['blindedTraceId'] as String,
+      reviewPayloadDigest: json['reviewPayloadDigest'] as String,
+      judgeManifestDigest: json['judgeManifestDigest'] as String,
+      privateKeyDigest: json['privateKeyDigest'] as String,
+      sourceManifestDigest: json['sourceManifestDigest'] as String,
+      rawTraceDigest: json['rawTraceDigest'] as String,
+    );
+  }
+
+  static const schemaVersion = 1;
+
+  final String blindedTraceId;
+  final String reviewPayloadDigest;
+  final String judgeManifestDigest;
+  final String privateKeyDigest;
+  final String sourceManifestDigest;
+  final String rawTraceDigest;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'schemaVersion': schemaVersion,
+    'kind': 'lotti.blindedTraceImport',
+    'blindedTraceId': blindedTraceId,
+    'reviewPayloadDigest': reviewPayloadDigest,
+    'judgeManifestDigest': judgeManifestDigest,
+    'privateKeyDigest': privateKeyDigest,
+    'sourceManifestDigest': sourceManifestDigest,
+    'rawTraceDigest': rawTraceDigest,
+  };
+}
+
 /// The verdict a Claude Code judge writes back for a trace (see
 /// eval/prompts/judge_system.md).
 class JudgeVerdict {
@@ -2906,6 +2956,7 @@ class JudgeVerdict {
     required this.pass,
     required this.judge,
     this.traceDigest,
+    this.blindedImport,
     this.rationale = '',
     this.issues = const <String>[],
   });
@@ -2927,6 +2978,11 @@ class JudgeVerdict {
         json['judge'] as Map<String, dynamic>,
       ),
       traceDigest: json['traceDigest'] as String?,
+      blindedImport: json['blindedImport'] == null
+          ? null
+          : BlindedVerdictImportRecord.fromJson(
+              json['blindedImport'] as Map<String, dynamic>,
+            ),
       rationale: (json['rationale'] as String?) ?? '',
       issues: ((json['issues'] as List<dynamic>?) ?? const [])
           .map((e) => e as String)
@@ -2942,6 +2998,7 @@ class JudgeVerdict {
   final bool pass;
   final JudgeProvenanceRecord judge;
   final String? traceDigest;
+  final BlindedVerdictImportRecord? blindedImport;
   final String rationale;
   final List<String> issues;
 
@@ -2952,9 +3009,23 @@ class JudgeVerdict {
     pass: pass,
     judge: judge,
     traceDigest: digest,
+    blindedImport: blindedImport,
     rationale: rationale,
     issues: issues,
   );
+
+  JudgeVerdict withBlindedImport(BlindedVerdictImportRecord provenance) =>
+      JudgeVerdict(
+        goalAttainment: goalAttainment,
+        quality: quality,
+        efficiency: efficiency,
+        pass: pass,
+        judge: judge,
+        traceDigest: traceDigest,
+        blindedImport: provenance,
+        rationale: rationale,
+        issues: issues,
+      );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'schemaVersion': schemaVersion,
@@ -2964,6 +3035,7 @@ class JudgeVerdict {
     'pass': pass,
     'judge': judge.toJson(),
     if (traceDigest != null) 'traceDigest': traceDigest,
+    if (blindedImport != null) 'blindedImport': blindedImport!.toJson(),
     'rationale': rationale,
     'issues': issues,
   };

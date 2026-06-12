@@ -25,7 +25,7 @@ eval/
   calibration/
     README.md          ← non-secret human-label schema for judge calibration
   grade_run.md         ← Claude Code runbook: trace dir -> verdicts
-  run_level2.sh        ← mode-based orchestration (run/blind/grade/verify/report)
+  run_level2.sh        ← mode-based orchestration (run/blind/import/report)
   runs/                ← git-ignored artifacts: <runId>/manifest.json + traces/verdicts
 
 test/eval/harness/     ← Dart support library (models, assertions, matrix runner, target, IO)
@@ -402,12 +402,21 @@ performance, and human calibration labels are checked later by `report`.
    exports are blocked unless `LOTTI_EVAL_PROTECTED_TRACE_ACK=1`.
 3. Grade with Claude Code: `claude -p "Follow eval/grade_run.md to grade eval/runs/<runId>"`.
    For model-identity-blinded grading, hand the judge only the `blind` mode's
-   `judge/` directory and keep `private/key.json` with the operator. The current
-   reporter still consumes verdicts as raw-trace sibling `.verdict.json` files;
-   until a blinded-verdict importer lands, copying blinded review scores back to
-   raw verdict files is an operator step that must preserve the private-key
-   mapping and should set `judge.modelIdentityVisible: false` only for reviews
-   actually performed from the blinded packet.
+   `judge/` directory and keep `private/key.json` with the operator. Judges
+   write `blind-000N.blinded-verdict.json` wrappers next to the blinded trace
+   files. Import them through the retained private key:
+
+   ```
+   EVAL_BLINDED_IMPORT=/private/tmp/lotti-blind-review \
+     eval/run_level2.sh import-blind <runId>
+   ```
+
+   Import validates `private/key.json`, the judge manifest digest, each
+   blinded trace's recomputed review payload digest, the raw trace digest, and
+   the verdict wrapper before writing raw sibling `.verdict.json` files. It
+   stores a `blindedImport` provenance block in each raw verdict and refuses to
+   overwrite existing raw verdicts unless
+   `EVAL_BLINDED_IMPORT_OVERWRITE=1` is set.
 4. `report` first loads the run through `TraceWriter.readRun`, which requires a
    current manifest, recomputes the manifest hash, and rejects traces bound to a
    different manifest. It then verifies exact scenario × profile × prompt
@@ -683,10 +692,10 @@ pair counts, human-human pass/score agreement with Wilson lower bounds, and zero
 unresolved human disagreement plus blinded human-review protocol evidence for
 the default model-class policy. The same policy rejects unblinded judge verdicts
 where exact provider/model identity was visible during grading.
-`eval/run_level2.sh blind` now creates a separate model-identity-redacted review
-packet, but tuning readiness still trusts the verdict provenance flag and
-retained private export key as audit evidence until blinded-verdict
-import/provenance is wired into the verifier.
+`eval/run_level2.sh blind` creates a separate model-identity-redacted review
+packet, and `eval/run_level2.sh import-blind` validates the retained private key
+plus blinded review payload digests before normalizing judge verdicts back into
+raw digest-bound `.verdict.json` files with `blindedImport` audit provenance.
 Public `holdout` split labels are process metadata only; they do not satisfy
 protected-holdout readiness unless the run manifest contains evidence from a
 protected external production-replay catalog with enough unique protected
