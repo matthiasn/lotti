@@ -463,6 +463,8 @@ class JudgeCalibrationReport {
     required this.scoreAgreementCount,
     required this.capabilitySummaries,
     required this.modelClassSummaries,
+    required this.promptVariantSummaries,
+    required this.modelClassPromptVariantSummaries,
     required this.findings,
     this.humanReviewPairCount = 0,
     this.humanPassAgreementPairCount = 0,
@@ -493,6 +495,8 @@ class JudgeCalibrationReport {
   final int unblindedHumanReviewCount;
   final List<JudgeCalibrationSliceSummary> capabilitySummaries;
   final List<JudgeCalibrationSliceSummary> modelClassSummaries;
+  final List<JudgeCalibrationSliceSummary> promptVariantSummaries;
+  final List<JudgeCalibrationSliceSummary> modelClassPromptVariantSummaries;
   final List<JudgeCalibrationFinding> findings;
 
   double get goldCoverageRate =>
@@ -752,6 +756,9 @@ abstract final class EvalJudgeCalibration {
     var unblindedHumanReviewCount = 0;
     final capabilityAccumulators = <String, _CalibrationAccumulator>{};
     final modelClassAccumulators = <String, _CalibrationAccumulator>{};
+    final promptVariantAccumulators = <String, _CalibrationAccumulator>{};
+    final modelClassPromptVariantAccumulators =
+        <String, _CalibrationAccumulator>{};
 
     for (final label in labelsByKey.values) {
       final matches = tracesByKey[label.key.id] ?? const <EvalTrace>[];
@@ -781,6 +788,8 @@ abstract final class EvalJudgeCalibration {
       final capabilityId =
           trace.scenario.metadata.primaryCapabilityId ?? 'uncategorized';
       final modelClass = trace.profile.modelClass.name;
+      final promptVariant = trace.agentDirectiveVariant.name;
+      final modelClassPromptVariant = '$modelClass@$promptVariant';
       final capability = capabilityAccumulators.putIfAbsent(
         capabilityId,
         () => _CalibrationAccumulator(capabilityId),
@@ -791,12 +800,25 @@ abstract final class EvalJudgeCalibration {
         () => _CalibrationAccumulator(modelClass),
       );
       modelClassAccumulator.labelCount++;
+      final promptVariantAccumulator = promptVariantAccumulators.putIfAbsent(
+        promptVariant,
+        () => _CalibrationAccumulator(promptVariant),
+      );
+      promptVariantAccumulator.labelCount++;
+      final modelClassPromptVariantAccumulator =
+          modelClassPromptVariantAccumulators.putIfAbsent(
+            modelClassPromptVariant,
+            () => _CalibrationAccumulator(modelClassPromptVariant),
+          );
+      modelClassPromptVariantAccumulator.labelCount++;
 
       final staleReasons = _staleLabelReasons(label: label, trace: trace);
       if (staleReasons.isNotEmpty) {
         staleLabelCount++;
         capability.staleLabelCount++;
         modelClassAccumulator.staleLabelCount++;
+        promptVariantAccumulator.staleLabelCount++;
+        modelClassPromptVariantAccumulator.staleLabelCount++;
         findings.add(
           JudgeCalibrationFinding(
             kind: JudgeCalibrationFindingKind.staleGoldLabel,
@@ -812,6 +834,8 @@ abstract final class EvalJudgeCalibration {
         missingVerdictCount++;
         capability.missingVerdictCount++;
         modelClassAccumulator.missingVerdictCount++;
+        promptVariantAccumulator.missingVerdictCount++;
+        modelClassPromptVariantAccumulator.missingVerdictCount++;
         findings.add(
           JudgeCalibrationFinding(
             kind: JudgeCalibrationFindingKind.missingVerdict,
@@ -827,6 +851,8 @@ abstract final class EvalJudgeCalibration {
         staleLabelCount++;
         capability.staleLabelCount++;
         modelClassAccumulator.staleLabelCount++;
+        promptVariantAccumulator.staleLabelCount++;
+        modelClassPromptVariantAccumulator.staleLabelCount++;
         findings.add(
           JudgeCalibrationFinding(
             kind: JudgeCalibrationFindingKind.staleGoldLabel,
@@ -845,6 +871,8 @@ abstract final class EvalJudgeCalibration {
           staleLabelCount++;
           capability.staleLabelCount++;
           modelClassAccumulator.staleLabelCount++;
+          promptVariantAccumulator.staleLabelCount++;
+          modelClassPromptVariantAccumulator.staleLabelCount++;
           findings.add(
             JudgeCalibrationFinding(
               kind: JudgeCalibrationFindingKind.staleGoldLabel,
@@ -862,6 +890,8 @@ abstract final class EvalJudgeCalibration {
         judgeCalibrationMismatchCount++;
         capability.judgeCalibrationMismatchCount++;
         modelClassAccumulator.judgeCalibrationMismatchCount++;
+        promptVariantAccumulator.judgeCalibrationMismatchCount++;
+        modelClassPromptVariantAccumulator.judgeCalibrationMismatchCount++;
         findings.add(
           JudgeCalibrationFinding(
             kind: JudgeCalibrationFindingKind.judgeCalibrationVersionMismatch,
@@ -877,6 +907,8 @@ abstract final class EvalJudgeCalibration {
       evaluatedCount++;
       capability.evaluatedCount++;
       modelClassAccumulator.evaluatedCount++;
+      promptVariantAccumulator.evaluatedCount++;
+      modelClassPromptVariantAccumulator.evaluatedCount++;
 
       final passMatches = verdict.pass == label.expectedPass;
       final scoresMatch =
@@ -900,15 +932,21 @@ abstract final class EvalJudgeCalibration {
         passAgreementCount++;
         capability.passAgreementCount++;
         modelClassAccumulator.passAgreementCount++;
+        promptVariantAccumulator.passAgreementCount++;
+        modelClassPromptVariantAccumulator.passAgreementCount++;
       } else {
         if (verdict.pass && !label.expectedPass) {
           falsePassCount++;
           capability.falsePassCount++;
           modelClassAccumulator.falsePassCount++;
+          promptVariantAccumulator.falsePassCount++;
+          modelClassPromptVariantAccumulator.falsePassCount++;
         } else if (!verdict.pass && label.expectedPass) {
           falseFailCount++;
           capability.falseFailCount++;
           modelClassAccumulator.falseFailCount++;
+          promptVariantAccumulator.falseFailCount++;
+          modelClassPromptVariantAccumulator.falseFailCount++;
         }
         findings.add(
           JudgeCalibrationFinding(
@@ -923,6 +961,8 @@ abstract final class EvalJudgeCalibration {
         scoreAgreementCount++;
         capability.scoreAgreementCount++;
         modelClassAccumulator.scoreAgreementCount++;
+        promptVariantAccumulator.scoreAgreementCount++;
+        modelClassPromptVariantAccumulator.scoreAgreementCount++;
       } else {
         final scoreMismatchDetail = _scoreMismatchDetail(
           verdict: verdict,
@@ -1017,6 +1057,10 @@ abstract final class EvalJudgeCalibration {
       unblindedHumanReviewCount: unblindedHumanReviewCount,
       capabilitySummaries: _summaries(capabilityAccumulators),
       modelClassSummaries: _summaries(modelClassAccumulators),
+      promptVariantSummaries: _summaries(promptVariantAccumulators),
+      modelClassPromptVariantSummaries: _summaries(
+        modelClassPromptVariantAccumulators,
+      ),
       findings: findings,
     );
   }
@@ -1067,6 +1111,16 @@ abstract final class EvalJudgeCalibration {
       buffer,
       'Model-class calibration',
       report.modelClassSummaries,
+    );
+    _renderSlices(
+      buffer,
+      'Prompt-variant calibration',
+      report.promptVariantSummaries,
+    );
+    _renderSlices(
+      buffer,
+      'Model-class prompt-variant calibration',
+      report.modelClassPromptVariantSummaries,
     );
     if (report.findings.isNotEmpty) {
       buffer

@@ -193,9 +193,10 @@ Passing labels must allow a passing score in every dimension.
 The report compares `JudgeVerdict` scores against the labels, prints gold-label
 coverage, pass and score agreement, Wilson intervals, false-pass/false-fail
 counts, human-human pair counts, human pass/score agreement, unresolved human
-disagreement, and slices agreement by primary capability and model class. It
-also surfaces duplicate labels, missing traces, missing verdicts, stale labels,
-judged traces without labels, verdicts graded under a different
+disagreement, and slices agreement by primary capability, model class, and
+prompt variant, plus model-class/prompt-variant pairs. It also surfaces
+duplicate labels, missing traces, missing verdicts, stale labels, judged traces
+without labels, verdicts graded under a different
 `judge.calibrationSetVersion`, and verdicts where the judge saw exact
 provider/model identity. A calibration-version mismatch is a provenance failure,
 not judge agreement data. The default model-class tuning policy requires enough

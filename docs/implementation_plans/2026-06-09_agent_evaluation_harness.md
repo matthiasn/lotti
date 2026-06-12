@@ -927,10 +927,11 @@ supplies real model behavior.
   verdicts produced while the judge was explicitly `uncalibrated`. It compares
   verdict pass plus goal/quality/efficiency scores against inclusive human score
   bands, reports gold-label coverage, pass and score agreement with Wilson
-  intervals, false-pass/false-fail counts, slices agreement by capability and
-  model class, and surfaces duplicate labels, stale labels, missing traces,
-  missing verdicts, verdicts graded under another judge calibration-set version,
-  unblinded verdicts, and judged traces without gold labels. Completed labels
+  intervals, false-pass/false-fail counts, slices agreement by capability,
+  model class, prompt variant, and model-class prompt-variant pair, and
+  surfaces duplicate labels, stale labels, missing traces, missing verdicts,
+  verdicts graded under another judge calibration-set version, unblinded
+  verdicts, and judged traces without gold labels. Completed labels
   cannot remain marked `needs_review` and must include reviewer provenance.
   Completed labels may include `independentReviews`; those raw votes are kept
   inside the one final gold label per trace, derive pairwise human pass/score
@@ -974,9 +975,10 @@ supplies real model behavior.
   `JudgeCalibrationReport` from the raw `JudgeCalibrationSet`; aggregate
   reports are display-only and cannot satisfy readiness gates. The calibration
   gates include evaluated-label minimums overall and per required model
-  class/capability, coverage/pass/score rates plus Wilson lower bounds,
+  class/capability/prompt variant/model-class prompt-variant pair,
+  global and per-prompt-variant pass/score rates plus Wilson lower bounds,
   false-pass/false-fail limits, exact judge calibration provenance, optional
-  human gold-label version, clean stale/missing/mismatch counts, and
+  human gold-label version, clean stale/missing/mismatch/unlabeled counts, and
   model-identity blinding, plus independent human-review pair counts,
   human-human pass/score agreement with Wilson lower bounds, and zero unresolved
   human disagreement plus blinded human-review protocol evidence for

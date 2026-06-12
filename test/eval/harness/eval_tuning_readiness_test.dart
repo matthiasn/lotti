@@ -813,6 +813,8 @@ void main() {
         minCalibrationEvaluatedCount: 2,
         minCalibrationEvaluatedPerModelClass: 2,
         minCalibrationEvaluatedPerCapability: 2,
+        minCalibrationEvaluatedPerPromptVariant: 2,
+        minCalibrationEvaluatedPerModelClassPromptVariant: 2,
         minCalibrationCoverageRate: 0.75,
         minCalibrationPassAgreementRate: 0.8,
         minCalibrationScoreAgreementRate: 0.8,
@@ -860,6 +862,17 @@ void main() {
       report.failures,
       contains(
         'calibration capability task.tuning.ready evaluated count 0 < 2',
+      ),
+    );
+    expect(
+      report.failures,
+      contains('calibration prompt variant default evaluated count 0 < 2'),
+    );
+    expect(
+      report.failures,
+      contains(
+        'calibration model class/prompt variant frontierFast@default '
+        'evaluated count 0 < 2',
       ),
     );
     expect(report.failures, contains('calibration coverage 50.0% < 75.0%'));
@@ -922,7 +935,198 @@ void main() {
     );
     expect(
       report.failures,
+      contains('calibration report has 1 unlabeled verdicts'),
+    );
+    expect(
+      report.failures,
       contains('calibration report has 1 calibration mismatches'),
+    );
+  });
+
+  test('calibration slice gates require each prompt variant', () {
+    const tunedVariant = EvalAgentDirectiveVariant(
+      name: 'metadata-first-v2',
+      generalDirective: 'Write durable metadata before summaries.',
+    );
+    final scenario = _scenarioWith(
+      taskWorkflowReleaseNotesScenario,
+      split: EvalScenarioSplit.development,
+      capabilityId: 'task.tuning.ready',
+    );
+    final defaultTrace = _trace(
+      scenario: scenario,
+      profile: frontierFast,
+      calibrationSetVersion: 'gold-v1',
+    );
+    final tunedTrace = _trace(
+      scenario: scenario,
+      profile: frontierFast,
+      calibrationSetVersion: 'gold-v1',
+      agentDirectiveVariant: tunedVariant,
+    );
+
+    final report = EvalTuningReadiness.assess(
+      traces: [defaultTrace, tunedTrace],
+      scenarios: [scenario],
+      profiles: const [frontierFast],
+      calibrationSet: _calibrationSetFor([defaultTrace]),
+      policy: const EvalTuningPolicy(
+        name: 'promptVariantCalibration',
+        requireCompleteTraceMatrix: false,
+        requireAllVerdicts: true,
+        requiredCalibrationSetVersion: 'gold-v1',
+        requireCalibrationReport: true,
+        minCalibrationEvaluatedCount: 1,
+        minCalibrationEvaluatedPerPromptVariant: 1,
+      ),
+    );
+
+    expect(report.ready, isFalse);
+    expect(
+      report.failures,
+      contains(
+        'calibration prompt variant metadata-first-v2 evaluated count 0 < 1',
+      ),
+    );
+    expect(
+      report.failures,
+      isNot(
+        contains('calibration prompt variant default evaluated count 0 < 1'),
+      ),
+    );
+  });
+
+  test('calibration slice gates require each model class prompt variant pair', () {
+    const tunedVariant = EvalAgentDirectiveVariant(
+      name: 'metadata-first-v2',
+      generalDirective: 'Write durable metadata before summaries.',
+    );
+    final scenario = _scenarioWith(
+      taskWorkflowReleaseNotesScenario,
+      split: EvalScenarioSplit.development,
+      capabilityId: 'task.tuning.ready',
+    );
+    final localTunedTrace = _trace(
+      scenario: scenario,
+      profile: localSmall,
+      calibrationSetVersion: 'gold-v1',
+      agentDirectiveVariant: tunedVariant,
+    );
+    final frontierTunedTrace = _trace(
+      scenario: scenario,
+      profile: frontierFast,
+      calibrationSetVersion: 'gold-v1',
+      agentDirectiveVariant: tunedVariant,
+    );
+
+    final report = EvalTuningReadiness.assess(
+      traces: [localTunedTrace, frontierTunedTrace],
+      scenarios: [scenario],
+      profiles: const [localSmall, frontierFast],
+      calibrationSet: _calibrationSetFor([localTunedTrace]),
+      policy: const EvalTuningPolicy(
+        name: 'promptVariantModelClassCalibration',
+        requireCompleteTraceMatrix: false,
+        requireAllVerdicts: true,
+        requiredCalibrationSetVersion: 'gold-v1',
+        requireCalibrationReport: true,
+        minCalibrationEvaluatedPerPromptVariant: 1,
+        minCalibrationEvaluatedPerModelClassPromptVariant: 1,
+      ),
+    );
+
+    expect(report.ready, isFalse);
+    expect(
+      report.failures,
+      isNot(
+        contains(
+          'calibration prompt variant metadata-first-v2 evaluated count 0 < 1',
+        ),
+      ),
+    );
+    expect(
+      report.failures,
+      contains(
+        'calibration model class/prompt variant frontierFast@metadata-first-v2 '
+        'evaluated count 0 < 1',
+      ),
+    );
+  });
+
+  test('calibration agreement gates inspect prompt variants', () {
+    const tunedVariant = EvalAgentDirectiveVariant(
+      name: 'metadata-first-v2',
+      generalDirective: 'Write durable metadata before summaries.',
+    );
+    final scenario = _scenarioWith(
+      taskWorkflowReleaseNotesScenario,
+      split: EvalScenarioSplit.development,
+      capabilityId: 'task.tuning.ready',
+    );
+    final defaultTrace = _trace(
+      scenario: scenario,
+      profile: frontierFast,
+      calibrationSetVersion: 'gold-v1',
+    );
+    final tunedTrace = _trace(
+      scenario: scenario,
+      profile: frontierFast,
+      calibrationSetVersion: 'gold-v1',
+      agentDirectiveVariant: tunedVariant,
+    );
+
+    final report = EvalTuningReadiness.assess(
+      traces: [defaultTrace, tunedTrace],
+      scenarios: [scenario],
+      profiles: const [frontierFast],
+      calibrationSet: JudgeCalibrationSet(
+        version: 'human-gold-v1',
+        judgeCalibrationSetVersion: 'gold-v1',
+        labels: [
+          _calibrationLabelForTrace(defaultTrace),
+          _calibrationLabelForTrace(
+            tunedTrace,
+            expectedPass: false,
+            goalAttainment: 1,
+            quality: 1,
+            efficiency: 1,
+          ),
+        ],
+      ),
+      policy: const EvalTuningPolicy(
+        name: 'promptVariantAgreement',
+        requireCompleteTraceMatrix: false,
+        requireAllVerdicts: true,
+        requiredCalibrationSetVersion: 'gold-v1',
+        requireCalibrationReport: true,
+        minCalibrationEvaluatedPerPromptVariant: 1,
+        minCalibrationPassAgreementPerPromptVariant: 0.8,
+        minCalibrationScoreAgreementPerPromptVariant: 0.8,
+      ),
+    );
+
+    expect(report.ready, isFalse);
+    expect(
+      report.failures,
+      contains(
+        'calibration prompt variant metadata-first-v2 pass agreement '
+        '0.0% < 80.0%',
+      ),
+    );
+    expect(
+      report.failures,
+      contains(
+        'calibration prompt variant metadata-first-v2 score agreement '
+        '0.0% < 80.0%',
+      ),
+    );
+    expect(
+      report.failures,
+      isNot(
+        contains(
+          'calibration prompt variant default pass agreement 0.0% < 80.0%',
+        ),
+      ),
     );
   });
 
@@ -1623,13 +1827,20 @@ EvalTrace _trace({
   bool level1Passed = true,
   String calibrationSetVersion = 'uncalibrated',
   bool modelIdentityVisible = false,
+  EvalAgentDirectiveVariant agentDirectiveVariant =
+      const EvalAgentDirectiveVariant(),
   EvalTraceCascadeWake? cascadeWake,
 }) {
   return EvalTrace(
     runId: 'readiness-run',
     scenario: scenario,
     profile: profile,
-    provenance: EvalProvenance.capture(scenario: scenario, profile: profile),
+    agentDirectiveVariant: agentDirectiveVariant,
+    provenance: EvalProvenance.capture(
+      scenario: scenario,
+      profile: profile,
+      agentDirectiveVariant: agentDirectiveVariant,
+    ),
     trialIndex: trialIndex,
     cascadeWake: cascadeWake,
     output: const AgentRunOutput(
@@ -1651,7 +1862,8 @@ EvalTrace _trace({
     verdict: judged
         ? JudgeVerdict(
             traceDigest: EvalProvenance.digestText(
-              '${scenario.id}-${profile.name}-$trialIndex',
+              '${scenario.id}-${profile.name}-'
+              '${agentDirectiveVariant.name}-$trialIndex',
             ),
             goalAttainment: 5,
             quality: 5,
@@ -1679,27 +1891,39 @@ JudgeCalibrationSet _calibrationSetFor(
     version: version,
     judgeCalibrationSetVersion: judgeCalibrationSetVersion,
     labels: [
-      for (final trace in traces)
-        JudgeCalibrationLabel(
-          key: EvalTraceKey.fromTrace(trace),
-          scenarioDigest: trace.provenance.scenarioDigest,
-          profileDigest: trace.provenance.profileDigest,
-          agentDirectiveVariantDigest:
-              trace.provenance.agentDirectiveVariantDigest,
-          traceDigest: trace.verdict!.traceDigest,
-          verdictDigest: EvalProvenance.digestJson(trace.verdict!.toJson()),
-          expectedPass: trace.verdict!.pass,
-          goalAttainmentMin: trace.verdict!.goalAttainment,
-          goalAttainmentMax: trace.verdict!.goalAttainment,
-          qualityMin: trace.verdict!.quality,
-          qualityMax: trace.verdict!.quality,
-          efficiencyMin: trace.verdict!.efficiency,
-          efficiencyMax: trace.verdict!.efficiency,
-          labeler: 'human-reviewer',
-          adjudicationStatus: 'reviewed',
-          rationale: 'Digest-bound readiness calibration fixture.',
-        ),
+      for (final trace in traces) _calibrationLabelForTrace(trace),
     ],
+  );
+}
+
+JudgeCalibrationLabel _calibrationLabelForTrace(
+  EvalTrace trace, {
+  bool? expectedPass,
+  int? goalAttainment,
+  int? quality,
+  int? efficiency,
+}) {
+  final verdict = trace.verdict!;
+  final humanGoalAttainment = goalAttainment ?? verdict.goalAttainment;
+  final humanQuality = quality ?? verdict.quality;
+  final humanEfficiency = efficiency ?? verdict.efficiency;
+  return JudgeCalibrationLabel(
+    key: EvalTraceKey.fromTrace(trace),
+    scenarioDigest: trace.provenance.scenarioDigest,
+    profileDigest: trace.provenance.profileDigest,
+    agentDirectiveVariantDigest: trace.provenance.agentDirectiveVariantDigest,
+    traceDigest: verdict.traceDigest,
+    verdictDigest: EvalProvenance.digestJson(verdict.toJson()),
+    expectedPass: expectedPass ?? verdict.pass,
+    goalAttainmentMin: humanGoalAttainment,
+    goalAttainmentMax: humanGoalAttainment,
+    qualityMin: humanQuality,
+    qualityMax: humanQuality,
+    efficiencyMin: humanEfficiency,
+    efficiencyMax: humanEfficiency,
+    labeler: 'human-reviewer',
+    adjudicationStatus: 'reviewed',
+    rationale: 'Digest-bound readiness calibration fixture.',
   );
 }
 
@@ -1722,6 +1946,9 @@ JudgeCalibrationReport _calibrationReport({
   int humanScoreAgreementPairCount = 0,
   int unresolvedHumanDisagreementCount = 0,
   int unblindedHumanReviewCount = 0,
+  List<JudgeCalibrationSliceSummary> promptVariantSummaries = const [],
+  List<JudgeCalibrationSliceSummary> modelClassPromptVariantSummaries =
+      const [],
 }) {
   return JudgeCalibrationReport(
     calibrationSetVersion: calibrationSetVersion,
@@ -1746,6 +1973,8 @@ JudgeCalibrationReport _calibrationReport({
     unblindedHumanReviewCount: unblindedHumanReviewCount,
     capabilitySummaries: const [],
     modelClassSummaries: const [],
+    promptVariantSummaries: promptVariantSummaries,
+    modelClassPromptVariantSummaries: modelClassPromptVariantSummaries,
     findings: const [],
   );
 }

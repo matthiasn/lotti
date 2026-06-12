@@ -2868,6 +2868,8 @@ JudgeCalibrationReport _calibrationReport({
     scoreAgreementCount: evaluatedCount,
     capabilitySummaries: const [],
     modelClassSummaries: const [],
+    promptVariantSummaries: const [],
+    modelClassPromptVariantSummaries: const [],
     findings: const [],
   );
 }

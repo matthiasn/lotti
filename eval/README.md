@@ -505,11 +505,11 @@ performance, and human calibration labels are checked later by `report`.
    verdicts produced with `judge.calibrationSetVersion: "uncalibrated"`.
    The calibration report
    prints gold-label coverage, pass/score agreement, Wilson intervals,
-   false-pass/false-fail counts, slices by primary capability and model class,
-   and coverage findings for duplicate labels, stale labels, missing traces,
-   missing verdicts, judged traces without labels, verdicts graded under a
-   different `judge.calibrationSetVersion`, and unblinded verdicts where the
-   judge saw exact provider/model identity.
+   false-pass/false-fail counts, slices by primary capability, model class, and
+   prompt variant, and coverage findings for duplicate labels, stale labels,
+   missing traces, missing verdicts, judged traces without labels, verdicts
+   graded under a different `judge.calibrationSetVersion`, and unblinded
+   verdicts where the judge saw exact provider/model identity.
    When `EVAL_CALIBRATION` is also set for `report`, the same calibration report
    is fed into `EvalTuningReadiness` before the ordinary run summary is printed.
 
@@ -686,7 +686,8 @@ without the flag is rejected as inconsistent. The calibration gate recomputes
 `JudgeCalibrationReport` from the raw `JudgeCalibrationSet`; a precomputed
 aggregate report is display-only and cannot satisfy readiness gates. The gate
 uses evaluated-label coverage over judged traces, evaluated-label minimums
-overall and per required model class/capability, pass/score agreement rates and
+overall and per required model class/capability/prompt variant/model-class
+prompt-variant pair, global and per-prompt-variant pass/score agreement rates,
 Wilson lower bounds, false-pass/false-fail limits, exact judge calibration
 version checks, optional human gold-label version checks,
 stale/missing/mismatch counts, model-identity blinding, independent human-review

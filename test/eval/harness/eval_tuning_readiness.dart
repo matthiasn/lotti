@@ -34,11 +34,15 @@ class EvalTuningPolicy {
     this.minCalibrationEvaluatedCount = 0,
     this.minCalibrationEvaluatedPerModelClass = 0,
     this.minCalibrationEvaluatedPerCapability = 0,
+    this.minCalibrationEvaluatedPerPromptVariant = 0,
+    this.minCalibrationEvaluatedPerModelClassPromptVariant = 0,
     this.minCalibrationCoverageRate = 0,
     this.minCalibrationCoverageLowerBound = 0,
     this.minCalibrationPassAgreementRate = 0,
+    this.minCalibrationPassAgreementPerPromptVariant = 0,
     this.minCalibrationPassAgreementLowerBound = 0,
     this.minCalibrationScoreAgreementRate = 0,
+    this.minCalibrationScoreAgreementPerPromptVariant = 0,
     this.minCalibrationScoreAgreementLowerBound = 0,
     this.minCalibrationHumanReviewPairCount = 0,
     this.minCalibrationHumanPassAgreementRate = 0,
@@ -104,6 +108,8 @@ class EvalTuningPolicy {
          minCalibrationEvaluatedCount: 12,
          minCalibrationEvaluatedPerModelClass: 2,
          minCalibrationEvaluatedPerCapability: 2,
+         minCalibrationEvaluatedPerPromptVariant: 2,
+         minCalibrationEvaluatedPerModelClassPromptVariant: 2,
          minCalibrationCoverageRate: 0.8,
          minCalibrationCoverageLowerBound: 0.6,
          minCalibrationPassAgreementRate: 0.85,
@@ -157,11 +163,15 @@ class EvalTuningPolicy {
   final int minCalibrationEvaluatedCount;
   final int minCalibrationEvaluatedPerModelClass;
   final int minCalibrationEvaluatedPerCapability;
+  final int minCalibrationEvaluatedPerPromptVariant;
+  final int minCalibrationEvaluatedPerModelClassPromptVariant;
   final double minCalibrationCoverageRate;
   final double minCalibrationCoverageLowerBound;
   final double minCalibrationPassAgreementRate;
+  final double minCalibrationPassAgreementPerPromptVariant;
   final double minCalibrationPassAgreementLowerBound;
   final double minCalibrationScoreAgreementRate;
+  final double minCalibrationScoreAgreementPerPromptVariant;
   final double minCalibrationScoreAgreementLowerBound;
   final int minCalibrationHumanReviewPairCount;
   final double minCalibrationHumanPassAgreementRate;
@@ -1520,6 +1530,7 @@ abstract final class EvalTuningReadiness {
     _validateCalibrationSliceCoverage(
       report: report,
       scenarios: scenarios,
+      traces: traces,
       policy: policy,
       failures: failures,
     );
@@ -1537,6 +1548,12 @@ abstract final class EvalTuningReadiness {
       if (report.missingVerdictCount > 0) {
         failures.add(
           'calibration report has ${report.missingVerdictCount} missing verdicts',
+        );
+      }
+      if (report.unlabeledVerdictCount > 0) {
+        failures.add(
+          'calibration report has ${report.unlabeledVerdictCount} unlabeled '
+          'verdicts',
         );
       }
       if (report.judgeCalibrationMismatchCount > 0) {
@@ -1570,11 +1587,15 @@ abstract final class EvalTuningReadiness {
       policy.minCalibrationEvaluatedCount > 0 ||
       policy.minCalibrationEvaluatedPerModelClass > 0 ||
       policy.minCalibrationEvaluatedPerCapability > 0 ||
+      policy.minCalibrationEvaluatedPerPromptVariant > 0 ||
+      policy.minCalibrationEvaluatedPerModelClassPromptVariant > 0 ||
       policy.minCalibrationCoverageRate > 0 ||
       policy.minCalibrationCoverageLowerBound > 0 ||
       policy.minCalibrationPassAgreementRate > 0 ||
+      policy.minCalibrationPassAgreementPerPromptVariant > 0 ||
       policy.minCalibrationPassAgreementLowerBound > 0 ||
       policy.minCalibrationScoreAgreementRate > 0 ||
+      policy.minCalibrationScoreAgreementPerPromptVariant > 0 ||
       policy.minCalibrationScoreAgreementLowerBound > 0 ||
       policy.minCalibrationHumanReviewPairCount > 0 ||
       policy.minCalibrationHumanPassAgreementRate > 0 ||
@@ -1592,6 +1613,7 @@ abstract final class EvalTuningReadiness {
   static void _validateCalibrationSliceCoverage({
     required JudgeCalibrationReport report,
     required List<EvalScenario> scenarios,
+    required List<EvalTrace> traces,
     required EvalTuningPolicy policy,
     required List<String> failures,
   }) {
@@ -1626,6 +1648,87 @@ abstract final class EvalTuningReadiness {
           failures.add(
             'calibration capability $capabilityId evaluated count $count < '
             '${policy.minCalibrationEvaluatedPerCapability}',
+          );
+        }
+      }
+    }
+    if (policy.minCalibrationEvaluatedPerPromptVariant > 0) {
+      final byPromptVariant = {
+        for (final summary in report.promptVariantSummaries)
+          summary.name: summary.evaluatedCount,
+      };
+      final promptVariantNames = <String>{
+        for (final trace in traces) trace.agentDirectiveVariant.name,
+      };
+      for (final promptVariantName in promptVariantNames.toList()..sort()) {
+        final count = byPromptVariant[promptVariantName] ?? 0;
+        if (count < policy.minCalibrationEvaluatedPerPromptVariant) {
+          failures.add(
+            'calibration prompt variant $promptVariantName evaluated count '
+            '$count < ${policy.minCalibrationEvaluatedPerPromptVariant}',
+          );
+        }
+      }
+    }
+    if (policy.minCalibrationPassAgreementPerPromptVariant > 0 ||
+        policy.minCalibrationScoreAgreementPerPromptVariant > 0) {
+      final byPromptVariant = {
+        for (final summary in report.promptVariantSummaries)
+          summary.name: summary,
+      };
+      final promptVariantNames = <String>{
+        for (final trace in traces) trace.agentDirectiveVariant.name,
+      };
+      for (final promptVariantName in promptVariantNames.toList()..sort()) {
+        final summary =
+            byPromptVariant[promptVariantName] ??
+            JudgeCalibrationSliceSummary(
+              name: promptVariantName,
+              labelCount: 0,
+              evaluatedCount: 0,
+              staleLabelCount: 0,
+              missingTraceCount: 0,
+              missingVerdictCount: 0,
+              falsePassCount: 0,
+              falseFailCount: 0,
+              judgeCalibrationMismatchCount: 0,
+              passAgreementCount: 0,
+              scoreAgreementCount: 0,
+            );
+        if (summary.passAgreementRate <
+            policy.minCalibrationPassAgreementPerPromptVariant) {
+          failures.add(
+            'calibration prompt variant $promptVariantName pass agreement '
+            '${_pct(summary.passAgreementRate)} < '
+            '${_pct(policy.minCalibrationPassAgreementPerPromptVariant)}',
+          );
+        }
+        if (summary.scoreAgreementRate <
+            policy.minCalibrationScoreAgreementPerPromptVariant) {
+          failures.add(
+            'calibration prompt variant $promptVariantName score agreement '
+            '${_pct(summary.scoreAgreementRate)} < '
+            '${_pct(policy.minCalibrationScoreAgreementPerPromptVariant)}',
+          );
+        }
+      }
+    }
+    if (policy.minCalibrationEvaluatedPerModelClassPromptVariant > 0) {
+      final byModelClassPromptVariant = {
+        for (final summary in report.modelClassPromptVariantSummaries)
+          summary.name: summary.evaluatedCount,
+      };
+      final modelClassPromptVariants = <String>{
+        for (final trace in traces)
+          '${trace.profile.modelClass.name}@${trace.agentDirectiveVariant.name}',
+      };
+      for (final name in modelClassPromptVariants.toList()..sort()) {
+        final count = byModelClassPromptVariant[name] ?? 0;
+        if (count < policy.minCalibrationEvaluatedPerModelClassPromptVariant) {
+          failures.add(
+            'calibration model class/prompt variant $name evaluated count '
+            '$count < '
+            '${policy.minCalibrationEvaluatedPerModelClassPromptVariant}',
           );
         }
       }

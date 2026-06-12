@@ -399,6 +399,24 @@ void main() {
     expect(local.labelCount, 1);
     expect(local.missingVerdictCount, 1);
 
+    final promptVariant = report.promptVariantSummaries.singleWhere(
+      (summary) => summary.name == 'default',
+    );
+    expect(promptVariant.labelCount, 5);
+    expect(promptVariant.evaluatedCount, 3);
+    expect(promptVariant.staleLabelCount, 1);
+    expect(promptVariant.missingVerdictCount, 1);
+    expect(promptVariant.falsePassCount, 1);
+    expect(promptVariant.falseFailCount, 1);
+
+    final frontierDefault = report.modelClassPromptVariantSummaries.singleWhere(
+      (summary) =>
+          summary.name == '${EvalModelClass.frontierFast.name}@default',
+    );
+    expect(frontierDefault.labelCount, 4);
+    expect(frontierDefault.evaluatedCount, 3);
+    expect(frontierDefault.staleLabelCount, 1);
+
     final rendered = EvalJudgeCalibration.render(report);
     expect(
       rendered,
@@ -407,6 +425,8 @@ void main() {
     expect(rendered, contains('coverage'));
     expect(rendered, contains('Capability calibration'));
     expect(rendered, contains('Model-class calibration'));
+    expect(rendered, contains('Prompt-variant calibration'));
+    expect(rendered, contains('Model-class prompt-variant calibration'));
     expect(rendered, contains('passMismatch'));
     expect(rendered, contains('staleGoldLabel'));
     expect(rendered, contains('unblindedVerdict'));
@@ -499,6 +519,12 @@ void main() {
     expect(report.evaluatedCount, 0);
     expect(report.staleLabelCount, 1);
     expect(report.passAgreementCount, 0);
+    final promptVariant = report.promptVariantSummaries.singleWhere(
+      (summary) => summary.name == 'metadata-first-v2',
+    );
+    expect(promptVariant.labelCount, 1);
+    expect(promptVariant.staleLabelCount, 1);
+    expect(promptVariant.evaluatedCount, 0);
     expect(
       report.findings
           .singleWhere(

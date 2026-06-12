@@ -432,10 +432,12 @@ readiness recomputes `JudgeCalibrationReport` from the raw completed
 `JudgeCalibrationSet`; precomputed aggregate reports are display artifacts and
 cannot satisfy tuning gates. The derived report compares evaluated-label
 coverage over judged traces, evaluated-label minimums overall and per required
-model class/capability, pass/score agreement rates and Wilson lower bounds,
-false-pass/false-fail limits, exact judge calibration provenance, optional human
-gold-label version, stale/missing/mismatched label counts, and model-identity
-blinding; the default model-class tuning policy also rejects unblinded judge
+model class/capability/prompt variant/model-class prompt-variant pair,
+global and per-prompt-variant pass/score agreement rates, Wilson lower bounds,
+false-pass/false-fail limits, exact judge calibration provenance, optional
+human gold-label version, stale/missing/mismatched label counts, and
+model-identity blinding; the default model-class tuning policy also rejects
+unblinded judge
 verdicts where exact provider/model identity was visible during grading.
 `eval/run_level2.sh blind` creates a separate model-identity-redacted review
 packet with opaque trace filenames, shuffled profile/prompt aliases, blinded
@@ -506,7 +508,7 @@ false-pass/false-fail counts, human-human agreement, duplicate labels, stale
 labels, missing traces, missing verdicts, unlabeled judged traces, verdicts
 graded under a different judge calibration-set version, unblinded verdicts where
 the judge saw exact provider/model identity, and slices by primary capability
-and model class.
+model class, prompt variant, and model-class prompt-variant pair.
 The judge evaluates exactly the three things requested: goal attainment given
 the app state, output quality/accuracy, and efficiency (token burn +
 unnecessary steps, read from the recorded `InferenceUsage` and tool-call list).
