@@ -10,11 +10,12 @@ import 'package:lotti/features/agents/projection/compaction_summary.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
+import 'package:lotti/features/agents/sync/agent_log_compactor_models.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/ai/service/text_chunker.dart';
 import 'package:uuid/uuid.dart';
 
-part 'agent_log_compactor_models.dart';
+export 'package:lotti/features/agents/sync/agent_log_compactor_models.dart';
 
 /// Distills a set of folded input sources into summary prose, optionally
 /// folding in the [priorSummary] it supersedes. Injected so the LLM dependency

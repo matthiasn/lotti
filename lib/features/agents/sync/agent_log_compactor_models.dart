@@ -1,6 +1,7 @@
-part of 'agent_log_compactor.dart';
+import 'package:lotti/features/agents/memory/memory_links.dart';
+import 'package:lotti/features/agents/projection/input_events.dart';
 
-/// One hit from [AgentLogCompactor.searchLog] / [AgentLogCompactor.resolveByIds]
+/// One hit from `AgentLogCompactor.searchLog` / `AgentLogCompactor.resolveByIds`
 /// — a raw memory-log entry (capture transcript or observation) that matched,
 /// including detail that has been folded out of the compacted summary.
 class MemoryLogHit {
