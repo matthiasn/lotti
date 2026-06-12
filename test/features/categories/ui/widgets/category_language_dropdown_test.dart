@@ -23,18 +23,21 @@ void main() {
       );
     }
 
-    testWidgets('renders as a settings picker field with the language label', (
-      tester,
-    ) async {
-      await pumpDropdown(tester);
+    testWidgets(
+      'renders as a settings picker field without a duplicate label — the '
+      'hosting section header already names it; semantics keep the name',
+      (tester) async {
+        await pumpDropdown(tester);
 
-      final field = tester.widget<SettingsPickerField>(
-        find.byType(SettingsPickerField),
-      );
-      expect(field.label, 'Language');
-      expect(field.hintText, 'Select Language');
-      expect(find.text('Language'), findsOneWidget);
-    });
+        final field = tester.widget<SettingsPickerField>(
+          find.byType(SettingsPickerField),
+        );
+        expect(field.label, isNull);
+        expect(field.semanticsLabel, 'Language');
+        expect(field.hintText, 'Select Language');
+        expect(find.text('Language'), findsNothing);
+      },
+    );
 
     testWidgets('shows the hint and no flag when no language is selected', (
       tester,

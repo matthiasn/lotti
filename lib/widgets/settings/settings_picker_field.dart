@@ -14,8 +14,8 @@ const double _kBorderAlpha = 0.12;
 /// in whatever modal [onTap] opens.
 class SettingsPickerField extends StatelessWidget {
   const SettingsPickerField({
-    required this.label,
     required this.onTap,
+    this.label,
     this.valueText,
     this.hintText,
     this.leading,
@@ -24,8 +24,9 @@ class SettingsPickerField extends StatelessWidget {
     super.key,
   });
 
-  /// Field label rendered above the tappable row.
-  final String label;
+  /// Field label rendered above the tappable row. Omit when the field is
+  /// the sole content of a section whose header already names it.
+  final String? label;
 
   /// Opens the picker (modal sheet / dialog).
   final VoidCallback onTap;
@@ -56,20 +57,22 @@ class SettingsPickerField extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: semanticsLabel ?? label,
+      label: semanticsLabel ?? label ?? hintText,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            label,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: tokens.colors.text.highEmphasis,
+          if (label != null) ...[
+            Text(
+              label!,
+              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          SizedBox(height: spacing.step2),
+            SizedBox(height: spacing.step2),
+          ],
           Material(
             color: Colors.transparent,
             child: InkWell(

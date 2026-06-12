@@ -26,7 +26,9 @@ class CategoryLanguageDropdown extends StatelessWidget {
     final language = code != null ? SupportedLanguage.fromCode(code) : null;
 
     return SettingsPickerField(
-      label: context.messages.taskLanguageLabel,
+      // The hosting section header already says "Language" — repeating
+      // it as a field label reads as a stutter.
+      semanticsLabel: context.messages.taskLanguageLabel,
       valueText: language?.localizedName(context),
       hintText: context.messages.selectLanguage,
       leading: language != null
