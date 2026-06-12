@@ -1,4 +1,6 @@
-part of 'day_agent_models.dart';
+import 'package:flutter/foundation.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_plan_models.dart';
 
 /// One bullet inside a learning card (Yesterday / This week / Gentle
 /// nudge). Tone matches the prototype copy.

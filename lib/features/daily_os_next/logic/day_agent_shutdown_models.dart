@@ -1,4 +1,5 @@
-part of 'day_agent_models.dart';
+import 'package:flutter/foundation.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
 
 /// What completed during the day — surfaced in Shutdown's
 /// "What you did" column.

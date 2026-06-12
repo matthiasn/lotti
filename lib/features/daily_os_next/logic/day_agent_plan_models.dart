@@ -1,4 +1,6 @@
-part of 'day_agent_models.dart';
+import 'package:flutter/foundation.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_capture_models.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_timeline_models.dart';
 
 /// Lifecycle state of a [DraftPlan]. Toggles once when the user
 /// signs off in the Commit screen. Day view renders drafted blocks

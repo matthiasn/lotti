@@ -1,4 +1,5 @@
-part of 'day_agent_models.dart';
+import 'package:flutter/foundation.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 
 /// Identifier for a single capture submission (one spoken check-in).
 @immutable
