@@ -161,8 +161,9 @@ unavailable reasons otherwise, persisted planner capacity when available,
 know which target ran.
 
 `EvalMatrixRunner` sits above the target seam. It runs every
-`scenario × profile × trialIndex` cell, passes an `EvalTargetRunContext` with
-the run id, scenario id, profile name, and trial index into the target,
+`scenario × profile × prompt variant × trialIndex` cell, passes an
+`EvalTargetRunContext` with the run id, scenario id, profile name, prompt
+variant, and trial index into the target,
 recomputes Level 1 checks, writes one trace per cell, and records target
 exceptions as failed traces so a model/API failure is auditable instead of
 becoming a missing matrix row. Failed exception payloads are sanitized before

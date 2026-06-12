@@ -74,6 +74,7 @@ abstract final class PlannerEvalBench {
   static const _templateId = 'eval-template-day';
   static const _threadId = 'eval-thread';
   static const _runKey = 'eval-run';
+  static const _baselineDirective = 'You are a helpful agent.';
 
   /// Backwards-compatible name for existing planner drafting tests.
   static Future<AgentRunOutput> runDraftingWake(
@@ -132,6 +133,7 @@ abstract final class PlannerEvalBench {
     final entityStore = <String, AgentDomainEntity>{};
     final linkStore = <AgentLink>[];
     final profileConfig = profileConfigOverride ?? evalProfileConfig(profile);
+    final agentDirectiveVariant = context.agentDirectiveVariant;
     String? wakeRunResolvedModelId;
     String? wakeRunTemplateId;
     String? wakeRunTemplateVersionId;
@@ -261,8 +263,16 @@ abstract final class PlannerEvalBench {
     );
     when(() => templateService.getActiveVersion(_templateId)).thenAnswer(
       (_) async => makeTestTemplateVersion(
-        id: '$_templateId-v1',
+        id: _templateVersionIdForVariant(
+          '$_templateId-v1',
+          agentDirectiveVariant,
+        ),
         agentId: _templateId,
+        directives: _baselineDirective,
+        generalDirective: agentDirectiveVariant.mergedGeneralDirective(
+          _baselineDirective,
+        ),
+        reportDirective: agentDirectiveVariant.reportDirective,
         modelId: 'legacy-version-model-must-not-win',
         profileId: profileConfig.profileId,
       ),
@@ -467,6 +477,20 @@ abstract final class PlannerEvalBench {
       context == EvalTargetRunContext.direct
       ? _threadId
       : '$_threadId:${context.cellId}';
+
+  static String _templateVersionIdForVariant(
+    String defaultId,
+    EvalAgentDirectiveVariant variant,
+  ) {
+    if (variant.isDefault) return defaultId;
+    final digest = EvalProvenance.agentDirectiveVariantDigest(variant);
+    final shortDigest = digest.substring(
+      'sha256:'.length,
+      'sha256:'.length + 12,
+    );
+    final safeName = variant.name.replaceAll(RegExp('[^A-Za-z0-9._-]'), '_');
+    return '$defaultId-$safeName-$shortDigest';
+  }
 
   static void _stubInferenceProfile(
     MockAiConfigRepository repo,

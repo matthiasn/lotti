@@ -35,6 +35,9 @@ abstract final class EvalRunVerifier {
     required List<EvalTrace> traces,
     required List<EvalScenario> scenarios,
     required List<EvalProfile> profiles,
+    List<EvalAgentDirectiveVariant> agentDirectiveVariants = const [
+      EvalAgentDirectiveVariant(),
+    ],
     EvalRunManifest? manifest,
     Iterable<String> artifactNames = const <String>[],
     bool requireVerdicts = true,
@@ -51,6 +54,7 @@ abstract final class EvalRunVerifier {
     final expectedKeys = _expectedKeys(
       scenarios,
       profiles,
+      agentDirectiveVariants,
       cascadeScenarioIds: cascadeScenarioIds,
     );
     final scenarioById = {
@@ -58,6 +62,9 @@ abstract final class EvalRunVerifier {
     };
     final profileByName = {
       for (final profile in profiles) profile.name: profile,
+    };
+    final variantByName = {
+      for (final variant in agentDirectiveVariants) variant.name: variant,
     };
     final bindingByProfileName = {
       if (manifest != null)
@@ -96,6 +103,7 @@ abstract final class EvalRunVerifier {
         runId: runId,
         scenarios: scenarios,
         profiles: profiles,
+        agentDirectiveVariants: agentDirectiveVariants,
         errors: errors,
       );
     }
@@ -131,6 +139,7 @@ abstract final class EvalRunVerifier {
       final key = _traceKey(trace);
       final canonicalScenario = scenarioById[trace.scenario.id];
       final canonicalProfile = profileByName[trace.profile.name];
+      final canonicalVariant = variantByName[trace.agentDirectiveVariant.name];
       if (trace.runId != runId) {
         errors.add('$key has runId ${trace.runId}, expected $runId');
       }
@@ -168,6 +177,7 @@ abstract final class EvalRunVerifier {
         trace: trace,
         canonicalScenario: canonicalScenario,
         canonicalProfile: canonicalProfile,
+        canonicalVariant: canonicalVariant,
         key: key,
         errors: errors,
       );
@@ -181,6 +191,7 @@ abstract final class EvalRunVerifier {
         manifest: manifest,
         canonicalScenario: canonicalScenario,
         canonicalProfile: canonicalProfile,
+        canonicalVariant: canonicalVariant,
         key: key,
         errors: errors,
       );
@@ -220,36 +231,44 @@ abstract final class EvalRunVerifier {
 
   static Set<String> _expectedKeys(
     List<EvalScenario> scenarios,
-    List<EvalProfile> profiles, {
+    List<EvalProfile> profiles,
+    List<EvalAgentDirectiveVariant> agentDirectiveVariants, {
     required Set<String> cascadeScenarioIds,
   }) {
     return {
       for (final scenario in scenarios)
         for (final profile in profiles)
-          for (
-            var trialIndex = 0;
-            trialIndex < profile.trialCount;
-            trialIndex++
-          )
-            if (cascadeScenarioIds.contains(scenario.id) &&
-                scenario.appState.taskLogEntries.isNotEmpty)
-              for (
-                var wakeIndex = 0;
-                wakeIndex < scenario.appState.taskLogEntries.length;
-                wakeIndex++
-              )
+          for (final variant in agentDirectiveVariants)
+            for (
+              var trialIndex = 0;
+              trialIndex < profile.trialCount;
+              trialIndex++
+            )
+              if (cascadeScenarioIds.contains(scenario.id) &&
+                  scenario.appState.taskLogEntries.isNotEmpty)
+                for (
+                  var wakeIndex = 0;
+                  wakeIndex < scenario.appState.taskLogEntries.length;
+                  wakeIndex++
+                )
+                  _key(
+                    scenario.id,
+                    profile.name,
+                    variant.name,
+                    trialIndex,
+                    cascadeWake: EvalTraceCascadeWake(
+                      cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+                      wakeIndex: wakeIndex,
+                      wakeCount: scenario.appState.taskLogEntries.length,
+                    ),
+                  )
+              else
                 _key(
                   scenario.id,
                   profile.name,
+                  variant.name,
                   trialIndex,
-                  cascadeWake: EvalTraceCascadeWake(
-                    cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
-                    wakeIndex: wakeIndex,
-                    wakeCount: scenario.appState.taskLogEntries.length,
-                  ),
-                )
-            else
-              _key(scenario.id, profile.name, trialIndex),
+                ),
     };
   }
 
@@ -365,6 +384,7 @@ abstract final class EvalRunVerifier {
     required EvalTrace trace,
     required EvalScenario? canonicalScenario,
     required EvalProfile? canonicalProfile,
+    required EvalAgentDirectiveVariant? canonicalVariant,
     required String key,
     required List<String> errors,
   }) {
@@ -376,6 +396,13 @@ abstract final class EvalRunVerifier {
     if (canonicalProfile != null &&
         !equality.equals(trace.profile.toJson(), canonicalProfile.toJson())) {
       errors.add('$key profile payload differs from configured profile');
+    }
+    if (canonicalVariant != null &&
+        !equality.equals(
+          trace.agentDirectiveVariant.toJson(),
+          canonicalVariant.toJson(),
+        )) {
+      errors.add('$key prompt variant payload differs from configured variant');
     }
   }
 
@@ -429,6 +456,7 @@ abstract final class EvalRunVerifier {
     required EvalRunManifest? manifest,
     required EvalScenario? canonicalScenario,
     required EvalProfile? canonicalProfile,
+    required EvalAgentDirectiveVariant? canonicalVariant,
     required String key,
     required List<String> errors,
   }) {
@@ -461,6 +489,17 @@ abstract final class EvalRunVerifier {
       );
     }
 
+    final expectedVariantDigest = EvalProvenance.agentDirectiveVariantDigest(
+      canonicalVariant ?? trace.agentDirectiveVariant,
+    );
+    if (trace.provenance.agentDirectiveVariantDigest != expectedVariantDigest) {
+      errors.add(
+        '$key provenance.agentDirectiveVariantDigest is '
+        '${trace.provenance.agentDirectiveVariantDigest}, '
+        'expected $expectedVariantDigest',
+      );
+    }
+
     final expectedPromptDigest = EvalProvenance.promptDigest();
     if (trace.provenance.promptDigest != expectedPromptDigest) {
       errors.add(
@@ -481,6 +520,10 @@ abstract final class EvalRunVerifier {
       ('manifestDigest', trace.provenance.manifestDigest),
       ('scenarioDigest', trace.provenance.scenarioDigest),
       ('profileDigest', trace.provenance.profileDigest),
+      (
+        'agentDirectiveVariantDigest',
+        trace.provenance.agentDirectiveVariantDigest,
+      ),
       ('promptDigest', trace.provenance.promptDigest),
       ('toolSchemaDigest', trace.provenance.toolSchemaDigest),
     ]) {
@@ -500,6 +543,7 @@ abstract final class EvalRunVerifier {
     required String runId,
     required List<EvalScenario> scenarios,
     required List<EvalProfile> profiles,
+    required List<EvalAgentDirectiveVariant> agentDirectiveVariants,
     required List<String> errors,
   }) {
     if (manifest.runId != runId) {
@@ -554,6 +598,11 @@ abstract final class EvalRunVerifier {
       profiles: profiles,
       errors: errors,
     );
+    _validateManifestAgentDirectiveVariants(
+      manifest: manifest,
+      agentDirectiveVariants: agentDirectiveVariants,
+      errors: errors,
+    );
 
     final expectedPromptDigest = EvalProvenance.promptDigest();
     if (manifest.promptDigest != expectedPromptDigest) {
@@ -580,6 +629,10 @@ abstract final class EvalRunVerifier {
       ('scenarioSetDigest', manifest.scenarioSetDigest),
       ('profileSetDigest', manifest.profileSetDigest),
       ('profileBindingSetDigest', manifest.profileBindingSetDigest),
+      (
+        'agentDirectiveVariantSetDigest',
+        manifest.agentDirectiveVariantSetDigest,
+      ),
       ('promptDigest', manifest.promptDigest),
       ('toolSchemaDigest', manifest.toolSchemaDigest),
     ]) {
@@ -606,6 +659,60 @@ abstract final class EvalRunVerifier {
       manifest.scenarioSetDigest,
       errors,
     );
+  }
+
+  static void _validateManifestAgentDirectiveVariants({
+    required EvalRunManifest manifest,
+    required List<EvalAgentDirectiveVariant> agentDirectiveVariants,
+    required List<String> errors,
+  }) {
+    final variants = manifest.agentDirectiveVariants;
+    if (variants.isEmpty) {
+      errors.add('manifest agentDirectiveVariants are missing');
+    }
+    final expectedVariantDigest = EvalProvenance.agentDirectiveVariantSetDigest(
+      variants,
+    );
+    if (manifest.agentDirectiveVariantSetDigest != expectedVariantDigest) {
+      errors.add(
+        'manifest agentDirectiveVariantSetDigest is '
+        '${manifest.agentDirectiveVariantSetDigest}, expected '
+        '$expectedVariantDigest',
+      );
+    }
+
+    final expectedNames = agentDirectiveVariants
+        .map((variant) => variant.name)
+        .toSet();
+    final actualNames = variants.map((variant) => variant.name).toSet();
+    for (final duplicate in _duplicates(
+      variants.map((variant) => variant.name).toList(),
+    )) {
+      errors.add('duplicate manifest agentDirectiveVariant for $duplicate');
+    }
+    for (final missing
+        in expectedNames.difference(actualNames).toList()..sort()) {
+      errors.add('missing manifest agentDirectiveVariant for $missing');
+    }
+    for (final unexpected
+        in actualNames.difference(expectedNames).toList()..sort()) {
+      errors.add('unexpected manifest agentDirectiveVariant for $unexpected');
+    }
+
+    const equality = DeepCollectionEquality();
+    final expectedByName = {
+      for (final variant in agentDirectiveVariants) variant.name: variant,
+    };
+    for (final variant in variants) {
+      final expected = expectedByName[variant.name];
+      if (expected == null) continue;
+      if (!equality.equals(variant.toJson(), expected.toJson())) {
+        errors.add(
+          'manifest agentDirectiveVariants[${variant.name}] differs from '
+          'configured variant',
+        );
+      }
+    }
   }
 
   static void _validateManifestProfileBindings({
@@ -787,9 +894,7 @@ abstract final class EvalRunVerifier {
     final workflowRun = trace.output.workflowRun;
     if (workflowRun == null) return;
 
-    final expectedCellId =
-        '${trace.runId}::${trace.scenario.id}::${trace.profile.name}::'
-        '${trace.trialIndex}';
+    final expectedCellId = _matrixCellId(trace);
     final isBoundToExpectedCell = workflowRun.matrixCellId == expectedCellId;
     if (!isBoundToExpectedCell &&
         !workflowRun.runKey.contains(expectedCellId)) {
@@ -2064,18 +2169,31 @@ abstract final class EvalRunVerifier {
   static String _traceKey(EvalTrace trace) => _key(
     trace.scenario.id,
     trace.profile.name,
+    trace.agentDirectiveVariant.name,
     trace.trialIndex,
     cascadeWake: trace.cascadeWake,
   );
 
+  static String _matrixCellId(EvalTrace trace) {
+    final variantSegment = trace.agentDirectiveVariant.isDefault
+        ? ''
+        : '::${trace.agentDirectiveVariant.name}';
+    return '${trace.runId}::${trace.scenario.id}::${trace.profile.name}'
+        '$variantSegment::${trace.trialIndex}';
+  }
+
   static String _key(
     String scenarioId,
     String profileName,
+    String agentDirectiveVariantName,
     int trialIndex, {
     EvalTraceCascadeWake? cascadeWake,
   }) {
     final suffix = cascadeWake == null ? '' : '::${cascadeWake.keySuffix}';
-    return '$scenarioId::$profileName::trial-$trialIndex$suffix';
+    final variantSegment = agentDirectiveVariantName == 'default'
+        ? ''
+        : '::$agentDirectiveVariantName';
+    return '$scenarioId::$profileName$variantSegment::trial-$trialIndex$suffix';
   }
 
   static String _stripSuffix(String value, String suffix) =>

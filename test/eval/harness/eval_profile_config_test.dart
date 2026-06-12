@@ -105,6 +105,22 @@ void main() {
     expect(json, isNot(contains('super-secret')));
   });
 
+  test('profile bindings stay prompt-agnostic', () {
+    final config = evalProfileConfig(kFrontierFastProfile);
+
+    final decision = config.toProviderDecisionRecord();
+    final binding = config.toExecutionBinding();
+
+    expect(
+      decision.toJson(),
+      isNot(containsPair('agentDirectiveVariantName', anything)),
+    );
+    expect(
+      binding.toJson(),
+      isNot(containsPair('agentDirectiveVariantName', anything)),
+    );
+  });
+
   test('rejects inconsistent local/frontier profile labels', () {
     const bad = EvalProfile(
       name: 'bad-local-frontier',

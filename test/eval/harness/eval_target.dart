@@ -30,7 +30,7 @@
 import 'eval_models.dart';
 import 'eval_profile_config.dart';
 
-/// Identifies one concrete scenario/profile/trial execution cell.
+/// Identifies one concrete scenario/profile/prompt-variant/trial cell.
 ///
 /// Direct unit calls use [direct]; matrix runs always pass the real run
 /// context so targets can choose distinct run keys, thread IDs, caches, or
@@ -40,6 +40,7 @@ class EvalTargetRunContext {
     required this.runId,
     required this.scenarioId,
     required this.profileName,
+    this.agentDirectiveVariant = const EvalAgentDirectiveVariant(),
     required this.trialIndex,
   });
 
@@ -47,15 +48,22 @@ class EvalTargetRunContext {
     runId: 'direct',
     scenarioId: 'direct',
     profileName: 'direct',
+    agentDirectiveVariant: EvalAgentDirectiveVariant(),
     trialIndex: 0,
   );
 
   final String runId;
   final String scenarioId;
   final String profileName;
+  final EvalAgentDirectiveVariant agentDirectiveVariant;
   final int trialIndex;
 
-  String get cellId => '$runId::$scenarioId::$profileName::$trialIndex';
+  String get cellId {
+    final variantSegment = agentDirectiveVariant.isDefault
+        ? ''
+        : '::${agentDirectiveVariant.name}';
+    return '$runId::$scenarioId::$profileName$variantSegment::$trialIndex';
+  }
 }
 
 /// Runs one scenario under one profile and returns the normalised output.

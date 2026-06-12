@@ -55,6 +55,26 @@ void main() {
     );
   });
 
+  test('directive variants round-trip and merge with a baseline', () {
+    const variant = EvalAgentDirectiveVariant(
+      name: 'metadata-first-v2',
+      generalDirective: 'Call metadata tools before reports.',
+      reportDirective: 'Report only after durable proposals are created.',
+    );
+
+    final roundTripped = EvalAgentDirectiveVariant.fromJson(variant.toJson());
+
+    expect(roundTripped.toJson(), variant.toJson());
+    expect(
+      roundTripped.mergedGeneralDirective('Baseline.'),
+      'Baseline.\n\nCall metadata tools before reports.',
+    );
+    expect(
+      roundTripped.reportDirective,
+      'Report only after durable proposals are created.',
+    );
+  });
+
   test('profile cost estimation clamps cached tokens to input tokens', () {
     const profile = EvalProfile(
       name: 'frontier-cached-clamp',

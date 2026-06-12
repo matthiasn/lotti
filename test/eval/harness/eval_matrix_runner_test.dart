@@ -142,7 +142,10 @@ void main() {
     expect(rendered, contains('trace cells: 6'));
     expect(rendered, contains('previewManifestDigest: sha256:'));
     expect(rendered, contains('providerModelId='));
-    expect(rendered, contains('task_release_notes x stable-frontier trial=1'));
+    expect(
+      rendered,
+      contains('task_release_notes x stable-frontier x default trial=1'),
+    );
   });
 
   test('plan rejects promotion plans for another scenario set', () {
@@ -226,114 +229,119 @@ void main() {
     expect(target.calls, isEmpty);
   });
 
-  test('writes the full scenario x profile x trial trace matrix', () async {
-    final tempDir = await Directory.systemTemp.createTemp('lotti-eval-matrix-');
-    addTearDown(() async {
-      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
-    });
-    final target = _RecordingTarget();
-    final writer = TraceWriter(runsRoot: tempDir.path);
-    final runner = EvalMatrixRunner(target: target, writer: writer);
-    final scenarios = [
-      taskReleaseNotesScenario,
-      plannerMorningCapacityScenario,
-    ];
-    const profiles = [stableProfile, singleProfile];
+  test(
+    'writes the full scenario x profile x prompt variant x trial matrix',
+    () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'lotti-eval-matrix-',
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+      });
+      final target = _RecordingTarget();
+      final writer = TraceWriter(runsRoot: tempDir.path);
+      final runner = EvalMatrixRunner(target: target, writer: writer);
+      final scenarios = [
+        taskReleaseNotesScenario,
+        plannerMorningCapacityScenario,
+      ];
+      const profiles = [stableProfile, singleProfile];
 
-    final result = await runner.run(
-      runId: 'run-1',
-      scenarios: scenarios,
-      profiles: profiles,
-    );
+      final result = await runner.run(
+        runId: 'run-1',
+        scenarios: scenarios,
+        profiles: profiles,
+      );
 
-    expect(result.traces, hasLength(6));
-    expect(result.traceFiles, hasLength(6));
-    expect(result.manifestFile.uri.pathSegments.last, 'manifest.json');
-    expect(result.manifest.manifestDigest, startsWith('sha256:'));
-    expect(result.manifest.profileExecutionBindings, hasLength(2));
-    expect(
-      result.manifest.profileBindingSetDigest,
-      EvalProvenance.profileBindingSetDigest(
-        result.manifest.profileExecutionBindings,
-      ),
-    );
-    expect(
-      {
-        for (final binding in result.manifest.profileExecutionBindings)
-          binding.profileName: binding.providerModelId,
-      },
-      {
-        stableProfile.name: 'models/eval-frontier-fast-stable-frontier-model',
-        singleProfile.name: 'eval-local-small:single-local-model',
-      },
-    );
-    expect(target.calls, [
-      'task_release_notes::stable-frontier::run-1::0',
-      'task_release_notes::stable-frontier::run-1::1',
-      'task_release_notes::single-local::run-1::0',
-      'planner_morning_capacity::stable-frontier::run-1::0',
-      'planner_morning_capacity::stable-frontier::run-1::1',
-      'planner_morning_capacity::single-local::run-1::0',
-    ]);
-    expect(
-      target.cellIds,
-      [
-        'run-1::task_release_notes::stable-frontier::0',
-        'run-1::task_release_notes::stable-frontier::1',
-        'run-1::task_release_notes::single-local::0',
-        'run-1::planner_morning_capacity::stable-frontier::0',
-        'run-1::planner_morning_capacity::stable-frontier::1',
-        'run-1::planner_morning_capacity::single-local::0',
-      ],
-    );
-    expect(
-      result.traceFiles.map((file) => file.uri.pathSegments.last).toSet(),
-      containsAll({
-        'task_release_notes__stable-frontier.trace.json',
-        'task_release_notes__stable-frontier__trial-1.trace.json',
-        'task_release_notes__single-local.trace.json',
-        'planner_morning_capacity__stable-frontier.trace.json',
-        'planner_morning_capacity__stable-frontier__trial-1.trace.json',
-        'planner_morning_capacity__single-local.trace.json',
-      }),
-    );
+      expect(result.traces, hasLength(6));
+      expect(result.traceFiles, hasLength(6));
+      expect(result.manifestFile.uri.pathSegments.last, 'manifest.json');
+      expect(result.manifest.manifestDigest, startsWith('sha256:'));
+      expect(result.manifest.profileExecutionBindings, hasLength(2));
+      expect(
+        result.manifest.profileBindingSetDigest,
+        EvalProvenance.profileBindingSetDigest(
+          result.manifest.profileExecutionBindings,
+        ),
+      );
+      expect(
+        {
+          for (final binding in result.manifest.profileExecutionBindings)
+            binding.profileName: binding.providerModelId,
+        },
+        {
+          stableProfile.name: 'models/eval-frontier-fast-stable-frontier-model',
+          singleProfile.name: 'eval-local-small:single-local-model',
+        },
+      );
+      expect(target.calls, [
+        'task_release_notes::stable-frontier::run-1::0',
+        'task_release_notes::stable-frontier::run-1::1',
+        'task_release_notes::single-local::run-1::0',
+        'planner_morning_capacity::stable-frontier::run-1::0',
+        'planner_morning_capacity::stable-frontier::run-1::1',
+        'planner_morning_capacity::single-local::run-1::0',
+      ]);
+      expect(
+        target.cellIds,
+        [
+          'run-1::task_release_notes::stable-frontier::0',
+          'run-1::task_release_notes::stable-frontier::1',
+          'run-1::task_release_notes::single-local::0',
+          'run-1::planner_morning_capacity::stable-frontier::0',
+          'run-1::planner_morning_capacity::stable-frontier::1',
+          'run-1::planner_morning_capacity::single-local::0',
+        ],
+      );
+      expect(
+        result.traceFiles.map((file) => file.uri.pathSegments.last).toSet(),
+        containsAll({
+          'task_release_notes__stable-frontier.trace.json',
+          'task_release_notes__stable-frontier__trial-1.trace.json',
+          'task_release_notes__single-local.trace.json',
+          'planner_morning_capacity__stable-frontier.trace.json',
+          'planner_morning_capacity__stable-frontier__trial-1.trace.json',
+          'planner_morning_capacity__single-local.trace.json',
+        }),
+      );
 
-    final loaded = await writer.readTraces('run-1');
-    final loadedManifest = await writer.readManifest('run-1');
-    expect(loadedManifest!.manifestDigest, result.manifest.manifestDigest);
-    expect(
-      loaded.map((trace) => trace.provenance.manifestDigest).toSet(),
-      {result.manifest.manifestDigest},
-    );
-    expect(
-      loaded.map(
-        (trace) =>
-            '${trace.scenario.id}::${trace.profile.name}::${trace.trialIndex}',
-      ),
-      [
-        'planner_morning_capacity::single-local::0',
-        'planner_morning_capacity::stable-frontier::0',
-        'planner_morning_capacity::stable-frontier::1',
-        'task_release_notes::single-local::0',
-        'task_release_notes::stable-frontier::0',
-        'task_release_notes::stable-frontier::1',
-      ],
-    );
+      final loaded = await writer.readTraces('run-1');
+      final loadedManifest = await writer.readManifest('run-1');
+      expect(loadedManifest!.manifestDigest, result.manifest.manifestDigest);
+      expect(
+        loaded.map((trace) => trace.provenance.manifestDigest).toSet(),
+        {result.manifest.manifestDigest},
+      );
+      expect(
+        loaded.map(
+          (trace) =>
+              '${trace.scenario.id}::${trace.profile.name}::${trace.trialIndex}',
+        ),
+        [
+          'planner_morning_capacity::single-local::0',
+          'planner_morning_capacity::stable-frontier::0',
+          'planner_morning_capacity::stable-frontier::1',
+          'task_release_notes::single-local::0',
+          'task_release_notes::stable-frontier::0',
+          'task_release_notes::stable-frontier::1',
+        ],
+      );
 
-    final verification = EvalRunVerifier.verify(
-      runId: 'run-1',
-      traces: loaded,
-      scenarios: scenarios,
-      profiles: profiles,
-      manifest: loadedManifest,
-      artifactNames: [
-        result.manifestFile.uri.pathSegments.last,
-        for (final file in result.traceFiles) file.uri.pathSegments.last,
-      ],
-      requireVerdicts: false,
-    );
-    expect(verification.errors, isEmpty);
-  });
+      final verification = EvalRunVerifier.verify(
+        runId: 'run-1',
+        traces: loaded,
+        scenarios: scenarios,
+        profiles: profiles,
+        manifest: loadedManifest,
+        artifactNames: [
+          result.manifestFile.uri.pathSegments.last,
+          for (final file in result.traceFiles) file.uri.pathSegments.last,
+        ],
+        requireVerdicts: false,
+      );
+      expect(verification.errors, isEmpty);
+    },
+  );
 
   test('records promotion plan evidence in the run manifest', () async {
     final tempDir = await Directory.systemTemp.createTemp('lotti-eval-matrix-');

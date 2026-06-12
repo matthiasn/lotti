@@ -28,8 +28,9 @@
 #   EVAL_PROMOTION_CANDIDATE_PROFILE=frontier-gemini EVAL_PROMOTION_BASELINE_PROFILE=frontier-fast EVAL_CALIBRATION=/private/tmp/judge_gold_v1.json eval/run_level2.sh report [runId]
 #   EVAL_SCENARIOS=/private/path/scenarios.json EVAL_RUNS_ROOT=/private/tmp/lotti-eval-runs eval/run_level2.sh run [runId]
 #   EVAL_PROFILES=/private/path/profiles.json eval/run_level2.sh run [runId]
+#   EVAL_PROMPT_VARIANTS=/private/path/prompt_variants.json eval/run_level2.sh run [runId]
 #   EVAL_SCENARIO_IDS=task_workflow_structured_update EVAL_PROFILE_NAMES=frontier-gemini eval/run_level2.sh run [runId]
-#   EVAL_SCENARIO_IDS=task_workflow_structured_update EVAL_PROFILE_NAMES=frontier-gemini eval/run_level2.sh plan [runId]
+#   EVAL_SCENARIO_IDS=task_workflow_structured_update EVAL_PROFILE_NAMES=frontier-gemini EVAL_PROMPT_VARIANT_NAMES=default,metadata-first-v2 eval/run_level2.sh plan [runId]
 #   EVAL_SCENARIOS=/private/path/scenarios.json EVAL_SCENARIOS_MODE=replace eval/run_level2.sh catalog
 #   eval/run_level2.sh all [runId]
 #
@@ -90,6 +91,8 @@ SCENARIO_CATALOG_MODE="${EVAL_SCENARIOS_MODE:-}"
 SCENARIO_IDS="${EVAL_SCENARIO_IDS:-}"
 PROFILE_CATALOG_PATH="${EVAL_PROFILES:-}"
 PROFILE_NAMES="${EVAL_PROFILE_NAMES:-}"
+PROMPT_VARIANT_CATALOG_PATH="${EVAL_PROMPT_VARIANTS:-}"
+PROMPT_VARIANT_NAMES="${EVAL_PROMPT_VARIANT_NAMES:-}"
 PROTECTED_TRACE_ACK="${LOTTI_EVAL_PROTECTED_TRACE_ACK:-}"
 PROMOTION_CANDIDATE_PROFILE="${EVAL_PROMOTION_CANDIDATE_PROFILE:-}"
 PROMOTION_BASELINE_PROFILE="${EVAL_PROMOTION_BASELINE_PROFILE:-}"
@@ -112,6 +115,12 @@ if [[ -n "$PROFILE_CATALOG_PATH" ]]; then
 fi
 if [[ -n "$PROFILE_NAMES" ]]; then
   DART_DEFINES+=("--dart-define=EVAL_PROFILE_NAMES=${PROFILE_NAMES}")
+fi
+if [[ -n "$PROMPT_VARIANT_CATALOG_PATH" ]]; then
+  DART_DEFINES+=("--dart-define=EVAL_PROMPT_VARIANTS=${PROMPT_VARIANT_CATALOG_PATH}")
+fi
+if [[ -n "$PROMPT_VARIANT_NAMES" ]]; then
+  DART_DEFINES+=("--dart-define=EVAL_PROMPT_VARIANT_NAMES=${PROMPT_VARIANT_NAMES}")
 fi
 if [[ -n "$PROTECTED_TRACE_ACK" ]]; then
   DART_DEFINES+=(
@@ -149,6 +158,12 @@ if [[ -n "$PROFILE_CATALOG_PATH" ]]; then
 fi
 if [[ -n "$PROFILE_NAMES" ]]; then
   echo "    profile names: ${PROFILE_NAMES}"
+fi
+if [[ -n "$PROMPT_VARIANT_CATALOG_PATH" ]]; then
+  echo "    prompt variant catalog: ${PROMPT_VARIANT_CATALOG_PATH}"
+fi
+if [[ -n "$PROMPT_VARIANT_NAMES" ]]; then
+  echo "    prompt variant names: ${PROMPT_VARIANT_NAMES}"
 fi
 if [[ -n "$PROMOTION_CANDIDATE_PROFILE" || -n "$PROMOTION_BASELINE_PROFILE" ]]; then
   if [[ -z "$PROMOTION_CANDIDATE_PROFILE" || -z "$PROMOTION_BASELINE_PROFILE" ]]; then

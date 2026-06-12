@@ -46,6 +46,10 @@ const _scenarioCatalogMode = String.fromEnvironment(
 const _scenarioIds = String.fromEnvironment(kEvalScenarioIdsEnv);
 const _profileCatalogValue = String.fromEnvironment(kEvalProfilesPathEnv);
 const _profileNames = String.fromEnvironment(kEvalProfileNamesEnv);
+const _promptVariantCatalogValue = String.fromEnvironment(
+  kEvalPromptVariantsPathEnv,
+);
+const _promptVariantNames = String.fromEnvironment(kEvalPromptVariantNamesEnv);
 const _runsRootPath = String.fromEnvironment('EVAL_RUNS_ROOT');
 
 void main() {
@@ -56,11 +60,13 @@ void main() {
       final run = await writer.readRun(_runId);
       final catalog = _loadScenarioCatalog();
       final profiles = _loadProfiles();
+      final promptVariants = _loadPromptVariants();
       final verification = EvalRunVerifier.verify(
         runId: _runId,
         traces: run.traces,
         scenarios: catalog.scenarios,
         profiles: profiles,
+        agentDirectiveVariants: promptVariants,
         manifest: run.manifest,
         artifactNames: run.artifactNames,
       );
@@ -83,12 +89,14 @@ void main() {
       final run = await writer.readRun(_runId);
       final catalog = _loadScenarioCatalog();
       final profiles = _loadProfiles();
+      final promptVariants = _loadPromptVariants();
       expect(run.traces, isNotEmpty, reason: 'EVAL_RUN=$_runId has no traces');
       final verification = EvalRunVerifier.verify(
         runId: _runId,
         traces: run.traces,
         scenarios: catalog.scenarios,
         profiles: profiles,
+        agentDirectiveVariants: promptVariants,
         manifest: run.manifest,
         artifactNames: run.artifactNames,
       );
@@ -174,12 +182,14 @@ void main() {
       final run = await writer.readRun(_runId);
       final catalog = _loadScenarioCatalog();
       final profiles = _loadProfiles();
+      final promptVariants = _loadPromptVariants();
       expect(run.traces, isNotEmpty, reason: 'EVAL_RUN=$_runId has no traces');
       final verification = EvalRunVerifier.verify(
         runId: _runId,
         traces: run.traces,
         scenarios: catalog.scenarios,
         profiles: profiles,
+        agentDirectiveVariants: promptVariants,
         manifest: run.manifest,
         artifactNames: run.artifactNames,
         requireVerdicts: false,
@@ -239,11 +249,13 @@ void main() {
       final run = await TraceWriter(runsRoot: _runsRoot()).readRun(_runId);
       final catalog = _loadScenarioCatalog();
       final profiles = _loadProfiles();
+      final promptVariants = _loadPromptVariants();
       final verification = EvalRunVerifier.verify(
         runId: _runId,
         traces: run.traces,
         scenarios: catalog.scenarios,
         profiles: profiles,
+        agentDirectiveVariants: promptVariants,
         manifest: run.manifest,
         artifactNames: run.artifactNames,
       );
@@ -762,11 +774,13 @@ void main() {
       final run = await TraceWriter(runsRoot: _runsRoot()).readRun(_runId);
       final catalog = _loadScenarioCatalog();
       final profiles = _loadProfiles();
+      final promptVariants = _loadPromptVariants();
       final verification = EvalRunVerifier.verify(
         runId: _runId,
         traces: run.traces,
         scenarios: catalog.scenarios,
         profiles: profiles,
+        agentDirectiveVariants: promptVariants,
         manifest: run.manifest,
         artifactNames: run.artifactNames,
       );
@@ -1043,6 +1057,7 @@ EvalRunManifest _promotionManifest({
     for (final profile in kDefaultProfiles)
       evalProfileConfig(profile).toExecutionBinding(),
   ];
+  const agentDirectiveVariants = [EvalAgentDirectiveVariant()];
   const promotionPolicy = ProfilePromotionPolicy(
     candidateProfileName: 'frontier-gemini',
     baselineProfileName: 'frontier-fast',
@@ -1070,6 +1085,9 @@ EvalRunManifest _promotionManifest({
       profileExecutionBindings,
     ),
     profileExecutionBindings: profileExecutionBindings,
+    agentDirectiveVariantSetDigest:
+        EvalProvenance.agentDirectiveVariantSetDigest(agentDirectiveVariants),
+    agentDirectiveVariants: agentDirectiveVariants,
     promptDigest: EvalProvenance.digestText('prompt'),
     toolSchemaDigest: EvalProvenance.digestText('tool-schema'),
     codeRevision: 'test-revision',
@@ -1142,6 +1160,14 @@ List<EvalProfile> _loadProfiles() {
   ).profiles;
 }
 
+List<EvalAgentDirectiveVariant> _loadPromptVariants() {
+  return EvalAgentDirectiveVariantCatalogLoader.fromEnvironment(
+    Platform.environment,
+    dartDefineValue: _promptVariantCatalogValueFromDefine(),
+    dartDefineVariantNames: _promptVariantNamesFromDefine(),
+  ).variants;
+}
+
 String _scenarioCatalogPathFromDefine() => _scenarioCatalogPath;
 
 String _scenarioCatalogModeFromDefine() => _scenarioCatalogMode;
@@ -1151,6 +1177,10 @@ String _scenarioIdsFromDefine() => _scenarioIds;
 String _profileCatalogValueFromDefine() => _profileCatalogValue;
 
 String _profileNamesFromDefine() => _profileNames;
+
+String _promptVariantCatalogValueFromDefine() => _promptVariantCatalogValue;
+
+String _promptVariantNamesFromDefine() => _promptVariantNames;
 
 bool _hasExternalScenarioCatalog() {
   return _scenarioCatalogPathValue() != null;

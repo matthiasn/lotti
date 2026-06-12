@@ -32,6 +32,10 @@ const _scenarioCatalogMode = String.fromEnvironment(
 const _scenarioIds = String.fromEnvironment(kEvalScenarioIdsEnv);
 const _profileCatalogValue = String.fromEnvironment(kEvalProfilesPathEnv);
 const _profileNames = String.fromEnvironment(kEvalProfileNamesEnv);
+const _promptVariantCatalogValue = String.fromEnvironment(
+  kEvalPromptVariantsPathEnv,
+);
+const _promptVariantNames = String.fromEnvironment(kEvalPromptVariantNamesEnv);
 const _runsRootPath = String.fromEnvironment('EVAL_RUNS_ROOT');
 const _protectedTraceAck = String.fromEnvironment(
   'LOTTI_EVAL_PROTECTED_TRACE_ACK',
@@ -59,6 +63,7 @@ void main() {
     () async {
       final profileCatalog = _loadProfileCatalog();
       final profiles = profileCatalog.profiles;
+      final promptVariantCatalog = _loadPromptVariantCatalog();
       settings.validateProfiles(profiles);
       final catalog = EvalScenarioCatalogLoader.fromEnvironment(
         Platform.environment,
@@ -80,12 +85,14 @@ void main() {
             runId: _runId,
             scenarios: catalog.scenarios,
             profiles: profiles,
+            agentDirectiveVariants: promptVariantCatalog.variants,
             scenarioCatalogEvidence: catalog.evidence,
             promotionPlan: promotionPlan,
           );
 
       final expectedTraceCount =
           catalog.scenarios.length *
+          promptVariantCatalog.variants.length *
           profiles.fold<int>(
             0,
             (sum, profile) => sum + profile.trialCount,
@@ -131,9 +138,21 @@ EvalProfileCatalog _loadProfileCatalog() {
   );
 }
 
+EvalAgentDirectiveVariantCatalog _loadPromptVariantCatalog() {
+  return EvalAgentDirectiveVariantCatalogLoader.fromEnvironment(
+    Platform.environment,
+    dartDefineValue: _promptVariantCatalogValueFromDefine(),
+    dartDefineVariantNames: _promptVariantNamesFromDefine(),
+  );
+}
+
 String _profileCatalogValueFromDefine() => _profileCatalogValue;
 
 String _profileNamesFromDefine() => _profileNames;
+
+String _promptVariantCatalogValueFromDefine() => _promptVariantCatalogValue;
+
+String _promptVariantNamesFromDefine() => _promptVariantNames;
 
 String _scenarioCatalogModeFromDefine() => _scenarioCatalogMode;
 

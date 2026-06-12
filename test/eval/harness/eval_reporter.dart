@@ -430,7 +430,8 @@ class _ProviderRequestStabilityBucket {
 
 String _traceKey(EvalTrace trace) =>
     '${trace.runId}\n${trace.scenario.id}\n${trace.profile.name}\n'
-    '${trace.trialIndex}\n${trace.cascadeWake?.keySuffix ?? 'direct'}';
+    '${trace.agentDirectiveVariant.name}\n${trace.trialIndex}\n'
+    '${trace.cascadeWake?.keySuffix ?? 'direct'}';
 
 List<EvalTrace> _nonCascadeTraces(List<EvalTrace> traces) =>
     traces.where((trace) => !trace.isCascadeWake).toList(growable: false);
@@ -796,7 +797,9 @@ abstract final class EvalReporter {
     final scoringTraces = _nonCascadeTraces(traces);
     final byProfile = <String, List<EvalTrace>>{};
     for (final trace in scoringTraces) {
-      byProfile.putIfAbsent(trace.profile.name, () => <EvalTrace>[]).add(trace);
+      byProfile
+          .putIfAbsent(_profileVariantName(trace), () => <EvalTrace>[])
+          .add(trace);
     }
     final summaries = <ProfileSummary>[];
     for (final entry in byProfile.entries) {
@@ -853,7 +856,7 @@ abstract final class EvalReporter {
             'unknown';
         final key = [
           trace.scenario.id,
-          trace.profile.name,
+          _profileVariantName(trace),
           request.providerType,
           request.providerModelId,
           endpointKey,
@@ -866,7 +869,7 @@ abstract final class EvalReporter {
               key,
               () => _ProviderRequestStabilityBucket(
                 scenarioId: trace.scenario.id,
-                profileName: trace.profile.name,
+                profileName: _profileVariantName(trace),
                 providerType: request.providerType,
                 providerModelId: request.providerModelId,
                 endpointKey: endpointKey,
@@ -895,7 +898,7 @@ abstract final class EvalReporter {
       if (trace.output.providerRequests.isEmpty) continue;
       byKey
           .putIfAbsent(
-            _scenarioProfileKey(trace.scenario.id, trace.profile.name),
+            _scenarioProfileVariantKey(trace),
             () => <EvalTrace>[],
           )
           .add(trace);
@@ -928,7 +931,7 @@ abstract final class EvalReporter {
       summaries.add(
         ProviderUsageCacheSummary(
           scenarioId: first.scenario.id,
-          profileName: first.profile.name,
+          profileName: _profileVariantName(first),
           expectedTrialCount: _expectedProviderTraceCount(first),
           traceCount: group.length,
           inputTokenTraceCount: inputTokenTraceCount,
@@ -1813,7 +1816,7 @@ abstract final class EvalReporter {
       if (capabilityId == null) continue;
       byKey
           .putIfAbsent(
-            '${trace.profile.name}\n$capabilityId',
+            '${_profileVariantName(trace)}\n$capabilityId',
             () => <EvalTrace>[],
           )
           .add(trace);
@@ -2390,11 +2393,23 @@ abstract final class EvalReporter {
   static String _scenarioProfileKey(String scenarioId, String profileName) =>
       '$scenarioId\n$profileName';
 
+  static String _scenarioProfileVariantKey(EvalTrace trace) =>
+      '${trace.scenario.id}\n${_profileVariantName(trace)}';
+
+  static String _profileVariantName(EvalTrace trace) {
+    if (trace.agentDirectiveVariant.isDefault) return trace.profile.name;
+    return '${trace.profile.name}@${trace.agentDirectiveVariant.name}';
+  }
+
   static int _compareTraceIdentity(EvalTrace a, EvalTrace b) {
     final scenarioOrder = a.scenario.id.compareTo(b.scenario.id);
     if (scenarioOrder != 0) return scenarioOrder;
     final profileOrder = a.profile.name.compareTo(b.profile.name);
     if (profileOrder != 0) return profileOrder;
+    final variantOrder = a.agentDirectiveVariant.name.compareTo(
+      b.agentDirectiveVariant.name,
+    );
+    if (variantOrder != 0) return variantOrder;
     final trialOrder = a.trialIndex.compareTo(b.trialIndex);
     if (trialOrder != 0) return trialOrder;
     return (a.cascadeWake?.wakeIndex ?? -1).compareTo(
@@ -2406,7 +2421,7 @@ abstract final class EvalReporter {
     final wake = trace.cascadeWake;
     return [
       trace.scenario.id,
-      trace.profile.name,
+      _profileVariantName(trace),
       'trial-${trace.trialIndex}',
       if (wake != null) wake.keySuffix,
     ].join('::');

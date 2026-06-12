@@ -118,13 +118,13 @@ optional secondary capability ids, a split (`development`, `holdout`, or
 `canary`), source, adversarial flag, tags, and optional digest-bound human
 review metadata. Review metadata is intentionally non-secret: status, reviewer,
 review time, rationale, optional source provenance, and a `subjectDigest` over
-the scenario JSON with the review block omitted. `EvalTrace.schemaVersion` 10
-includes a provenance block with canonical scenario/profile hashes, eval
-prompt/rubric hash, tool-schema hash, code revision, and the run manifest hash,
-plus optional `cascadeWake { cascadeId, wakeIndex, wakeCount }`,
-model-invocation, provider-request, and provider-response records for
-workflow-backed traces. Cascade wake traces preserve real `trialIndex`; wake
-identity is separate metadata.
+the scenario JSON with the review block omitted. `EvalTrace.schemaVersion` 11
+includes a provenance block with canonical scenario/profile hashes, prompt
+variant hash, eval prompt/rubric hash, tool-schema hash, code revision, and the
+run manifest hash, plus optional `cascadeWake { cascadeId, wakeIndex,
+wakeCount }`, model-invocation, provider-request, and provider-response records
+for workflow-backed traces. Cascade wake traces preserve real `trialIndex`;
+wake identity is separate metadata.
 Real workflow benches also record runtime prompt/tool fingerprints as `sha256:`
 digests in `output.runtimePrompt` without storing prompt text.
 Planning scenarios may seed submitted captures, parsed capture items, existing
@@ -204,9 +204,10 @@ timestamp-named directory under `eval/runs/`.
 For fast iteration on one use case, select a subset of the loaded matrix with
 comma-separated ids and profile names. Use the same selector env for `run`,
 `verify`, `report`, `template`, and `calibrate`; the run manifest binds to the
-selected scenario/profile set and later phases fail closed if the selectors
-drift. `plan` uses the same selectors and prints every scenario/profile/trial
-cell with its future trace and verdict path.
+selected scenario/profile/prompt-variant set and later phases fail closed if
+the selectors drift. `plan` uses the same selectors and prints every
+scenario/profile/prompt-variant/trial cell with its future trace and verdict
+path.
 
 ```
 EVAL_SCENARIO_IDS=task_workflow_structured_update \
@@ -285,6 +286,31 @@ shell. The catalog is a JSON array, or an object with a `profiles` array:
 }
 ```
 
+Prompt-policy variants are a separate matrix axis, not part of model profiles.
+Use `EVAL_PROMPT_VARIANTS` and optionally `EVAL_PROMPT_VARIANT_NAMES` to compare
+the same scenario/profile/trial cells under default and tuned task/day-agent
+template directives:
+
+```json
+{
+  "promptVariants": [
+    { "name": "default" },
+    {
+      "name": "metadata-first-v2",
+      "generalDirective": "When the task log or transcript states a due date, priority, estimate, label, checklist item, title, or status change, call the matching metadata tool before update_report.",
+      "reportDirective": "Publish the report only after required durable metadata proposals have been created."
+    }
+  ]
+}
+```
+
+The runner records `agentDirectiveVariantSetDigest` and the full non-secret
+variant list in the manifest, records the selected variant on each trace, and
+adds a `prompt-<variant>` suffix to non-default trace filenames. Default-only
+runs keep the historical `<scenario>__<profile>[__trial-N].trace.json` names.
+Variant text is capped and scenario-id leakage is rejected during matrix
+planning.
+
 Bind those slots to live providers through the existing env hierarchy, for
 example `LOTTI_EVAL_FRONTIER_PROVIDER=openAi`,
 `LOTTI_EVAL_FRONTIER_MODEL=gpt-5-mini`, `OPENAI_API_KEY=...`, or
@@ -327,31 +353,35 @@ It exits non-zero unless the catalog is `catalog-ready`, but it does **not**
 prove tuning readiness: traces, verdicts, provider provenance, model
 performance, and human calibration labels are checked later by `report`.
 
-1. `run` executes each scenario against each profile/model class through the
+1. `run` executes each scenario against each profile/model class and selected
+   prompt variant through the
    shared `EvalMatrixRunner`, writes `<runsRoot>/<runId>/manifest.json` first,
-   then writes one manifest-bound trace per `(scenario, profile, trialIndex)`.
+   then writes one manifest-bound trace per
+   `(scenario, profile, promptVariant, trialIndex)`.
    Cascade sidecar runners write one trace per wake with explicit `cascadeWake`
    metadata rather than overloading `trialIndex`.
    The manifest records the target name/kind, trace schema version, command,
    git revision/dirty-state digest, sanitized environment-key presence, and
-   scenario/profile/prompt/tool-schema set digests, plus
+   scenario/profile/prompt-variant/prompt/tool-schema set digests, plus
    `profileExecutionBindings` and `profileBindingSetDigest` that bind each
    profile slot to the concrete provider id/type, provider-native model id,
    model/profile config ids, normalized endpoint origin, base URL digest, and
    effective provider request temperature used in the run. Live bindings are
    captured after environment/profile overrides. The
    manifest also records non-secret scenario catalog evidence for public-only
-   or public-plus-external catalogs. The runner passes
-   the same run id, scenario id, profile name, and trial index into the target
-   as `EvalTargetRunContext`. Scripted real-workflow benches already derive
+   or public-plus-external catalogs, plus `agentDirectiveVariants` and
+   `agentDirectiveVariantSetDigest`. The runner passes the same run id,
+   scenario id, profile name, prompt variant, and trial index into the target as
+   `EvalTargetRunContext`. Scripted real-workflow benches already derive
    distinct workflow `runKey`/`threadId` values from it and record them in the
    trace; live runs use the same cell id and are gated by `LOTTI_EVAL_LIVE=1`.
    In CI, live runs additionally require `LOTTI_EVAL_ALLOW_CI=1`.
 2. Grade with Claude Code: `claude -p "Follow eval/grade_run.md to grade eval/runs/<runId>"`.
 3. `report` first loads the run through `TraceWriter.readRun`, which requires a
    current manifest, recomputes the manifest hash, and rejects traces bound to a
-   different manifest. It then verifies exact scenario × profile × trial
-   coverage, rejects embedded/orphan/stale verdicts and non-current trace schema
+   different manifest. It then verifies exact scenario × profile × prompt
+   variant × trial coverage, rejects embedded/orphan/stale verdicts and
+   non-current trace schema
    versions, recomputes Level 1 checks, validates workflow run/thread
    provenance when present, validates runtime prompt/tool digest shape,
    validates every recorded model invocation against `providerDecision`,

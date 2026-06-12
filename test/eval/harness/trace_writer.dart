@@ -1,9 +1,9 @@
 // Trace persistence for the evaluation harness (ADR 0029).
 //
-// The Level 2 runner writes one `<scenario>__<profile>.trace.json` per run under
-// `eval/runs/<runId>/`. The Claude Code judge (eval/grade_run.md) writes a
-// sibling `<scenario>__<profile>.verdict.json`. `readTraces` reattaches verdicts
-// so the reporter sees a complete `EvalTrace`.
+// The Level 2 runner writes one trace per scenario/profile/prompt variant/trial
+// cell under `eval/runs/<runId>/`. The Claude Code judge (eval/grade_run.md)
+// writes a sibling `.verdict.json`. `readTraces` reattaches verdicts so the
+// reporter sees a complete `EvalTrace`.
 
 import 'dart:convert';
 import 'dart:io';
@@ -46,6 +46,7 @@ class TraceWriter {
     required String runId,
     required String scenarioId,
     required String profileName,
+    String agentDirectiveVariantName = 'default',
     int trialIndex = 0,
     EvalTraceCascadeWake? cascadeWake,
   }) {
@@ -54,6 +55,7 @@ class TraceWriter {
       '${_stemFromParts(
         scenarioId,
         profileName,
+        agentDirectiveVariantName,
         trialIndex,
         cascadeWake,
       )}.trace.json',
@@ -103,6 +105,7 @@ class TraceWriter {
       runId: trace.runId,
       scenarioId: trace.scenario.id,
       profileName: trace.profile.name,
+      agentDirectiveVariantName: trace.agentDirectiveVariant.name,
       trialIndex: trace.trialIndex,
       cascadeWake: trace.cascadeWake,
     );
@@ -201,6 +204,10 @@ class TraceWriter {
         if (scenarioOrder != 0) return scenarioOrder;
         final profileOrder = a.profile.name.compareTo(b.profile.name);
         if (profileOrder != 0) return profileOrder;
+        final variantOrder = a.agentDirectiveVariant.name.compareTo(
+          b.agentDirectiveVariant.name,
+        );
+        if (variantOrder != 0) return variantOrder;
         final trialOrder = a.trialIndex.compareTo(b.trialIndex);
         if (trialOrder != 0) return trialOrder;
         return _cascadeSortKey(a).compareTo(_cascadeSortKey(b));
@@ -287,8 +294,12 @@ class TraceWriter {
     }
     final traces = await readTraces(runId);
     for (final trace in traces) {
+      final variantSegment = trace.agentDirectiveVariant.isDefault
+          ? ''
+          : '::${trace.agentDirectiveVariant.name}';
       final traceKey =
-          '${trace.scenario.id}::${trace.profile.name}::${trace.trialIndex}';
+          '${trace.scenario.id}::${trace.profile.name}$variantSegment::'
+          '${trace.trialIndex}';
       if (trace.runId != manifest.runId) {
         throw StateError(
           'Trace $traceKey has runId ${trace.runId}, '
@@ -347,11 +358,15 @@ class TraceWriter {
   String _stemFromParts(
     String scenarioId,
     String profileName,
+    String agentDirectiveVariantName,
     int trialIndex,
     EvalTraceCascadeWake? cascadeWake,
   ) {
     final base = '${_safe(scenarioId)}__${_safe(profileName)}';
     final parts = <String>[base];
+    if (agentDirectiveVariantName != 'default') {
+      parts.add('prompt-${_safe(agentDirectiveVariantName)}');
+    }
     if (trialIndex != 0) parts.add('trial-$trialIndex');
     if (cascadeWake != null) {
       parts

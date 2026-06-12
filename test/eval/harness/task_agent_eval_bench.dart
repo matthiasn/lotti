@@ -3,9 +3,9 @@
 // Mirrors PlannerEvalBench but for `TaskAgentWorkflow.execute(...)`. It seeds an
 // `EvalScenario` (one active task) onto the centralized mocks + the existing
 // task-agent test helpers, scripts the model response through the proven
-// `MockConversationRepository.sendMessageDelegate` -> `strategy.processToolCalls`
-// path (mock ConversationManager), runs the real workflow under `withClock`, and
-// maps the result to an `AgentRunOutput` the SAME Level 1 suite grades.
+// `ScriptedConversationRepository` path, runs the real workflow under
+// `withClock`, and maps the result to an `AgentRunOutput` the SAME Level 1
+// suite grades.
 //
 // Durable output fields are read from the entities the workflow persisted, not
 // from replayed scripted intent: reports from `AgentReportEntity`, observations
@@ -40,7 +40,6 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
-import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -60,6 +59,7 @@ import 'eval_target.dart';
 import 'observing_conversation_repository.dart';
 import 'proposal_record_mapper.dart';
 import 'scripted_agent_behavior.dart';
+import 'scripted_conversation_repository.dart';
 import 'tool_call_record_mapper.dart';
 
 /// One wake in a same-task task-agent eval cascade.
@@ -83,6 +83,7 @@ abstract final class TaskAgentEvalBench {
   static const _runKey = 'eval-run';
   static const _threadId = 'eval-thread';
   static const _decidedTaskPrefix = 'decided_task:';
+  static const _baselineDirective = 'You are a diligent task agent.';
 
   /// Seeds the scenario's active task, runs `TaskAgentWorkflow.execute(...)`
   /// replaying [behavior], and returns the mapped output.
@@ -100,6 +101,7 @@ abstract final class TaskAgentEvalBench {
     final session = _TaskAgentEvalSession(
       scenario,
       profile,
+      agentDirectiveVariant: context.agentDirectiveVariant,
       profileConfigOverride: profileConfigOverride,
       providerEnvPresence: providerEnvPresence,
     );
@@ -136,6 +138,7 @@ abstract final class TaskAgentEvalBench {
     final session = _TaskAgentEvalSession(
       scenario,
       profile,
+      agentDirectiveVariant: context.agentDirectiveVariant,
       profileConfigOverride: profileConfigOverride,
       providerEnvPresence: providerEnvPresence,
       seedScenarioTaskLogEntries: seedScenarioTaskLogEntries,
@@ -208,6 +211,20 @@ abstract final class TaskAgentEvalBench {
       context == EvalTargetRunContext.direct
       ? _threadId
       : '$_threadId:${context.cellId}';
+
+  static String _templateVersionIdForVariant(
+    String defaultId,
+    EvalAgentDirectiveVariant variant,
+  ) {
+    if (variant.isDefault) return defaultId;
+    final digest = EvalProvenance.agentDirectiveVariantDigest(variant);
+    final shortDigest = digest.substring(
+      'sha256:'.length,
+      'sha256:'.length + 12,
+    );
+    final safeName = variant.name.replaceAll(RegExp('[^A-Za-z0-9._-]'), '_');
+    return '$defaultId-$safeName-$shortDigest';
+  }
 
   static void _stubInferenceProfile(
     MockAiConfigRepository repo,
@@ -1176,6 +1193,8 @@ class _TaskAgentEvalSession {
   factory _TaskAgentEvalSession(
     EvalScenario scenario,
     EvalProfile profile, {
+    EvalAgentDirectiveVariant agentDirectiveVariant =
+        const EvalAgentDirectiveVariant(),
     EvalProfileConfig? profileConfigOverride,
     Map<String, bool>? providerEnvPresence,
     bool seedScenarioTaskLogEntries = true,
@@ -1224,7 +1243,15 @@ class _TaskAgentEvalSession {
       profileId: profileConfig.profileId,
     );
     final testTemplateVersion = makeTestTemplateVersion(
-      directives: 'You are a diligent task agent.',
+      id: TaskAgentEvalBench._templateVersionIdForVariant(
+        'version-001',
+        agentDirectiveVariant,
+      ),
+      directives: TaskAgentEvalBench._baselineDirective,
+      generalDirective: agentDirectiveVariant.mergedGeneralDirective(
+        TaskAgentEvalBench._baselineDirective,
+      ),
+      reportDirective: agentDirectiveVariant.reportDirective,
       modelId: 'legacy-version-model-must-not-win',
       profileId: profileConfig.profileId,
     );
@@ -1436,11 +1463,9 @@ class _TaskAgentEvalSession {
     String? sentProviderModelId;
     AiConfigInferenceProvider? sentProvider;
 
-    final conversationManager = MockConversationManager();
-    when(() => conversationManager.messages).thenReturn([]);
     final scriptedConversationRepository =
         conversationRepositoryOverride == null
-        ? MockConversationRepository(conversationManager)
+        ? ScriptedConversationRepository()
         : null;
     final conversationRepository =
         conversationRepositoryOverride ?? scriptedConversationRepository!;
@@ -1448,39 +1473,23 @@ class _TaskAgentEvalSession {
         cloudInferenceRepositoryOverride ?? MockCloudInferenceRepository();
 
     if (scriptedConversationRepository != null) {
+      final turns = behavior.isMultiTurn
+          ? behavior.turns
+          : [
+              ScriptedAgentTurn(
+                toolCalls: behavior.toolCalls,
+                finalResponse: behavior.finalResponse,
+                usage: behavior.usage,
+              ),
+            ];
       scriptedConversationRepository
-        ..maxDelegateCalls = behavior.isMultiTurn ? behavior.turns.length : 1
-        ..sendMessageDelegate =
-            ({
-              required conversationId,
-              required message,
-              required model,
-              required provider,
-              required inferenceRepo,
-              tools,
-              toolChoice,
-              temperature = 0.7,
-              strategy,
-            }) async {
-              onUserMessage?.call(message);
-              sentProviderModelId = model;
-              sentProvider = provider;
-              final turnIndex =
-                  scriptedConversationRepository.sendMessageDelegateCallCount -
-                  1;
-              final toolCalls = behavior.isMultiTurn
-                  ? behavior.turns[turnIndex].toolCalls
-                  : behavior.toolCalls;
-              if (strategy is TaskAgentStrategy) {
-                await strategy.processToolCalls(
-                  toolCalls: TaskAgentEvalBench._toToolCalls(toolCalls),
-                  manager: conversationManager,
-                );
-              }
-              return behavior.isMultiTurn
-                  ? behavior.turns[turnIndex].usage
-                  : behavior.usage;
-            };
+        ..toolCallsByInvocation = [
+          for (final turn in turns)
+            TaskAgentEvalBench._toToolCalls(turn.toolCalls),
+        ]
+        ..usageByInvocation = [
+          for (final turn in turns) turn.usage,
+        ];
     }
 
     final workflow = createTestWorkflow(
@@ -1521,7 +1530,7 @@ class _TaskAgentEvalSession {
     final executedToolCalls = scriptedConversationRepository == null
         ? toolCallRecordsFromPersistedActions(wakeEntities)
         : behavior.toolCallsForTurns(
-            scriptedConversationRepository.sendMessageDelegateCallCount,
+            scriptedConversationRepository.sendMessageCount,
           );
     return AgentRunOutput(
       success: result.success,
@@ -1570,7 +1579,7 @@ class _TaskAgentEvalSession {
       mutatedEntryIds: result.mutatedEntries.keys.toSet(),
       turnCount:
           observer?.sendMessageCount ??
-          scriptedConversationRepository?.sendMessageDelegateCallCount ??
+          scriptedConversationRepository?.sendMessageCount ??
           0,
     );
   }

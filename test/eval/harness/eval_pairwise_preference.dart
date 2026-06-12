@@ -40,6 +40,7 @@ class EvalPairwiseTraceRef {
     required this.runId,
     required this.scenarioId,
     required this.profileName,
+    required this.agentDirectiveVariantName,
     required this.agentKind,
     required this.modelClass,
     required this.capabilityId,
@@ -47,6 +48,7 @@ class EvalPairwiseTraceRef {
     required this.traceDigest,
     required this.scenarioDigest,
     required this.profileDigest,
+    required this.agentDirectiveVariantDigest,
     this.cascadeWake,
   });
 
@@ -57,6 +59,7 @@ class EvalPairwiseTraceRef {
     runId: trace.runId,
     scenarioId: trace.scenario.id,
     profileName: trace.profile.name,
+    agentDirectiveVariantName: trace.agentDirectiveVariant.name,
     agentKind: trace.scenario.agentKind,
     modelClass: trace.profile.modelClass,
     capabilityId: trace.scenario.metadata.primaryCapabilityId ?? '',
@@ -65,6 +68,7 @@ class EvalPairwiseTraceRef {
     traceDigest: traceDigest,
     scenarioDigest: trace.provenance.scenarioDigest,
     profileDigest: trace.provenance.profileDigest,
+    agentDirectiveVariantDigest: trace.provenance.agentDirectiveVariantDigest,
   );
 
   factory EvalPairwiseTraceRef.fromJson(Map<String, dynamic> json) =>
@@ -72,6 +76,8 @@ class EvalPairwiseTraceRef {
         runId: json['runId'] as String,
         scenarioId: json['scenarioId'] as String,
         profileName: json['profileName'] as String,
+        agentDirectiveVariantName:
+            (json['agentDirectiveVariantName'] as String?) ?? 'default',
         agentKind: AgentKind.fromName(json['agentKind'] as String),
         modelClass: EvalModelClass.fromName(json['modelClass'] as String),
         capabilityId: (json['capabilityId'] as String?) ?? '',
@@ -84,11 +90,14 @@ class EvalPairwiseTraceRef {
         traceDigest: json['traceDigest'] as String,
         scenarioDigest: json['scenarioDigest'] as String,
         profileDigest: json['profileDigest'] as String,
+        agentDirectiveVariantDigest:
+            (json['agentDirectiveVariantDigest'] as String?) ?? '',
       );
 
   final String runId;
   final String scenarioId;
   final String profileName;
+  final String agentDirectiveVariantName;
   final AgentKind agentKind;
   final EvalModelClass modelClass;
   final String capabilityId;
@@ -97,23 +106,32 @@ class EvalPairwiseTraceRef {
   final String traceDigest;
   final String scenarioDigest;
   final String profileDigest;
+  final String agentDirectiveVariantDigest;
 
   String get traceKey {
     final suffix = cascadeWake == null ? '' : '::${cascadeWake!.keySuffix}';
-    return '$runId::$scenarioId::$profileName::trial-$trialIndex$suffix';
+    final variantSegment = agentDirectiveVariantName == 'default'
+        ? ''
+        : '::$agentDirectiveVariantName';
+    return '$runId::$scenarioId::$profileName$variantSegment::trial-'
+        '$trialIndex$suffix';
   }
 
   String get artifactKey => '$traceKey::$traceDigest';
 
   String get comparableKey {
     final suffix = cascadeWake == null ? '' : '::${cascadeWake!.keySuffix}';
-    return '$runId::$scenarioId::trial-$trialIndex$suffix';
+    final variantSegment = agentDirectiveVariantName == 'default'
+        ? ''
+        : '::$agentDirectiveVariantName';
+    return '$runId::$scenarioId$variantSegment::trial-$trialIndex$suffix';
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'runId': runId,
     'scenarioId': scenarioId,
     'profileName': profileName,
+    'agentDirectiveVariantName': agentDirectiveVariantName,
     'agentKind': agentKind.name,
     'modelClass': modelClass.name,
     'capabilityId': capabilityId,
@@ -122,6 +140,7 @@ class EvalPairwiseTraceRef {
     'traceDigest': traceDigest,
     'scenarioDigest': scenarioDigest,
     'profileDigest': profileDigest,
+    'agentDirectiveVariantDigest': agentDirectiveVariantDigest,
   };
 }
 
@@ -518,10 +537,20 @@ void _validateTraceRef(
   _requireNonEmpty(failures, '$label.runId', ref.runId);
   _requireNonEmpty(failures, '$label.scenarioId', ref.scenarioId);
   _requireNonEmpty(failures, '$label.profileName', ref.profileName);
+  _requireNonEmpty(
+    failures,
+    '$label.agentDirectiveVariantName',
+    ref.agentDirectiveVariantName,
+  );
   _requireNonEmpty(failures, '$label.capabilityId', ref.capabilityId);
   _requireDigest(failures, '$label.traceDigest', ref.traceDigest);
   _requireDigest(failures, '$label.scenarioDigest', ref.scenarioDigest);
   _requireDigest(failures, '$label.profileDigest', ref.profileDigest);
+  _requireDigest(
+    failures,
+    '$label.agentDirectiveVariantDigest',
+    ref.agentDirectiveVariantDigest,
+  );
 }
 
 void _requireNonEmpty(List<String> failures, String field, String value) {

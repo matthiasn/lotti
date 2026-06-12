@@ -338,6 +338,7 @@ EvalPairwiseTraceRef _ref({
   runId: 'run-1',
   scenarioId: 'task_pairwise',
   profileName: profileName,
+  agentDirectiveVariantName: 'default',
   agentKind: agentKind,
   modelClass: EvalModelClass.frontierReasoning,
   capabilityId: 'task.grooming.basic',
@@ -346,6 +347,9 @@ EvalPairwiseTraceRef _ref({
   traceDigest: traceDigest,
   scenarioDigest: _digest('scenario'),
   profileDigest: _digest('profile-$profileName'),
+  agentDirectiveVariantDigest: EvalProvenance.agentDirectiveVariantDigest(
+    const EvalAgentDirectiveVariant(),
+  ),
 );
 
 EvalPairwisePreferenceVote _vote({

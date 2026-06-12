@@ -146,7 +146,6 @@ void main() {
         modelId: 'bad-local-frontier-model',
       ).toJson(),
     ]);
-
     expect(
       () => EvalProfileCatalogLoader.fromJsonSource(duplicateJson),
       throwsA(
@@ -214,6 +213,78 @@ void main() {
           (error) => error.message,
           'message',
           contains('EVAL_PROFILE_NAMES must not contain empty entries'),
+        ),
+      ),
+    );
+  });
+
+  test('loads and filters prompt directive variants separately', () {
+    final catalog = EvalAgentDirectiveVariantCatalogLoader.fromEnvironment(
+      const {},
+      dartDefineValue: jsonEncode({
+        'promptVariants': [
+          const EvalAgentDirectiveVariant().toJson(),
+          const EvalAgentDirectiveVariant(
+            name: 'metadata-first-v2',
+            generalDirective:
+                'Prefer task metadata tools before report updates.',
+          ).toJson(),
+        ],
+      }),
+      dartDefineVariantNames: 'metadata-first-v2',
+    );
+
+    expect(catalog.usesExternalVariants, isTrue);
+    expect(catalog.sourceLabel, 'inline JSON filtered to metadata-first-v2');
+    expect(catalog.variants, hasLength(1));
+    expect(catalog.variants.single.name, 'metadata-first-v2');
+  });
+
+  test('validates prompt variant catalog configuration', () {
+    final duplicateJson = jsonEncode([
+      const EvalAgentDirectiveVariant().toJson(),
+      const EvalAgentDirectiveVariant().toJson(),
+    ]);
+    final emptyDirectiveJson = jsonEncode([
+      const EvalAgentDirectiveVariant(name: 'empty-v2').toJson(),
+    ]);
+
+    expect(
+      () => EvalAgentDirectiveVariantCatalogLoader.fromJsonSource(
+        duplicateJson,
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('Duplicate eval prompt variant name: default'),
+        ),
+      ),
+    );
+    expect(
+      () => EvalAgentDirectiveVariantCatalogLoader.fromJsonSource(
+        emptyDirectiveJson,
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('has empty directives'),
+        ),
+      ),
+    );
+    expect(
+      () => EvalAgentDirectiveVariantCatalogLoader.fromEnvironment(
+        const {},
+        dartDefineVariantNames: 'default,default',
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains(
+            'EVAL_PROMPT_VARIANT_NAMES contains duplicate entry: default',
+          ),
         ),
       ),
     );

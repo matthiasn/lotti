@@ -161,13 +161,13 @@ supports `append` (default) or `replace` for external scenario catalogs. The
 selected scenario/profile set is what the run manifest digests, so later phases
 must use the same selectors or verification fails closed.
 Current active slice adds `eval/run_level2.sh plan [runId]`, backed by
-`EvalMatrixRunner.plan(...)`, to preview the exact scenario x profile x trial
-matrix, trace/verdict artifact paths, non-secret live provider/model bindings,
-promotion-plan evidence, and scenario-catalog evidence before spending model
-calls. `run(...)` executes the same planned cells, so dry-run and live-run
-matrix construction share validation and artifact preflight. The printed
-preview manifest digest is not a reservation; the subsequent live run writes
-the authoritative manifest at execution time.
+`EvalMatrixRunner.plan(...)`, to preview the exact scenario x profile x prompt
+variant x trial matrix, trace/verdict artifact paths, non-secret live
+provider/model bindings, promotion-plan evidence, and scenario-catalog evidence
+before spending model calls. `run(...)` executes the same planned cells, so
+dry-run and live-run matrix construction share validation and artifact
+preflight. The printed preview manifest digest is not a reservation; the
+subsequent live run writes the authoritative manifest at execution time.
 Current active slice adds raw tool-call argument oracles:
 `EvalExpectations.requiredToolCalls` / `forbiddenToolCalls` assert the
 model-facing `AgentRunOutput.toolCalls` layer separately from durable
@@ -282,6 +282,16 @@ match the run-manifest evidence, and requires `manifestDigest` to match the
 verified run manifest before asserting `promote`. Direct promotion profile env
 vars still work for exploratory reports, but if they are used with a plan they
 must match it and they are not assertion-gated by themselves.
+Current active slice adds first-class prompt-policy variants as a matrix axis
+separate from `EvalProfile`: `EVAL_PROMPT_VARIANTS` can name non-secret
+task/day-agent `generalDirective` and `reportDirective` overlays, while
+`EVAL_PROMPT_VARIANT_NAMES` selects a subset for a run. The real workflow
+benches seed those into production template-version fields with deterministic
+variant-digest version ids. Manifests record `agentDirectiveVariants` plus
+`agentDirectiveVariantSetDigest`, traces record the selected variant and
+`agentDirectiveVariantDigest`, and non-default artifacts get a
+`prompt-<variant>` filename segment so model-class comparisons are not
+confounded with prompt tuning.
 Current active slice adds protected holdout source-digest uniqueness: tuning
 readiness and catalog preflight reject duplicate protected holdout
 `review.sourceDigest` values, so multiple scenario IDs cannot count as
@@ -323,7 +333,7 @@ test/eval/harness/                       # Dart support library
   eval_assertions.dart    # Level 1 suite + ExpectedDurableState oracle checks
   eval_target.dart        # EvalTarget seam + EvalTargetRunContext + FixtureEvalTarget
   trace_writer.dart       # write traces / verify digest-bound verdicts (dart:io)
-  eval_matrix_runner.dart # scenario x profile x trial execution + per-cell context + trace writing
+  eval_matrix_runner.dart # scenario x profile x prompt variant x trial execution + per-cell context + trace writing
   eval_reporter.dart      # per-profile summary + uncertainty/pairing (pure)
   eval_judge_calibration.dart # human-label agreement reports (pure)
   eval_run_verifier.dart  # exact run matrix + verdict/Level 1/provenance consistency checks
@@ -464,7 +474,7 @@ test/eval/scenarios/                     # dataset + Level 1 example tests
   own `JudgeVerdict.schemaVersion` and judge provenance block. SHA-256 digests
   must use the exact `sha256:` + 64 lowercase-hex shape. `EvalRunVerifier` then
   checks the exact
-  scenario × profile × trial matrix, rejects orphan verdicts, recomputes Level 1
+  scenario × profile × prompt variant × trial matrix, rejects orphan verdicts, recomputes Level 1
   checks, validates workflow run/thread provenance when a target records it,
   validates resolved model/provider provenance against `EvalProfile`, validates
   recorded model invocations and provider requests against `providerDecision`
@@ -679,8 +689,8 @@ test/eval/scenarios/
   externalScenarioCount, externalCatalogDigest?, externalCatalogId?,
   externalSourceLabel?, protectedHoldout, protectedScenarioIds,
   protectedHoldoutScenarioIds }`
-- `EvalRunManifest { schemaVersion=1, runId, traceSchemaVersion, targetName, targetKind, createdAt, command, scenarioSetDigest, profileSetDigest, promptDigest, toolSchemaDigest, codeRevision, gitDirty, dirtyDiffDigest?, envPresence, scenarioCatalogEvidence?, manifestDigest? }`
-- `EvalTrace { schemaVersion=10, runId, scenario, profile, provenance, output,`
+- `EvalRunManifest { schemaVersion=2, runId, traceSchemaVersion, targetName, targetKind, createdAt, command, scenarioSetDigest, profileSetDigest, profileBindingSetDigest, agentDirectiveVariantSetDigest, promptDigest, toolSchemaDigest, codeRevision, gitDirty, dirtyDiffDigest?, envPresence, scenarioCatalogEvidence?, agentDirectiveVariants, manifestDigest? }`
+- `EvalTrace { schemaVersion=11, runId, scenario, profile, agentDirectiveVariant, provenance, output,`
   `trialIndex, cascadeWake?, level1Checks, verdict? }`
 - `EvalTraceCascadeWake { cascadeId, wakeIndex, wakeCount }`
 - `JudgeVerdict { schemaVersion=1, traceDigest?, judge,`
@@ -765,11 +775,12 @@ catch regressions, not just that a widget built.
   verdicts, binds sibling verdicts to `sha256:` trace digests, and supports
   `trialIndex` stems for repeated runs plus cascade wake stems when a trace has
   `EvalTraceCascadeWake` metadata.
-- `EvalMatrixRunner` executes the full `scenario × profile × trialIndex` matrix,
-  recomputes Level 1 checks, writes one trace per cell, keeps trace read order
-  deterministic, records target exceptions as failed traces so matrix cells
-  are auditable instead of silently missing, and fails the run after artifact
-  writes when any deterministic Level 1 check fails.
+- `EvalMatrixRunner` executes the full
+  `scenario × profile × prompt variant × trialIndex` matrix, recomputes Level 1
+  checks, writes one trace per cell, keeps trace read order deterministic,
+  records target exceptions as failed traces so matrix cells are auditable
+  instead of silently missing, and fails the run after artifact writes when any
+  deterministic Level 1 check fails.
 - `EvalRunVerifier` enforces exact run matrix coverage, rejects orphan verdicts,
   rejects trace-embedded scenario/profile payload drift from the canonical
   catalog, recomputes Level 1 checks from the canonical scenario/profile,

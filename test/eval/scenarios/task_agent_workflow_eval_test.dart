@@ -109,6 +109,65 @@ void main() {
   });
 
   test(
+    'prompt directive variant changes the task-agent runtime prompt',
+    () async {
+      const tunedVariant = EvalAgentDirectiveVariant(
+        name: 'metadata-first-v2',
+        generalDirective:
+            'When a transcript states due dates, priority, estimates, labels, '
+            'or checklist items, call the matching metadata tool before '
+            'publishing a report.',
+      );
+      const tunedContext = EvalTargetRunContext(
+        runId: 'run-task-context',
+        scenarioId: 'task_release_notes',
+        profileName: 'frontier-gemini',
+        agentDirectiveVariant: tunedVariant,
+        trialIndex: 0,
+      );
+      const behavior = ScriptedAgentBehavior(
+        toolCalls: [goodReport],
+        usage: InferenceUsage(inputTokens: 1200, outputTokens: 180),
+      );
+
+      final baseline = await TaskAgentEvalBench.runWake(
+        scenario,
+        kFrontierProfile,
+        behavior,
+      );
+      final tuned = await TaskAgentEvalBench.runWake(
+        scenario,
+        kFrontierProfile,
+        behavior,
+        context: tunedContext,
+      );
+
+      expect(baseline.runtimePrompt, isNotNull);
+      expect(tuned.runtimePrompt, isNotNull);
+      expect(
+        tuned.runtimePrompt!.systemDigest,
+        isNot(baseline.runtimePrompt!.systemDigest),
+      );
+      expect(
+        tuned.runtimePrompt!.userDigest,
+        baseline.runtimePrompt!.userDigest,
+      );
+      expect(
+        tuned.runtimePrompt!.toolSchemaDigest,
+        baseline.runtimePrompt!.toolSchemaDigest,
+      );
+      expect(
+        tuned.providerDecision!.selectedModelConfigId,
+        baseline.providerDecision!.selectedModelConfigId,
+      );
+      expect(
+        tuned.resolvedModel!.templateVersionId,
+        contains('metadata-first-v2'),
+      );
+    },
+  );
+
+  test(
     'uses decided task trigger as active task when first fixture is a decoy',
     () async {
       final decoyScenario = EvalScenario(

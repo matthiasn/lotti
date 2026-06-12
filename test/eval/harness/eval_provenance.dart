@@ -22,12 +22,17 @@ abstract final class EvalProvenance {
   static EvalTraceProvenance capture({
     required EvalScenario scenario,
     required EvalProfile profile,
+    EvalAgentDirectiveVariant agentDirectiveVariant =
+        const EvalAgentDirectiveVariant(),
     String manifestDigest = unboundManifestDigest,
   }) {
     return EvalTraceProvenance(
       manifestDigest: manifestDigest,
       scenarioDigest: digestJson(scenario.toJson()),
       profileDigest: digestJson(profile.toJson()),
+      agentDirectiveVariantDigest: agentDirectiveVariantDigest(
+        agentDirectiveVariant,
+      ),
       promptDigest: promptDigest(),
       toolSchemaDigest: toolSchemaDigest(),
       codeRevision: codeRevision(),
@@ -46,6 +51,9 @@ abstract final class EvalProvenance {
     Map<String, String>? environment,
     EvalPromotionPlan? promotionPlan,
     List<EvalProfileExecutionBinding>? profileExecutionBindings,
+    List<EvalAgentDirectiveVariant> agentDirectiveVariants = const [
+      EvalAgentDirectiveVariant(),
+    ],
   }) {
     final env = environment ?? Platform.environment;
     final git = _gitState(env);
@@ -77,6 +85,10 @@ abstract final class EvalProvenance {
       profileSetDigest: profileSetDigest(profiles),
       profileBindingSetDigest: profileBindingSetDigest(executionBindings),
       profileExecutionBindings: executionBindings,
+      agentDirectiveVariantSetDigest: agentDirectiveVariantSetDigest(
+        agentDirectiveVariants,
+      ),
+      agentDirectiveVariants: agentDirectiveVariants,
       promptDigest: promptDigest(),
       toolSchemaDigest: toolSchemaDigest(),
       codeRevision: git.codeRevision,
@@ -121,6 +133,19 @@ abstract final class EvalProvenance {
       ...bindings,
     ]..sort((a, b) => a.profileName.compareTo(b.profileName)))
       binding.toJson(),
+  ]);
+
+  static String agentDirectiveVariantDigest(
+    EvalAgentDirectiveVariant variant,
+  ) => digestJson(variant.toJson());
+
+  static String agentDirectiveVariantSetDigest(
+    List<EvalAgentDirectiveVariant> variants,
+  ) => digestJson([
+    for (final variant in [
+      ...variants,
+    ]..sort((a, b) => a.name.compareTo(b.name)))
+      variant.toJson(),
   ]);
 
   static String manifestDigest(EvalRunManifest manifest) =>
@@ -231,6 +256,8 @@ abstract final class EvalProvenance {
     'EVAL_SCENARIOS_MODE',
     'EVAL_SCENARIO_IDS',
     'EVAL_PROFILE_NAMES',
+    'EVAL_PROMPT_VARIANTS',
+    'EVAL_PROMPT_VARIANT_NAMES',
     'LOTTI_EVAL_ALLOW_CI',
     'LOTTI_EVAL_LIVE',
     'LOTTI_EVAL_LOCAL_MODEL',

@@ -1,8 +1,8 @@
 // Level 2 dry-run entrypoint.
 //
-// This previews the exact scenario x profile x trial matrix, provider/model
-// bindings, and artifact paths without creating a run directory or making live
-// model calls.
+// This previews the exact scenario x profile x prompt variant x trial matrix,
+// provider/model bindings, and artifact paths without creating a run directory
+// or making live model calls.
 
 import 'dart:convert';
 import 'dart:io';
@@ -23,6 +23,10 @@ const _scenarioCatalogMode = String.fromEnvironment(
 const _scenarioIds = String.fromEnvironment(kEvalScenarioIdsEnv);
 const _profileCatalogValue = String.fromEnvironment(kEvalProfilesPathEnv);
 const _profileNames = String.fromEnvironment(kEvalProfileNamesEnv);
+const _promptVariantCatalogValue = String.fromEnvironment(
+  kEvalPromptVariantsPathEnv,
+);
+const _promptVariantNames = String.fromEnvironment(kEvalPromptVariantNamesEnv);
 const _runsRootPath = String.fromEnvironment('EVAL_RUNS_ROOT');
 const _protectedTraceAck = String.fromEnvironment(
   'LOTTI_EVAL_PROTECTED_TRACE_ACK',
@@ -36,6 +40,7 @@ void main() {
     'renders eval matrix plan',
     () {
       final profileCatalog = _loadProfileCatalog();
+      final promptVariantCatalog = _loadPromptVariantCatalog();
       final catalog = _loadScenarioCatalog();
       final runsRoot = _runsRoot();
       _guardProtectedTraceOutput(catalog, runsRoot);
@@ -51,6 +56,7 @@ void main() {
             runId: _runId,
             scenarios: catalog.scenarios,
             profiles: profileCatalog.profiles,
+            agentDirectiveVariants: promptVariantCatalog.variants,
             scenarioCatalogEvidence: catalog.evidence,
             promotionPlan: promotionPlan,
           );
@@ -61,6 +67,7 @@ void main() {
           plan,
           scenarioSourceLabel: catalog.sourceDescription,
           profileSourceLabel: profileCatalog.sourceLabel,
+          promptVariantSourceLabel: promptVariantCatalog.sourceLabel,
         ),
       );
 
@@ -131,6 +138,14 @@ EvalProfileCatalog _loadProfileCatalog() {
   );
 }
 
+EvalAgentDirectiveVariantCatalog _loadPromptVariantCatalog() {
+  return EvalAgentDirectiveVariantCatalogLoader.fromEnvironment(
+    Platform.environment,
+    dartDefineValue: _promptVariantCatalogValueFromDefine(),
+    dartDefineVariantNames: _promptVariantNamesFromDefine(),
+  );
+}
+
 String _scenarioCatalogPathFromDefine() => _scenarioCatalogPath;
 
 String _scenarioCatalogModeFromDefine() => _scenarioCatalogMode;
@@ -140,6 +155,10 @@ String _scenarioIdsFromDefine() => _scenarioIds;
 String _profileCatalogValueFromDefine() => _profileCatalogValue;
 
 String _profileNamesFromDefine() => _profileNames;
+
+String _promptVariantCatalogValueFromDefine() => _promptVariantCatalogValue;
+
+String _promptVariantNamesFromDefine() => _promptVariantNames;
 
 String _runsRoot() {
   final fromDefine = _runsRootPath.trim();

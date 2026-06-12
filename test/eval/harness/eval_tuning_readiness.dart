@@ -364,7 +364,14 @@ abstract final class EvalTuningReadiness {
       );
     }
 
-    final expectedKeys = _expectedTraceKeys(scenarios, profiles);
+    final agentDirectiveVariants =
+        manifest?.agentDirectiveVariants ??
+        _agentDirectiveVariantsFromTraces(traces);
+    final expectedKeys = _expectedTraceKeys(
+      scenarios,
+      profiles,
+      agentDirectiveVariants,
+    );
     final traceKeys = traces.map(_traceKey).toList(growable: false);
     final actualKeys = traceKeys.toSet();
     final duplicateKeys = _duplicates(traceKeys);
@@ -1628,22 +1635,25 @@ abstract final class EvalTuningReadiness {
   static Set<String> _expectedTraceKeys(
     List<EvalScenario> scenarios,
     List<EvalProfile> profiles,
+    List<EvalAgentDirectiveVariant> agentDirectiveVariants,
   ) {
     return {
       for (final scenario in scenarios)
         for (final profile in profiles)
-          for (
-            var trialIndex = 0;
-            trialIndex < profile.trialCount;
-            trialIndex++
-          )
-            _key(scenario.id, profile.name, trialIndex),
+          for (final variant in agentDirectiveVariants)
+            for (
+              var trialIndex = 0;
+              trialIndex < profile.trialCount;
+              trialIndex++
+            )
+              _key(scenario.id, profile.name, variant.name, trialIndex),
     };
   }
 
   static String _traceKey(EvalTrace trace) => _key(
     trace.scenario.id,
     trace.profile.name,
+    trace.agentDirectiveVariant.name,
     trace.trialIndex,
     cascadeWake: trace.cascadeWake,
   );
@@ -1651,11 +1661,28 @@ abstract final class EvalTuningReadiness {
   static String _key(
     String scenarioId,
     String profileName,
+    String agentDirectiveVariantName,
     int trialIndex, {
     EvalTraceCascadeWake? cascadeWake,
   }) {
     final suffix = cascadeWake == null ? '' : '::${cascadeWake.keySuffix}';
-    return '$scenarioId::$profileName::trial-$trialIndex$suffix';
+    final variantSegment = agentDirectiveVariantName == 'default'
+        ? ''
+        : '::$agentDirectiveVariantName';
+    return '$scenarioId::$profileName$variantSegment::trial-$trialIndex$suffix';
+  }
+
+  static List<EvalAgentDirectiveVariant> _agentDirectiveVariantsFromTraces(
+    List<EvalTrace> traces,
+  ) {
+    if (traces.isEmpty) return const [EvalAgentDirectiveVariant()];
+    final byName = <String, EvalAgentDirectiveVariant>{};
+    for (final trace in traces) {
+      byName[trace.agentDirectiveVariant.name] = trace.agentDirectiveVariant;
+    }
+    return [
+      for (final name in byName.keys.toList()..sort()) byName[name]!,
+    ];
   }
 
   static Set<String> _duplicates(Iterable<String> values) {

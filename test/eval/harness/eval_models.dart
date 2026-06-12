@@ -2627,6 +2627,56 @@ class AgentRunOutput {
   };
 }
 
+/// Prompt/directive variant for one eval matrix execution.
+///
+/// Profiles remain the model-class comparison unit. Directive variants are a
+/// separate matrix axis so a run can compare prompt policy changes without
+/// making them look like different model/provider profiles.
+class EvalAgentDirectiveVariant {
+  const EvalAgentDirectiveVariant({
+    this.name = 'default',
+    this.generalDirective = '',
+    this.reportDirective = '',
+  });
+
+  factory EvalAgentDirectiveVariant.fromJson(Map<String, dynamic> json) =>
+      EvalAgentDirectiveVariant(
+        name: (json['name'] as String?) ?? 'default',
+        generalDirective: (json['generalDirective'] as String?) ?? '',
+        reportDirective: (json['reportDirective'] as String?) ?? '',
+      );
+
+  final String name;
+  final String generalDirective;
+  final String reportDirective;
+
+  String get combinedDirectiveText => [generalDirective, reportDirective]
+      .where((part) => part.isNotEmpty)
+      .join(
+        '\n\n',
+      );
+
+  bool get isDefault =>
+      name == 'default' &&
+      generalDirective.trim().isEmpty &&
+      reportDirective.trim().isEmpty;
+
+  String mergedGeneralDirective(String baseline) {
+    final trimmedDirective = generalDirective.trim();
+    if (trimmedDirective.isEmpty) return '';
+
+    final trimmedBaseline = baseline.trim();
+    if (trimmedBaseline.isEmpty) return trimmedDirective;
+    return '$trimmedBaseline\n\n$trimmedDirective';
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'name': name,
+    if (generalDirective.isNotEmpty) 'generalDirective': generalDirective,
+    if (reportDirective.isNotEmpty) 'reportDirective': reportDirective,
+  };
+}
+
 /// A model profile to grade against: local vs frontier, with the efficiency
 /// target encoded as `tokenBudget`.
 ///
@@ -2996,6 +3046,7 @@ class EvalTraceProvenance {
     required this.manifestDigest,
     required this.scenarioDigest,
     required this.profileDigest,
+    required this.agentDirectiveVariantDigest,
     required this.promptDigest,
     required this.toolSchemaDigest,
     required this.codeRevision,
@@ -3006,6 +3057,8 @@ class EvalTraceProvenance {
         manifestDigest: json['manifestDigest'] as String,
         scenarioDigest: json['scenarioDigest'] as String,
         profileDigest: json['profileDigest'] as String,
+        agentDirectiveVariantDigest:
+            json['agentDirectiveVariantDigest'] as String,
         promptDigest: json['promptDigest'] as String,
         toolSchemaDigest: json['toolSchemaDigest'] as String,
         codeRevision: json['codeRevision'] as String,
@@ -3014,6 +3067,7 @@ class EvalTraceProvenance {
   final String manifestDigest;
   final String scenarioDigest;
   final String profileDigest;
+  final String agentDirectiveVariantDigest;
   final String promptDigest;
   final String toolSchemaDigest;
   final String codeRevision;
@@ -3022,6 +3076,7 @@ class EvalTraceProvenance {
     'manifestDigest': manifestDigest,
     'scenarioDigest': scenarioDigest,
     'profileDigest': profileDigest,
+    'agentDirectiveVariantDigest': agentDirectiveVariantDigest,
     'promptDigest': promptDigest,
     'toolSchemaDigest': toolSchemaDigest,
     'codeRevision': codeRevision,
@@ -3178,6 +3233,8 @@ class EvalRunManifest {
     required this.profileSetDigest,
     required this.profileBindingSetDigest,
     required this.profileExecutionBindings,
+    required this.agentDirectiveVariantSetDigest,
+    required this.agentDirectiveVariants,
     required this.promptDigest,
     required this.toolSchemaDigest,
     required this.codeRevision,
@@ -3216,6 +3273,16 @@ class EvalRunManifest {
                 ),
               )
               .toList(),
+      agentDirectiveVariantSetDigest:
+          json['agentDirectiveVariantSetDigest'] as String,
+      agentDirectiveVariants:
+          ((json['agentDirectiveVariants'] as List<dynamic>?) ?? const [])
+              .map(
+                (e) => EvalAgentDirectiveVariant.fromJson(
+                  e as Map<String, dynamic>,
+                ),
+              )
+              .toList(),
       promptDigest: json['promptDigest'] as String,
       toolSchemaDigest: json['toolSchemaDigest'] as String,
       codeRevision: json['codeRevision'] as String,
@@ -3237,7 +3304,7 @@ class EvalRunManifest {
     );
   }
 
-  static const schemaVersion = 1;
+  static const schemaVersion = 2;
 
   final String runId;
   final int traceSchemaVersion;
@@ -3249,6 +3316,8 @@ class EvalRunManifest {
   final String profileSetDigest;
   final String profileBindingSetDigest;
   final List<EvalProfileExecutionBinding> profileExecutionBindings;
+  final String agentDirectiveVariantSetDigest;
+  final List<EvalAgentDirectiveVariant> agentDirectiveVariants;
   final String promptDigest;
   final String toolSchemaDigest;
   final String codeRevision;
@@ -3270,6 +3339,8 @@ class EvalRunManifest {
     profileSetDigest: profileSetDigest,
     profileBindingSetDigest: profileBindingSetDigest,
     profileExecutionBindings: profileExecutionBindings,
+    agentDirectiveVariantSetDigest: agentDirectiveVariantSetDigest,
+    agentDirectiveVariants: agentDirectiveVariants,
     promptDigest: promptDigest,
     toolSchemaDigest: toolSchemaDigest,
     codeRevision: codeRevision,
@@ -3300,6 +3371,13 @@ class EvalRunManifest {
           ...profileExecutionBindings,
         ]..sort((a, b) => a.profileName.compareTo(b.profileName)))
           binding.toJson(),
+      ],
+      'agentDirectiveVariantSetDigest': agentDirectiveVariantSetDigest,
+      'agentDirectiveVariants': [
+        for (final variant in [
+          ...agentDirectiveVariants,
+        ]..sort((a, b) => a.name.compareTo(b.name)))
+          variant.toJson(),
       ],
       'promptDigest': promptDigest,
       'toolSchemaDigest': toolSchemaDigest,
@@ -3383,6 +3461,7 @@ class EvalTrace {
     required this.runId,
     required this.scenario,
     required this.profile,
+    this.agentDirectiveVariant = const EvalAgentDirectiveVariant(),
     required this.provenance,
     required this.output,
     this.trialIndex = 0,
@@ -3409,6 +3488,11 @@ class EvalTrace {
             ),
       scenario: EvalScenario.fromJson(json['scenario'] as Map<String, dynamic>),
       profile: EvalProfile.fromJson(json['profile'] as Map<String, dynamic>),
+      agentDirectiveVariant: json['agentDirectiveVariant'] == null
+          ? const EvalAgentDirectiveVariant()
+          : EvalAgentDirectiveVariant.fromJson(
+              json['agentDirectiveVariant'] as Map<String, dynamic>,
+            ),
       provenance: EvalTraceProvenance.fromJson(
         json['provenance'] as Map<String, dynamic>,
       ),
@@ -3422,13 +3506,14 @@ class EvalTrace {
     );
   }
 
-  static const schemaVersion = 10;
+  static const schemaVersion = 11;
 
   final String runId;
   final int trialIndex;
   final EvalTraceCascadeWake? cascadeWake;
   final EvalScenario scenario;
   final EvalProfile profile;
+  final EvalAgentDirectiveVariant agentDirectiveVariant;
   final EvalTraceProvenance provenance;
   final AgentRunOutput output;
   final List<EvalCheck> level1Checks;
@@ -3443,6 +3528,7 @@ class EvalTrace {
     runId: runId,
     scenario: scenario,
     profile: profile,
+    agentDirectiveVariant: agentDirectiveVariant,
     provenance: provenance,
     output: output,
     trialIndex: trialIndex,
@@ -3458,6 +3544,8 @@ class EvalTrace {
     if (cascadeWake != null) 'cascadeWake': cascadeWake!.toJson(),
     'scenario': scenario.toJson(),
     'profile': profile.toJson(),
+    if (!agentDirectiveVariant.isDefault)
+      'agentDirectiveVariant': agentDirectiveVariant.toJson(),
     'provenance': provenance.toJson(),
     'output': output.toJson(),
     'level1Checks': level1Checks.map((c) => c.toJson()).toList(),

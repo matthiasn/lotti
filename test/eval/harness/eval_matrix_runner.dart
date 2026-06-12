@@ -1,8 +1,8 @@
 // Matrix execution for Level 2 eval runs (ADR 0029).
 //
-// Runs the same scenario catalog across every configured profile and trial,
-// writes one trace per cell, and records target exceptions as failed traces so
-// reporting/verifier steps still see a complete matrix.
+// Runs the same scenario catalog across every configured profile, prompt
+// variant, and trial, writes one trace per cell, and records target exceptions
+// as failed traces so reporting/verifier steps still see a complete matrix.
 
 import 'dart:io';
 
@@ -35,6 +35,7 @@ class EvalMatrixPlan {
     required this.manifestFile,
     required this.scenarios,
     required this.profiles,
+    required this.agentDirectiveVariants,
     required this.cells,
   });
 
@@ -42,6 +43,7 @@ class EvalMatrixPlan {
   final File manifestFile;
   final List<EvalScenario> scenarios;
   final List<EvalProfile> profiles;
+  final List<EvalAgentDirectiveVariant> agentDirectiveVariants;
   final List<EvalMatrixPlanCell> cells;
 
   int get traceCount => cells.length;
@@ -59,23 +61,28 @@ class EvalMatrixPlanCell {
   const EvalMatrixPlanCell({
     required this.scenarioIndex,
     required this.profileIndex,
+    required this.agentDirectiveVariantIndex,
     required this.trialIndex,
     required this.scenario,
     required this.profile,
+    required this.agentDirectiveVariant,
     required this.traceFile,
     required this.verdictFile,
   });
 
   final int scenarioIndex;
   final int profileIndex;
+  final int agentDirectiveVariantIndex;
   final int trialIndex;
   final EvalScenario scenario;
   final EvalProfile profile;
+  final EvalAgentDirectiveVariant agentDirectiveVariant;
   final File traceFile;
   final File verdictFile;
 
   String get scenarioId => scenario.id;
   String get profileName => profile.name;
+  String get agentDirectiveVariantName => agentDirectiveVariant.name;
 }
 
 abstract final class EvalMatrixPlanRenderer {
@@ -83,6 +90,7 @@ abstract final class EvalMatrixPlanRenderer {
     EvalMatrixPlan plan, {
     String? scenarioSourceLabel,
     String? profileSourceLabel,
+    String? promptVariantSourceLabel,
   }) {
     final buffer = StringBuffer()
       ..writeln('Eval matrix plan')
@@ -97,6 +105,10 @@ abstract final class EvalMatrixPlanRenderer {
       ..writeln(
         'profileBindingSetDigest: ${plan.manifest.profileBindingSetDigest}',
       )
+      ..writeln(
+        'agentDirectiveVariantSetDigest: '
+        '${plan.manifest.agentDirectiveVariantSetDigest}',
+      )
       ..writeln('promptDigest: ${plan.manifest.promptDigest}')
       ..writeln('toolSchemaDigest: ${plan.manifest.toolSchemaDigest}')
       ..writeln('codeRevision: ${plan.manifest.codeRevision}')
@@ -110,10 +122,15 @@ abstract final class EvalMatrixPlanRenderer {
         '- scenarios: ${scenarioSourceLabel ?? 'loaded scenario catalog'}',
       )
       ..writeln('- profiles: ${profileSourceLabel ?? 'loaded profile catalog'}')
+      ..writeln(
+        '- prompt variants: '
+        '${promptVariantSourceLabel ?? 'loaded prompt variant catalog'}',
+      )
       ..writeln()
       ..writeln('Counts')
       ..writeln('- scenarios: ${plan.scenarios.length}')
       ..writeln('- profiles: ${plan.profiles.length}')
+      ..writeln('- prompt variants: ${plan.agentDirectiveVariants.length}')
       ..writeln('- trace cells: ${plan.traceCount}');
 
     final splitCounts = _countsBy(
@@ -223,6 +240,16 @@ abstract final class EvalMatrixPlanRenderer {
     }
     buffer
       ..writeln()
+      ..writeln('Prompt Variants');
+    for (final variant in plan.agentDirectiveVariants) {
+      buffer
+        ..writeln('- ${variant.name}')
+        ..writeln(
+          '  digest=${EvalProvenance.agentDirectiveVariantDigest(variant)}',
+        );
+    }
+    buffer
+      ..writeln()
       ..writeln('Scenarios');
     for (final scenario in plan.scenarios) {
       final metadata = scenario.metadata;
@@ -241,7 +268,8 @@ abstract final class EvalMatrixPlanRenderer {
     for (final cell in plan.cells) {
       buffer
         ..writeln(
-          '- ${cell.scenarioId} x ${cell.profileName} '
+          '- ${cell.scenarioId} x ${cell.profileName} x '
+          '${cell.agentDirectiveVariantName} '
           'trial=${cell.trialIndex}',
         )
         ..writeln('  trace=${cell.traceFile.path}')
@@ -279,22 +307,29 @@ class EvalMatrixRunner {
     required String runId,
     required List<EvalScenario> scenarios,
     required List<EvalProfile> profiles,
+    List<EvalAgentDirectiveVariant> agentDirectiveVariants = const [
+      EvalAgentDirectiveVariant(),
+    ],
     EvalScenarioCatalogEvidence? scenarioCatalogEvidence,
     EvalPromotionPlan? promotionPlan,
     bool overwrite = false,
     bool deleteVerdictOnOverwrite = false,
   }) {
-    _validateInputs(scenarios, profiles);
+    _validateInputs(scenarios, profiles, agentDirectiveVariants);
     _preflightArtifacts(
       runId: runId,
       scenarios: scenarios,
       profiles: profiles,
+      agentDirectiveVariants: agentDirectiveVariants,
       overwrite: overwrite,
       deleteVerdictOnOverwrite: deleteVerdictOnOverwrite,
     );
 
     final canonicalScenarios = _snapshotScenarios(scenarios);
     final canonicalProfiles = _snapshotProfiles(profiles);
+    final canonicalAgentDirectiveVariants = _snapshotAgentDirectiveVariants(
+      agentDirectiveVariants,
+    );
     final profileExecutionBindings = profileExecutionBindingsForTarget(
       target,
       canonicalProfiles,
@@ -313,6 +348,7 @@ class EvalMatrixRunner {
       scenarioCatalogEvidence: scenarioCatalogEvidence,
       promotionPlan: promotionPlan,
       profileExecutionBindings: profileExecutionBindings,
+      agentDirectiveVariants: canonicalAgentDirectiveVariants,
     );
     final cells = <EvalMatrixPlanCell>[];
     for (
@@ -328,27 +364,37 @@ class EvalMatrixRunner {
       ) {
         final profile = canonicalProfiles[profileIndex];
         for (
-          var trialIndex = 0;
-          trialIndex < profile.trialCount;
-          trialIndex++
+          var variantIndex = 0;
+          variantIndex < canonicalAgentDirectiveVariants.length;
+          variantIndex++
         ) {
-          final traceFile = writer.traceFileFor(
-            runId: runId,
-            scenarioId: scenario.id,
-            profileName: profile.name,
-            trialIndex: trialIndex,
-          );
-          cells.add(
-            EvalMatrixPlanCell(
-              scenarioIndex: scenarioIndex,
-              profileIndex: profileIndex,
+          final variant = canonicalAgentDirectiveVariants[variantIndex];
+          for (
+            var trialIndex = 0;
+            trialIndex < profile.trialCount;
+            trialIndex++
+          ) {
+            final traceFile = writer.traceFileFor(
+              runId: runId,
+              scenarioId: scenario.id,
+              profileName: profile.name,
+              agentDirectiveVariantName: variant.name,
               trialIndex: trialIndex,
-              scenario: scenario,
-              profile: profile,
-              traceFile: traceFile,
-              verdictFile: writer.verdictFileForTrace(traceFile),
-            ),
-          );
+            );
+            cells.add(
+              EvalMatrixPlanCell(
+                scenarioIndex: scenarioIndex,
+                profileIndex: profileIndex,
+                agentDirectiveVariantIndex: variantIndex,
+                trialIndex: trialIndex,
+                scenario: scenario,
+                profile: profile,
+                agentDirectiveVariant: variant,
+                traceFile: traceFile,
+                verdictFile: writer.verdictFileForTrace(traceFile),
+              ),
+            );
+          }
         }
       }
     }
@@ -358,6 +404,9 @@ class EvalMatrixRunner {
       manifestFile: writer.manifestFileFor(runId),
       scenarios: List.unmodifiable(canonicalScenarios),
       profiles: List.unmodifiable(canonicalProfiles),
+      agentDirectiveVariants: List.unmodifiable(
+        canonicalAgentDirectiveVariants,
+      ),
       cells: List.unmodifiable(cells),
     );
   }
@@ -366,6 +415,9 @@ class EvalMatrixRunner {
     required String runId,
     required List<EvalScenario> scenarios,
     required List<EvalProfile> profiles,
+    List<EvalAgentDirectiveVariant> agentDirectiveVariants = const [
+      EvalAgentDirectiveVariant(),
+    ],
     EvalScenarioCatalogEvidence? scenarioCatalogEvidence,
     EvalPromotionPlan? promotionPlan,
     bool overwrite = false,
@@ -375,6 +427,7 @@ class EvalMatrixRunner {
       runId: runId,
       scenarios: scenarios,
       profiles: profiles,
+      agentDirectiveVariants: agentDirectiveVariants,
       scenarioCatalogEvidence: scenarioCatalogEvidence,
       promotionPlan: promotionPlan,
       overwrite: overwrite,
@@ -396,6 +449,7 @@ class EvalMatrixRunner {
         runId: runId,
         scenarioId: scenario.id,
         profileName: profile.name,
+        agentDirectiveVariant: cell.agentDirectiveVariant,
         trialIndex: cell.trialIndex,
       );
       final output = await _runTarget(scenario, profile, context);
@@ -403,9 +457,11 @@ class EvalMatrixRunner {
         runId: runId,
         scenario: cell.scenario,
         profile: cell.profile,
+        agentDirectiveVariant: cell.agentDirectiveVariant,
         provenance: EvalProvenance.capture(
           scenario: cell.scenario,
           profile: cell.profile,
+          agentDirectiveVariant: cell.agentDirectiveVariant,
           manifestDigest: manifestDigest,
         ),
         trialIndex: cell.trialIndex,
@@ -431,6 +487,7 @@ class EvalMatrixRunner {
       traces: traces,
       scenarios: planned.scenarios,
       profiles: planned.profiles,
+      agentDirectiveVariants: planned.agentDirectiveVariants,
       manifest: planned.manifest,
       artifactNames: _artifactNames(runId),
       requireVerdicts: false,
@@ -454,6 +511,7 @@ class EvalMatrixRunner {
   void _validateInputs(
     List<EvalScenario> scenarios,
     List<EvalProfile> profiles,
+    List<EvalAgentDirectiveVariant> agentDirectiveVariants,
   ) {
     if (scenarios.isEmpty) {
       throw ArgumentError.value(scenarios, 'scenarios', 'must not be empty');
@@ -461,12 +519,46 @@ class EvalMatrixRunner {
     if (profiles.isEmpty) {
       throw ArgumentError.value(profiles, 'profiles', 'must not be empty');
     }
+    if (agentDirectiveVariants.isEmpty) {
+      throw ArgumentError.value(
+        agentDirectiveVariants,
+        'agentDirectiveVariants',
+        'must not be empty',
+      );
+    }
     final scenarioIds = <String>{};
     for (final scenario in scenarios) {
       if (!scenarioIds.add(scenario.id)) {
         throw ArgumentError('duplicate scenario id: ${scenario.id}');
       }
       _validateScenarioMetadata(scenario);
+    }
+    final variantNames = <String>{};
+    for (final variant in agentDirectiveVariants) {
+      if (variant.name.trim().isEmpty) {
+        throw ArgumentError('agent directive variant name must not be empty');
+      }
+      if (!variantNames.add(variant.name)) {
+        throw ArgumentError(
+          'duplicate agent directive variant name: ${variant.name}',
+        );
+      }
+      if (variant.name != 'default' &&
+          variant.generalDirective.trim().isEmpty &&
+          variant.reportDirective.trim().isEmpty) {
+        throw ArgumentError(
+          'agent directive variant ${variant.name} has no directives',
+        );
+      }
+      for (final scenario in scenarios) {
+        final text = variant.combinedDirectiveText;
+        if (text.isNotEmpty && text.contains(scenario.id)) {
+          throw ArgumentError(
+            'agent directive variant ${variant.name} mentions scenario id '
+            '${scenario.id}; variants must stay scenario-agnostic',
+          );
+        }
+      }
     }
     final profileNames = <String>{};
     for (final profile in profiles) {
@@ -512,6 +604,7 @@ class EvalMatrixRunner {
     required String runId,
     required List<EvalScenario> scenarios,
     required List<EvalProfile> profiles,
+    required List<EvalAgentDirectiveVariant> agentDirectiveVariants,
     required bool overwrite,
     required bool deleteVerdictOnOverwrite,
   }) {
@@ -522,33 +615,37 @@ class EvalMatrixRunner {
     final tracePaths = <String>{};
     for (final scenario in scenarios) {
       for (final profile in profiles) {
-        for (
-          var trialIndex = 0;
-          trialIndex < profile.trialCount;
-          trialIndex++
-        ) {
-          final traceFile = writer.traceFileFor(
-            runId: runId,
-            scenarioId: scenario.id,
-            profileName: profile.name,
-            trialIndex: trialIndex,
-          );
-          if (!tracePaths.add(traceFile.path)) {
-            throw StateError(
-              'Trace artifact name collision for ${traceFile.path}; '
-              'scenario and profile ids must produce unique filenames.',
+        for (final variant in agentDirectiveVariants) {
+          for (
+            var trialIndex = 0;
+            trialIndex < profile.trialCount;
+            trialIndex++
+          ) {
+            final traceFile = writer.traceFileFor(
+              runId: runId,
+              scenarioId: scenario.id,
+              profileName: profile.name,
+              agentDirectiveVariantName: variant.name,
+              trialIndex: trialIndex,
             );
-          }
-          if (traceFile.existsSync() && !overwrite) {
-            throw StateError('Trace already exists: ${traceFile.path}');
-          }
-          final verdictFile = writer.verdictFileForTrace(traceFile);
-          if (verdictFile.existsSync() &&
-              (!overwrite || !deleteVerdictOnOverwrite)) {
-            throw StateError(
-              'Refusing to overwrite trace with existing verdict: '
-              '${traceFile.path}',
-            );
+            if (!tracePaths.add(traceFile.path)) {
+              throw StateError(
+                'Trace artifact name collision for ${traceFile.path}; '
+                'scenario, profile, prompt variant, and trial ids must '
+                'produce unique filenames.',
+              );
+            }
+            if (traceFile.existsSync() && !overwrite) {
+              throw StateError('Trace already exists: ${traceFile.path}');
+            }
+            final verdictFile = writer.verdictFileForTrace(traceFile);
+            if (verdictFile.existsSync() &&
+                (!overwrite || !deleteVerdictOnOverwrite)) {
+              throw StateError(
+                'Refusing to overwrite trace with existing verdict: '
+                '${traceFile.path}',
+              );
+            }
           }
         }
       }
@@ -675,6 +772,15 @@ class EvalMatrixRunner {
   List<EvalProfile> _snapshotProfiles(List<EvalProfile> profiles) {
     return [
       for (final profile in profiles) EvalProfile.fromJson(profile.toJson()),
+    ];
+  }
+
+  List<EvalAgentDirectiveVariant> _snapshotAgentDirectiveVariants(
+    List<EvalAgentDirectiveVariant> variants,
+  ) {
+    return [
+      for (final variant in variants)
+        EvalAgentDirectiveVariant.fromJson(variant.toJson()),
     ];
   }
 
