@@ -21,11 +21,28 @@ Trace JSON contains the raw scenario payload and model output needed for
 judging; do not copy protected trace files into tickets, docs, prompts, or
 committed fixtures.
 
+For model-identity-blinded review, export a separate judge packet first:
+
+```
+EVAL_BLINDED_EXPORT=/private/tmp/lotti-blind-review \
+  eval/run_level2.sh blind <runId>
+```
+
+Give Claude Code only `/private/tmp/lotti-blind-review/judge`, not
+`private/key.json`. The private key maps opaque blinded trace ids back to raw
+trace/verdict filenames and raw trace digests; it is operator audit material,
+not judge input.
+
 ## Inputs
 
 - `<runsRoot>/<runId>/*.trace.json` — one `EvalTrace` per
   `(scenario, profile, trialIndex)`, or per explicit `cascadeWake` inside that
   trial for cascade sidecar runs, written by the Level 2 runner.
+- For blinded review only:
+  `<exportDir>/judge/traces/*.blinded-trace.json` plus
+  `<exportDir>/judge/manifest.json`. These hide exact profile/model/provider
+  identities and raw trace filenames/digests, while preserving a blinded packet
+  digest and coarse profile context for the efficiency rubric.
 - `eval/prompts/judge_system.md` — the judge persona + output contract.
 - `eval/prompts/rubric_task_agent.md` / `rubric_planning_agent.md` — anchors.
 
@@ -75,6 +92,21 @@ committed fixtures.
    Calibration labels are trace-keyed, digest-bound, and non-secret; see
    `eval/calibration/README.md`.
 
+## Blinded Review Discipline
+
+Raw run directories are not blinded: filenames and payloads expose profile
+names, model ids, provider ids/types, endpoint evidence, prompt variant names,
+and provider response metadata. A reviewer may set
+`judge.modelIdentityVisible: false` only when they graded from the `blind`
+mode's `judge/` packet and did not see the private key or raw run directory.
+
+The current reporter still consumes verdicts as sibling `.verdict.json` files
+next to raw traces. Until a blinded-verdict importer exists, an operator must
+use `private/key.json` to transfer blinded review scores back to the matching
+raw verdict files. The raw verdict's `traceDigest` must still cite the raw trace
+digest from the private key, while the review rationale should mention the
+blinded trace id and blinded packet digest used for grading.
+
 ## Optional Pairwise A/B Review
 
 Use pairwise preference votes when the question is subjective free-text quality
@@ -99,8 +131,8 @@ ordinary verifier ignores these files; report mode reads them separately after
 normal trace/verdict verification and prints a diagnostic-only A/B section.
 Stale or orphaned trace bindings are rejected by the preference reader. Raw run
 directories are not blinded because trace filenames and payloads include profile
-names; for blinded review, prepare a separate prompt/export that hides profile
-and model identity while preserving the referenced trace digests.
+names; for blinded review, use `eval/run_level2.sh blind` and keep the private
+key away from reviewers.
 
 Run multiple independent reviewers with profile/model identity and peer votes
 hidden when possible. Randomize option order for each reviewer when the

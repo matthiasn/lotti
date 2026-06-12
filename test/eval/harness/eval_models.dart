@@ -2881,8 +2881,9 @@ class JudgeProvenanceRecord {
   /// efficiency rubric. This should be true for current Lotti evals.
   final bool profileVisible;
 
-  /// Whether exact provider/model identities were visible to the judge. Current
-  /// raw traces expose them; future blinded trace exports should set this false.
+  /// Whether exact provider/model identities were visible to the judge. Raw
+  /// traces expose them; blinded judge exports should set this false only when
+  /// the judge did not see the private key or raw trace directory.
   final bool modelIdentityVisible;
 
   Map<String, dynamic> toJson() => <String, dynamic>{

@@ -64,7 +64,9 @@
   bindings for actual provider/model/endpoint overrides, external
   `EVAL_PROFILES` profile catalogs, model-selection judge-blinding gates, and
   diagnostic pairwise A/B preference quorum records for subjective free-text
-  quality.
+  quality, plus first-class blinded judge export packets with opaque trace
+  filenames, shuffled profile/prompt aliases, public blinded packet digests, and
+  private raw-trace mapping keys.
   Next up:
   populate a real human-labeled calibration set, private production-replay
   holdout JSON catalogs, and a larger production-scale adversarial scenario
@@ -977,8 +979,11 @@ supplies real model behavior.
   human disagreement plus blinded human-review protocol evidence for
   model-class tuning. The default model-class policy also rejects unblinded
   judge verdicts where exact provider/model identity was visible during grading.
-  Until first-class blinded trace exports exist, this is a verdict-provenance
-  protocol gate rather than cryptographic proof that the raw trace was hidden.
+  `eval/run_level2.sh blind` now creates a separate model-identity-redacted
+  review packet, but until blinded-verdict import/provenance is wired into the
+  verifier this remains a verdict-provenance protocol gate backed by retained
+  private export-key evidence rather than cryptographic proof that the raw trace
+  was hidden.
   The rendered readiness block now includes the
   evidence counts behind those gates: corpus by agent/split, primary capability
   count, model-class profile coverage, trial range, adversarial totals and

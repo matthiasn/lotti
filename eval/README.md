@@ -25,7 +25,7 @@ eval/
   calibration/
     README.md          ← non-secret human-label schema for judge calibration
   grade_run.md         ← Claude Code runbook: trace dir -> verdicts
-  run_level2.sh        ← mode-based orchestration (run/grade/verify/report)
+  run_level2.sh        ← mode-based orchestration (run/blind/grade/verify/report)
   runs/                ← git-ignored artifacts: <runId>/manifest.json + traces/verdicts
 
 test/eval/harness/     ← Dart support library (models, assertions, matrix runner, target, IO)
@@ -42,7 +42,9 @@ flowchart LR
   O --> L1[Level 1 assertions<br/>runLevel1]
   L1 --> M[manifest.json<br/>run-level provenance]
   M --> TR[EvalTrace JSON<br/>manifest-bound]
+  TR --> BLIND[Blinded judge export<br/>anonymous review packet]
   TR --> J[Claude Code judge<br/>grade_run.md + rubrics]
+  BLIND --> J
   J --> V[verdict JSON]
   V --> REP[EvalReporter<br/>per-profile summary]
   TR --> AB[Pairwise preference votes<br/>blind A/B quorum]
@@ -376,8 +378,36 @@ performance, and human calibration labels are checked later by `report`.
    distinct workflow `runKey`/`threadId` values from it and record them in the
    trace; live runs use the same cell id and are gated by `LOTTI_EVAL_LIVE=1`.
    In CI, live runs additionally require `LOTTI_EVAL_ALLOW_CI=1`.
-2. Grade with Claude Code: `claude -p "Follow eval/grade_run.md to grade eval/runs/<runId>"`.
-3. `report` first loads the run through `TraceWriter.readRun`, which requires a
+2. `blind` writes a model-identity-redacted review packet for judges or human
+   reviewers:
+
+   ```
+   EVAL_BLINDED_EXPORT=/private/tmp/lotti-blind-review \
+     eval/run_level2.sh blind <runId>
+   ```
+
+   The export contains a `judge/` directory with opaque
+   `blind-000N.blinded-trace.json` files plus a judge-visible `manifest.json`.
+   It also writes `private/key.json`, which maps each anonymous trace back to
+   the raw trace/verdict filenames and raw trace digest. Do not give the
+   private key to reviewers. The judge packet preserves scenario/output
+   evidence, Level 1 checks, prompt/tool digests, coarse profile context needed
+   for the efficiency rubric, and a blinded packet digest, but removes exact
+   profile names, profile model ids, provider ids/types, endpoint evidence,
+   provider response metadata, prompt variant names, raw trace filenames, and
+   raw trace digests. Export order and profile/prompt-variant aliases are
+   seed-shuffled; set `EVAL_BLINDED_EXPORT_SEED` only when reproducibility is
+   more important than fresh randomization. For external catalogs, in-repo
+   exports are blocked unless `LOTTI_EVAL_PROTECTED_TRACE_ACK=1`.
+3. Grade with Claude Code: `claude -p "Follow eval/grade_run.md to grade eval/runs/<runId>"`.
+   For model-identity-blinded grading, hand the judge only the `blind` mode's
+   `judge/` directory and keep `private/key.json` with the operator. The current
+   reporter still consumes verdicts as raw-trace sibling `.verdict.json` files;
+   until a blinded-verdict importer lands, copying blinded review scores back to
+   raw verdict files is an operator step that must preserve the private-key
+   mapping and should set `judge.modelIdentityVisible: false` only for reviews
+   actually performed from the blinded packet.
+4. `report` first loads the run through `TraceWriter.readRun`, which requires a
    current manifest, recomputes the manifest hash, and rejects traces bound to a
    different manifest. It then verifies exact scenario × profile × prompt
    variant × trial coverage, rejects embedded/orphan/stale verdicts and
@@ -416,7 +446,7 @@ performance, and human calibration labels are checked later by `report`.
    from the canonical catalog rather than from observed traces alone; it
    validates the supplied matrix against the run manifest digests before treating
    coverage as authoritative. It never regenerates traces.
-4. `template` first performs the same manifest/catalog verification as
+5. `template` first performs the same manifest/catalog verification as
    `report`, requires verdict-bound traces, and writes a non-secret human-label
    template to `EVAL_CALIBRATION_TEMPLATE`. The template includes trace keys,
    scenario/profile digests, `JudgeVerdict.traceDigest`, a digest of the
@@ -439,7 +469,7 @@ performance, and human calibration labels are checked later by `report`.
    This is calibration coverage planning only; a sampled queue is not
    tuning-ready unless the completed labels still satisfy the calibration and
    readiness gates.
-5. `calibrate` first performs the same manifest/catalog verification as
+6. `calibrate` first performs the same manifest/catalog verification as
    `report`, then loads a human-label JSON file through `EVAL_CALIBRATION` and
    compares the run's `JudgeVerdict`s against those labels. Calibration labels
    key into `(scenarioId, profileName, trialIndex)` plus optional
@@ -517,8 +547,9 @@ section when votes are present. The preference reader rejects stale or orphaned
 trace bindings by recomputing the referenced trace digests, and trace overwrite
 refuses to leave old preference votes behind unless explicitly told to delete
 them. Raw run directories are not a blinded review surface because trace
-filenames and payloads include profile names; blinded reviews need a separate
-export or prompt that hides those identities while preserving trace digests.
+filenames and payloads include profile names. Use `eval/run_level2.sh blind`
+to produce an opaque judge packet plus a private audit key before asking for
+model-identity-blinded preference review.
 Summary Wilson 95% confidence intervals cluster repeated trials at the scenario
 or scenario-profile-cell level by default; explicit trace-level estimates remain
 available only as diagnostics. Cascade wake traces are also diagnostics by
@@ -651,9 +682,10 @@ pair counts, human-human pass/score agreement with Wilson lower bounds, and zero
 unresolved human disagreement plus blinded human-review protocol evidence for
 the default model-class policy. The same policy rejects unblinded judge verdicts
 where exact provider/model identity was visible during grading.
-Until first-class blinded trace exports exist, the verdict flag is a
-provenance/protocol assertion rather than proof that raw trace identity was
-cryptographically hidden.
+`eval/run_level2.sh blind` now creates a separate model-identity-redacted review
+packet, but tuning readiness still trusts the verdict provenance flag and
+retained private export key as audit evidence until blinded-verdict
+import/provenance is wired into the verifier.
 Public `holdout` split labels are process metadata only; they do not satisfy
 protected-holdout readiness unless the run manifest contains evidence from a
 protected external production-replay catalog with enough unique protected

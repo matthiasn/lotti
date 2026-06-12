@@ -95,8 +95,9 @@ Rules:
   calibration set version when one exists; otherwise write `"uncalibrated"` so
   the report does not hide that limitation.
 - `profileVisible` must be `true` because the efficiency score is profile-aware.
-  `modelIdentityVisible` is `true` for raw traces; future blinded trace exports
-  should set it to `false`. Model-class tuning readiness requires
+  `modelIdentityVisible` is `true` for raw traces; set it to `false` only when
+  grading from a `run_level2.sh blind` judge packet that hid exact
+  provider/model identity. Model-class tuning readiness requires
   model-identity-blinded verdicts.
 - `rationale` must cite specifics from the trace (a tool name, proposal, block
   time, or token count), never generic praise.

@@ -27,6 +27,11 @@ const _calibrationTemplateOverwrite = String.fromEnvironment(
 const _calibrationTemplateMaxRows = String.fromEnvironment(
   'EVAL_CALIBRATION_TEMPLATE_MAX_ROWS',
 );
+const _blindedExportPath = String.fromEnvironment('EVAL_BLINDED_EXPORT');
+const _blindedExportOverwrite = String.fromEnvironment(
+  'EVAL_BLINDED_EXPORT_OVERWRITE',
+);
+const _blindedExportSeed = String.fromEnvironment('EVAL_BLINDED_EXPORT_SEED');
 const _promotionCandidateProfile = String.fromEnvironment(
   'EVAL_PROMOTION_CANDIDATE_PROFILE',
 );
@@ -299,6 +304,55 @@ void main() {
   );
 
   test(
+    'writes blinded judge trace export',
+    () async {
+      final writer = TraceWriter(runsRoot: _runsRoot());
+      final run = await writer.readRun(_runId);
+      final catalog = _loadScenarioCatalog();
+      final profiles = _loadProfiles();
+      final promptVariants = _loadPromptVariants();
+      final verification = EvalRunVerifier.verify(
+        runId: _runId,
+        traces: run.traces,
+        scenarios: catalog.scenarios,
+        profiles: profiles,
+        agentDirectiveVariants: promptVariants,
+        manifest: run.manifest,
+        artifactNames: run.artifactNames,
+        requireVerdicts: false,
+      );
+      expect(
+        verification.errors,
+        isEmpty,
+        reason: verification.errors.join('\n'),
+      );
+
+      final outputDir = Directory(_blindedExportPath);
+      _guardBlindedExportOutput(
+        manifestEvidence: run.manifest.scenarioCatalogEvidence,
+        loadedEvidence: catalog.evidence,
+        directory: outputDir,
+      );
+      final result = await EvalBlindedTraceExporter.writeRun(
+        run: run,
+        writer: writer,
+        outputDir: outputDir,
+        overwrite: _blindedExportOverwrite == '1',
+        exportSeed: _blindedExportSeedValue(),
+      );
+      // ignore: avoid_print
+      print('Wrote blinded judge export: ${result.judgeDir.path}');
+      // ignore: avoid_print
+      print('Wrote private blinded export key: ${result.privateKeyFile.path}');
+    },
+    tags: 'eval-report',
+    skip: _runId.isEmpty || _blindedExportPath.isEmpty
+        ? 'Set EVAL_RUN=<runId> and EVAL_BLINDED_EXPORT=<dir> to write '
+              'a blinded judge trace export.'
+        : false,
+  );
+
+  test(
     'calibration template path must not look like a completed label file',
     () {
       expect(
@@ -403,6 +457,40 @@ void main() {
         manifestEvidence: evidence,
         loadedEvidence: _publicCatalogEvidence(),
         file: file,
+        protectedTraceAck: '1',
+      ),
+      returnsNormally,
+    );
+  });
+
+  test('external blinded trace exports inside repo require ack', () {
+    final evidence = EvalScenarioCatalogEvidence(
+      scenarioSetDigest: EvalProvenance.digestText('external-scenarios'),
+      publicScenarioCount: 0,
+      externalScenarioCount: 1,
+      externalCatalogDigest: EvalProvenance.digestText('external-catalog'),
+      externalCatalogId: 'private-production-replay-v1',
+      externalSourceLabel: 'private_scenarios.json',
+      protectedHoldout: false,
+      protectedScenarioIds: const [],
+      protectedHoldoutScenarioIds: const [],
+    );
+    final directory = Directory('eval/blinded/private-run');
+
+    expect(
+      () => _guardBlindedExportOutput(
+        manifestEvidence: evidence,
+        loadedEvidence: _publicCatalogEvidence(),
+        directory: directory,
+        protectedTraceAck: '0',
+      ),
+      throwsStateError,
+    );
+    expect(
+      () => _guardBlindedExportOutput(
+        manifestEvidence: evidence,
+        loadedEvidence: _publicCatalogEvidence(),
+        directory: directory,
         protectedTraceAck: '1',
       ),
       returnsNormally,
@@ -1250,6 +1338,28 @@ int? _calibrationTemplateMaxRowsValue({
     );
   }
   return parsed;
+}
+
+String? _blindedExportSeedValue({
+  String value = _blindedExportSeed,
+}) {
+  final trimmed = value.trim();
+  return trimmed.isEmpty ? null : trimmed;
+}
+
+void _guardBlindedExportOutput({
+  required EvalScenarioCatalogEvidence? manifestEvidence,
+  required EvalScenarioCatalogEvidence loadedEvidence,
+  required Directory directory,
+  String? protectedTraceAck,
+}) {
+  _guardExternalCatalogRepoPath(
+    manifestEvidence: manifestEvidence,
+    loadedEvidence: loadedEvidence,
+    file: File(directory.path),
+    artifactDescription: 'blinded trace exports',
+    protectedTraceAck: protectedTraceAck,
+  );
 }
 
 void _guardCalibrationTemplateOutput({

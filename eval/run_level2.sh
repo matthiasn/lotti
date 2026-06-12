@@ -22,6 +22,7 @@
 #   EVAL_SCENARIOS=/private/path/scenarios.json eval/run_level2.sh catalog
 #   eval/run_level2.sh report [runId]
 #   EVAL_CALIBRATION_TEMPLATE=/private/tmp/judge_gold_v1.template.json EVAL_CALIBRATION_TEMPLATE_MAX_ROWS=24 eval/run_level2.sh template <runId>
+#   EVAL_BLINDED_EXPORT=/private/tmp/lotti-blind-review eval/run_level2.sh blind [runId]
 #   EVAL_CALIBRATION=eval/calibration/judge_gold_v1.json eval/run_level2.sh calibrate [runId]
 #   EVAL_PROMOTION_PLAN=/private/tmp/promotion_plan.draft.json eval/run_level2.sh run [runId]
 #   EVAL_PROMOTION_PLAN=/private/tmp/promotion_plan.json EVAL_CALIBRATION=/private/tmp/judge_gold_v1.json eval/run_level2.sh report [runId]
@@ -56,7 +57,7 @@ latest_run_id() {
 }
 
 MODE="${1:-run}"
-if [[ "$MODE" != "plan" && "$MODE" != "run" && "$MODE" != "grade" && "$MODE" != "verify" && "$MODE" != "diagnose" && "$MODE" != "catalog" && "$MODE" != "report" && "$MODE" != "template" && "$MODE" != "calibrate" && "$MODE" != "all" ]]; then
+if [[ "$MODE" != "plan" && "$MODE" != "run" && "$MODE" != "grade" && "$MODE" != "verify" && "$MODE" != "diagnose" && "$MODE" != "catalog" && "$MODE" != "report" && "$MODE" != "template" && "$MODE" != "blind" && "$MODE" != "calibrate" && "$MODE" != "all" ]]; then
   RUN_ID="$MODE"
   MODE="run"
 else
@@ -75,7 +76,7 @@ else
       fi
       RUN_ID="$2"
       ;;
-    grade | verify | diagnose | report | calibrate)
+    grade | verify | diagnose | report | blind | calibrate)
       RUN_ID="${2:-$(latest_run_id)}"
       ;;
   esac
@@ -86,6 +87,9 @@ CALIBRATION_TEMPLATE_PATH="${EVAL_CALIBRATION_TEMPLATE:-}"
 CALIBRATION_TEMPLATE_VERSION="${EVAL_CALIBRATION_VERSION:-human-gold-v1}"
 CALIBRATION_TEMPLATE_OVERWRITE="${EVAL_CALIBRATION_TEMPLATE_OVERWRITE:-}"
 CALIBRATION_TEMPLATE_MAX_ROWS="${EVAL_CALIBRATION_TEMPLATE_MAX_ROWS:-}"
+BLINDED_EXPORT_PATH="${EVAL_BLINDED_EXPORT:-}"
+BLINDED_EXPORT_OVERWRITE="${EVAL_BLINDED_EXPORT_OVERWRITE:-}"
+BLINDED_EXPORT_SEED="${EVAL_BLINDED_EXPORT_SEED:-}"
 SCENARIO_CATALOG_PATH="${EVAL_SCENARIOS:-}"
 SCENARIO_CATALOG_MODE="${EVAL_SCENARIOS_MODE:-}"
 SCENARIO_IDS="${EVAL_SCENARIO_IDS:-}"
@@ -174,6 +178,9 @@ if [[ -n "$PROMOTION_CANDIDATE_PROFILE" || -n "$PROMOTION_BASELINE_PROFILE" ]]; 
 fi
 if [[ -n "$PROMOTION_PLAN_PATH" ]]; then
   echo "    promotion assertion plan: ${PROMOTION_PLAN_PATH}"
+fi
+if [[ -n "$BLINDED_EXPORT_PATH" ]]; then
+  echo "    blinded export: ${BLINDED_EXPORT_PATH}"
 fi
 
 catalog_preflight() {
@@ -297,6 +304,30 @@ template_run() {
     "${template_defines[@]}"
 }
 
+blind_run() {
+  if [[ -z "$BLINDED_EXPORT_PATH" ]]; then
+    echo "!!! Set EVAL_BLINDED_EXPORT=<dir> to write a blinded judge export." >&2
+    exit 13
+  fi
+  local blind_defines=("${DART_DEFINES[@]}")
+  if [[ -n "$BLINDED_EXPORT_OVERWRITE" ]]; then
+    blind_defines+=(
+      "--dart-define=EVAL_BLINDED_EXPORT_OVERWRITE=${BLINDED_EXPORT_OVERWRITE}"
+    )
+  fi
+  if [[ -n "$BLINDED_EXPORT_SEED" ]]; then
+    blind_defines+=(
+      "--dart-define=EVAL_BLINDED_EXPORT_SEED=${BLINDED_EXPORT_SEED}"
+    )
+  fi
+  echo "==> Writing blinded judge trace export..."
+  fvm flutter test test/eval/scenarios/report_test.dart \
+    --plain-name "writes blinded judge trace export" \
+    --dart-define=EVAL_RUN="${RUN_ID}" \
+    --dart-define=EVAL_BLINDED_EXPORT="${BLINDED_EXPORT_PATH}" \
+    "${blind_defines[@]}"
+}
+
 case "$MODE" in
   plan)
     plan_run
@@ -323,6 +354,9 @@ case "$MODE" in
     ;;
   template)
     template_run
+    ;;
+  blind)
+    blind_run
     ;;
   calibrate)
     verify_run
