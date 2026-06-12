@@ -2629,6 +2629,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get clearButton => 'Șterge';
 
   @override
+  String get colorCustomLabel => 'Personalizat';
+
+  @override
   String get colorLabel => 'Culoare';
 
   @override
@@ -4094,6 +4097,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get dashboardCopyHint =>
       'Salvează și copiază configurația tabloului de bord';
+
+  @override
+  String get dashboardCopyLabel => 'Salvare și copiere configurație';
 
   @override
   String get dashboardDeleteConfirm => 'DA, ȘTERGE ACEST TABLOU DE BORD';
@@ -6615,7 +6621,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCategoriesDetailsLabel => 'Editare categorie';
 
   @override
-  String get settingsCategoriesEmptyState => 'Nu s-au găsit categorii';
+  String get settingsCategoriesEmptyState => 'Nicio categorie încă';
 
   @override
   String get settingsCategoriesEmptyStateHint =>
@@ -6845,7 +6851,7 @@ class AppLocalizationsRo extends AppLocalizations {
       'Vizibil doar când intrările private sunt afișate';
 
   @override
-  String get settingsLabelsPrivateTitle => 'Etichetă privată';
+  String get settingsLabelsPrivateTitle => 'Privat';
 
   @override
   String get settingsLabelsSearchHint => 'Caută etichete…';
@@ -7000,6 +7006,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Verifică';
 
   @override
+  String get settingsMeasurableAggregationHelper =>
+      'Cum se combină intrările unei zile în grafice';
+
+  @override
   String get settingsMeasurableAggregationLabel => 'Agregare implicită';
 
   @override
@@ -7031,7 +7041,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Apăsați butonul + pentru a crea prima măsurătoare.';
+      'Măsurătorile sunt valori urmărite în timp — greutate, apă, pași.';
 
   @override
   String get settingsMeasurablesErrorLoading =>

@@ -213,11 +213,9 @@ void main() {
           expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
           expect(find.text('Nothing here yet'), findsOneWidget);
           expect(find.text('Tap create to add an item'), findsOneWidget);
-          // The create affordance stays available from the empty state.
-          expect(
-            find.byType(DesignSystemFloatingActionButton),
-            findsOneWidget,
-          );
+          // One create affordance: the inline button carries it; the
+          // corner FAB hides so the same action isn't offered twice.
+          expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
         },
       );
 

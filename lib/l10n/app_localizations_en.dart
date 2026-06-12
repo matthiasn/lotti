@@ -2339,7 +2339,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Set default AI profile and agent template for new tasks in this category';
 
   @override
-  String get categoryAiDefaultsTitle => 'AI Defaults';
+  String get categoryAiDefaultsTitle => 'AI defaults';
 
   @override
   String get categoryCreationError =>
@@ -2571,6 +2571,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get clearButton => 'Clear';
+
+  @override
+  String get colorCustomLabel => 'Custom';
 
   @override
   String get colorLabel => 'Color';
@@ -2959,7 +2962,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'When you manually correct checklist items, those corrections are saved here and used to improve AI suggestions.';
 
   @override
-  String get correctionExamplesSectionTitle => 'Checklist Correction Examples';
+  String get correctionExamplesSectionTitle => 'Checklist correction examples';
 
   @override
   String correctionExamplesWarning(int count, int max) {
@@ -4002,6 +4005,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dashboardCopyHint => 'Save & Copy dashboard config';
+
+  @override
+  String get dashboardCopyLabel => 'Save and copy configuration';
 
   @override
   String get dashboardDeleteConfirm => 'YES, DELETE THIS DASHBOARD';
@@ -6460,7 +6466,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoriesDetailsLabel => 'Edit category';
 
   @override
-  String get settingsCategoriesEmptyState => 'No categories found';
+  String get settingsCategoriesEmptyState => 'No categories yet';
 
   @override
   String get settingsCategoriesEmptyStateHint =>
@@ -6684,7 +6690,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Only visible when private entries are shown';
 
   @override
-  String get settingsLabelsPrivateTitle => 'Private label';
+  String get settingsLabelsPrivateTitle => 'Private';
 
   @override
   String get settingsLabelsSearchHint => 'Search labels…';
@@ -6835,6 +6841,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Verify';
 
   @override
+  String get settingsMeasurableAggregationHelper =>
+      'How a day\'s entries combine on charts';
+
+  @override
   String get settingsMeasurableAggregationLabel => 'Default aggregation type';
 
   @override
@@ -6866,7 +6876,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Tap the + button to create your first measurable.';
+      'Measurables are numbers you track over time — weight, water, steps.';
 
   @override
   String get settingsMeasurablesErrorLoading => 'Error loading measurables';
@@ -7060,7 +7070,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Add terms that are often misspelled by speech recognition (names, places, technical terms)';
 
   @override
-  String get speechDictionarySectionTitle => 'Speech Recognition';
+  String get speechDictionarySectionTitle => 'Speech recognition';
 
   @override
   String speechDictionaryWarning(Object count) {

@@ -26,8 +26,7 @@ const double _stackPillsTextScale = 1.5;
 /// live in the form itself (`SettingsDeleteRow` via the scaffold) — three
 /// labeled pills cannot fit a narrow phone in every locale, and Delete
 /// does not belong next to Save anyway. At large accessibility text
-/// scales the actions stack vertically with the primary action closest
-/// to the thumb.
+/// scales the actions stack vertically, primary on top.
 class SettingsFormActionBar extends StatelessWidget {
   const SettingsFormActionBar({
     required this.primaryLabel,
@@ -114,8 +113,7 @@ class SettingsFormActionBar extends StatelessWidget {
     );
   }
 
-  /// Stacked variant for large accessibility text: full-width pills, the
-  /// primary action last (closest to the thumb).
+  /// Stacked variant for large accessibility text: full-width pills.
   Widget _buildStacked(BuildContext context, DsTokens tokens) {
     final spacing = tokens.spacing;
     return Column(
@@ -128,11 +126,14 @@ class SettingsFormActionBar extends StatelessWidget {
           ),
           SizedBox(height: spacing.step3),
         ],
-        if (onSecondary != null) ...[
-          _secondaryPill(tokens),
-          SizedBox(height: spacing.step3),
-        ],
+        // Primary first: when the horizontal [Cancel | Save] wraps into a
+        // stack, the top slot keeps the primary action (skimming thumbs
+        // land on Save, not on a destructive-by-omission Cancel).
         _primaryPill(context, tokens),
+        if (onSecondary != null) ...[
+          SizedBox(height: spacing.step3),
+          _secondaryPill(tokens),
+        ],
       ],
     );
   }
@@ -143,15 +144,18 @@ class SettingsFormActionBar extends StatelessWidget {
     onTap: onSecondary!,
   );
 
-  /// Primary pill. Disabled drops the solid interactive fill entirely for
-  /// the quiet translucent glass treatment, so available-vs-unavailable is
-  /// legible at a glance instead of two similar shades of the accent. On
-  /// pointer devices a tooltip surfaces the keyboard shortcut.
+  /// Primary pill. On pointer devices a tooltip surfaces the keyboard
+  /// shortcut.
   Widget _primaryPill(BuildContext context, DsTokens tokens) {
+    // Disabled keeps a solid quiet surface (DsGlassPill dims it further
+    // and drops the foreground to lowEmphasis) so the dead pill recedes
+    // behind the enabled Cancel instead of out-shining it on glass.
     final pill = DsGlassPill(
       icon: primaryIcon,
       label: primaryLabel,
-      fillColor: primaryEnabled ? tokens.colors.interactive.enabled : null,
+      fillColor: primaryEnabled
+          ? tokens.colors.interactive.enabled
+          : tokens.colors.background.level02,
       foregroundColor: primaryEnabled
           ? tokens.colors.text.onInteractiveAlert
           : null,

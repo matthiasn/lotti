@@ -138,7 +138,7 @@ The list page behavior is:
 
 ### Category details and create mode
 
-Both modes of `CategoryDetailsPage` render inside the shared settings-detail kit (`lib/widgets/settings/`): `SettingsDetailScaffold` provides the header with a back affordance that beams to `/settings/categories`, binds Cmd/Ctrl+S to save, and mounts a sticky glass `SettingsFormActionBar` (primary save/create pill, cancel pill, and — in edit mode — a destructive delete button). Form sections are `SettingsFormSection` cards; the switch rows are `SettingsSwitchRow`s, the name input is the design-system `DesignSystemTextInput` (via `CategoryNameField`), the tap-to-pick fields (color, language, AI defaults) render as `SettingsPickerField`s, and the speech dictionary is a `DesignSystemTextarea`.
+Both modes of `CategoryDetailsPage` render inside the shared settings-detail kit (`lib/widgets/settings/`): `SettingsDetailScaffold` provides the header with a back affordance that beams to `/settings/categories`, binds Cmd/Ctrl+S to save, and mounts a sticky glass `SettingsFormActionBar` (primary save/create pill and cancel pill); in edit mode a full-width `SettingsDeleteRow` closes the form. Form sections are `SettingsFormSection` cards; the switch rows are `SettingsSwitchRow`s, the name input is the design-system `DesignSystemTextInput` (via `CategoryNameField`), the tap-to-pick fields (color, language, AI defaults) render as `SettingsPickerField`s, and the speech dictionary is a `DesignSystemTextarea`.
 
 `CategoryDetailsPage` has two distinct modes:
 
@@ -146,7 +146,8 @@ Both modes of `CategoryDetailsPage` render inside the shared settings-detail kit
   Writes directly through `CategoryRepository.createCategory()` and only captures `name`, `color`, and `icon` — no placeholder controls for the rest. The Create pill stays disabled until a name is entered, and a successful create beams straight into the new category's editor where privacy, language, and AI defaults are configured.
 - edit mode
   Uses `CategoryDetailsController` and exposes sections for:
-  - basic settings
+  - basic settings (name, color, icon)
+  - options (the `CategorySwitchTiles` switch rows in the shared definitions-editor order: favorite, private, active, day planning)
   - default language
   - AI defaults via `SettingsProfilePickerField` and `TemplateSelector`
   - speech dictionary

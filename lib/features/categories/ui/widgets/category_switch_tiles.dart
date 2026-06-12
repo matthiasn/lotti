@@ -26,8 +26,9 @@ enum SwitchFieldType { private, active, favorite, availableForDayPlan }
 
 /// A widget that displays four switch rows for category settings.
 ///
-/// This widget shows [SettingsSwitchRow]s for private, active, favorite,
-/// and day-plan availability settings. It's designed to be independent of
+/// This widget shows [SettingsSwitchRow]s in the shared Options order used
+/// by every definition editor — Favorite, Private, Active, then the
+/// category-only Day planning row. It's designed to be independent of
 /// Riverpod for better testability.
 class CategorySwitchTiles extends StatelessWidget {
   const CategorySwitchTiles({
@@ -42,27 +43,27 @@ class CategorySwitchTiles extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final rows = <(SwitchFieldType, String, String, IconData, bool)>[
+    final rows = <(SwitchFieldType, String, String?, IconData, bool)>[
+      (
+        SwitchFieldType.favorite,
+        messages.favoriteLabel,
+        null,
+        Icons.star_outline_rounded,
+        settings.isFavorite,
+      ),
       (
         SwitchFieldType.private,
         messages.privateLabel,
-        messages.categoryPrivateDescription,
+        messages.privateSwitchDescription,
         Icons.lock_outline,
         settings.isPrivate,
       ),
       (
         SwitchFieldType.active,
         messages.activeLabel,
-        messages.categoryActiveDescription,
+        messages.inactiveSwitchDescription,
         Icons.visibility_outlined,
         settings.isActive,
-      ),
-      (
-        SwitchFieldType.favorite,
-        messages.favoriteLabel,
-        messages.categoryFavoriteDescription,
-        Icons.star_outline,
-        settings.isFavorite,
       ),
       (
         SwitchFieldType.availableForDayPlan,

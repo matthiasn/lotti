@@ -438,15 +438,31 @@ void main() {
         expect(find.byType(CustomScrollView), findsOneWidget);
       });
 
-      testWidgets('shows FAB for creating labels', (tester) async {
+      testWidgets('shows FAB for creating labels once labels exist', (
+        tester,
+      ) async {
         when(() => mockRepository.watchLabels()).thenAnswer(
-          (_) => Stream.value([]),
+          (_) => Stream.value([LabelTestUtils.createTestLabel(name: 'Bug')]),
         );
 
         await pumpLabelsListPage(tester);
 
         expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
       });
+
+      testWidgets(
+        'hides the corner FAB on an empty list — the empty state carries '
+        'its own inline create button instead',
+        (tester) async {
+          when(() => mockRepository.watchLabels()).thenAnswer(
+            (_) => Stream.value([]),
+          );
+
+          await pumpLabelsListPage(tester);
+
+          expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
+        },
+      );
     });
   });
   group('LabelsListPage — navigation, search, and badges', () {

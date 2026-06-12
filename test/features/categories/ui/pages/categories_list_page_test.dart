@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_fl
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -106,21 +107,38 @@ void main() {
         await pumpCategoriesListPage(tester);
 
         expect(find.byIcon(Icons.category_outlined), findsOneWidget);
-        expect(find.text('No categories found'), findsOneWidget);
+        expect(find.text('No categories yet'), findsOneWidget);
         expect(
           find.text('Create a category to organize your entries'),
           findsOneWidget,
         );
       });
+
+      testWidgets(
+        'hides the corner FAB on an empty list — the empty state carries '
+        'its own inline create button instead',
+        (tester) async {
+          when(() => mockRepository.watchCategories()).thenAnswer(
+            (_) => Stream.value([]),
+          );
+
+          await pumpCategoriesListPage(tester);
+
+          expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
+          expect(find.text('Create category'), findsOneWidget);
+        },
+      );
     });
 
     group('Header', () {
       testWidgets(
         'shows a create-category FAB at the bottom-right (replaces the '
-        'old app-bar text button)',
+        'old app-bar text button) once categories exist',
         (tester) async {
           when(() => mockRepository.watchCategories()).thenAnswer(
-            (_) => Stream.value([]),
+            (_) => Stream.value([
+              CategoryTestUtils.createTestCategory(id: 'a', name: 'Alpha'),
+            ]),
           );
 
           await pumpCategoriesListPage(tester);
@@ -149,7 +167,9 @@ void main() {
         'list-to-full-page flow as every other definition type',
         (tester) async {
           when(() => mockRepository.watchCategories()).thenAnswer(
-            (_) => Stream.value([]),
+            (_) => Stream.value([
+              CategoryTestUtils.createTestCategory(id: 'a', name: 'Alpha'),
+            ]),
           );
           String? beamedTo;
           beamToNamedOverride = (path) => beamedTo = path;
@@ -379,7 +399,7 @@ void main() {
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       });
 
-      testWidgets('shows favorite star for favorited categories', (
+      testWidgets('shows outlined amber star for favorited categories', (
         tester,
       ) async {
         final categories = [
@@ -395,7 +415,15 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.star), findsOneWidget);
+        // One icon weight across the trailing slot — the star is an
+        // outline like lock/eye-off; amber carries the favorite signal.
+        final star = find.byIcon(Icons.star_outline_rounded);
+        expect(star, findsOneWidget);
+        final tokens = tester.element(star).designTokens;
+        expect(
+          tester.widget<Icon>(star).color,
+          tokens.colors.alert.warning.defaultColor,
+        );
       });
 
       testWidgets('does not show star for non-favorite categories', (
@@ -411,7 +439,7 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.star), findsNothing);
+        expect(find.byIcon(Icons.star_outline_rounded), findsNothing);
       });
 
       testWidgets('shows fallback letter when no icon set', (tester) async {
@@ -657,7 +685,7 @@ void main() {
 
         expect(find.byIcon(Icons.lock_outline), findsOneWidget);
         expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.star), findsOneWidget);
+        expect(find.byIcon(Icons.star_outline_rounded), findsOneWidget);
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       });
 
@@ -676,7 +704,7 @@ void main() {
 
         expect(find.byIcon(Icons.lock_outline), findsNothing);
         expect(find.byIcon(Icons.visibility_off_outlined), findsNothing);
-        expect(find.byIcon(Icons.star), findsNothing);
+        expect(find.byIcon(Icons.star_outline_rounded), findsNothing);
       });
     });
 

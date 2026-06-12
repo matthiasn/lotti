@@ -157,7 +157,10 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
           ),
         ],
       ),
-      floatingActionButton: desktop
+      // The empty state renders its own inline create button — showing
+      // the corner FAB at the same time would be the same action twice.
+      floatingActionButton:
+          desktop || (widget.itemsAsync.value?.isEmpty ?? false)
           ? null
           : DesignSystemBottomNavigationFabPadding(
               child: DesignSystemFloatingActionButton(

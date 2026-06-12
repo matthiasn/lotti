@@ -5,10 +5,12 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -100,8 +102,8 @@ void main() {
 
     group('leading category chip', () {
       testWidgets(
-        'unresolved category renders the neutral chip with a more_horiz '
-        'glyph instead of the empty-state shapes glyph',
+        'unresolved category renders the neutral chip with the habit '
+        'initial — never the more_horiz glyph',
         (tester) async {
           // habitFlossing has no categoryId, so the cache resolves null.
           await pumpHabitsPage(tester, habits: [habitFlossing]);
@@ -109,19 +111,17 @@ void main() {
           final chipFinder = find.byType(CategoryIconChip);
           expect(chipFinder, findsOneWidget);
           expect(
-            find.descendant(
-              of: chipFinder,
-              matching: find.byIcon(Icons.more_horiz),
-            ),
+            find.descendant(of: chipFinder, matching: find.text('F')),
             findsOneWidget,
           );
+          expect(find.byIcon(Icons.more_horiz), findsNothing);
           expect(find.byIcon(Icons.category_outlined), findsNothing);
         },
       );
 
       testWidgets(
-        'resolved category renders the colored chip with the category '
-        'first letter',
+        'resolved category renders the HABIT first letter on the category '
+        'color — never the category initial or icon',
         (tester) async {
           final cache =
               getIt<EntitiesCacheService>() as MockEntitiesCacheService;
@@ -139,10 +139,24 @@ void main() {
           final chipFinder = find.byType(CategoryIconChip);
           expect(chipFinder, findsOneWidget);
           expect(find.byIcon(Icons.more_horiz), findsNothing);
+          // The habit's own initial ('F' for Flossing), not the
+          // category's ('M' for Mindfulness)...
           expect(
-            find.descendant(of: chipFinder, matching: find.text('M')),
+            find.descendant(of: chipFinder, matching: find.text('F')),
             findsOneWidget,
           );
+          expect(
+            find.descendant(of: chipFinder, matching: find.text('M')),
+            findsNothing,
+          );
+          // ...while the chip background carries the category color.
+          final inner = tester.widget<DefinitionIconChip>(
+            find.descendant(
+              of: chipFinder,
+              matching: find.byType(DefinitionIconChip),
+            ),
+          );
+          expect(inner.background, colorFromCssHex(categoryMindfulness.color));
         },
       );
     });
@@ -182,15 +196,15 @@ void main() {
               expected: false,
             ),
             (
-              description: 'shows star icon when favorite',
+              description: 'shows outlined star icon when favorite',
               habit: habitFlossing.copyWith(priority: true),
-              icon: Icons.star,
+              icon: Icons.star_outline_rounded,
               expected: true,
             ),
             (
               description: 'hides star icon when not favorite',
               habit: habitFlossing,
-              icon: Icons.star,
+              icon: Icons.star_outline_rounded,
               expected: false,
             ),
           ];
@@ -216,7 +230,16 @@ void main() {
 
         expect(find.byIcon(Icons.lock_outline), findsOneWidget);
         expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.star), findsOneWidget);
+        // One icon weight across the trailing slot — the star is an
+        // outline like its lock/eye-off neighbors; amber carries the
+        // favorite signal.
+        final star = find.byIcon(Icons.star_outline_rounded);
+        expect(star, findsOneWidget);
+        final tokens = tester.element(star).designTokens;
+        expect(
+          tester.widget<Icon>(star).color,
+          tokens.colors.alert.warning.defaultColor,
+        );
       });
     });
 

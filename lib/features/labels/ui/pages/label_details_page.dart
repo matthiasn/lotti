@@ -1,4 +1,3 @@
-import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -9,7 +8,6 @@ import 'package:lotti/features/design_system/components/textareas/design_system_
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -19,6 +17,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
@@ -187,7 +186,14 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
       );
     }
 
-    final saveEnabled = !state.isSaving && state.name.trim().isNotEmpty;
+    // Gate Save on dirty state like every sibling editor: a pristine
+    // editor shows the quiet disabled pill. In create mode a non-empty
+    // name already counts as something worth saving.
+    final dirty =
+        state.hasChanges ||
+        (widget.isCreateMode && state.name.trim().isNotEmpty);
+    final saveEnabled =
+        !state.isSaving && state.name.trim().isNotEmpty && dirty;
     final tokens = context.designTokens;
 
     return SettingsDetailScaffold(
@@ -229,9 +235,15 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
               minLines: 2,
               maxLines: 4,
             ),
+          ],
+        ),
+        SettingsFormSection(
+          title: messages.habitSectionOptionsTitle,
+          icon: Icons.tune_rounded,
+          children: [
             SettingsSwitchRow(
-              title: messages.settingsLabelsPrivateTitle,
-              subtitle: messages.settingsLabelsPrivateDescription,
+              title: messages.privateLabel,
+              subtitle: messages.privateSwitchDescription,
               icon: Icons.lock_outline,
               value: state.isPrivate,
               onChanged: (value) =>
@@ -272,47 +284,15 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
     LabelEditorController controller,
     LabelEditorState state,
   ) {
-    final tokens = context.designTokens;
-    final theme = Theme.of(context);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        color: tokens.colors.background.level03,
+    return SettingsColorPickerField(
+      // The hosting section header already says "Color" — repeating it
+      // as a field label reads as a stutter.
+      semanticsLabel: context.messages.colorLabel,
+      color: colorFromCssHex(
+        state.colorHex,
+        substitute: Theme.of(context).colorScheme.primary,
       ),
-      child: Padding(
-        padding: EdgeInsets.all(tokens.spacing.step3),
-        child: ColorPicker(
-          color: colorFromCssHex(
-            state.colorHex,
-            substitute: theme.colorScheme.primary,
-          ),
-          onColorChanged: controller.setColor,
-          selectedPickerTypeColor: theme.colorScheme.primary,
-          pickersEnabled: const <ColorPickerType, bool>{
-            ColorPickerType.custom: true,
-            ColorPickerType.wheel: true,
-            ColorPickerType.accent: false,
-            ColorPickerType.primary: true,
-            ColorPickerType.bw: false,
-            ColorPickerType.both: false,
-          },
-          customColorSwatchesAndNames: {
-            for (final preset in labelColorPresets)
-              ColorTools.createPrimarySwatch(
-                colorFromCssHex(
-                  preset.hex,
-                  substitute: Colors.blue,
-                ),
-              ): preset.name,
-          },
-          pickerTypeLabels: <ColorPickerType, String>{
-            ColorPickerType.custom:
-                context.messages.settingsLabelsColorSubheading,
-            ColorPickerType.wheel: context.messages.customColor,
-          },
-          colorNameTextStyle: tokens.typography.styles.body.bodySmall,
-        ),
-      ),
+      onColorChanged: controller.setColor,
     );
   }
 

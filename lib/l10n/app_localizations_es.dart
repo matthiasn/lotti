@@ -2620,6 +2620,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get clearButton => 'Borrar';
 
   @override
+  String get colorCustomLabel => 'Personalizado';
+
+  @override
   String get colorLabel => 'Color';
 
   @override
@@ -4077,6 +4080,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dashboardCopyHint => 'Guardar y copiar la configuración del panel';
+
+  @override
+  String get dashboardCopyLabel => 'Guardar y copiar la configuración';
 
   @override
   String get dashboardDeleteConfirm => 'SÍ, BORRAR ESTE PANEL';
@@ -6614,7 +6620,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsCategoriesDetailsLabel => 'Editar categoría';
 
   @override
-  String get settingsCategoriesEmptyState => 'No se encontraron categorías';
+  String get settingsCategoriesEmptyState => 'Aún no hay categorías';
 
   @override
   String get settingsCategoriesEmptyStateHint =>
@@ -6839,7 +6845,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Solo visible cuando se muestran las entradas privadas';
 
   @override
-  String get settingsLabelsPrivateTitle => 'Etiqueta privada';
+  String get settingsLabelsPrivateTitle => 'Privado';
 
   @override
   String get settingsLabelsSearchHint => 'Buscar etiquetas…';
@@ -6995,6 +7001,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Verificar';
 
   @override
+  String get settingsMeasurableAggregationHelper =>
+      'Cómo se combinan las entradas de un día en los gráficos';
+
+  @override
   String get settingsMeasurableAggregationLabel => 'Agregación predeterminada';
 
   @override
@@ -7027,7 +7037,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Toca el botón + para crear tu primer medible.';
+      'Los medibles son números que sigues a lo largo del tiempo: peso, agua, pasos.';
 
   @override
   String get settingsMeasurablesErrorLoading => 'Error al cargar medibles';

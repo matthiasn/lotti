@@ -249,8 +249,10 @@ The details page is the route-backed editor for create and edit flows. It suppor
 - name and description editing
 - color picking from presets or custom color
 - multi-category scoping
-- privacy toggle
+- a privacy toggle in its own Options section card (shared title/subtitle copy with the other definition editors)
 - soft delete in edit mode
+
+The action bar's Save pill is dirty-gated on the controller's `hasChanges` flag: a pristine editor renders the quiet disabled pill, like every sibling definitions editor. In create mode a non-empty name already counts as dirty.
 
 ## Assignment UI
 

@@ -243,18 +243,33 @@ The control panel is wired to actual breakers, not cardboard cutouts.
 
 ## Shared List and Detail Pattern
 
-Dashboards, habits, and measurables all reuse the same broad pattern:
+All five definition types (categories, labels, dashboards, habits,
+measurables) reuse one pattern:
 
-1. A list page wraps [`DefinitionsListPage<T>`](ui/pages/definitions_list_page.dart).
-2. The list is fed by `notificationDrivenStream(...)` from `JournalDb` plus `UpdateNotifications`.
-3. Search happens locally in the generic scaffold.
-4. Tapping an item opens a detail editor page.
-5. Saving or deleting goes through shared persistence or a feature-specific controller.
+1. A list page wraps [`DefinitionsListPage<T>`](ui/pages/definitions_list_page.dart),
+   fed by an `AsyncValue<List<T>>` from a Riverpod stream provider.
+2. The shell owns search, sorted rendering, loading/empty/no-match/error
+   states (each with localized copy; the empty state carries an inline
+   create button), and the create affordance — a bottom-nav-cleared FAB on
+   mobile, a header `DesignSystemButton` on desktop.
+3. Rows lead with one shared 36px rounded-square chip
+   (`CategoryIconChip`/`DefinitionIconChip`) and keep a stable subtitle
+   semantic per page (counts for categories/labels, unit for measurables,
+   description for habits/dashboards). The chip letter always belongs to
+   the row's own item: habit and dashboard rows pass
+   `CategoryIconChip.fromId(..., letterFrom: item.name)` so the initial
+   matches the row name while the background color carries the category
+   (neutral `background.level03` when unresolved); only category rows show
+   the category's own icon or initial, since that is the row's identity.
+4. Tapping a row beams to the detail editor; the desktop split pane
+   dispatches the same URLs inline.
+5. Saving or deleting goes through shared persistence or a
+   feature-specific controller.
 
-The shared create affordance for those list pages is `FloatingAddIcon`, which
-now includes the bottom-navigation clearance wrapper. Dashboards, habits, and
-measurables therefore stay above the floating app-shell nav without each page
-inventing its own bottom offset.
+Everything sits on the shared settings grid
+([`lib/widgets/settings/settings_page_layout.dart`](../../widgets/settings/settings_page_layout.dart)):
+content aligns with the header title at every pane width and centers as a
+capped column on wide desktop windows.
 
 ### List pages
 
@@ -271,9 +286,12 @@ inventing its own bottom offset.
 All detail editors render through the shared settings-detail kit
 ([`lib/widgets/settings/settings_detail_scaffold.dart`](../../widgets/settings/settings_detail_scaffold.dart)):
 a `SettingsDetailScaffold` provides the header (back beams to the list
-route), the Cmd/Ctrl+S save shortcut, and a sticky `SettingsFormActionBar`
-with primary save (gated on the page's dirty state), secondary cancel, and —
-in edit mode — a destructive delete that reuses each page's confirm flow.
+route), the Cmd/Ctrl+S save shortcut (with a tooltip on desktop), a sticky
+glass `SettingsFormActionBar` with the primary save pill (gated on the
+page's dirty state; disabled renders as quiet translucent glass) and
+cancel, and — in edit mode — a full-width `SettingsDeleteRow` at the end of
+the form that reuses each page's confirm flow. Tap-to-pick fields render as
+`SettingsPickerField`s.
 Form rows are grouped into `SettingsFormSection` cards; the
 FormBuilder-driven pages bridge into the design system via
 [`ui/widgets/form/settings_form_text_field.dart`](ui/widgets/form/settings_form_text_field.dart)
@@ -291,7 +309,7 @@ The dashboard editor keeps its chart machinery (`ChartMultiSelect` pickers,
 reorderable `DashboardItemCard` list with swipe-to-dismiss and an explicit
 drag handle) inside the charts section; chart rows title as
 "Name — Localized aggregation". Save-and-copy-to-clipboard lives on the
-action bar as a `DsGlassRoundButton` next to the destructive pill.
+action bar as a `DsGlassRoundButton` in the `extraActions` slot.
 
 ### Persistence split
 

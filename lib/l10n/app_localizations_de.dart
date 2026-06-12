@@ -2608,6 +2608,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get clearButton => 'Löschen';
 
   @override
+  String get colorCustomLabel => 'Benutzerdefiniert';
+
+  @override
   String get colorLabel => 'Farbe';
 
   @override
@@ -4059,6 +4062,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get dashboardCopyHint =>
       'Dashboard-Konfiguration speichern & kopieren';
+
+  @override
+  String get dashboardCopyLabel => 'Speichern und Konfiguration kopieren';
 
   @override
   String get dashboardDeleteConfirm => 'JA, DIESES DASHBOARD LÖSCHEN';
@@ -6542,7 +6548,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCategoriesDetailsLabel => 'Kategorie bearbeiten';
 
   @override
-  String get settingsCategoriesEmptyState => 'Keine Kategorien gefunden';
+  String get settingsCategoriesEmptyState => 'Noch keine Kategorien';
 
   @override
   String get settingsCategoriesEmptyStateHint =>
@@ -6770,7 +6776,7 @@ class AppLocalizationsDe extends AppLocalizations {
       'Nur sichtbar, wenn private Einträge angezeigt werden';
 
   @override
-  String get settingsLabelsPrivateTitle => 'Private label';
+  String get settingsLabelsPrivateTitle => 'Privat';
 
   @override
   String get settingsLabelsSearchHint => 'Search labels…';
@@ -6922,6 +6928,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Verifizieren';
 
   @override
+  String get settingsMeasurableAggregationHelper =>
+      'Wie die Einträge eines Tages in Diagrammen zusammengefasst werden';
+
+  @override
   String get settingsMeasurableAggregationLabel => 'Standard-Aggregation';
 
   @override
@@ -6953,7 +6963,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Tippe auf +, um deine erste Messgröße zu erstellen.';
+      'Messgrößen sind Zahlen, die du über die Zeit verfolgst — Gewicht, Wasser, Schritte.';
 
   @override
   String get settingsMeasurablesErrorLoading =>

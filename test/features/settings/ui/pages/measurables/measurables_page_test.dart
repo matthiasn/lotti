@@ -5,6 +5,7 @@ import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -151,15 +152,15 @@ void main() {
               expected: false,
             ),
             (
-              description: 'shows star icon when favorite',
+              description: 'shows outlined star icon when favorite',
               measurable: measurableWater.copyWith(favorite: true),
-              icon: Icons.star,
+              icon: Icons.star_outline_rounded,
               expected: true,
             ),
             (
               description: 'hides star icon when not favorite',
               measurable: measurableWater,
-              icon: Icons.star,
+              icon: Icons.star_outline_rounded,
               expected: false,
             ),
           ];
@@ -186,7 +187,16 @@ void main() {
         await pumpMeasurablesPage(tester, measurables: [fullMeasurable]);
 
         expect(find.byIcon(Icons.lock_outline), findsOneWidget);
-        expect(find.byIcon(Icons.star), findsOneWidget);
+        // One icon weight across the trailing slot — the star is an
+        // outline like its lock neighbor; amber carries the favorite
+        // signal.
+        final star = find.byIcon(Icons.star_outline_rounded);
+        expect(star, findsOneWidget);
+        final tokens = tester.element(star).designTokens;
+        expect(
+          tester.widget<Icon>(star).color,
+          tokens.colors.alert.warning.defaultColor,
+        );
       });
     });
 
@@ -233,7 +243,10 @@ void main() {
 
         expect(find.text('No measurables yet'), findsOneWidget);
         expect(
-          find.text('Tap the + button to create your first measurable.'),
+          find.text(
+            'Measurables are numbers you track over time — weight, water, '
+            'steps.',
+          ),
           findsOneWidget,
         );
       });

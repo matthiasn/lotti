@@ -33,7 +33,8 @@ part 'category_details_form_sections.dart';
 /// Category Details Page with AI Settings
 ///
 /// This page allows editing of category details including:
-/// - Basic settings (name, color, privacy, active status)
+/// - Basic settings (name, color, icon)
+/// - Options (favorite, private, active, day planning)
 /// - Default language selection
 /// - Allowed AI models/prompts
 /// - Automatic prompt configuration
@@ -259,6 +260,12 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
               _buildNameField(),
               _buildColorPicker(),
               _buildIconPicker(category: category),
+            ],
+          ),
+          SettingsFormSection(
+            title: context.messages.habitSectionOptionsTitle,
+            icon: Icons.tune_rounded,
+            children: [
               _buildSwitchTiles(category),
             ],
           ),

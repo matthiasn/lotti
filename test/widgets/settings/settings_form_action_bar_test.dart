@@ -71,8 +71,7 @@ void main() {
   });
 
   testWidgets(
-    'large accessibility text stacks all actions as labeled pills with '
-    'the primary action last',
+    'large accessibility text stacks the pills with the primary first',
     (tester) async {
       await pumpBar(
         tester,
@@ -88,10 +87,11 @@ void main() {
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
 
-      // Primary lands closest to the thumb (greatest dy).
+      // Primary on top: a skimming thumb lands on Save, not on a
+      // destructive-by-omission Cancel.
       final cancelY = tester.getTopLeft(find.text('Cancel')).dy;
       final saveY = tester.getTopLeft(find.text('Save')).dy;
-      expect(cancelY, lessThan(saveY));
+      expect(saveY, lessThan(cancelY));
     },
   );
 

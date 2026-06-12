@@ -1,8 +1,9 @@
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
 import '../../../../test_helper.dart';
@@ -13,8 +14,12 @@ void main() {
       WidgetTester tester, {
       Color? selectedColor,
       ValueChanged<Color>? onColorChanged,
-    }) {
-      return tester.pumpWidget(
+    }) async {
+      // Tall surface so the picker modal content is on-screen when opened.
+      tester.view.physicalSize = const Size(1024, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
         WidgetTestBench(
           child: CategoryColorPicker(
             selectedColor: selectedColor,
@@ -39,6 +44,12 @@ void main() {
           return decoration is BoxDecoration && decoration.color == color;
         });
 
+    Future<void> openModal(WidgetTester tester) async {
+      await tester.tap(fieldTapTarget());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+    }
+
     testWidgets('shows hint and no swatch when no color is selected', (
       tester,
     ) async {
@@ -48,10 +59,10 @@ void main() {
       expect(find.text('Color'), findsOneWidget);
       expect(find.text('Select a color'), findsOneWidget);
 
-      // Reads as a kit field: chevron instead of the old palette glyph.
-      expect(find.byType(SettingsPickerField), findsOneWidget);
+      // Delegates to the shared color field (one interaction model for
+      // categories and labels).
+      expect(find.byType(SettingsColorPickerField), findsOneWidget);
       expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.palette_outlined), findsNothing);
 
       // No leading swatch without a selection.
       final field = tester.widget<SettingsPickerField>(
@@ -60,140 +71,84 @@ void main() {
       expect(field.leading, isNull);
     });
 
-    testWidgets('shows hex value and leading swatch when color is selected', (
-      tester,
-    ) async {
-      const selectedColor = Colors.red;
+    testWidgets('shows the preset name (not hex) and a leading swatch for a '
+        'preset color', (tester) async {
+      // 'Ocean Blue' in labelColorPresets.
+      final selectedColor = colorFromCssHex('#0066CC');
 
       await pumpPicker(tester, selectedColor: selectedColor);
 
-      // Hex value replaces the hint.
-      expect(find.text(colorToCssHex(selectedColor)), findsOneWidget);
+      expect(find.text('Ocean Blue'), findsOneWidget);
+      // Raw hex never surfaces in the field.
+      expect(find.textContaining('#'), findsNothing);
       expect(find.text('Select a color'), findsNothing);
 
       // The leading swatch is filled with the selected color.
       expect(swatchesWithColor(tester, selectedColor), isNotEmpty);
     });
 
-    testWidgets('opens color picker dialog on tap', (tester) async {
-      await pumpPicker(tester, selectedColor: Colors.blue);
+    testWidgets('shows the localized Custom label for a non-preset color', (
+      tester,
+    ) async {
+      const selectedColor = Color(0xFF123456);
 
-      await tester.tap(fieldTapTarget());
-      await tester.pumpAndSettle();
+      await pumpPicker(tester, selectedColor: selectedColor);
 
-      // Verify dialog is shown
-      expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.text('Select a color'), findsOneWidget); // Dialog title
+      expect(find.text('Custom'), findsOneWidget);
+      expect(find.textContaining('#'), findsNothing);
+      expect(swatchesWithColor(tester, selectedColor), isNotEmpty);
+    });
+
+    testWidgets('opens the shared picker modal on tap — no second dialog', (
+      tester,
+    ) async {
+      await pumpPicker(tester, selectedColor: colorFromCssHex('#0066CC'));
+
+      await openModal(tester);
+
+      // The shared modal hosts the full flex picker; there is no
+      // AlertDialog-based second picker anymore.
+      expect(find.text('Select a color'), findsOneWidget); // modal title
       expect(find.byType(ColorPicker), findsOneWidget);
-
-      // Verify dialog buttons
-      expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Select'), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
     });
 
-    testWidgets('calls onColorChanged when color is picked', (tester) async {
-      Color? changedColor;
+    testWidgets('seeds the picker with the selected color', (tester) async {
+      final initialColor = colorFromCssHex('#E63946');
 
-      await pumpPicker(
-        tester,
-        selectedColor: Colors.blue,
-        onColorChanged: (color) => changedColor = color,
-      );
+      await pumpPicker(tester, selectedColor: initialColor);
+      await openModal(tester);
 
-      // Open dialog
-      await tester.tap(fieldTapTarget());
-      await tester.pumpAndSettle();
-
-      // The ColorPicker widget is complex, so we'll simulate changing the
-      // color by directly tapping the Select button which will use the
-      // initial color. In a real scenario, the user would interact with
-      // the ColorPicker first.
-      await tester.tap(find.text('Select'));
-      await tester.pumpAndSettle();
-
-      // The color should be the initial pickerColor (blue in this case)
-      expect(changedColor, Colors.blue);
+      final colorPicker = tester.widget<ColorPicker>(find.byType(ColorPicker));
+      expect(colorPicker.color, initialColor);
     });
 
-    testWidgets('closes dialog on cancel without changing color', (
+    testWidgets('selecting a preset in the modal fires onColorChanged live', (
       tester,
     ) async {
       Color? changedColor;
 
       await pumpPicker(
         tester,
-        selectedColor: Colors.blue,
+        selectedColor: colorFromCssHex('#0066CC'),
         onColorChanged: (color) => changedColor = color,
       );
+      await openModal(tester);
 
-      // Open dialog
-      await tester.tap(fieldTapTarget());
-      await tester.pumpAndSettle();
+      // Tap the 'Crimson' preset indicator (#E63946) in the swatch grid.
+      final crimsonIndicator = find.byWidgetPredicate(
+        (widget) =>
+            widget is ColorIndicator &&
+            colorToCssHex(widget.color) == '#E63946',
+      );
+      expect(crimsonIndicator, findsOneWidget);
+      await tester.tap(crimsonIndicator, warnIfMissed: false);
+      await tester.pump();
 
-      // Tap cancel
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-
-      // Dialog should be closed
-      expect(find.byType(AlertDialog), findsNothing);
-
-      // Color should not have changed
-      expect(changedColor, isNull);
-    });
-
-    testWidgets('closes dialog on select', (tester) async {
-      await pumpPicker(tester, selectedColor: Colors.blue);
-
-      // Open dialog
-      await tester.tap(fieldTapTarget());
-      await tester.pumpAndSettle();
-
-      // Tap select
-      await tester.tap(find.text('Select'));
-      await tester.pumpAndSettle();
-
-      // Dialog should be closed
-      expect(find.byType(AlertDialog), findsNothing);
-    });
-
-    testWidgets('uses correct initial color in picker', (tester) async {
-      const initialColor = Colors.purple;
-
-      await pumpPicker(tester, selectedColor: initialColor);
-
-      // Open dialog
-      await tester.tap(fieldTapTarget());
-      await tester.pumpAndSettle();
-
-      // Verify ColorPicker has correct initial color
-      final colorPicker = tester.widget<ColorPicker>(find.byType(ColorPicker));
-      expect(colorPicker.pickerColor, initialColor);
-    });
-
-    testWidgets('uses red as default when no color selected', (tester) async {
-      await pumpPicker(tester);
-
-      // Open dialog
-      await tester.tap(fieldTapTarget());
-      await tester.pumpAndSettle();
-
-      // Verify ColorPicker defaults to red
-      final colorPicker = tester.widget<ColorPicker>(find.byType(ColorPicker));
-      expect(colorPicker.pickerColor, Colors.red);
-    });
-
-    testWidgets('has correct ColorPicker configuration', (tester) async {
-      await pumpPicker(tester, selectedColor: Colors.blue);
-
-      // Open dialog
-      await tester.tap(fieldTapTarget());
-      await tester.pumpAndSettle();
-
-      // Verify ColorPicker configuration
-      final colorPicker = tester.widget<ColorPicker>(find.byType(ColorPicker));
-      expect(colorPicker.enableAlpha, isFalse);
-      expect(colorPicker.labelTypes, isEmpty);
-      expect(colorPicker.pickerAreaBorderRadius, BorderRadius.circular(10));
+      // The color is applied live — no confirm button between the user
+      // and the change.
+      expect(changedColor, isNotNull);
+      expect(colorToCssHex(changedColor!), '#E63946');
     });
   });
 }

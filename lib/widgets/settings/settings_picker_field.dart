@@ -20,6 +20,7 @@ class SettingsPickerField extends StatelessWidget {
     this.hintText,
     this.leading,
     this.onClear,
+    this.helperText,
     this.semanticsLabel,
     super.key,
   });
@@ -43,6 +44,10 @@ class SettingsPickerField extends StatelessWidget {
   /// When provided (and a value is set), shows a clear button that
   /// resets the selection without opening the picker.
   final VoidCallback? onClear;
+
+  /// Optional explanatory caption under the field — for the one field on
+  /// a form whose label alone can't carry the meaning.
+  final String? helperText;
 
   final String? semanticsLabel;
 
@@ -133,6 +138,15 @@ class SettingsPickerField extends StatelessWidget {
               ),
             ),
           ),
+          if (helperText != null) ...[
+            SizedBox(height: spacing.step2),
+            Text(
+              helperText!,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
         ],
       ),
     );

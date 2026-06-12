@@ -7,6 +7,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
@@ -20,6 +21,8 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
+import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
@@ -177,6 +180,55 @@ void main() {
         await tester.pump();
 
         expect(beamedTo, '/settings/dashboards');
+      },
+    );
+
+    testWidgets(
+      'Options section card groups Private then Active with the unified '
+      'copy, leaving Basic settings switch-free',
+      (tester) async {
+        await _pumpPage(
+          tester,
+          DashboardDefinitionPage(dashboard: testDashboardConfig),
+        );
+
+        final optionsSection = find.ancestor(
+          of: find.text('Options'),
+          matching: find.byType(SettingsFormSection),
+        );
+        expect(optionsSection, findsOneWidget);
+
+        final rows = tester
+            .widgetList<SettingsSwitchRow>(
+              find.descendant(
+                of: optionsSection,
+                matching: find.byType(SettingsSwitchRow),
+              ),
+            )
+            .toList();
+        expect(rows.map((row) => row.title), ['Private', 'Active']);
+        expect(rows[0].icon, Icons.lock_outline);
+        expect(
+          rows[0].subtitle,
+          'Only visible when private entries are shown',
+        );
+        expect(rows[1].icon, Icons.visibility_outlined);
+        expect(
+          rows[1].subtitle,
+          'Inactive items are hidden from selection lists',
+        );
+
+        // The toggles moved out of Basic settings entirely.
+        expect(
+          find.descendant(
+            of: find.ancestor(
+              of: find.text('Basic settings'),
+              matching: find.byType(SettingsFormSection),
+            ),
+            matching: find.byType(SettingsSwitchRow),
+          ),
+          findsNothing,
+        );
       },
     );
 
@@ -384,19 +436,17 @@ void main() {
           ),
         );
 
-        // The copy action lives on the bottom action bar as a glass round
-        // button, not in the page header.
+        // The copy action is a labeled in-form secondary button — not an
+        // unlabeled icon in the action bar and not a header action.
         final copyFinder = find.byKey(const Key('dashboard_copy'));
-        expect(
-          tester.widget(copyFinder),
-          isA<DsGlassRoundButton>(),
-        );
+        final copyButton = tester.widget<DesignSystemButton>(copyFinder);
+        expect(copyButton.label, 'Save and copy configuration');
         expect(
           find.ancestor(
             of: copyFinder,
             matching: find.byType(SettingsFormActionBar),
           ),
-          findsOneWidget,
+          findsNothing,
         );
 
         await tester.enterText(

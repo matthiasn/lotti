@@ -6,8 +6,15 @@ import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 import '../../../../test_helper.dart';
 
-/// Per-field display expectations, in tile render order.
-const _expectedTiles = <SwitchFieldType, (String, String, IconData)>{
+/// Per-field display expectations, in tile render order — the shared
+/// Options order (Favorite, Private, Active, Day planning) with the
+/// unified copy used by every definition editor.
+const _expectedTiles = <SwitchFieldType, (String, String?, IconData)>{
+  SwitchFieldType.favorite: (
+    'Favorite',
+    null,
+    Icons.star_outline_rounded,
+  ),
   SwitchFieldType.private: (
     'Private',
     'Only visible when private entries are shown',
@@ -15,13 +22,8 @@ const _expectedTiles = <SwitchFieldType, (String, String, IconData)>{
   ),
   SwitchFieldType.active: (
     'Active',
-    "Inactive categories won't appear in selection lists",
+    'Inactive items are hidden from selection lists',
     Icons.visibility_outlined,
-  ),
-  SwitchFieldType.favorite: (
-    'Favorite',
-    'Mark this category as a favorite',
-    Icons.star_outline,
   ),
   SwitchFieldType.availableForDayPlan: (
     'Day planning',
@@ -29,6 +31,14 @@ const _expectedTiles = <SwitchFieldType, (String, String, IconData)>{
     Icons.today_outlined,
   ),
 };
+
+/// Tile render order — must match [_expectedTiles] key order.
+const _renderOrder = <SwitchFieldType>[
+  SwitchFieldType.favorite,
+  SwitchFieldType.private,
+  SwitchFieldType.active,
+  SwitchFieldType.availableForDayPlan,
+];
 
 CategorySwitchSettings _settings({
   bool isPrivate = false,
@@ -63,22 +73,33 @@ Future<void> _pumpTiles(
 
 void main() {
   group('CategorySwitchTiles', () {
-    testWidgets('displays every switch row with title, subtitle, and icon', (
-      tester,
-    ) async {
-      await _pumpTiles(tester, settings: _settings());
+    testWidgets(
+      'renders the unified Options order (Favorite, Private, Active, '
+      'Day planning) with the shared titles, subtitles, and icons',
+      (tester) async {
+        await _pumpTiles(tester, settings: _settings());
 
-      expect(
-        find.byType(SettingsSwitchRow),
-        findsNWidgets(SwitchFieldType.values.length),
-      );
+        final switchRows = tester
+            .widgetList<SettingsSwitchRow>(find.byType(SettingsSwitchRow))
+            .toList();
+        expect(switchRows, hasLength(SwitchFieldType.values.length));
 
-      for (final (title, subtitle, icon) in _expectedTiles.values) {
-        expect(find.text(title), findsOneWidget);
-        expect(find.text(subtitle), findsOneWidget);
-        expect(find.byIcon(icon), findsOneWidget);
-      }
-    });
+        for (var i = 0; i < _renderOrder.length; i++) {
+          final (title, subtitle, icon) = _expectedTiles[_renderOrder[i]]!;
+          expect(
+            switchRows[i].title,
+            title,
+            reason: 'tile $i should be $title',
+          );
+          expect(
+            switchRows[i].subtitle,
+            subtitle,
+            reason: '$title should carry the shared subtitle copy',
+          );
+          expect(switchRows[i].icon, icon);
+        }
+      },
+    );
 
     testWidgets('reflects the initial value of every switch', (tester) async {
       await _pumpTiles(
@@ -95,9 +116,9 @@ void main() {
           .widgetList<SettingsSwitchRow>(find.byType(SettingsSwitchRow))
           .toList();
 
-      expect(switchRows[0].value, isTrue); // Private
-      expect(switchRows[1].value, isFalse); // Active
-      expect(switchRows[2].value, isTrue); // Favorite
+      expect(switchRows[0].value, isTrue); // Favorite
+      expect(switchRows[1].value, isTrue); // Private
+      expect(switchRows[2].value, isFalse); // Active
       expect(switchRows[3].value, isTrue); // Day planning
     });
 
@@ -121,14 +142,14 @@ void main() {
         );
 
         final toggles = find.byType(DesignSystemToggle);
-        for (var i = 0; i < SwitchFieldType.values.length; i++) {
+        for (var i = 0; i < _renderOrder.length; i++) {
           await tester.tap(toggles.at(i));
         }
         await tester.pump();
 
-        expect(changes, hasLength(SwitchFieldType.values.length));
-        for (var i = 0; i < SwitchFieldType.values.length; i++) {
-          final field = SwitchFieldType.values[i];
+        expect(changes, hasLength(_renderOrder.length));
+        for (var i = 0; i < _renderOrder.length; i++) {
+          final field = _renderOrder[i];
           expect(
             changes[i],
             (field, expectedToggleValue[field]),

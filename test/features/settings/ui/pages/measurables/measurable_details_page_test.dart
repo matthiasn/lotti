@@ -9,6 +9,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
+import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -126,6 +128,52 @@ void main() {
         expect(saved.unitName, 'ml');
         expect(saved.aggregationType, AggregationType.dailySum);
         expect(beamedTo, '/settings/measurables');
+      },
+    );
+
+    testWidgets(
+      'Options section card groups Favorite then Private with the unified '
+      'copy, leaving Basic settings switch-free',
+      (tester) async {
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(dataType: measurableWater),
+        );
+
+        final optionsSection = find.ancestor(
+          of: find.text('Options'),
+          matching: find.byType(SettingsFormSection),
+        );
+        expect(optionsSection, findsOneWidget);
+
+        final rows = tester
+            .widgetList<SettingsSwitchRow>(
+              find.descendant(
+                of: optionsSection,
+                matching: find.byType(SettingsSwitchRow),
+              ),
+            )
+            .toList();
+        expect(rows.map((row) => row.title), ['Favorite', 'Private']);
+        expect(rows[0].icon, Icons.star_outline_rounded);
+        expect(rows[0].subtitle, isNull);
+        expect(rows[1].icon, Icons.lock_outline);
+        expect(
+          rows[1].subtitle,
+          'Only visible when private entries are shown',
+        );
+
+        // The toggles moved out of Basic settings entirely.
+        expect(
+          find.descendant(
+            of: find.ancestor(
+              of: find.text('Basic settings'),
+              matching: find.byType(SettingsFormSection),
+            ),
+            matching: find.byType(SettingsSwitchRow),
+          ),
+          findsNothing,
+        );
       },
     );
 

@@ -9,6 +9,7 @@ import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -117,8 +118,8 @@ void main() {
 
     group('leading category chip', () {
       testWidgets(
-        'unresolved category renders the neutral chip with a more_horiz '
-        'glyph instead of the empty-state shapes glyph',
+        'unresolved category renders the neutral chip with the dashboard '
+        'initial — never the more_horiz glyph',
         (tester) async {
           // The unstubbed cache resolves the dashboard's categoryId to
           // null, so the chip falls back to the neutral treatment.
@@ -126,20 +127,19 @@ void main() {
 
           final chipFinder = find.byType(CategoryIconChip);
           expect(chipFinder, findsOneWidget);
+          // 'S' for 'Some test dashboard'.
           expect(
-            find.descendant(
-              of: chipFinder,
-              matching: find.byIcon(Icons.more_horiz),
-            ),
+            find.descendant(of: chipFinder, matching: find.text('S')),
             findsOneWidget,
           );
+          expect(find.byIcon(Icons.more_horiz), findsNothing);
           expect(find.byIcon(Icons.category_outlined), findsNothing);
         },
       );
 
       testWidgets(
-        'resolved category renders the colored chip with the category '
-        'first letter',
+        'resolved category renders the DASHBOARD first letter on the '
+        'category color — never the category initial or icon',
         (tester) async {
           final cache =
               getIt<EntitiesCacheService>() as MockEntitiesCacheService;
@@ -152,10 +152,24 @@ void main() {
           final chipFinder = find.byType(CategoryIconChip);
           expect(chipFinder, findsOneWidget);
           expect(find.byIcon(Icons.more_horiz), findsNothing);
+          // The dashboard's own initial ('S' for 'Some test dashboard'),
+          // not the category's ('M' for Mindfulness)...
           expect(
-            find.descendant(of: chipFinder, matching: find.text('M')),
+            find.descendant(of: chipFinder, matching: find.text('S')),
             findsOneWidget,
           );
+          expect(
+            find.descendant(of: chipFinder, matching: find.text('M')),
+            findsNothing,
+          );
+          // ...while the chip background carries the category color.
+          final inner = tester.widget<DefinitionIconChip>(
+            find.descendant(
+              of: chipFinder,
+              matching: find.byType(DefinitionIconChip),
+            ),
+          );
+          expect(inner.background, colorFromCssHex(categoryMindfulness.color));
         },
       );
     });

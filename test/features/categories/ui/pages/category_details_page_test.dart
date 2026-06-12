@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
@@ -223,15 +225,17 @@ void main() {
         await pumpCategoryDetailsPage(
           tester,
           settle: true,
-          viewportSize: const Size(1024, 3000),
+          viewportSize: const Size(1024, 3600),
         );
 
-        // Sections render via the shared kit, headed by Basic settings.
+        // Sections render via the shared kit, headed by Basic settings and
+        // followed by the dedicated Options card for the switch tiles.
         expect(find.text('Basic settings'), findsOneWidget);
-        expect(find.byType(SettingsFormSection), findsNWidgets(5));
+        expect(find.text('Options'), findsOneWidget);
+        expect(find.byType(SettingsFormSection), findsNWidgets(6));
         // Correction examples live in a SettingsFormSection whose header
         // owns the title — the widget renders no duplicate of its own.
-        expect(find.text('Checklist Correction Examples'), findsOneWidget);
+        expect(find.text('Checklist correction examples'), findsOneWidget);
       });
 
       testWidgets('displays all basic form fields', (tester) async {
@@ -243,13 +247,38 @@ void main() {
 
         await pumpCategoryDetailsPage(tester, settle: true);
 
-        // Name field plus the four switch rows of the basic section.
+        // Name field in Basic settings, plus the four switch rows of the
+        // Options section in the shared editor order with unified copy.
         expect(nameFieldFinder(), findsOneWidget);
-        expect(find.text('Private'), findsOneWidget);
-        expect(find.text('Active'), findsOneWidget);
-        expect(find.text('Favorite'), findsOneWidget);
-        expect(find.text('Day planning'), findsOneWidget);
-        expect(find.byType(SettingsSwitchRow), findsNWidgets(4));
+
+        final switchRows = tester
+            .widgetList<SettingsSwitchRow>(find.byType(SettingsSwitchRow))
+            .toList();
+        expect(
+          switchRows.map((row) => row.title),
+          ['Favorite', 'Private', 'Active', 'Day planning'],
+        );
+        expect(switchRows[0].subtitle, isNull);
+        expect(
+          switchRows[1].subtitle,
+          'Only visible when private entries are shown',
+        );
+        expect(
+          switchRows[2].subtitle,
+          'Inactive items are hidden from selection lists',
+        );
+
+        // All switch rows live inside the Options card, not Basic settings.
+        expect(
+          find.descendant(
+            of: find.ancestor(
+              of: find.text('Options'),
+              matching: find.byType(SettingsFormSection),
+            ),
+            matching: find.byType(SettingsSwitchRow),
+          ),
+          findsNWidgets(4),
+        );
       });
 
       testWidgets('displays action bar with delete, cancel, and save', (
@@ -261,7 +290,12 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await pumpCategoryDetailsPage(tester, settle: true);
+        // Tall viewport so the trailing Delete row sliver builds.
+        await pumpCategoryDetailsPage(
+          tester,
+          settle: true,
+          viewportSize: const Size(1024, 3600),
+        );
 
         expect(find.byType(SettingsFormActionBar), findsOneWidget);
         // Destructive delete renders as a labeled glass pill.
@@ -347,7 +381,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Private, Active, Favorite, Day planning
+        // Favorite, Private, Active, Day planning
         final toggles = find.byType(DesignSystemToggle);
         expect(toggles, findsNWidgets(4));
 
@@ -355,7 +389,7 @@ void main() {
         await tester.ensureVisible(toggles.first);
         await tester.pump();
 
-        // Tap the first toggle (Private)
+        // Tap the first toggle (Favorite)
         await tester.tap(toggles.first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
@@ -697,8 +731,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Color picker dialog should open
-        expect(find.byType(AlertDialog), findsOneWidget);
+        // The shared picker modal opens with the full flex picker —
+        // there is no AlertDialog-based second picker anymore.
+        expect(find.byType(ColorPicker), findsOneWidget);
+        expect(find.byType(AlertDialog), findsNothing);
       });
 
       testWidgets('saves category with updated values', (tester) async {
@@ -1039,12 +1075,15 @@ void main() {
 
     group('Color Picker in Edit Mode', () {
       testWidgets(
-        'edit mode color picker opens dialog and can be cancelled',
+        'edit mode color field opens the shared picker modal and dismissing '
+        'it leaves the form pristine',
         (tester) async {
           final streamController =
               StreamController<CategoryDefinition?>.broadcast();
+          // 'Ocean Blue' in labelColorPresets — the field shows the
+          // palette name, never the raw hex.
           final category = CategoryTestUtils.createTestCategory(
-            color: '#FF0000',
+            color: '#0066CC',
           );
 
           when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -1057,34 +1096,40 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Tap the color field to open the color picker
+          expect(find.text('Ocean Blue'), findsOneWidget);
+          expect(find.text('#0066CC'), findsNothing);
+
+          // Tap the color field to open the shared picker modal
           await tester.ensureVisible(colorFieldFinder());
           await tester.tap(colorFieldFinder());
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Color picker dialog should open with the select/cancel actions
-          expect(find.byType(AlertDialog), findsOneWidget);
+          // The flex picker is hosted in the modal — no AlertDialog.
+          expect(find.byType(ColorPicker), findsOneWidget);
+          expect(find.byType(AlertDialog), findsNothing);
 
-          // Cancel — no color change, dialog dismissed
-          final cancelButton = find.text('Cancel').last;
-          await tester.tap(cancelButton);
+          // Dismiss via the modal close button — no color was picked,
+          // so the form stays pristine (Save remains disabled).
+          await tester.tap(find.byIcon(Icons.close_rounded).last);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          expect(find.byType(AlertDialog), findsNothing);
+          expect(find.byType(ColorPicker), findsNothing);
+          expect(isPillEnabled(tester, 'Save'), isFalse);
 
           await streamController.close();
         },
       );
 
       testWidgets(
-        'edit mode color picker shows current category color in dialog',
+        'edit mode picker seeds with the category color and selecting a '
+        'preset marks the form dirty',
         (tester) async {
           final streamController =
               StreamController<CategoryDefinition?>.broadcast();
           final category = CategoryTestUtils.createTestCategory(
-            color: '#FF0000',
+            color: '#0066CC',
           );
 
           when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -1097,40 +1142,55 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Open color picker in edit mode
+          expect(isPillEnabled(tester, 'Save'), isFalse);
+
+          // Open the shared picker modal in edit mode
           await tester.ensureVisible(colorFieldFinder());
           await tester.tap(colorFieldFinder());
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // AlertDialog with Select and Cancel actions is shown
-          expect(find.byType(AlertDialog), findsOneWidget);
-          expect(find.text('Select'), findsOneWidget);
+          // The picker seeds with the current category color.
+          final colorPicker = tester.widget<ColorPicker>(
+            find.byType(ColorPicker),
+          );
+          expect(colorToCssHex(colorPicker.color), '#0066CC');
 
-          // Selecting a color calls onColorChanged → marks form dirty.
-          // The picker starts at the category color (#FF0000 = red), so we
-          // just confirm Select dismisses the dialog (onColorChanged is
-          // invoked with the current picker value regardless).
-          final selectButton = find.text('Select');
-          await tester.tap(selectButton);
+          // Pick the 'Crimson' preset (#E63946) — applied live, marking
+          // the form dirty without a confirm button.
+          final crimsonIndicator = find.byWidgetPredicate(
+            (widget) =>
+                widget is ColorIndicator &&
+                colorToCssHex(widget.color) == '#E63946',
+          );
+          expect(crimsonIndicator, findsOneWidget);
+          await tester.tap(crimsonIndicator, warnIfMissed: false);
+          await tester.pump();
+
+          // Dismiss the modal; the field now names the new preset and
+          // the dirty form enables Save.
+          await tester.tap(find.byIcon(Icons.close_rounded).last);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          expect(find.byType(AlertDialog), findsNothing);
+          expect(find.byType(ColorPicker), findsNothing);
+          expect(find.text('Crimson'), findsOneWidget);
+          expect(find.text('#E63946'), findsNothing);
+          expect(isPillEnabled(tester, 'Save'), isTrue);
 
           await streamController.close();
         },
       );
     });
 
-    group('Switch Tiles — active, favorite, and day-plan branches', () {
-      // The Private branch is already covered by the existing "toggle switches
-      // trigger state changes" test (which taps toggles.first). Here we cover
-      // Active (1), Favorite (2), and Day planning (3) via one parameterised
-      // loop instead of three copy-pasted test bodies.
+    group('Switch Tiles — private, active, and day-plan branches', () {
+      // The Favorite branch is already covered by the existing "toggle
+      // switches trigger state changes" test (which taps toggles.first).
+      // Here we cover Private (1), Active (2), and Day planning (3) via one
+      // parameterised loop instead of three copy-pasted test bodies.
       for (final (index, label) in const [
-        (1, 'Active'),
-        (2, 'Favorite'),
+        (1, 'Private'),
+        (2, 'Active'),
         (3, 'Day planning'),
       ]) {
         testWidgets(
@@ -1152,7 +1212,7 @@ void main() {
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 350));
 
-            // Four toggles: Private(0), Active(1), Favorite(2),
+            // Four toggles: Favorite(0), Private(1), Active(2),
             // Day planning(3).
             final toggles = find.byType(DesignSystemToggle);
             expect(toggles, findsNWidgets(4));
@@ -1460,8 +1520,8 @@ void main() {
 
     group('Create Mode Color Selection', () {
       testWidgets(
-        'selecting a color then creating passes the selected color hex to '
-        'the repository',
+        'selecting a preset color then creating passes the selected color '
+        'hex to the repository',
         (tester) async {
           String? beamedTo;
           beamToNamedOverride = (path) => beamedTo = path;
@@ -1478,26 +1538,40 @@ void main() {
 
           await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
-          // Open the color picker (default selected color is null → the
-          // picker seeds at Colors.red).
+          // Open the shared color picker modal (default selected color is
+          // null → the picker seeds at the theme primary).
           await tester.tap(colorFieldFinder());
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
-          expect(find.byType(AlertDialog), findsOneWidget);
+          expect(find.byType(ColorPicker), findsOneWidget);
 
-          // Tap "Select" → CategoryColorPicker.onColorChanged fires with the
-          // seeded red, which runs setState(_selectedColor = color) on the
-          // page. The dialog dismisses.
-          await tester.tap(find.text('Select'));
+          // The seed color may land the picker on the wheel tab, so switch
+          // to the preset swatches first ('Quick presets' tab label).
+          await tester.tap(find.text('Quick presets'), warnIfMissed: false);
+          await tester.pump();
+
+          // Tap the 'Crimson' preset (#E63946) → onColorChanged fires live
+          // and runs setState(_selectedColor = color) on the page.
+          final crimsonIndicator = find.byWidgetPredicate(
+            (widget) =>
+                widget is ColorIndicator &&
+                colorToCssHex(widget.color) == '#E63946',
+          );
+          expect(crimsonIndicator, findsOneWidget);
+          await tester.tap(crimsonIndicator, warnIfMissed: false);
+          await tester.pump();
+
+          // Dismiss the modal via its close button.
+          await tester.tap(find.byIcon(Icons.close_rounded).last);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
-          expect(find.byType(AlertDialog), findsNothing);
+          expect(find.byType(ColorPicker), findsNothing);
 
-          // The color row now shows the selected hex (the picker seeds at
-          // Colors.red, the Material swatch #F44336) instead of the
-          // "select color" hint — proving _selectedColor was assigned via
-          // setState in the page's onColorChanged callback.
-          expect(find.text('#F44336'), findsOneWidget);
+          // The color row now names the preset — never the raw hex —
+          // proving _selectedColor was assigned via setState in the
+          // page's onColorChanged callback.
+          expect(find.text('Crimson'), findsOneWidget);
+          expect(find.text('#E63946'), findsNothing);
 
           // Enter a name and create. Because _selectedColor is now non-null,
           // _handleCreate takes the colorToCssHex(_selectedColor!) branch.
@@ -1508,7 +1582,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Repository received the selected color (red swatch), not the blue
+          // Repository received the selected preset color, not the blue
           // default — confirming the non-null color branch executed.
           final captured =
               verify(
@@ -1520,7 +1594,7 @@ void main() {
                     ),
                   ).captured.single
                   as String;
-          expect(captured, '#F44336');
+          expect(captured, '#E63946');
           // Creation lands in the new category's editor.
           expect(beamedTo, startsWith('/settings/categories/'));
         },

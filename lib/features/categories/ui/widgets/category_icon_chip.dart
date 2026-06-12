@@ -89,22 +89,31 @@ class DefinitionIconChip extends StatelessWidget {
 
 /// [DefinitionIconChip] variant for rows that carry a category.
 ///
-/// Renders the category color as the chip background with the category
-/// icon (or first-letter fallback) as the glyph. [CategoryIconChip.fromId]
+/// Renders the category color as the chip background. The default
+/// constructor (categories list) shows the category's own identity as the
+/// glyph: its icon, or its first-letter fallback. [CategoryIconChip.fromId]
 /// resolves the category through [EntitiesCacheService] for rows that only
-/// store a category id (habits, dashboards); a null or unresolved id falls
-/// back to a neutral chip (`background.level03`) with an [Icons.more_horiz]
-/// glyph at `text.lowEmphasis` — deliberately not the shapes glyph used by
-/// the empty-state illustration, which would read as a bug.
+/// store a category id (habits, dashboards); those rows pass [letterFrom]
+/// so the chip always shows the ITEM's own first letter while the
+/// background color carries the category — the initial-matches-name
+/// convention every definitions list follows.
+///
+/// A null or unresolved id falls back to a neutral chip
+/// (`background.level03`): with [letterFrom] it keeps the item letter at
+/// `text.mediumEmphasis`; without it, an [Icons.more_horiz] glyph at
+/// `text.lowEmphasis` — deliberately not the shapes glyph used by the
+/// empty-state illustration, which would read as a bug.
 class CategoryIconChip extends StatelessWidget {
   const CategoryIconChip({
     required CategoryDefinition this.category,
     this.size = DefinitionIconChip.defaultSize,
     super.key,
-  }) : categoryId = null;
+  }) : categoryId = null,
+       letterFrom = null;
 
   const CategoryIconChip.fromId(
     this.categoryId, {
+    this.letterFrom,
     this.size = DefinitionIconChip.defaultSize,
     super.key,
   }) : category = null;
@@ -117,6 +126,12 @@ class CategoryIconChip extends StatelessWidget {
   /// null.
   final String? categoryId;
 
+  /// Letter source for the chip glyph (the owning item's name). When set,
+  /// the chip always renders this string's first letter — never the
+  /// category's icon or initial — so the letter identifies the row while
+  /// the background color identifies the category.
+  final String? letterFrom;
+
   /// Edge length of the square chip.
   final double size;
 
@@ -127,6 +142,14 @@ class CategoryIconChip extends StatelessWidget {
 
     if (resolved == null) {
       final tokens = context.designTokens;
+      if (letterFrom != null) {
+        return DefinitionIconChip(
+          background: tokens.colors.background.level03,
+          foreground: tokens.colors.text.mediumEmphasis,
+          name: letterFrom,
+          size: size,
+        );
+      }
       return DefinitionIconChip(
         background: tokens.colors.background.level03,
         foreground: tokens.colors.text.lowEmphasis,
@@ -135,11 +158,21 @@ class CategoryIconChip extends StatelessWidget {
       );
     }
 
+    final background = colorFromCssHex(
+      resolved.color,
+      substitute: Theme.of(context).colorScheme.primary,
+    );
+
+    if (letterFrom != null) {
+      return DefinitionIconChip(
+        background: background,
+        name: letterFrom,
+        size: size,
+      );
+    }
+
     return DefinitionIconChip(
-      background: colorFromCssHex(
-        resolved.color,
-        substitute: Theme.of(context).colorScheme.primary,
-      ),
+      background: background,
       icon: resolved.icon?.iconData,
       name: resolved.name,
       size: size,

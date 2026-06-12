@@ -76,7 +76,12 @@ class _DashboardListItem extends StatelessWidget {
     return DesignSystemListItem(
       title: dashboard.name,
       subtitle: description.isNotEmpty ? description : null,
-      leading: CategoryIconChip.fromId(dashboard.categoryId),
+      // Item letter on the category color: the initial matches the row's
+      // name while the chip color carries the category.
+      leading: CategoryIconChip.fromId(
+        dashboard.categoryId,
+        letterFrom: dashboard.name,
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

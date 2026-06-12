@@ -110,9 +110,13 @@ class _CategoryListItem extends ConsumerWidget {
               ),
             ),
           if (isFavorite)
-            const Padding(
-              padding: EdgeInsets.only(right: 4),
-              child: Icon(Icons.star, color: Colors.amber, size: 20),
+            Padding(
+              padding: const EdgeInsets.only(right: 4),
+              child: Icon(
+                Icons.star_outline_rounded,
+                color: tokens.colors.alert.warning.defaultColor,
+                size: 20,
+              ),
             ),
           Icon(
             Icons.chevron_right_rounded,

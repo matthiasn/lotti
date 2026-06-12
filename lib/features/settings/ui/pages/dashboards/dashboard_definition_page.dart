@@ -9,7 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
-import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
 import 'package:lotti/features/settings/ui/widgets/dashboards/dashboard_category.dart';
@@ -355,14 +355,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         primaryEnabled: dirty,
                         secondaryLabel: messages.cancelButton,
                         onSecondary: backToList,
-                        extraActions: [
-                          DsGlassRoundButton(
-                            key: const Key('dashboard_copy'),
-                            icon: Icons.copy_rounded,
-                            semanticLabel: messages.dashboardCopyHint,
-                            onPressed: copyDashboard,
-                          ),
-                        ],
                       ),
                       deleteLabel: widget.isCreateMode
                           ? null
@@ -378,43 +370,59 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               dirty = true;
                             });
                           },
-                          child: SettingsFormSection(
-                            title: messages.basicSettings,
-                            icon: Icons.dashboard_customize_outlined,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
-                              SettingsFormTextField(
-                                key: const Key('dashboard_name_field'),
-                                initialValue: widget.dashboard.name,
-                                labelText: messages.dashboardNameLabel,
-                                name: 'name',
-                                semanticsLabel: 'Dashboard - name field',
+                              SettingsFormSection(
+                                title: messages.basicSettings,
+                                icon: Icons.dashboard_customize_outlined,
+                                children: [
+                                  SettingsFormTextField(
+                                    key: const Key('dashboard_name_field'),
+                                    initialValue: widget.dashboard.name,
+                                    labelText: messages.dashboardNameLabel,
+                                    name: 'name',
+                                    semanticsLabel: 'Dashboard - name field',
+                                  ),
+                                  SettingsFormTextField(
+                                    key: const Key(
+                                      'dashboard_description_field',
+                                    ),
+                                    initialValue: widget.dashboard.description,
+                                    labelText:
+                                        messages.dashboardDescriptionLabel,
+                                    name: 'description',
+                                    semanticsLabel:
+                                        'Dashboard - description field',
+                                    fieldRequired: false,
+                                    multiline: true,
+                                  ),
+                                  SelectDashboardCategoryWidget(
+                                    setCategory: setCategory,
+                                    categoryId: categoryId,
+                                  ),
+                                ],
                               ),
-                              SettingsFormTextField(
-                                key: const Key('dashboard_description_field'),
-                                initialValue: widget.dashboard.description,
-                                labelText: messages.dashboardDescriptionLabel,
-                                name: 'description',
-                                semanticsLabel: 'Dashboard - description field',
-                                fieldRequired: false,
-                                multiline: true,
-                              ),
-                              FormSwitch(
-                                name: 'private',
-                                initialValue: widget.dashboard.private,
-                                title: messages.dashboardPrivateLabel,
-                                subtitle: messages.privateSwitchDescription,
-                                icon: Icons.lock_outline,
-                              ),
-                              FormSwitch(
-                                name: 'active',
-                                initialValue: widget.dashboard.active,
-                                title: messages.dashboardActiveLabel,
-                                subtitle: messages.inactiveSwitchDescription,
-                                icon: Icons.visibility_outlined,
-                              ),
-                              SelectDashboardCategoryWidget(
-                                setCategory: setCategory,
-                                categoryId: categoryId,
+                              SettingsFormSection(
+                                title: messages.habitSectionOptionsTitle,
+                                icon: Icons.tune_rounded,
+                                children: [
+                                  FormSwitch(
+                                    name: 'private',
+                                    initialValue: widget.dashboard.private,
+                                    title: messages.privateLabel,
+                                    subtitle: messages.privateSwitchDescription,
+                                    icon: Icons.lock_outline,
+                                  ),
+                                  FormSwitch(
+                                    name: 'active',
+                                    initialValue: widget.dashboard.active,
+                                    title: messages.activeLabel,
+                                    subtitle:
+                                        messages.inactiveSwitchDescription,
+                                    icon: Icons.visibility_outlined,
+                                  ),
+                                ],
                               ),
                             ],
                           ),
@@ -509,6 +517,19 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               iconData: Icons.sports_gymnastics,
                             ),
                           ],
+                        ),
+                        // Labeled in-form secondary action — an unlabeled
+                        // icon in the primary action bar broke the shared
+                        // bar contract.
+                        Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: DesignSystemButton(
+                            key: const Key('dashboard_copy'),
+                            label: messages.dashboardCopyLabel,
+                            leadingIcon: Icons.copy_rounded,
+                            variant: DesignSystemButtonVariant.secondary,
+                            onPressed: copyDashboard,
+                          ),
                         ),
                       ],
                     );

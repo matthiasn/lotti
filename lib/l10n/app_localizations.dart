@@ -4036,7 +4036,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryAiDefaultsTitle.
   ///
   /// In en, this message translates to:
-  /// **'AI Defaults'**
+  /// **'AI defaults'**
   String get categoryAiDefaultsTitle;
 
   /// No description provided for @categoryCreationError.
@@ -4458,6 +4458,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Clear'**
   String get clearButton;
+
+  /// No description provided for @colorCustomLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom'**
+  String get colorCustomLabel;
 
   /// No description provided for @colorLabel.
   ///
@@ -5049,7 +5055,7 @@ abstract class AppLocalizations {
   /// No description provided for @correctionExamplesSectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Checklist Correction Examples'**
+  /// **'Checklist correction examples'**
   String get correctionExamplesSectionTitle;
 
   /// No description provided for @correctionExamplesWarning.
@@ -6869,6 +6875,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Save & Copy dashboard config'**
   String get dashboardCopyHint;
+
+  /// No description provided for @dashboardCopyLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Save and copy configuration'**
+  String get dashboardCopyLabel;
 
   /// No description provided for @dashboardDeleteConfirm.
   ///
@@ -11203,7 +11215,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsCategoriesEmptyState.
   ///
   /// In en, this message translates to:
-  /// **'No categories found'**
+  /// **'No categories yet'**
   String get settingsCategoriesEmptyState;
 
   /// No description provided for @settingsCategoriesEmptyStateHint.
@@ -11593,7 +11605,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLabelsPrivateTitle.
   ///
   /// In en, this message translates to:
-  /// **'Private label'**
+  /// **'Private'**
   String get settingsLabelsPrivateTitle;
 
   /// No description provided for @settingsLabelsSearchHint.
@@ -11845,6 +11857,12 @@ abstract class AppLocalizations {
   /// **'Verify'**
   String get settingsMatrixVerifyLabel;
 
+  /// No description provided for @settingsMeasurableAggregationHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'How a day\'s entries combine on charts'**
+  String get settingsMeasurableAggregationHelper;
+
   /// No description provided for @settingsMeasurableAggregationLabel.
   ///
   /// In en, this message translates to:
@@ -11908,7 +11926,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsMeasurablesEmptyStateHint.
   ///
   /// In en, this message translates to:
-  /// **'Tap the + button to create your first measurable.'**
+  /// **'Measurables are numbers you track over time — weight, water, steps.'**
   String get settingsMeasurablesEmptyStateHint;
 
   /// No description provided for @settingsMeasurablesErrorLoading.
@@ -12250,7 +12268,7 @@ abstract class AppLocalizations {
   /// No description provided for @speechDictionarySectionTitle.
   ///
   /// In en, this message translates to:
-  /// **'Speech Recognition'**
+  /// **'Speech recognition'**
   String get speechDictionarySectionTitle;
 
   /// No description provided for @speechDictionaryWarning.

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,8 +16,12 @@ import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
+import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -275,11 +280,58 @@ void main() {
       verify(() => repo.deleteLabel('label-1')).called(1);
     });
 
-    testWidgets('color picker calls controller.setColor', (tester) async {
+    testWidgets('color field shows the matching preset name, never hex', (
+      tester,
+    ) async {
+      const state = LabelEditorState(
+        name: 'Urgent',
+        colorHex: '#0066CC', // 'Ocean Blue' in labelColorPresets
+        isPrivate: false,
+        selectedCategoryIds: {},
+      );
+
+      await pumpPage(
+        tester,
+        overrides: [
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => state,
+          ),
+        ],
+      );
+
+      expect(find.text('Ocean Blue'), findsOneWidget);
+      // Raw hex stays behind the picker — it never surfaces in the field.
+      expect(find.textContaining('#'), findsNothing);
+    });
+
+    testWidgets('color field shows the localized Custom label for a '
+        'non-preset hex', (tester) async {
+      const state = LabelEditorState(
+        name: 'Urgent',
+        colorHex: '#FF0000', // not in labelColorPresets
+        isPrivate: false,
+        selectedCategoryIds: {},
+      );
+
+      await pumpPage(
+        tester,
+        overrides: [
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => state,
+          ),
+        ],
+      );
+
+      expect(find.text('Custom'), findsOneWidget);
+      expect(find.textContaining('#'), findsNothing);
+    });
+
+    testWidgets('tapping the color field opens the shared picker modal and '
+        'selecting a preset calls controller.setColor', (tester) async {
       Color? picked;
       const state = LabelEditorState(
         name: 'Urgent',
-        colorHex: '#FF0000',
+        colorHex: '#0066CC', // preset → the modal opens on the preset tab
         isPrivate: false,
         selectedCategoryIds: {},
       );
@@ -298,10 +350,35 @@ void main() {
         ],
       );
 
-      // Drive color change directly via the pre-constructed controller
-      // (UI swatch hit-testing can be flaky in tests)
-      colorSpyController.setColor(Colors.green);
-      expect(picked, equals(Colors.green));
+      // The wheel no longer renders inline — picking happens in the
+      // shared modal opened from the field.
+      expect(find.byType(ColorPicker), findsNothing);
+
+      final colorField = find.descendant(
+        of: find.byType(SettingsColorPickerField),
+        matching: find.byType(InkWell),
+      );
+      await tester.ensureVisible(colorField);
+      await tester.tap(colorField);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      // The shared modal hosts the full flex picker.
+      expect(find.byType(ColorPicker), findsOneWidget);
+
+      // Select the 'Crimson' preset (#E63946) — applied live through
+      // controller.setColor, no confirm step.
+      final crimsonIndicator = find.byWidgetPredicate(
+        (widget) =>
+            widget is ColorIndicator &&
+            colorToCssHex(widget.color) == '#E63946',
+      );
+      expect(crimsonIndicator, findsOneWidget);
+      await tester.tap(crimsonIndicator, warnIfMissed: false);
+      await tester.pump();
+
+      expect(picked, isNotNull);
+      expect(colorToCssHex(picked!), '#E63946');
     });
 
     testWidgets('tapping Add category opens selection modal', (tester) async {
@@ -499,6 +576,89 @@ void main() {
       await tester.ensureVisible(errorText);
       expect(errorText, findsOneWidget);
     });
+
+    testWidgets(
+      'Options section card hosts the Private toggle with the unified copy, '
+      'leaving Basic settings switch-free',
+      (tester) async {
+        const state = LabelEditorState(
+          name: 'Alpha',
+          colorHex: '#00FF00',
+          isPrivate: false,
+          selectedCategoryIds: {},
+        );
+        await pumpPage(
+          tester,
+          overrides: [
+            labelEditorControllerProvider.overrideWithBuild(
+              (ref, args) => state,
+            ),
+          ],
+        );
+
+        final optionsSection = find.ancestor(
+          of: find.text('Options'),
+          matching: find.byType(SettingsFormSection),
+        );
+        expect(optionsSection, findsOneWidget);
+
+        final row = tester.widget<SettingsSwitchRow>(
+          find.descendant(
+            of: optionsSection,
+            matching: find.byType(SettingsSwitchRow),
+          ),
+        );
+        expect(row.title, 'Private');
+        expect(
+          row.subtitle,
+          'Only visible when private entries are shown',
+        );
+        expect(row.icon, Icons.lock_outline);
+
+        // The toggle moved out of Basic settings entirely.
+        expect(
+          find.descendant(
+            of: find.ancestor(
+              of: find.text('Basic settings'),
+              matching: find.byType(SettingsFormSection),
+            ),
+            matching: find.byType(SettingsSwitchRow),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'edit mode: pristine editor shows a disabled Save; flipping the '
+      'Private toggle marks it dirty and enables Save',
+      (tester) async {
+        final repo = MockLabelsRepository();
+        when(() => repo.watchLabel('label-1')).thenAnswer(
+          (_) => Stream<LabelDefinition?>.value(
+            testLabelDefinition1.copyWith(id: 'label-1'),
+          ),
+        );
+
+        await pumpPage(
+          tester,
+          overrides: [labelsRepositoryProvider.overrideWithValue(repo)],
+          child: const LabelDetailsPage(labelId: 'label-1'),
+        );
+
+        // Nothing touched yet → the quiet disabled Save, like every
+        // sibling definitions editor.
+        expect(pillFinder('Save'), findsOneWidget);
+        expect(isPillEnabled(tester, 'Save'), isFalse);
+
+        final toggleFinder = find.byType(DesignSystemToggle);
+        await tester.ensureVisible(toggleFinder);
+        await tester.tap(toggleFinder);
+        await tester.pump();
+
+        expect(isPillEnabled(tester, 'Save'), isTrue);
+      },
+    );
 
     testWidgets('privacy toggle flips value via controller', (tester) async {
       const state = LabelEditorState(

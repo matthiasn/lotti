@@ -2614,6 +2614,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get clearButton => 'Vymazat';
 
   @override
+  String get colorCustomLabel => 'Vlastní';
+
+  @override
   String get colorLabel => 'Barva';
 
   @override
@@ -4055,6 +4058,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dashboardCopyHint => 'Uložit a zkopírovat konfiguraci panelu';
+
+  @override
+  String get dashboardCopyLabel => 'Uložit a zkopírovat konfiguraci';
 
   @override
   String get dashboardDeleteConfirm => 'ANO, SMAZAT TENTO PANEL';
@@ -6578,7 +6584,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCategoriesDetailsLabel => 'Upravit kategorii';
 
   @override
-  String get settingsCategoriesEmptyState => 'Žádné kategorie nalezeny';
+  String get settingsCategoriesEmptyState => 'Zatím žádné kategorie';
 
   @override
   String get settingsCategoriesEmptyStateHint =>
@@ -6805,7 +6811,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Viditelné pouze při zobrazení soukromých záznamů';
 
   @override
-  String get settingsLabelsPrivateTitle => 'Soukromý štítek';
+  String get settingsLabelsPrivateTitle => 'Soukromé';
 
   @override
   String get settingsLabelsSearchHint => 'Hledat štítky...';
@@ -6957,6 +6963,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Ověřit';
 
   @override
+  String get settingsMeasurableAggregationHelper =>
+      'Jak se záznamy jednoho dne kombinují v grafech';
+
+  @override
   String get settingsMeasurableAggregationLabel => 'Výchozí agregace';
 
   @override
@@ -6988,7 +6998,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Klepněte na tlačítko + pro vytvoření prvního měřitelného typu.';
+      'Měřitelné typy jsou čísla sledovaná v čase — váha, voda, kroky.';
 
   @override
   String get settingsMeasurablesErrorLoading =>

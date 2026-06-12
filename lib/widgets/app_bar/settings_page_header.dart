@@ -227,7 +227,10 @@ class SettingsPageHeader extends StatelessWidget {
                             collapseProgress: progress,
                           ),
                         ),
-                        ...?actions,
+                        if (actions != null) ...[
+                          const SizedBox(width: 16),
+                          ...actions!,
+                        ],
                       ],
                     ),
                   ),

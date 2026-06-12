@@ -107,7 +107,7 @@ class _MeasurableListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.favoriteLabel,
                 child: Icon(
-                  Icons.star,
+                  Icons.star_outline_rounded,
                   color: tokens.colors.alert.warning.defaultColor,
                   size: 20,
                 ),

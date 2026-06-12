@@ -2622,6 +2622,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get clearButton => 'Effacer';
 
   @override
+  String get colorCustomLabel => 'Personnalisée';
+
+  @override
   String get colorLabel => 'Couleur';
 
   @override
@@ -4087,6 +4090,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get dashboardCopyHint =>
       'Enregistrer et copier la configuration du tableau de bord';
+
+  @override
+  String get dashboardCopyLabel => 'Enregistrer et copier la configuration';
 
   @override
   String get dashboardDeleteConfirm => 'OUI, SUPPRIMER CE TABLEAU DE BORD';
@@ -6629,7 +6635,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsCategoriesDetailsLabel => 'Modifier la catégorie';
 
   @override
-  String get settingsCategoriesEmptyState => 'Aucune catégorie trouvée';
+  String get settingsCategoriesEmptyState => 'Aucune catégorie pour le moment';
 
   @override
   String get settingsCategoriesEmptyStateHint =>
@@ -6860,7 +6866,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Visible uniquement lorsque les entrées privées sont affichées';
 
   @override
-  String get settingsLabelsPrivateTitle => 'Étiquette privée';
+  String get settingsLabelsPrivateTitle => 'Privé';
 
   @override
   String get settingsLabelsSearchHint => 'Rechercher des étiquettes…';
@@ -7015,6 +7021,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Vérifier';
 
   @override
+  String get settingsMeasurableAggregationHelper =>
+      'Comment les entrées d\'une journée sont combinées dans les graphiques';
+
+  @override
   String get settingsMeasurableAggregationLabel => 'Agrégation par défaut';
 
   @override
@@ -7047,7 +7057,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsMeasurablesEmptyStateHint =>
-      'Appuie sur le bouton + pour créer ton premier élément mesurable.';
+      'Les éléments mesurables sont des chiffres que tu suis dans le temps — poids, eau, pas.';
 
   @override
   String get settingsMeasurablesErrorLoading =>

@@ -179,63 +179,76 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
               dirty = true;
             });
           },
-          child: SettingsFormSection(
-            title: messages.basicSettings,
-            icon: Icons.settings_outlined,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              SettingsFormTextField(
-                key: const Key('measurable_name_field'),
-                initialValue: item.displayName,
-                labelText: messages.settingsMeasurableNameLabel,
-                name: 'displayName',
-                semanticsLabel: 'Measurable - name field',
-                autofocus: widget.isCreateMode,
+              SettingsFormSection(
+                title: messages.basicSettings,
+                icon: Icons.settings_outlined,
+                children: [
+                  SettingsFormTextField(
+                    key: const Key('measurable_name_field'),
+                    initialValue: item.displayName,
+                    labelText: messages.settingsMeasurableNameLabel,
+                    name: 'displayName',
+                    semanticsLabel: 'Measurable - name field',
+                    autofocus: widget.isCreateMode,
+                  ),
+                  SettingsFormTextField(
+                    key: const Key('measurable_description_field'),
+                    initialValue: item.description,
+                    labelText: messages.settingsMeasurableDescriptionLabel,
+                    fieldRequired: false,
+                    multiline: true,
+                    name: 'description',
+                    semanticsLabel: 'Measurable - description field',
+                  ),
+                  SettingsFormTextField(
+                    initialValue: item.unitName,
+                    labelText: messages.settingsMeasurableUnitLabel,
+                    fieldRequired: false,
+                    name: 'unitName',
+                    semanticsLabel: 'Measurable - unit name field',
+                  ),
+                  FormBuilderField<AggregationType>(
+                    name: 'aggregationType',
+                    initialValue: item.aggregationType,
+                    builder: (field) {
+                      final value = field.value;
+                      return SettingsPickerField(
+                        key: const Key('measurable_aggregation_field'),
+                        label: messages.settingsMeasurableAggregationLabel,
+                        valueText: value != null
+                            ? aggregationTypeLabel(messages, value)
+                            : null,
+                        hintText: messages.aggregationNone,
+                        helperText:
+                            messages.settingsMeasurableAggregationHelper,
+                        semanticsLabel: 'Measurable - aggregation type field',
+                        onTap: () => _pickAggregationType(field),
+                      );
+                    },
+                  ),
+                ],
               ),
-              SettingsFormTextField(
-                key: const Key('measurable_description_field'),
-                initialValue: item.description,
-                labelText: messages.settingsMeasurableDescriptionLabel,
-                fieldRequired: false,
-                multiline: true,
-                name: 'description',
-                semanticsLabel: 'Measurable - description field',
-              ),
-              SettingsFormTextField(
-                initialValue: item.unitName,
-                labelText: messages.settingsMeasurableUnitLabel,
-                fieldRequired: false,
-                name: 'unitName',
-                semanticsLabel: 'Measurable - unit name field',
-              ),
-              FormSwitch(
-                name: 'favorite',
-                initialValue: item.favorite ?? false,
-                title: messages.favoriteLabel,
-                icon: Icons.star_outline_rounded,
-              ),
-              FormSwitch(
-                name: 'private',
-                initialValue: item.private,
-                title: messages.privateLabel,
-                subtitle: messages.privateSwitchDescription,
-                icon: Icons.lock_outline,
-              ),
-              FormBuilderField<AggregationType>(
-                name: 'aggregationType',
-                initialValue: item.aggregationType,
-                builder: (field) {
-                  final value = field.value;
-                  return SettingsPickerField(
-                    key: const Key('measurable_aggregation_field'),
-                    label: messages.settingsMeasurableAggregationLabel,
-                    valueText: value != null
-                        ? aggregationTypeLabel(messages, value)
-                        : null,
-                    hintText: messages.aggregationNone,
-                    semanticsLabel: 'Measurable - aggregation type field',
-                    onTap: () => _pickAggregationType(field),
-                  );
-                },
+              SettingsFormSection(
+                title: messages.habitSectionOptionsTitle,
+                icon: Icons.tune_rounded,
+                children: [
+                  FormSwitch(
+                    name: 'favorite',
+                    initialValue: item.favorite ?? false,
+                    title: messages.favoriteLabel,
+                    icon: Icons.star_outline_rounded,
+                  ),
+                  FormSwitch(
+                    name: 'private',
+                    initialValue: item.private,
+                    title: messages.privateLabel,
+                    subtitle: messages.privateSwitchDescription,
+                    icon: Icons.lock_outline,
+                  ),
+                ],
               ),
             ],
           ),

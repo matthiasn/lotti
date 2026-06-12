@@ -71,7 +71,12 @@ class _HabitListItem extends StatelessWidget {
 
     return DesignSystemListItem(
       title: habit.name,
-      leading: CategoryIconChip.fromId(habit.categoryId),
+      // Item letter on the category color: the initial matches the row's
+      // name while the chip color carries the category.
+      leading: CategoryIconChip.fromId(
+        habit.categoryId,
+        letterFrom: habit.name,
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -105,7 +110,7 @@ class _HabitListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.favoriteLabel,
                 child: Icon(
-                  Icons.star,
+                  Icons.star_outline_rounded,
                   color: tokens.colors.alert.warning.defaultColor,
                   size: 20,
                 ),

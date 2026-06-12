@@ -10,6 +10,8 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
+import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -141,6 +143,42 @@ void main() {
           () => mockNotificationService.scheduleHabitNotification(any()),
         ).called(1);
         expect(beamedTo, '/settings/habits');
+      },
+    );
+
+    testWidgets(
+      'Options section card groups Favorite, Private, then Active with the '
+      'unified copy',
+      (tester) async {
+        await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
+
+        final optionsSection = find.ancestor(
+          of: find.text('Options'),
+          matching: find.byType(SettingsFormSection),
+        );
+        expect(optionsSection, findsOneWidget);
+
+        final rows = tester
+            .widgetList<SettingsSwitchRow>(
+              find.descendant(
+                of: optionsSection,
+                matching: find.byType(SettingsSwitchRow),
+              ),
+            )
+            .toList();
+        expect(rows.map((row) => row.title), ['Favorite', 'Private', 'Active']);
+        expect(rows[0].icon, Icons.star_outline_rounded);
+        expect(rows[0].subtitle, isNull);
+        expect(rows[1].icon, Icons.lock_outline);
+        expect(
+          rows[1].subtitle,
+          'Only visible when private entries are shown',
+        );
+        expect(rows[2].icon, Icons.visibility_outlined);
+        expect(
+          rows[2].subtitle,
+          'Inactive items are hidden from selection lists',
+        );
       },
     );
 
