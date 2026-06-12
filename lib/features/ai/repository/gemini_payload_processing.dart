@@ -1,10 +1,13 @@
-part of 'gemini_inference_repository.dart';
+import 'dart:convert';
+
+import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 /// Extracts thinking, visible text, tool calls, and usage metadata from
 /// a complete Gemini response payload.
 ///
 /// [turnIndex] is used for generating unique tool call IDs across turns.
-_ProcessedPayload _processGeminiPayload(
+ProcessedGeminiPayload processGeminiPayload(
   Map<String, dynamic> decoded, {
   required bool includeThoughts,
   int turnIndex = 0,
@@ -81,7 +84,7 @@ _ProcessedPayload _processGeminiPayload(
     }
   }
 
-  return _ProcessedPayload(
+  return ProcessedGeminiPayload(
     thinking: tb.toString(),
     visible: cb.toString(),
     toolChunks: toolChunks,

@@ -149,7 +149,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
           // Emit thinking block when transitioning to regular content
           if (inThinking) {
             emittedAny = true;
-            yield _createThinkingChunk(
+            yield createThinkingChunk(
               id: idPrefix,
               created: created,
               model: model,
@@ -164,7 +164,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
           if (text is String && text.isNotEmpty) {
             answerStarted = true;
             emittedAny = true;
-            yield _createTextChunk(
+            yield createTextChunk(
               id: idPrefix,
               created: created,
               model: model,
@@ -185,7 +185,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
             final turn = turnIndex ?? 0;
             final toolCallId = 'tool_turn${turn}_$currentIndex';
 
-            _captureSignatureIfPresent(
+            captureSignatureIfPresent(
               part: p,
               toolCallId: toolCallId,
               functionName: name,
@@ -193,7 +193,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
               signatureCollector: signatureCollector,
             );
 
-            yield _createToolCallChunk(
+            yield createToolCallChunk(
               id: idPrefix,
               created: created,
               model: model,
@@ -210,7 +210,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
     // Flush any remaining thinking
     if (inThinking && thinkingBuffer.isNotEmpty) {
       emittedAny = true;
-      yield _createThinkingChunk(
+      yield createThinkingChunk(
         id: idPrefix,
         created: created,
         model: model,
@@ -220,7 +220,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
 
     // Emit usage metadata
     if (promptTokens != null || candidatesTokens != null) {
-      yield _createUsageChunk(
+      yield createUsageChunk(
         id: idPrefix,
         created: created,
         model: model,

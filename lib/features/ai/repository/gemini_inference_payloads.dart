@@ -1,8 +1,9 @@
-part of 'gemini_inference_repository.dart';
+import 'package:openai_dart/openai_dart.dart';
 
-/// Internal helper result for consolidated (non-streaming) Gemini payloads.
-class _ProcessedPayload {
-  _ProcessedPayload({
+/// Consolidated (non-streaming) Gemini payload, decomposed for downstream
+/// chunk emission.
+class ProcessedGeminiPayload {
+  ProcessedGeminiPayload({
     required this.thinking,
     required this.visible,
     required this.toolChunks,
@@ -47,7 +48,7 @@ String? extractThoughtSignature(Map<String, dynamic> part) {
 ///
 /// Contains the raw image bytes and MIME type (typically 'image/png').
 /// This is used as the return type for `generateImage` (see
-/// [GeminiImageGeneration]).
+/// `GeminiImageGeneration`).
 class GeneratedImage {
   const GeneratedImage({
     required this.bytes,

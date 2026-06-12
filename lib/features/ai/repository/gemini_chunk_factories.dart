@@ -1,4 +1,8 @@
-part of 'gemini_inference_repository.dart';
+import 'dart:developer' as developer;
+
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 // ---------------------------------------------------------------------------
 // OpenAI-compatible response-chunk factories shared by the chat, multiturn
@@ -6,7 +10,7 @@ part of 'gemini_inference_repository.dart';
 // ---------------------------------------------------------------------------
 
 /// Creates a response chunk containing a thinking block.
-CreateChatCompletionStreamResponse _createThinkingChunk({
+CreateChatCompletionStreamResponse createThinkingChunk({
   required String id,
   required int created,
   required String model,
@@ -28,7 +32,7 @@ CreateChatCompletionStreamResponse _createThinkingChunk({
 }
 
 /// Creates a response chunk containing visible text content.
-CreateChatCompletionStreamResponse _createTextChunk({
+CreateChatCompletionStreamResponse createTextChunk({
   required String id,
   required int created,
   required String model,
@@ -48,7 +52,7 @@ CreateChatCompletionStreamResponse _createTextChunk({
 }
 
 /// Creates a response chunk containing a tool call.
-CreateChatCompletionStreamResponse _createToolCallChunk({
+CreateChatCompletionStreamResponse createToolCallChunk({
   required String id,
   required int created,
   required String model,
@@ -82,7 +86,7 @@ CreateChatCompletionStreamResponse _createToolCallChunk({
 }
 
 /// Creates a response chunk containing usage statistics.
-CreateChatCompletionStreamResponse _createUsageChunk({
+CreateChatCompletionStreamResponse createUsageChunk({
   required String id,
   required int created,
   required String model,
@@ -110,7 +114,7 @@ CreateChatCompletionStreamResponse _createUsageChunk({
 ///
 /// Logs when a signature is captured or when the first function call lacks one.
 /// Uses [extractThoughtSignature] to extract the signature from the part.
-void _captureSignatureIfPresent({
+void captureSignatureIfPresent({
   required Map<String, dynamic> part,
   required String toolCallId,
   required String functionName,

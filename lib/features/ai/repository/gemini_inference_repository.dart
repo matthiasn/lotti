@@ -5,18 +5,20 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/repository/gemini_chunk_factories.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:lotti/features/ai/repository/gemini_payload_processing.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-part 'gemini_inference_payloads.dart';
+export 'package:lotti/features/ai/repository/gemini_inference_payloads.dart'
+    show GeneratedImage;
 
 part 'gemini_multiturn_inference.dart';
-part 'gemini_chunk_factories.dart';
 part 'gemini_image_generation.dart';
-part 'gemini_payload_processing.dart';
 
 /// Gemini inference over raw HTTP with OpenAI-compatible streaming output.
 ///
@@ -247,7 +249,7 @@ class GeminiInferenceRepository {
             // Emit thinking block once we transition to regular text/content
             if (inThinking) {
               emittedAny = true;
-              yield _createThinkingChunk(
+              yield createThinkingChunk(
                 id: idPrefix,
                 created: created,
                 model: model,
@@ -264,7 +266,7 @@ class GeminiInferenceRepository {
               emittedAny = true;
               visibleChars += text.length;
               totalCharsEmitted = visibleChars + thinkingChars;
-              yield _createTextChunk(
+              yield createTextChunk(
                 id: idPrefix,
                 created: created,
                 model: model,
@@ -291,7 +293,7 @@ class GeminiInferenceRepository {
               // Single-turn is always turn 0
               final toolCallId = 'tool_turn0_$currentIndex';
 
-              _captureSignatureIfPresent(
+              captureSignatureIfPresent(
                 part: p,
                 toolCallId: toolCallId,
                 functionName: name,
@@ -299,7 +301,7 @@ class GeminiInferenceRepository {
                 signatureCollector: signatureCollector,
               );
 
-              yield _createToolCallChunk(
+              yield createToolCallChunk(
                 id: idPrefix,
                 created: created,
                 model: model,
@@ -318,7 +320,7 @@ class GeminiInferenceRepository {
     // Flush any remaining thinking at end of stream
     if (inThinking && thinkingBuffer.isNotEmpty) {
       emittedAny = true;
-      yield _createThinkingChunk(
+      yield createThinkingChunk(
         id: idPrefix,
         created: created,
         model: model,
@@ -328,7 +330,7 @@ class GeminiInferenceRepository {
 
     // Emit final response with usage metadata if available
     if (promptTokens != null || candidatesTokens != null) {
-      yield _createUsageChunk(
+      yield createUsageChunk(
         id: idPrefix,
         created: created,
         model: model,
@@ -360,7 +362,7 @@ class GeminiInferenceRepository {
           .timeout(kNonStreamingTimeout);
       if (fallbackResp.statusCode >= 200 && fallbackResp.statusCode < 300) {
         final decoded = jsonDecode(fallbackResp.body) as Map<String, dynamic>;
-        final payload = _processGeminiPayload(
+        final payload = processGeminiPayload(
           decoded,
           includeThoughts: thinkingConfig.includeThoughts,
         );
@@ -373,7 +375,7 @@ class GeminiInferenceRepository {
         }
 
         if (payload.thinking.isNotEmpty) {
-          yield _createThinkingChunk(
+          yield createThinkingChunk(
             id: idPrefix,
             created: created,
             model: model,
@@ -381,7 +383,7 @@ class GeminiInferenceRepository {
           );
         }
         if (payload.visible.isNotEmpty) {
-          yield _createTextChunk(
+          yield createTextChunk(
             id: idPrefix,
             created: created,
             model: model,

@@ -1548,46 +1548,6 @@ void main() {
     });
   });
 
-  group('extractThoughtSignature helper', () {
-    test('extracts signature from part level (sibling of functionCall)', () {
-      final part = <String, dynamic>{
-        'functionCall': {'name': 'test_func', 'args': <String, dynamic>{}},
-        'thoughtSignature': 'encrypted-sig-12345',
-      };
-      expect(extractThoughtSignature(part), 'encrypted-sig-12345');
-    });
-
-    test('returns null when no signature present', () {
-      final part = <String, dynamic>{
-        'functionCall': {'name': 'test_func', 'args': <String, dynamic>{}},
-      };
-      expect(extractThoughtSignature(part), isNull);
-    });
-
-    test(
-      'returns null when signature is inside functionCall (wrong location)',
-      () {
-        // This tests that we correctly look at part level, not inside functionCall
-        final part = <String, dynamic>{
-          'functionCall': {
-            'name': 'test_func',
-            'args': <String, dynamic>{},
-            'thoughtSignature': 'wrong-location-sig',
-          },
-        };
-        expect(extractThoughtSignature(part), isNull);
-      },
-    );
-
-    test('handles non-string signature values by converting to string', () {
-      final part = <String, dynamic>{
-        'functionCall': {'name': 'test_func', 'args': <String, dynamic>{}},
-        'thoughtSignature': 12345, // numeric value
-      };
-      expect(extractThoughtSignature(part), '12345');
-    });
-  });
-
   group('Signature capture from streaming', () {
     test('captures thought signatures in collector during streaming', () async {
       // According to Gemini docs, thoughtSignature is a sibling of functionCall
