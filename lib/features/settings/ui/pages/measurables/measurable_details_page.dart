@@ -167,9 +167,9 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
         primaryEnabled: dirty,
         secondaryLabel: messages.cancelButton,
         onSecondary: backToList,
-        destructiveLabel: widget.isCreateMode ? null : messages.deleteButton,
-        onDestructive: widget.isCreateMode ? null : onDeletePressed,
       ),
+      deleteLabel: widget.isCreateMode ? null : messages.deleteButton,
+      onDelete: widget.isCreateMode ? null : onDeletePressed,
       children: [
         FormBuilder(
           key: _formKey,

@@ -204,10 +204,10 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
         primaryEnabled: saveEnabled,
         secondaryLabel: messages.cancelButton,
         onSecondary: () => beamToNamed('/settings/labels'),
-        destructiveLabel: widget.isCreateMode ? null : messages.deleteButton,
-        onDestructive: widget.isCreateMode ? null : handleDelete,
-        destructiveEnabled: !state.isSaving,
       ),
+      deleteLabel: widget.isCreateMode ? null : messages.deleteButton,
+      onDelete: widget.isCreateMode ? null : handleDelete,
+      deleteEnabled: !state.isSaving,
       children: [
         SettingsFormSection(
           title: messages.basicSettings,

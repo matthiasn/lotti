@@ -18,6 +18,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -435,7 +436,20 @@ void main() {
           ),
         );
 
-        await tester.tap(find.widgetWithText(DsGlassPill, 'Delete'));
+        await tester.scrollUntilVisible(
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // The sticky glass action bar overlays the viewport bottom; nudge
+        // the row above it so the tap hits the row, not the bar.
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -120),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -469,7 +483,20 @@ void main() {
           ),
         );
 
-        await tester.tap(find.widgetWithText(DsGlassPill, 'Delete'));
+        await tester.scrollUntilVisible(
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // The sticky glass action bar overlays the viewport bottom; nudge
+        // the row above it so the tap hits the row, not the bar.
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -120),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -502,7 +529,7 @@ void main() {
 
       expect(find.text(testDashboardDescription), findsOneWidget);
       // The destructive delete pill is present in edit mode.
-      expect(find.widgetWithText(DsGlassPill, 'Delete'), findsOneWidget);
+      expect(find.widgetWithText(SettingsDeleteRow, 'Delete'), findsOneWidget);
     });
 
     testWidgets('dashboard definition page setCategory logs to DevLogger '

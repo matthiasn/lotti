@@ -17,6 +17,7 @@ import 'package:lotti/features/design_system/components/toggles/design_system_to
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
@@ -264,7 +265,10 @@ void main() {
 
         expect(find.byType(SettingsFormActionBar), findsOneWidget);
         // Destructive delete renders as a labeled glass pill.
-        expect(pillFinder('Delete'), findsOneWidget);
+        expect(
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
+          findsOneWidget,
+        );
         expect(pillFinder('Cancel'), findsOneWidget);
         expect(pillFinder('Save'), findsOneWidget);
       });
@@ -417,7 +421,20 @@ void main() {
         await pumpCategoryDetailsPage(tester, settle: true);
 
         // The destructive action is the labeled Delete pill in the bar.
-        await tester.tap(pillFinder('Delete'));
+        await tester.scrollUntilVisible(
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // The sticky glass action bar overlays the viewport bottom; nudge
+        // the row above it so the tap hits the row, not the bar.
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -120),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -444,7 +461,20 @@ void main() {
           await pumpCategoryDetailsPage(tester, settle: true);
 
           // Open delete dialog
-          await tester.tap(pillFinder('Delete'));
+          await tester.scrollUntilVisible(
+            find.widgetWithText(SettingsDeleteRow, 'Delete'),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          // The sticky glass action bar overlays the viewport bottom; nudge
+          // the row above it so the tap hits the row, not the bar.
+          await tester.drag(
+            find.byType(Scrollable).first,
+            const Offset(0, -120),
+            warnIfMissed: false,
+          );
+          await tester.pump();
+          await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -479,7 +509,20 @@ void main() {
         await pumpCategoryDetailsPage(tester, settle: true);
 
         // Open delete dialog
-        await tester.tap(pillFinder('Delete'));
+        await tester.scrollUntilVisible(
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // The sticky glass action bar overlays the viewport bottom; nudge
+        // the row above it so the tap hits the row, not the bar.
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -120),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 

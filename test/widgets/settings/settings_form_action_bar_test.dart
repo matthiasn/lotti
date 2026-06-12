@@ -71,47 +71,6 @@ void main() {
   });
 
   testWidgets(
-    'destructive action renders as a labeled pill and fires',
-    (tester) async {
-      var deleted = false;
-      await pumpBar(
-        tester,
-        bar: SettingsFormActionBar(
-          primaryLabel: 'Save',
-          onPrimary: () {},
-          destructiveLabel: 'Delete',
-          onDestructive: () => deleted = true,
-        ),
-      );
-
-      // Always labeled: an icon-only destructive control is invisible
-      // to users who scan for words.
-      expect(find.text('Delete'), findsOneWidget);
-      expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
-
-      await tester.tap(find.text('Delete'));
-      expect(deleted, isTrue);
-    },
-  );
-
-  testWidgets('disabled destructive button does not fire', (tester) async {
-    var deleted = false;
-    await pumpBar(
-      tester,
-      bar: SettingsFormActionBar(
-        primaryLabel: 'Save',
-        onPrimary: () {},
-        destructiveLabel: 'Delete',
-        onDestructive: () => deleted = true,
-        destructiveEnabled: false,
-      ),
-    );
-
-    await tester.tap(find.text('Delete'));
-    expect(deleted, isFalse);
-  });
-
-  testWidgets(
     'large accessibility text stacks all actions as labeled pills with '
     'the primary action last',
     (tester) async {
@@ -123,44 +82,39 @@ void main() {
           onPrimary: () {},
           secondaryLabel: 'Cancel',
           onSecondary: () {},
-          destructiveLabel: 'Delete',
-          onDestructive: () {},
         ),
       );
 
-      expect(find.text('Delete'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
 
-      // Primary lands closest to the thumb (greatest dy), destructive
-      // farthest from it (smallest dy).
-      final deleteY = tester.getTopLeft(find.text('Delete')).dy;
+      // Primary lands closest to the thumb (greatest dy).
       final cancelY = tester.getTopLeft(find.text('Cancel')).dy;
       final saveY = tester.getTopLeft(find.text('Save')).dy;
-      expect(deleteY, lessThan(cancelY));
       expect(cancelY, lessThan(saveY));
     },
   );
 
   testWidgets(
-    'row layout keeps destructive at the start and primary at the end',
+    'row layout renders pills at intrinsic width — long labels never '
+    'get squeezed into ellipses by flex sharing',
     (tester) async {
       await pumpBar(
         tester,
         bar: SettingsFormActionBar(
-          primaryLabel: 'Save',
+          primaryLabel: 'Speichern',
           onPrimary: () {},
-          secondaryLabel: 'Cancel',
+          secondaryLabel: 'Abbrechen',
           onSecondary: () {},
-          destructiveLabel: 'Delete',
-          onDestructive: () {},
         ),
       );
 
-      final deleteX = tester.getCenter(find.text('Delete')).dx;
-      final cancelX = tester.getCenter(find.text('Cancel')).dx;
-      final saveX = tester.getCenter(find.text('Save')).dx;
-      expect(deleteX, lessThan(cancelX));
+      // Both full labels render (no "S…" truncation), end-aligned with
+      // cancel before save.
+      expect(find.text('Abbrechen'), findsOneWidget);
+      expect(find.text('Speichern'), findsOneWidget);
+      final cancelX = tester.getCenter(find.text('Abbrechen')).dx;
+      final saveX = tester.getCenter(find.text('Speichern')).dx;
       expect(cancelX, lessThan(saveX));
     },
   );

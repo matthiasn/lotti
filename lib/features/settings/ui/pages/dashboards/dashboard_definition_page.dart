@@ -355,12 +355,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         primaryEnabled: dirty,
                         secondaryLabel: messages.cancelButton,
                         onSecondary: backToList,
-                        destructiveLabel: widget.isCreateMode
-                            ? null
-                            : messages.deleteButton,
-                        onDestructive: widget.isCreateMode
-                            ? null
-                            : deleteDashboard,
                         extraActions: [
                           DsGlassRoundButton(
                             key: const Key('dashboard_copy'),
@@ -370,6 +364,10 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                           ),
                         ],
                       ),
+                      deleteLabel: widget.isCreateMode
+                          ? null
+                          : messages.deleteButton,
+                      onDelete: widget.isCreateMode ? null : deleteDashboard,
                       children: [
                         FormBuilder(
                           key: formKey,

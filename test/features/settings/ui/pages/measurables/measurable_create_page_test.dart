@@ -6,6 +6,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_p
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -68,7 +69,7 @@ void main() {
         await pumpPage(tester, CreateMeasurablePage());
 
         expect(find.text('Create measurable'), findsOneWidget);
-        expect(find.widgetWithText(DsGlassPill, 'Delete'), findsNothing);
+        expect(find.widgetWithText(SettingsDeleteRow, 'Delete'), findsNothing);
 
         // An unset aggregation type renders the localized hint, never a
         // raw enum identifier.

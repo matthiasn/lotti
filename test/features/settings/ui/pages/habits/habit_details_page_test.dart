@@ -9,6 +9,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -184,7 +185,20 @@ void main() {
       (tester) async {
         await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
 
-        await tester.tap(find.widgetWithText(DsGlassPill, 'Delete'));
+        await tester.scrollUntilVisible(
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // The sticky glass action bar overlays the viewport bottom; nudge
+        // the row above it so the tap hits the row, not the bar.
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -120),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
 
@@ -265,7 +279,7 @@ void main() {
         );
 
         expect(find.text('Create habit'), findsOneWidget);
-        expect(find.widgetWithText(DsGlassPill, 'Delete'), findsNothing);
+        expect(find.widgetWithText(SettingsDeleteRow, 'Delete'), findsNothing);
 
         final createPill = tester.widget<DsGlassPill>(
           find.widgetWithText(DsGlassPill, 'Create'),

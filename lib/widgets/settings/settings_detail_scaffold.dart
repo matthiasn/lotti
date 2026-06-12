@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
+import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
 
@@ -31,10 +32,17 @@ class SettingsDetailScaffold extends StatelessWidget {
     this.actionBar,
     this.onSaveShortcut,
     this.headerActions,
+    this.deleteLabel,
+    this.onDelete,
+    this.deleteEnabled = true,
     super.key,
   }) : assert(
          (children == null) != (slivers == null),
          'Provide exactly one of children or slivers.',
+       ),
+       assert(
+         (deleteLabel == null) == (onDelete == null),
+         'deleteLabel and onDelete must be provided together.',
        );
 
   /// Header title (e.g. "Edit habit").
@@ -63,6 +71,13 @@ class SettingsDetailScaffold extends StatelessWidget {
 
   /// Optional trailing header widgets.
   final List<Widget>? headerActions;
+
+  /// Optional destructive action, rendered as a [SettingsDeleteRow] at
+  /// the very end of the form — the conventional, deliberate home for
+  /// Delete, fully separated from the sticky bar's save flow.
+  final String? deleteLabel;
+  final VoidCallback? onDelete;
+  final bool deleteEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +115,19 @@ class SettingsDetailScaffold extends StatelessWidget {
                 )
               else
                 ...slivers!,
+              if (onDelete != null)
+                SettingsContentSliver(
+                  sliver: SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.only(top: tokens.spacing.step4),
+                      child: SettingsDeleteRow(
+                        label: deleteLabel!,
+                        onTap: onDelete!,
+                        enabled: deleteEnabled,
+                      ),
+                    ),
+                  ),
+                ),
               SliverToBoxAdapter(
                 child: SizedBox(height: bottomInset + tokens.spacing.step6),
               ),

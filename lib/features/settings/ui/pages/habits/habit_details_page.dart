@@ -101,9 +101,9 @@ class HabitDetailsPage extends ConsumerWidget {
         primaryEnabled: saveEnabled,
         secondaryLabel: messages.cancelButton,
         onSecondary: () => beamToNamed('/settings/habits'),
-        destructiveLabel: isCreateMode ? null : messages.deleteButton,
-        onDestructive: isCreateMode ? null : handleDelete,
       ),
+      deleteLabel: isCreateMode ? null : messages.deleteButton,
+      onDelete: isCreateMode ? null : handleDelete,
       children: [
         FormBuilder(
           key: state.formKey,

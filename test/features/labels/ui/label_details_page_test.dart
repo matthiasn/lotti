@@ -16,6 +16,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -245,7 +246,20 @@ void main() {
 
       // The destructive action is the labeled Delete pill in the sticky
       // action bar.
-      await tester.tap(pillFinder('Delete'));
+      await tester.scrollUntilVisible(
+        find.widgetWithText(SettingsDeleteRow, 'Delete'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      // The sticky glass action bar overlays the viewport bottom; nudge
+      // the row above it so the tap hits the row, not the bar.
+      await tester.drag(
+        find.byType(Scrollable).first,
+        const Offset(0, -120),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
       await tester.pump();
 
       // Confirm in the dialog (destructive tertiary button)
@@ -649,7 +663,20 @@ void main() {
         );
 
         // Open the delete confirmation dialog via the labeled Delete pill.
-        await tester.tap(pillFinder('Delete'));
+        await tester.scrollUntilVisible(
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // The sticky glass action bar overlays the viewport bottom; nudge
+        // the row above it so the tap hits the row, not the bar.
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -120),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         expect(find.byType(AlertDialog), findsOneWidget);

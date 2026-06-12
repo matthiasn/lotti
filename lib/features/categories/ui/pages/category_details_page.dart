@@ -237,10 +237,10 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         primaryEnabled: saveEnabled,
         secondaryLabel: context.messages.cancelButton,
         onSecondary: () => beamToNamed('/settings/categories'),
-        destructiveLabel: context.messages.deleteButton,
-        onDestructive: _showDeleteDialog,
-        destructiveEnabled: !state.isSaving,
       ),
+      deleteLabel: context.messages.deleteButton,
+      onDelete: _showDeleteDialog,
+      deleteEnabled: !state.isSaving,
       children: [
         if (state.errorMessage != null)
           ErrorStateWidget(

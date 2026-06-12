@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 
@@ -114,5 +115,31 @@ void main() {
       () => SettingsDetailScaffold(title: 'x', onBack: () {}),
       throwsAssertionError,
     );
+  });
+  testWidgets('renders the delete row after the form content', (
+    tester,
+  ) async {
+    var deleted = false;
+    await pumpScaffold(
+      tester,
+      scaffold: SettingsDetailScaffold(
+        title: 'Edit label',
+        onBack: () {},
+        deleteLabel: 'Delete',
+        onDelete: () => deleted = true,
+        children: const [Text('form content')],
+      ),
+    );
+
+    final row = find.byType(SettingsDeleteRow);
+    expect(row, findsOneWidget);
+    // Below the form content, at the end of the scroll body.
+    expect(
+      tester.getTopLeft(row).dy,
+      greaterThan(tester.getTopLeft(find.text('form content')).dy),
+    );
+
+    await tester.tap(find.text('Delete'));
+    expect(deleted, isTrue);
   });
 }

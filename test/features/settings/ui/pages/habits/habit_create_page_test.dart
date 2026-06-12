@@ -8,6 +8,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -90,7 +91,7 @@ void main() {
         await pumpPage(tester, page);
 
         expect(find.text('Create habit'), findsOneWidget);
-        expect(find.widgetWithText(DsGlassPill, 'Delete'), findsNothing);
+        expect(find.widgetWithText(SettingsDeleteRow, 'Delete'), findsNothing);
 
         final createFinder = find.widgetWithText(DsGlassPill, 'Create');
         expect(tester.widget<DsGlassPill>(createFinder).enabled, isFalse);
