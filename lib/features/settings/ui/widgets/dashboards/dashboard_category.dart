@@ -9,9 +9,12 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
+/// Category picker for the dashboard editor, rendered as a
+/// [SettingsPickerField] so it matches the design-system fields around
+/// it. Selection happens in a single-page modal listing the categories.
 class SelectDashboardCategoryWidget extends StatelessWidget {
   const SelectDashboardCategoryWidget({
     required this.setCategory,
@@ -24,8 +27,6 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = TextEditingController();
-
     return StreamBuilder<List<CategoryDefinition>>(
       stream: notificationDrivenStream(
         notifications: getIt<UpdateNotifications>(),
@@ -35,15 +36,10 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
       builder: (context, snapshot) {
         final categories = snapshot.data ?? <CategoryDefinition>[]
           ..sortBy((category) => category.name);
-        final categoriesById = <String, CategoryDefinition>{};
-
-        for (final category in categories) {
-          categoriesById[category.id] = category;
-        }
-
+        final categoriesById = <String, CategoryDefinition>{
+          for (final category in categories) category.id: category,
+        };
         final category = categoriesById[categoryId];
-
-        controller.text = category?.name ?? '';
 
         void onTap() {
           ModalUtils.showSinglePageModal<void>(
@@ -72,46 +68,19 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
           );
         }
 
-        final categoryUndefined = categoryId == null;
-        final style = context.textTheme.titleMedium;
-
-        return TextField(
+        return SettingsPickerField(
           key: const Key('select_dashboard_category'),
-          onTap: onTap,
-          readOnly: true,
-          focusNode: FocusNode(),
-          controller: controller,
-          decoration:
-              inputDecoration(
-                labelText: categoryUndefined
-                    ? ''
-                    : context.messages.dashboardCategoryLabel,
-                semanticsLabel: 'Select category',
-                themeData: Theme.of(context),
-              ).copyWith(
-                icon: CategoryIconCompact(
-                  category?.id,
+          label: context.messages.dashboardCategoryLabel,
+          valueText: category?.name,
+          hintText: context.messages.habitCategoryHint,
+          leading: category != null
+              ? CategoryIconCompact(
+                  category.id,
                   size: CategoryIconConstants.iconSizeMedium,
-                ),
-                suffixIcon: categoryUndefined
-                    ? null
-                    : GestureDetector(
-                        child: Icon(
-                          Icons.close_rounded,
-                          color: style?.color,
-                        ),
-                        onTap: () {
-                          controller.clear();
-                          setCategory(null);
-                        },
-                      ),
-                hintText: context.messages.habitCategoryHint,
-                hintStyle: style?.copyWith(
-                  color: context.colorScheme.outline.withAlpha(127),
-                ),
-                border: InputBorder.none,
-              ),
-          style: style,
+                )
+              : null,
+          onClear: category != null ? () => setCategory(null) : null,
+          onTap: onTap,
         );
       },
     );

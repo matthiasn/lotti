@@ -81,7 +81,7 @@ void main() {
       ) async {
         await pumpWidget(tester, setCategory: (_) {});
 
-        expect(find.text('Select Category...'), findsOneWidget);
+        expect(find.text('Select category'), findsOneWidget);
       });
 
       testWidgets('shows selected category name in text field', (tester) async {
@@ -160,7 +160,10 @@ void main() {
       ) async {
         await pumpWidget(tester, setCategory: (_) {});
 
-        final textField = find.byKey(const Key('select_dashboard_category'));
+        final textField = find.descendant(
+          of: find.byKey(const Key('select_dashboard_category')),
+          matching: find.byType(InkWell),
+        );
         await tester.ensureVisible(textField);
         await tester.tap(textField);
         await tester.pumpAndSettle();
@@ -184,7 +187,10 @@ void main() {
           );
 
           // Open modal.
-          final textField = find.byKey(const Key('select_dashboard_category'));
+          final textField = find.descendant(
+            of: find.byKey(const Key('select_dashboard_category')),
+            matching: find.byType(InkWell),
+          );
           await tester.ensureVisible(textField);
           await tester.tap(textField);
           await tester.pumpAndSettle();
@@ -205,7 +211,10 @@ void main() {
           await pumpWidget(tester, setCategory: (_) {});
 
           // Open modal.
-          final textField = find.byKey(const Key('select_dashboard_category'));
+          final textField = find.descendant(
+            of: find.byKey(const Key('select_dashboard_category')),
+            matching: find.byType(InkWell),
+          );
           await tester.ensureVisible(textField);
           await tester.tap(textField);
           await tester.pumpAndSettle();
@@ -227,7 +236,10 @@ void main() {
         // Verify both category names are shown so the `.map` path (lines 56–68) is exercised.
         await pumpWidget(tester, setCategory: (_) {});
 
-        final textField = find.byKey(const Key('select_dashboard_category'));
+        final textField = find.descendant(
+          of: find.byKey(const Key('select_dashboard_category')),
+          matching: find.byType(InkWell),
+        );
         await tester.ensureVisible(textField);
         await tester.tap(textField);
         await tester.pumpAndSettle();

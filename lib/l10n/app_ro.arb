@@ -1,5 +1,4 @@
 {
-  "@@locale": "ro",
   "activeLabel": "Activ",
   "addActionAddAudioRecording": "Adauga inregistrare audio",
   "addActionAddChecklist": "Listă de verificare",
@@ -8,8 +7,8 @@
   "addActionAddScreenshot": "Adauga captura de ecran",
   "addActionAddTask": "Adauga sarcina",
   "addActionAddText": "Adauga text",
-  "addActionAddTimer": "Cronometru",
   "addActionAddTimeRecording": "Adauga timp",
+  "addActionAddTimer": "Cronometru",
   "addActionImportImage": "Importă imagine",
   "addHabitCommentLabel": "Comentariu",
   "addHabitDateLabel": "Finalizat la",
@@ -325,8 +324,8 @@
   "agentSoulAssignedTemplatesTitle": "Șabloane atribuite",
   "agentSoulAssignmentLabel": "Suflet",
   "agentSoulCoachingStyleLabel": "Stil de coaching",
-  "agentSoulCreatedSuccess": "Suflet creat",
   "agentSoulCreateTitle": "Creează un suflet",
+  "agentSoulCreatedSuccess": "Suflet creat",
   "agentSoulDeleteConfirmBody": "Aceasta va elimina sufletul și toate versiunile sale.",
   "agentSoulDeleteConfirmTitle": "Șterge sufletul",
   "agentSoulDetailTitle": "Detalii suflet",
@@ -364,10 +363,7 @@
     }
   },
   "agentSoulSelectTitle": "Selectează un suflet",
-  "agentSoulsEmptyFiltered": "Niciun suflet nu se potrivește cu filtrele dvs.",
   "agentSoulSettingsTab": "Setări",
-  "agentSoulsSearchPlaceholder": "Caută suflete…",
-  "agentSoulsTitle": "Suflete",
   "agentSoulToneBoundsLabel": "Limite de ton",
   "agentSoulVersionHistoryTitle": "Istoric versiuni",
   "agentSoulVersionLabel": "Versiunea {version}",
@@ -380,6 +376,9 @@
   },
   "agentSoulVersionSaved": "Versiune nouă de suflet salvată",
   "agentSoulVoiceDirectiveLabel": "Directivă vocală",
+  "agentSoulsEmptyFiltered": "Niciun suflet nu se potrivește cu filtrele dvs.",
+  "agentSoulsSearchPlaceholder": "Caută suflete…",
+  "agentSoulsTitle": "Suflete",
   "agentStateConsecutiveFailures": "Eșecuri consecutive",
   "agentStateErrorLoading": "Eroare la încărcarea stării: {error}",
   "@agentStateErrorLoading": {
@@ -425,8 +424,8 @@
   "agentTabStats": "Statistici",
   "agentTemplateAggregateTokenUsageHeading": "Utilizare totală de token-uri",
   "agentTemplateAssignedLabel": "Șablon",
-  "agentTemplateCreatedSuccess": "Șablon creat",
   "agentTemplateCreateTitle": "Creează un șablon",
+  "agentTemplateCreatedSuccess": "Șablon creat",
   "agentTemplateDeleteConfirm": "Ștergi acest șablon? Această acțiune nu poate fi anulată.",
   "agentTemplateDeleteHasInstances": "Nu se poate șterge: agenți activi utilizează acest șablon.",
   "agentTemplateDisplayNameLabel": "Nume",
@@ -441,10 +440,10 @@
   "agentTemplateKindProjectAgent": "Agent de proiect",
   "agentTemplateKindTaskAgent": "Agent de sarcini",
   "agentTemplateMetricsTotalWakes": "Total activări",
-  "agentTemplateNoneAssigned": "Niciun șablon atribuit",
   "agentTemplateNoTemplates": "Nu sunt șabloane disponibile. Creează unul în Setări mai întâi.",
-  "agentTemplateNotFound": "Șablon negăsit",
   "agentTemplateNoVersions": "Nicio versiune",
+  "agentTemplateNoneAssigned": "Niciun șablon atribuit",
+  "agentTemplateNotFound": "Șablon negăsit",
   "agentTemplateReportDirectiveHint": "Definiți structura raportului, secțiunile necesare și regulile de formatare...",
   "agentTemplateReportDirectiveLabel": "Directivă de raport",
   "agentTemplateReportsEmpty": "Niciun raport încă.",
@@ -460,16 +459,10 @@
   },
   "agentTemplateSaveNewVersion": "Salvează",
   "agentTemplateSelectTitle": "Selectează un șablon",
-  "agentTemplatesEmptyFiltered": "Niciun șablon nu corespunde filtrelor dvs.",
   "agentTemplateSettingsTab": "Setări",
-  "agentTemplatesFilterSectionKind": "Tip",
-  "agentTemplatesGroupByKind": "Tip",
-  "agentTemplatesGroupNone": "Toate",
-  "agentTemplatesSearchPlaceholder": "Caută șabloane…",
   "agentTemplateStatsTab": "Statistici",
   "agentTemplateStatusActive": "Activ",
   "agentTemplateStatusArchived": "Arhivat",
-  "agentTemplatesTitle": "Șabloane agent",
   "agentTemplateSwitchHint": "Pentru a utiliza un alt șablon, distruge acest agent și creează unul nou.",
   "agentTemplateVersionHistoryTitle": "Istoric versiuni",
   "agentTemplateVersionLabel": "Versiunea {version}",
@@ -481,6 +474,12 @@
     }
   },
   "agentTemplateVersionSaved": "Versiune nouă salvată",
+  "agentTemplatesEmptyFiltered": "Niciun șablon nu corespunde filtrelor dvs.",
+  "agentTemplatesFilterSectionKind": "Tip",
+  "agentTemplatesGroupByKind": "Tip",
+  "agentTemplatesGroupNone": "Toate",
+  "agentTemplatesSearchPlaceholder": "Caută șabloane…",
+  "agentTemplatesTitle": "Șabloane agent",
   "agentThreadReportLabel": "Raport generat în acest ciclu",
   "agentTokenUsageCachedTokens": "Din cache",
   "agentTokenUsageEmpty": "Nu s-a înregistrat încă nicio utilizare de tokeni.",
@@ -687,6 +686,30 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "URL de bază (opțional)",
   "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Apare în lista dvs. de furnizori",
+  "aiProviderConnectKeyHelperLink": "Obțineți o cheie la {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Ascunsă",
+  "aiProviderConnectKeyPrivacyHint": "Cheia dvs. API nu părăsește niciodată dispozitivul.",
+  "aiProviderConnectPageTitle": "Conectați {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Salvați și continuați",
+  "aiProviderConnectSaveAsDraft": "Salvați ca schiță",
+  "aiProviderConnectSavedAsDraftToast": "Salvată ca schiță",
+  "aiProviderConnectStepChoose": "Alegeți furnizorul",
+  "aiProviderConnectStepConnect": "Conectați",
+  "aiProviderConnectStepReview": "Verificați",
   "aiProviderConnectionCheckingLabel": "Se verifică cheia, se listează modelele disponibile…",
   "aiProviderConnectionFailedBadResponseDetail": "Formă de răspuns neașteptată: {type}",
   "@aiProviderConnectionFailedBadResponseDetail": {
@@ -739,30 +762,6 @@
     }
   },
   "aiProviderConnectionVerifiedTitle": "Conexiune verificată",
-  "aiProviderConnectKeyHelperLink": "Obțineți o cheie la {url}",
-  "@aiProviderConnectKeyHelperLink": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectKeyHiddenLabel": "Ascunsă",
-  "aiProviderConnectKeyPrivacyHint": "Cheia dvs. API nu părăsește niciodată dispozitivul.",
-  "aiProviderConnectPageTitle": "Conectați {providerName}",
-  "@aiProviderConnectPageTitle": {
-    "placeholders": {
-      "providerName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectSaveAndContinue": "Salvați și continuați",
-  "aiProviderConnectSaveAsDraft": "Salvați ca schiță",
-  "aiProviderConnectSavedAsDraftToast": "Salvată ca schiță",
-  "aiProviderConnectStepChoose": "Alegeți furnizorul",
-  "aiProviderConnectStepConnect": "Conectați",
-  "aiProviderConnectStepReview": "Verificați",
   "aiProviderDetailActiveProfileTitle": "Profil activ",
   "aiProviderDetailAddModelButton": "Adaugă model",
   "aiProviderDetailApiKeyLabel": "Cheie API",
@@ -826,11 +825,11 @@
   "aiResponseTypePromptGeneration": "Prompt generat",
   "aiResponseTypeTaskSummary": "Rezumat sarcină",
   "aiRunningActivityOpenProgress": "Afișează progresul AI",
-  "aiSettingsAddedLabel": "Adăugat",
   "aiSettingsAddModelButton": "Adaugă model",
   "aiSettingsAddModelTooltip": "Adaugă acest model la furnizorul tău",
   "aiSettingsAddProfileButton": "Adaugă profil",
   "aiSettingsAddProviderButton": "Adaugă furnizor",
+  "aiSettingsAddedLabel": "Adăugat",
   "aiSettingsClearAllFiltersTooltip": "Șterge toate filtrele",
   "aiSettingsClearFiltersButton": "Șterge",
   "aiSettingsCounterModels": "Modele",
@@ -1037,9 +1036,9 @@
   "audioRecordingCancel": "ANULARE",
   "audioRecordingListening": "Se ascultă...",
   "audioRecordingRealtime": "Transcriere în direct",
-  "audioRecordings": "Înregistrări audio",
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOP",
+  "audioRecordings": "Înregistrări audio",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 acțiune} other{{count} acțiuni}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1230,12 +1229,12 @@
   "checklistExpandTooltip": "Extindeți",
   "checklistExportAsMarkdown": "Exportă lista de verificare ca Markdown",
   "checklistExportFailed": "Exportul a eșuat",
-  "checklistItemArchived": "Element arhivat",
   "checklistItemArchiveUndo": "Anulează",
+  "checklistItemArchived": "Element arhivat",
   "checklistItemDeleteCancel": "Anulează",
   "checklistItemDeleteConfirm": "Confirmă",
-  "checklistItemDeleted": "Element șters",
   "checklistItemDeleteWarning": "Această acțiune nu poate fi anulată.",
+  "checklistItemDeleted": "Element șters",
   "checklistMarkdownCopied": "Lista de verificare copiată ca Markdown",
   "checklistMoreTooltip": "Mai mult",
   "checklistNoneDone": "Niciun element finalizat încă.",
@@ -1421,12 +1420,8 @@
   "conflictPickerEditMerge": "Editare și îmbinare…",
   "conflictPickerUseFromSync": "Folosiți din sincronizare",
   "conflictPickerUseThisDevice": "Folosiți acest dispozitiv",
-  "conflictsEmptyDescription": "Totul este sincronizat. Elementele rezolvate rămân disponibile în celălalt filtru.",
-  "conflictsEmptyTitle": "Nu s-au detectat conflicte",
   "conflictSideFromSync": "DIN SINCRONIZARE",
   "conflictSideThisDevice": "ACEST DISPOZITIV",
-  "conflictsResolved": "rezolvat",
-  "conflictsUnresolved": "nerezolvat",
   "conflictWordCount": "{count, plural, one{{count} cuvânt} few{{count} cuvinte} other{{count} de cuvinte}}",
   "@conflictWordCount": {
     "description": "Word count shown on the conflict detail meta row.",
@@ -1437,6 +1432,10 @@
       }
     }
   },
+  "conflictsEmptyDescription": "Totul este sincronizat. Elementele rezolvate rămân disponibile în celălalt filtru.",
+  "conflictsEmptyTitle": "Nu s-au detectat conflicte",
+  "conflictsResolved": "rezolvat",
+  "conflictsUnresolved": "nerezolvat",
   "copyAsMarkdown": "Copiază ca Markdown",
   "copyAsText": "Copiază ca text",
   "correctionExampleCancel": "ANULEAZĂ",
@@ -1602,7 +1601,6 @@
   "dailyOsNextCaptureListeningStatus": "Se ascultă…",
   "dailyOsNextCapturePastPrompt": "Mai doriți să înregistrați ceva din {date}?",
   "dailyOsNextCaptureReconcileCta": "Verificați",
-  "dailyOsNextCapturesPanelTitle": "Capturi",
   "dailyOsNextCaptureTranscribing": "Se transcrie…",
   "dailyOsNextCaptureTranscriptHint": "Corectați orice a înțeles greșit transcrierea înainte de planificare.",
   "dailyOsNextCaptureTranscriptLabel": "Verificați transcrierea",
@@ -1610,6 +1608,7 @@
   "dailyOsNextCaptureVoiceButtonReset": "Reîncepe",
   "dailyOsNextCaptureVoiceButtonStart": "Începe ascultarea",
   "dailyOsNextCaptureVoiceButtonStop": "Oprește ascultarea",
+  "dailyOsNextCapturesPanelTitle": "Capturi",
   "dailyOsNextCategoryFilterAll": "Toate categoriile",
   "dailyOsNextCategoryFilterDescription": "Doar categoriile activate pentru planificarea zilei sunt folosite pentru procesarea automată Daily OS.",
   "dailyOsNextCategoryFilterEmpty": "Nu există încă categorii activate pentru planificarea zilei.",
@@ -1817,6 +1816,11 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Recurent · ratat",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesiune anterioară} few{{count} sesiuni anterioare} other{{count} de sesiuni anterioare}}",
+  "dailyOsNextTimeSpentShowLess": "Afișează mai puțin",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount, plural, =1{1 finalizată} few{{completedCount} finalizate} other{{completedCount} de finalizate}}",
+  "dailyOsNextTimeSpentTitle": "AZI PÂNĂ ACUM",
+  "dailyOsNextTimeSpentTitlePast": "TIMP ÎNREGISTRAT",
   "dailyOsNextTimelineActual": "Real",
   "dailyOsNextTimelineBoth": "Plan și real",
   "dailyOsNextTimelineMeridiemAm": "AM",
@@ -1829,38 +1833,33 @@
   "dailyOsNextTimelineShowPaged": "Afișați planul și realul prin glisare",
   "dailyOsNextTimelineSwipeHint": "Glisați spre real · ciupiți vertical pentru zoom",
   "dailyOsNextTimelineTracked": "înregistrat",
-  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesiune anterioară} few{{count} sesiuni anterioare} other{{count} de sesiuni anterioare}}",
-  "dailyOsNextTimeSpentShowLess": "Afișează mai puțin",
-  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount, plural, =1{1 finalizată} few{{completedCount} finalizate} other{{completedCount} de finalizate}}",
-  "dailyOsNextTimeSpentTitle": "AZI PÂNĂ ACUM",
-  "dailyOsNextTimeSpentTitlePast": "TIMP ÎNREGISTRAT",
   "dailyOsNextTriageConfirmDefer": "Amânat",
-  "dailyOsNextTriageConfirmDone": "Marcat ca finalizat",
   "dailyOsNextTriageConfirmDoNow": "Făcut imediat",
+  "dailyOsNextTriageConfirmDone": "Marcat ca finalizat",
   "dailyOsNextTriageConfirmDrop": "Renunțat",
   "dailyOsNextTriageConfirmToday": "Adăugat la astăzi",
   "dailyOsNextTriageDefer": "Amână",
-  "dailyOsNextTriageDone": "Finalizat",
   "dailyOsNextTriageDoNow": "Fă acum",
+  "dailyOsNextTriageDone": "Finalizat",
   "dailyOsNextTriageDrop": "Renunță",
   "dailyOsNextTriageToday": "Astăzi",
+  "dailyOsNoBudgetWarning": "Niciun timp planificat",
   "dailyOsNoBudgets": "Fără bugete de timp",
   "dailyOsNoBudgetsHint": "Adăugați bugete pentru a urmări cum vă distribuiți timpul pe categorii.",
-  "dailyOsNoBudgetWarning": "Niciun timp planificat",
-  "dailyOsNote": "Notă",
   "dailyOsNoTimeline": "Fără intrări în cronologie",
   "dailyOsNoTimelineHint": "Porniți un cronometru sau adăugați blocuri planificate pentru a vedea ziua dvs.",
+  "dailyOsNote": "Notă",
   "dailyOsOnTrack": "Pe drumul cel bun",
   "dailyOsOver": "Depășit",
-  "dailyOsOverallProgress": "Progres general",
   "dailyOsOverBudget": "Buget depășit",
+  "dailyOsOverallProgress": "Progres general",
   "dailyOsOverdue": "Întârziat",
   "dailyOsOverdueShort": "Târziu",
   "dailyOsPlan": "Plan",
   "dailyOsPlanCreated": "Plan creat cu succes",
   "dailyOsPlanCreatedDescription": "Blocurile dvs. de timp au fost salvate. Puteți începe să vă urmăriți sarcinile.",
-  "dailyOsPlanned": "Planificat",
   "dailyOsPlanWithoutVoice": "Planificați fără voce",
+  "dailyOsPlanned": "Planificat",
   "dailyOsQuickCreateTask": "Creează sarcină pentru acest buget",
   "dailyOsReAgree": "Acceptă din nou",
   "dailyOsRecorded": "Înregistrat",
@@ -1887,7 +1886,6 @@
       }
     }
   },
-  "dailyOsTimeline": "Cronologie",
   "dailyOsTimeOver": "+{time} depășit",
   "@dailyOsTimeOver": {
     "placeholders": {
@@ -1897,6 +1895,7 @@
     }
   },
   "dailyOsTimeRange": "Interval de timp",
+  "dailyOsTimeline": "Cronologie",
   "dailyOsTimesUp": "Timpul a expirat",
   "dailyOsTodayButton": "Astăzi",
   "dailyOsUncategorized": "Necategorizat",
@@ -1913,7 +1912,7 @@
   "dashboardAddWorkoutButton": "Bord de Antrenament",
   "dashboardAddWorkoutTitle": "Bord de Antrenament",
   "dashboardAggregationLabel": "Agregare",
-  "dashboardCategoryLabel": "Categorie:",
+  "dashboardCategoryLabel": "Categorie",
   "dashboardCopyHint": "Salvează și copiază configurația tabloului de bord",
   "dashboardDeleteConfirm": "DA, ȘTERGE ACEST TABLOU DE BORD",
   "dashboardDeleteHint": "Șterge tablou de bord",
@@ -2035,8 +2034,8 @@
   },
   "designSystemMyDailyHikeWithDanielaTitle": "Drumeție cu Daniela",
   "designSystemMyDailyLunchBreakTitle": "Pauză de prânz",
-  "designSystemMyDailyMeetingsLabel": "Întâlniri",
   "designSystemMyDailyMeetingWithDannyTitle": "Întâlnire cu Danny",
+  "designSystemMyDailyMeetingsLabel": "Întâlniri",
   "designSystemMyDailyProfileActionLabel": "Profil",
   "designSystemMyDailySkiWithMattTitle": "Mergi la schi cu Matt",
   "designSystemMyDailyTapToExpandLabel": "Apasă pentru extindere",
@@ -2072,8 +2071,8 @@
   "designSystemSmallLabel": "Mic",
   "designSystemSpinnerPlainLabel": "Simplu",
   "designSystemSpinnerSkeletonPulseLabel": "Puls",
-  "designSystemSpinnerSkeletonsTitle": "Schelete",
   "designSystemSpinnerSkeletonWaveLabel": "Val",
+  "designSystemSpinnerSkeletonsTitle": "Schelete",
   "designSystemSpinnerSpinnersTitle": "Spinnere",
   "designSystemSpinnerTrackLabel": "Cu pistă",
   "designSystemSplitButtonDropdownSemantics": "Deschide opțiunile pentru {label}",
@@ -2123,18 +2122,18 @@
   "desktopEmptyStateSelectDashboard": "Selectați un tablou de bord pentru a vedea detaliile",
   "desktopEmptyStateSelectProject": "Selectați un proiect pentru a vedea detaliile",
   "desktopEmptyStateSelectTask": "Selectați o sarcină pentru a vedea detaliile",
-  "deviceDeletedSuccess": "Dispozitivul {deviceName} a fost șters cu succes",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {
-        "type": "String"
-      }
-    }
-  },
   "deviceDeleteFailed": "Ștergerea dispozitivului a eșuat: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
       "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceDeletedSuccess": "Dispozitivul {deviceName} a fost șters cu succes",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {
         "type": "String"
       }
     }
@@ -2186,20 +2185,22 @@
   "generateCoverArtSubtitle": "Creează imagine din descrierea vocală",
   "habitActiveFromLabel": "Data de început",
   "habitArchivedLabel": "Arhivat",
-  "habitCategoryHint": "Selectați categoria...",
+  "habitCategoryHint": "Selectați categoria",
   "habitCategoryLabel": "Categorie",
-  "habitDashboardHint": "Selectați tabloul de bord...",
-  "habitDashboardLabel": "Tablou de bord:",
+  "habitDashboardHint": "Selectați tabloul de bord",
+  "habitDashboardLabel": "Tablou de bord",
   "habitDeleteConfirm": "DA, ȘTERGEȚI ACEST OBICEI",
   "habitDeleteQuestion": "Doriți să ștergeți acest obicei?",
   "habitPriorityLabel": "Prioritate",
+  "habitSectionOptionsTitle": "Opțiuni",
+  "habitSectionScheduleTitle": "Programare",
+  "habitShowAlertAtLabel": "Afișați alerta la",
+  "habitShowFromLabel": "Afișați de la",
   "habitsCompletedHeader": "Finalizate",
   "habitsFilterAll": "toate",
   "habitsFilterCompleted": "finalizate",
   "habitsFilterOpenNow": "scadente",
   "habitsFilterPendingLater": "mai târziu",
-  "habitShowAlertAtLabel": "Afișați alerta la",
-  "habitShowFromLabel": "Afișați de la",
   "habitsOpenHeader": "Scadente acum",
   "habitsPendingLaterHeader": "Mai târziu astăzi",
   "imageGenerationError": "Generarea imaginii a eșuat",
@@ -2247,7 +2248,6 @@
   "inferenceProfileSaveButton": "Salvați",
   "inferenceProfileSelectModel": "Selectați un model…",
   "inferenceProfileSelectProfile": "Selectați un profil…",
-  "inferenceProfilesEmpty": "Niciun profil de inferență",
   "inferenceProfileSkillModelRequired": "Necesită modelul {slotName}",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -2256,7 +2256,6 @@
       }
     }
   },
-  "inferenceProfileSkillsSection": "Competențe automatizate",
   "inferenceProfileSkillUsesModel": "Utilizează modelul {slotName}",
   "@inferenceProfileSkillUsesModel": {
     "placeholders": {
@@ -2265,11 +2264,13 @@
       }
     }
   },
-  "inferenceProfilesTitle": "Profile de inferență",
+  "inferenceProfileSkillsSection": "Competențe automatizate",
   "inferenceProfileThinking": "Gândire",
   "inferenceProfileThinkingHighEnd": "Gândire (nivel înalt)",
   "inferenceProfileThinkingRequired": "Este necesar un model de gândire",
   "inferenceProfileTranscription": "Transcriere",
+  "inferenceProfilesEmpty": "Niciun profil de inferență",
+  "inferenceProfilesTitle": "Profile de inferență",
   "inputDataTypeAudioFilesDescription": "Folosește fișiere audio ca intrare",
   "inputDataTypeAudioFilesName": "Fișiere audio",
   "inputDataTypeImagesDescription": "Folosește imagini ca intrare",
@@ -2324,6 +2325,8 @@
   "journalFlaggedTooltip": "Marcat",
   "journalHideLinkHint": "Ascunde linkul",
   "journalHideMapHint": "Ascunde harta",
+  "journalLinkFromHint": "Legătură de la",
+  "journalLinkToHint": "Legătură la",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
   "journalLinkedEntriesActivityFilterImages": "Imagini",
   "journalLinkedEntriesActivityFilterTimer": "Cronometru",
@@ -2334,8 +2337,6 @@
   "journalLinkedEntriesSortNewestFirst": "Cele mai noi mai întâi",
   "journalLinkedEntriesSortOldestFirst": "Cele mai vechi mai întâi",
   "journalLinkedFromLabel": "Legat de la:",
-  "journalLinkFromHint": "Legătură de la",
-  "journalLinkToHint": "Legătură la",
   "journalPrivateTooltip": "Privat",
   "journalSearchHint": "Cautare jurnal...",
   "journalShareHint": "Partajează",
@@ -2347,12 +2348,13 @@
   "journalUnlinkConfirm": "DA, DESPĂRȚIȚI INTRAREA",
   "journalUnlinkHint": "Despărțiți",
   "journalUnlinkQuestion": "Sigur doriți să despărțiți această intrare?",
+  "linkExistingTask": "Leagă o sarcină existentă...",
   "linkedFromCaption": "de la",
   "linkedTaskImageBadge": "Din sarcina legată",
   "linkedTasksMenuTooltip": "Opțiuni sarcini legate",
   "linkedTasksTitle": "Sarcini legate",
   "linkedToCaption": "la",
-  "linkExistingTask": "Leagă o sarcină existentă...",
+  "@@locale": "ro",
   "loggingDomainAgentRuntime": "Rulare agenți",
   "loggingDomainAgentWorkflow": "Flux de lucru agenți",
   "loggingDomainAi": "IA",
@@ -2433,16 +2435,16 @@
   "maintenancePurgeSentOutboxConfirm": "DA, ELIMINAȚI",
   "maintenancePurgeSentOutboxDescription": "Ștergeți rândurile din outbox trimise cu mai mult de 7 zile în urmă și recuperați spațiul pe disc",
   "maintenancePurgeSentOutboxQuestion": "Ștergeți elementele din outbox trimise cu mai mult de 7 zile în urmă? Această operațiune șterge rândurile deja trimise în blocuri și rulează VACUUM pentru a recupera spațiul pe disc. Elementele în așteptare și cu erori sunt păstrate.",
-  "maintenanceRecreateFts5": "Recreați indexul full-text",
-  "maintenanceRecreateFts5Confirm": "DA, RECREEAZĂ INDEXUL",
-  "maintenanceRecreateFts5Description": "Recreează indexul de căutare text complet",
-  "maintenanceRecreateFts5Message": "Sigur doriți să recreați indexul de căutare text complet? Acest lucru poate dura ceva timp.",
   "maintenanceReSync": "Resincronizați mesajele",
   "maintenanceReSyncAgentEntities": "Entități agent",
   "maintenanceReSyncDescription": "Resincronizează mesajele de pe server",
   "maintenanceReSyncEntityTypes": "Tipuri de entități",
   "maintenanceReSyncJournalEntities": "Intrări jurnal",
   "maintenanceReSyncSelectAtLeastOne": "Selectați cel puțin un tip de entitate",
+  "maintenanceRecreateFts5": "Recreați indexul full-text",
+  "maintenanceRecreateFts5Confirm": "DA, RECREEAZĂ INDEXUL",
+  "maintenanceRecreateFts5Description": "Recreează indexul de căutare text complet",
+  "maintenanceRecreateFts5Message": "Sigur doriți să recreați indexul de căutare text complet? Acest lucru poate dura ceva timp.",
   "maintenanceSyncDefinitions": "Sincronizează măsurabile, tablouri de bord, obiceiuri, categorii, setări AI",
   "maintenanceSyncDefinitionsDescription": "Sincronizează măsurabile, tablouri de bord, obiceiuri, categorii și setări AI",
   "manageLinks": "Gestionează legăturile...",
@@ -2624,10 +2626,8 @@
   "projectPickerUnassigned": "Fără proiect",
   "projectRecommendationDismissTooltip": "Respinge",
   "projectRecommendationResolveTooltip": "Marchează ca rezolvat",
-  "projectRecommendationsTitle": "Pași următori recomandați",
   "projectRecommendationUpdateError": "Recomandarea nu a putut fi actualizată. Vă rugăm să încercați din nou.",
-  "projectsFilterStatusLabel": "Stare:",
-  "projectsFilterTooltip": "Filtrați proiectele",
+  "projectRecommendationsTitle": "Pași următori recomandați",
   "projectShowcaseAiReportTitle": "Raport AI",
   "projectShowcaseBlockedLegend": "{count} blocate",
   "@projectShowcaseBlockedLegend": {
@@ -2728,6 +2728,8 @@
   "projectTargetDateLabel": "Data țintă",
   "projectTitleLabel": "Titlu proiect",
   "projectTitleRequired": "Titlul proiectului nu poate fi gol",
+  "projectsFilterStatusLabel": "Stare:",
+  "projectsFilterTooltip": "Filtrați proiectele",
   "promptDefaultModelBadge": "Implicit",
   "promptGenerationCardTitle": "Prompt de codare AI",
   "promptGenerationCopiedSnackbar": "Prompt copiat în clipboard",
@@ -2864,6 +2866,8 @@
   "sessionRatingSkipButton": "Omite",
   "sessionRatingTitle": "Evaluează această sesiune",
   "sessionRatingViewAction": "Vezi evaluarea",
+  "settingThemingDark": "Temă întunecată",
+  "settingThemingLight": "Temă luminoasă",
   "settingsAboutAppInformation": "Informații aplicație",
   "settingsAboutAppTagline": "Jurnalul tău personal",
   "settingsAboutBuildType": "Tip build",
@@ -3060,6 +3064,7 @@
   "settingsMeasurableNameLabel": "Numele măsurătorii",
   "settingsMeasurablePrivateLabel": "Privat: ",
   "settingsMeasurableSaveLabel": "Salvare",
+  "settingsMeasurableUnitLabel": "Unitatea abrevierii",
   "settingsMeasurablesCreateTitle": "Creare măsurătoare",
   "settingsMeasurablesEmptyState": "Nicio măsurătoare încă",
   "settingsMeasurablesEmptyStateHint": "Apăsați butonul + pentru a crea prima măsurătoare.",
@@ -3075,7 +3080,6 @@
   "settingsMeasurablesSearchHint": "Caută măsurători…",
   "settingsMeasurablesSubtitle": "Configurați tipurile de date măsurabile",
   "settingsMeasurablesTitle": "Măsurători",
-  "settingsMeasurableUnitLabel": "Unitatea abrevierii",
   "settingsResetGeminiConfirm": "Resetează",
   "settingsResetGeminiConfirmQuestion": "Aceasta va afișa din nou dialogul de configurare Gemini. Continui?",
   "settingsResetGeminiSubtitle": "Afișează din nou dialogul de configurare Gemini AI",
@@ -3121,8 +3125,6 @@
   "settingsV2UnimplementedTitle": "Panoul nu este încă implementat",
   "settingsWhatsNewSubtitle": "Vezi cele mai recente actualizări și funcționalități",
   "settingsWhatsNewTitle": "Ce este nou",
-  "settingThemingDark": "Temă întunecată",
-  "settingThemingLight": "Temă luminoasă",
   "sidebarRunningTimerLabel": "Cronometru în execuție",
   "sidebarRunningTimerStopTooltip": "Oprește cronometrul",
   "sidebarToggleCollapseLabel": "Restrânge bara laterală",
@@ -3305,14 +3307,6 @@
       }
     }
   },
-  "tasksAddLabelButton": "Adaugă etichetă",
-  "tasksAgentFilterAll": "Toate",
-  "tasksAgentFilterHasAgent": "Cu agent",
-  "tasksAgentFilterNoAgent": "Fără agent",
-  "tasksAgentFilterTitle": "Agent",
-  "tasksFilterApplyTitle": "Aplică filtrul",
-  "tasksFilterClearAll": "Șterge tot",
-  "tasksFilterTitle": "Filtru sarcini",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} finalizate",
   "@taskShowcaseCompletedCount": {
@@ -3357,6 +3351,25 @@
   "taskShowcaseTimeTracker": "Urmărire timp",
   "taskShowcaseTodo": "De făcut",
   "taskShowcaseTodos": "De făcut",
+  "taskStatusAll": "Toate",
+  "taskStatusBlocked": "BLOCAT",
+  "taskStatusDone": "TERMINAT",
+  "taskStatusGroomed": "PREGĂTIT",
+  "taskStatusInProgress": "ÎN PROGRES",
+  "taskStatusLabel": "Starea Sarcinii:",
+  "taskStatusOnHold": "ÎN AȘTEPTARE",
+  "taskStatusOpen": "DESCHIS",
+  "taskStatusRejected": "RESPINS",
+  "taskTitleEmpty": "Fără titlu",
+  "taskUntitled": "(fără titlu)",
+  "tasksAddLabelButton": "Adaugă etichetă",
+  "tasksAgentFilterAll": "Toate",
+  "tasksAgentFilterHasAgent": "Cu agent",
+  "tasksAgentFilterNoAgent": "Fără agent",
+  "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Aplică filtrul",
+  "tasksFilterClearAll": "Șterge tot",
+  "tasksFilterTitle": "Filtru sarcini",
   "tasksLabelFilterAll": "Toate",
   "tasksLabelFilterTitle": "Etichetă",
   "tasksLabelFilterUnlabeled": "Fără etichetă",
@@ -3382,19 +3395,6 @@
   "tasksSavedFilterDeleteTooltip": "Ștergeți filtrul salvat",
   "tasksSavedFilterDragHandleSemantics": "Trageți pentru a reordona",
   "tasksSavedFilterRenameSemantics": "Redenumiți filtrul salvat",
-  "tasksSavedFiltersSaveButtonLabel": "Salvați",
-  "tasksSavedFiltersSavePopupCancel": "Anulați",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtru activ. Salvat în bara laterală, sub Sarcini.} few{{count} filtre active. Salvate în bara laterală, sub Sarcini.} other{{count} de filtre active. Salvate în bara laterală, sub Sarcini.}}",
-  "@tasksSavedFiltersSavePopupHelper": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "tasksSavedFiltersSavePopupHint": "ex.: Blocate sau în așteptare",
-  "tasksSavedFiltersSavePopupSave": "Salvați",
-  "tasksSavedFiltersSavePopupTitle": "Denumiți acest filtru",
   "tasksSavedFilterToastDeleted": "Filtru șters",
   "tasksSavedFilterToastSaved": "Salvat „{name}”",
   "@tasksSavedFilterToastSaved": {
@@ -3412,6 +3412,19 @@
       }
     }
   },
+  "tasksSavedFiltersSaveButtonLabel": "Salvați",
+  "tasksSavedFiltersSavePopupCancel": "Anulați",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filtru activ. Salvat în bara laterală, sub Sarcini.} few{{count} filtre active. Salvate în bara laterală, sub Sarcini.} other{{count} de filtre active. Salvate în bara laterală, sub Sarcini.}}",
+  "@tasksSavedFiltersSavePopupHelper": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersSavePopupHint": "ex.: Blocate sau în așteptare",
+  "tasksSavedFiltersSavePopupSave": "Salvați",
+  "tasksSavedFiltersSavePopupTitle": "Denumiți acest filtru",
   "tasksSearchModeLabel": "Mod de căutare",
   "tasksShowCreationDate": "Afișează data creării pe carduri",
   "tasksShowDueDate": "Afișează data scadenței pe carduri",
@@ -3419,17 +3432,6 @@
   "tasksSortByDueDate": "Scadență",
   "tasksSortByLabel": "Sortare după",
   "tasksSortByPriority": "Prioritate",
-  "taskStatusAll": "Toate",
-  "taskStatusBlocked": "BLOCAT",
-  "taskStatusDone": "TERMINAT",
-  "taskStatusGroomed": "PREGĂTIT",
-  "taskStatusInProgress": "ÎN PROGRES",
-  "taskStatusLabel": "Starea Sarcinii:",
-  "taskStatusOnHold": "ÎN AȘTEPTARE",
-  "taskStatusOpen": "DESCHIS",
-  "taskStatusRejected": "RESPINS",
-  "taskTitleEmpty": "Fără titlu",
-  "taskUntitled": "(fără titlu)",
   "thinkingDisclosureCopied": "Raționament copiat",
   "thinkingDisclosureCopy": "Copiază raționamentul",
   "thinkingDisclosureHide": "Ascunde raționamentul",

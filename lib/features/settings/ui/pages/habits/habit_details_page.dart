@@ -11,9 +11,9 @@ import 'package:lotti/features/settings/ui/widgets/form/settings_form_text_field
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:lotti/widgets/settings/settings_date_time_field.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
@@ -135,6 +135,12 @@ class HabitDetailsPage extends ConsumerWidget {
                   ),
                   SelectCategoryWidget(habitId: habitId),
                   SelectDashboardWidget(habitId: habitId),
+                ],
+              ),
+              SettingsFormSection(
+                title: messages.habitSectionOptionsTitle,
+                icon: Icons.tune_rounded,
+                children: [
                   FormSwitch(
                     name: 'priority',
                     key: const Key('habit_priority'),
@@ -156,20 +162,26 @@ class HabitDetailsPage extends ConsumerWidget {
                     title: messages.habitArchivedLabel,
                     icon: Icons.archive_outlined,
                   ),
-                  DateTimeField(
+                ],
+              ),
+              SettingsFormSection(
+                title: messages.habitSectionScheduleTitle,
+                icon: Icons.schedule_rounded,
+                children: [
+                  SettingsDateTimeField(
                     dateTime: item.activeFrom,
                     labelText: messages.habitActiveFromLabel,
                     setDateTime: controller.setActiveFrom,
                     mode: CupertinoDatePickerMode.date,
                   ),
                   if (isDaily) ...[
-                    DateTimeField(
+                    SettingsDateTimeField(
                       dateTime: showFrom,
                       labelText: messages.habitShowFromLabel,
                       setDateTime: controller.setShowFrom,
                       mode: CupertinoDatePickerMode.time,
                     ),
-                    DateTimeField(
+                    SettingsDateTimeField(
                       dateTime: alertAtTime,
                       labelText: messages.habitShowAlertAtLabel,
                       setDateTime: controller.setAlertAtTime,

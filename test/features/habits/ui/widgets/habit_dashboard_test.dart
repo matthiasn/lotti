@@ -9,6 +9,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -64,7 +65,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(SelectDashboardWidget), findsOneWidget);
-    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byType(SettingsPickerField), findsOneWidget);
   });
 
   testWidgets('opens dashboard modal and selects dashboard', (tester) async {
@@ -78,7 +79,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     // Tap to open modal
-    await tester.tap(find.byType(TextField));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(SettingsPickerField),
+        matching: find.byType(InkWell),
+      ),
+    );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
@@ -130,7 +136,10 @@ void main() {
 
     // The field starts with the dashboard's name resolved and shown.
     expect(
-      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      tester
+              .widget<SettingsPickerField>(find.byType(SettingsPickerField))
+              .valueText ??
+          '',
       dashboard.name,
     );
 
@@ -154,7 +163,10 @@ void main() {
     expect(state.habitDefinition.dashboardId, isNull);
     expect(state.dirty, isTrue);
     expect(
-      tester.widget<TextField>(find.byType(TextField)).controller!.text,
+      tester
+              .widget<SettingsPickerField>(find.byType(SettingsPickerField))
+              .valueText ??
+          '',
       isEmpty,
     );
   });
