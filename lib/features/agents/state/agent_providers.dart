@@ -6,7 +6,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
@@ -14,6 +13,7 @@ import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/standing_agreement_service.dart';
+import 'package:lotti/features/agents/state/agent_wiring.dart';
 import 'package:lotti/features/agents/state/agent_workflow_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
@@ -23,7 +23,6 @@ import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
-import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
@@ -43,7 +42,6 @@ export 'package:lotti/features/agents/state/agent_workflow_providers.dart';
 export 'package:lotti/features/agents/state/template_query_providers.dart';
 
 part 'agent_providers.g.dart';
-part 'agent_wiring.dart';
 
 void Function(String) persistedStateChangedNotifier(
   UpdateNotifications notifications,
@@ -376,7 +374,7 @@ Future<void> agentInitialization(Ref ref) async {
   }
 
   // 2. Wire the workflow executor into the orchestrator.
-  _wireWakeExecutor(
+  wireWakeExecutor(
     ref,
     orchestrator,
     workflow,
@@ -393,7 +391,7 @@ Future<void> agentInitialization(Ref ref) async {
   projectActivityMonitor.start();
 
   // 4. Wire the sync event processor for cross-device agent data.
-  _wireSyncEventProcessor(
+  wireSyncEventProcessor(
     ref,
     orchestrator,
     syncEventProcessor,

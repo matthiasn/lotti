@@ -1,8 +1,17 @@
-part of 'agent_providers.dart';
+import 'dart:developer' as developer;
+
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/features/projects/repository/project_repository.dart';
+import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:riverpod/riverpod.dart';
 
 /// Wires the wake executor into the orchestrator, routing to the appropriate
 /// workflow based on the agent's `kind` field.
-void _wireWakeExecutor(
+void wireWakeExecutor(
   Ref ref,
   WakeOrchestrator orchestrator,
   TaskAgentWorkflow workflow,
@@ -182,7 +191,7 @@ Future<void> _notifyWakeCompletion(
 /// [SyncEventProcessor] so that incoming agent data is persisted and incoming
 /// lifecycle changes (pause/destroy from another device) restore/remove
 /// subscriptions.
-void _wireSyncEventProcessor(
+void wireSyncEventProcessor(
   Ref ref,
   WakeOrchestrator orchestrator,
   SyncEventProcessor? processor,
