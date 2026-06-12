@@ -30,8 +30,8 @@ EVAL_BLINDED_EXPORT=/private/tmp/lotti-blind-review \
 
 Give Claude Code only `/private/tmp/lotti-blind-review/judge`, not
 `private/key.json`. The private key maps opaque blinded trace ids back to raw
-trace/verdict filenames and raw trace digests; it is operator audit material,
-not judge input.
+trace/verdict filenames, raw trace digests, and raw manifest fingerprints; it
+is operator audit material, not judge input.
 
 ## Inputs
 
@@ -41,7 +41,7 @@ not judge input.
 - For blinded review only:
   `<exportDir>/judge/traces/*.blinded-trace.json` plus
   `<exportDir>/judge/manifest.json`. These hide exact profile/model/provider
-  identities and raw trace filenames/digests, while preserving a blinded packet
+  identities and raw trace filenames/digests, while preserving a review payload
   digest and coarse profile context for the efficiency rubric.
 - `eval/prompts/judge_system.md` — the judge persona + output contract.
 - `eval/prompts/rubric_task_agent.md` / `rubric_planning_agent.md` — anchors.
@@ -105,7 +105,7 @@ next to raw traces. Until a blinded-verdict importer exists, an operator must
 use `private/key.json` to transfer blinded review scores back to the matching
 raw verdict files. The raw verdict's `traceDigest` must still cite the raw trace
 digest from the private key, while the review rationale should mention the
-blinded trace id and blinded packet digest used for grading.
+blinded trace id and review payload digest used for grading.
 
 ## Optional Pairwise A/B Review
 

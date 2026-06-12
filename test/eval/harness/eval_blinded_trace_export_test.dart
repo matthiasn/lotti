@@ -60,43 +60,47 @@ void main() {
       expect(judgeManifest['modelIdentityVisible'], isFalse);
       expect(judgeManifest['profileVisible'], isTrue);
       expect(judgeManifest['sourceRunId'], isNull);
-      expect(judgeManifest['sourceRunDigest'], startsWith('sha256:'));
+      expect(judgeManifest, isNot(contains('sourceRunDigest')));
+      expect(judgeManifest, isNot(contains('sourceManifestDigest')));
       expect(judgeManifest['traceCount'], 1);
       expect(blindedTrace, isNot(contains('rawTraceDigest')));
       expect(judgePayload, isNot(contains(rawTraceDigest)));
-      expect(blindedTrace['blindedTraceDigest'], startsWith('sha256:'));
+      final reviewPayload =
+          blindedTrace['reviewPayload'] as Map<String, dynamic>;
+      final reviewPayloadDigest = EvalProvenance.digestJson(reviewPayload);
+      expect(blindedTrace['reviewPayloadDigest'], reviewPayloadDigest);
       expect(
         blindedTrace['verdictContract'],
-        containsPair('blindedTraceDigest', blindedTrace['blindedTraceDigest']),
+        containsPair('reviewPayloadDigest', reviewPayloadDigest),
       );
       expect(
-        (blindedTrace['profileContext'] as Map<String, dynamic>)['modelClass'],
+        (reviewPayload['profileContext'] as Map<String, dynamic>)['modelClass'],
         EvalModelClass.frontierFast.name,
       );
       expect(
-        (blindedTrace['profileContext']
+        (reviewPayload['profileContext']
             as Map<String, dynamic>)['profileAlias'],
         'profile-01',
       );
-      expect(blindedTrace['promptVariantAlias'], 'prompt-variant-01');
+      expect(reviewPayload['promptVariantAlias'], 'prompt-variant-01');
       expect(
-        (blindedTrace['output'] as Map<String, dynamic>),
+        (reviewPayload['output'] as Map<String, dynamic>),
         isNot(contains('resolvedModel')),
       );
       expect(
-        (blindedTrace['output'] as Map<String, dynamic>),
+        (reviewPayload['output'] as Map<String, dynamic>),
         isNot(contains('providerDecision')),
       );
       expect(
-        (blindedTrace['output'] as Map<String, dynamic>),
+        (reviewPayload['output'] as Map<String, dynamic>),
         isNot(contains('modelInvocations')),
       );
       expect(
-        (blindedTrace['output'] as Map<String, dynamic>),
+        (reviewPayload['output'] as Map<String, dynamic>),
         isNot(contains('providerRequests')),
       );
       expect(
-        (blindedTrace['output'] as Map<String, dynamic>),
+        (reviewPayload['output'] as Map<String, dynamic>),
         isNot(contains('providerResponses')),
       );
       expect(judgePayload, isNot(contains('frontier-secret-profile')));
@@ -108,6 +112,7 @@ void main() {
       expect(privatePayload, contains('gpt-secret-model'));
       expect(privatePayload, contains('metadata-secret-v1'));
       expect(privatePayload, contains(rawTraceDigest));
+      expect(privatePayload, contains(manifest.manifestDigest!));
       expect(privatePayload, contains(rawTraceFile.uri.pathSegments.last));
     },
   );
@@ -195,6 +200,101 @@ void main() {
       overwrite: true,
     );
   });
+
+  test('overwrite refuses to delete a non-export directory', () async {
+    final dir = await Directory.systemTemp.createTemp(
+      'lotti-blinded-export-unsafe-overwrite-',
+    );
+    addTearDown(() async {
+      if (dir.existsSync()) await dir.delete(recursive: true);
+    });
+
+    final writer = TraceWriter(runsRoot: '${dir.path}/runs');
+    final manifest = _manifest();
+    await writer.writeManifest(manifest);
+    await writer.writeTrace(_trace(manifestDigest: manifest.manifestDigest!));
+    final run = await writer.readRun('blind-run');
+    final outputDir = Directory('${dir.path}/shared');
+    await outputDir.create();
+    final unrelatedFile = File('${outputDir.path}/keep-me.txt');
+    await unrelatedFile.writeAsString('not an export');
+
+    await expectLater(
+      EvalBlindedTraceExporter.writeRun(
+        run: run,
+        writer: writer,
+        outputDir: outputDir,
+        overwrite: true,
+        exportSeed: 'test-seed',
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('non-export entries exist'),
+        ),
+      ),
+    );
+    expect(await unrelatedFile.readAsString(), 'not an export');
+  });
+
+  test('seed changes trace order or aliases for multi-arm exports', () async {
+    final dir = await Directory.systemTemp.createTemp(
+      'lotti-blinded-export-shuffle-',
+    );
+    addTearDown(() async {
+      if (dir.existsSync()) await dir.delete(recursive: true);
+    });
+
+    final writer = TraceWriter(runsRoot: '${dir.path}/runs');
+    final manifest = _manifest(
+      profiles: const [_profile, _secondProfile],
+      variants: const [_variant, _secondVariant],
+    );
+    await writer.writeManifest(manifest);
+    await writer.writeTrace(_trace(manifestDigest: manifest.manifestDigest!));
+    await writer.writeTrace(
+      _trace(
+        manifestDigest: manifest.manifestDigest!,
+        profile: _secondProfile,
+        variant: _secondVariant,
+      ),
+    );
+    final run = await writer.readRun('blind-run');
+
+    var foundSeededPermutation = false;
+    for (var seedIndex = 0; seedIndex < 16; seedIndex++) {
+      final exportDir = Directory('${dir.path}/blind-$seedIndex');
+      final result = await EvalBlindedTraceExporter.writeRun(
+        run: run,
+        writer: writer,
+        outputDir: exportDir,
+        exportSeed: 'shuffle-seed-$seedIndex',
+      );
+      final privateKey =
+          jsonDecode(
+                await result.privateKeyFile.readAsString(),
+              )
+              as Map<String, dynamic>;
+      final entries = (privateKey['entries'] as List)
+          .cast<Map<String, dynamic>>();
+      final profileOrder = [
+        for (final entry in entries) entry['profileName'] as String,
+      ];
+      final profileAliases = {
+        for (final entry in entries)
+          entry['profileName'] as String: entry['profileAlias'] as String,
+      };
+      if (profileOrder.join('|') !=
+              'frontier-secret-profile|local-secret-profile' ||
+          profileAliases['frontier-secret-profile'] != 'profile-01') {
+        foundSeededPermutation = true;
+        break;
+      }
+    }
+
+    expect(foundSeededPermutation, isTrue);
+  });
 }
 
 const _profile = EvalProfile(
@@ -211,13 +311,30 @@ const _variant = EvalAgentDirectiveVariant(
   generalDirective: 'Create durable metadata before writing reports.',
 );
 
-EvalRunManifest _manifest() => EvalProvenance.captureRunManifest(
+const _secondProfile = EvalProfile(
+  name: 'local-secret-profile',
+  isLocal: true,
+  modelClass: EvalModelClass.localSmall,
+  modelId: 'local-secret-model',
+  tokenBudget: 10000,
+  maxCompletionTokens: 1024,
+);
+
+const _secondVariant = EvalAgentDirectiveVariant(
+  name: 'planner-secret-v2',
+  reportDirective: 'Summarize only after tool effects are durable.',
+);
+
+EvalRunManifest _manifest({
+  List<EvalProfile> profiles = const [_profile],
+  List<EvalAgentDirectiveVariant> variants = const [_variant],
+}) => EvalProvenance.captureRunManifest(
   runId: 'blind-run',
   targetName: 'blind-export-test',
   targetKind: 'test',
   scenarios: [taskReleaseNotesScenario],
-  profiles: const [_profile],
-  agentDirectiveVariants: const [_variant],
+  profiles: profiles,
+  agentDirectiveVariants: variants,
   createdAt: DateTime(2026, 6, 12, 12),
   command: 'blind-export-test',
   environment: const <String, String>{},
@@ -225,6 +342,8 @@ EvalRunManifest _manifest() => EvalProvenance.captureRunManifest(
 
 EvalTrace _trace({
   required String manifestDigest,
+  EvalProfile profile = _profile,
+  EvalAgentDirectiveVariant variant = _variant,
   String reportContent = 'Task metadata was updated.',
 }) {
   final output = AgentRunOutput(
@@ -336,19 +455,19 @@ EvalTrace _trace({
   return EvalTrace(
     runId: 'blind-run',
     scenario: taskReleaseNotesScenario,
-    profile: _profile,
-    agentDirectiveVariant: _variant,
+    profile: profile,
+    agentDirectiveVariant: variant,
     provenance: EvalProvenance.capture(
       scenario: taskReleaseNotesScenario,
-      profile: _profile,
-      agentDirectiveVariant: _variant,
+      profile: profile,
+      agentDirectiveVariant: variant,
       manifestDigest: manifestDigest,
     ),
     output: output,
     level1Checks: runLevel1(
       taskReleaseNotesScenario,
       output,
-      profile: _profile,
+      profile: profile,
     ),
   );
 }

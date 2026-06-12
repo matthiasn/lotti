@@ -65,7 +65,7 @@
   `EVAL_PROFILES` profile catalogs, model-selection judge-blinding gates, and
   diagnostic pairwise A/B preference quorum records for subjective free-text
   quality, plus first-class blinded judge export packets with opaque trace
-  filenames, shuffled profile/prompt aliases, public blinded packet digests, and
+  filenames, shuffled profile/prompt aliases, public review payload digests, and
   private raw-trace mapping keys.
   Next up:
   populate a real human-labeled calibration set, private production-replay

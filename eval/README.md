@@ -392,10 +392,11 @@ performance, and human calibration labels are checked later by `report`.
    the raw trace/verdict filenames and raw trace digest. Do not give the
    private key to reviewers. The judge packet preserves scenario/output
    evidence, Level 1 checks, prompt/tool digests, coarse profile context needed
-   for the efficiency rubric, and a blinded packet digest, but removes exact
-   profile names, profile model ids, provider ids/types, endpoint evidence,
-   provider response metadata, prompt variant names, raw trace filenames, and
-   raw trace digests. Export order and profile/prompt-variant aliases are
+   for the efficiency rubric, and a recomputable review payload digest, but
+   removes exact profile names, profile model ids, provider ids/types, endpoint
+   evidence, provider response metadata, prompt variant names, raw trace
+   filenames, raw manifest fingerprints, and raw trace digests. Export order
+   and profile/prompt-variant aliases are
    seed-shuffled; set `EVAL_BLINDED_EXPORT_SEED` only when reproducibility is
    more important than fresh randomization. For external catalogs, in-repo
    exports are blocked unless `LOTTI_EVAL_PROTECTED_TRACE_ACK=1`.

@@ -438,10 +438,11 @@ blinding; the default model-class tuning policy also rejects unblinded judge
 verdicts where exact provider/model identity was visible during grading.
 `eval/run_level2.sh blind` creates a separate model-identity-redacted review
 packet with opaque trace filenames, shuffled profile/prompt aliases, blinded
-packet digests, and a private key that maps back to raw trace/verdict filenames
-and raw trace digests. Until blinded-verdict import/provenance is wired into the
-verifier, readiness still treats the verdict flag plus retained private export
-key as audit evidence rather than cryptographic proof.
+review payload digests, and a private key that maps back to raw trace/verdict
+filenames, raw manifest fingerprints, and raw trace digests. Until
+blinded-verdict import/provenance is wired into the verifier, readiness still
+treats the verdict flag plus retained private export key as audit evidence
+rather than cryptographic proof.
 Protected holdout evidence is accepted only from an external catalog
 envelope that declares `protectedHoldout: true`, has a `catalogId`, contains
 enough unique `holdout` scenarios sourced from `productionReplay`, distributes

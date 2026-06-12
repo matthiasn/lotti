@@ -8,6 +8,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
+
 import 'eval_models.dart';
 import 'eval_provenance.dart';
 import 'trace_writer.dart';
@@ -43,16 +45,16 @@ abstract final class EvalBlindedTraceExporter {
         'Cannot write a blinded export for a run with no traces',
       );
     }
-    if (outputDir.existsSync() && !overwrite) {
+    if (outputDir.existsSync()) {
       final hasFiles = !(await outputDir.list().isEmpty);
       if (hasFiles) {
-        throw StateError(
-          'Refusing to overwrite blinded export directory: ${outputDir.path}',
-        );
+        if (!overwrite) {
+          throw StateError(
+            'Refusing to overwrite blinded export directory: ${outputDir.path}',
+          );
+        }
+        await _clearPreviousExport(outputDir);
       }
-    }
-    if (outputDir.existsSync() && overwrite) {
-      await outputDir.delete(recursive: true);
     }
 
     final judgeDir = Directory('${outputDir.path}/judge');
@@ -99,21 +101,25 @@ abstract final class EvalBlindedTraceExporter {
         throw StateError('Missing raw trace for blinded export: $rawTraceFile');
       }
       final rawTraceDigest = await writer.traceDigest(rawTraceFile);
-      final blindedTraceJson = _blindedTraceJson(
+      final reviewPayload = _reviewPayloadJson(
         trace: trace,
-        manifest: run.manifest,
-        blindedTraceId: blindedTraceId,
         profileAlias: profileAlias,
         promptVariantAlias: promptVariantAlias,
       );
-      final blindedTraceDigest = EvalProvenance.digestJson(blindedTraceJson);
-      blindedTraceJson
-        ..['blindedTraceDigest'] = blindedTraceDigest
-        ..['verdictContract'] = <String, dynamic>{
-          'blindedTraceDigest': blindedTraceDigest,
-          'judge.profileVisible': true,
-          'judge.modelIdentityVisible': false,
-        };
+      final reviewPayloadDigest = EvalProvenance.digestJson(reviewPayload);
+      final blindedTraceJson =
+          <String, dynamic>{
+              'schemaVersion': schemaVersion,
+              'kind': 'lotti.blindedTraceExport.trace',
+              'blindedTraceId': blindedTraceId,
+              'reviewPayloadDigest': reviewPayloadDigest,
+              'reviewPayload': reviewPayload,
+            }
+            ..['verdictContract'] = <String, dynamic>{
+              'reviewPayloadDigest': reviewPayloadDigest,
+              'judge.profileVisible': true,
+              'judge.modelIdentityVisible': false,
+            };
       _assertNoModelIdentityLeak(
         trace: trace,
         json: blindedTraceJson,
@@ -130,7 +136,7 @@ abstract final class EvalBlindedTraceExporter {
           trace: trace,
           blindedTraceId: blindedTraceId,
           relativeTracePath: relativeTracePath,
-          blindedTraceDigest: blindedTraceDigest,
+          reviewPayloadDigest: reviewPayloadDigest,
           profileAlias: profileAlias,
           promptVariantAlias: promptVariantAlias,
         ),
@@ -141,7 +147,7 @@ abstract final class EvalBlindedTraceExporter {
           writer: writer,
           rawTraceFile: rawTraceFile,
           rawTraceDigest: rawTraceDigest,
-          blindedTraceDigest: blindedTraceDigest,
+          reviewPayloadDigest: reviewPayloadDigest,
           blindedTraceId: blindedTraceId,
           relativeTracePath: relativeTracePath,
           profileAlias: profileAlias,
@@ -153,8 +159,6 @@ abstract final class EvalBlindedTraceExporter {
     final judgeManifest = <String, dynamic>{
       'schemaVersion': schemaVersion,
       'kind': 'lotti.blindedTraceExport.judge',
-      'sourceRunDigest': EvalProvenance.digestText(run.manifest.runId),
-      'sourceManifestDigest': run.manifest.manifestDigest,
       'exportSeedDigest': EvalProvenance.digestText(seed),
       'traceSchemaVersion': run.manifest.traceSchemaVersion,
       'promptDigest': run.manifest.promptDigest,
@@ -182,6 +186,7 @@ abstract final class EvalBlindedTraceExporter {
       'kind': 'lotti.blindedTraceExport.privateKey',
       'sourceRunId': run.manifest.runId,
       'sourceManifestDigest': run.manifest.manifestDigest,
+      'sourceRunDigest': EvalProvenance.digestText(run.manifest.runId),
       'exportSeed': seed,
       'judgeManifestDigest': EvalProvenance.digestJson(judgeManifest),
       'traceCount': keyEntries.length,
@@ -199,18 +204,12 @@ abstract final class EvalBlindedTraceExporter {
     );
   }
 
-  static Map<String, dynamic> _blindedTraceJson({
+  static Map<String, dynamic> _reviewPayloadJson({
     required EvalTrace trace,
-    required EvalRunManifest manifest,
-    required String blindedTraceId,
     required String profileAlias,
     required String promptVariantAlias,
   }) {
     return <String, dynamic>{
-      'schemaVersion': schemaVersion,
-      'kind': 'lotti.blindedTraceExport.trace',
-      'blindedTraceId': blindedTraceId,
-      'sourceManifestDigest': manifest.manifestDigest,
       'promptDigest': trace.provenance.promptDigest,
       'toolSchemaDigest': trace.provenance.toolSchemaDigest,
       'profileVisible': true,
@@ -275,14 +274,14 @@ abstract final class EvalBlindedTraceExporter {
     required EvalTrace trace,
     required String blindedTraceId,
     required String relativeTracePath,
-    required String blindedTraceDigest,
+    required String reviewPayloadDigest,
     required String profileAlias,
     required String promptVariantAlias,
   }) {
     return <String, dynamic>{
       'blindedTraceId': blindedTraceId,
       'file': relativeTracePath,
-      'blindedTraceDigest': blindedTraceDigest,
+      'reviewPayloadDigest': reviewPayloadDigest,
       'scenarioId': trace.scenario.id,
       'agentKind': trace.scenario.agentKind.name,
       'primaryCapability': trace.scenario.metadata.primaryCapabilityId,
@@ -300,7 +299,7 @@ abstract final class EvalBlindedTraceExporter {
     required TraceWriter writer,
     required File rawTraceFile,
     required String rawTraceDigest,
-    required String blindedTraceDigest,
+    required String reviewPayloadDigest,
     required String blindedTraceId,
     required String relativeTracePath,
     required String profileAlias,
@@ -316,7 +315,7 @@ abstract final class EvalBlindedTraceExporter {
           .pathSegments
           .last,
       'rawTraceDigest': rawTraceDigest,
-      'blindedTraceDigest': blindedTraceDigest,
+      'reviewPayloadDigest': reviewPayloadDigest,
       'runId': trace.runId,
       'scenarioId': trace.scenario.id,
       'scenarioDigest': trace.provenance.scenarioDigest,
@@ -344,6 +343,49 @@ abstract final class EvalBlindedTraceExporter {
       for (var i = 0; i < sorted.length; i++)
         sorted[i]: '$prefix-${(i + 1).toString().padLeft(2, '0')}',
     };
+  }
+
+  static Future<void> _clearPreviousExport(Directory outputDir) async {
+    final entries = await outputDir.list().toList();
+    final unexpected =
+        entries
+            .map((entry) => p.basename(entry.path))
+            .where((name) => name != 'judge' && name != 'private')
+            .toList()
+          ..sort();
+    if (unexpected.isNotEmpty) {
+      throw StateError(
+        'Refusing to overwrite ${outputDir.path}; non-export entries exist: '
+        '${unexpected.join(', ')}',
+      );
+    }
+    await _requireExportKind(
+      File('${outputDir.path}/judge/manifest.json'),
+      'lotti.blindedTraceExport.judge',
+    );
+    await _requireExportKind(
+      File('${outputDir.path}/private/key.json'),
+      'lotti.blindedTraceExport.privateKey',
+    );
+    await Directory('${outputDir.path}/judge').delete(recursive: true);
+    await Directory('${outputDir.path}/private').delete(recursive: true);
+  }
+
+  static Future<void> _requireExportKind(File file, String expectedKind) async {
+    if (!file.existsSync()) {
+      throw StateError(
+        'Refusing to overwrite blinded export without marker file: '
+        '${file.path}',
+      );
+    }
+    final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+    if (json['schemaVersion'] != schemaVersion ||
+        json['kind'] != expectedKind) {
+      throw StateError(
+        'Refusing to overwrite ${file.parent.parent.path}; '
+        '${file.path} is not a $expectedKind artifact.',
+      );
+    }
   }
 
   static List<EvalTrace> _shuffledTraces(List<EvalTrace> traces, String seed) {
