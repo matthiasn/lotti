@@ -1,6 +1,11 @@
-part of 'task_list_detail_mock_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
 
-CategoryDefinition _category({
+CategoryDefinition mockCategory({
   required String id,
   required String name,
   required String color,
@@ -21,7 +26,7 @@ CategoryDefinition _category({
       as CategoryDefinition;
 }
 
-TaskRecord _taskRecord({
+TaskRecord mockTaskRecord({
   required String id,
   required CategoryDefinition category,
   required String title,
@@ -83,7 +88,7 @@ TaskRecord _taskRecord({
   );
 }
 
-TaskStatus _taskOpen(DateTime createdAt) {
+TaskStatus mockTaskOpen(DateTime createdAt) {
   return TaskStatus.open(
     id: 'open-${createdAt.microsecondsSinceEpoch}',
     createdAt: createdAt,
@@ -91,7 +96,7 @@ TaskStatus _taskOpen(DateTime createdAt) {
   );
 }
 
-TaskStatus _taskBlocked(DateTime createdAt, String reason) {
+TaskStatus mockTaskBlocked(DateTime createdAt, String reason) {
   return TaskStatus.blocked(
     id: 'blocked-${createdAt.microsecondsSinceEpoch}',
     createdAt: createdAt,
@@ -100,7 +105,7 @@ TaskStatus _taskBlocked(DateTime createdAt, String reason) {
   );
 }
 
-TaskStatus _taskOnHold(DateTime createdAt, String reason) {
+TaskStatus mockTaskOnHold(DateTime createdAt, String reason) {
   return TaskStatus.onHold(
     id: 'on-hold-${createdAt.microsecondsSinceEpoch}',
     createdAt: createdAt,
@@ -109,7 +114,7 @@ TaskStatus _taskOnHold(DateTime createdAt, String reason) {
   );
 }
 
-TaskStatus _taskGroomed(DateTime createdAt) {
+TaskStatus mockTaskGroomed(DateTime createdAt) {
   return TaskStatus.groomed(
     id: 'groomed-${createdAt.microsecondsSinceEpoch}',
     createdAt: createdAt,

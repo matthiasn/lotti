@@ -1,47 +1,43 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/classes/entry_text.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_state.dart';
-
-part 'task_list_detail_mock_helpers.dart';
+import 'package:lotti/features/tasks/widgetbook/task_list_detail_mock_helpers.dart';
 
 TaskListData buildTaskListDetailMockData() {
-  final work = _category(
+  final work = mockCategory(
     id: 'work',
     name: 'Work',
     color: '#4AB6E8',
     icon: CategoryIcon.work,
   );
-  final study = _category(
+  final study = mockCategory(
     id: 'study',
     name: 'Study',
     color: '#FBA337',
     icon: CategoryIcon.school,
   );
-  final leisure = _category(
+  final leisure = mockCategory(
     id: 'leisure',
     name: 'Leisure',
     color: '#E84D47',
     icon: CategoryIcon.social,
   );
-  final meals = _category(
+  final meals = mockCategory(
     id: 'meals',
     name: 'Meals',
     color: '#7AB889',
     icon: CategoryIcon.cooking,
   );
-  final household = _category(
+  final household = mockCategory(
     id: 'household',
     name: 'Household',
     color: '#1F9CF5',
     icon: CategoryIcon.home,
   );
-  final meeting = _category(
+  final meeting = mockCategory(
     id: 'meeting',
     name: 'Meeting',
     color: '#C1C700',
@@ -59,7 +55,7 @@ TaskListData buildTaskListDetailMockData() {
       meeting,
     ],
     tasks: [
-      _taskRecord(
+      mockTaskRecord(
         id: 'user-testing',
         category: study,
         title: 'User Testing',
@@ -69,7 +65,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2026, 4, 1, 8),
         due: DateTime(2026, 4),
         priority: TaskPriority.p2Medium,
-        status: _taskBlocked(DateTime(2026, 4, 1, 9), 'Recruiting gap'),
+        status: mockTaskBlocked(DateTime(2026, 4, 1, 9), 'Recruiting gap'),
         timeRange: '8:00-9:30am',
         labels: const [],
         aiSummary:
@@ -95,7 +91,7 @@ TaskListData buildTaskListDetailMockData() {
         ],
         audioEntries: const [],
       ),
-      _taskRecord(
+      mockTaskRecord(
         id: 'payment-confirmation',
         category: work,
         title: 'Payment confirmation',
@@ -105,7 +101,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2026, 4, 1, 10),
         due: DateTime(2026, 4),
         priority: TaskPriority.p1High,
-        status: _taskOpen(DateTime(2026, 4, 1, 10)),
+        status: mockTaskOpen(DateTime(2026, 4, 1, 10)),
         timeRange: '10:00-11:30am',
         labels: const [
           TaskShowcaseLabel(
@@ -213,7 +209,7 @@ TaskListData buildTaskListDetailMockData() {
           ),
         ],
       ),
-      _taskRecord(
+      mockTaskRecord(
         id: 'team-lunch',
         category: leisure,
         title: 'Team Lunch',
@@ -223,7 +219,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2026, 4, 1, 12),
         due: DateTime(2026, 4),
         priority: TaskPriority.p3Low,
-        status: _taskOnHold(DateTime(2026, 4, 1, 12), 'Waiting on RSVPs'),
+        status: mockTaskOnHold(DateTime(2026, 4, 1, 12), 'Waiting on RSVPs'),
         timeRange: '12:30-1:15pm',
         labels: const [],
         aiSummary: 'Pause until the venue shortlist is confirmed.',
@@ -233,7 +229,7 @@ TaskListData buildTaskListDetailMockData() {
         checklistItems: const [],
         audioEntries: const [],
       ),
-      _taskRecord(
+      mockTaskRecord(
         id: 'design-meeting',
         category: meals,
         title: 'Design Meeting',
@@ -243,7 +239,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2026, 3, 31, 9),
         due: DateTime(2026, 3, 31),
         priority: TaskPriority.p2Medium,
-        status: _taskOpen(DateTime(2026, 3, 31, 9)),
+        status: mockTaskOpen(DateTime(2026, 3, 31, 9)),
         timeRange: '9:00-10:00am',
         labels: const [],
         aiSummary: 'Review the draft and send final notes.',
@@ -253,7 +249,7 @@ TaskListData buildTaskListDetailMockData() {
         checklistItems: const [],
         audioEntries: const [],
       ),
-      _taskRecord(
+      mockTaskRecord(
         id: 'client-meeting',
         category: meals,
         title: 'Client Meeting',
@@ -263,7 +259,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2026, 3, 31, 14),
         due: DateTime(2026, 3, 31),
         priority: TaskPriority.p2Medium,
-        status: _taskOpen(DateTime(2026, 3, 31, 14)),
+        status: mockTaskOpen(DateTime(2026, 3, 31, 14)),
         timeRange: '2:00-3:30pm',
         labels: const [],
         aiSummary: 'Open items remain around scheduling.',
@@ -273,7 +269,7 @@ TaskListData buildTaskListDetailMockData() {
         checklistItems: const [],
         audioEntries: const [],
       ),
-      _taskRecord(
+      mockTaskRecord(
         id: 'investor-meeting',
         category: meals,
         title: 'Investor Meeting',
@@ -283,7 +279,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2024, 12, 26, 11),
         due: DateTime(2024, 12, 26),
         priority: TaskPriority.p2Medium,
-        status: _taskOpen(DateTime(2024, 12, 26, 11)),
+        status: mockTaskOpen(DateTime(2024, 12, 26, 11)),
         timeRange: '11:00am-12:00pm',
         labels: const [],
         aiSummary: 'Deck updates are ready for review.',
@@ -293,7 +289,7 @@ TaskListData buildTaskListDetailMockData() {
         checklistItems: const [],
         audioEntries: const [],
       ),
-      _taskRecord(
+      mockTaskRecord(
         id: 'code-review',
         category: household,
         title: 'Code Review',
@@ -303,7 +299,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2024, 12, 26, 15),
         due: DateTime(2024, 12, 26),
         priority: TaskPriority.p3Low,
-        status: _taskOnHold(DateTime(2024, 12, 26, 15), 'Awaiting patch'),
+        status: mockTaskOnHold(DateTime(2024, 12, 26, 15), 'Awaiting patch'),
         timeRange: '3:00-5:00pm',
         labels: const [],
         aiSummary: 'Blocked until the follow-up patch arrives.',
@@ -313,7 +309,7 @@ TaskListData buildTaskListDetailMockData() {
         checklistItems: const [],
         audioEntries: const [],
       ),
-      _taskRecord(
+      mockTaskRecord(
         id: 'sprint-planning',
         category: work,
         title: 'Sprint Planning',
@@ -323,7 +319,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2024, 12, 4, 9),
         due: DateTime(2024, 12, 4),
         priority: TaskPriority.p1High,
-        status: _taskGroomed(DateTime(2024, 12, 4, 9)),
+        status: mockTaskGroomed(DateTime(2024, 12, 4, 9)),
         timeRange: '9:30-11:00am',
         labels: const [],
         aiSummary: 'The sprint backlog is groomed and ready.',
@@ -333,7 +329,7 @@ TaskListData buildTaskListDetailMockData() {
         checklistItems: const [],
         audioEntries: const [],
       ),
-      _taskRecord(
+      mockTaskRecord(
         id: 'customer-onboarding',
         category: work,
         title: 'Customer Onboarding',
@@ -343,7 +339,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2024, 12, 4, 13),
         due: DateTime(2024, 12, 4),
         priority: TaskPriority.p1High,
-        status: _taskGroomed(DateTime(2024, 12, 4, 13)),
+        status: mockTaskGroomed(DateTime(2024, 12, 4, 13)),
         timeRange: '1:00-2:30pm',
         labels: const [],
         aiSummary: 'Prep is complete and ready for handoff.',
@@ -354,7 +350,7 @@ TaskListData buildTaskListDetailMockData() {
         checklistItems: const [],
         audioEntries: const [],
       ),
-      _taskRecord(
+      mockTaskRecord(
         id: 'team-presentation',
         category: study,
         title: 'Team Presentation',
@@ -364,7 +360,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2024, 11, 20, 10),
         due: DateTime(2024, 11, 20),
         priority: TaskPriority.p2Medium,
-        status: _taskBlocked(DateTime(2024, 11, 20, 10), 'Need final deck'),
+        status: mockTaskBlocked(DateTime(2024, 11, 20, 10), 'Need final deck'),
         timeRange: '10:00-11:00am',
         labels: const [],
         aiSummary: 'Deck is blocked until the final examples arrive.',
@@ -375,7 +371,7 @@ TaskListData buildTaskListDetailMockData() {
         checklistItems: const [],
         audioEntries: const [],
       ),
-      _taskRecord(
+      mockTaskRecord(
         id: 'marketing-campaign',
         category: meeting,
         title: 'Marketing Campaign',
@@ -385,7 +381,7 @@ TaskListData buildTaskListDetailMockData() {
         createdAt: DateTime(2024, 11, 20, 14),
         due: DateTime(2024, 11, 20),
         priority: TaskPriority.p1High,
-        status: _taskOpen(DateTime(2024, 11, 20, 14)),
+        status: mockTaskOpen(DateTime(2024, 11, 20, 14)),
         timeRange: '2:00-4:00pm',
         labels: const [],
         aiSummary: 'Ready for the final review round.',
