@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:crypto/crypto.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
@@ -23,6 +25,75 @@ final _thinkBlockPattern = RegExp(
   r'<think(?:ing)?\b[^>]*>[\s\S]*?</think(?:ing)?>',
   caseSensitive: false,
 );
+
+/// Non-secret snapshot of one provider request made inside
+/// [ConversationRepository.sendMessage].
+///
+/// This intentionally stores hashes and structural metadata only. Prompt text,
+/// assistant content, tool arguments, and provider credentials must never be
+/// persisted through this object.
+class ConversationProviderRequest {
+  const ConversationProviderRequest({
+    required this.requestIndex,
+    required this.turnIndex,
+    required this.providerModelId,
+    required this.providerId,
+    required this.providerType,
+    required this.messageDigest,
+    required this.messageCount,
+    required this.toolSchemaDigest,
+    required this.toolCount,
+    required this.toolNames,
+    required this.temperature,
+    required this.thoughtSignatureCount,
+    this.forcedToolName,
+  });
+
+  final int requestIndex;
+  final int turnIndex;
+  final String providerModelId;
+  final String providerId;
+  final String providerType;
+  final String messageDigest;
+  final int messageCount;
+  final String toolSchemaDigest;
+  final int toolCount;
+  final List<String> toolNames;
+  final String? forcedToolName;
+  final double temperature;
+  final int thoughtSignatureCount;
+}
+
+/// Non-secret snapshot of response metadata reported by the provider stream for
+/// one provider request inside [ConversationRepository.sendMessage].
+///
+/// This intentionally captures provider-reported identity only. Provider
+/// adapters may normalize stream chunks for conversation handling, so
+/// [responseModelIds] must stay empty when the adapter only knows the requested
+/// model and the provider did not return an authoritative response model.
+class ConversationProviderResponse {
+  const ConversationProviderResponse({
+    required this.requestIndex,
+    required this.turnIndex,
+    required this.providerType,
+    required this.chunkCount,
+    required this.responseModelIds,
+    required this.systemFingerprints,
+    required this.providerNames,
+    required this.serviceTiers,
+    this.responseModelUnavailableReason,
+  });
+
+  final int requestIndex;
+  final int turnIndex;
+  final String providerType;
+  final int chunkCount;
+  final List<String> responseModelIds;
+  final List<String> systemFingerprints;
+  final List<String> providerNames;
+  final List<String> serviceTiers;
+  final String? responseModelUnavailableReason;
+}
 
 @visibleForTesting
 String? stripThinkBlocks(String? content) {
@@ -197,6 +268,20 @@ class ConversationRepository extends _$ConversationRepository {
     return _conversations[conversationId];
   }
 
+  /// Hook for eval/test observers that need request-level provenance.
+  ///
+  /// The default implementation is intentionally a no-op so production behavior
+  /// remains unchanged unless a subclass opts in.
+  @protected
+  void observeProviderRequest(ConversationProviderRequest request) {}
+
+  /// Hook for eval/test observers that need response-level provenance.
+  ///
+  /// The default implementation is intentionally a no-op so production behavior
+  /// remains unchanged unless a subclass opts in.
+  @protected
+  void observeProviderResponse(ConversationProviderResponse response) {}
+
   /// Send a message in a conversation.
   ///
   /// When [toolChoice] is supplied it overrides the provider default (`auto`)
@@ -244,6 +329,7 @@ class ConversationRepository extends _$ConversationRepository {
     // Start conversation loop
     var shouldContinue = true;
     var accumulated = InferenceUsage.empty;
+    var providerRequestIndex = 0;
 
     while (shouldContinue) {
       try {
@@ -255,6 +341,33 @@ class ConversationRepository extends _$ConversationRepository {
 
         // Create signature collector for this turn (Gemini 3 multi-turn support)
         final signatureCollector = ThoughtSignatureCollector();
+        final turnIndex = manager.turnCount;
+        final providerRequestIndexForTurn = providerRequestIndex++;
+        observeProviderRequest(
+          ConversationProviderRequest(
+            requestIndex: providerRequestIndexForTurn,
+            turnIndex: turnIndex,
+            providerModelId: model,
+            providerId: provider.id,
+            providerType: provider.inferenceProviderType.name,
+            messageDigest: _digestJson([
+              for (final message in messages) message.toJson(),
+            ]),
+            messageCount: messages.length,
+            toolSchemaDigest: _digestJson([
+              for (final tool in tools ?? const <ChatCompletionTool>[])
+                tool.toJson(),
+            ]),
+            toolCount: tools?.length ?? 0,
+            toolNames: [
+              for (final tool in tools ?? const <ChatCompletionTool>[])
+                tool.function.name,
+            ],
+            forcedToolName: _forcedToolName(toolChoice),
+            temperature: effectiveTemperature,
+            thoughtSignatureCount: manager.thoughtSignatures.length,
+          ),
+        );
 
         // Make API call with full conversation history
         // Pass previous signatures and collector for new ones
@@ -268,7 +381,7 @@ class ConversationRepository extends _$ConversationRepository {
           temperature: effectiveTemperature,
           thoughtSignatures: manager.thoughtSignatures,
           signatureCollector: signatureCollector,
-          turnIndex: manager.turnCount,
+          turnIndex: turnIndex,
         );
 
         // Collect response
@@ -277,9 +390,34 @@ class ConversationRepository extends _$ConversationRepository {
         // Use StringBuffer for each tool call to safely accumulate arguments
         // This prevents JSON corruption when chunks are split mid-character or arrive out of order
         final toolCallArgumentBuffers = <String, StringBuffer>{};
+        final responseModelIds = <String>{};
+        final systemFingerprints = <String>{};
+        final providerNames = <String>{};
+        final serviceTiers = <String>{};
+        var responseChunkCount = 0;
         InferenceUsage? turnUsage;
 
         await for (final response in stream) {
+          responseChunkCount++;
+          final responseModelId = _authoritativeResponseModelId(
+            response,
+            provider.inferenceProviderType,
+          );
+          if (responseModelId != null) {
+            responseModelIds.add(responseModelId);
+          }
+          final systemFingerprint = _nonEmpty(response.systemFingerprint);
+          if (systemFingerprint != null) {
+            systemFingerprints.add(systemFingerprint);
+          }
+          final providerName = _nonEmpty(response.provider);
+          if (providerName != null) {
+            providerNames.add(providerName);
+          }
+          final serviceTier = _nonEmpty(response.serviceTier?.name);
+          if (serviceTier != null) {
+            serviceTiers.add(serviceTier);
+          }
           // Capture usage from the response (typically on the final chunk).
           if (response.usage != null) {
             final u = response.usage!;
@@ -317,6 +455,23 @@ class ConversationRepository extends _$ConversationRepository {
             }
           }
         }
+        observeProviderResponse(
+          ConversationProviderResponse(
+            requestIndex: providerRequestIndexForTurn,
+            turnIndex: turnIndex,
+            providerType: provider.inferenceProviderType.name,
+            chunkCount: responseChunkCount,
+            responseModelIds: _sorted(responseModelIds),
+            systemFingerprints: _sorted(systemFingerprints),
+            providerNames: _sorted(providerNames),
+            serviceTiers: _sorted(serviceTiers),
+            responseModelUnavailableReason: responseModelIds.isEmpty
+                ? _responseModelUnavailableReason(
+                    provider.inferenceProviderType,
+                  )
+                : null,
+          ),
+        );
 
         // Accumulate token usage from this turn.
         if (turnUsage != null) {
@@ -413,6 +568,55 @@ class ConversationRepository extends _$ConversationRepository {
     final manager = _conversations.remove(conversationId);
     manager?.dispose();
   }
+}
+
+String _digestJson(Object? value) =>
+    'sha256:${sha256.convert(utf8.encode(jsonEncode(_canonicalize(value))))}';
+
+String? _authoritativeResponseModelId(
+  CreateChatCompletionStreamResponse response,
+  InferenceProviderType providerType,
+) {
+  // Gemini chunks are currently synthesized by the native adapter from the
+  // requested model id, not from provider-returned response metadata.
+  if (providerType == InferenceProviderType.gemini) return null;
+  return _nonEmpty(response.model);
+}
+
+String _responseModelUnavailableReason(InferenceProviderType providerType) =>
+    providerType == InferenceProviderType.gemini
+    ? 'gemini_native_response_model_not_authoritative'
+    : '${providerType.name}_response_model_unavailable';
+
+List<String> _sorted(Set<String> values) => values.toList()..sort();
+
+String? _nonEmpty(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
+
+Object? _canonicalize(Object? value) {
+  if (value is Map) {
+    final keys = value.keys.map((key) => key.toString()).toList()..sort();
+    return {
+      for (final key in keys) key: _canonicalize(value[key]),
+    };
+  }
+  if (value is Set) {
+    return value.map(_canonicalize).toList()
+      ..sort((a, b) => jsonEncode(a).compareTo(jsonEncode(b)));
+  }
+  if (value is List) {
+    return value.map(_canonicalize).toList();
+  }
+  return value;
+}
+
+String? _forcedToolName(ChatCompletionToolChoiceOption? toolChoice) {
+  return toolChoice?.map(
+    mode: (_) => null,
+    tool: (choice) => choice.value.function.name,
+  );
 }
 
 /// Provider for accessing conversation events

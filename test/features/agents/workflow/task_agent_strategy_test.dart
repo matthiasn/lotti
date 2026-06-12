@@ -998,6 +998,93 @@ void main() {
 
         expect(strategy.getContinuationPrompt(mockManager), isNull);
       });
+
+      test(
+        'continues when update_report is followed by another tool call',
+        () async {
+          await strategy.processToolCalls(
+            toolCalls: [
+              ChatCompletionMessageToolCall(
+                id: 'call-report',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: 'update_report',
+                  arguments: jsonEncode({
+                    'content': '# Report',
+                    'oneLiner': 'Implementation done, release next',
+                    'tldr': 'Implementation is done and release is next.',
+                  }),
+                ),
+              ),
+              ChatCompletionMessageToolCall(
+                id: 'call-observation',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: 'record_observations',
+                  arguments: jsonEncode({
+                    'observations': ['Report was not final.'],
+                  }),
+                ),
+              ),
+            ],
+            manager: mockManager,
+          );
+
+          final prompt = strategy.getContinuationPrompt(mockManager);
+
+          expect(prompt, isNotNull);
+          expect(prompt, contains('not the final step'));
+          expect(prompt, contains('update_report'));
+        },
+      );
+
+      test(
+        'stops when a later update_report is the final tool call',
+        () async {
+          await strategy.processToolCalls(
+            toolCalls: [
+              ChatCompletionMessageToolCall(
+                id: 'call-report-stale',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: 'update_report',
+                  arguments: jsonEncode({
+                    'content': '# Stale',
+                    'oneLiner': 'Stale report',
+                    'tldr': 'This report was not final.',
+                  }),
+                ),
+              ),
+              ChatCompletionMessageToolCall(
+                id: 'call-observation',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: 'record_observations',
+                  arguments: jsonEncode({
+                    'observations': ['Need final report.'],
+                  }),
+                ),
+              ),
+              ChatCompletionMessageToolCall(
+                id: 'call-report-final',
+                type: ChatCompletionMessageToolCallType.function,
+                function: ChatCompletionMessageFunctionCall(
+                  name: 'update_report',
+                  arguments: jsonEncode({
+                    'content': '# Final',
+                    'oneLiner': 'Final report',
+                    'tldr': 'This report was final.',
+                  }),
+                ),
+              ),
+            ],
+            manager: mockManager,
+          );
+
+          expect(strategy.extractReportContent(), '# Final');
+          expect(strategy.getContinuationPrompt(mockManager), isNull);
+        },
+      );
     });
 
     group('update_report tool', () {

@@ -209,3 +209,6 @@ test/.test_optimizer.dart
 logs/
 
 .claude/projects/
+
+# Agent evaluation harness run artifacts (ADR 0027)
+/eval/runs/
