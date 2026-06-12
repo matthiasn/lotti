@@ -552,10 +552,11 @@ reversed option order before counting votes. Votes for one pair must share the
 same review protocol: reviewer kind/model, prompt digest, calibration-set
 version, blinding flags, and trace-order randomization flag. Mixed-protocol
 votes are invalid instead of being pooled into one quorum. `preferredTrace`
-points at the winning trace when there is a strict preference. These A/B outcomes are
-diagnostic and audit-friendly: they support the human-or-LLM quorum workflow
-for subjective summaries, but they are not `JudgeVerdict`s and do not affect
-profile promotion unless a future pre-registered policy explicitly opts them in.
+points at the winning trace when there is a strict preference. These A/B
+outcomes are diagnostic and audit-friendly: they support the human-or-LLM
+quorum workflow for subjective summaries, but they are not `JudgeVerdict`s and
+do not affect profile promotion unless a future pre-registered policy
+explicitly opts them in.
 Store one vote per `<safeVoteId>.preference.json` file in the run directory.
 `TraceWriter.readRun` deliberately ignores these files so verification,
 readiness, calibration, and promotion gates remain driven only by the manifest,
@@ -564,10 +565,22 @@ verification and prints a `Subjective A/B preference votes (diagnostic only)`
 section when votes are present. The preference reader rejects stale or orphaned
 trace bindings by recomputing the referenced trace digests, and trace overwrite
 refuses to leave old preference votes behind unless explicitly told to delete
-them. Raw run directories are not a blinded review surface because trace
-filenames and payloads include profile names. Use `eval/run_level2.sh blind`
-to produce an opaque judge packet plus a private audit key before asking for
-model-identity-blinded preference review.
+them.
+
+Raw run directories are not a blinded review surface because trace filenames
+and payloads include profile names. For model/profile-sensitive A/B review,
+`EvalBlindedPairwisePreference.writePairs` writes a separate
+`judge/pairs/*.blinded-pair.json` packet plus `private/key.json`. Public pair
+packets contain aliases, model-class context, redacted outputs, a
+`reviewPayloadDigest`, and a `preferenceContract`; they do not include raw
+profile names, model ids, provider ids, raw trace filenames, or raw trace
+digests. Reviewers write sibling `*.blinded-preference.json` wrappers.
+`EvalBlindedPairwisePreference.importVotes` validates the private key, judge
+manifest, pair payload digest, raw trace digests, missing/extra wrappers, and
+the packet contract before reconstructing raw `.preference.json` votes through
+`TraceWriter`. Imported votes carry `blindedImport` provenance, and stricter
+policies can set `requireBlindedImport: true` to reject self-attested
+blinding.
 Summary Wilson 95% confidence intervals cluster repeated trials at the scenario
 or scenario-profile-cell level by default; explicit trace-level estimates remain
 available only as diagnostics. Cascade wake traces are also diagnostics by

@@ -41,6 +41,62 @@ enum EvalPairwiseComparisonAxis {
   invalid,
 }
 
+/// Audit binding proving a raw pairwise vote came from a blinded pair packet.
+class BlindedPairwisePreferenceImportRecord {
+  const BlindedPairwisePreferenceImportRecord({
+    required this.blindedPairId,
+    required this.reviewPayloadDigest,
+    required this.judgeManifestDigest,
+    required this.privateKeyDigest,
+    required this.sourceManifestDigest,
+    required this.optionARawTraceDigest,
+    required this.optionBRawTraceDigest,
+  });
+
+  factory BlindedPairwisePreferenceImportRecord.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final rawVersion = json['schemaVersion'];
+    if (rawVersion != schemaVersion) {
+      throw FormatException(
+        'Unsupported BlindedPairwisePreferenceImportRecord schemaVersion '
+        '$rawVersion (expected $schemaVersion)',
+      );
+    }
+    return BlindedPairwisePreferenceImportRecord(
+      blindedPairId: json['blindedPairId'] as String,
+      reviewPayloadDigest: json['reviewPayloadDigest'] as String,
+      judgeManifestDigest: json['judgeManifestDigest'] as String,
+      privateKeyDigest: json['privateKeyDigest'] as String,
+      sourceManifestDigest: json['sourceManifestDigest'] as String,
+      optionARawTraceDigest: json['optionARawTraceDigest'] as String,
+      optionBRawTraceDigest: json['optionBRawTraceDigest'] as String,
+    );
+  }
+
+  static const schemaVersion = 1;
+
+  final String blindedPairId;
+  final String reviewPayloadDigest;
+  final String judgeManifestDigest;
+  final String privateKeyDigest;
+  final String sourceManifestDigest;
+  final String optionARawTraceDigest;
+  final String optionBRawTraceDigest;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'schemaVersion': schemaVersion,
+    'kind': 'lotti.blindedPairwisePreferenceImport',
+    'blindedPairId': blindedPairId,
+    'reviewPayloadDigest': reviewPayloadDigest,
+    'judgeManifestDigest': judgeManifestDigest,
+    'privateKeyDigest': privateKeyDigest,
+    'sourceManifestDigest': sourceManifestDigest,
+    'optionARawTraceDigest': optionARawTraceDigest,
+    'optionBRawTraceDigest': optionBRawTraceDigest,
+  };
+}
+
 class EvalPairwiseTraceRef {
   const EvalPairwiseTraceRef({
     required this.runId,
@@ -169,6 +225,7 @@ class EvalPairwisePreferenceVote {
     required this.choice,
     required this.rationale,
     this.reviewerModel,
+    this.blindedImport,
     this.issues = const <String>[],
   });
 
@@ -201,6 +258,11 @@ class EvalPairwisePreferenceVote {
       traceOrderRandomized: json['traceOrderRandomized'] as bool,
       choice: EvalPairwisePreferenceChoice.fromName(json['choice'] as String),
       rationale: json['rationale'] as String,
+      blindedImport: json['blindedImport'] == null
+          ? null
+          : BlindedPairwisePreferenceImportRecord.fromJson(
+              json['blindedImport'] as Map<String, dynamic>,
+            ),
       issues: ((json['issues'] as List<dynamic>?) ?? const <dynamic>[])
           .map((e) => e as String)
           .toList(),
@@ -223,6 +285,7 @@ class EvalPairwisePreferenceVote {
   final bool traceOrderRandomized;
   final EvalPairwisePreferenceChoice choice;
   final String rationale;
+  final BlindedPairwisePreferenceImportRecord? blindedImport;
   final List<String> issues;
 
   bool get isCanonicalOrder =>
@@ -288,8 +351,30 @@ class EvalPairwisePreferenceVote {
     'traceOrderRandomized': traceOrderRandomized,
     'choice': choice.name,
     'rationale': rationale,
+    if (blindedImport != null) 'blindedImport': blindedImport!.toJson(),
     'issues': issues,
   };
+
+  EvalPairwisePreferenceVote withBlindedImport(
+    BlindedPairwisePreferenceImportRecord provenance,
+  ) => EvalPairwisePreferenceVote(
+    voteId: voteId,
+    optionA: optionA,
+    optionB: optionB,
+    reviewerId: reviewerId,
+    reviewerKind: reviewerKind,
+    reviewerModel: reviewerModel,
+    promptDigest: promptDigest,
+    calibrationSetVersion: calibrationSetVersion,
+    profileVisible: profileVisible,
+    modelIdentityVisible: modelIdentityVisible,
+    peerVotesVisible: peerVotesVisible,
+    traceOrderRandomized: traceOrderRandomized,
+    choice: choice,
+    rationale: rationale,
+    blindedImport: provenance,
+    issues: issues,
+  );
 
   List<String> validate(EvalPairwisePreferencePolicy policy) {
     final failures = <String>[];
@@ -349,6 +434,9 @@ class EvalPairwisePreferenceVote {
     if (policy.requireTraceOrderRandomized && !traceOrderRandomized) {
       failures.add('trace order was not randomized');
     }
+    if (policy.requireBlindedImport && blindedImport == null) {
+      failures.add('missing blinded pairwise import provenance');
+    }
     return failures;
   }
 }
@@ -361,6 +449,7 @@ class EvalPairwisePreferencePolicy {
     this.requireProfileBlind = false,
     this.requirePeerVoteBlind = true,
     this.requireTraceOrderRandomized = false,
+    this.requireBlindedImport = false,
   });
 
   final int minVotes;
@@ -369,6 +458,7 @@ class EvalPairwisePreferencePolicy {
   final bool requireProfileBlind;
   final bool requirePeerVoteBlind;
   final bool requireTraceOrderRandomized;
+  final bool requireBlindedImport;
 
   List<String> validate() {
     final failures = <String>[];

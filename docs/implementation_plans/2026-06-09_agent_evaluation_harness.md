@@ -219,6 +219,15 @@ results cannot hide a confounded experiment design.
 The quorum also rejects mixed review protocols: reviewer kind/model, prompt
 digest, calibration-set version, blinding flags, and trace-order randomization
 must match across pooled votes.
+Current active slice adds pairwise-specific blinded review artifacts:
+`EvalBlindedPairwisePreference.writePairs` creates reviewer-facing
+`*.blinded-pair.json` packets plus a private key, with aliases and redacted
+outputs in public files and raw digest mappings only in the private key.
+`importVotes` validates the judge manifest, private key, pair payload digest,
+raw trace digests, packet contract, and missing/extra wrappers before writing
+raw `.preference.json` votes with `blindedImport` provenance. Pairwise results
+remain diagnostic; stricter policies can now require blinded-import provenance
+without promoting A/B outcomes automatically.
 Current active slice also makes one vote per `<safeVoteId>.preference.json`
 a first-class run artifact. `TraceWriter.readRun` deliberately ignores those
 files so ordinary verification, readiness, calibration, and promotion gates stay

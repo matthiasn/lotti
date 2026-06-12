@@ -335,6 +335,58 @@ void main() {
     expect(summary.findings.join('\n'), contains('pairwise-gold-v2'));
   });
 
+  test('can require blinded import provenance for model-class tuning', () {
+    final optionA = _ref(
+      profileName: 'candidate',
+      traceDigest: _digest('optionA'),
+    );
+    final optionB = _ref(
+      profileName: 'baseline',
+      traceDigest: _digest('optionB'),
+    );
+    final vote = _vote(
+      voteId: 'vote-1',
+      reviewerId: 'judge-a',
+      optionA: optionA,
+      optionB: optionB,
+    );
+    final importedVote = vote.withBlindedImport(
+      BlindedPairwisePreferenceImportRecord(
+        blindedPairId: 'pair-0001',
+        reviewPayloadDigest: _digest('review-payload'),
+        judgeManifestDigest: _digest('judge-manifest'),
+        privateKeyDigest: _digest('private-key'),
+        sourceManifestDigest: _digest('manifest'),
+        optionARawTraceDigest: optionA.traceDigest,
+        optionBRawTraceDigest: optionB.traceDigest,
+      ),
+    );
+
+    final selfAttested = EvalPairwisePreferenceReporter.summarize(
+      [vote],
+      policy: const EvalPairwisePreferencePolicy(
+        minVotes: 1,
+        requireBlindedImport: true,
+      ),
+    ).single;
+    final imported = EvalPairwisePreferenceReporter.summarize(
+      [importedVote],
+      policy: const EvalPairwisePreferencePolicy(
+        minVotes: 1,
+        requireBlindedImport: true,
+      ),
+    ).single;
+
+    expect(selfAttested.status, EvalPairwisePreferenceStatus.invalid);
+    expect(
+      selfAttested.findings.join('\n'),
+      contains('missing blinded pairwise import provenance'),
+    );
+    expect(imported.hasWinner, isTrue);
+    expect(imported.preferredTrace?.profileName, 'candidate');
+    expect(imported.invalidVoteCount, 0);
+  });
+
   test('invalidates incompatible pairwise trace refs', () {
     final optionA = _ref(
       profileName: 'candidate',

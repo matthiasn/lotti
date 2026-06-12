@@ -4,6 +4,7 @@
 // test/eval/scenarios/*: import '../harness/eval_harness.dart';
 
 export 'eval_assertions.dart';
+export 'eval_blinded_pairwise_preference.dart';
 export 'eval_blinded_trace_export.dart';
 export 'eval_blinded_verdict_import.dart';
 export 'eval_judge_calibration.dart';
