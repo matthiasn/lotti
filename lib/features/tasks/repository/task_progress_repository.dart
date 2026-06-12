@@ -41,7 +41,7 @@ class TaskProgressRepository {
   /// double-counting overlapping entries.
   ///
   /// This is the canonical implementation of time-spent calculation logic.
-  /// Both [getTaskProgressData] and `AiInputRepository._calculateTimeSpentFromEntities`
+  /// Both [getTaskProgressData] and `calculateTimeSpentFromEntities`
   /// use this same filtering logic.
   static Duration sumTimeSpentFromEntities(List<JournalEntity> entities) {
     return calculateUnionDuration(

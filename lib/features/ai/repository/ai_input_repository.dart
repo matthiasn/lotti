@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/workflow/task_state_markdown.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/repository/linked_task_context_builder.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/utils/assigned_labels_util.dart';
@@ -23,8 +24,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-
-part 'ai_input_linked_tasks.dart';
 
 part 'ai_input_repository.g.dart';
 
@@ -52,6 +51,12 @@ class AiInputRepository {
   });
 
   final JournalDb _db = getIt<JournalDb>();
+  late final LinkedTaskContextBuilder _linkedTaskContextBuilder =
+      LinkedTaskContextBuilder(
+        db: _db,
+        taskSummaryResolver: _taskSummaryResolver,
+        entitiesCache: getIt<EntitiesCacheService>(),
+      );
   final Ref ref;
   final TaskSummaryResolver _taskSummaryResolver;
   final ProjectRepository _projectRepository;
@@ -87,7 +92,7 @@ class AiInputRepository {
     }
 
     final task = entry;
-    final timeSpent = await _calculateTimeSpentWithRepo(
+    final timeSpent = await calculateTimeSpentWithRepo(
       task.id,
       progressRepository,
     );
@@ -338,7 +343,7 @@ class AiInputRepository {
           (await _projectRepository.getTasksForProject(
               project.id,
             )).where((task) => task.id != taskId).toList()
-            ..sort(_compareRelatedProjectTasks);
+            ..sort(compareRelatedProjectTasks);
 
       if (siblingTasks.isEmpty) return '{}';
 
@@ -365,7 +370,7 @@ class AiInputRepository {
           'title': siblingTask.data.title,
           'status': siblingTask.data.status.toDbString,
           'timeSpent': formatHhMm(
-            _calculateTimeSpentFromEntities(
+            calculateTimeSpentFromEntities(
               bulkLinkedEntities[siblingTask.id] ?? const <JournalEntity>[],
             ),
           ),
@@ -467,14 +472,6 @@ class AiInputRepository {
   /// Uses [EntitiesCacheService] for O(1) lookups per label, avoiding
   /// additional database queries. Falls back to the ID as the name if
   /// a label definition is not found in cache.
-  List<Map<String, String>> _buildLabelTuplesFromCache(List<String> ids) {
-    if (ids.isEmpty) return <Map<String, String>>[];
-    final cache = getIt<EntitiesCacheService>();
-    return ids.map((id) {
-      final def = cache.getLabelById(id);
-      return {'id': id, 'name': def?.name ?? id};
-    }).toList();
-  }
 
   /// Build context for tasks that link TO this task (children/subtasks).
   /// These are tasks where the current task is the target of the link.
@@ -493,7 +490,7 @@ class AiInputRepository {
             .toList()
           ..sort((a, b) => a.meta.createdAt.compareTo(b.meta.createdAt));
 
-    return _buildLinkedTaskContextsBatched(tasks);
+    return _linkedTaskContextBuilder.buildBatched(tasks);
   }
 
   /// Build context for tasks this task links TO (parents/epics).
@@ -510,7 +507,7 @@ class AiInputRepository {
             .toList()
           ..sort((a, b) => a.meta.createdAt.compareTo(b.meta.createdAt));
 
-    return _buildLinkedTaskContextsBatched(tasks);
+    return _linkedTaskContextBuilder.buildBatched(tasks);
   }
 
   // Legacy `_getLatestSummaryFromEntities` removed — summary resolution
