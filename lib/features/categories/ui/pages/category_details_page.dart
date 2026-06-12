@@ -65,7 +65,10 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController();
+    // Rebuild on edits so create mode can gate its primary action on a
+    // non-empty name instead of scolding after the tap.
+    _nameController = TextEditingController()
+      ..addListener(() => setState(() {}));
   }
 
   @override
@@ -99,6 +102,9 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
       actionBar: SettingsFormActionBar(
         primaryLabel: context.messages.createButton,
         onPrimary: _handleCreate,
+        // A nameless category can't be created — say so up front instead
+        // of scolding with a toast after the tap.
+        primaryEnabled: _nameController.text.trim().isNotEmpty,
         secondaryLabel: context.messages.cancelButton,
         onSecondary: () => beamToNamed('/settings/categories'),
       ),
@@ -281,8 +287,14 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
               _buildSpeechDictionary(category),
             ],
           ),
-          // Correction examples render their own header + list chrome.
-          _buildCorrectionExamples(category),
+          SettingsFormSection(
+            title: context.messages.correctionExamplesSectionTitle,
+            icon: Icons.rule_rounded,
+            description: context.messages.correctionExamplesSectionDescription,
+            children: [
+              _buildCorrectionExamples(category),
+            ],
+          ),
         ],
       ],
     );
@@ -331,8 +343,10 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         : colorFromCssHex(category.color, substitute: Colors.blue);
     final iconDisplayName =
         icon?.displayName ?? context.messages.categoryIconChooseHint;
-    final hintText = isCreateMode
-        ? context.messages.categoryIconCreateHint
+    // With no icon yet, the main line already says "Choose an icon" — a
+    // second instruction underneath would just repeat it.
+    final hintText = icon == null
+        ? null
         : context.messages.categoryIconEditHint;
 
     return Column(
@@ -397,13 +411,16 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
                               color: tokens.colors.text.highEmphasis,
                             ),
                       ),
-                      SizedBox(height: tokens.spacing.step1),
-                      Text(
-                        hintText,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
+                      if (hintText != null) ...[
+                        SizedBox(height: tokens.spacing.step1),
+                        Text(
+                          hintText,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ),

@@ -1122,6 +1122,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Aufwachvorgänge';
 
   @override
+  String get aggregationDailyAvg => 'Tagesdurchschnitt';
+
+  @override
+  String get aggregationDailyMax => 'Tagesmaximum';
+
+  @override
+  String get aggregationDailySum => 'Tagessumme';
+
+  @override
+  String get aggregationHourlySum => 'Stundensumme';
+
+  @override
+  String get aggregationNone => 'Keine';
+
+  @override
   String get aiAssistantTitle => 'Generieren…';
 
   @override
@@ -2399,10 +2414,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryIconChooseHint => 'Symbol auswählen';
 
   @override
-  String get categoryIconCreateHint => 'Tippe, um ein Symbol auszuwählen';
+  String get categoryIconCreateHint => 'Symbol auswählen';
 
   @override
-  String get categoryIconEditHint => 'Tippe, um ein anderes Symbol auszuwählen';
+  String get categoryIconEditHint => 'Anderes Symbol auswählen';
 
   @override
   String get categoryIconLabel => 'Symbol';
@@ -2418,7 +2433,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get categoryPrivateDescription =>
-      'Diese Kategorie ausblenden, wenn der private Modus aktiviert ist';
+      'Nur sichtbar, wenn private Einträge angezeigt werden';
 
   @override
   String get categorySearchPlaceholder => 'Kategorien suchen...';
@@ -4873,6 +4888,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get inactiveLabel => 'Inaktiv';
 
   @override
+  String get inactiveSwitchDescription =>
+      'Inaktive Elemente erscheinen nicht in Auswahllisten';
+
+  @override
   String get inferenceProfileCreateTitle => 'Profil erstellen';
 
   @override
@@ -5790,6 +5809,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get privateLabel => 'Privat';
 
   @override
+  String get privateSwitchDescription =>
+      'Nur sichtbar, wenn private Einträge angezeigt werden';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Für dieses Projekt wurde noch kein Projekt-Agent eingerichtet.';
 
@@ -6323,6 +6346,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get saveLabel => 'Speichern';
 
   @override
+  String get saveShortcutTooltip => 'Speichern — Strg+S (⌘S auf dem Mac)';
+
+  @override
   String get saveSuccessful => 'Erfolgreich gespeichert';
 
   @override
@@ -6679,7 +6705,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsLabelsCategoriesRemoveTooltip => 'Entfernen';
 
   @override
-  String get settingsLabelsColorHeading => 'Select a color';
+  String get settingsLabelsColorHeading => 'Farbe';
 
   @override
   String get settingsLabelsColorSubheading => 'Quick presets';
@@ -6741,7 +6767,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsLabelsPrivateDescription =>
-      'Private Labels erscheinen nur, wenn \"Private Einträge anzeigen\" aktiviert ist.';
+      'Nur sichtbar, wenn private Einträge angezeigt werden';
 
   @override
   String get settingsLabelsPrivateTitle => 'Private label';
@@ -6763,7 +6789,7 @@ class AppLocalizationsDe extends AppLocalizations {
       other: '$count Aufgaben',
       one: '1 Aufgabe',
     );
-    return 'Bei $_temp0 verwendet';
+    return '$_temp0';
   }
 
   @override
@@ -6896,8 +6922,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Verifizieren';
 
   @override
-  String get settingsMeasurableAggregationLabel =>
-      'Standard-Aggregationsart (optional)';
+  String get settingsMeasurableAggregationLabel => 'Standard-Aggregation';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Messgröße löschen';

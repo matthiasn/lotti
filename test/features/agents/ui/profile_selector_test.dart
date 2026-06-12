@@ -35,6 +35,26 @@ Widget _buildSubject({
   );
 }
 
+Widget _buildSettingsField({
+  required String? selectedProfileId,
+  required ValueChanged<String?> onProfileSelected,
+  required List<AiConfig> profiles,
+  String? hintText,
+}) {
+  return RiverpodWidgetTestBench(
+    overrides: [
+      inferenceProfileControllerProvider.overrideWith(
+        () => _FakeInferenceProfileController(profiles),
+      ),
+    ],
+    child: SettingsProfilePickerField(
+      selectedProfileId: selectedProfileId,
+      onProfileSelected: onProfileSelected,
+      hintText: hintText,
+    ),
+  );
+}
+
 void main() {
   testWidgets('shows placeholder when no profile selected', (tester) async {
     final profile = testInferenceProfile();
@@ -189,5 +209,148 @@ void main() {
     );
     // The dropdown arrow is still visible but InkWell.onTap is null.
     expect(find.byIcon(Icons.arrow_drop_down), findsOneWidget);
+  });
+
+  group('SettingsProfilePickerField', () {
+    testWidgets('shows label and default hint when nothing is selected', (
+      tester,
+    ) async {
+      final profile = testInferenceProfile();
+
+      await tester.pumpWidget(
+        _buildSettingsField(
+          selectedProfileId: null,
+          onProfileSelected: (_) {},
+          profiles: [profile],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(
+        find.byType(SettingsProfilePickerField),
+      );
+      expect(
+        find.text(context.messages.agentDefaultProfileLabel),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.inferenceProfileSelectProfile),
+        findsOneWidget,
+      );
+      expect(find.text(profile.name), findsNothing);
+    });
+
+    testWidgets('shows a custom hint when provided', (tester) async {
+      await tester.pumpWidget(
+        _buildSettingsField(
+          selectedProfileId: null,
+          onProfileSelected: (_) {},
+          profiles: [testInferenceProfile()],
+          hintText: 'Select a profile',
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Select a profile'), findsOneWidget);
+    });
+
+    testWidgets('shows the selected profile name', (tester) async {
+      final profile = testInferenceProfile(
+        id: 'profile-abc',
+        name: 'My Profile',
+      );
+
+      await tester.pumpWidget(
+        _buildSettingsField(
+          selectedProfileId: 'profile-abc',
+          onProfileSelected: (_) {},
+          profiles: [profile],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('My Profile'), findsOneWidget);
+    });
+
+    testWidgets('clear affordance resets the selection to null', (
+      tester,
+    ) async {
+      final profile = testInferenceProfile(id: 'p-1');
+      String? clearedTo = 'not-cleared';
+
+      await tester.pumpWidget(
+        _buildSettingsField(
+          selectedProfileId: 'p-1',
+          onProfileSelected: (id) => clearedTo = id,
+          profiles: [profile],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The kit field renders the clear affordance as a close icon.
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pumpAndSettle();
+
+      expect(clearedTo, isNull);
+    });
+
+    testWidgets('opens picker and selecting a profile calls callback', (
+      tester,
+    ) async {
+      final profileA = testInferenceProfile(id: 'p-a', name: 'Alpha');
+      final profileB = testInferenceProfile(id: 'p-b', name: 'Beta');
+      String? selectedId;
+
+      await tester.pumpWidget(
+        _buildSettingsField(
+          selectedProfileId: null,
+          onProfileSelected: (id) => selectedId = id,
+          profiles: [profileA, profileB],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Alpha'), findsOneWidget);
+      expect(find.text('Beta'), findsOneWidget);
+
+      await tester.tap(find.text('Beta'));
+      await tester.pumpAndSettle();
+
+      expect(selectedId, 'p-b');
+    });
+
+    testWidgets('inert when no profiles available — tap opens no modal', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildSettingsField(
+          selectedProfileId: null,
+          onProfileSelected: (_) {},
+          profiles: [],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(
+        find.byType(SettingsProfilePickerField),
+      );
+      // The field label renders exactly once; opening the modal would add
+      // a second occurrence as the modal title.
+      expect(
+        find.text(context.messages.agentDefaultProfileLabel),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(context.messages.agentDefaultProfileLabel),
+        findsOneWidget,
+      );
+    });
   });
 }

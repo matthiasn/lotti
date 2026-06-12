@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
@@ -36,7 +37,7 @@ Future<void> _pumpPage(
         emptyHint: 'Tap create to add an item',
         noMatchMessage: (query) => 'No items match "$query"',
         errorTitle: 'Failed to load items',
-        createSemanticLabel: 'Create item',
+        createLabel: 'Create item',
         onCreate: onCreate ?? () {},
         searchText: searchText,
         noMatchActionBuilder: noMatchActionBuilder,
@@ -403,4 +404,67 @@ void main() {
       });
     });
   });
+  testWidgets('empty state offers an inline create action', (tester) async {
+    var created = false;
+    await _pumpPage(
+      tester,
+      itemsAsync: const AsyncValue.data([]),
+      onCreate: () => created = true,
+    );
+
+    final inlineCreate = find.descendant(
+      of: find.byType(DesignSystemButton),
+      matching: find.text('Create item'),
+    );
+    expect(inlineCreate, findsOneWidget);
+
+    await tester.tap(inlineCreate);
+    expect(created, isTrue);
+  });
+
+  testWidgets(
+    'desktop replaces the corner FAB with a header create button',
+    (tester) async {
+      tester.view
+        ..physicalSize = const Size(1440, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      var created = false;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          MediaQuery(
+            data: const MediaQueryData(size: Size(1440, 900)),
+            child: DefinitionsListPage<String>(
+              title: 'Test Items',
+              itemsAsync: const AsyncValue.data(['Alpha']),
+              searchHint: 'Search test items',
+              displayName: (item) => item,
+              itemBuilder: (context, item, {required bool showDivider}) =>
+                  ListTile(title: Text(item)),
+              emptyIcon: Icons.inbox_outlined,
+              emptyTitle: 'Nothing here yet',
+              emptyHint: 'Tap create to add an item',
+              noMatchMessage: (query) => 'No items match "$query"',
+              errorTitle: 'Failed to load items',
+              createLabel: 'Create item',
+              onCreate: () => created = true,
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+
+      expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
+      final headerCreate = find.descendant(
+        of: find.byType(DesignSystemButton),
+        matching: find.text('Create item'),
+      );
+      expect(headerCreate, findsOneWidget);
+
+      await tester.tap(headerCreate);
+      expect(created, isTrue);
+    },
+  );
 }

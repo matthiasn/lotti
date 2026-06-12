@@ -33,7 +33,7 @@ void main() {
       );
     }
 
-    testWidgets('renders the design-system input with label, hint, and icon', (
+    testWidgets('renders the design-system input with label and hint only', (
       tester,
     ) async {
       await pumpField(tester, isCreateMode: true);
@@ -41,7 +41,10 @@ void main() {
       expect(find.byType(DesignSystemTextInput), findsOneWidget);
       expect(find.text('Category name'), findsOneWidget);
       expect(find.text('Enter category name'), findsOneWidget);
-      expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+      // No leading glyph: the name field is the only field that carried
+      // one, and the shapes glyph is overloaded with the empty-state
+      // illustration.
+      expect(find.byIcon(Icons.category_outlined), findsNothing);
     });
 
     testWidgets('calls onChanged with the typed value in edit mode', (
@@ -145,7 +148,7 @@ void main() {
       expect(input.controller, equals(controller));
       expect(input.label, 'Category name');
       expect(input.hintText, 'Enter category name');
-      expect(input.leadingIcon, Icons.category_outlined);
+      expect(input.leadingIcon, isNull);
       expect(input.textCapitalization, TextCapitalization.sentences);
     });
   });

@@ -68,7 +68,11 @@ void main() {
         await pumpPage(tester, CreateMeasurablePage());
 
         expect(find.text('Create measurable'), findsOneWidget);
-        expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+        expect(find.widgetWithText(DsGlassPill, 'Delete'), findsNothing);
+
+        // An unset aggregation type renders the localized hint, never a
+        // raw enum identifier.
+        expect(find.text('None'), findsOneWidget);
 
         final createFinder = find.widgetWithText(DsGlassPill, 'Create');
         expect(tester.widget<DsGlassPill>(createFinder).enabled, isFalse);
@@ -93,6 +97,10 @@ void main() {
                 ).captured.single
                 as MeasurableDataType;
         expect(saved.displayName, 'Steps');
+        // Untouched switches and picker persist their pristine defaults.
+        expect(saved.favorite, isFalse);
+        expect(saved.private, isFalse);
+        expect(saved.aggregationType, isNull);
         expect(beamedTo, '/settings/measurables');
       },
     );

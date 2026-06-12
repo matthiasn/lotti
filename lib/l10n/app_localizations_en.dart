@@ -1104,6 +1104,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Wakes';
 
   @override
+  String get aggregationDailyAvg => 'Daily average';
+
+  @override
+  String get aggregationDailyMax => 'Daily maximum';
+
+  @override
+  String get aggregationDailySum => 'Daily sum';
+
+  @override
+  String get aggregationHourlySum => 'Hourly sum';
+
+  @override
+  String get aggregationNone => 'None';
+
+  @override
   String get aiAssistantTitle => 'Generate…';
 
   @override
@@ -2342,7 +2357,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Set a default language for tasks in this category';
 
   @override
-  String get categoryDefaultProfileHint => 'Select a profile…';
+  String get categoryDefaultProfileHint => 'Select a profile';
 
   @override
   String get categoryDefaultTemplateHint => 'Select a template…';
@@ -2367,10 +2382,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryIconChooseHint => 'Choose an icon';
 
   @override
-  String get categoryIconCreateHint => 'Tap to select an icon';
+  String get categoryIconCreateHint => 'Select an icon';
 
   @override
-  String get categoryIconEditHint => 'Tap to select a different icon';
+  String get categoryIconEditHint => 'Select a different icon';
 
   @override
   String get categoryIconLabel => 'Icon';
@@ -2386,7 +2401,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get categoryPrivateDescription =>
-      'Hide this category when private mode is enabled';
+      'Only visible when private entries are shown';
 
   @override
   String get categorySearchPlaceholder => 'Search categories...';
@@ -4714,13 +4729,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitArchivedLabel => 'Archived';
 
   @override
-  String get habitCategoryHint => 'Select category';
+  String get habitCategoryHint => 'Select a category';
 
   @override
   String get habitCategoryLabel => 'Category';
 
   @override
-  String get habitDashboardHint => 'Select dashboard';
+  String get habitDashboardHint => 'Select a dashboard';
 
   @override
   String get habitDashboardLabel => 'Dashboard';
@@ -4810,6 +4825,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get inactiveLabel => 'Inactive';
+
+  @override
+  String get inactiveSwitchDescription =>
+      'Inactive items are hidden from selection lists';
 
   @override
   String get inferenceProfileCreateTitle => 'Create Profile';
@@ -5713,6 +5732,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get privateLabel => 'Private';
 
   @override
+  String get privateSwitchDescription =>
+      'Only visible when private entries are shown';
+
+  @override
   String get projectAgentNotProvisioned =>
       'No project agent has been provisioned for this project yet.';
 
@@ -6245,6 +6268,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get saveLabel => 'Save';
 
   @override
+  String get saveShortcutTooltip => 'Save — Ctrl+S (⌘S on Mac)';
+
+  @override
   String get saveSuccessful => 'Saved successfully';
 
   @override
@@ -6263,7 +6289,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get selectButton => 'Select';
 
   @override
-  String get selectColor => 'Select Color';
+  String get selectColor => 'Select a color';
 
   @override
   String get selectLanguage => 'Select Language';
@@ -6593,7 +6619,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLabelsCategoriesRemoveTooltip => 'Remove';
 
   @override
-  String get settingsLabelsColorHeading => 'Select a color';
+  String get settingsLabelsColorHeading => 'Color';
 
   @override
   String get settingsLabelsColorSubheading => 'Quick presets';
@@ -6655,7 +6681,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsLabelsPrivateDescription =>
-      'Private labels only appear when “Show private entries” is enabled.';
+      'Only visible when private entries are shown';
 
   @override
   String get settingsLabelsPrivateTitle => 'Private label';
@@ -6677,7 +6703,7 @@ class AppLocalizationsEn extends AppLocalizations {
       other: '$count tasks',
       one: '1 task',
     );
-    return 'Used on $_temp0';
+    return '$_temp0';
   }
 
   @override
@@ -6809,8 +6835,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Verify';
 
   @override
-  String get settingsMeasurableAggregationLabel =>
-      'Default Aggregation Type (optional)';
+  String get settingsMeasurableAggregationLabel => 'Default aggregation type';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Delete measurable type';
@@ -6858,7 +6883,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMeasurablesSubtitle => 'Configure measurable data types';
 
   @override
-  String get settingsMeasurablesTitle => 'Measurable Types';
+  String get settingsMeasurablesTitle => 'Measurables';
 
   @override
   String get settingsResetGeminiConfirm => 'Reset';
@@ -7922,13 +7947,13 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get habitArchivedLabel => 'Archived';
 
   @override
-  String get habitCategoryHint => 'Select category';
+  String get habitCategoryHint => 'Select a category';
 
   @override
   String get habitCategoryLabel => 'Category';
 
   @override
-  String get habitDashboardHint => 'Select dashboard';
+  String get habitDashboardHint => 'Select a dashboard';
 
   @override
   String get habitDashboardLabel => 'Dashboard';
@@ -8140,7 +8165,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get searchHint => 'Search…';
 
   @override
-  String get selectColor => 'Select Colour';
+  String get selectColor => 'Select a color';
 
   @override
   String get sessionRatingEnergyQuestion => 'How energised did you feel?';
@@ -8181,7 +8206,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
       'Create a category to organise your entries';
 
   @override
-  String get settingsLabelsColorHeading => 'Select a colour';
+  String get settingsLabelsColorHeading => 'Color';
 
   @override
   String get settingsLabelsSubtitle => 'Organise tasks with coloured labels';

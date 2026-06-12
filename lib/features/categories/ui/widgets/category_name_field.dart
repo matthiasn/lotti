@@ -27,7 +27,6 @@ class CategoryNameField extends StatelessWidget {
       controller: controller,
       label: context.messages.settingsCategoriesNameLabel,
       hintText: context.messages.enterCategoryName,
-      leadingIcon: Icons.category_outlined,
       autofocus: isCreateMode,
       textCapitalization: TextCapitalization.sentences,
       onChanged: isCreateMode ? null : onChanged,

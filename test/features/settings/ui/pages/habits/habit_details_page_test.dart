@@ -144,10 +144,16 @@ void main() {
     );
 
     testWidgets(
-      'toggling priority and archived switches persists priority=true and '
-      'active=false',
+      'toggling the Favorite and Active switches persists priority=true '
+      'and active=false',
       (tester) async {
         await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
+
+        // The star toggle announces "Favorite" (matching the list row) and
+        // the visibility toggle uses Active polarity (ON = visible).
+        expect(find.text('Favorite'), findsOneWidget);
+        expect(find.text('Active'), findsOneWidget);
+        expect(find.text('Archived'), findsNothing);
 
         final priorityFinder = find.byKey(const Key('habit_priority'));
         await tester.ensureVisible(priorityFinder);
@@ -155,10 +161,12 @@ void main() {
         await tester.tap(priorityFinder);
         await tester.pump();
 
-        final archivedFinder = find.byKey(const Key('habit_archived'));
-        await tester.ensureVisible(archivedFinder);
+        // habitFlossing is active, so the switch starts ON; tapping it
+        // turns the habit inactive.
+        final activeFinder = find.byKey(const Key('habit_active'));
+        await tester.ensureVisible(activeFinder);
         await tester.pump();
-        await tester.tap(archivedFinder);
+        await tester.tap(activeFinder);
         await tester.pump();
 
         await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
@@ -176,7 +184,7 @@ void main() {
       (tester) async {
         await pumpPage(tester, EditHabitPage(habitId: habitFlossing.id));
 
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
 
@@ -257,7 +265,7 @@ void main() {
         );
 
         expect(find.text('Create habit'), findsOneWidget);
-        expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+        expect(find.widgetWithText(DsGlassPill, 'Delete'), findsNothing);
 
         final createPill = tester.widget<DsGlassPill>(
           find.widgetWithText(DsGlassPill, 'Create'),

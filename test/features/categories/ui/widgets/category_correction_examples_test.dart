@@ -22,26 +22,33 @@ void main() {
   }
 
   group('CategoryCorrectionExamples — empty state', () {
-    testWidgets('shows section title and description', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryCorrectionExamples(
-            examples: null,
-            onDeleteAt: (_) {},
+    testWidgets(
+      'renders no internal header — the page section owns title and '
+      'description',
+      (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: CategoryCorrectionExamples(
+              examples: null,
+              onDeleteAt: (_) {},
+            ),
           ),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      expect(find.text('Checklist Correction Examples'), findsOneWidget);
-      expect(
-        find.text(
-          'When you manually correct checklist items, those corrections are '
-          'saved here and used to improve AI suggestions.',
-        ),
-        findsOneWidget,
-      );
-    });
+        // The page wraps this widget in a SettingsFormSection titled with
+        // correctionExamplesSectionTitle; rendering the title here too
+        // would duplicate it.
+        expect(find.text('Checklist Correction Examples'), findsNothing);
+        expect(
+          find.text(
+            'When you manually correct checklist items, those corrections '
+            'are saved here and used to improve AI suggestions.',
+          ),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets('shows empty-state message when examples is null', (
       tester,
@@ -202,8 +209,7 @@ void main() {
       );
       await tester.pump();
 
-      // Only the title, description, and the example tile text should appear —
-      // no date text at all.
+      // Only the example tile text should appear — no date text at all.
       expect(find.textContaining('2024'), findsNothing);
     });
 

@@ -19,11 +19,12 @@ void main() {
       expect(insets.end, 56);
     });
 
-    test('wide panes grow the end inset to cap content width', () {
+    test('wide panes center the capped content column', () {
       final insets = SettingsPageLayout.contentInsets(1440);
-      // Header padding at >=1200 is 120; available 1200 > 840 cap.
-      expect(insets.start, 120);
-      expect(insets.end, 1440 - 120 - SettingsPageLayout.maxContentWidth);
+      // Available span (1440 - 2*120) exceeds the cap, so the column
+      // centers: equal insets of (1440 - 840) / 2.
+      expect(insets.start, (1440 - SettingsPageLayout.maxContentWidth) / 2);
+      expect(insets.end, insets.start);
       expect(
         1440 - insets.start - insets.end,
         SettingsPageLayout.maxContentWidth,
@@ -75,12 +76,12 @@ void main() {
       expect(rect.width, 375 - 40);
     });
 
-    testWidgets('caps content width on wide panes', (tester) async {
+    testWidgets('centers capped content on wide panes', (tester) async {
       const key = Key('content');
       await pumpAt(tester, width: 1440, childKey: key);
 
       final rect = tester.getRect(find.byKey(key));
-      expect(rect.left, 120);
+      expect(rect.left, (1440 - SettingsPageLayout.maxContentWidth) / 2);
       expect(rect.width, SettingsPageLayout.maxContentWidth);
     });
   });

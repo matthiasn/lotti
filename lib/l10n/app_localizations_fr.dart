@@ -1125,6 +1125,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Réveils';
 
   @override
+  String get aggregationDailyAvg => 'Moyenne quotidienne';
+
+  @override
+  String get aggregationDailyMax => 'Maximum quotidien';
+
+  @override
+  String get aggregationDailySum => 'Somme quotidienne';
+
+  @override
+  String get aggregationHourlySum => 'Somme horaire';
+
+  @override
+  String get aggregationNone => 'Aucune';
+
+  @override
   String get aiAssistantTitle => 'Générer…';
 
   @override
@@ -2411,10 +2426,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get categoryIconChooseHint => 'Choisir une icône';
 
   @override
-  String get categoryIconCreateHint => 'Appuie pour choisir une icône';
+  String get categoryIconCreateHint => 'Choisir une icône';
 
   @override
-  String get categoryIconEditHint => 'Appuie pour changer d\'icône';
+  String get categoryIconEditHint => 'Choisir une autre icône';
 
   @override
   String get categoryIconLabel => 'Icône';
@@ -2430,7 +2445,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get categoryPrivateDescription =>
-      'Masquer cette catégorie lorsque le mode privé est activé';
+      'Visible uniquement lorsque les entrées privées sont affichées';
 
   @override
   String get categorySearchPlaceholder => 'Rechercher des catégories...';
@@ -4811,13 +4826,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitArchivedLabel => 'Archivé';
 
   @override
-  String get habitCategoryHint => 'Sélectionner une catégorie';
+  String get habitCategoryHint => 'Choisir une catégorie';
 
   @override
   String get habitCategoryLabel => 'Catégorie';
 
   @override
-  String get habitDashboardHint => 'Sélectionner un tableau de bord';
+  String get habitDashboardHint => 'Choisir un tableau de bord';
 
   @override
   String get habitDashboardLabel => 'Tableau de bord';
@@ -4907,6 +4922,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get inactiveLabel => 'Inactif';
+
+  @override
+  String get inactiveSwitchDescription =>
+      'Les éléments inactifs n\'apparaissent pas dans les listes de sélection';
 
   @override
   String get inferenceProfileCreateTitle => 'Créer un profil';
@@ -5854,6 +5873,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get privateLabel => 'Privé';
 
   @override
+  String get privateSwitchDescription =>
+      'Visible uniquement lorsque les entrées privées sont affichées';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Aucun agent de projet n\'a encore été configuré pour ce projet.';
 
@@ -6410,6 +6433,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get saveLabel => 'Enregistrer';
 
   @override
+  String get saveShortcutTooltip => 'Enregistrer — Ctrl+S (⌘S sur Mac)';
+
+  @override
   String get saveSuccessful => 'Enregistré avec succès';
 
   @override
@@ -6428,7 +6454,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get selectButton => 'Sélectionner';
 
   @override
-  String get selectColor => 'Sélectionner une couleur';
+  String get selectColor => 'Choisir une couleur';
 
   @override
   String get selectLanguage => 'Sélectionner une langue';
@@ -6769,7 +6795,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsLabelsCategoriesRemoveTooltip => 'Supprimer';
 
   @override
-  String get settingsLabelsColorHeading => 'Sélectionner une couleur';
+  String get settingsLabelsColorHeading => 'Couleur';
 
   @override
   String get settingsLabelsColorSubheading => 'Préréglages rapides';
@@ -6831,7 +6857,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get settingsLabelsPrivateDescription =>
-      'Les étiquettes privées n\'apparaissent que lorsque « Afficher les entrées privées » est activé.';
+      'Visible uniquement lorsque les entrées privées sont affichées';
 
   @override
   String get settingsLabelsPrivateTitle => 'Étiquette privée';
@@ -6854,7 +6880,7 @@ class AppLocalizationsFr extends AppLocalizations {
       other: '$count tâches',
       one: '1 tâche',
     );
-    return 'Utilisée sur $_temp0';
+    return '$_temp0';
   }
 
   @override
@@ -6989,8 +7015,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Vérifier';
 
   @override
-  String get settingsMeasurableAggregationLabel =>
-      'Type d\'agrégation par défaut';
+  String get settingsMeasurableAggregationLabel => 'Agrégation par défaut';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Supprimer type mesurable';
@@ -7042,7 +7067,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Configurer les types de données mesurables';
 
   @override
-  String get settingsMeasurablesTitle => 'Types de données mesurables';
+  String get settingsMeasurablesTitle => 'Éléments mesurables';
 
   @override
   String get settingsResetGeminiConfirm => 'Réinitialiser';

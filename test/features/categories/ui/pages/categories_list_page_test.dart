@@ -6,6 +6,7 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
@@ -252,7 +253,7 @@ void main() {
     });
 
     group('Category Tile Design', () {
-      testWidgets('renders CategoryIconBadge with fallback letter', (
+      testWidgets('renders CategoryIconChip with fallback letter', (
         tester,
       ) async {
         final categories = [
@@ -270,7 +271,7 @@ void main() {
 
         expect(find.text('Red Category'), findsOneWidget);
         expect(find.text('R'), findsOneWidget);
-        expect(find.byType(CategoryIconBadge), findsOneWidget);
+        expect(find.byType(CategoryIconChip), findsOneWidget);
       });
 
       testWidgets('renders task count subtitle', (tester) async {

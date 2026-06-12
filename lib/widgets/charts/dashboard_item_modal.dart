@@ -1,6 +1,6 @@
-import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/settings/ui/aggregation_label.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -51,7 +51,9 @@ class DashboardItemModal extends StatelessWidget {
                   );
                   Navigator.pop(context);
                 },
-                label: Text(EnumToString.convertToString(aggregationType)),
+                label: Text(
+                  aggregationTypeLabel(context.messages, aggregationType),
+                ),
                 selectedColor: Theme.of(context).primaryColor,
                 selected: aggregationType == item.aggregationType,
               );

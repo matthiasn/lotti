@@ -84,8 +84,8 @@ void main() {
         final createPill = tester.widget<DsGlassPill>(_pill('Create'));
         expect(createPill.enabled, isFalse);
 
-        // No destructive delete affordance in create mode.
-        expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+        // No destructive delete pill in create mode.
+        expect(_pill('Delete'), findsNothing);
 
         // Both form fields are present and empty.
         expect(find.byKey(const Key('dashboard_name_field')), findsOneWidget);

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 
@@ -72,8 +71,7 @@ void main() {
   });
 
   testWidgets(
-    'destructive action renders as icon-only round button in the row '
-    'layout and fires',
+    'destructive action renders as a labeled pill and fires',
     (tester) async {
       var deleted = false;
       await pumpBar(
@@ -86,11 +84,12 @@ void main() {
         ),
       );
 
-      expect(find.byType(DsGlassRoundButton), findsOneWidget);
-      // Icon-only: the label is semantic, not visible text.
-      expect(find.text('Delete'), findsNothing);
+      // Always labeled: an icon-only destructive control is invisible
+      // to users who scan for words.
+      expect(find.text('Delete'), findsOneWidget);
+      expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
 
-      await tester.tap(find.byType(DsGlassRoundButton));
+      await tester.tap(find.text('Delete'));
       expect(deleted, isTrue);
     },
   );
@@ -108,7 +107,7 @@ void main() {
       ),
     );
 
-    await tester.tap(find.byType(DsGlassRoundButton));
+    await tester.tap(find.text('Delete'));
     expect(deleted, isFalse);
   });
 
@@ -129,8 +128,6 @@ void main() {
         ),
       );
 
-      // Stacked: destructive becomes a labeled pill, no round button.
-      expect(find.byType(DsGlassRoundButton), findsNothing);
       expect(find.text('Delete'), findsOneWidget);
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
@@ -160,7 +157,7 @@ void main() {
         ),
       );
 
-      final deleteX = tester.getCenter(find.byType(DsGlassRoundButton)).dx;
+      final deleteX = tester.getCenter(find.text('Delete')).dx;
       final cancelX = tester.getCenter(find.text('Cancel')).dx;
       final saveX = tester.getCenter(find.text('Save')).dx;
       expect(deleteX, lessThan(cancelX));

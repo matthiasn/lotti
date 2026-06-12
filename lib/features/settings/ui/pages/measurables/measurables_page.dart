@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
@@ -49,7 +50,7 @@ class MeasurablesPage extends ConsumerWidget {
       emptyHint: messages.settingsMeasurablesEmptyStateHint,
       noMatchMessage: messages.settingsMeasurablesNoMatchQuery,
       errorTitle: messages.settingsMeasurablesErrorLoading,
-      createSemanticLabel: messages.settingsMeasurablesCreateTitle,
+      createLabel: messages.settingsMeasurablesCreateTitle,
       onCreate: () => beamToNamed('/settings/measurables/create'),
       itemBuilder: (context, dataType, {required bool showDivider}) =>
           _MeasurableListItem(item: dataType, showDivider: showDivider),
@@ -63,8 +64,6 @@ class _MeasurableListItem extends StatelessWidget {
     required this.showDivider,
   });
 
-  static const double _leadingIconSize = 24;
-
   final MeasurableDataType item;
   final bool showDivider;
 
@@ -73,15 +72,19 @@ class _MeasurableListItem extends StatelessWidget {
     final tokens = context.designTokens;
     final isPrivate = item.private ?? false;
     final isFavorite = item.favorite ?? false;
-    final description = item.description;
 
     return DesignSystemListItem(
       title: item.displayName,
-      subtitle: description.isNotEmpty ? description : item.unitName,
-      leading: Icon(
-        Icons.trending_up_rounded,
-        size: _leadingIconSize,
-        color: tokens.colors.text.mediumEmphasis,
+      // Stable subtitle semantics: always the unit (or nothing), never
+      // the description — every row's second line answers the same
+      // question.
+      subtitle: item.unitName.isNotEmpty ? item.unitName : null,
+      // Neutral first-letter chip: rows become distinguishable instead of
+      // decorated with one repeated glyph.
+      leading: DefinitionIconChip(
+        background: tokens.colors.background.level03,
+        foreground: tokens.colors.text.mediumEmphasis,
+        name: item.displayName,
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -119,7 +122,9 @@ class _MeasurableListItem extends StatelessWidget {
       ),
       showDivider: showDivider,
       dividerIndent:
-          tokens.spacing.step5 + _leadingIconSize + tokens.spacing.step3,
+          tokens.spacing.step5 +
+          DefinitionIconChip.defaultSize +
+          tokens.spacing.step3,
       onTap: () => beamToNamed('/settings/measurables/${item.id}'),
     );
   }

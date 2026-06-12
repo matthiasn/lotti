@@ -8,6 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
@@ -39,6 +40,13 @@ bool isPillEnabled(WidgetTester tester, String label) =>
 Finder nameFieldFinder() => find.descendant(
   of: find.byType(CategoryNameField),
   matching: find.byType(TextField),
+);
+
+/// The tappable row of the color picker field (now a kit picker field,
+/// so there is no longer a palette glyph to tap).
+Finder colorFieldFinder() => find.descendant(
+  of: find.byType(CategoryColorPicker),
+  matching: find.byType(InkWell),
 );
 
 void main() {
@@ -210,11 +218,19 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await pumpCategoryDetailsPage(tester, settle: true);
+        // Tall viewport so every section (including the last one) builds.
+        await pumpCategoryDetailsPage(
+          tester,
+          settle: true,
+          viewportSize: const Size(1024, 3000),
+        );
 
-        // Sections render via the shared kit, headed by Basic Settings.
-        expect(find.text('Basic Settings'), findsOneWidget);
-        expect(find.byType(SettingsFormSection), findsWidgets);
+        // Sections render via the shared kit, headed by Basic settings.
+        expect(find.text('Basic settings'), findsOneWidget);
+        expect(find.byType(SettingsFormSection), findsNWidgets(5));
+        // Correction examples live in a SettingsFormSection whose header
+        // owns the title — the widget renders no duplicate of its own.
+        expect(find.text('Checklist Correction Examples'), findsOneWidget);
       });
 
       testWidgets('displays all basic form fields', (tester) async {
@@ -247,8 +263,8 @@ void main() {
         await pumpCategoryDetailsPage(tester, settle: true);
 
         expect(find.byType(SettingsFormActionBar), findsOneWidget);
-        // Destructive delete renders as the icon-only round glass button.
-        expect(find.byType(DsGlassRoundButton), findsOneWidget);
+        // Destructive delete renders as a labeled glass pill.
+        expect(pillFinder('Delete'), findsOneWidget);
         expect(pillFinder('Cancel'), findsOneWidget);
         expect(pillFinder('Save'), findsOneWidget);
       });
@@ -400,8 +416,8 @@ void main() {
 
         await pumpCategoryDetailsPage(tester, settle: true);
 
-        // The destructive action is the round glass button in the bar.
-        await tester.tap(find.byType(DsGlassRoundButton));
+        // The destructive action is the labeled Delete pill in the bar.
+        await tester.tap(pillFinder('Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -428,7 +444,7 @@ void main() {
           await pumpCategoryDetailsPage(tester, settle: true);
 
           // Open delete dialog
-          await tester.tap(find.byType(DsGlassRoundButton));
+          await tester.tap(pillFinder('Delete'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -463,7 +479,7 @@ void main() {
         await pumpCategoryDetailsPage(tester, settle: true);
 
         // Open delete dialog
-        await tester.tap(find.byType(DsGlassRoundButton));
+        await tester.tap(pillFinder('Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -625,17 +641,16 @@ void main() {
           findsOneWidget,
         ); // Basic Settings section
         expect(find.byType(TextField), findsOneWidget); // Name field
-        expect(
-          find.byIcon(Icons.palette_outlined),
-          findsOneWidget,
-        ); // Color picker icon
+        // Color renders as a kit picker field with label + hint.
+        expect(find.text('Color'), findsOneWidget);
+        expect(find.text('Select a color'), findsOneWidget);
 
         // Should be able to enter name
         await tester.enterText(find.byType(TextField), 'New Category');
         expect(find.text('New Category'), findsOneWidget);
 
         // Should be able to open color picker
-        await tester.tap(find.byIcon(Icons.palette_outlined));
+        await tester.tap(colorFieldFinder());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -764,31 +779,35 @@ void main() {
         await streamController.close();
       });
 
-      testWidgets('create mode shows an error toast for an empty name', (
-        tester,
-      ) async {
-        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
+      testWidgets(
+        'create pill stays disabled until a non-empty name is entered',
+        (tester) async {
+          await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
-        // Leave the name field empty and tap Create.
-        await tester.tap(pillFinder('Create'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+          // Empty name → the Create pill is disabled and tapping is inert.
+          expect(isPillEnabled(tester, 'Create'), isFalse);
+          await tester.tap(pillFinder('Create'), warnIfMissed: false);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+          verifyNever(
+            () => mockRepository.createCategory(
+              name: any(named: 'name'),
+              color: any(named: 'color'),
+              icon: any(named: 'icon'),
+            ),
+          );
 
-        // Repository must not be called when the name is empty.
-        verifyNever(
-          () => mockRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-            icon: any(named: 'icon'),
-          ),
-        );
+          // Whitespace-only does not count as a name.
+          await tester.enterText(find.byType(TextField), '   ');
+          await tester.pump();
+          expect(isPillEnabled(tester, 'Create'), isFalse);
 
-        // An error toast explains that the name is required.
-        expect(
-          find.textContaining('Category name is required'),
-          findsOneWidget,
-        );
-      });
+          // A real name enables the pill.
+          await tester.enterText(find.byType(TextField), 'New Category');
+          await tester.pump();
+          expect(isPillEnabled(tester, 'Create'), isTrue);
+        },
+      );
 
       testWidgets('does not navigate back when creation fails', (tester) async {
         String? beamedTo;
@@ -995,10 +1014,9 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Tap palette icon to open color picker
-          final paletteIcon = find.byIcon(Icons.palette_outlined);
-          await tester.ensureVisible(paletteIcon);
-          await tester.tap(paletteIcon);
+          // Tap the color field to open the color picker
+          await tester.ensureVisible(colorFieldFinder());
+          await tester.tap(colorFieldFinder());
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -1037,9 +1055,8 @@ void main() {
           await tester.pump(const Duration(milliseconds: 350));
 
           // Open color picker in edit mode
-          final paletteIcon = find.byIcon(Icons.palette_outlined);
-          await tester.ensureVisible(paletteIcon);
-          await tester.tap(paletteIcon);
+          await tester.ensureVisible(colorFieldFinder());
+          await tester.tap(colorFieldFinder());
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -1213,8 +1230,9 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Open the icon picker
-          final iconSection = find.text('Tap to select a different icon');
+          // Open the icon picker — with no icon set the row's main line
+          // is the "Choose an icon" prompt (no secondary hint).
+          final iconSection = find.text('Choose an icon');
           final inkWell = find
               .ancestor(
                 of: iconSection,
@@ -1244,7 +1262,7 @@ void main() {
       );
 
       testWidgets(
-        'edit mode icon picker shows hint text when no icon set',
+        'edit mode icon row shows only the choose prompt when no icon set',
         (tester) async {
           final category =
               CategoryTestUtils.createTestCategory(); // icon defaults to null
@@ -1260,16 +1278,18 @@ void main() {
             find.text('Choose an icon'),
             findsOneWidget,
           );
-          // And the hint says tap to change
+          // The secondary hint would only repeat the main line, so it is
+          // omitted until an icon is set.
           expect(
-            find.text('Tap to select a different icon'),
-            findsOneWidget,
+            find.text('Select a different icon'),
+            findsNothing,
           );
         },
       );
 
       testWidgets(
-        'edit mode icon picker shows icon display name when icon is set',
+        'edit mode icon row shows display name plus change hint when icon '
+        'is set',
         (tester) async {
           final category = CategoryTestUtils.createTestCategory(
             icon: CategoryIcon.fitness,
@@ -1289,6 +1309,11 @@ void main() {
           expect(
             find.text('Choose an icon'),
             findsNothing,
+          );
+          // With an icon set, the secondary hint invites changing it.
+          expect(
+            find.text('Select a different icon'),
+            findsOneWidget,
           );
         },
       );
@@ -1412,7 +1437,7 @@ void main() {
 
           // Open the color picker (default selected color is null → the
           // picker seeds at Colors.red).
-          await tester.tap(find.byIcon(Icons.palette_outlined));
+          await tester.tap(colorFieldFinder());
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
           expect(find.byType(AlertDialog), findsOneWidget);

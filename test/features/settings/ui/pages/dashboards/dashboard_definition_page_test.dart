@@ -18,6 +18,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
@@ -326,17 +327,17 @@ void main() {
         // Tap the measurable item card deterministically: a coordinate tap
         // on the text proved flaky in the batched CI run (silent miss
         // behind warnIfMissed: false when fonts/layout drift across the
-        // shared isolate). Invoke the card ListTile's onTap directly.
-        final chocolateTile = tester.widget<ListTile>(
+        // shared isolate). Invoke the card's onTap directly.
+        final chocolateCard = tester.widget<ItemCard>(
           find.ancestor(
             of: find.descendant(
               of: find.byType(MeasurableItemCard),
               matching: find.textContaining(measurableChocolate.displayName),
             ),
-            matching: find.byType(ListTile),
+            matching: find.byType(ItemCard),
           ),
         );
-        chocolateTile.onTap!();
+        chocolateCard.onTap!();
         // Modal open is a route transition — settle until fully mounted.
         await tester.pumpAndSettle();
 
@@ -351,19 +352,23 @@ void main() {
         );
 
         // Pick a different aggregation type. The modal pops, the item card
-        // title re-renders with the new aggregation suffix, and the dirty
-        // flag enables the save pill.
-        await tester.tap(find.text('dailyMax'));
+        // title re-renders with the localized aggregation suffix, and the
+        // dirty flag enables the save pill.
+        await tester.tap(find.text('Daily maximum'));
         // Modal close is a route transition as well — settle it.
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('[dailyMax]'), findsOneWidget);
+        expect(
+          find.text('${measurableChocolate.displayName} — Daily maximum'),
+          findsOneWidget,
+        );
         expect(_pillEnabled(tester, 'Save'), isTrue);
       },
     );
 
     testWidgets(
-      'header copy action saves the dashboard and copies its definitions',
+      'action-bar copy button saves the dashboard and copies its '
+      'definitions',
       (tester) async {
         final formKey = GlobalKey<FormBuilderState>();
 
@@ -378,13 +383,28 @@ void main() {
           ),
         );
 
+        // The copy action lives on the bottom action bar as a glass round
+        // button, not in the page header.
+        final copyFinder = find.byKey(const Key('dashboard_copy'));
+        expect(
+          tester.widget(copyFinder),
+          isA<DsGlassRoundButton>(),
+        );
+        expect(
+          find.ancestor(
+            of: copyFinder,
+            matching: find.byType(SettingsFormActionBar),
+          ),
+          findsOneWidget,
+        );
+
         await tester.enterText(
           find.byKey(const Key('dashboard_name_field')),
           '${testDashboardConfig.name} modified',
         );
         await tester.pump();
 
-        await tester.tap(find.byKey(const Key('dashboard_copy')));
+        await tester.tap(copyFinder);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -415,7 +435,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -449,7 +469,7 @@ void main() {
           ),
         );
 
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -481,8 +501,8 @@ void main() {
       );
 
       expect(find.text(testDashboardDescription), findsOneWidget);
-      // The destructive delete action is present in edit mode.
-      expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+      // The destructive delete pill is present in edit mode.
+      expect(find.widgetWithText(DsGlassPill, 'Delete'), findsOneWidget);
     });
 
     testWidgets('dashboard definition page setCategory logs to DevLogger '
@@ -916,14 +936,14 @@ void main() {
         expect(_pillEnabled(tester, 'Save'), isFalse);
 
         // The measurable item card title renders the resolved display name
-        // with the aggregation suffix.
+        // with the localized aggregation suffix — no raw enum names.
         final cardTitleFinder = find.text(
-          '${measurableWater.displayName} [dailySum]',
+          '${measurableWater.displayName} — Daily sum',
         );
         expect(cardTitleFinder, findsOneWidget);
 
-        // Tapping the card's ListTile fires updateItemFn (updateItem), which
-        // also opens the edit modal. updateItem sets dirty = true.
+        // Tapping the card fires updateItemFn (updateItem), which also
+        // opens the edit modal. updateItem sets dirty = true.
         await tester.tap(cardTitleFinder);
         await tester.pump();
 

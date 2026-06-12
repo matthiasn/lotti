@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
@@ -69,32 +70,61 @@ void main() {
         );
       });
 
-      testWidgets('displays description as subtitle', (tester) async {
-        await pumpMeasurablesPage(tester, measurables: [measurableWater]);
-
-        expect(find.text(measurableWater.description), findsOneWidget);
-      });
-
-      testWidgets('displays unit name when description is empty', (
+      testWidgets('subtitle is always the unit, never the description', (
         tester,
       ) async {
-        final noDescMeasurable = measurableWater.copyWith(
-          displayName: 'Steps',
-          description: '',
-          unitName: 'steps',
+        await pumpMeasurablesPage(tester, measurables: [measurableWater]);
+
+        expect(find.text(measurableWater.unitName), findsOneWidget);
+        expect(find.text(measurableWater.description), findsNothing);
+      });
+
+      testWidgets('omits subtitle when the unit is empty', (tester) async {
+        final unitless = measurableWater.copyWith(unitName: '');
+        await pumpMeasurablesPage(tester, measurables: [unitless]);
+
+        final item = tester.widget<DesignSystemListItem>(
+          find.byType(DesignSystemListItem),
         );
-        await pumpMeasurablesPage(tester, measurables: [noDescMeasurable]);
-
-        expect(find.text('steps'), findsOneWidget);
+        expect(item.subtitle, isNull);
       });
 
-      testWidgets('displays trending-up leading and chevron trailing icons', (
-        tester,
-      ) async {
-        await pumpMeasurablesPage(tester, measurables: [measurableWater]);
+      testWidgets(
+        'leads with a neutral first-letter chip and chevron trailing icon',
+        (tester) async {
+          await pumpMeasurablesPage(tester, measurables: [measurableWater]);
 
-        expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+          // No repeated decorative trend-line glyph.
+          expect(find.byIcon(Icons.trending_up_rounded), findsNothing);
+          expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+
+          // The chip carries the measurable's first letter so rows are
+          // distinguishable at a glance.
+          final chipFinder = find.byType(DefinitionIconChip);
+          expect(chipFinder, findsOneWidget);
+          expect(
+            find.descendant(of: chipFinder, matching: find.text('W')),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets('each row chip shows its own first letter', (tester) async {
+        await pumpMeasurablesPage(
+          tester,
+          measurables: [measurableWater, measurableChocolate],
+        );
+
+        final chips = find.byType(DefinitionIconChip);
+        expect(chips, findsNWidgets(2));
+        expect(
+          find.descendant(of: chips, matching: find.text('C')),
+          findsOneWidget,
+        );
+        expect(
+          find.descendant(of: chips, matching: find.text('W')),
+          findsOneWidget,
+        );
       });
     });
 

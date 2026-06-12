@@ -8,6 +8,42 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
+
+/// Inference profiles usable on this platform: `desktopOnly` profiles are
+/// filtered out on non-desktop platforms.
+List<AiConfigInferenceProfile> _platformProfiles(
+  AsyncValue<List<AiConfig>> profilesAsync,
+) {
+  final profiles = switch (profilesAsync) {
+    AsyncData(:final value) =>
+      value.whereType<AiConfigInferenceProfile>().toList(),
+    _ => <AiConfigInferenceProfile>[],
+  };
+  return isDesktop ? profiles : profiles.where((p) => !p.desktopOnly).toList();
+}
+
+/// Opens the shared profile-selection modal; selecting a profile invokes
+/// [onProfileSelected] and pops the modal.
+void _showProfilePicker({
+  required BuildContext context,
+  required List<AiConfigInferenceProfile> profiles,
+  required String? selectedProfileId,
+  required ValueChanged<String?> onProfileSelected,
+}) {
+  SelectionModalBase.show(
+    context: context,
+    title: context.messages.agentDefaultProfileLabel,
+    child: _ProfilePickerContent(
+      profiles: profiles,
+      selectedProfileId: selectedProfileId,
+      onSelected: (id) {
+        onProfileSelected(id);
+        Navigator.of(context).pop();
+      },
+    ),
+  );
+}
 
 /// Lists inference profiles for selection in agent/template contexts.
 ///
@@ -30,18 +66,9 @@ class ProfileSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profilesAsync = ref.watch(inferenceProfileControllerProvider);
-
-    final profiles = switch (profilesAsync) {
-      AsyncData(:final value) =>
-        value.whereType<AiConfigInferenceProfile>().toList(),
-      _ => <AiConfigInferenceProfile>[],
-    };
-
-    // Filter desktop-only on mobile.
-    final filtered = isDesktop
-        ? profiles
-        : profiles.where((p) => !p.desktopOnly).toList();
+    final filtered = _platformProfiles(
+      ref.watch(inferenceProfileControllerProvider),
+    );
 
     final selected = selectedProfileId != null
         ? filtered.where((p) => p.id == selectedProfileId).firstOrNull
@@ -49,7 +76,12 @@ class ProfileSelector extends ConsumerWidget {
 
     return InkWell(
       onTap: filtered.isNotEmpty
-          ? () => _showProfilePicker(context, filtered)
+          ? () => _showProfilePicker(
+              context: context,
+              profiles: filtered,
+              selectedProfileId: selectedProfileId,
+              onProfileSelected: onProfileSelected,
+            )
           : null,
       borderRadius: BorderRadius.circular(12),
       child: InputDecorator(
@@ -85,22 +117,53 @@ class ProfileSelector extends ConsumerWidget {
       ),
     );
   }
+}
 
-  void _showProfilePicker(
-    BuildContext context,
-    List<AiConfigInferenceProfile> profiles,
-  ) {
-    SelectionModalBase.show(
-      context: context,
-      title: context.messages.agentDefaultProfileLabel,
-      child: _ProfilePickerContent(
-        profiles: profiles,
-        selectedProfileId: selectedProfileId,
-        onSelected: (id) {
-          onProfileSelected(id);
-          Navigator.of(context).pop();
-        },
-      ),
+/// Settings-styled variant of [ProfileSelector] for definition editors
+/// (category details): the same provider-backed selection modal, rendered
+/// as a [SettingsPickerField] so it matches the design-system fields
+/// around it. With no profiles available the field stays inert (tapping
+/// does nothing).
+class SettingsProfilePickerField extends ConsumerWidget {
+  const SettingsProfilePickerField({
+    required this.selectedProfileId,
+    required this.onProfileSelected,
+    this.hintText,
+    super.key,
+  });
+
+  final String? selectedProfileId;
+  final ValueChanged<String?> onProfileSelected;
+
+  /// Optional hint text shown when no profile is selected. Defaults to
+  /// `context.messages.inferenceProfileSelectProfile`.
+  final String? hintText;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filtered = _platformProfiles(
+      ref.watch(inferenceProfileControllerProvider),
+    );
+
+    final selected = selectedProfileId != null
+        ? filtered.where((p) => p.id == selectedProfileId).firstOrNull
+        : null;
+
+    return SettingsPickerField(
+      label: context.messages.agentDefaultProfileLabel,
+      valueText: selected?.name,
+      hintText: hintText ?? context.messages.inferenceProfileSelectProfile,
+      onClear: selected != null ? () => onProfileSelected(null) : null,
+      onTap: () {
+        if (filtered.isNotEmpty) {
+          _showProfilePicker(
+            context: context,
+            profiles: filtered,
+            selectedProfileId: selectedProfileId,
+            onProfileSelected: onProfileSelected,
+          );
+        }
+      },
     );
   }
 }

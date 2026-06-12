@@ -243,9 +243,9 @@ void main() {
         child: const LabelDetailsPage(labelId: 'label-1'),
       );
 
-      // The destructive action is the icon-only round glass button in the
-      // sticky action bar.
-      await tester.tap(find.byType(DsGlassRoundButton));
+      // The destructive action is the labeled Delete pill in the sticky
+      // action bar.
+      await tester.tap(pillFinder('Delete'));
       await tester.pump();
 
       // Confirm in the dialog (destructive tertiary button)
@@ -648,8 +648,8 @@ void main() {
           child: const LabelDetailsPage(labelId: 'label-1'),
         );
 
-        // Open the delete confirmation dialog via the round glass button.
-        await tester.tap(find.byType(DsGlassRoundButton));
+        // Open the delete confirmation dialog via the labeled Delete pill.
+        await tester.tap(pillFinder('Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         expect(find.byType(AlertDialog), findsOneWidget);

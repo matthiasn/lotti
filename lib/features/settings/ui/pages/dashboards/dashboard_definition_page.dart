@@ -9,6 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
 import 'package:lotti/features/settings/ui/widgets/dashboards/dashboard_category.dart';
@@ -346,14 +347,6 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                       onSaveShortcut: () {
                         if (dirty) saveDashboardPress();
                       },
-                      headerActions: [
-                        IconButton(
-                          key: const Key('dashboard_copy'),
-                          icon: const Icon(Icons.copy),
-                          tooltip: messages.dashboardCopyHint,
-                          onPressed: copyDashboard,
-                        ),
-                      ],
                       actionBar: SettingsFormActionBar(
                         primaryLabel: widget.isCreateMode
                             ? messages.createButton
@@ -368,6 +361,14 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                         onDestructive: widget.isCreateMode
                             ? null
                             : deleteDashboard,
+                        extraActions: [
+                          DsGlassRoundButton(
+                            key: const Key('dashboard_copy'),
+                            icon: Icons.copy_rounded,
+                            semanticLabel: messages.dashboardCopyHint,
+                            onPressed: copyDashboard,
+                          ),
+                        ],
                       ),
                       children: [
                         FormBuilder(
@@ -403,12 +404,14 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 name: 'private',
                                 initialValue: widget.dashboard.private,
                                 title: messages.dashboardPrivateLabel,
+                                subtitle: messages.privateSwitchDescription,
                                 icon: Icons.lock_outline,
                               ),
                               FormSwitch(
                                 name: 'active',
                                 initialValue: widget.dashboard.active,
                                 title: messages.dashboardActiveLabel,
+                                subtitle: messages.inactiveSwitchDescription,
                                 icon: Icons.visibility_outlined,
                               ),
                               SelectDashboardCategoryWidget(

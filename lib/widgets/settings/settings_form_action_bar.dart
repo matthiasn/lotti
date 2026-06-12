@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/settings/settings_page_layout.dart';
 
 /// Text scale at which the bar stacks its pills vertically instead of
@@ -34,6 +36,7 @@ class SettingsFormActionBar extends StatelessWidget {
     this.destructiveLabel,
     this.onDestructive,
     this.destructiveEnabled = true,
+    this.extraActions,
     super.key,
   }) : assert(
          (secondaryLabel == null) == (onSecondary == null),
@@ -62,11 +65,16 @@ class SettingsFormActionBar extends StatelessWidget {
   final String? secondaryLabel;
   final VoidCallback? onSecondary;
 
-  /// Optional destructive (delete) action. Renders as an icon-only round
-  /// glass button in the row layout and as a labeled pill when stacked.
+  /// Optional destructive (delete) action, rendered as a labeled quiet
+  /// pill with the error color carrying the meaning.
   final String? destructiveLabel;
   final VoidCallback? onDestructive;
   final bool destructiveEnabled;
+
+  /// Optional secondary entity actions (e.g. duplicate) rendered next to
+  /// the destructive pill, so every action on an editor lives on one bar.
+  /// Typically [DsGlassRoundButton]s.
+  final List<Widget>? extraActions;
 
   @override
   Widget build(BuildContext context) {
@@ -83,31 +91,28 @@ class SettingsFormActionBar extends StatelessWidget {
           bottom: spacing.step4 + safeBottomInset,
         ),
         child: SettingsContentArea(
-          child: stacked ? _buildStacked(tokens) : _buildRow(tokens),
+          child: stacked
+              ? _buildStacked(context, tokens)
+              : _buildRow(context, tokens),
         ),
       ),
     );
   }
 
-  Widget _buildRow(DsTokens tokens) {
+  Widget _buildRow(BuildContext context, DsTokens tokens) {
     final spacing = tokens.spacing;
     return Row(
       children: [
-        if (onDestructive != null)
-          DsGlassRoundButton(
-            icon: Icons.delete_outline_rounded,
-            semanticLabel: destructiveLabel!,
-            iconColor: destructiveEnabled
-                ? tokens.colors.alert.error.defaultColor
-                : tokens.colors.text.lowEmphasis,
-            onPressed: destructiveEnabled ? onDestructive! : () {},
-          ),
+        if (onDestructive != null) Flexible(child: _destructivePill(tokens)),
+        ...?extraActions?.expand(
+          (action) => [SizedBox(width: spacing.step3), action],
+        ),
         const Spacer(),
         if (onSecondary != null) ...[
           Flexible(child: _secondaryPill(tokens)),
           SizedBox(width: spacing.step3),
         ],
-        Flexible(child: _primaryPill(tokens)),
+        Flexible(child: _primaryPill(context, tokens)),
       ],
     );
   }
@@ -115,29 +120,43 @@ class SettingsFormActionBar extends StatelessWidget {
   /// Stacked variant for large accessibility text: full-width pills, the
   /// primary action last (closest to the thumb), destructive first so it
   /// stays farthest from the default reach.
-  Widget _buildStacked(DsTokens tokens) {
+  Widget _buildStacked(BuildContext context, DsTokens tokens) {
     final spacing = tokens.spacing;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (onDestructive != null) ...[
-          DsGlassPill(
-            icon: Icons.delete_outline_rounded,
-            label: destructiveLabel!,
-            foregroundColor: tokens.colors.alert.error.defaultColor,
-            enabled: destructiveEnabled,
-            onTap: onDestructive!,
+        if (extraActions != null) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [...?extraActions],
           ),
+          SizedBox(height: spacing.step3),
+        ],
+        if (onDestructive != null) ...[
+          _destructivePill(tokens),
           SizedBox(height: spacing.step3),
         ],
         if (onSecondary != null) ...[
           _secondaryPill(tokens),
           SizedBox(height: spacing.step3),
         ],
-        _primaryPill(tokens),
+        _primaryPill(context, tokens),
       ],
     );
   }
+
+  /// Labeled destructive pill: a solid quiet surface (theme-correct on
+  /// light and dark glass) with the error color carrying the meaning.
+  /// Always labeled — an icon-only destructive control is invisible to
+  /// users who scan for words.
+  Widget _destructivePill(DsTokens tokens) => DsGlassPill(
+    icon: Icons.delete_outline_rounded,
+    label: destructiveLabel!,
+    fillColor: tokens.colors.background.level02,
+    foregroundColor: tokens.colors.alert.error.defaultColor,
+    enabled: destructiveEnabled,
+    onTap: onDestructive!,
+  );
 
   Widget _secondaryPill(DsTokens tokens) => DsGlassPill(
     label: secondaryLabel!,
@@ -145,12 +164,25 @@ class SettingsFormActionBar extends StatelessWidget {
     onTap: onSecondary!,
   );
 
-  Widget _primaryPill(DsTokens tokens) => DsGlassPill(
-    icon: primaryIcon,
-    label: primaryLabel,
-    fillColor: tokens.colors.interactive.enabled,
-    foregroundColor: tokens.colors.text.onInteractiveAlert,
-    enabled: primaryEnabled,
-    onTap: onPrimary,
-  );
+  /// Primary pill. Disabled drops the solid interactive fill entirely for
+  /// the quiet translucent glass treatment, so available-vs-unavailable is
+  /// legible at a glance instead of two similar shades of the accent. On
+  /// pointer devices a tooltip surfaces the keyboard shortcut.
+  Widget _primaryPill(BuildContext context, DsTokens tokens) {
+    final pill = DsGlassPill(
+      icon: primaryIcon,
+      label: primaryLabel,
+      fillColor: primaryEnabled ? tokens.colors.interactive.enabled : null,
+      foregroundColor: primaryEnabled
+          ? tokens.colors.text.onInteractiveAlert
+          : null,
+      enabled: primaryEnabled,
+      onTap: onPrimary,
+    );
+    if (!isDesktopLayout(context) || !primaryEnabled) return pill;
+    return Tooltip(
+      message: context.messages.saveShortcutTooltip,
+      child: pill,
+    );
+  }
 }

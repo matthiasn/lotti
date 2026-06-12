@@ -1124,6 +1124,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Treziri';
 
   @override
+  String get aggregationDailyAvg => 'Medie zilnică';
+
+  @override
+  String get aggregationDailyMax => 'Maxim zilnic';
+
+  @override
+  String get aggregationDailySum => 'Sumă zilnică';
+
+  @override
+  String get aggregationHourlySum => 'Sumă orară';
+
+  @override
+  String get aggregationNone => 'Niciuna';
+
+  @override
   String get aiAssistantTitle => 'Generează…';
 
   @override
@@ -2417,10 +2432,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get categoryIconChooseHint => 'Alegeți o pictogramă';
 
   @override
-  String get categoryIconCreateHint => 'Apăsați pentru a alege o pictogramă';
+  String get categoryIconCreateHint => 'Alegeți o pictogramă';
 
   @override
-  String get categoryIconEditHint => 'Apăsați pentru a schimba pictograma';
+  String get categoryIconEditHint => 'Alegeți altă pictogramă';
 
   @override
   String get categoryIconLabel => 'Pictogramă';
@@ -2436,7 +2451,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get categoryPrivateDescription =>
-      'Ascundeți această categorie când modul privat este activat';
+      'Vizibil doar când intrările private sunt afișate';
 
   @override
   String get categorySearchPlaceholder => 'Caută categorii...';
@@ -4811,13 +4826,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitArchivedLabel => 'Arhivat';
 
   @override
-  String get habitCategoryHint => 'Selectați categoria';
+  String get habitCategoryHint => 'Selectați o categorie';
 
   @override
   String get habitCategoryLabel => 'Categorie';
 
   @override
-  String get habitDashboardHint => 'Selectați tabloul de bord';
+  String get habitDashboardHint => 'Selectați un panou de bord';
 
   @override
   String get habitDashboardLabel => 'Tablou de bord';
@@ -4908,6 +4923,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get inactiveLabel => 'Inactiv';
+
+  @override
+  String get inactiveSwitchDescription =>
+      'Elementele inactive nu apar în listele de selecție';
 
   @override
   String get inferenceProfileCreateTitle => 'Creați un profil';
@@ -5843,6 +5862,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get privateLabel => 'Privat';
 
   @override
+  String get privateSwitchDescription =>
+      'Vizibil doar când intrările private sunt afișate';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Încă nu a fost configurat niciun agent de proiect pentru acest proiect.';
 
@@ -6397,6 +6420,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get saveLabel => 'Salvați';
 
   @override
+  String get saveShortcutTooltip => 'Salvare — Ctrl+S (⌘S pe Mac)';
+
+  @override
   String get saveSuccessful => 'Salvat cu succes';
 
   @override
@@ -6415,7 +6441,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get selectButton => 'Selectează';
 
   @override
-  String get selectColor => 'Selectează culoarea';
+  String get selectColor => 'Alegeți o culoare';
 
   @override
   String get selectLanguage => 'Selectează limba';
@@ -6754,7 +6780,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsLabelsCategoriesRemoveTooltip => 'Elimină';
 
   @override
-  String get settingsLabelsColorHeading => 'Selectează o culoare';
+  String get settingsLabelsColorHeading => 'Culoare';
 
   @override
   String get settingsLabelsColorSubheading => 'Presetări rapide';
@@ -6816,7 +6842,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsLabelsPrivateDescription =>
-      'Etichetele private apar doar când „Arată intrările private” este activat.';
+      'Vizibil doar când intrările private sunt afișate';
 
   @override
   String get settingsLabelsPrivateTitle => 'Etichetă privată';
@@ -6836,10 +6862,11 @@ class AppLocalizationsRo extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count sarcini',
+      other: '$count de sarcini',
+      few: '$count sarcini',
       one: '1 sarcină',
     );
-    return 'Folosită pe $_temp0';
+    return '$_temp0';
   }
 
   @override
@@ -6973,7 +7000,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Verifică';
 
   @override
-  String get settingsMeasurableAggregationLabel => 'Tip Agregări';
+  String get settingsMeasurableAggregationLabel => 'Agregare implicită';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Șterge tipul măsurătorii';

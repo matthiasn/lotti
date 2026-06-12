@@ -81,7 +81,7 @@ void main() {
       ) async {
         await pumpWidget(tester, setCategory: (_) {});
 
-        expect(find.text('Select category'), findsOneWidget);
+        expect(find.text('Select a category'), findsOneWidget);
       });
 
       testWidgets('shows selected category name in text field', (tester) async {

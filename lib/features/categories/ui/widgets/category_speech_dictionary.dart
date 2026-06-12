@@ -1,7 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/form/lotti_text_field.dart';
 
 /// Maximum length for individual dictionary terms.
 const int kMaxTermLength = 50;
@@ -10,11 +10,15 @@ const int kMaxTermLength = 50;
 /// Raised from 30 to 500 to align with correction examples limit.
 const int kDictionaryWarningThreshold = 500;
 
-/// A widget for editing the speech dictionary of a category.
+/// A widget for editing the speech dictionary of a category, rendered as
+/// a [DesignSystemTextarea] so it matches the design-system fields around
+/// it. The "how to format terms" explanation lives in the section
+/// description the page renders above the field (the textarea's helper
+/// row clips to one line); the helper slot only surfaces the token-budget
+/// warning once the term count exceeds [kDictionaryWarningThreshold].
 ///
-/// This widget displays a text field where terms are separated by semicolons.
-/// It parses the input, validates terms, and calls onChanged with the
-/// resulting list of terms.
+/// Terms are separated by semicolons. The widget parses the input,
+/// validates terms, and calls onChanged with the resulting list of terms.
 ///
 /// Validation rules:
 /// - Empty strings are filtered out
@@ -107,24 +111,14 @@ class _CategorySpeechDictionaryState extends State<CategorySpeechDictionary> {
     final termCount = _parseDictionary(_controller.text).length;
     final showWarning = termCount > kDictionaryWarningThreshold;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        LottiTextField(
-          controller: _controller,
-          labelText: context.messages.speechDictionaryLabel,
-          hintText: context.messages.speechDictionaryHint,
-          helperText: showWarning
-              ? context.messages.speechDictionaryWarning(termCount)
-              : context.messages.speechDictionaryHelper,
-          prefixIcon: Icons.spellcheck_outlined,
-          onChanged: _onChanged,
-          maxLines: 3,
-          minLines: 1,
-          keyboardType: TextInputType.text,
-          textCapitalization: TextCapitalization.words,
-        ),
-      ],
+    return DesignSystemTextarea(
+      controller: _controller,
+      label: context.messages.speechDictionaryLabel,
+      hintText: context.messages.speechDictionaryHint,
+      helperText: showWarning
+          ? context.messages.speechDictionaryWarning(termCount)
+          : null,
+      onChanged: _onChanged,
     );
   }
 }

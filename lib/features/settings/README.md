@@ -278,9 +278,20 @@ Form rows are grouped into `SettingsFormSection` cards; the
 FormBuilder-driven pages bridge into the design system via
 [`ui/widgets/form/settings_form_text_field.dart`](ui/widgets/form/settings_form_text_field.dart)
 and [`ui/widgets/form/form_switch.dart`](ui/widgets/form/form_switch.dart).
+Visibility toggles share Active polarity (ON = visible) and private/active
+switch rows carry explanatory subtitles.
+
+The measurables editor exposes Favorite and Private switches and picks the
+default aggregation type through a `SettingsPickerField` + single-page
+modal; aggregation types always render their localized names (via
+[`ui/aggregation_label.dart`](ui/aggregation_label.dart)), never raw enum
+identifiers.
+
 The dashboard editor keeps its chart machinery (`ChartMultiSelect` pickers,
-reorderable `DashboardItemCard` list with swipe-to-dismiss) inside the
-charts section, and exposes save-and-copy-to-clipboard as a header action.
+reorderable `DashboardItemCard` list with swipe-to-dismiss and an explicit
+drag handle) inside the charts section; chart rows title as
+"Name — Localized aggregation". Save-and-copy-to-clipboard lives on the
+action bar as a `DsGlassRoundButton` next to the destructive pill.
 
 ### Persistence split
 

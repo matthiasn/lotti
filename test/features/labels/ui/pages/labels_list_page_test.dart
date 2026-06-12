@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
@@ -165,29 +166,16 @@ void main() {
         expect(third.title, 'Zebra');
       });
 
-      testWidgets('shows description as subtitle when present', (tester) async {
-        final labels = [
-          LabelTestUtils.createTestLabel(
-            name: 'Important',
-            description: 'High priority items',
-          ),
-        ];
-
-        when(() => mockRepository.watchLabels()).thenAnswer(
-          (_) => Stream.value(labels),
-        );
-
-        await pumpLabelsListPage(tester);
-
-        expect(find.text('High priority items'), findsOneWidget);
-      });
-
-      testWidgets('shows usage count as subtitle when no description', (
+      testWidgets('subtitle is always the usage count, never the description', (
         tester,
       ) async {
         const labelId = 'label-123';
         final labels = [
-          LabelTestUtils.createTestLabel(id: labelId, name: 'Plain'),
+          LabelTestUtils.createTestLabel(
+            id: labelId,
+            name: 'Important',
+            description: 'High priority items',
+          ),
         ];
 
         when(() => mockRepository.watchLabels()).thenAnswer(
@@ -199,7 +187,51 @@ void main() {
           usageCounts: {labelId: 5},
         );
 
-        expect(find.text('Used on 5 tasks'), findsOneWidget);
+        expect(find.text('5 tasks'), findsOneWidget);
+        expect(find.text('High priority items'), findsNothing);
+      });
+
+      testWidgets('shows zero usage count for unused labels', (tester) async {
+        final labels = [
+          LabelTestUtils.createTestLabel(name: 'Plain'),
+        ];
+
+        when(() => mockRepository.watchLabels()).thenAnswer(
+          (_) => Stream.value(labels),
+        );
+
+        await pumpLabelsListPage(tester);
+
+        expect(find.text('0 tasks'), findsOneWidget);
+      });
+
+      testWidgets('leads with a color swatch chip showing the first letter', (
+        tester,
+      ) async {
+        final labels = [
+          LabelTestUtils.createTestLabel(name: 'Bug', color: '#000033'),
+        ];
+
+        when(() => mockRepository.watchLabels()).thenAnswer(
+          (_) => Stream.value(labels),
+        );
+
+        await pumpLabelsListPage(tester);
+
+        final chipFinder = find.byType(DefinitionIconChip);
+        expect(chipFinder, findsOneWidget);
+
+        // Swatch carries the label color and falls back to the first
+        // letter with auto white-on-dark foreground.
+        final chip = tester.widget<DefinitionIconChip>(chipFinder);
+        expect(chip.background, const Color(0xFF000033));
+
+        final letterFinder = find.descendant(
+          of: chipFinder,
+          matching: find.text('B'),
+        );
+        expect(letterFinder, findsOneWidget);
+        expect(tester.widget<Text>(letterFinder).style?.color, Colors.white);
       });
 
       testWidgets('shows chevron trailing icon', (tester) async {
@@ -467,8 +499,8 @@ void main() {
     });
 
     testWidgets('renders labels with usage stats', (tester) async {
-      // testLabelDefinition1 has a description so subtitle shows description.
-      // testLabelDefinition2 has no description so subtitle shows usage count.
+      // The subtitle is always the usage count — descriptions never leak
+      // into the second line, so its meaning is stable across rows.
       await tester.pumpWidget(
         _buildPage(
           labels: [testLabelDefinition1, testLabelDefinition2],
@@ -479,13 +511,10 @@ void main() {
 
       expect(find.text('Urgent'), findsWidgets);
       expect(find.text('Backlog'), findsWidgets);
-      // Label 1 has description → subtitle is description, not usage count
-      expect(
-        find.text('Requires immediate attention'),
-        findsOneWidget,
-      );
-      // Label 2 has no description → subtitle is usage count
-      expect(find.textContaining('Used on 1 task'), findsOneWidget);
+      expect(find.text('3 tasks'), findsOneWidget);
+      expect(find.text('1 task'), findsOneWidget);
+      // Label 1 has a description, but it is never the subtitle.
+      expect(find.text('Requires immediate attention'), findsNothing);
     });
 
     testWidgets('filters list based on search query', (tester) async {

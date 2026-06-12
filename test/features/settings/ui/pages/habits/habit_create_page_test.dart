@@ -90,7 +90,7 @@ void main() {
         await pumpPage(tester, page);
 
         expect(find.text('Create habit'), findsOneWidget);
-        expect(find.byIcon(Icons.delete_outline_rounded), findsNothing);
+        expect(find.widgetWithText(DsGlassPill, 'Delete'), findsNothing);
 
         final createFinder = find.widgetWithText(DsGlassPill, 'Create');
         expect(tester.widget<DsGlassPill>(createFinder).enabled, isFalse);
@@ -121,6 +121,8 @@ void main() {
         expect(saved.id, page.habitId);
         expect(saved.name, 'Morning stretch');
         expect(saved.description, 'Five minutes after waking up');
+        // The untouched Active switch persists the new habit as active.
+        expect(saved.active, isTrue);
         expect(beamedTo, '/settings/habits');
       },
     );

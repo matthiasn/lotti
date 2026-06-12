@@ -1114,6 +1114,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Probuzení';
 
   @override
+  String get aggregationDailyAvg => 'Denní průměr';
+
+  @override
+  String get aggregationDailyMax => 'Denní maximum';
+
+  @override
+  String get aggregationDailySum => 'Denní součet';
+
+  @override
+  String get aggregationHourlySum => 'Hodinový součet';
+
+  @override
+  String get aggregationNone => 'Žádná';
+
+  @override
   String get aiAssistantTitle => 'Generovat…';
 
   @override
@@ -2406,10 +2421,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryIconChooseHint => 'Vyberte ikonu';
 
   @override
-  String get categoryIconCreateHint => 'Klepněte pro výběr ikony';
+  String get categoryIconCreateHint => 'Vyberte ikonu';
 
   @override
-  String get categoryIconEditHint => 'Klepněte pro změnu ikony';
+  String get categoryIconEditHint => 'Vyberte jinou ikonu';
 
   @override
   String get categoryIconLabel => 'Ikona';
@@ -2425,7 +2440,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get categoryPrivateDescription =>
-      'Skrýt tuto kategorii, když je zapnutý soukromý režim';
+      'Viditelné pouze při zobrazení soukromých záznamů';
 
   @override
   String get categorySearchPlaceholder => 'Vyhledávat kategorie...';
@@ -4871,6 +4886,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inactiveLabel => 'Neaktivní';
 
   @override
+  String get inactiveSwitchDescription =>
+      'Neaktivní položky se nezobrazují ve výběrových seznamech';
+
+  @override
   String get inferenceProfileCreateTitle => 'Create Profile';
 
   @override
@@ -5808,6 +5827,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get privateLabel => 'Soukromé';
 
   @override
+  String get privateSwitchDescription =>
+      'Viditelné pouze při zobrazení soukromých záznamů';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Pro tento projekt ještě nebyl nastaven žádný projektový agent.';
 
@@ -6362,6 +6385,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get saveLabel => 'Uložit';
 
   @override
+  String get saveShortcutTooltip => 'Uložit — Ctrl+S (⌘S na Macu)';
+
+  @override
   String get saveSuccessful => 'Úspěšně uloženo';
 
   @override
@@ -6380,7 +6406,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get selectButton => 'Vybrat';
 
   @override
-  String get selectColor => 'Vybrat barvu';
+  String get selectColor => 'Vyberte barvu';
 
   @override
   String get selectLanguage => 'Vybrat jazyk';
@@ -6713,7 +6739,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsLabelsCategoriesRemoveTooltip => 'Odstranit';
 
   @override
-  String get settingsLabelsColorHeading => 'Vyberte barvu';
+  String get settingsLabelsColorHeading => 'Barva';
 
   @override
   String get settingsLabelsColorSubheading => 'Rychlé přednastavení';
@@ -6776,7 +6802,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsLabelsPrivateDescription =>
-      'Soukromé štítky se zobrazují pouze tehdy, když je povoleno Zobrazit soukromé záznamy.';
+      'Viditelné pouze při zobrazení soukromých záznamů';
 
   @override
   String get settingsLabelsPrivateTitle => 'Soukromý štítek';
@@ -6795,10 +6821,11 @@ class AppLocalizationsCs extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count úkolech',
-      one: '1 úkolu',
+      other: '$count úkolů',
+      few: '$count úkoly',
+      one: '1 úkol',
     );
-    return 'Použito na $_temp0';
+    return '$_temp0';
   }
 
   @override
@@ -6930,8 +6957,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Ověřit';
 
   @override
-  String get settingsMeasurableAggregationLabel =>
-      'Výchozí typ agregace (volitelné)';
+  String get settingsMeasurableAggregationLabel => 'Výchozí agregace';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Smazat měřitelný typ';
@@ -6981,7 +7007,7 @@ class AppLocalizationsCs extends AppLocalizations {
       'Konfigurace měřitelných datových typů';
 
   @override
-  String get settingsMeasurablesTitle => 'Typy měřitelných veličin';
+  String get settingsMeasurablesTitle => 'Měřitelné typy';
 
   @override
   String get settingsResetGeminiConfirm => 'Obnovit';

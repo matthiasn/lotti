@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
@@ -51,7 +51,7 @@ class DashboardSettingsPage extends ConsumerWidget {
       emptyHint: messages.settingsDashboardsEmptyStateHint,
       noMatchMessage: messages.settingsDashboardsNoMatchQuery,
       errorTitle: messages.settingsDashboardsErrorLoading,
-      createSemanticLabel: messages.settingsDashboardsCreateTitle,
+      createLabel: messages.settingsDashboardsCreateTitle,
       onCreate: () => beamToNamed('/settings/dashboards/create'),
       itemBuilder: (context, dashboard, {required bool showDivider}) =>
           _DashboardListItem(dashboard: dashboard, showDivider: showDivider),
@@ -65,8 +65,6 @@ class _DashboardListItem extends StatelessWidget {
     required this.showDivider,
   });
 
-  static const double _leadingIconSize = 28;
-
   final DashboardDefinition dashboard;
   final bool showDivider;
 
@@ -78,10 +76,7 @@ class _DashboardListItem extends StatelessWidget {
     return DesignSystemListItem(
       title: dashboard.name,
       subtitle: description.isNotEmpty ? description : null,
-      leading: CategoryIconCompact(
-        dashboard.categoryId,
-        size: _leadingIconSize,
-      ),
+      leading: CategoryIconChip.fromId(dashboard.categoryId),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -103,7 +98,9 @@ class _DashboardListItem extends StatelessWidget {
       ),
       showDivider: showDivider,
       dividerIndent:
-          tokens.spacing.step5 + _leadingIconSize + tokens.spacing.step3,
+          tokens.spacing.step5 +
+          DefinitionIconChip.defaultSize +
+          tokens.spacing.step3,
       onTap: () => beamToNamed('/settings/dashboards/${dashboard.id}'),
     );
   }

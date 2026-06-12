@@ -1118,6 +1118,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Despertares';
 
   @override
+  String get aggregationDailyAvg => 'Promedio diario';
+
+  @override
+  String get aggregationDailyMax => 'Máximo diario';
+
+  @override
+  String get aggregationDailySum => 'Suma diaria';
+
+  @override
+  String get aggregationHourlySum => 'Suma por hora';
+
+  @override
+  String get aggregationNone => 'Ninguna';
+
+  @override
   String get aiAssistantTitle => 'Generar…';
 
   @override
@@ -2402,10 +2417,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get categoryIconChooseHint => 'Elegir un icono';
 
   @override
-  String get categoryIconCreateHint => 'Toca para elegir un icono';
+  String get categoryIconCreateHint => 'Elegir un icono';
 
   @override
-  String get categoryIconEditHint => 'Toca para cambiar el icono';
+  String get categoryIconEditHint => 'Elegir otro icono';
 
   @override
   String get categoryIconLabel => 'Icono';
@@ -2421,7 +2436,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get categoryPrivateDescription =>
-      'Ocultar esta categoría cuando el modo privado esté activado';
+      'Solo visible cuando se muestran las entradas privadas';
 
   @override
   String get categorySearchPlaceholder => 'Buscar categorías...';
@@ -4799,13 +4814,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get habitArchivedLabel => 'Archivado';
 
   @override
-  String get habitCategoryHint => 'Seleccionar categoría';
+  String get habitCategoryHint => 'Seleccionar una categoría';
 
   @override
   String get habitCategoryLabel => 'Categoría';
 
   @override
-  String get habitDashboardHint => 'Seleccionar panel';
+  String get habitDashboardHint => 'Seleccionar un panel';
 
   @override
   String get habitDashboardLabel => 'Panel';
@@ -4896,6 +4911,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inactiveLabel => 'Inactivo';
+
+  @override
+  String get inactiveSwitchDescription =>
+      'Los elementos inactivos no aparecen en las listas de selección';
 
   @override
   String get inferenceProfileCreateTitle => 'Crear perfil';
@@ -5842,6 +5861,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get privateLabel => 'Privado';
 
   @override
+  String get privateSwitchDescription =>
+      'Solo visible cuando se muestran las entradas privadas';
+
+  @override
   String get projectAgentNotProvisioned =>
       'Todavía no se ha configurado un agente de proyecto para este proyecto.';
 
@@ -6393,6 +6416,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get saveLabel => 'Guardar';
 
   @override
+  String get saveShortcutTooltip => 'Guardar — Ctrl+S (⌘S en Mac)';
+
+  @override
   String get saveSuccessful => 'Guardado correctamente';
 
   @override
@@ -6411,7 +6437,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get selectButton => 'Seleccionar';
 
   @override
-  String get selectColor => 'Seleccionar color';
+  String get selectColor => 'Elegir un color';
 
   @override
   String get selectLanguage => 'Seleccionar idioma';
@@ -6748,7 +6774,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsLabelsCategoriesRemoveTooltip => 'Eliminar';
 
   @override
-  String get settingsLabelsColorHeading => 'Seleccionar un color';
+  String get settingsLabelsColorHeading => 'Color';
 
   @override
   String get settingsLabelsColorSubheading => 'Preajustes rápidos';
@@ -6810,7 +6836,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get settingsLabelsPrivateDescription =>
-      'Las etiquetas privadas solo aparecen cuando \"Mostrar entradas privadas\" está activado.';
+      'Solo visible cuando se muestran las entradas privadas';
 
   @override
   String get settingsLabelsPrivateTitle => 'Etiqueta privada';
@@ -6833,7 +6859,7 @@ class AppLocalizationsEs extends AppLocalizations {
       other: '$count tareas',
       one: '1 tarea',
     );
-    return 'Usada en $_temp0';
+    return '$_temp0';
   }
 
   @override
@@ -6969,8 +6995,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsMatrixVerifyLabel => 'Verificar';
 
   @override
-  String get settingsMeasurableAggregationLabel =>
-      'Tipo de agregación predeterminado (opcional)';
+  String get settingsMeasurableAggregationLabel => 'Agregación predeterminada';
 
   @override
   String get settingsMeasurableDeleteTooltip => 'Eliminar tipo de medición';
@@ -7020,7 +7045,7 @@ class AppLocalizationsEs extends AppLocalizations {
       'Configurar tipos de datos medibles';
 
   @override
-  String get settingsMeasurablesTitle => 'Tipos de medición';
+  String get settingsMeasurablesTitle => 'Medibles';
 
   @override
   String get settingsResetGeminiConfirm => 'Restablecer';

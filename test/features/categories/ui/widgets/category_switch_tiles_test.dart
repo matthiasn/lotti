@@ -10,7 +10,7 @@ import '../../../../test_helper.dart';
 const _expectedTiles = <SwitchFieldType, (String, String, IconData)>{
   SwitchFieldType.private: (
     'Private',
-    'Hide this category when private mode is enabled',
+    'Only visible when private entries are shown',
     Icons.lock_outline,
   ),
   SwitchFieldType.active: (

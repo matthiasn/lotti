@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
+import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 
 import '../../../../test_helper.dart';
 
@@ -16,21 +17,22 @@ void main() {
         ),
       );
 
-      // Verify label is shown
+      // Renders as the design-system textarea with label and hint.
+      expect(find.byType(DesignSystemTextarea), findsOneWidget);
       expect(find.text('Speech Dictionary'), findsOneWidget);
-
-      // Verify hint is shown (actual l10n string)
       expect(
         find.text('macOS; Kirkjubæjarklaustur; Claude Code'),
         findsOneWidget,
       );
 
-      // Verify helper text is shown (actual l10n string)
+      // The formatting explanation lives in the page's section description
+      // now — the in-field helper slot stays empty below the warning
+      // threshold (the textarea clips helpers to one line).
       expect(
         find.text(
           'Semicolon-separated terms (max 50 chars) for better speech recognition',
         ),
-        findsOneWidget,
+        findsNothing,
       );
 
       // Verify text field is empty
@@ -192,7 +194,9 @@ void main() {
       expect(changedTerms, isEmpty);
     });
 
-    testWidgets('has correct icon', (tester) async {
+    testWidgets('renders no in-field glyph — the section header carries it', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: CategorySpeechDictionary(
@@ -202,11 +206,14 @@ void main() {
         ),
       );
 
-      // Verify spellcheck icon is shown
-      expect(find.byIcon(Icons.spellcheck_outlined), findsOneWidget);
+      // The page section header shows the spellcheck icon; duplicating it
+      // inside the field would be noise.
+      expect(find.byIcon(Icons.spellcheck_outlined), findsNothing);
     });
 
-    testWidgets('supports multiline input', (tester) async {
+    testWidgets('supports multiline input via the textarea defaults', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         WidgetTestBench(
           child: CategorySpeechDictionary(
@@ -216,25 +223,10 @@ void main() {
         ),
       );
 
-      // Verify text field supports multiple lines
+      // DesignSystemTextarea defaults: minLines 3, maxLines minLines + 2.
       final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.maxLines, equals(3));
-      expect(textField.minLines, equals(1));
-    });
-
-    testWidgets('has word capitalization', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategorySpeechDictionary(
-            dictionary: null,
-            onChanged: (_) {},
-          ),
-        ),
-      );
-
-      // Verify text capitalization is words
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.textCapitalization, equals(TextCapitalization.words));
+      expect(textField.minLines, equals(3));
+      expect(textField.maxLines, equals(5));
     });
 
     testWidgets('updates when dictionary changes externally', (tester) async {
@@ -451,7 +443,7 @@ void main() {
       expect(find.textContaining('505'), findsOneWidget);
     });
 
-    testWidgets('shows normal helper text when below threshold', (
+    testWidgets('shows no helper text when below threshold', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -463,13 +455,12 @@ void main() {
         ),
       );
 
-      // Verify normal helper text is shown
-      expect(
-        find.text(
-          'Semicolon-separated terms (max 50 chars) for better speech recognition',
-        ),
-        findsOneWidget,
+      // Below the threshold the helper slot stays empty — the section
+      // description on the page explains the format instead.
+      final textarea = tester.widget<DesignSystemTextarea>(
+        find.byType(DesignSystemTextarea),
       );
+      expect(textarea.helperText, isNull);
     });
   });
 }

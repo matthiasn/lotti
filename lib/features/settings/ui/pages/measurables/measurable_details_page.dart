@@ -1,11 +1,12 @@
-import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/aggregation_label.dart';
 import 'package:lotti/features/settings/ui/widgets/form/form_switch.dart';
 import 'package:lotti/features/settings/ui/widgets/form/settings_form_text_field.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -15,9 +16,11 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
 /// Measurable data type editor on the shared settings-detail kit.
 ///
@@ -52,10 +55,45 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
   final _formKey = GlobalKey<FormBuilderState>();
   bool dirty = false;
 
+  /// Opens a single-page modal listing every [AggregationType] under its
+  /// localized name; picking one writes it into the form [field].
+  Future<void> _pickAggregationType(
+    FormFieldState<AggregationType> field,
+  ) {
+    return ModalUtils.showSinglePageModal<void>(
+      context: context,
+      title: context.messages.settingsMeasurableAggregationLabel,
+      builder: (BuildContext modalContext) {
+        final spacing = modalContext.designTokens.spacing;
+        return Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing.step3,
+            vertical: spacing.step5,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final aggregationType in AggregationType.values)
+                SettingsCard(
+                  onTap: () {
+                    field.didChange(aggregationType);
+                    Navigator.pop(modalContext);
+                  },
+                  title: aggregationTypeLabel(
+                    modalContext.messages,
+                    aggregationType,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
-    final tokens = context.designTokens;
 
     // Beam back to the measurables list rather than popping. The page
     // is mounted inline inside V2's desktop detail surface (no
@@ -170,28 +208,34 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                 semanticsLabel: 'Measurable - unit name field',
               ),
               FormSwitch(
+                name: 'favorite',
+                initialValue: item.favorite ?? false,
+                title: messages.favoriteLabel,
+                icon: Icons.star_outline_rounded,
+              ),
+              FormSwitch(
                 name: 'private',
                 initialValue: item.private,
                 title: messages.privateLabel,
+                subtitle: messages.privateSwitchDescription,
                 icon: Icons.lock_outline,
               ),
-              FormBuilderDropdown<AggregationType>(
+              FormBuilderField<AggregationType>(
                 name: 'aggregationType',
                 initialValue: item.aggregationType,
-                decoration: InputDecoration(
-                  labelText: messages.settingsMeasurableAggregationLabel,
-                ),
-                style: tokens.typography.styles.body.bodyLarge.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-                items: AggregationType.values.map((aggregationType) {
-                  return DropdownMenuItem(
-                    value: aggregationType,
-                    child: Text(
-                      EnumToString.convertToString(aggregationType),
-                    ),
+                builder: (field) {
+                  final value = field.value;
+                  return SettingsPickerField(
+                    key: const Key('measurable_aggregation_field'),
+                    label: messages.settingsMeasurableAggregationLabel,
+                    valueText: value != null
+                        ? aggregationTypeLabel(messages, value)
+                        : null,
+                    hintText: messages.aggregationNone,
+                    semanticsLabel: 'Measurable - aggregation type field',
+                    onTap: () => _pickAggregationType(field),
                   );
-                }).toList(),
+                },
               ),
             ],
           ),

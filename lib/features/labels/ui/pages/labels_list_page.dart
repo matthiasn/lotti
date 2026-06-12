@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -22,8 +23,9 @@ class LabelsListBody extends StatelessWidget {
 
 /// Labels list on the shared [DefinitionsListPage] shell.
 ///
-/// Each label row shows a colored dot, the label name, an optional
-/// description subtitle, status icons, and a chevron. Search also matches
+/// Each label row leads with a [DefinitionIconChip] color swatch (label
+/// color, first-letter fallback), followed by the label name, a
+/// usage-count subtitle, status icons, and a chevron. Search also matches
 /// descriptions, and a query with no match offers creating a label with
 /// that name.
 class LabelsListPage extends ConsumerWidget {
@@ -58,7 +60,7 @@ class LabelsListPage extends ConsumerWidget {
         },
       ),
       errorTitle: messages.settingsLabelsErrorLoading,
-      createSemanticLabel: messages.settingsLabelsCreateTitle,
+      createLabel: messages.settingsLabelsCreateTitle,
       onCreate: () => beamToNamed('/settings/labels/create'),
       itemBuilder: (context, label, {required bool showDivider}) =>
           _LabelListItem(
@@ -86,19 +88,18 @@ class _LabelListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final isPrivate = label.private ?? false;
-    final description = label.description?.trim();
-    final subtitle = description != null && description.isNotEmpty
-        ? description
-        : context.messages.settingsLabelsUsageCount(usageCount);
 
     return DesignSystemListItem(
       title: label.name,
-      subtitle: subtitle,
-      leading: _LabelColorDot(
-        color: colorFromCssHex(
+      // Stable subtitle semantics: always the usage count, never the
+      // description — every row's second line answers the same question.
+      subtitle: context.messages.settingsLabelsUsageCount(usageCount),
+      leading: DefinitionIconChip(
+        background: colorFromCssHex(
           label.color,
           substitute: Theme.of(context).colorScheme.primary,
         ),
+        name: label.name,
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -122,37 +123,9 @@ class _LabelListItem extends StatelessWidget {
       showDivider: showDivider,
       dividerIndent:
           tokens.spacing.step5 +
-          _LabelColorDot.containerSize +
+          DefinitionIconChip.defaultSize +
           tokens.spacing.step3,
       onTap: () => beamToNamed('/settings/labels/${label.id}'),
-    );
-  }
-}
-
-/// Colored dot indicator for label leading position.
-class _LabelColorDot extends StatelessWidget {
-  const _LabelColorDot({required this.color});
-
-  final Color color;
-
-  static const double dotSize = 14;
-  static const double containerSize = 36;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: containerSize,
-      height: containerSize,
-      child: Center(
-        child: Container(
-          width: dotSize,
-          height: dotSize,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
     );
   }
 }

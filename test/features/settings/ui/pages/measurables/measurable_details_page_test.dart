@@ -129,13 +129,18 @@ void main() {
     );
 
     testWidgets(
-      'toggling the private switch and picking another aggregation type '
-      'persists both',
+      'toggling the private and favorite switches and picking another '
+      'aggregation type in the modal persists all three',
       (tester) async {
         await pumpPage(
           tester,
           MeasurableDetailsPage(dataType: measurableWater),
         );
+
+        // The aggregation picker renders the localized name, never the raw
+        // enum identifier.
+        expect(find.text('Daily sum'), findsOneWidget);
+        expect(find.text('dailySum'), findsNothing);
 
         // The whole switch row is tappable; hit it via its title.
         final switchFinder = find.text('Private');
@@ -144,23 +149,66 @@ void main() {
         await tester.tap(switchFinder);
         await tester.pump();
 
-        final dropdownFinder = find.text('dailySum').last;
-        await tester.ensureVisible(dropdownFinder);
+        final favoriteFinder = find.text('Favorite');
+        await tester.ensureVisible(favoriteFinder);
         await tester.pump();
-        await tester.tap(dropdownFinder);
+        await tester.tap(favoriteFinder);
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
 
-        await tester.tap(find.text('dailyMax').last);
+        // Tapping the picker field opens the single-page modal listing the
+        // localized aggregation names.
+        final pickerFinder = find.byKey(
+          const Key('measurable_aggregation_field'),
+        );
+        await tester.ensureVisible(pickerFinder);
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 500));
+        await tester.tap(pickerFinder);
+        await tester.pumpAndSettle();
+
+        expect(find.text('Daily average'), findsOneWidget);
+        expect(find.text('Hourly sum'), findsOneWidget);
+
+        await tester.tap(find.text('Daily maximum'));
+        await tester.pumpAndSettle();
+
+        // The picker now shows the newly selected localized name.
+        expect(find.text('Daily maximum'), findsOneWidget);
+        expect(find.text('Daily sum'), findsNothing);
 
         await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
         await tester.pump();
 
         final saved = capturedUpsert();
         expect(saved.private, isTrue);
+        expect(saved.favorite, isTrue);
         expect(saved.aggregationType, AggregationType.dailyMax);
+      },
+    );
+
+    testWidgets(
+      'saving an unrelated edit preserves a seeded favorite flag',
+      (tester) async {
+        await pumpPage(
+          tester,
+          MeasurableDetailsPage(
+            dataType: measurableWater.copyWith(favorite: true),
+          ),
+        );
+
+        await tester.enterText(
+          find.byKey(const Key('measurable_name_field')),
+          'Sparkling water',
+        );
+        await tester.pump();
+
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Save'));
+        await tester.pump();
+
+        // The favorite switch carries the seeded value through the save
+        // instead of silently resetting it to false.
+        final saved = capturedUpsert();
+        expect(saved.displayName, 'Sparkling water');
+        expect(saved.favorite, isTrue);
       },
     );
 
@@ -173,7 +221,7 @@ void main() {
           MeasurableDetailsPage(dataType: measurableWater),
         );
 
-        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.tap(find.widgetWithText(DsGlassPill, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 500));
 
@@ -260,8 +308,8 @@ void main() {
 
         expect(find.text('Water'), findsOneWidget);
         expect(find.text('Edit measurable'), findsOneWidget);
-        // Delete affordance present in edit mode.
-        expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
+        // Delete pill present in edit mode.
+        expect(find.widgetWithText(DsGlassPill, 'Delete'), findsOneWidget);
       },
     );
 

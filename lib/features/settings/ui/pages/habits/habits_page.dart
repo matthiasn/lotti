@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
@@ -46,7 +46,7 @@ class HabitsPage extends ConsumerWidget {
       emptyHint: messages.settingsHabitsEmptyStateHint,
       noMatchMessage: messages.settingsHabitsNoMatchQuery,
       errorTitle: messages.settingsHabitsErrorLoading,
-      createSemanticLabel: messages.settingsHabitsCreateTitle,
+      createLabel: messages.settingsHabitsCreateTitle,
       onCreate: () => beamToNamed('/settings/habits/create'),
       itemBuilder: (context, habit, {required bool showDivider}) =>
           _HabitListItem(habit: habit, showDivider: showDivider),
@@ -60,8 +60,6 @@ class _HabitListItem extends StatelessWidget {
     required this.showDivider,
   });
 
-  static const double _leadingIconSize = 28;
-
   final HabitDefinition habit;
   final bool showDivider;
 
@@ -73,10 +71,7 @@ class _HabitListItem extends StatelessWidget {
 
     return DesignSystemListItem(
       title: habit.name,
-      leading: CategoryIconCompact(
-        habit.categoryId,
-        size: _leadingIconSize,
-      ),
+      leading: CategoryIconChip.fromId(habit.categoryId),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -125,7 +120,9 @@ class _HabitListItem extends StatelessWidget {
       ),
       showDivider: showDivider,
       dividerIndent:
-          tokens.spacing.step5 + _leadingIconSize + tokens.spacing.step3,
+          tokens.spacing.step5 +
+          DefinitionIconChip.defaultSize +
+          tokens.spacing.step3,
       onTap: () => beamToNamed('/settings/habits/by_id/${habit.id}'),
     );
   }

@@ -2011,6 +2011,36 @@ abstract class AppLocalizations {
   /// **'Wakes'**
   String get agentTokenUsageWakeCount;
 
+  /// No description provided for @aggregationDailyAvg.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily average'**
+  String get aggregationDailyAvg;
+
+  /// No description provided for @aggregationDailyMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily maximum'**
+  String get aggregationDailyMax;
+
+  /// No description provided for @aggregationDailySum.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily sum'**
+  String get aggregationDailySum;
+
+  /// No description provided for @aggregationHourlySum.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly sum'**
+  String get aggregationHourlySum;
+
+  /// No description provided for @aggregationNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get aggregationNone;
+
   /// No description provided for @aiAssistantTitle.
   ///
   /// In en, this message translates to:
@@ -4036,7 +4066,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryDefaultProfileHint.
   ///
   /// In en, this message translates to:
-  /// **'Select a profile…'**
+  /// **'Select a profile'**
   String get categoryDefaultProfileHint;
 
   /// No description provided for @categoryDefaultTemplateHint.
@@ -4084,13 +4114,13 @@ abstract class AppLocalizations {
   /// No description provided for @categoryIconCreateHint.
   ///
   /// In en, this message translates to:
-  /// **'Tap to select an icon'**
+  /// **'Select an icon'**
   String get categoryIconCreateHint;
 
   /// No description provided for @categoryIconEditHint.
   ///
   /// In en, this message translates to:
-  /// **'Tap to select a different icon'**
+  /// **'Select a different icon'**
   String get categoryIconEditHint;
 
   /// No description provided for @categoryIconLabel.
@@ -4120,7 +4150,7 @@ abstract class AppLocalizations {
   /// No description provided for @categoryPrivateDescription.
   ///
   /// In en, this message translates to:
-  /// **'Hide this category when private mode is enabled'**
+  /// **'Only visible when private entries are shown'**
   String get categoryPrivateDescription;
 
   /// No description provided for @categorySearchPlaceholder.
@@ -8241,7 +8271,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitCategoryHint.
   ///
   /// In en, this message translates to:
-  /// **'Select category'**
+  /// **'Select a category'**
   String get habitCategoryHint;
 
   /// No description provided for @habitCategoryLabel.
@@ -8253,7 +8283,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitDashboardHint.
   ///
   /// In en, this message translates to:
-  /// **'Select dashboard'**
+  /// **'Select a dashboard'**
   String get habitDashboardHint;
 
   /// No description provided for @habitDashboardLabel.
@@ -8411,6 +8441,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Inactive'**
   String get inactiveLabel;
+
+  /// No description provided for @inactiveSwitchDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Inactive items are hidden from selection lists'**
+  String get inactiveSwitchDescription;
 
   /// No description provided for @inferenceProfileCreateTitle.
   ///
@@ -10024,6 +10060,12 @@ abstract class AppLocalizations {
   /// **'Private'**
   String get privateLabel;
 
+  /// No description provided for @privateSwitchDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Only visible when private entries are shown'**
+  String get privateSwitchDescription;
+
   /// No description provided for @projectAgentNotProvisioned.
   ///
   /// In en, this message translates to:
@@ -10792,6 +10834,12 @@ abstract class AppLocalizations {
   /// **'Save'**
   String get saveLabel;
 
+  /// No description provided for @saveShortcutTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Save — Ctrl+S (⌘S on Mac)'**
+  String get saveShortcutTooltip;
+
   /// No description provided for @saveSuccessful.
   ///
   /// In en, this message translates to:
@@ -10831,7 +10879,7 @@ abstract class AppLocalizations {
   /// No description provided for @selectColor.
   ///
   /// In en, this message translates to:
-  /// **'Select Color'**
+  /// **'Select a color'**
   String get selectColor;
 
   /// No description provided for @selectLanguage.
@@ -11437,7 +11485,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLabelsColorHeading.
   ///
   /// In en, this message translates to:
-  /// **'Select a color'**
+  /// **'Color'**
   String get settingsLabelsColorHeading;
 
   /// No description provided for @settingsLabelsColorSubheading.
@@ -11539,7 +11587,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLabelsPrivateDescription.
   ///
   /// In en, this message translates to:
-  /// **'Private labels only appear when “Show private entries” is enabled.'**
+  /// **'Only visible when private entries are shown'**
   String get settingsLabelsPrivateDescription;
 
   /// No description provided for @settingsLabelsPrivateTitle.
@@ -11569,7 +11617,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsLabelsUsageCount.
   ///
   /// In en, this message translates to:
-  /// **'Used on {count, plural, =1{1 task} other{{count} tasks}}'**
+  /// **'{count, plural, =1{1 task} other{{count} tasks}}'**
   String settingsLabelsUsageCount(int count);
 
   /// No description provided for @settingsLoggingDomainsSubtitle.
@@ -11800,7 +11848,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsMeasurableAggregationLabel.
   ///
   /// In en, this message translates to:
-  /// **'Default Aggregation Type (optional)'**
+  /// **'Default aggregation type'**
   String get settingsMeasurableAggregationLabel;
 
   /// No description provided for @settingsMeasurableDeleteTooltip.
@@ -11890,7 +11938,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsMeasurablesTitle.
   ///
   /// In en, this message translates to:
-  /// **'Measurable Types'**
+  /// **'Measurables'**
   String get settingsMeasurablesTitle;
 
   /// No description provided for @settingsResetGeminiConfirm.

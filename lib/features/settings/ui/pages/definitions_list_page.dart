@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
@@ -35,7 +36,7 @@ class DefinitionsListPage<T> extends StatefulWidget {
     required this.emptyHint,
     required this.noMatchMessage,
     required this.errorTitle,
-    required this.createSemanticLabel,
+    required this.createLabel,
     required this.onCreate,
     this.searchText,
     this.noMatchActionBuilder,
@@ -84,7 +85,7 @@ class DefinitionsListPage<T> extends StatefulWidget {
   final String errorTitle;
 
   /// Semantic label + handler for the floating create button.
-  final String createSemanticLabel;
+  final String createLabel;
   final VoidCallback onCreate;
 
   /// Optional override for the search haystack (e.g. labels also match
@@ -114,12 +115,26 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
 
   @override
   Widget build(BuildContext context) {
+    // Desktop: creation lives in the header on the content axis (a FAB
+    // pinned to the corner of a wide window strands it ~1000px from the
+    // list it acts on). Mobile keeps the thumb-reachable FAB.
+    final desktop = isDesktopLayout(context);
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
           SettingsPageHeader(
             title: widget.title,
-            showBackButton: !isDesktopLayout(context),
+            showBackButton: !desktop,
+            actions: desktop
+                ? [
+                    DesignSystemButton(
+                      label: widget.createLabel,
+                      leadingIcon: Icons.add,
+                      onPressed: widget.onCreate,
+                    ),
+                  ]
+                : null,
           ),
           ...widget.itemsAsync.when(
             data: (items) => _buildContentSlivers(context, items),
@@ -142,12 +157,14 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
           ),
         ],
       ),
-      floatingActionButton: DesignSystemBottomNavigationFabPadding(
-        child: DesignSystemFloatingActionButton(
-          semanticLabel: widget.createSemanticLabel,
-          onPressed: widget.onCreate,
-        ),
-      ),
+      floatingActionButton: desktop
+          ? null
+          : DesignSystemBottomNavigationFabPadding(
+              child: DesignSystemFloatingActionButton(
+                semanticLabel: widget.createLabel,
+                onPressed: widget.onCreate,
+              ),
+            ),
     );
   }
 
@@ -215,6 +232,13 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
         icon: widget.emptyIcon,
         title: widget.emptyTitle,
         body: widget.emptyHint,
+        // Close the loop right where the instruction sits, instead of
+        // pointing the reader at a create button in the opposite corner.
+        action: DesignSystemButton(
+          label: widget.createLabel,
+          leadingIcon: Icons.add,
+          onPressed: widget.onCreate,
+        ),
       ),
     );
   }

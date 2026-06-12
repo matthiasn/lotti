@@ -88,17 +88,19 @@ void main() {
         await tester.pump();
 
         // Check that the card is rendered
-        expect(find.byType(Card), findsOneWidget);
-        expect(find.byType(ListTile), findsOneWidget);
+        expect(find.byType(ItemCard), findsOneWidget);
 
-        // Check the icon
+        // Check the leading icon and the explicit drag handle
         expect(find.byIcon(Icons.insights), findsOneWidget);
+        expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
 
-        // Check the title includes the measurement name and aggregation type
-        expect(find.text('Test Measurement [dailySum]'), findsOneWidget);
+        // The title joins the measurement name and the localized
+        // aggregation name — no raw enum identifiers, no brackets.
+        expect(find.text('Test Measurement — Daily sum'), findsOneWidget);
+        expect(find.textContaining('dailySum'), findsNothing);
 
         // Test tap functionality
-        await tester.tap(find.byType(ListTile));
+        await tester.tap(find.byType(ItemCard));
         await tester.pump();
 
         expect(updateCalled, isTrue);
@@ -194,7 +196,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(Card), findsOneWidget);
+        expect(find.byType(ItemCard), findsOneWidget);
         expect(find.byIcon(MdiIcons.stethoscope), findsOneWidget);
         expect(find.text('steps'), findsOneWidget);
       });
@@ -219,7 +221,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(Card), findsOneWidget);
+        expect(find.byType(ItemCard), findsOneWidget);
         expect(find.byIcon(Icons.sports_gymnastics), findsOneWidget);
         expect(find.text('Running (time)'), findsOneWidget);
       });
@@ -243,7 +245,7 @@ void main() {
           ),
         );
 
-        expect(find.byType(Card), findsOneWidget);
+        expect(find.byType(ItemCard), findsOneWidget);
         expect(find.byIcon(MdiIcons.clipboardOutline), findsOneWidget);
         expect(find.text('Daily Mood Survey'), findsOneWidget);
       });
@@ -288,7 +290,7 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byType(Card), findsOneWidget);
+        expect(find.byType(ItemCard), findsOneWidget);
         expect(find.byIcon(MdiIcons.lightningBolt), findsOneWidget);
         expect(find.text('Daily Exercise'), findsOneWidget);
       });
@@ -316,7 +318,7 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byType(Card), findsOneWidget);
+        expect(find.byType(ItemCard), findsOneWidget);
         expect(find.byIcon(MdiIcons.lightningBolt), findsOneWidget);
         expect(find.text('non-existent-habit'), findsOneWidget);
       });
@@ -324,7 +326,9 @@ void main() {
   });
 
   group('ItemCard', () {
-    testWidgets('should render item card with title and icon', (tester) async {
+    testWidgets('should render title, leading icon, and drag handle', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const WidgetTestBench(
           child: ItemCard(
@@ -334,10 +338,10 @@ void main() {
         ),
       );
 
-      expect(find.byType(Card), findsOneWidget);
-      expect(find.byType(ListTile), findsOneWidget);
       expect(find.text('Test Title'), findsOneWidget);
       expect(find.byIcon(Icons.star), findsOneWidget);
+      // Reorderable rows carry a visible drag handle.
+      expect(find.byIcon(Icons.drag_indicator), findsOneWidget);
     });
 
     testWidgets('should handle tap correctly', (tester) async {
@@ -353,7 +357,7 @@ void main() {
         ),
       );
 
-      await tester.tap(find.byType(ListTile));
+      await tester.tap(find.byType(ItemCard));
       expect(tapped, isTrue);
     });
 
@@ -367,13 +371,11 @@ void main() {
         ),
       );
 
-      expect(find.byType(Card), findsOneWidget);
-      expect(find.byType(ListTile), findsOneWidget);
       expect(find.text('Test Title'), findsOneWidget);
       expect(find.byIcon(Icons.star), findsOneWidget);
 
       // Should not crash when tapped without onTap
-      await tester.tap(find.byType(ListTile));
+      await tester.tap(find.byType(ItemCard));
     });
   });
 }

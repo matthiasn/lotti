@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
@@ -17,9 +19,10 @@ void main() {
   setUp(() async {
     await setUpTestGetIt(
       additionalSetup: () {
-        // _DashboardListItem renders CategoryIconCompact, which resolves
-        // the dashboard's category through the cache; the unstubbed mock
-        // returns null and triggers the fallback icon, which is fine here.
+        // _DashboardListItem renders CategoryIconChip.fromId, which
+        // resolves the dashboard's category through the cache; the
+        // unstubbed mock returns null and triggers the neutral fallback
+        // chip, which is fine for most tests here.
         getIt.registerSingleton<EntitiesCacheService>(
           MockEntitiesCacheService(),
         );
@@ -110,6 +113,51 @@ void main() {
 
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       });
+    });
+
+    group('leading category chip', () {
+      testWidgets(
+        'unresolved category renders the neutral chip with a more_horiz '
+        'glyph instead of the empty-state shapes glyph',
+        (tester) async {
+          // The unstubbed cache resolves the dashboard's categoryId to
+          // null, so the chip falls back to the neutral treatment.
+          await pumpDashboardsPage(tester, dashboards: [testDashboardConfig]);
+
+          final chipFinder = find.byType(CategoryIconChip);
+          expect(chipFinder, findsOneWidget);
+          expect(
+            find.descendant(
+              of: chipFinder,
+              matching: find.byIcon(Icons.more_horiz),
+            ),
+            findsOneWidget,
+          );
+          expect(find.byIcon(Icons.category_outlined), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'resolved category renders the colored chip with the category '
+        'first letter',
+        (tester) async {
+          final cache =
+              getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+          when(
+            () => cache.getCategoryById(categoryMindfulness.id),
+          ).thenReturn(categoryMindfulness);
+
+          await pumpDashboardsPage(tester, dashboards: [testDashboardConfig]);
+
+          final chipFinder = find.byType(CategoryIconChip);
+          expect(chipFinder, findsOneWidget);
+          expect(find.byIcon(Icons.more_horiz), findsNothing);
+          expect(
+            find.descendant(of: chipFinder, matching: find.text('M')),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('private indicator', () {

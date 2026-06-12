@@ -233,9 +233,12 @@ The list page is the label-management surface in Settings. It provides:
 
 Each row shows:
 
-- a leading colored dot
+- a leading 36px rounded-square color swatch chip (`DefinitionIconChip` from
+  `features/categories/ui/widgets/category_icon_chip.dart`) filled with the
+  label color and showing the first letter of the label name
 - the label name
-- one subtitle that is the description when present, otherwise the usage count
+- one subtitle that is always the usage count (never the description, so the
+  second line has a stable meaning across rows)
 - a private lock icon when the label is private
 - a trailing chevron into details
 

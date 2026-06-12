@@ -2,10 +2,10 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_header_dimensions.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
+import 'package:lotti/widgets/settings/settings_page_layout.dart';
 
 // Dimensions have been extracted to SettingsHeaderDimensions to centralize
 // spacing and layout breakpoints.
@@ -150,11 +150,12 @@ class SettingsPageHeader extends StatelessWidget {
           );
           final easedProgress = Curves.easeOutCubic.transform(progress);
 
-          final horizontalPadding =
-              (SettingsHeaderDimensions.horizontalPadding(width) - 8).clamp(
-                16.0,
-                double.infinity,
-              );
+          // Shares the settings content grid's start inset so the title
+          // sits on the same axis as search fields, cards, and the
+          // action bar below it.
+          final horizontalPadding = SettingsPageLayout.contentInsets(
+            width,
+          ).start;
           final titleSize =
               lerpDouble(
                 baseTitleSize,
@@ -170,9 +171,13 @@ class SettingsPageHeader extends StatelessWidget {
               ) ??
               bottomSpacing;
 
+          // Flat header: plain surface with a hairline that fades in as
+          // the header collapses over scrolling content. No gradient,
+          // shadow, or rounded card edge — chrome that earned attention
+          // without carrying information.
           final borderColor =
               Color.lerp(
-                colorScheme.primary.withValues(alpha: 0.18),
+                colorScheme.outlineVariant.withValues(alpha: 0),
                 colorScheme.outlineVariant.withValues(alpha: 0.24),
                 easedProgress,
               ) ??
@@ -180,31 +185,7 @@ class SettingsPageHeader extends StatelessWidget {
 
           return Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: AlignmentDirectional.topCenter,
-                end: AlignmentDirectional.bottomCenter,
-                colors: [
-                  colorScheme.surface.withValues(alpha: wide ? 0.98 : 0.96),
-                  colorScheme.surface.withValues(alpha: 0.93),
-                ],
-              ),
-              // Same radius as the bottom nav bar's top corners
-              // (DesignSystemFiveSlotNavBar), so docked chrome at both
-              // screen edges rounds identically.
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(
-                  context.designTokens.radii.sectionCards,
-                ),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: colorScheme.shadow.withValues(
-                    alpha: 0.16 * (1 - easedProgress),
-                  ),
-                  blurRadius: 28,
-                  offset: const Offset(0, 16),
-                ),
-              ],
+              color: colorScheme.surface,
               border: Border(
                 bottom: BorderSide(color: borderColor),
               ),

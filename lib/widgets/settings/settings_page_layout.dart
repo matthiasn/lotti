@@ -19,16 +19,20 @@ abstract final class SettingsPageLayout {
   /// cap, but wider because settings forms host full-width inputs.
   static const double maxContentWidth = 840;
 
-  /// Resolved horizontal insets for content at the given pane [width]:
-  /// the start inset always matches the header title's padding; the end
-  /// inset grows once the remaining span would exceed [maxContentWidth].
+  /// Resolved horizontal insets for content at the given pane [width].
+  /// While the pane is narrow enough that content fills it, both insets
+  /// equal the header padding; once content hits [maxContentWidth] the
+  /// column centers in the pane (no dead right half on desktop). The
+  /// header title uses the same start inset so title, fields, and action
+  /// bar share one axis at every width.
   static EdgeInsetsDirectional contentInsets(double width) {
-    final start = SettingsHeaderDimensions.horizontalPadding(width);
-    final available = width - start * 2;
-    final end = available > maxContentWidth
-        ? width - start - maxContentWidth
-        : start;
-    return EdgeInsetsDirectional.only(start: start, end: end);
+    final padding = SettingsHeaderDimensions.horizontalPadding(width);
+    final available = width - padding * 2;
+    if (available <= maxContentWidth) {
+      return EdgeInsetsDirectional.only(start: padding, end: padding);
+    }
+    final inset = (width - maxContentWidth) / 2;
+    return EdgeInsetsDirectional.only(start: inset, end: inset);
   }
 }
 
