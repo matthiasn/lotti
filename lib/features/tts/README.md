@@ -30,8 +30,34 @@ features/tts/
     tts_model_repository.dart      first-run Hugging Face download boundary
     tts_engine_provider.dart       engine provider (+ Unavailable fallback)
     tts_playback_controller.dart   orchestrates ensure-model -> synthesize -> play
-  ui/                          Settings -> Speech page + selectors (in progress)
+  ui/widgets/
+    tts_play_button.dart       focal 44pt play/stop control (filled-accent
+                               circle; play/stop by shape+label, progress arc)
 ```
+
+The **AI-card header** integration lives in the agents feature
+(`lib/features/agents/ui/ai_summary_card.dart` + `.../ai_summary_card/
+tldr_section_part.dart`): the card builds a `TtsPlayButton` from
+`TtsPlaybackController` (gated on the `enable_ai_summary_tts` flag + a non-empty
+TL;DR + a supported engine), and the agent "Thinking…" pill is visually
+distinct from the audio control. This **replaced** the old fire-and-forget MLX
+`_speakSummary` path.
+
+## Remaining work (handoff)
+
+- **Settings → Speech page** (voice / model / playback-speed selectors, in the
+  entity-definition design language) — `tts_settings_controller` and the voice/
+  model catalogs are ready; the page/body widgets + mobile nav + desktop v2
+  panel are not yet built.
+- **Dead-code cleanup:** `MlxAudioChannel.speakText`/`stopSpeaking` and the
+  Qwen3-TTS catalog entry are now unreachable but still co-tested with ASR
+  behaviour; remove them in a focused pass that preserves the ASR tests.
+- **Native:** ship the voice-style JSONs as bundled assets (declare
+  `assets/tts/voice_styles/` in pubspec) and add the iOS deployment-target 16.0
+  / static-linkage Podfile config `flutter_onnxruntime` needs.
+- **Verify** the exact `Supertone/supertonic-3/onnx/` filenames and run the
+  real model end-to-end on macOS before enabling the flag by default; add the
+  CHANGELOG entry when the feature becomes user-visible.
 
 The engine is split so the correctness-sensitive, deterministic logic
 (normalization, tokenization, WAV encoding) is unit-tested without the native
