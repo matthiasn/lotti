@@ -57,6 +57,7 @@ dependencies:
     sdk: flutter
   flutter_map: ^8.0.0
   flutter_material_design_icons: ^3.1.0+7447
+  flutter_onnxruntime: ^1.8.0
   flutter_openssl_crypto: ^0.5.0
   flutter_quill: ^11.5.1
   flutter_quill_extensions: ^11.0.0
