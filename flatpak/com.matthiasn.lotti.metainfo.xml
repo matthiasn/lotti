@@ -32,11 +32,15 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1019" date="2026-06-11">
+    <release version="0.9.1020" date="2026-06-13">
       <description>
           <p>Settings: all definition pages (categories, labels, habits, measurables, dashboards) now share one design language. Lists get the same header, search, grouped rows, floating create button, and localized empty states; editors share a sticky bottom action bar floating on blurred glass with Save/Create (enabled once something changed), Cancel, and Delete with confirmation, Cmd/Ctrl+S keyboard save, design-system fields in titled section cards, and consistent "Edit habit"/"Edit category" titles without stray label colons.</p>
           <p>Settings: creating a category now opens the same full create page as other definition types instead of a popup — it asks only for name, color, and icon, then lands in the new category's editor for the rest. The Projects section moved out of category settings (projects have their own page), and on desktop habit editing opens inline in the settings split pane.</p>
           <p>Settings: dashboard editor save-and-copy moved to a header action, and saving with an invalid form no longer navigates away while silently discarding changes.</p>
+      </description>
+    </release>
+    <release version="0.9.1019" date="2026-06-11">
+      <description>
           <p>Daily OS Next: the day-planning conversation was redesigned around a stable voice orb — it stays put directly above the action bar in every state while the live transcript grows upward above it, reacts to presses with a visible ripple and press animation, and while recording its core breathes with your voice (with a slow idle pulse between words) under a stop glyph, then steps back after capture so the Review action carries the weight. Every action lives on the sticky bottom bar in every state, and a per-state headline narrates what is happening.</p>
           <p>Daily OS Next: on desktop, day planning now opens in a full-height right side panel instead of a centered dialog, keeping the day visible while you talk; panel buttons size to their content.</p>
           <p>Daily OS Next: the drafting wait replaced its shimmer placeholders with the AI thinking animation over a rotating narration of what the agent is doing, alongside yesterday's learning cards.</p>

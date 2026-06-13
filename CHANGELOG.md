@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1019]
+## [0.9.1020]
 ### Changed
 - All settings definition pages (categories, labels, habits, measurables,
   dashboards) now share one design language. Every list page has the same
@@ -30,6 +30,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard editor: save-and-copy moved to a header action next to the
   title, and saving with an invalid form no longer navigates away while
   silently discarding the changes.
+
+## [0.9.1019]
+### Changed
 - The Daily OS day-planning conversation was redesigned around a stable
   voice orb: the orb now stays put directly above the action bar in every
   state while the live transcript grows upward above it (no more layout
