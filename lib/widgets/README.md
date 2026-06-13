@@ -350,7 +350,7 @@ Unified detail-page shell: `SettingsPageHeader` with back affordance (callers be
 Sticky bottom action bar on `DesignSystemGlassStrip` (hairline + backdrop blur + scrim gradient). Destructive action (icon-only round glass button) at the start, secondary + primary `DsGlassPill`s at the end of the content grid. At accessibility text scales ≥ 1.5 the actions stack vertically with the primary pill closest to the thumb.
 
 ### SettingsFormSection
-Token-driven section header (icon chip, title, optional description) above a grouped card matching `DesignSystemGroupedList`'s surface (background level02, decorative hairline, radii.m). Spaces its children with `cardItemSpacing` — no manual separators needed.
+Token-driven section header (quiet medium-emphasis title, optional description) above a grouped card matching `DesignSystemGroupedList`'s surface (background level02, decorative hairline, radii.m). Spaces its children with `cardItemSpacing` — no manual separators needed.
 
 ### SettingsSwitchRow
 Toggle row (title, optional subtitle/icon, `DesignSystemToggle`) used inside form sections; the whole row is tappable. Also wrapped by `FormSwitch` for `flutter_form_builder` forms.
