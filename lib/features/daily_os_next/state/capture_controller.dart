@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/daily_os_next/state/capture_state.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -18,9 +19,9 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart' as record;
 
-part 'capture_controller_cleanup.dart';
+export 'package:lotti/features/daily_os_next/state/capture_state.dart';
 
-part 'capture_state.dart';
+part 'capture_controller_cleanup.dart';
 
 /// Drives the Capture screen's recording lifecycle.
 ///

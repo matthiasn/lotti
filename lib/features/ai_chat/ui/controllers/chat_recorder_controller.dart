@@ -6,12 +6,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart' as record;
 
-part 'chat_recorder_state.dart';
+export 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
+
 part 'chat_recorder_controller_realtime.dart';
 
 class ChatRecorderController extends Notifier<ChatRecorderState>
@@ -535,3 +537,19 @@ final chatRecorderControllerProvider =
     NotifierProvider.autoDispose<ChatRecorderController, ChatRecorderState>(
       ChatRecorderController.new,
     );
+
+/// Only triggers on [AppLifecycleState.paused] (actual backgrounding), not on
+/// [AppLifecycleState.inactive], which fires for transient events like
+/// notification center pulls or incoming calls on iOS.
+class _AppLifecycleObserver extends WidgetsBindingObserver {
+  _AppLifecycleObserver({required this.onPaused});
+
+  final VoidCallback onPaused;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      onPaused();
+    }
+  }
+}

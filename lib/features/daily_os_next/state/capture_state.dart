@@ -1,4 +1,4 @@
-part of 'capture_controller.dart';
+import 'package:flutter/foundation.dart';
 
 /// Phases of the Capture screen.
 enum CapturePhase {
@@ -36,7 +36,7 @@ enum CaptureError {
   transcriptionFailed,
 }
 
-/// State held by [CaptureController].
+/// State held by `CaptureController`.
 @immutable
 class CaptureState {
   const CaptureState({
