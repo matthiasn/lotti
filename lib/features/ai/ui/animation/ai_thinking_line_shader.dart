@@ -1,4 +1,8 @@
-part of 'ai_state_shader_animation.dart';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 
 class AiThinkingLineShader extends StatefulWidget {
   const AiThinkingLineShader({
@@ -197,9 +201,9 @@ class AiThinkingLineShaderPainter extends CustomPainter {
       ..setFloat(7, pulse)
       ..setFloat(8, route.index.toDouble())
       ..setFloat(9, opacity);
-    _setColor(shader, 10, primaryColor);
-    _setColor(shader, 14, secondaryColor);
-    _setColor(shader, 18, backgroundColor);
+    aiSetShaderColor(shader, 10, primaryColor);
+    aiSetShaderColor(shader, 14, secondaryColor);
+    aiSetShaderColor(shader, 18, backgroundColor);
 
     canvas.drawRect(
       Offset.zero & size,
@@ -224,7 +228,6 @@ class AiThinkingLineShaderPainter extends CustomPainter {
   }
 }
 
-@visibleForTesting
 @visibleForTesting
 class AiThinkingLineFallbackPainter extends CustomPainter {
   AiThinkingLineFallbackPainter({
@@ -331,12 +334,4 @@ class AiThinkingLineFallbackPainter extends CustomPainter {
         oldDelegate.secondaryColor != secondaryColor ||
         oldDelegate.backgroundColor != backgroundColor;
   }
-}
-
-void _setColor(ui.FragmentShader shader, int index, Color color) {
-  shader
-    ..setFloat(index, color.r)
-    ..setFloat(index + 1, color.g)
-    ..setFloat(index + 2, color.b)
-    ..setFloat(index + 3, color.a);
 }

@@ -13,9 +13,10 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
-import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
@@ -28,10 +29,11 @@ import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 
+export 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
+export 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
+
 part 'ai_summary_card/assign_agent_cta_part.dart';
-part 'ai_summary_card/proposal_kind_part.dart';
 part 'ai_summary_card/proposal_row_part.dart';
-part 'ai_summary_card/proposal_row_widgets_part.dart';
 part 'ai_summary_card/proposals_section_part.dart';
 part 'ai_summary_card/tldr_section_part.dart';
 

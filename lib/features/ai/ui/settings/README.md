@@ -76,10 +76,10 @@ lib/features/ai/ui/settings/
 │   └── v2/                                 # Live card chrome
 │       ├── ai_settings_header_bar.dart     # Search row
 │       ├── ai_settings_tab_bar.dart        # Providers/Models/Profiles tabs
-│       ├── ai_settings_cards.dart          # Card library owner (part files below)
-│       ├── ai_provider_card.dart           # Providers-tab card (part)
-│       ├── ai_model_card.dart              # Models-tab card (part)
-│       ├── ai_profile_card.dart            # Profiles-tab card (part)
+│       ├── ai_settings_cards.dart          # Card barrel: AiProviderIconTile + re-exports
+│       ├── ai_provider_card.dart           # Providers-tab card (standalone)
+│       ├── ai_model_card.dart              # Models-tab card (standalone)
+│       ├── ai_profile_card.dart            # Profiles-tab card (standalone)
 │       ├── ai_settings_empty_view.dart     # FTUE banner + no-providers card
 │       └── ai_card_action_menu.dart        # Per-card ⋯ overflow menu
 └── README.md                               # This documentation
@@ -149,12 +149,15 @@ Navigator.push(context, MaterialPageRoute(
 
 #### v2 Cards (`AiProviderCard`, `AiModelCard`, `AiProfileCard`)
 
-The live page renders one card type per tab from `widgets/v2/`. The three
-card widgets are Dart `part` files of `widgets/v2/ai_settings_cards.dart`
-(the library owner), so they cannot be imported individually — importing
-`ai_settings_cards.dart` brings all three into scope. That file's only
-real `export` is `AiProviderCardStatus` (re-exported from
-`util/ai_provider_status.dart`). Each card takes a `menuActions` list —
+The live page renders one card type per tab from `widgets/v2/`. Each card
+widget is its own standalone library (`ai_provider_card.dart`,
+`ai_model_card.dart`, `ai_profile_card.dart`); they share the leading
+`AiProviderIconTile` widget, which lives in the
+`widgets/v2/ai_settings_cards.dart` barrel and is re-exported alongside the
+three cards. Importing `ai_settings_cards.dart` brings all three card types
+plus `AiProviderCardStatus` (re-exported from `util/ai_provider_status.dart`)
+into scope, so existing single-import call sites keep working. Each card
+takes a `menuActions` list —
 built by the page's `_buildCardMenu` — that populates the per-card `⋯`
 overflow menu (`AiCardActionMenuButton`) with `Edit` and `Delete` rows.
 

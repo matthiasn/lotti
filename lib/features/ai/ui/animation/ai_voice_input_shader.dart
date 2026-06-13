@@ -1,4 +1,8 @@
-part of 'ai_state_shader_animation.dart';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 
 class AiVoiceInputShader extends StatefulWidget {
   const AiVoiceInputShader({
@@ -189,9 +193,9 @@ class AiVoiceInputShaderPainter extends CustomPainter {
       ..setFloat(6, lineDensity)
       ..setFloat(7, orbitalMix)
       ..setFloat(8, route.index.toDouble());
-    _setColor(shader, 9, primaryColor);
-    _setColor(shader, 13, secondaryColor);
-    _setColor(shader, 17, backgroundColor);
+    aiSetShaderColor(shader, 9, primaryColor);
+    aiSetShaderColor(shader, 13, secondaryColor);
+    aiSetShaderColor(shader, 17, backgroundColor);
 
     canvas.drawRect(
       Offset.zero & size,

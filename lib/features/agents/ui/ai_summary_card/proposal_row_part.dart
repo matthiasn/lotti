@@ -259,9 +259,9 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    final kind = _resolveKind(_toolName, _args);
-    final kindMeta = _kindMeta(context, kind);
-    final cleanText = _cleanText(_humanSummary, kindMeta.label);
+    final kind = resolveKind(_toolName, _args);
+    final meta = kindMeta(context, kind);
+    final cleanText = _cleanText(_humanSummary, meta.label);
 
     // Combine the user's drag offset with any hint-wiggle so the
     // gradient backdrop and the row translation stay in sync.
@@ -350,7 +350,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _KindChip(meta: kindMeta),
+                    KindChip(meta: meta),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -366,7 +366,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
                     ),
                     const SizedBox(width: 10),
                     if (widget.isResolved)
-                      _ResolvedTag(status: _resolvedStatus)
+                      ResolvedTag(status: _resolvedStatus)
                     else if (_isCompactWidth(context))
                       // On narrow viewports the buttons take up too
                       // much horizontal space — rely on swipe alone
@@ -376,7 +376,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
                       // the swipe threshold).
                       const SizedBox.shrink()
                     else
-                      _RowActions(
+                      RowActions(
                         busy: _busy,
                         onReject: _reject,
                         onConfirm: _confirm,

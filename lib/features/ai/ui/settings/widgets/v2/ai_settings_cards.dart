@@ -1,27 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/ui/settings/util/ai_provider_status.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
-import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
-import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 
 export 'package:lotti/features/ai/ui/settings/util/ai_provider_status.dart'
     show AiProviderCardStatus;
+export 'package:lotti/features/ai/ui/settings/widgets/v2/ai_model_card.dart';
+export 'package:lotti/features/ai/ui/settings/widgets/v2/ai_profile_card.dart';
+export 'package:lotti/features/ai/ui/settings/widgets/v2/ai_provider_card.dart';
 
-part 'ai_provider_card.dart';
-part 'ai_model_card.dart';
-part 'ai_profile_card.dart';
-
-class _ProviderIconTile extends StatelessWidget {
-  const _ProviderIconTile({
+/// Small rounded square showing a provider-type icon in the provider
+/// accent color over a tinted surface. Used as the leading badge on
+/// provider cards, profile cards, and model rows — shared across the
+/// three card libraries in this directory.
+class AiProviderIconTile extends StatelessWidget {
+  const AiProviderIconTile({
     required this.accent,
     required this.surface,
     required this.providerType,
     this.size,
+    super.key,
   });
 
   final Color accent;
@@ -49,8 +47,3 @@ class _ProviderIconTile extends StatelessWidget {
     );
   }
 }
-
-/// Status row below the divider on a provider card. Left side: status
-/// dot + label. Right side: secondary meta — model count + optional
-/// "last used" for connected, the inline Fix link for invalid-key,
-/// the Ollama-running hint for offline.
