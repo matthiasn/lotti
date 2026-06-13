@@ -8,6 +8,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -61,7 +62,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     // The field renders the resolved category's name, not just any text box.
-    expect(find.byType(TextField), findsOneWidget);
+    expect(find.byType(SettingsPickerField), findsOneWidget);
     expect(find.text(categoryMindfulness.name), findsOneWidget);
   });
 
@@ -87,7 +88,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Open the modal and pick the category.
-      await tester.tap(find.byType(TextField));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(SettingsPickerField),
+          matching: find.byType(InkWell),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       final categoryFinder = find.text(categoryMindfulness.name);

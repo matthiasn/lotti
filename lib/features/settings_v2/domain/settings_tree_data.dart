@@ -188,18 +188,18 @@ List<SettingsNode> buildSettingsTree({
       'definitions',
       Icons.account_tree_outlined,
       children: [
-        if (enableHabits)
-          leaf(
-            'definitions/habits',
-            Icons.repeat_rounded,
-            panel: 'habits',
-          ),
         leaf(
           'definitions/categories',
           Icons.category_rounded,
           panel: 'categories',
         ),
         leaf('definitions/labels', Icons.label_rounded, panel: 'labels'),
+        if (enableHabits)
+          leaf(
+            'definitions/habits',
+            Icons.repeat_rounded,
+            panel: 'habits',
+          ),
         if (enableDashboards)
           leaf(
             'definitions/dashboards',

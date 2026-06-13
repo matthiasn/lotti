@@ -6,11 +6,15 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
-/// Lists task-agent templates for selection in category default contexts.
+/// Lists task-agent templates for selection in category default contexts,
+/// rendered as a [SettingsPickerField] so it matches the design-system
+/// fields around it. Selection happens in a [SelectionModalBase] modal.
 ///
 /// Filters to only [AgentTemplateKind.taskAgent] templates.
-/// Pre-selects the given [selectedTemplateId] if provided.
+/// Pre-selects the given [selectedTemplateId] if provided. With no
+/// templates available the field stays inert (tapping does nothing).
 class TemplateSelector extends ConsumerWidget {
   const TemplateSelector({
     required this.selectedTemplateId,
@@ -38,42 +42,13 @@ class TemplateSelector extends ConsumerWidget {
         ? templates.where((t) => t.id == selectedTemplateId).firstOrNull
         : null;
 
-    return InkWell(
-      onTap: templates.isNotEmpty
-          ? () => _showTemplatePicker(context, templates)
-          : null,
-      borderRadius: BorderRadius.circular(12),
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: context.messages.categoryDefaultTemplateLabel,
-          border: const OutlineInputBorder(
-            borderRadius: BorderRadius.all(Radius.circular(12)),
-          ),
-          suffixIcon: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (selectedTemplateId != null)
-                IconButton(
-                  icon: const Icon(Icons.clear, size: 18),
-                  onPressed: () => onTemplateSelected(null),
-                ),
-              const Icon(Icons.arrow_drop_down),
-            ],
-          ),
-          enabled: templates.isNotEmpty,
-        ),
-        child: selected != null
-            ? Text(
-                selected.displayName,
-                style: context.textTheme.bodyLarge,
-              )
-            : Text(
-                context.messages.categoryDefaultTemplateHint,
-                style: context.textTheme.bodyLarge?.copyWith(
-                  color: context.colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-              ),
-      ),
+    return SettingsPickerField(
+      label: context.messages.categoryDefaultTemplateLabel,
+      valueText: selected?.displayName,
+      hintText: context.messages.categoryDefaultTemplateHint,
+      enabled: templates.isNotEmpty,
+      onClear: selected != null ? () => onTemplateSelected(null) : null,
+      onTap: () => _showTemplatePicker(context, templates),
     );
   }
 

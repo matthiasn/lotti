@@ -1,288 +1,154 @@
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
 import '../../../../test_helper.dart';
 
 void main() {
   group('CategoryColorPicker', () {
-    testWidgets('displays correctly with no color selected', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryColorPicker(
-            selectedColor: null,
-            onColorChanged: (_) {},
-          ),
-        ),
-      );
-
-      // Verify title
-      expect(find.text('Color:'), findsOneWidget);
-
-      // Verify default color is shown (primary color)
-      final containers = tester.widgetList<Container>(find.byType(Container));
-      final colorContainer = containers.firstWhere(
-        (container) {
-          final decoration = container.decoration;
-          return decoration is BoxDecoration && decoration.color != null;
-        },
-      );
-      final decoration = colorContainer.decoration! as BoxDecoration;
-      expect(decoration.color, isNotNull);
-
-      // Verify "Select color" text
-      expect(find.text('Select Color'), findsOneWidget);
-
-      // Verify icon
-      expect(find.byIcon(Icons.palette_outlined), findsOneWidget);
-    });
-
-    testWidgets('displays correctly with color selected', (tester) async {
-      const selectedColor = Colors.red;
-
+    Future<void> pumpPicker(
+      WidgetTester tester, {
+      Color? selectedColor,
+      ValueChanged<Color>? onColorChanged,
+    }) async {
+      // Tall surface so the picker modal content is on-screen when opened.
+      tester.view.physicalSize = const Size(1024, 1600);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
       await tester.pumpWidget(
         WidgetTestBench(
           child: CategoryColorPicker(
             selectedColor: selectedColor,
-            onColorChanged: (_) {},
+            onColorChanged: onColorChanged ?? (_) {},
           ),
         ),
       );
+    }
 
-      // Verify color hex is displayed
-      expect(find.text(colorToCssHex(selectedColor)), findsOneWidget);
+    /// The tappable row inside the picker field.
+    Finder fieldTapTarget() => find.descendant(
+      of: find.byType(CategoryColorPicker),
+      matching: find.byType(InkWell),
+    );
 
-      // Verify selected color is shown
-      final colorContainers = tester
-          .widgetList<Container>(
-            find.byType(Container),
-          )
-          .where((container) {
-            final decoration = container.decoration;
-            if (decoration is BoxDecoration) {
-              return decoration.color == selectedColor;
-            }
-            return false;
-          });
-      expect(colorContainers, isNotEmpty);
+    /// Containers whose decoration is filled with [color] (the swatch).
+    Iterable<Container> swatchesWithColor(WidgetTester tester, Color color) =>
+        tester.widgetList<Container>(find.byType(Container)).where((
+          container,
+        ) {
+          final decoration = container.decoration;
+          return decoration is BoxDecoration && decoration.color == color;
+        });
+
+    Future<void> openModal(WidgetTester tester) async {
+      await tester.tap(fieldTapTarget());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+    }
+
+    testWidgets('shows hint and no swatch when no color is selected', (
+      tester,
+    ) async {
+      await pumpPicker(tester);
+
+      // Field label and hint from l10n.
+      expect(find.text('Color'), findsOneWidget);
+      expect(find.text('Select a color'), findsOneWidget);
+
+      // Delegates to the shared color field (one interaction model for
+      // categories and labels).
+      expect(find.byType(SettingsColorPickerField), findsOneWidget);
+      expect(find.byIcon(Icons.keyboard_arrow_down_rounded), findsOneWidget);
+
+      // No leading swatch without a selection.
+      final field = tester.widget<SettingsPickerField>(
+        find.byType(SettingsPickerField),
+      );
+      expect(field.leading, isNull);
     });
 
-    testWidgets('opens color picker dialog on tap', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryColorPicker(
-            selectedColor: Colors.blue,
-            onColorChanged: (_) {},
-          ),
-        ),
-      );
+    testWidgets('shows the preset name (not hex) and a leading swatch for a '
+        'preset color', (tester) async {
+      // 'Ocean Blue' in labelColorPresets.
+      final selectedColor = colorFromCssHex('#0066CC');
 
-      // Tap on the color picker
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
+      await pumpPicker(tester, selectedColor: selectedColor);
 
-      // Verify dialog is shown
-      expect(find.byType(AlertDialog), findsOneWidget);
-      expect(find.text('Select Color'), findsOneWidget); // Title only
+      expect(find.text('Ocean Blue'), findsOneWidget);
+      // Raw hex never surfaces in the field.
+      expect(find.textContaining('#'), findsNothing);
+      expect(find.text('Select a color'), findsNothing);
+
+      // The leading swatch is filled with the selected color.
+      expect(swatchesWithColor(tester, selectedColor), isNotEmpty);
+    });
+
+    testWidgets('shows the localized Custom label for a non-preset color', (
+      tester,
+    ) async {
+      const selectedColor = Color(0xFF123456);
+
+      await pumpPicker(tester, selectedColor: selectedColor);
+
+      expect(find.text('Custom'), findsOneWidget);
+      expect(find.textContaining('#'), findsNothing);
+      expect(swatchesWithColor(tester, selectedColor), isNotEmpty);
+    });
+
+    testWidgets('opens the shared picker modal on tap — no second dialog', (
+      tester,
+    ) async {
+      await pumpPicker(tester, selectedColor: colorFromCssHex('#0066CC'));
+
+      await openModal(tester);
+
+      // The shared modal hosts the full flex picker; there is no
+      // AlertDialog-based second picker anymore.
+      expect(find.text('Select a color'), findsOneWidget); // modal title
       expect(find.byType(ColorPicker), findsOneWidget);
-
-      // Verify dialog buttons
-      expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Select'), findsOneWidget);
+      expect(find.byType(AlertDialog), findsNothing);
     });
 
-    testWidgets('calls onColorChanged when color is picked', (tester) async {
-      Color? changedColor;
+    testWidgets('seeds the picker with the selected color', (tester) async {
+      final initialColor = colorFromCssHex('#E63946');
 
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryColorPicker(
-            selectedColor: Colors.blue,
-            onColorChanged: (color) {
-              changedColor = color;
-            },
-          ),
-        ),
-      );
+      await pumpPicker(tester, selectedColor: initialColor);
+      await openModal(tester);
 
-      // Open dialog
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
-
-      // The ColorPicker widget is complex, so we'll simulate changing the color
-      // by directly tapping the Select button which will use the initial color
-      // In a real scenario, the user would interact with the ColorPicker first
-
-      // Tap Select button to confirm the color
-      await tester.tap(find.text('Select'));
-      await tester.pumpAndSettle();
-
-      // The color should be the initial pickerColor (blue in this case)
-      expect(changedColor, Colors.blue);
+      final colorPicker = tester.widget<ColorPicker>(find.byType(ColorPicker));
+      expect(colorPicker.color, initialColor);
     });
 
-    testWidgets('closes dialog on cancel without changing color', (
+    testWidgets('selecting a preset in the modal fires onColorChanged live', (
       tester,
     ) async {
       Color? changedColor;
 
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryColorPicker(
-            selectedColor: Colors.blue,
-            onColorChanged: (color) {
-              changedColor = color;
-            },
-          ),
-        ),
+      await pumpPicker(
+        tester,
+        selectedColor: colorFromCssHex('#0066CC'),
+        onColorChanged: (color) => changedColor = color,
       );
+      await openModal(tester);
 
-      // Open dialog
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
-
-      // Tap cancel
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-
-      // Dialog should be closed
-      expect(find.byType(AlertDialog), findsNothing);
-
-      // Color should not have changed
-      expect(changedColor, isNull);
-    });
-
-    testWidgets('closes dialog on select', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryColorPicker(
-            selectedColor: Colors.blue,
-            onColorChanged: (_) {},
-          ),
-        ),
+      // Tap the 'Crimson' preset indicator (#E63946) in the swatch grid.
+      final crimsonIndicator = find.byWidgetPredicate(
+        (widget) =>
+            widget is ColorIndicator &&
+            colorToCssHex(widget.color) == '#E63946',
       );
+      expect(crimsonIndicator, findsOneWidget);
+      await tester.tap(crimsonIndicator, warnIfMissed: false);
+      await tester.pump();
 
-      // Open dialog
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
-
-      // Tap select
-      await tester.tap(find.text('Select'));
-      await tester.pumpAndSettle();
-
-      // Dialog should be closed
-      expect(find.byType(AlertDialog), findsNothing);
-    });
-
-    testWidgets('uses correct initial color in picker', (tester) async {
-      const initialColor = Colors.purple;
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryColorPicker(
-            selectedColor: initialColor,
-            onColorChanged: (_) {},
-          ),
-        ),
-      );
-
-      // Open dialog
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
-
-      // Verify ColorPicker has correct initial color
-      final colorPicker = tester.widget<ColorPicker>(find.byType(ColorPicker));
-      expect(colorPicker.pickerColor, initialColor);
-    });
-
-    testWidgets('uses red as default when no color selected', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryColorPicker(
-            selectedColor: null,
-            onColorChanged: (_) {},
-          ),
-        ),
-      );
-
-      // Open dialog
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
-
-      // Verify ColorPicker defaults to red
-      final colorPicker = tester.widget<ColorPicker>(find.byType(ColorPicker));
-      expect(colorPicker.pickerColor, Colors.red);
-    });
-
-    testWidgets('has correct ColorPicker configuration', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryColorPicker(
-            selectedColor: Colors.blue,
-            onColorChanged: (_) {},
-          ),
-        ),
-      );
-
-      // Open dialog
-      await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
-
-      // Verify ColorPicker configuration
-      final colorPicker = tester.widget<ColorPicker>(find.byType(ColorPicker));
-      expect(colorPicker.enableAlpha, isFalse);
-      expect(colorPicker.labelTypes, isEmpty);
-      expect(colorPicker.pickerAreaBorderRadius, BorderRadius.circular(10));
-    });
-
-    testWidgets('responds to theme changes', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.light(),
-          home: WidgetTestBench(
-            child: CategoryColorPicker(
-              selectedColor: null,
-              onColorChanged: (_) {},
-            ),
-          ),
-        ),
-      );
-
-      // Get initial theme colors
-      final context = tester.element(find.byType(CategoryColorPicker));
-      final initialPrimaryColor = Theme.of(context).colorScheme.primary;
-
-      // Verify primary color is used when no color selected
-      final containers = tester.widgetList<Container>(find.byType(Container));
-      final colorContainer = containers.firstWhere(
-        (container) {
-          final decoration = container.decoration;
-          return decoration is BoxDecoration &&
-              decoration.color == initialPrimaryColor;
-        },
-      );
-      expect(colorContainer, isNotNull);
-    });
-
-    testWidgets('has correct layout structure', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryColorPicker(
-            selectedColor: Colors.green,
-            onColorChanged: (_) {},
-          ),
-        ),
-      );
-
-      // Verify structure
-      expect(find.byType(Column), findsOneWidget);
-      expect(find.byType(InkWell), findsOneWidget);
-      expect(find.byType(Row), findsOneWidget);
-
-      // Verify spacing - SizedBox count may vary due to framework internals
-      expect(find.byType(SizedBox), findsWidgets);
+      // The color is applied live — no confirm button between the user
+      // and the change.
+      expect(changedColor, isNotNull);
+      expect(colorToCssHex(changedColor!), '#E63946');
     });
   });
 }

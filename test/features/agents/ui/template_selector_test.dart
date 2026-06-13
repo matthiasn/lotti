@@ -57,7 +57,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Select a template…'), findsOneWidget);
+      expect(find.text('Select a template'), findsOneWidget);
       expect(find.text('Default agent template'), findsOneWidget);
     });
 
@@ -71,11 +71,11 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Task Helper'), findsOneWidget);
-      expect(find.text('Select a template…'), findsNothing);
+      expect(find.text('Select a template'), findsNothing);
     });
 
     testWidgets('shows clear button when template is selected', (tester) async {
-      String? cleared;
+      String? cleared = 'not-cleared';
       await tester.pumpWidget(
         buildWidget(
           selectedTemplateId: 'tpl-1',
@@ -85,8 +85,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Find and tap the clear icon button
-      final clearButton = find.byIcon(Icons.clear);
+      // The kit field renders the clear affordance as a close icon.
+      final clearButton = find.byIcon(Icons.close_rounded);
       expect(clearButton, findsOneWidget);
       await tester.tap(clearButton);
 
@@ -99,7 +99,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.clear), findsNothing);
+      expect(find.byIcon(Icons.close_rounded), findsNothing);
     });
 
     testWidgets('opens picker and selects template', (tester) async {
@@ -143,14 +143,21 @@ void main() {
       expect(find.text('Improver'), findsNothing);
     });
 
-    testWidgets('disabled when no templates available', (tester) async {
+    testWidgets('inert when no templates available — tap opens no modal', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('Select a template…'), findsOneWidget);
-      // The InkWell should have a null onTap (disabled)
-      final inkWell = tester.widget<InkWell>(find.byType(InkWell).first);
-      expect(inkWell.onTap, isNull);
+      expect(find.text('Select a template'), findsOneWidget);
+      // The field label renders exactly once; opening the modal would add
+      // a second occurrence as the modal title.
+      expect(find.text('Default agent template'), findsOneWidget);
+
+      await tester.tap(find.byType(InkWell).first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Default agent template'), findsOneWidget);
     });
 
     testWidgets('shows check icon for selected template in picker', (
@@ -192,7 +199,7 @@ void main() {
       await tester.pump();
 
       // Should show hint text (empty templates → disabled)
-      expect(find.text('Select a template…'), findsOneWidget);
+      expect(find.text('Select a template'), findsOneWidget);
     });
   });
 }

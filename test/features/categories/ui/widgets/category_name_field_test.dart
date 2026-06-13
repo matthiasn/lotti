@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 
 import '../../../../test_helper.dart';
 
@@ -17,166 +17,100 @@ void main() {
       controller.dispose();
     });
 
-    testWidgets('displays correctly in create mode', (tester) async {
-      await tester.pumpWidget(
+    Future<void> pumpField(
+      WidgetTester tester, {
+      required bool isCreateMode,
+      ValueChanged<String>? onChanged,
+    }) {
+      return tester.pumpWidget(
         WidgetTestBench(
           child: CategoryNameField(
             controller: controller,
-            isCreateMode: true,
+            isCreateMode: isCreateMode,
+            onChanged: onChanged,
           ),
         ),
       );
+    }
 
-      // Verify LottiTextField is rendered
-      expect(find.byType(LottiTextField), findsOneWidget);
+    testWidgets('renders the design-system input with label and hint only', (
+      tester,
+    ) async {
+      await pumpField(tester, isCreateMode: true);
 
-      // Verify label and hint text
-      expect(find.text('Category name:'), findsOneWidget);
+      expect(find.byType(DesignSystemTextInput), findsOneWidget);
+      expect(find.text('Category name'), findsOneWidget);
       expect(find.text('Enter category name'), findsOneWidget);
-
-      // Verify icon
-      expect(find.byIcon(Icons.category_outlined), findsOneWidget);
+      // No leading glyph: the name field is the only field that carried
+      // one, and the shapes glyph is overloaded with the empty-state
+      // illustration.
+      expect(find.byIcon(Icons.category_outlined), findsNothing);
     });
 
-    testWidgets('displays correctly in edit mode', (tester) async {
-      var onChangedCalled = false;
+    testWidgets('calls onChanged with the typed value in edit mode', (
+      tester,
+    ) async {
       String? changedValue;
 
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryNameField(
-            controller: controller,
-            isCreateMode: false,
-            onChanged: (value) {
-              onChangedCalled = true;
-              changedValue = value;
-            },
-          ),
-        ),
+      await pumpField(
+        tester,
+        isCreateMode: false,
+        onChanged: (value) => changedValue = value,
       );
 
-      // Type text
       await tester.enterText(find.byType(TextField), 'Test Category');
       await tester.pump();
 
-      // Verify onChanged is called in edit mode
-      expect(onChangedCalled, isTrue);
       expect(changedValue, 'Test Category');
     });
 
     testWidgets('does not call onChanged in create mode', (tester) async {
       var onChangedCalled = false;
 
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryNameField(
-            controller: controller,
-            isCreateMode: true,
-            onChanged: (value) {
-              onChangedCalled = true;
-            },
-          ),
-        ),
+      await pumpField(
+        tester,
+        isCreateMode: true,
+        onChanged: (value) => onChangedCalled = true,
       );
 
-      // Type text
       await tester.enterText(find.byType(TextField), 'Test Category');
       await tester.pump();
 
-      // Verify onChanged is not called in create mode
+      // Create mode tracks input via the controller only.
       expect(onChangedCalled, isFalse);
-      // But controller should still have the value
       expect(controller.text, 'Test Category');
     });
 
-    testWidgets('uses default validator when none provided', (tester) async {
-      final formKey = GlobalKey<FormState>();
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: Form(
-            key: formKey,
-            child: CategoryNameField(
-              controller: controller,
-              isCreateMode: true,
-            ),
-          ),
-        ),
+    testWidgets('autofocuses in create mode but not in edit mode', (
+      tester,
+    ) async {
+      await pumpField(tester, isCreateMode: true);
+      expect(
+        tester
+            .widget<DesignSystemTextInput>(
+              find.byType(DesignSystemTextInput),
+            )
+            .autofocus,
+        isTrue,
+      );
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).focusNode?.hasFocus,
+        isTrue,
       );
 
-      // Test empty validation
-      expect(formKey.currentState!.validate(), isFalse);
-      await tester.pump();
-      expect(find.text('Category name is required'), findsOneWidget);
-
-      // Test valid input
-      await tester.enterText(find.byType(TextField), 'Valid Name');
-      expect(formKey.currentState!.validate(), isTrue);
-    });
-
-    testWidgets('uses custom validator when provided', (tester) async {
-      final formKey = GlobalKey<FormState>();
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: Form(
-            key: formKey,
-            child: CategoryNameField(
-              controller: controller,
-              isCreateMode: true,
-              validator: (value) {
-                if (value == null || value.length < 5) {
-                  return 'Name must be at least 5 characters';
-                }
-                return null;
-              },
-            ),
-          ),
-        ),
+      await pumpField(tester, isCreateMode: false);
+      expect(
+        tester
+            .widget<DesignSystemTextInput>(
+              find.byType(DesignSystemTextInput),
+            )
+            .autofocus,
+        isFalse,
       );
-
-      // Test short name
-      await tester.enterText(find.byType(TextField), 'Test');
-      expect(formKey.currentState!.validate(), isFalse);
-      await tester.pump();
-      expect(find.text('Name must be at least 5 characters'), findsOneWidget);
-
-      // Test valid name
-      await tester.enterText(find.byType(TextField), 'Valid Name');
-      expect(formKey.currentState!.validate(), isTrue);
-    });
-
-    testWidgets('trims whitespace in default validator', (tester) async {
-      final formKey = GlobalKey<FormState>();
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: Form(
-            key: formKey,
-            child: CategoryNameField(
-              controller: controller,
-              isCreateMode: true,
-            ),
-          ),
-        ),
-      );
-
-      // Test whitespace only
-      await tester.enterText(find.byType(TextField), '   ');
-      expect(formKey.currentState!.validate(), isFalse);
-      await tester.pump();
-      expect(find.text('Category name is required'), findsOneWidget);
     });
 
     testWidgets('updates controller text', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryNameField(
-            controller: controller,
-            isCreateMode: true,
-          ),
-        ),
-      );
+      await pumpField(tester, isCreateMode: true);
 
       await tester.enterText(find.byType(TextField), 'New Category');
       expect(controller.text, 'New Category');
@@ -185,53 +119,37 @@ void main() {
     testWidgets('displays initial controller text', (tester) async {
       controller.text = 'Initial Category';
 
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryNameField(
-            controller: controller,
-            isCreateMode: false,
-          ),
-        ),
-      );
+      await pumpField(tester, isCreateMode: false);
 
       expect(find.text('Initial Category'), findsOneWidget);
     });
 
-    testWidgets('handles null onChanged callback', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryNameField(
-            controller: controller,
-            isCreateMode: false,
-          ),
-        ),
-      );
-
-      // Should not throw when typing
-      await tester.enterText(find.byType(TextField), 'Test');
-      await tester.pump();
-    });
-
-    testWidgets('passes through LottiTextField properties correctly', (
+    testWidgets('handles null onChanged callback without throwing', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: CategoryNameField(
-            controller: controller,
-            isCreateMode: true,
-          ),
-        ),
+      await pumpField(tester, isCreateMode: false);
+
+      await tester.enterText(find.byType(TextField), 'Test');
+      await tester.pump();
+
+      expect(controller.text, 'Test');
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('forwards controller and capitalization to the input', (
+      tester,
+    ) async {
+      await pumpField(tester, isCreateMode: true);
+
+      final input = tester.widget<DesignSystemTextInput>(
+        find.byType(DesignSystemTextInput),
       );
 
-      final lottiTextField = tester.widget<LottiTextField>(
-        find.byType(LottiTextField),
-      );
-
-      expect(lottiTextField.controller, equals(controller));
-      expect(lottiTextField.labelText, 'Category name:');
-      expect(lottiTextField.hintText, 'Enter category name');
-      expect(lottiTextField.prefixIcon, Icons.category_outlined);
+      expect(input.controller, equals(controller));
+      expect(input.label, 'Category name');
+      expect(input.hintText, 'Enter category name');
+      expect(input.leadingIcon, isNull);
+      expect(input.textCapitalization, TextCapitalization.sentences);
     });
   });
 }

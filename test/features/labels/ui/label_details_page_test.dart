@@ -1,25 +1,43 @@
 import 'dart:async';
 
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
+import 'package:lotti/widgets/settings/settings_delete_row.dart';
+import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+
+/// Finds the glass pill in the sticky action bar by its (localized) label.
+Finder pillFinder(String label) => find.byWidgetPredicate(
+  (widget) => widget is DsGlassPill && widget.label == label,
+);
+
+/// Whether the action bar pill with [label] is enabled. A disabled pill
+/// still renders (quieter affordance), so enabled state lives on the
+/// widget's [DsGlassPill.enabled] field rather than on an `onPressed`.
+bool isPillEnabled(WidgetTester tester, String label) =>
+    tester.widget<DsGlassPill>(pillFinder(label)).enabled;
 
 class _FakeLabelEditorController extends LabelEditorController {
   _FakeLabelEditorController(
@@ -81,7 +99,8 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
   });
   setUp(() {
-    // Larger viewport to keep bottom bar and sliver content within view
+    // Tall viewport so the sliver form (header, sections, error row) and
+    // the sticky action bar are all built and on-screen together.
     TestWidgetsFlutterBinding
         .instance
         .platformDispatcher
@@ -89,7 +108,7 @@ void main() {
         .first
         .physicalSize = const Size(
       1024,
-      1400,
+      2400,
     );
     TestWidgetsFlutterBinding
             .instance
@@ -132,8 +151,10 @@ void main() {
   });
 
   /// Builds a kept-alive [ProviderContainer] with [overrides], pumps
-  /// [child] inside it, and drains the first frames with bounded pumps
-  /// (the synchronously-overridden controller state needs no settling).
+  /// [child] inside it, and drains the first frames with bounded pumps.
+  /// The trailing 1100 ms pump runs the header back-affordance fade-in
+  /// (flutter_animate, 1 s) to completion so its timer never outlives
+  /// the test.
   Future<ProviderContainer> pumpPage(
     WidgetTester tester, {
     List<Override> overrides = const [],
@@ -148,12 +169,14 @@ void main() {
       ),
     );
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump(const Duration(milliseconds: 1100));
     return container;
   }
 
   group('LabelDetailsPage', () {
-    testWidgets('create mode: Save disabled when name empty', (tester) async {
+    testWidgets('create mode: Create pill disabled when name empty', (
+      tester,
+    ) async {
       const state = LabelEditorState(
         name: '',
         colorHex: '#FF0000',
@@ -170,12 +193,11 @@ void main() {
         ],
       );
 
-      final saveButton = find.byType(LottiPrimaryButton);
-      expect(saveButton, findsOneWidget);
-      expect(tester.widget<LottiPrimaryButton>(saveButton).onPressed, isNull);
+      expect(pillFinder('Create'), findsOneWidget);
+      expect(isPillEnabled(tester, 'Create'), isFalse);
     });
 
-    testWidgets('create mode: tapping Save calls controller.save', (
+    testWidgets('create mode: tapping Create calls controller.save', (
       tester,
     ) async {
       var saved = false;
@@ -202,13 +224,9 @@ void main() {
         ],
       );
 
-      final saveButton = find.byType(LottiPrimaryButton);
-      expect(
-        tester.widget<LottiPrimaryButton>(saveButton).onPressed,
-        isNotNull,
-      );
+      expect(isPillEnabled(tester, 'Create'), isTrue);
 
-      await tester.tap(saveButton);
+      await tester.tap(pillFinder('Create'));
       await tester.pump();
 
       expect(saved, isTrue);
@@ -231,15 +249,29 @@ void main() {
         child: const LabelDetailsPage(labelId: 'label-1'),
       );
 
-      // Tap the delete button in the bottom bar
-      await tester.tap(find.byType(LottiTertiaryButton));
+      // The destructive action is the labeled Delete pill in the sticky
+      // action bar.
+      await tester.scrollUntilVisible(
+        find.widgetWithText(SettingsDeleteRow, 'Delete'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      // The sticky glass action bar overlays the viewport bottom; nudge
+      // the row above it so the tap hits the row, not the bar.
+      await tester.drag(
+        find.byType(Scrollable).first,
+        const Offset(0, -120),
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
       await tester.pump();
 
       // Confirm in the dialog (destructive tertiary button)
       final confirmButton = find
           .descendant(
             of: find.byType(AlertDialog),
-            matching: find.byType(LottiTertiaryButton),
+            matching: find.byType(DesignSystemButton),
           )
           .last;
       await tester.tap(confirmButton);
@@ -248,11 +280,58 @@ void main() {
       verify(() => repo.deleteLabel('label-1')).called(1);
     });
 
-    testWidgets('color picker calls controller.setColor', (tester) async {
+    testWidgets('color field shows the matching preset name, never hex', (
+      tester,
+    ) async {
+      const state = LabelEditorState(
+        name: 'Urgent',
+        colorHex: '#0066CC', // 'Ocean Blue' in labelColorPresets
+        isPrivate: false,
+        selectedCategoryIds: {},
+      );
+
+      await pumpPage(
+        tester,
+        overrides: [
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => state,
+          ),
+        ],
+      );
+
+      expect(find.text('Ocean Blue'), findsOneWidget);
+      // Raw hex stays behind the picker — it never surfaces in the field.
+      expect(find.textContaining('#'), findsNothing);
+    });
+
+    testWidgets('color field shows the localized Custom label for a '
+        'non-preset hex', (tester) async {
+      const state = LabelEditorState(
+        name: 'Urgent',
+        colorHex: '#FF0000', // not in labelColorPresets
+        isPrivate: false,
+        selectedCategoryIds: {},
+      );
+
+      await pumpPage(
+        tester,
+        overrides: [
+          labelEditorControllerProvider.overrideWithBuild(
+            (ref, args) => state,
+          ),
+        ],
+      );
+
+      expect(find.text('Custom'), findsOneWidget);
+      expect(find.textContaining('#'), findsNothing);
+    });
+
+    testWidgets('tapping the color field opens the shared picker modal and '
+        'selecting a preset calls controller.setColor', (tester) async {
       Color? picked;
       const state = LabelEditorState(
         name: 'Urgent',
-        colorHex: '#FF0000',
+        colorHex: '#0066CC', // preset → the modal opens on the preset tab
         isPrivate: false,
         selectedCategoryIds: {},
       );
@@ -271,10 +350,35 @@ void main() {
         ],
       );
 
-      // Drive color change directly via the pre-constructed controller
-      // (UI swatch hit-testing can be flaky in tests)
-      colorSpyController.setColor(Colors.green);
-      expect(picked, equals(Colors.green));
+      // The wheel no longer renders inline — picking happens in the
+      // shared modal opened from the field.
+      expect(find.byType(ColorPicker), findsNothing);
+
+      final colorField = find.descendant(
+        of: find.byType(SettingsColorPickerField),
+        matching: find.byType(InkWell),
+      );
+      await tester.ensureVisible(colorField);
+      await tester.tap(colorField);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+
+      // The shared modal hosts the full flex picker.
+      expect(find.byType(ColorPicker), findsOneWidget);
+
+      // Select the 'Crimson' preset (#E63946) — applied live through
+      // controller.setColor, no confirm step.
+      final crimsonIndicator = find.byWidgetPredicate(
+        (widget) =>
+            widget is ColorIndicator &&
+            colorToCssHex(widget.color) == '#E63946',
+      );
+      expect(crimsonIndicator, findsOneWidget);
+      await tester.tap(crimsonIndicator, warnIfMissed: false);
+      await tester.pump();
+
+      expect(picked, isNotNull);
+      expect(colorToCssHex(picked!), '#E63946');
     });
 
     testWidgets('tapping Add category opens selection modal', (tester) async {
@@ -300,12 +404,16 @@ void main() {
         ],
       );
 
-      // Tap the Add category button (label is localized). We only assert it exists and is tappable.
+      // Tap the Add category button (label is localized).
       final addButton = find.byIcon(Icons.add);
       expect(addButton, findsOneWidget);
       await tester.ensureVisible(addButton);
       await tester.tap(addButton);
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The category selection modal is mounted.
+      expect(find.byType(CategorySelectionModalContent), findsOneWidget);
     });
 
     testWidgets('keyboard shortcut Cmd+S triggers save', (tester) async {
@@ -375,7 +483,7 @@ void main() {
     });
 
     testWidgets(
-      'app-bar back arrow beams to the labels list (V2 desktop has no '
+      'header back affordance beams to the labels list (V2 desktop has no '
       'Navigator.canPop fallback to auto-render the leading)',
       (tester) async {
         String? beamedTo;
@@ -396,9 +504,7 @@ void main() {
           ],
         );
 
-        await tester.tap(
-          find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
-        );
+        await tester.tap(find.byIcon(Icons.chevron_left));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -407,7 +513,7 @@ void main() {
     );
 
     testWidgets(
-      'Cancel button does not call save and beams back to the labels list',
+      'Cancel pill does not call save and beams back to the labels list',
       (tester) async {
         var saved = false;
         String? beamedTo;
@@ -435,7 +541,7 @@ void main() {
           ],
         );
 
-        final cancel = find.byType(LottiSecondaryButton);
+        final cancel = pillFinder('Cancel');
         expect(cancel, findsOneWidget);
         await tester.tap(cancel);
         await tester.pump();
@@ -471,7 +577,90 @@ void main() {
       expect(errorText, findsOneWidget);
     });
 
-    testWidgets('privacy switch toggles value via controller', (tester) async {
+    testWidgets(
+      'Options section card hosts the Private toggle with the unified copy, '
+      'leaving Basic settings switch-free',
+      (tester) async {
+        const state = LabelEditorState(
+          name: 'Alpha',
+          colorHex: '#00FF00',
+          isPrivate: false,
+          selectedCategoryIds: {},
+        );
+        await pumpPage(
+          tester,
+          overrides: [
+            labelEditorControllerProvider.overrideWithBuild(
+              (ref, args) => state,
+            ),
+          ],
+        );
+
+        final optionsSection = find.ancestor(
+          of: find.text('Options'),
+          matching: find.byType(SettingsFormSection),
+        );
+        expect(optionsSection, findsOneWidget);
+
+        final row = tester.widget<SettingsSwitchRow>(
+          find.descendant(
+            of: optionsSection,
+            matching: find.byType(SettingsSwitchRow),
+          ),
+        );
+        expect(row.title, 'Private');
+        expect(
+          row.subtitle,
+          'Only visible when private entries are shown',
+        );
+        expect(row.icon, Icons.lock_outline);
+
+        // The toggle moved out of Basic settings entirely.
+        expect(
+          find.descendant(
+            of: find.ancestor(
+              of: find.text('Basic settings'),
+              matching: find.byType(SettingsFormSection),
+            ),
+            matching: find.byType(SettingsSwitchRow),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'edit mode: pristine editor shows a disabled Save; flipping the '
+      'Private toggle marks it dirty and enables Save',
+      (tester) async {
+        final repo = MockLabelsRepository();
+        when(() => repo.watchLabel('label-1')).thenAnswer(
+          (_) => Stream<LabelDefinition?>.value(
+            testLabelDefinition1.copyWith(id: 'label-1'),
+          ),
+        );
+
+        await pumpPage(
+          tester,
+          overrides: [labelsRepositoryProvider.overrideWithValue(repo)],
+          child: const LabelDetailsPage(labelId: 'label-1'),
+        );
+
+        // Nothing touched yet → the quiet disabled Save, like every
+        // sibling definitions editor.
+        expect(pillFinder('Save'), findsOneWidget);
+        expect(isPillEnabled(tester, 'Save'), isFalse);
+
+        final toggleFinder = find.byType(DesignSystemToggle);
+        await tester.ensureVisible(toggleFinder);
+        await tester.tap(toggleFinder);
+        await tester.pump();
+
+        expect(isPillEnabled(tester, 'Save'), isTrue);
+      },
+    );
+
+    testWidgets('privacy toggle flips value via controller', (tester) async {
       const state = LabelEditorState(
         name: 'Alpha',
         colorHex: '#00FF00',
@@ -487,15 +676,16 @@ void main() {
         ],
       );
 
-      final switchFinder = find.byType(Switch);
-      await tester.ensureVisible(switchFinder);
-      expect(switchFinder, findsOneWidget);
-      expect(tester.widget<Switch>(switchFinder).value, isFalse);
+      // The privacy row hosts the page's only design-system toggle.
+      final toggleFinder = find.byType(DesignSystemToggle);
+      await tester.ensureVisible(toggleFinder);
+      expect(toggleFinder, findsOneWidget);
+      expect(tester.widget<DesignSystemToggle>(toggleFinder).value, isFalse);
 
-      await tester.tap(switchFinder);
+      await tester.tap(toggleFinder);
       await tester.pump();
 
-      expect(tester.widget<Switch>(switchFinder).value, isTrue);
+      expect(tester.widget<DesignSystemToggle>(toggleFinder).value, isTrue);
     });
 
     testWidgets('category chip delete removes it via controller', (
@@ -580,12 +770,14 @@ void main() {
         ],
       );
 
-      // Both fields seeded from state
-      final nameField = find.byType(TextFormField).first;
-      expect(tester.widget<TextFormField>(nameField).controller?.text, 'Alpha');
-      final descField = find.byType(TextFormField).at(1);
+      // Exactly two text fields: name (DesignSystemTextInput) and
+      // description (DesignSystemTextarea), both seeded from state.
+      expect(find.byType(TextField), findsNWidgets(2));
+      final nameField = find.byType(TextField).first;
+      expect(tester.widget<TextField>(nameField).controller?.text, 'Alpha');
+      final descField = find.byType(TextField).at(1);
       expect(
-        tester.widget<TextFormField>(descField).controller?.text,
+        tester.widget<TextField>(descField).controller?.text,
         'Hello world',
       );
 
@@ -594,18 +786,18 @@ void main() {
       await tester.enterText(descField, 'HelloX');
       await tester.pump();
 
-      // Trigger a rebuild via toggling private switch
-      final switchFinder = find.byType(Switch);
-      await tester.tap(switchFinder);
+      // Trigger a rebuild via flipping the privacy toggle
+      final toggleFinder = find.byType(DesignSystemToggle);
+      await tester.tap(toggleFinder);
       await tester.pump();
 
       // Controllers keep user-edited text (no reseed)
       expect(
-        tester.widget<TextFormField>(nameField).controller?.text,
+        tester.widget<TextField>(nameField).controller?.text,
         'AlphaX',
       );
       expect(
-        tester.widget<TextFormField>(descField).controller?.text,
+        tester.widget<TextField>(descField).controller?.text,
         'HelloX',
       );
     });
@@ -630,8 +822,21 @@ void main() {
           child: const LabelDetailsPage(labelId: 'label-1'),
         );
 
-        // Open the delete confirmation dialog.
-        await tester.tap(find.byType(LottiTertiaryButton));
+        // Open the delete confirmation dialog via the labeled Delete pill.
+        await tester.scrollUntilVisible(
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // The sticky glass action bar overlays the viewport bottom; nudge
+        // the row above it so the tap hits the row, not the bar.
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -120),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         expect(find.byType(AlertDialog), findsOneWidget);
@@ -640,7 +845,7 @@ void main() {
         final cancelButton = find
             .descendant(
               of: find.byType(AlertDialog),
-              matching: find.byType(LottiTertiaryButton),
+              matching: find.byType(DesignSystemButton),
             )
             .first;
         await tester.tap(cancelButton);

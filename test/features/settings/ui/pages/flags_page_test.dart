@@ -5,6 +5,7 @@ import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -174,8 +175,11 @@ void main() {
         DesignSystemListItem,
         context.messages.configFlagPrivate,
       );
-      final privateFlagSwitch = tester.widget<Switch>(
-        find.descendant(of: privateFlagItem, matching: find.byType(Switch)),
+      final privateFlagSwitch = tester.widget<DesignSystemToggle>(
+        find.descendant(
+          of: privateFlagItem,
+          matching: find.byType(DesignSystemToggle),
+        ),
       );
       expect(privateFlagSwitch.value, isTrue);
     });
@@ -193,10 +197,10 @@ void main() {
         DesignSystemListItem,
         context.messages.configFlagEnableNotifications,
       );
-      final notificationsSwitch = tester.widget<Switch>(
+      final notificationsSwitch = tester.widget<DesignSystemToggle>(
         find.descendant(
           of: notificationsItem,
-          matching: find.byType(Switch),
+          matching: find.byType(DesignSystemToggle),
         ),
       );
       expect(notificationsSwitch.value, isFalse);
@@ -214,7 +218,10 @@ void main() {
         context.messages.configFlagPrivate,
       );
       await tester.tap(
-        find.descendant(of: privateFlagItem, matching: find.byType(Switch)),
+        find.descendant(
+          of: privateFlagItem,
+          matching: find.byType(DesignSystemToggle),
+        ),
       );
       await tester.pump();
 
@@ -395,7 +402,10 @@ void main() {
             final item = await pumpAndFindRow(tester, flagCase.title);
 
             await tester.tap(
-              find.descendant(of: item, matching: find.byType(Switch)),
+              find.descendant(
+                of: item,
+                matching: find.byType(DesignSystemToggle),
+              ),
             );
             await tester.pump();
 
@@ -1009,8 +1019,11 @@ void main() {
           );
 
           // Switch reflects the initial status.
-          final flagSwitch = tester.widget<Switch>(
-            find.descendant(of: item, matching: find.byType(Switch)),
+          final flagSwitch = tester.widget<DesignSystemToggle>(
+            find.descendant(
+              of: item,
+              matching: find.byType(DesignSystemToggle),
+            ),
           );
           expect(
             flagSwitch.value,

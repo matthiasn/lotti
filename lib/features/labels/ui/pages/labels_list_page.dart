@@ -1,18 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
-import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
-import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/app_bar/settings_page_header.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
-import 'package:lotti/widgets/search/index.dart';
 
 /// Embeddable body alias for the Settings V2 detail pane (plan
 /// step 8). See `CategoriesListBody` for the polish note about the
@@ -24,217 +21,53 @@ class LabelsListBody extends StatelessWidget {
   Widget build(BuildContext context) => const LabelsListPage();
 }
 
-/// Labels list page using [DesignSystemListItem] in a grouped container.
+/// Labels list on the shared [DefinitionsListPage] shell.
 ///
-/// Each label row shows a colored dot, the label name, an optional
-/// description subtitle, status icons, and a chevron.
-class LabelsListPage extends ConsumerStatefulWidget {
+/// Each label row leads with a [DefinitionIconChip] color swatch (label
+/// color, first-letter fallback), followed by the label name, a
+/// usage-count subtitle, status icons, and a chevron. Search also matches
+/// descriptions, and a query with no match offers creating a label with
+/// that name.
+class LabelsListPage extends ConsumerWidget {
   const LabelsListPage({super.key});
 
   @override
-  ConsumerState<LabelsListPage> createState() => _LabelsListPageState();
-}
-
-class _LabelsListPageState extends ConsumerState<LabelsListPage> {
-  final _searchController = TextEditingController();
-  String _searchRaw = '';
-  String _searchLower = '';
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final labelsAsync = ref.watch(labelsStreamProvider);
-
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SettingsPageHeader(
-            title: context.messages.settingsLabelsTitle,
-            showBackButton: !isDesktopLayout(context),
-          ),
-          ...labelsAsync.when(
-            data: (labels) => _buildContentSlivers(context, labels),
-            loading: () => [
-              const SliverFillRemaining(
-                child: Center(child: CircularProgressIndicator()),
-              ),
-            ],
-            error: (error, stackTrace) => [
-              SliverFillRemaining(
-                child: _buildErrorState(context, error),
-              ),
-            ],
-          ),
-        ],
-      ),
-      floatingActionButton: DesignSystemBottomNavigationFabPadding(
-        child: DesignSystemFloatingActionButton(
-          semanticLabel: context.messages.settingsLabelsCreateTitle,
-          onPressed: () => beamToNamed('/settings/labels/create'),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildContentSlivers(
-    BuildContext context,
-    List<LabelDefinition> labels,
-  ) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messages = context.messages;
     final usageCounts = ref
         .watch(labelUsageStatsProvider)
         .maybeWhen(
           data: (value) => value,
           orElse: () => const <String, int>{},
         );
-    final filtered =
-        labels.where((label) {
-          if (_searchLower.isEmpty) return true;
-          return label.name.toLowerCase().contains(_searchLower) ||
-              (label.description?.toLowerCase().contains(_searchLower) ??
-                  false);
-        }).toList()..sort(
-          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
-        );
 
-    return [
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: LottiSearchBar(
-            controller: _searchController,
-            hintText: context.messages.settingsLabelsSearchHint,
-            textCapitalization: TextCapitalization.words,
-            onChanged: (value) => setState(() {
-              _searchRaw = value;
-              _searchLower = value.trim().toLowerCase();
-            }),
-            onClear: () => setState(() {
-              _searchRaw = '';
-              _searchLower = '';
-            }),
-          ),
-        ),
+    return DefinitionsListPage<LabelDefinition>(
+      itemsAsync: ref.watch(labelsStreamProvider),
+      title: messages.settingsLabelsTitle,
+      searchHint: messages.settingsLabelsSearchHint,
+      displayName: (label) => label.name,
+      searchText: (label) => '${label.name} ${label.description ?? ''}',
+      emptyIcon: Icons.label_outline,
+      emptyTitle: messages.settingsLabelsEmptyState,
+      emptyHint: messages.settingsLabelsEmptyStateHint,
+      noMatchMessage: messages.settingsLabelsNoMatchQuery,
+      noMatchActionBuilder: (context, query) => DesignSystemButton(
+        label: context.messages.settingsLabelsNoMatchCreate(query),
+        leadingIcon: Icons.add,
+        onPressed: () {
+          final encoded = Uri.encodeComponent(query);
+          beamToNamed('/settings/labels/create?name=$encoded');
+        },
       ),
-      if (filtered.isEmpty)
-        _buildEmptySliver(context, labels.isEmpty)
-      else
-        SliverToBoxAdapter(
-          child: DesignSystemGroupedList(
-            children: [
-              for (final (index, label) in filtered.indexed)
-                _LabelListItem(
-                  label: label,
-                  usageCount: usageCounts[label.id] ?? 0,
-                  showDivider: index < filtered.length - 1,
-                ),
-            ],
+      errorTitle: messages.settingsLabelsErrorLoading,
+      createLabel: messages.settingsLabelsCreateTitle,
+      onCreate: () => beamToNamed('/settings/labels/create'),
+      itemBuilder: (context, label, {required bool showDivider}) =>
+          _LabelListItem(
+            label: label,
+            usageCount: usageCounts[label.id] ?? 0,
+            showDivider: showDivider,
           ),
-        ),
-    ];
-  }
-
-  Widget _buildEmptySliver(BuildContext context, bool noLabelsAtAll) {
-    final query = _searchRaw.trim();
-    if (!noLabelsAtAll && query.isNotEmpty) {
-      return SliverFillRemaining(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.search_off_rounded,
-                  size: 64,
-                  color: Theme.of(context).disabledColor,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  context.messages.settingsLabelsNoMatchQuery(query),
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 8),
-                FilledButton.icon(
-                  onPressed: () {
-                    final encoded = Uri.encodeComponent(query);
-                    beamToNamed('/settings/labels/create?name=$encoded');
-                  },
-                  icon: const Icon(Icons.add),
-                  label: Text(
-                    context.messages.settingsLabelsNoMatchCreate(query),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-    return SliverFillRemaining(
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(32),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.label_outline,
-                size: 64,
-                color: Theme.of(context).disabledColor,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                context.messages.settingsLabelsEmptyState,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Theme.of(context).disabledColor,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.messages.settingsLabelsEmptyStateHint,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).disabledColor,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(BuildContext context, Object error) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              context.messages.settingsLabelsErrorLoading,
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error.toString(),
-              style: Theme.of(context).textTheme.bodySmall,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -255,19 +88,18 @@ class _LabelListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final isPrivate = label.private ?? false;
-    final description = label.description?.trim();
-    final subtitle = description != null && description.isNotEmpty
-        ? description
-        : context.messages.settingsLabelsUsageCount(usageCount);
 
     return DesignSystemListItem(
       title: label.name,
-      subtitle: subtitle,
-      leading: _LabelColorDot(
-        color: colorFromCssHex(
+      // Stable subtitle semantics: always the usage count, never the
+      // description — every row's second line answers the same question.
+      subtitle: context.messages.settingsLabelsUsageCount(usageCount),
+      leading: DefinitionIconChip(
+        background: colorFromCssHex(
           label.color,
           substitute: Theme.of(context).colorScheme.primary,
         ),
+        name: label.name,
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -291,37 +123,9 @@ class _LabelListItem extends StatelessWidget {
       showDivider: showDivider,
       dividerIndent:
           tokens.spacing.step5 +
-          _LabelColorDot.containerSize +
+          DefinitionIconChip.defaultSize +
           tokens.spacing.step3,
       onTap: () => beamToNamed('/settings/labels/${label.id}'),
-    );
-  }
-}
-
-/// Colored dot indicator for label leading position.
-class _LabelColorDot extends StatelessWidget {
-  const _LabelColorDot({required this.color});
-
-  final Color color;
-
-  static const double dotSize = 14;
-  static const double containerSize = 36;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: containerSize,
-      height: containerSize,
-      child: Center(
-        child: Container(
-          width: dotSize,
-          height: dotSize,
-          decoration: BoxDecoration(
-            color: color,
-            shape: BoxShape.circle,
-          ),
-        ),
-      ),
     );
   }
 }

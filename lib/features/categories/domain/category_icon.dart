@@ -107,28 +107,15 @@ class CategoryIconConstants {
 ///
 /// This class provides reusable string constants to avoid hardcoded strings
 /// throughout the category icon implementation, improving maintainability and localization.
+/// Non-localizable string constants for category icons. All user-visible
+/// icon-picker copy lives in the l10n catalog (`categoryIcon*` keys).
 class CategoryIconStrings {
   CategoryIconStrings._(); // Private constructor to prevent instantiation
 
   /// Default fallback character when category name is empty
   static const String fallbackCharacter = '?';
 
-  /// Title for icon picker dialog
-  static const String chooseIconTitle = 'Choose Icon';
-
-  /// Label for icon section in forms
-  static const String iconLabel = 'Icon';
-
-  /// Instruction text for icon selection
-  static const String iconSelectionHint = 'Tap to select a different icon';
-
-  /// Instruction text for create mode icon selection
-  static const String createModeIconHint = 'Tap to select an icon';
-
-  /// Fallback text when no icon is selected
-  static const String chooseIconText = 'Choose an icon';
-
-  /// Warning message prefix for invalid icon names
+  /// Warning message prefix for invalid icon names (log output)
   static const String invalidIconWarning =
       'Warning: Invalid CategoryIcon name: ';
 }

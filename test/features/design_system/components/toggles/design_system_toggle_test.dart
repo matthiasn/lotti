@@ -101,7 +101,7 @@ void main() {
       );
       expect(
         (thumb.decoration! as BoxDecoration).color,
-        dsTokensLight.colors.text.highEmphasis,
+        dsTokensLight.colors.text.onInteractiveAlert,
       );
       expect(align.alignment, Alignment.centerLeft);
       expectTextStyle(

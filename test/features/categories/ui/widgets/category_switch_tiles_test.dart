@@ -1,26 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 import '../../../../test_helper.dart';
 
-/// Per-field display expectations, in tile render order.
-const _expectedTiles = <SwitchFieldType, (String, String, IconData)>{
+/// Per-field display expectations, in tile render order — the shared
+/// Options order (Favorite, Private, Active, Day planning) with the
+/// unified copy used by every definition editor.
+const _expectedTiles = <SwitchFieldType, (String, String?, IconData)>{
+  SwitchFieldType.favorite: (
+    'Favorite',
+    null,
+    Icons.star_outline_rounded,
+  ),
   SwitchFieldType.private: (
     'Private',
-    'Hide this category when private mode is enabled',
+    'Only visible when private entries are shown',
     Icons.lock_outline,
   ),
   SwitchFieldType.active: (
     'Active',
-    "Inactive categories won't appear in selection lists",
+    'Selectable for new entries',
     Icons.visibility_outlined,
-  ),
-  SwitchFieldType.favorite: (
-    'Favorite',
-    'Mark this category as a favorite',
-    Icons.star_outline,
   ),
   SwitchFieldType.availableForDayPlan: (
     'Day planning',
@@ -28,6 +31,14 @@ const _expectedTiles = <SwitchFieldType, (String, String, IconData)>{
     Icons.today_outlined,
   ),
 };
+
+/// Tile render order — must match [_expectedTiles] key order.
+const _renderOrder = <SwitchFieldType>[
+  SwitchFieldType.favorite,
+  SwitchFieldType.private,
+  SwitchFieldType.active,
+  SwitchFieldType.availableForDayPlan,
+];
 
 CategorySwitchSettings _settings({
   bool isPrivate = false,
@@ -47,9 +58,11 @@ Future<void> _pumpTiles(
   WidgetTester tester, {
   required CategorySwitchSettings settings,
   SwitchFieldChanged? onChanged,
+  ThemeData? theme,
 }) {
   return tester.pumpWidget(
     WidgetTestBench(
+      theme: theme,
       child: CategorySwitchTiles(
         settings: settings,
         onChanged: onChanged ?? (field, {required value}) {},
@@ -60,22 +73,33 @@ Future<void> _pumpTiles(
 
 void main() {
   group('CategorySwitchTiles', () {
-    testWidgets('displays every switch tile with title, subtitle, and icon', (
-      tester,
-    ) async {
-      await _pumpTiles(tester, settings: _settings());
+    testWidgets(
+      'renders the unified Options order (Favorite, Private, Active, '
+      'Day planning) with the shared titles, subtitles, and icons',
+      (tester) async {
+        await _pumpTiles(tester, settings: _settings());
 
-      expect(
-        find.byType(LottiSwitchField),
-        findsNWidgets(SwitchFieldType.values.length),
-      );
+        final switchRows = tester
+            .widgetList<SettingsSwitchRow>(find.byType(SettingsSwitchRow))
+            .toList();
+        expect(switchRows, hasLength(SwitchFieldType.values.length));
 
-      for (final (title, subtitle, icon) in _expectedTiles.values) {
-        expect(find.text(title), findsOneWidget);
-        expect(find.text(subtitle), findsOneWidget);
-        expect(find.byIcon(icon), findsOneWidget);
-      }
-    });
+        for (var i = 0; i < _renderOrder.length; i++) {
+          final (title, subtitle, icon) = _expectedTiles[_renderOrder[i]]!;
+          expect(
+            switchRows[i].title,
+            title,
+            reason: 'tile $i should be $title',
+          );
+          expect(
+            switchRows[i].subtitle,
+            subtitle,
+            reason: '$title should carry the shared subtitle copy',
+          );
+          expect(switchRows[i].icon, icon);
+        }
+      },
+    );
 
     testWidgets('reflects the initial value of every switch', (tester) async {
       await _pumpTiles(
@@ -88,18 +112,18 @@ void main() {
         ),
       );
 
-      final switchFields = tester
-          .widgetList<LottiSwitchField>(find.byType(LottiSwitchField))
+      final switchRows = tester
+          .widgetList<SettingsSwitchRow>(find.byType(SettingsSwitchRow))
           .toList();
 
-      expect(switchFields[0].value, isTrue); // Private
-      expect(switchFields[1].value, isFalse); // Active
-      expect(switchFields[2].value, isTrue); // Favorite
-      expect(switchFields[3].value, isTrue); // Day planning
+      expect(switchRows[0].value, isTrue); // Favorite
+      expect(switchRows[1].value, isTrue); // Private
+      expect(switchRows[2].value, isFalse); // Active
+      expect(switchRows[3].value, isTrue); // Day planning
     });
 
     testWidgets(
-      'tapping each switch emits its field with the toggled value',
+      'tapping each toggle emits its field with the toggled value',
       (tester) async {
         // Initial values: private=false, active=true, favorite=false,
         // availableForDayPlan=false — so toggling yields the inverse.
@@ -117,15 +141,15 @@ void main() {
           onChanged: (field, {required value}) => changes.add((field, value)),
         );
 
-        final switches = find.byType(Switch);
-        for (var i = 0; i < SwitchFieldType.values.length; i++) {
-          await tester.tap(switches.at(i));
+        final toggles = find.byType(DesignSystemToggle);
+        for (var i = 0; i < _renderOrder.length; i++) {
+          await tester.tap(toggles.at(i));
         }
         await tester.pump();
 
-        expect(changes, hasLength(SwitchFieldType.values.length));
-        for (var i = 0; i < SwitchFieldType.values.length; i++) {
-          final field = SwitchFieldType.values[i];
+        expect(changes, hasLength(_renderOrder.length));
+        for (var i = 0; i < _renderOrder.length; i++) {
+          final field = _renderOrder[i];
           expect(
             changes[i],
             (field, expectedToggleValue[field]),
@@ -135,41 +159,36 @@ void main() {
       },
     );
 
-    testWidgets('has spacing between consecutive switches', (tester) async {
-      await _pumpTiles(tester, settings: _settings());
+    testWidgets(
+      'tapping the row (not the toggle) also emits the toggled value',
+      (tester) async {
+        final changes = <(SwitchFieldType, bool)>[];
+        await _pumpTiles(
+          tester,
+          settings: _settings(),
+          onChanged: (field, {required value}) => changes.add((field, value)),
+        );
 
-      final sizedBoxes = tester.widgetList<SizedBox>(
-        find.descendant(
-          of: find.byType(CategorySwitchTiles),
-          matching: find.byType(SizedBox),
-        ),
-      );
+        // The whole SettingsSwitchRow is tappable; tap the Private title.
+        await tester.tap(find.text('Private'));
+        await tester.pump();
 
-      // N switches need N-1 spacers.
-      final spacingSizedBoxes = sizedBoxes.where((box) => box.height == 8);
-      expect(
-        spacingSizedBoxes.length,
-        SwitchFieldType.values.length - 1,
-      );
-    });
+        expect(changes, [(SwitchFieldType.private, true)]);
+      },
+    );
 
-    testWidgets('renders without errors in dark theme', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark(),
-          home: WidgetTestBench(
-            child: CategorySwitchTiles(
-              settings: _settings(),
-              onChanged: (field, {required value}) {},
-            ),
-          ),
-        ),
+    testWidgets('renders all rows in dark theme', (tester) async {
+      await _pumpTiles(
+        tester,
+        settings: _settings(),
+        theme: ThemeData.dark(),
       );
 
       expect(
-        find.byType(LottiSwitchField),
+        find.byType(SettingsSwitchRow),
         findsNWidgets(SwitchFieldType.values.length),
       );
+      expect(tester.takeException(), isNull);
     });
   });
 }

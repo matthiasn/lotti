@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/search/lotti_search_bar.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 class ChartMultiSelect<T> extends StatelessWidget {
@@ -95,7 +96,6 @@ class _MultiSelectList<T> extends StatefulWidget {
 class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
   final Set<T?> _selected = {};
   String _searchQuery = '';
-  final _searchController = TextEditingController();
 
   List<MultiSelectItem<T?>> get _filteredItems {
     if (_searchQuery.isEmpty) return widget.items;
@@ -108,12 +108,6 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
   }
 
   @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
     // Calculate max height: screen height minus safe areas and modal chrome
@@ -122,12 +116,13 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Search field
-        LottiSearchBar(
-          controller: _searchController,
+        // Search field — the design-system search used across the
+        // settings revamp (flat, token-bordered); the old LottiSearchBar
+        // carried a gradient fill and drop shadow that read as foreign
+        // inside the modal. Its clear button fires `onChanged('')`.
+        DesignSystemSearch(
           hintText: context.messages.searchHint,
           onChanged: (value) => setState(() => _searchQuery = value),
-          onClear: () => setState(() => _searchQuery = ''),
         ),
 
         const SizedBox(height: 16),
@@ -149,68 +144,89 @@ class _MultiSelectListState<T> extends State<_MultiSelectList<T>> {
                     ),
                   ),
                 )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _filteredItems.length,
-                  itemBuilder: (context, index) {
-                    final item = _filteredItems[index];
-                    final isSelected = _selected.contains(item.value);
+              : _HoverlessList(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _filteredItems.length,
+                    itemBuilder: (context, index) {
+                      final item = _filteredItems[index];
+                      final isSelected = _selected.contains(item.value);
 
-                    return CheckboxListTile(
-                      value: isSelected,
-                      onChanged: (checked) {
-                        setState(() {
-                          if (checked ?? false) {
-                            _selected.add(item.value);
-                          } else {
-                            _selected.remove(item.value);
-                          }
-                        });
-                      },
-                      title: Text(
-                        item.label,
-                        style: context.textTheme.bodyLarge,
-                      ),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      contentPadding: EdgeInsets.zero,
-                      activeColor: colorScheme.primary,
-                      checkboxShape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    );
-                  },
+                      return CheckboxListTile(
+                        value: isSelected,
+                        onChanged: (checked) {
+                          setState(() {
+                            if (checked ?? false) {
+                              _selected.add(item.value);
+                            } else {
+                              _selected.remove(item.value);
+                            }
+                          });
+                        },
+                        title: Text(
+                          item.label,
+                          style: context.textTheme.bodyLarge,
+                        ),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        contentPadding: EdgeInsets.zero,
+                        activeColor: colorScheme.primary,
+                        checkboxShape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      );
+                    },
+                  ),
                 ),
         ),
 
         const SizedBox(height: 16),
 
-        // Action buttons - always visible
+        // Action buttons — design-system buttons, end-aligned (secondary
+        // then primary), mirroring the detail-page action bar language.
         Row(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(context.messages.cancelButton),
-              ),
+            DesignSystemButton(
+              label: context.messages.cancelButton,
+              variant: DesignSystemButtonVariant.secondary,
+              onPressed: () => Navigator.of(context).pop(),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: FilledButton(
-                onPressed: _selected.isEmpty
-                    ? null
-                    : () => widget.onConfirm(_selected.toList()),
-                child: Text(
-                  _selected.isEmpty
-                      ? context.messages.multiSelectAddButton
-                      : context.messages.multiSelectAddButtonWithCount(
-                          _selected.length,
-                        ),
-                ),
-              ),
+            DesignSystemButton(
+              label: _selected.isEmpty
+                  ? context.messages.multiSelectAddButton
+                  : context.messages.multiSelectAddButtonWithCount(
+                      _selected.length,
+                    ),
+              onPressed: _selected.isEmpty
+                  ? null
+                  : () => widget.onConfirm(_selected.toList()),
             ),
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Strips the Material hover/splash/highlight from its subtree so the
+/// `CheckboxListTile` rows don't paint a grey hover band on desktop —
+/// the rows are passive selectables, not buttons. Scoped to the list so
+/// the modal's action buttons keep their own overlays.
+class _HoverlessList extends StatelessWidget {
+  const _HoverlessList({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        hoverColor: Colors.transparent,
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+      ),
+      child: child,
     );
   }
 }

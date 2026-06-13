@@ -1,26 +1,26 @@
-import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
-import 'package:lotti/features/labels/constants/label_color_presets.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
-import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/ui/form_bottom_bar.dart';
+import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
+import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
+import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
+import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
 class LabelDetailsPage extends ConsumerStatefulWidget {
   const LabelDetailsPage({
@@ -80,8 +80,9 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
         final label = snapshot.data;
         // Wait for first label to arrive
         if (label == null) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            backgroundColor: context.designTokens.colors.background.level01,
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
         // Initialize args once per label id
@@ -103,9 +104,10 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
     required LabelEditorArgs controllerArgs,
     required LabelDefinition? existingLabel,
   }) {
+    final messages = context.messages;
     final title = widget.isCreateMode
-        ? context.messages.settingsLabelsCreateTitle
-        : context.messages.settingsLabelsEditTitle;
+        ? messages.settingsLabelsCreateTitle
+        : messages.settingsLabelsEditTitle;
 
     final controllerProvider = labelEditorControllerProvider(controllerArgs);
     final state = ref.watch(controllerProvider);
@@ -131,7 +133,7 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
       if (result != null) {
         context.showToast(
           tone: DesignSystemToastTone.success,
-          title: context.messages.saveSuccessful,
+          title: messages.saveSuccessful,
         );
         // Beam back to the list rather than popping — V2's desktop
         // detail surface is rendered inline (no Navigator route to
@@ -155,11 +157,13 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
             ),
           ),
           actions: [
-            LottiTertiaryButton(
-              onPressed: () => Navigator.pop(dialogContext),
+            DesignSystemButton(
               label: dialogContext.messages.cancelButton,
+              variant: DesignSystemButtonVariant.secondary,
+              onPressed: () => Navigator.pop(dialogContext),
             ),
-            LottiTertiaryButton(
+            DesignSystemButton(
+              variant: DesignSystemButtonVariant.danger,
               onPressed: () async {
                 // Close the dialog using its own context
                 Navigator.pop(dialogContext);
@@ -177,119 +181,94 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                 );
               },
               label: dialogContext.messages.settingsLabelsDeleteConfirmAction,
-              isDestructive: true,
             ),
           ],
         ),
       );
     }
 
-    final saveEnabled = !state.isSaving && state.name.trim().isNotEmpty;
+    // Gate Save on dirty state like every sibling editor: a pristine
+    // editor shows the quiet disabled pill. In create mode a non-empty
+    // name already counts as something worth saving.
+    final dirty =
+        state.hasChanges ||
+        (widget.isCreateMode && state.name.trim().isNotEmpty);
+    final saveEnabled =
+        !state.isSaving && state.name.trim().isNotEmpty && dirty;
+    final tokens = context.designTokens;
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.keyS, meta: true): () {
-          if (saveEnabled) handleSave();
-        },
-        const SingleActivator(LogicalKeyboardKey.keyS, control: true): () {
-          if (saveEnabled) handleSave();
-        },
+    return SettingsDetailScaffold(
+      title: title,
+      onBack: () => beamToNamed('/settings/labels'),
+      onSaveShortcut: () {
+        if (saveEnabled) handleSave();
       },
-      child: Scaffold(
-        backgroundColor: context.colorScheme.surface,
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back_rounded),
-                tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-                onPressed: () => beamToNamed('/settings/labels'),
-              ),
-              title: Text(
-                title,
-                style: appBarTextStyleNewLarge.copyWith(
-                  color: Theme.of(context).primaryColor,
-                ),
-              ),
-              pinned: true,
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildNameAndDescription(context, controller, state),
-                  const SizedBox(height: 24),
-                  _buildColorPicker(context, controller, state),
-                  const SizedBox(height: 24),
-                  _buildApplicableCategories(context, controller, state),
-                  const SizedBox(height: 24),
-                  _buildPrivacySwitch(context, controller, state),
-                  if (state.errorMessage != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      state.errorMessage!,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 80), // space for bottom bar
-                ]),
-              ),
-            ),
-          ],
-        ),
-        bottomNavigationBar: FormBottomBar(
-          leftButton: widget.isCreateMode
-              ? null
-              : LottiTertiaryButton(
-                  onPressed: state.isSaving ? null : handleDelete,
-                  icon: Icons.delete_outline,
-                  label: context.messages.deleteButton,
-                  isDestructive: true,
-                ),
-          rightButtons: [
-            LottiSecondaryButton(
-              onPressed: () => beamToNamed('/settings/labels'),
-              label: context.messages.cancelButton,
-            ),
-            LottiPrimaryButton(
-              onPressed: saveEnabled ? handleSave : null,
-              label: widget.isCreateMode
-                  ? context.messages.createButton
-                  : context.messages.saveButton,
-            ),
-          ],
-        ),
+      actionBar: SettingsFormActionBar(
+        primaryLabel: widget.isCreateMode
+            ? messages.createButton
+            : messages.saveButton,
+        onPrimary: handleSave,
+        primaryEnabled: saveEnabled,
+        secondaryLabel: messages.cancelButton,
+        onSecondary: () => beamToNamed('/settings/labels'),
       ),
-    );
-  }
-
-  Widget _buildNameAndDescription(
-    BuildContext context,
-    LabelEditorController controller,
-    LabelEditorState state,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      deleteLabel: widget.isCreateMode ? null : messages.deleteButton,
+      onDelete: widget.isCreateMode ? null : handleDelete,
+      deleteEnabled: !state.isSaving,
       children: [
-        LottiTextField(
-          controller: _nameController,
-          labelText: context.messages.settingsLabelsNameLabel,
-          hintText: context.messages.settingsLabelsNameHint,
-          autofocus: widget.isCreateMode,
-          textCapitalization: TextCapitalization.sentences,
-          onChanged: controller.setName,
+        SettingsFormSection(
+          title: messages.basicSettings,
+          children: [
+            DesignSystemTextInput(
+              controller: _nameController,
+              label: messages.settingsLabelsNameLabel,
+              hintText: messages.settingsLabelsNameHint,
+              autofocus: widget.isCreateMode,
+              textCapitalization: TextCapitalization.sentences,
+              onChanged: controller.setName,
+            ),
+            DesignSystemTextarea(
+              controller: _descriptionController,
+              label: messages.settingsLabelsDescriptionLabel,
+              hintText: messages.settingsLabelsDescriptionHint,
+              onChanged: controller.setDescription,
+              minLines: 2,
+              maxLines: 4,
+            ),
+            // Color is a basic property, not a chapter — the categories
+            // editor places it here too.
+            _buildColorPicker(context, controller, state),
+          ],
         ),
-        const SizedBox(height: 16),
-        LottiTextArea(
-          controller: _descriptionController,
-          labelText: context.messages.settingsLabelsDescriptionLabel,
-          hintText: context.messages.settingsLabelsDescriptionHint,
-          onChanged: controller.setDescription,
-          minLines: 2,
-          maxLines: 4,
+        SettingsFormSection(
+          title: messages.habitSectionOptionsTitle,
+          children: [
+            SettingsSwitchRow(
+              title: messages.privateLabel,
+              subtitle: messages.privateSwitchDescription,
+              icon: Icons.lock_outline,
+              value: state.isPrivate,
+              onChanged: (value) =>
+                  controller.setPrivate(isPrivateValue: value),
+            ),
+          ],
         ),
+        SettingsFormSection(
+          title: messages.settingsLabelsCategoriesHeading,
+          children: [
+            _buildApplicableCategories(context, controller, state),
+          ],
+        ),
+        if (state.errorMessage != null)
+          Padding(
+            padding: EdgeInsets.only(bottom: tokens.spacing.step4),
+            child: Text(
+              state.errorMessage!,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.alert.error.defaultColor,
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -299,54 +278,15 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
     LabelEditorController controller,
     LabelEditorState state,
   ) {
-    final theme = Theme.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.messages.settingsLabelsColorHeading,
-          style: theme.textTheme.titleMedium,
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: theme.colorScheme.surfaceContainerHighest,
-          ),
-          padding: const EdgeInsets.all(12),
-          child: ColorPicker(
-            color: colorFromCssHex(
-              state.colorHex,
-              substitute: theme.colorScheme.primary,
-            ),
-            onColorChanged: controller.setColor,
-            selectedPickerTypeColor: context.colorScheme.primary,
-            pickersEnabled: const <ColorPickerType, bool>{
-              ColorPickerType.custom: true,
-              ColorPickerType.wheel: true,
-              ColorPickerType.accent: false,
-              ColorPickerType.primary: true,
-              ColorPickerType.bw: false,
-              ColorPickerType.both: false,
-            },
-            customColorSwatchesAndNames: {
-              for (final preset in labelColorPresets)
-                ColorTools.createPrimarySwatch(
-                  colorFromCssHex(
-                    preset.hex,
-                    substitute: Colors.blue,
-                  ),
-                ): preset.name,
-            },
-            pickerTypeLabels: <ColorPickerType, String>{
-              ColorPickerType.custom:
-                  context.messages.settingsLabelsColorSubheading,
-              ColorPickerType.wheel: context.messages.customColor,
-            },
-            colorNameTextStyle: theme.textTheme.bodySmall,
-          ),
-        ),
-      ],
+    return SettingsColorPickerField(
+      // Inside the multi-field Basic settings card the field needs its
+      // own label.
+      label: context.messages.colorLabel,
+      color: colorFromCssHex(
+        state.colorHex,
+        substitute: Theme.of(context).colorScheme.primary,
+      ),
+      onColorChanged: controller.setColor,
     );
   }
 
@@ -355,7 +295,7 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
     LabelEditorController controller,
     LabelEditorState state,
   ) {
-    final theme = Theme.of(context);
+    final tokens = context.designTokens;
     final cache = getIt<EntitiesCacheService>();
     final chips =
         state.selectedCategoryIds
@@ -369,20 +309,17 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          context.messages.settingsLabelsCategoriesHeading,
-          style: theme.textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
         if (chips.isEmpty)
           Text(
             context.messages.settingsLabelsCategoriesNone,
-            style: theme.textTheme.bodySmall,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
           )
         else
           Wrap(
-            spacing: 8,
-            runSpacing: 8,
+            spacing: tokens.spacing.step2,
+            runSpacing: tokens.spacing.step2,
             children: [
               for (final category in chips)
                 Builder(
@@ -397,10 +334,8 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                     final fg = isDark ? Colors.white : Colors.black;
                     return InputChip(
                       label: Text(category.name),
-                      labelStyle: Theme.of(context).textTheme.labelSmall
-                          ?.copyWith(
-                            color: fg,
-                          ),
+                      labelStyle: tokens.typography.styles.others.caption
+                          .copyWith(color: fg),
                       backgroundColor: bg,
                       onDeleted: () => controller.removeCategoryId(category.id),
                       deleteIcon: const Icon(Icons.close_rounded, size: 16),
@@ -413,45 +348,34 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                 ),
             ],
           ),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(
-          icon: const Icon(Icons.add),
-          label: Text(context.messages.settingsLabelsCategoriesAdd),
-          onPressed: () async {
-            final result =
-                await ModalUtils.showBottomSheet<List<CategoryDefinition>>(
-                  context: context,
-                  isScrollControlled: true,
-                  useRootNavigator: true,
-                  builder: (context) => CategorySelectionModalContent(
-                    onCategorySelected: (_) {},
-                    multiSelect: true,
-                    initiallySelectedCategoryIds: state.selectedCategoryIds,
-                  ),
-                );
-            if (result != null && result.isNotEmpty) {
-              for (final cat in result) {
-                controller.addCategoryId(cat.id);
+        SizedBox(height: tokens.spacing.step3),
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: DesignSystemButton(
+            label: context.messages.settingsLabelsCategoriesAdd,
+            leadingIcon: Icons.add,
+            variant: DesignSystemButtonVariant.secondary,
+            onPressed: () async {
+              final result =
+                  await ModalUtils.showBottomSheet<List<CategoryDefinition>>(
+                    context: context,
+                    isScrollControlled: true,
+                    useRootNavigator: true,
+                    builder: (context) => CategorySelectionModalContent(
+                      onCategorySelected: (_) {},
+                      multiSelect: true,
+                      initiallySelectedCategoryIds: state.selectedCategoryIds,
+                    ),
+                  );
+              if (result != null && result.isNotEmpty) {
+                for (final cat in result) {
+                  controller.addCategoryId(cat.id);
+                }
               }
-            }
-          },
+            },
+          ),
         ),
       ],
-    );
-  }
-
-  Widget _buildPrivacySwitch(
-    BuildContext context,
-    LabelEditorController controller,
-    LabelEditorState state,
-  ) {
-    return SwitchListTile.adaptive(
-      value: state.isPrivate,
-      onChanged: (value) => controller.setPrivate(isPrivateValue: value),
-      title: Text(context.messages.settingsLabelsPrivateTitle),
-      subtitle: Text(
-        context.messages.settingsLabelsPrivateDescription,
-      ),
     );
   }
 }

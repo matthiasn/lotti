@@ -1,27 +1,28 @@
 import 'dart:async';
 
+import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
+import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
-import 'package:lotti/features/projects/ui/widgets/category_projects_section.dart';
+import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
-import 'package:lotti/widgets/form/form_widgets.dart';
-import 'package:lotti/widgets/ui/form_bottom_bar.dart';
+import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/settings/settings_delete_row.dart';
+import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
+import 'package:lotti/widgets/settings/settings_form_section.dart';
+import 'package:lotti/widgets/settings/settings_switch_row.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -29,26 +30,27 @@ import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../test_utils.dart';
 
-/// Minimal stub for [InferenceProfileController] that returns an empty profile list.
-class _FakeProfileController extends InferenceProfileController {
-  @override
-  Stream<List<AiConfig>> build() => Stream.value(const []);
-}
+/// Finds the glass pill in the action bar by its (localized) label.
+Finder pillFinder(String label) => find.byWidgetPredicate(
+  (widget) => widget is DsGlassPill && widget.label == label,
+);
 
-// Helper method to find an enabled LottiPrimaryButton
-LottiPrimaryButton? findEnabledPrimaryButton(WidgetTester tester) {
-  final saveButtons = tester.widgetList<LottiPrimaryButton>(
-    find.byType(LottiPrimaryButton),
-  );
+/// Whether the action bar's primary pill with [label] is enabled.
+bool isPillEnabled(WidgetTester tester, String label) =>
+    tester.widget<DsGlassPill>(pillFinder(label)).enabled;
 
-  for (final button in saveButtons) {
-    if (button.onPressed != null) {
-      return button;
-    }
-  }
+/// The [TextField] inside the design-system name input.
+Finder nameFieldFinder() => find.descendant(
+  of: find.byType(CategoryNameField),
+  matching: find.byType(TextField),
+);
 
-  return null;
-}
+/// The tappable row of the color picker field (now a kit picker field,
+/// so there is no longer a palette glyph to tap).
+Finder colorFieldFinder() => find.descendant(
+  of: find.byType(CategoryColorPicker),
+  matching: find.byType(InkWell),
+);
 
 void main() {
   setUpAll(() {
@@ -57,12 +59,10 @@ void main() {
 
   group('CategoryDetailsPage Widget Tests', () {
     late MockCategoryRepository mockRepository;
-    // late MockAiConfigRepository mockAiConfigRepository;
     late String testCategoryId;
 
     setUp(() {
       mockRepository = MockCategoryRepository();
-      // mockAiConfigRepository = MockAiConfigRepository();
       testCategoryId = const Uuid().v4();
       // The page now drives navigation via `beamToNamed` (which
       // delegates through `getIt<NavService>()`). These tests don't
@@ -80,12 +80,18 @@ void main() {
     ///
     /// [createMode] omits the categoryId (create flow); [settle] follows up
     /// with the standard pump + 350 ms animation pump most tests need.
+    /// [viewportSize] defaults to a tall surface so the header, all form
+    /// sections, and the sticky action bar are on-screen together.
     Future<void> pumpCategoryDetailsPage(
       WidgetTester tester, {
       List<Override> extraOverrides = const [],
       bool createMode = false,
       bool settle = false,
+      Size viewportSize = const Size(1024, 1600),
     }) async {
+      tester.view.physicalSize = viewportSize;
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
@@ -129,8 +135,7 @@ void main() {
         streamController.add(category);
         await tester.pump();
 
-        // Find the name field (first TextFormField in Basic Settings)
-        final nameField = find.byType(TextFormField).first;
+        final nameField = nameFieldFinder();
         await tester.tap(nameField);
         await tester.pump();
 
@@ -144,7 +149,7 @@ void main() {
         await tester.pump();
 
         // The text should remain user's edited value (no reseed)
-        final tf = tester.widget<TextFormField>(nameField);
+        final tf = tester.widget<TextField>(nameField);
         expect(tf.controller?.text, equals('AlphaX'));
 
         await streamController.close();
@@ -158,6 +163,9 @@ void main() {
         );
 
         await pumpCategoryDetailsPage(tester);
+        // Drain the header back-affordance fade-in timer (zero-duration
+        // timers only fire on an elapsing pump).
+        await tester.pump(const Duration(milliseconds: 1));
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
@@ -213,15 +221,21 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await pumpCategoryDetailsPage(tester);
+        // Tall viewport so every section (including the last one) builds.
+        await pumpCategoryDetailsPage(
+          tester,
+          settle: true,
+          viewportSize: const Size(1024, 3600),
+        );
 
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
-
-        // Check for form sections - these are translated texts
-        expect(find.text('Basic Settings'), findsOneWidget);
-        // Skip checking for section titles that might not be visible initially
-        // The AI sections might be collapsed or rendered differently
+        // Sections render via the shared kit, headed by Basic settings and
+        // followed by the dedicated Options card for the switch tiles.
+        expect(find.text('Basic settings'), findsOneWidget);
+        expect(find.text('Options'), findsOneWidget);
+        expect(find.byType(SettingsFormSection), findsNWidgets(6));
+        // Correction examples live in a SettingsFormSection whose header
+        // owns the title — the widget renders no duplicate of its own.
+        expect(find.text('Checklist correction examples'), findsOneWidget);
       });
 
       testWidgets('displays all basic form fields', (tester) async {
@@ -231,47 +245,66 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await pumpCategoryDetailsPage(tester);
+        await pumpCategoryDetailsPage(tester, settle: true);
 
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+        // Name field in Basic settings, plus the four switch rows of the
+        // Options section in the shared editor order with unified copy.
+        expect(nameFieldFinder(), findsOneWidget);
 
-        // Check for form fields in the visible area
-        // Name field is in Basic Settings (Speech Dictionary is scrolled out)
-        expect(find.byType(LottiTextField), findsAtLeastNWidgets(1));
-        expect(find.text('Private'), findsOneWidget);
-        expect(find.text('Active'), findsOneWidget);
-        expect(find.text('Favorite'), findsOneWidget);
-        expect(find.text('Day planning'), findsOneWidget);
+        final switchRows = tester
+            .widgetList<SettingsSwitchRow>(find.byType(SettingsSwitchRow))
+            .toList();
         expect(
-          find.byType(LottiSwitchField),
+          switchRows.map((row) => row.title),
+          ['Favorite', 'Private', 'Active', 'Day planning'],
+        );
+        expect(switchRows[0].subtitle, isNull);
+        expect(
+          switchRows[1].subtitle,
+          'Only visible when private entries are shown',
+        );
+        expect(
+          switchRows[2].subtitle,
+          'Selectable for new entries',
+        );
+
+        // All switch rows live inside the Options card, not Basic settings.
+        expect(
+          find.descendant(
+            of: find.ancestor(
+              of: find.text('Options'),
+              matching: find.byType(SettingsFormSection),
+            ),
+            matching: find.byType(SettingsSwitchRow),
+          ),
           findsNWidgets(4),
-        ); // 4 toggle switches
+        );
       });
 
-      testWidgets('displays bottom bar with all buttons', (tester) async {
+      testWidgets('displays action bar with delete, cancel, and save', (
+        tester,
+      ) async {
         final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
         );
 
-        await pumpCategoryDetailsPage(tester);
+        // Tall viewport so the trailing Delete row sliver builds.
+        await pumpCategoryDetailsPage(
+          tester,
+          settle: true,
+          viewportSize: const Size(1024, 3600),
+        );
 
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
-
-        // Check for bottom bar
-        expect(find.byType(FormBottomBar), findsOneWidget);
+        expect(find.byType(SettingsFormActionBar), findsOneWidget);
+        // Destructive delete renders as a labeled glass pill.
         expect(
-          find.byType(LottiTertiaryButton),
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
           findsOneWidget,
-        ); // Delete button
-        expect(
-          find.byType(LottiSecondaryButton),
-          findsOneWidget,
-        ); // Cancel button
-        expect(find.byType(LottiPrimaryButton), findsOneWidget); // Save button
+        );
+        expect(pillFinder('Cancel'), findsOneWidget);
+        expect(pillFinder('Save'), findsOneWidget);
       });
 
       testWidgets('displays category name in form', (tester) async {
@@ -283,21 +316,15 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await pumpCategoryDetailsPage(tester);
+        await pumpCategoryDetailsPage(tester, settle: true);
 
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
-
-        // Find the name text field (first one) and check its value
-        final textFields = find.byType(TextFormField);
-        expect(textFields, findsAtLeastNWidgets(1)); // Name field visible
-        final textFieldWidget = tester.widget<TextFormField>(textFields.first);
+        final textFieldWidget = tester.widget<TextField>(nameFieldFinder());
         expect(textFieldWidget.controller?.text, equals('My Test Category'));
       });
     });
 
     group('Form Interactions', () {
-      testWidgets('save button is disabled initially when no changes', (
+      testWidgets('save pill is disabled initially when no changes', (
         tester,
       ) async {
         final category = CategoryTestUtils.createTestCategory();
@@ -306,17 +333,12 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await pumpCategoryDetailsPage(tester);
+        await pumpCategoryDetailsPage(tester, settle: true);
 
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
-
-        final saveButton = find.byType(LottiPrimaryButton);
-        final buttonWidget = tester.widget<LottiPrimaryButton>(saveButton);
-        expect(buttonWidget.onPressed, isNull);
+        expect(isPillEnabled(tester, 'Save'), isFalse);
       });
 
-      testWidgets('save button becomes enabled after changing name', (
+      testWidgets('save pill becomes enabled after changing name', (
         tester,
       ) async {
         final streamController =
@@ -336,14 +358,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Change the name (use .first to target name field, not speech dictionary)
-        final nameField = find.byType(TextFormField).first;
-        await tester.enterText(nameField, 'Updated Name');
+        await tester.enterText(nameFieldFinder(), 'Updated Name');
         await tester.pump();
 
-        // Check save button is enabled - there might be multiple buttons
-        final enabledButton = findEnabledPrimaryButton(tester);
-        expect(enabledButton, isNotNull);
+        expect(isPillEnabled(tester, 'Save'), isTrue);
 
         await streamController.close();
       });
@@ -363,30 +381,27 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Find and tap the private switch
-        final switches = find.byType(Switch);
-        // Private, Active, Favorite, Day planning
-        expect(switches, findsNWidgets(4));
+        // Favorite, Private, Active, Day planning
+        final toggles = find.byType(DesignSystemToggle);
+        expect(toggles, findsNWidgets(4));
 
-        // Scroll to ensure the switch is visible before tapping
-        await tester.ensureVisible(switches.first);
+        // Scroll to ensure the toggle is visible before tapping
+        await tester.ensureVisible(toggles.first);
+        await tester.pump();
+
+        // Tap the first toggle (Favorite)
+        await tester.tap(toggles.first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Tap the first switch (Private)
-        await tester.tap(switches.first);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
-
-        // Save button should now be enabled
-        final enabledButton = findEnabledPrimaryButton(tester);
-        expect(enabledButton, isNotNull);
+        // Save pill should now be enabled
+        expect(isPillEnabled(tester, 'Save'), isTrue);
 
         await streamController.close();
       });
 
       testWidgets(
-        'app-bar back arrow beams to the categories list — works in V2 '
+        'header back arrow beams to the categories list — works in V2 '
         'desktop where the auto-leading would never appear',
         (tester) async {
           final category = CategoryTestUtils.createTestCategory();
@@ -397,13 +412,9 @@ void main() {
             (_) => Stream.value(category),
           );
 
-          await pumpCategoryDetailsPage(tester);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+          await pumpCategoryDetailsPage(tester, settle: true);
 
-          await tester.tap(
-            find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
-          );
+          await tester.tap(find.byIcon(Icons.chevron_left));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -411,7 +422,7 @@ void main() {
         },
       );
 
-      testWidgets('cancel button navigates back', (tester) async {
+      testWidgets('cancel pill navigates back', (tester) async {
         final category = CategoryTestUtils.createTestCategory();
         String? beamedTo;
         beamToNamedOverride = (path) => beamedTo = path;
@@ -420,14 +431,9 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await pumpCategoryDetailsPage(tester);
+        await pumpCategoryDetailsPage(tester, settle: true);
 
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
-
-        // Find and tap cancel button
-        final cancelButton = find.byType(LottiSecondaryButton);
-        await tester.tap(cancelButton);
+        await tester.tap(pillFinder('Cancel'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -446,14 +452,23 @@ void main() {
           (_) => Stream.value(category),
         );
 
-        await pumpCategoryDetailsPage(tester);
+        await pumpCategoryDetailsPage(tester, settle: true);
 
+        // The destructive action is the labeled Delete pill in the bar.
+        await tester.scrollUntilVisible(
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // The sticky glass action bar overlays the viewport bottom; nudge
+        // the row above it so the tap hits the row, not the bar.
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -120),
+          warnIfMissed: false,
+        );
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
-
-        // Find and tap delete button
-        final deleteButton = find.byType(LottiTertiaryButton);
-        await tester.tap(deleteButton);
+        await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -477,13 +492,23 @@ void main() {
             (_) async {},
           );
 
-          await pumpCategoryDetailsPage(tester);
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+          await pumpCategoryDetailsPage(tester, settle: true);
 
           // Open delete dialog
-          await tester.tap(find.byType(LottiTertiaryButton));
+          await tester.scrollUntilVisible(
+            find.widgetWithText(SettingsDeleteRow, 'Delete'),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          // The sticky glass action bar overlays the viewport bottom; nudge
+          // the row above it so the tap hits the row, not the bar.
+          await tester.drag(
+            find.byType(Scrollable).first,
+            const Offset(0, -120),
+            warnIfMissed: false,
+          );
+          await tester.pump();
+          await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -492,7 +517,7 @@ void main() {
           final confirmButton = find
               .descendant(
                 of: find.byType(AlertDialog),
-                matching: find.byType(LottiTertiaryButton),
+                matching: find.byType(DesignSystemButton),
               )
               .last;
           await tester.tap(confirmButton);
@@ -506,32 +531,49 @@ void main() {
         },
       );
 
-      testWidgets('cancel delete dismisses dialog', (tester) async {
+      testWidgets('cancel delete dismisses dialog without deleting', (
+        tester,
+      ) async {
         final category = CategoryTestUtils.createTestCategory();
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => Stream.value(category),
         );
 
-        await pumpCategoryDetailsPage(tester);
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+        await pumpCategoryDetailsPage(tester, settle: true);
 
         // Open delete dialog
-        final deleteButton = find.byType(LottiTertiaryButton);
-        await tester.tap(deleteButton);
+        await tester.scrollUntilVisible(
+          find.widgetWithText(SettingsDeleteRow, 'Delete'),
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        // The sticky glass action bar overlays the viewport bottom; nudge
+        // the row above it so the tap hits the row, not the bar.
+        await tester.drag(
+          find.byType(Scrollable).first,
+          const Offset(0, -120),
+          warnIfMissed: false,
+        );
+        await tester.pump();
+        await tester.tap(find.widgetWithText(SettingsDeleteRow, 'Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Find cancel button in dialog and tap it
-        final cancelInDialog = find.text('Cancel').last;
+        // The first tertiary button inside the dialog is Cancel.
+        final cancelInDialog = find
+            .descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(DesignSystemButton),
+            )
+            .first;
         await tester.tap(cancelInDialog);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Dialog should be dismissed
+        // Dialog should be dismissed and nothing deleted
         expect(find.byType(AlertDialog), findsNothing);
+        verifyNever(() => mockRepository.deleteCategory(any()));
       });
     });
 
@@ -649,32 +691,14 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Clear the name field (use .first to target name field, not speech dictionary)
-        final nameField = find.byType(TextFormField).first;
-        await tester.enterText(nameField, '   '); // Only spaces
+        // Clear the name field
+        await tester.enterText(nameFieldFinder(), '   '); // Only spaces
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Try to save - find the enabled save button
-        final saveButtons = find.byType(LottiPrimaryButton);
-        LottiPrimaryButton? enabledButton;
-        int? enabledIndex;
-
-        for (var i = 0; i < saveButtons.evaluate().length; i++) {
-          final button = tester.widget<LottiPrimaryButton>(saveButtons.at(i));
-          if (button.onPressed != null) {
-            enabledButton = button;
-            enabledIndex = i;
-            break;
-          }
-        }
-
-        expect(
-          enabledButton,
-          isNotNull,
-          reason: 'Should find an enabled save button',
-        );
-        await tester.tap(saveButtons.at(enabledIndex!));
+        // Whitespace-only differs from the original name → save enabled.
+        expect(isPillEnabled(tester, 'Save'), isTrue);
+        await tester.tap(pillFinder('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -688,29 +712,29 @@ void main() {
         await pumpCategoryDetailsPage(tester, createMode: true);
 
         // Should display create mode UI without errors
-        // Use partial text matching since we don't know exact translations
         expect(find.byType(CategoryDetailsPage), findsOneWidget);
         expect(
-          find.byType(LottiFormSection),
+          find.byType(SettingsFormSection),
           findsOneWidget,
         ); // Basic Settings section
         expect(find.byType(TextField), findsOneWidget); // Name field
-        expect(
-          find.byIcon(Icons.palette_outlined),
-          findsOneWidget,
-        ); // Color picker icon
+        // Color renders as a kit picker field with label + hint.
+        expect(find.text('Color'), findsOneWidget);
+        expect(find.text('Select a color'), findsOneWidget);
 
         // Should be able to enter name
         await tester.enterText(find.byType(TextField), 'New Category');
         expect(find.text('New Category'), findsOneWidget);
 
         // Should be able to open color picker
-        await tester.tap(find.byIcon(Icons.palette_outlined));
+        await tester.tap(colorFieldFinder());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Color picker dialog should open
-        expect(find.byType(AlertDialog), findsOneWidget);
+        // The shared picker modal opens with the full flex picker —
+        // there is no AlertDialog-based second picker anymore.
+        expect(find.byType(ColorPicker), findsOneWidget);
+        expect(find.byType(AlertDialog), findsNothing);
       });
 
       testWidgets('saves category with updated values', (tester) async {
@@ -734,29 +758,11 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Enter name with whitespace (use .first to target name field, not speech dictionary)
-        final nameField = find.byType(TextFormField).first;
-        await tester.enterText(nameField, 'New Name');
+        await tester.enterText(nameFieldFinder(), 'New Name');
         await tester.pump();
 
-        // Save - find the enabled save button
-        final saveButtons = find.byType(LottiPrimaryButton);
-        int? enabledIndex;
-
-        for (var i = 0; i < saveButtons.evaluate().length; i++) {
-          final button = tester.widget<LottiPrimaryButton>(saveButtons.at(i));
-          if (button.onPressed != null) {
-            enabledIndex = i;
-            break;
-          }
-        }
-
-        expect(
-          enabledIndex,
-          isNotNull,
-          reason: 'Should find an enabled save button',
-        );
-        await tester.tap(saveButtons.at(enabledIndex!));
+        expect(isPillEnabled(tester, 'Save'), isTrue);
+        await tester.tap(pillFinder('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -773,44 +779,46 @@ void main() {
     });
 
     group('Navigation Behavior', () {
-      testWidgets('navigates back after successful category creation', (
-        tester,
-      ) async {
-        String? beamedTo;
-        beamToNamedOverride = (path) => beamedTo = path;
+      testWidgets(
+        "beams to the new category's editor after creation — creation "
+        'only captures name/color/icon, the rest is configured there',
+        (tester) async {
+          String? beamedTo;
+          beamToNamedOverride = (path) => beamedTo = path;
 
-        when(
-          () => mockRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-            icon: any(named: 'icon'),
-          ),
-        ).thenAnswer(
-          (_) async => CategoryTestUtils.createTestCategory(),
-        );
+          when(
+            () => mockRepository.createCategory(
+              name: any(named: 'name'),
+              color: any(named: 'color'),
+              icon: any(named: 'icon'),
+            ),
+          ).thenAnswer(
+            (_) async => CategoryTestUtils.createTestCategory(id: 'cat-new'),
+          );
 
-        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
+          await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
-        // Enter category name
-        await tester.enterText(find.byType(TextField), 'New Category');
-        await tester.pump();
+          // Enter category name
+          await tester.enterText(find.byType(TextField), 'New Category');
+          await tester.pump();
 
-        // Tap create button
-        final createButton = find.byType(LottiPrimaryButton);
-        await tester.tap(createButton);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+          // Tap create pill
+          await tester.tap(pillFinder('Create'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
-        // After a successful create the page beams back to the list.
-        expect(beamedTo, '/settings/categories');
-        verify(
-          () => mockRepository.createCategory(
-            name: 'New Category',
-            color: any(named: 'color'),
-            icon: any(named: 'icon'),
-          ),
-        ).called(1);
-      });
+          // After a successful create the page lands in the editor of
+          // the category that was just created.
+          expect(beamedTo, '/settings/categories/cat-new');
+          verify(
+            () => mockRepository.createCategory(
+              name: 'New Category',
+              color: any(named: 'color'),
+              icon: any(named: 'icon'),
+            ),
+          ).called(1);
+        },
+      );
 
       testWidgets('navigates back after successful save', (tester) async {
         final streamController =
@@ -835,48 +843,50 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Change name to enable save (use .first to target name field, not speech dictionary)
-        await tester.enterText(find.byType(TextFormField).first, 'Updated');
+        // Change name to enable save
+        await tester.enterText(nameFieldFinder(), 'Updated');
         await tester.pump();
 
-        // Tap save button
-        final saveButton = findEnabledPrimaryButton(tester);
-        await tester.tap(find.byWidget(saveButton!));
+        await tester.tap(pillFinder('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Success path shows the snackbar and beams back to the list.
+        // Success path shows the toast and beams back to the list.
         expect(find.byType(SnackBar), findsOneWidget);
         expect(beamedTo, '/settings/categories');
 
         await streamController.close();
       });
 
-      testWidgets('create mode shows an error toast for an empty name', (
-        tester,
-      ) async {
-        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
+      testWidgets(
+        'create pill stays disabled until a non-empty name is entered',
+        (tester) async {
+          await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
-        // Leave the name field empty and tap Create.
-        await tester.tap(find.byType(LottiPrimaryButton));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+          // Empty name → the Create pill is disabled and tapping is inert.
+          expect(isPillEnabled(tester, 'Create'), isFalse);
+          await tester.tap(pillFinder('Create'), warnIfMissed: false);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+          verifyNever(
+            () => mockRepository.createCategory(
+              name: any(named: 'name'),
+              color: any(named: 'color'),
+              icon: any(named: 'icon'),
+            ),
+          );
 
-        // Repository must not be called when the name is empty.
-        verifyNever(
-          () => mockRepository.createCategory(
-            name: any(named: 'name'),
-            color: any(named: 'color'),
-            icon: any(named: 'icon'),
-          ),
-        );
+          // Whitespace-only does not count as a name.
+          await tester.enterText(find.byType(TextField), '   ');
+          await tester.pump();
+          expect(isPillEnabled(tester, 'Create'), isFalse);
 
-        // An error toast explains that the name is required.
-        expect(
-          find.textContaining('Category name is required'),
-          findsOneWidget,
-        );
-      });
+          // A real name enables the pill.
+          await tester.enterText(find.byType(TextField), 'New Category');
+          await tester.pump();
+          expect(isPillEnabled(tester, 'Create'), isTrue);
+        },
+      );
 
       testWidgets('does not navigate back when creation fails', (tester) async {
         String? beamedTo;
@@ -895,7 +905,7 @@ void main() {
         await tester.enterText(find.byType(TextField), 'New Category');
         await tester.pump();
 
-        await tester.tap(find.byType(LottiPrimaryButton));
+        await tester.tap(pillFinder('Create'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -908,13 +918,56 @@ void main() {
       });
     });
 
-    group('UI Behavior', () {
-      testWidgets('does not display app bar save; only bottom bar save is used', (
+    group('Keyboard Shortcuts', () {
+      testWidgets('Ctrl+S with pending changes saves and beams back', (
         tester,
       ) async {
         final streamController =
             StreamController<CategoryDefinition?>.broadcast();
-        final category = CategoryTestUtils.createTestCategory();
+        final category = CategoryTestUtils.createTestCategory(name: 'Original');
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => streamController.stream,
+        );
+        when(() => mockRepository.getCategoryById(testCategoryId)).thenAnswer(
+          (_) async => category,
+        );
+        when(() => mockRepository.updateCategory(any())).thenAnswer(
+          (_) async => category,
+        );
+
+        await pumpCategoryDetailsPage(tester);
+
+        streamController.add(category);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        // Make a change (also moves focus inside the page).
+        await tester.enterText(nameFieldFinder(), 'Updated');
+        await tester.pump();
+
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        verify(() => mockRepository.updateCategory(any())).called(1);
+        expect(beamedTo, '/settings/categories');
+
+        await streamController.close();
+      });
+
+      testWidgets('Ctrl+S without changes neither saves nor navigates', (
+        tester,
+      ) async {
+        final streamController =
+            StreamController<CategoryDefinition?>.broadcast();
+        final category = CategoryTestUtils.createTestCategory(name: 'Original');
+        String? beamedTo;
+        beamToNamedOverride = (path) => beamedTo = path;
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
           (_) => streamController.stream,
@@ -926,55 +979,18 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // Initially no save button in app bar (no changes)
-        expect(
-          find.ancestor(
-            of: find.byType(LottiTertiaryButton),
-            matching: find.byType(SliverAppBar),
-          ),
-          findsNothing,
-        );
-
-        // Make a change (use .first to target name field, not speech dictionary)
-        await tester.enterText(
-          find.byType(TextFormField).first,
-          'Changed Name',
-        );
+        // Focus the name field without changing the text.
+        await tester.tap(nameFieldFinder());
         await tester.pump();
 
-        // Save button should remain absent in app bar; save is in bottom bar only
-        expect(
-          find.ancestor(
-            of: find.byType(LottiTertiaryButton),
-            matching: find.byType(SliverAppBar),
-          ),
-          findsNothing,
-        );
+        await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
+        await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+        await tester.sendKeyUpEvent(LogicalKeyboardKey.control);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-        // Bottom bar should show Save enabled
-        final enabledSave = find.byWidgetPredicate(
-          (w) => w is LottiPrimaryButton && w.onPressed != null,
-        );
-        expect(enabledSave, findsOneWidget);
-
-        await streamController.close();
-      });
-
-      testWidgets('displays CustomScrollView even during loading state', (
-        tester,
-      ) async {
-        final streamController =
-            StreamController<CategoryDefinition?>.broadcast();
-
-        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-          (_) => streamController.stream,
-        );
-
-        await pumpCategoryDetailsPage(tester);
-
-        // Even in loading state, CustomScrollView should be present
-        expect(find.byType(CustomScrollView), findsOneWidget);
-        expect(find.byType(SliverAppBar), findsOneWidget);
+        verifyNever(() => mockRepository.updateCategory(any()));
+        expect(beamedTo, isNull);
 
         await streamController.close();
       });
@@ -989,9 +1005,7 @@ void main() {
 
         await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
-        await tester.tap(
-          find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
-        );
+        await tester.tap(find.byIcon(Icons.chevron_left));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
@@ -999,16 +1013,14 @@ void main() {
       });
 
       testWidgets(
-        'cancel button in create mode beams back to categories list',
+        'cancel pill in create mode beams back to categories list',
         (tester) async {
           String? beamedTo;
           beamToNamedOverride = (path) => beamedTo = path;
 
           await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
-          final cancelButton = find.byType(LottiSecondaryButton);
-          await tester.ensureVisible(cancelButton);
-          await tester.tap(cancelButton);
+          await tester.tap(pillFinder('Cancel'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -1017,22 +1029,16 @@ void main() {
       );
 
       testWidgets(
-        'create mode shows Private and Active switch tiles as disabled',
+        'create mode asks only for name, color, and icon — no disabled '
+        'placeholder switches (privacy/active are configured in the '
+        'editor after creation)',
         (tester) async {
           await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
-          // Two disabled switch tiles (Private, Active) visible in create mode
-          final switchFields = tester.widgetList<LottiSwitchField>(
-            find.byType(LottiSwitchField),
-          );
-          // All onChanged must be null (disabled)
-          for (final sw in switchFields) {
-            expect(
-              sw.onChanged,
-              isNull,
-              reason: 'Create-mode switch tiles should be disabled',
-            );
-          }
+          expect(find.byType(SettingsSwitchRow), findsNothing);
+          expect(find.byType(CategoryNameField), findsOneWidget);
+          // Color and icon pickers are present.
+          expect(find.text('Icon'), findsOneWidget);
         },
       );
     });
@@ -1057,9 +1063,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          await tester.tap(
-            find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
-          );
+          await tester.tap(find.byIcon(Icons.chevron_left));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -1069,93 +1073,17 @@ void main() {
       );
     });
 
-    group('Projects Section', () {
-      testWidgets(
-        'shows CategoryProjectsSection when enableProjects flag is true',
-        (tester) async {
-          // Use a very tall viewport to render all sliver items on-screen.
-          tester.view.physicalSize = const Size(800, 3000);
-          tester.view.devicePixelRatio = 1;
-          addTearDown(tester.view.reset);
-
-          final category = CategoryTestUtils.createTestCategory();
-
-          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-            (_) => Stream.value(category),
-          );
-
-          await pumpCategoryDetailsPage(
-            tester,
-            settle: true,
-            extraOverrides: [
-              configFlagProvider.overrideWith(
-                (ref, flagName) => flagName == enableProjectsFlag
-                    ? Stream.value(true)
-                    : Stream.value(false),
-              ),
-              inferenceProfileControllerProvider.overrideWith(
-                _FakeProfileController.new,
-              ),
-              agentTemplatesProvider.overrideWith(
-                (ref) async => const [],
-              ),
-            ],
-          );
-
-          // With a tall viewport all SliverList items are on-screen.
-          expect(
-            find.byType(CategoryProjectsSection),
-            findsOneWidget,
-          );
-        },
-      );
-
-      testWidgets(
-        'hides CategoryProjectsSection when enableProjects flag is false',
-        (tester) async {
-          // Use a tall viewport so all items are rendered.
-          tester.view.physicalSize = const Size(800, 3000);
-          tester.view.devicePixelRatio = 1;
-          addTearDown(tester.view.reset);
-
-          final category = CategoryTestUtils.createTestCategory();
-
-          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-            (_) => Stream.value(category),
-          );
-
-          await pumpCategoryDetailsPage(
-            tester,
-            settle: true,
-            extraOverrides: [
-              configFlagProvider.overrideWith(
-                (ref, flagName) => Stream.value(false),
-              ),
-              inferenceProfileControllerProvider.overrideWith(
-                _FakeProfileController.new,
-              ),
-              agentTemplatesProvider.overrideWith(
-                (ref) async => const [],
-              ),
-            ],
-          );
-
-          expect(
-            find.byType(CategoryProjectsSection),
-            findsNothing,
-          );
-        },
-      );
-    });
-
     group('Color Picker in Edit Mode', () {
       testWidgets(
-        'edit mode color picker opens dialog and can be cancelled',
+        'edit mode color field opens the shared picker modal and dismissing '
+        'it leaves the form pristine',
         (tester) async {
           final streamController =
               StreamController<CategoryDefinition?>.broadcast();
+          // 'Ocean Blue' in labelColorPresets — the field shows the
+          // palette name, never the raw hex.
           final category = CategoryTestUtils.createTestCategory(
-            color: '#FF0000',
+            color: '#0066CC',
           );
 
           when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -1168,35 +1096,40 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Tap palette icon to open color picker
-          final paletteIcon = find.byIcon(Icons.palette_outlined);
-          await tester.ensureVisible(paletteIcon);
-          await tester.tap(paletteIcon);
+          expect(find.text('Ocean Blue'), findsOneWidget);
+          expect(find.text('#0066CC'), findsNothing);
+
+          // Tap the color field to open the shared picker modal
+          await tester.ensureVisible(colorFieldFinder());
+          await tester.tap(colorFieldFinder());
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Color picker dialog should open with the select/cancel actions
-          expect(find.byType(AlertDialog), findsOneWidget);
-
-          // Cancel — no color change, dialog dismissed
-          final cancelButton = find.text('Cancel').last;
-          await tester.tap(cancelButton);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-
+          // The flex picker is hosted in the modal — no AlertDialog.
+          expect(find.byType(ColorPicker), findsOneWidget);
           expect(find.byType(AlertDialog), findsNothing);
+
+          // Dismiss via the modal close button — no color was picked,
+          // so the form stays pristine (Save remains disabled).
+          await tester.tap(find.byIcon(Icons.close_rounded).last);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          expect(find.byType(ColorPicker), findsNothing);
+          expect(isPillEnabled(tester, 'Save'), isFalse);
 
           await streamController.close();
         },
       );
 
       testWidgets(
-        'edit mode color picker shows current category color in dialog',
+        'edit mode picker seeds with the category color and selecting a '
+        'preset marks the form dirty',
         (tester) async {
           final streamController =
               StreamController<CategoryDefinition?>.broadcast();
           final category = CategoryTestUtils.createTestCategory(
-            color: '#FF0000',
+            color: '#0066CC',
           );
 
           when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
@@ -1209,160 +1142,96 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Open color picker in edit mode
-          final paletteIcon = find.byIcon(Icons.palette_outlined);
-          await tester.ensureVisible(paletteIcon);
-          await tester.tap(paletteIcon);
+          expect(isPillEnabled(tester, 'Save'), isFalse);
+
+          // Open the shared picker modal in edit mode
+          await tester.ensureVisible(colorFieldFinder());
+          await tester.tap(colorFieldFinder());
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // AlertDialog with Select and Cancel actions is shown
-          expect(find.byType(AlertDialog), findsOneWidget);
-          expect(find.text('Select'), findsOneWidget);
+          // The picker seeds with the current category color.
+          final colorPicker = tester.widget<ColorPicker>(
+            find.byType(ColorPicker),
+          );
+          expect(colorToCssHex(colorPicker.color), '#0066CC');
 
-          // Selecting a color calls onColorChanged → marks form dirty.
-          // The picker starts at the category color (#FF0000 = red), so we
-          // just confirm Select dismisses the dialog (onColorChanged is
-          // invoked with the current picker value regardless).
-          final selectButton = find.text('Select');
-          await tester.tap(selectButton);
+          // Pick the 'Crimson' preset (#E63946) — applied live, marking
+          // the form dirty without a confirm button.
+          final crimsonIndicator = find.byWidgetPredicate(
+            (widget) =>
+                widget is ColorIndicator &&
+                colorToCssHex(widget.color) == '#E63946',
+          );
+          expect(crimsonIndicator, findsOneWidget);
+          await tester.tap(crimsonIndicator, warnIfMissed: false);
+          await tester.pump();
+
+          // Dismiss the modal; the field now names the new preset and
+          // the dirty form enables Save.
+          await tester.tap(find.byIcon(Icons.close_rounded).last);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          expect(find.byType(AlertDialog), findsNothing);
+          expect(find.byType(ColorPicker), findsNothing);
+          expect(find.text('Crimson'), findsOneWidget);
+          expect(find.text('#E63946'), findsNothing);
+          expect(isPillEnabled(tester, 'Save'), isTrue);
 
           await streamController.close();
         },
       );
     });
 
-    group('Switch Tiles — active, favorite, and day-plan branches', () {
-      // The Private branch is already covered by the existing "toggle switches
-      // trigger state changes" test (which taps switches.first). Here we
-      // cover Active (index 1), Favorite (index 2), and Day planning (3)
-      // explicitly.
+    group('Switch Tiles — private, active, and day-plan branches', () {
+      // The Favorite branch is already covered by the existing "toggle
+      // switches trigger state changes" test (which taps toggles.first).
+      // Here we cover Private (1), Active (2), and Day planning (3) via one
+      // parameterised loop instead of three copy-pasted test bodies.
+      for (final (index, label) in const [
+        (1, 'Private'),
+        (2, 'Active'),
+        (3, 'Day planning'),
+      ]) {
+        testWidgets(
+          'toggling $label switch enables save pill',
+          (tester) async {
+            final streamController =
+                StreamController<CategoryDefinition?>.broadcast();
+            final category = CategoryTestUtils.createTestCategory(
+              favorite: false,
+            );
 
-      testWidgets(
-        'toggling Active switch enables save button',
-        (tester) async {
-          final streamController =
-              StreamController<CategoryDefinition?>.broadcast();
-          final category = CategoryTestUtils.createTestCategory(
-            // active defaults to true; toggling it marks form dirty
-            favorite: false,
-          );
+            when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+              (_) => streamController.stream,
+            );
 
-          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-            (_) => streamController.stream,
-          );
+            await pumpCategoryDetailsPage(tester);
 
-          await pumpCategoryDetailsPage(tester);
+            streamController.add(category);
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 350));
 
-          streamController.add(category);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+            // Four toggles: Favorite(0), Private(1), Active(2),
+            // Day planning(3).
+            final toggles = find.byType(DesignSystemToggle);
+            expect(toggles, findsNWidgets(4));
+            await tester.ensureVisible(toggles.at(index));
+            await tester.pump();
+            await tester.tap(toggles.at(index));
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 350));
 
-          // Four Switch widgets: Private(0), Active(1), Favorite(2),
-          // Day planning(3). Tap the Switch widget at index 1 (Active).
-          final switches = find.byType(Switch);
-          expect(switches, findsNWidgets(4));
-          await tester.ensureVisible(switches.at(1));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-          await tester.tap(switches.at(1));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+            expect(
+              isPillEnabled(tester, 'Save'),
+              isTrue,
+              reason: '$label toggle should enable save',
+            );
 
-          final enabledSave = findEnabledPrimaryButton(tester);
-          expect(
-            enabledSave,
-            isNotNull,
-            reason: 'Active toggle should enable save',
-          );
-
-          await streamController.close();
-        },
-      );
-
-      testWidgets(
-        'toggling Favorite switch enables save button',
-        (tester) async {
-          final streamController =
-              StreamController<CategoryDefinition?>.broadcast();
-          final category = CategoryTestUtils.createTestCategory(
-            // favorite=false; toggling it marks form dirty
-            favorite: false,
-          );
-
-          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-            (_) => streamController.stream,
-          );
-
-          await pumpCategoryDetailsPage(tester);
-
-          streamController.add(category);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-
-          final switches = find.byType(Switch);
-          expect(switches, findsNWidgets(4));
-          await tester.ensureVisible(switches.at(2));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-          await tester.tap(switches.at(2));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-
-          final enabledSave = findEnabledPrimaryButton(tester);
-          expect(
-            enabledSave,
-            isNotNull,
-            reason: 'Favorite toggle should enable save',
-          );
-
-          await streamController.close();
-        },
-      );
-
-      testWidgets(
-        'toggling Day planning switch enables save button',
-        (tester) async {
-          final streamController =
-              StreamController<CategoryDefinition?>.broadcast();
-          // Flag unset (null) — toggling it on marks the form dirty.
-          final category = CategoryTestUtils.createTestCategory(
-            favorite: false,
-          );
-
-          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-            (_) => streamController.stream,
-          );
-
-          await pumpCategoryDetailsPage(tester);
-
-          streamController.add(category);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-
-          final switches = find.byType(Switch);
-          expect(switches, findsNWidgets(4));
-          await tester.ensureVisible(switches.at(3));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-          await tester.tap(switches.at(3));
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
-
-          final enabledSave = findEnabledPrimaryButton(tester);
-          expect(
-            enabledSave,
-            isNotNull,
-            reason: 'Day planning toggle should enable save',
-          );
-
-          await streamController.close();
-        },
-      );
+            await streamController.close();
+          },
+        );
+      }
     });
 
     group('Icon Picker', () {
@@ -1373,14 +1242,14 @@ void main() {
 
           // Initially shows "Choose an icon" hint text
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Select an icon'),
             findsOneWidget,
           );
 
           // Tap the icon picker row
           final inkWellFinder = find
               .ancestor(
-                of: find.text(CategoryIconStrings.chooseIconText),
+                of: find.text('Select an icon'),
                 matching: find.byType(InkWell),
               )
               .first;
@@ -1402,7 +1271,7 @@ void main() {
 
           // The "Choose an icon" text should be replaced by the icon's display name
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Select an icon'),
             findsNothing,
           );
           expect(find.text(firstIconName), findsOneWidget);
@@ -1416,14 +1285,14 @@ void main() {
           await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Select an icon'),
             findsOneWidget,
           );
 
           // Open the icon picker dialog
           final inkWellFinder = find
               .ancestor(
-                of: find.text(CategoryIconStrings.chooseIconText),
+                of: find.text('Select an icon'),
                 matching: find.byType(InkWell),
               )
               .first;
@@ -1441,7 +1310,7 @@ void main() {
 
           // Display name should remain the default
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Select an icon'),
             findsOneWidget,
           );
         },
@@ -1464,8 +1333,9 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Open the icon picker
-          final iconSection = find.text(CategoryIconStrings.iconSelectionHint);
+          // Open the icon picker — with no icon set the row's main line
+          // is the "Choose an icon" prompt (no secondary hint).
+          final iconSection = find.text('Select an icon');
           final inkWell = find
               .ancestor(
                 of: iconSection,
@@ -1488,15 +1358,14 @@ void main() {
           await tester.pump(const Duration(milliseconds: 350));
 
           // After picking, the icon change should mark the form dirty
-          final enabledSave = findEnabledPrimaryButton(tester);
-          expect(enabledSave, isNotNull);
+          expect(isPillEnabled(tester, 'Save'), isTrue);
 
           await streamController.close();
         },
       );
 
       testWidgets(
-        'edit mode icon picker shows hint text when no icon set',
+        'edit mode icon row shows only the choose prompt when no icon set',
         (tester) async {
           final category =
               CategoryTestUtils.createTestCategory(); // icon defaults to null
@@ -1505,26 +1374,25 @@ void main() {
             (_) => Stream.value(category),
           );
 
-          await pumpCategoryDetailsPage(tester);
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+          await pumpCategoryDetailsPage(tester, settle: true);
 
           // With no icon on the category, "Choose an icon" is shown
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Select an icon'),
             findsOneWidget,
           );
-          // And the hint says tap to change
+          // The secondary hint would only repeat the main line, so it is
+          // omitted until an icon is set.
           expect(
-            find.text(CategoryIconStrings.iconSelectionHint),
-            findsOneWidget,
+            find.text('Select a different icon'),
+            findsNothing,
           );
         },
       );
 
       testWidgets(
-        'edit mode icon picker shows icon display name when icon is set',
+        'edit mode icon row shows display name plus change hint when icon '
+        'is set',
         (tester) async {
           final category = CategoryTestUtils.createTestCategory(
             icon: CategoryIcon.fitness,
@@ -1534,10 +1402,7 @@ void main() {
             (_) => Stream.value(category),
           );
 
-          await pumpCategoryDetailsPage(tester);
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+          await pumpCategoryDetailsPage(tester, settle: true);
 
           // Shows the icon's display name instead of the fallback
           expect(
@@ -1545,8 +1410,13 @@ void main() {
             findsOneWidget,
           );
           expect(
-            find.text(CategoryIconStrings.chooseIconText),
+            find.text('Select an icon'),
             findsNothing,
+          );
+          // With an icon set, the secondary hint invites changing it.
+          expect(
+            find.text('Select a different icon'),
+            findsOneWidget,
           );
         },
       );
@@ -1556,11 +1426,6 @@ void main() {
       testWidgets(
         'language dropdown is rendered and tapping it opens a language modal',
         (tester) async {
-          // Use a tall viewport so all sections fit without scrolling.
-          tester.view.physicalSize = const Size(800, 2400);
-          tester.view.devicePixelRatio = 1;
-          addTearDown(tester.view.reset);
-
           final streamController =
               StreamController<CategoryDefinition?>.broadcast();
           final category = CategoryTestUtils.createTestCategory(
@@ -1571,7 +1436,11 @@ void main() {
             (_) => streamController.stream,
           );
 
-          await pumpCategoryDetailsPage(tester);
+          // Use a tall viewport so all sections fit without scrolling.
+          await pumpCategoryDetailsPage(
+            tester,
+            viewportSize: const Size(1024, 2400),
+          );
 
           streamController.add(category);
           await tester.pump();
@@ -1629,13 +1498,11 @@ void main() {
           await tester.pump(const Duration(milliseconds: 350));
 
           // Make a change to enable save
-          final nameField = find.byType(TextFormField).first;
-          await tester.enterText(nameField, 'Updated');
+          await tester.enterText(nameFieldFinder(), 'Updated');
           await tester.pump();
 
           // Tap save
-          final saveBtn = findEnabledPrimaryButton(tester);
-          await tester.tap(find.byWidget(saveBtn!));
+          await tester.tap(pillFinder('Save'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
@@ -1653,8 +1520,8 @@ void main() {
 
     group('Create Mode Color Selection', () {
       testWidgets(
-        'selecting a color then creating passes the selected color hex to '
-        'the repository',
+        'selecting a preset color then creating passes the selected color '
+        'hex to the repository',
         (tester) async {
           String? beamedTo;
           beamToNamedOverride = (path) => beamedTo = path;
@@ -1671,37 +1538,51 @@ void main() {
 
           await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
-          // Open the color picker (default selected color is null → the
-          // picker seeds at Colors.red).
-          await tester.tap(find.byIcon(Icons.palette_outlined));
+          // Open the shared color picker modal (default selected color is
+          // null → the picker seeds at the theme primary).
+          await tester.tap(colorFieldFinder());
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
-          expect(find.byType(AlertDialog), findsOneWidget);
+          expect(find.byType(ColorPicker), findsOneWidget);
 
-          // Tap "Select" → CategoryColorPicker.onColorChanged fires with the
-          // seeded red, which runs setState(_selectedColor = color) on the
-          // page. The dialog dismisses.
-          await tester.tap(find.text('Select'));
+          // The seed color may land the picker on the wheel tab, so switch
+          // to the preset swatches first ('Quick presets' tab label).
+          await tester.tap(find.text('Quick presets'), warnIfMissed: false);
+          await tester.pump();
+
+          // Tap the 'Crimson' preset (#E63946) → onColorChanged fires live
+          // and runs setState(_selectedColor = color) on the page.
+          final crimsonIndicator = find.byWidgetPredicate(
+            (widget) =>
+                widget is ColorIndicator &&
+                colorToCssHex(widget.color) == '#E63946',
+          );
+          expect(crimsonIndicator, findsOneWidget);
+          await tester.tap(crimsonIndicator, warnIfMissed: false);
+          await tester.pump();
+
+          // Dismiss the modal via its close button.
+          await tester.tap(find.byIcon(Icons.close_rounded).last);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
-          expect(find.byType(AlertDialog), findsNothing);
+          expect(find.byType(ColorPicker), findsNothing);
 
-          // The color row now shows the selected hex (the picker seeds at
-          // Colors.red, the Material swatch #F44336) instead of the
-          // "select color" hint — proving _selectedColor was assigned via
-          // setState in the page's onColorChanged callback.
-          expect(find.text('#F44336'), findsOneWidget);
+          // The color row now names the preset — never the raw hex —
+          // proving _selectedColor was assigned via setState in the
+          // page's onColorChanged callback.
+          expect(find.text('Crimson'), findsOneWidget);
+          expect(find.text('#E63946'), findsNothing);
 
           // Enter a name and create. Because _selectedColor is now non-null,
           // _handleCreate takes the colorToCssHex(_selectedColor!) branch.
           await tester.enterText(find.byType(TextField), 'Red Category');
           await tester.pump();
 
-          await tester.tap(find.byType(LottiPrimaryButton));
+          await tester.tap(pillFinder('Create'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Repository received the selected color (red swatch), not the blue
+          // Repository received the selected preset color, not the blue
           // default — confirming the non-null color branch executed.
           final captured =
               verify(
@@ -1713,8 +1594,9 @@ void main() {
                     ),
                   ).captured.single
                   as String;
-          expect(captured, '#F44336');
-          expect(beamedTo, '/settings/categories');
+          expect(captured, '#E63946');
+          // Creation lands in the new category's editor.
+          expect(beamedTo, startsWith('/settings/categories/'));
         },
       );
     });
@@ -1723,12 +1605,6 @@ void main() {
       testWidgets(
         'picking a different language updates the form and dismisses the modal',
         (tester) async {
-          // Tall viewport so the language dropdown is on-screen without
-          // scrolling.
-          tester.view.physicalSize = const Size(800, 2400);
-          tester.view.devicePixelRatio = 1;
-          addTearDown(tester.view.reset);
-
           final streamController =
               StreamController<CategoryDefinition?>.broadcast();
           final category = CategoryTestUtils.createTestCategory(
@@ -1739,14 +1615,19 @@ void main() {
             (_) => streamController.stream,
           );
 
-          await pumpCategoryDetailsPage(tester);
+          // Tall viewport so the language dropdown is on-screen without
+          // scrolling.
+          await pumpCategoryDetailsPage(
+            tester,
+            viewportSize: const Size(1024, 2400),
+          );
 
           streamController.add(category);
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
           // Save starts disabled (no changes yet).
-          expect(findEnabledPrimaryButton(tester), isNull);
+          expect(isPillEnabled(tester, 'Save'), isFalse);
 
           // Open the language selector modal.
           await tester.tap(find.byType(CategoryLanguageDropdown));
@@ -1770,7 +1651,7 @@ void main() {
 
           // Form is now dirty ('de' != original 'en') → save is enabled,
           // proving updateFormField was invoked with the new code.
-          expect(findEnabledPrimaryButton(tester), isNotNull);
+          expect(isPillEnabled(tester, 'Save'), isTrue);
 
           await streamController.close();
         },

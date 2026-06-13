@@ -64,7 +64,7 @@ void main() {
         // animation), so `find.text` still locates them.
         expect(find.text('Categories'), findsOneWidget);
         expect(find.text('Labels'), findsOneWidget);
-        expect(find.text('Measurable Types'), findsOneWidget);
+        expect(find.text('Measurables'), findsOneWidget);
         expect(find.text('Config Flags'), findsOneWidget);
       },
     );

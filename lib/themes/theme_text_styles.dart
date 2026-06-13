@@ -121,7 +121,12 @@ const appBarTextStyleNewLarge = TextStyle(
 );
 
 /// Primary heading style for premium settings headers.
+///
+/// Pins the design-system font family ('Inter', matching the generated
+/// typography tokens) — without it the header was the one piece of
+/// settings text falling back to the platform font.
 const settingsHeaderTitleTextStyle = TextStyle(
+  fontFamily: 'Inter',
   fontSize: 32,
   fontWeight: FontWeight.w300,
   letterSpacing: -0.2,
@@ -130,6 +135,7 @@ const settingsHeaderTitleTextStyle = TextStyle(
 
 /// Secondary copy style used beneath the settings header title.
 const settingsHeaderSubtitleTextStyle = TextStyle(
+  fontFamily: 'Inter',
   fontSize: 16,
   fontWeight: TypographyConstants.bodyFontWeight,
   height: 1.4,

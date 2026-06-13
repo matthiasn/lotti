@@ -217,7 +217,8 @@ void main() {
       expect(find.byType(FittedBox), findsOneWidget);
     });
 
-    testWidgets('title color follows theme primary', (tester) async {
+    testWidgets('title color is neutral onSurface — the accent is '
+        'reserved for actionable controls', (tester) async {
       AnimatedDefaultTextStyle titleStyle() =>
           tester.widget<AnimatedDefaultTextStyle>(
             find
@@ -237,7 +238,7 @@ void main() {
           contentHeight: 200,
         );
         await tester.pumpAndSettle(); // let the text style animation finish
-        expect(titleStyle().style.color, equals(theme.colorScheme.primary));
+        expect(titleStyle().style.color, equals(theme.colorScheme.onSurface));
       }
     });
   });

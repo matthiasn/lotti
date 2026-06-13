@@ -318,9 +318,9 @@ The current details page allows editing:
 - description
 - category
 - dashboard
-- priority
+- priority (shown as a "Favorite" star toggle, matching the list row's star)
 - private flag
-- archived flag
+- active flag (an "Active" visibility toggle; ON = visible, stored as `active`)
 - active-from date
 - daily `showFrom`
 - daily `alertAtTime`

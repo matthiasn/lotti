@@ -18,6 +18,7 @@ This directory contains reusable widgets used throughout the Lotti application. 
 - [Navigation Bar Widgets](#navigation-bar-widgets)
 - [Search Widgets](#search-widgets)
 - [Selection Widgets](#selection-widgets)
+- [Settings Widgets](#settings-widgets)
 - [UI Widgets](#ui-widgets)
 
 ## App Bar Widgets
@@ -150,9 +151,6 @@ Located in `/lib/widgets/form/`
 
 ### LottiFormSection
 Section header with optional icon and description for grouping related form fields.
-
-### LottiSwitchField
-Switch field with consistent styling, supporting title, subtitle, and icon.
 
 ### LottiTextField
 Single-line text input following the Lotti design system (labels, hints, prefixes, validation).
@@ -334,6 +332,25 @@ Unified toggle/switch component providing a single source of truth for selection
 
 ### UnifiedAiToggleField
 AI-specific toggle field matching the AI Settings design language (gradient container, label, optional description and icon).
+
+## Settings Widgets
+
+Located in `/lib/widgets/settings/` — the shared shell for the settings definition pages (categories, labels, habits, measurables, dashboards) so list and detail surfaces share one silhouette. See `lib/features/settings/README.md` for the page-level architecture.
+
+### SettingsPageLayout / SettingsContentSliver / SettingsContentArea
+Responsive content grid for settings pages. `SettingsPageLayout.contentInsets(width)` anchors content to the same responsive start inset as `SettingsPageHeader`'s title and caps content width at `maxContentWidth` (840) on wide panes. `SettingsContentSliver` applies the grid to slivers, `SettingsContentArea` to box widgets (used by the action bar so buttons align with the form's edges).
+
+### SettingsDetailScaffold
+Unified detail-page shell: `SettingsPageHeader` with back affordance (callers beam to their list route so the desktop split pane stays in sync), aligned scrollable content (`children` or raw `slivers`), Cmd/Ctrl+S save shortcut, and a sticky glass action bar mounted with `extendBody: true` so the form scrolls visibly behind the blur.
+
+### SettingsFormActionBar
+Sticky bottom action bar on `DesignSystemGlassStrip` (hairline + backdrop blur + scrim gradient). Destructive action (icon-only round glass button) at the start, secondary + primary `DsGlassPill`s at the end of the content grid. At accessibility text scales ≥ 1.5 the actions stack vertically with the primary pill closest to the thumb.
+
+### SettingsFormSection
+Token-driven section header (quiet medium-emphasis title, optional description) above a grouped card matching `DesignSystemGroupedList`'s surface (background level02, decorative hairline, radii.m). Spaces its children with `cardItemSpacing` — no manual separators needed.
+
+### SettingsSwitchRow
+Toggle row (title, optional subtitle/icon, `DesignSystemToggle`) used inside form sections; the whole row is tappable. Also wrapped by `FormSwitch` for `flutter_form_builder` forms.
 
 ## UI Widgets
 

@@ -95,7 +95,10 @@ class BackWidget extends StatelessWidget {
             Icons.chevron_left,
             size: 30,
             weight: 500,
-            color: Theme.of(context).colorScheme.outline,
+            // onSurfaceVariant, not outline: the chevron is an
+            // interactive control and must clear the 3:1 non-text
+            // contrast minimum on both themes.
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
             semanticLabel: 'Navigate back',
           ),
         ),

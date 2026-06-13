@@ -9,17 +9,25 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 class DesignSystemGroupedList extends StatelessWidget {
   const DesignSystemGroupedList({
     required this.children,
+    this.padding,
     super.key,
   });
 
   final List<Widget> children;
+
+  /// Outer padding around the grouped card. Defaults to the standard
+  /// `spacing.step5` horizontal inset; hosts that already lay the card on
+  /// a padded grid (e.g. the settings content column) pass
+  /// [EdgeInsets.zero].
+  final EdgeInsetsGeometry? padding;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+      padding:
+          padding ?? EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
       child: DecoratedBox(
         decoration: BoxDecoration(
           color: tokens.colors.background.level02,

@@ -183,9 +183,12 @@ class DsGlassPill extends StatelessWidget {
             alpha: fillColor!.a * kDsGlassDisabledFillFactor,
           );
     final isTranslucent = effectiveFill == null;
+    // Disabled honors an explicit [foregroundColor] override so hosts
+    // can tune the dimmed label per surface; the default stays
+    // lowEmphasis.
     final foreground = enabled
         ? (foregroundColor ?? tokens.colors.text.highEmphasis)
-        : tokens.colors.text.lowEmphasis;
+        : (foregroundColor ?? tokens.colors.text.lowEmphasis);
     final pillRadius = BorderRadius.circular(tokens.radii.badgesPills);
     final textStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
       color: foreground,

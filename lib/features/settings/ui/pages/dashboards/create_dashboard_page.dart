@@ -24,6 +24,9 @@ class CreateDashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DashboardDefinitionPage(dashboard: _dashboardDefinition);
+    return DashboardDefinitionPage(
+      dashboard: _dashboardDefinition,
+      isCreateMode: true,
+    );
   }
 }

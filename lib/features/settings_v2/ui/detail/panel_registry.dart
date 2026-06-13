@@ -20,6 +20,8 @@ import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_pag
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
+import 'package:lotti/features/settings/ui/pages/habits/habit_create_page.dart';
+import 'package:lotti/features/settings/ui/pages/habits/habit_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habits_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
@@ -264,7 +266,15 @@ Widget _labelsPanel(BuildContext context) => DetailIdDispatch(
     labelId: id,
   ),
 );
-Widget _habitsPanel(BuildContext context) => const HabitsBody();
+Widget _habitsPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'habitId',
+  list: (_) => const HabitsBody(),
+  create: (_, _) => CreateHabitPage(),
+  detail: (_, id) => EditHabitPage(
+    key: ValueKey('settings-v2-habit-$id'),
+    habitId: id,
+  ),
+);
 Widget _dashboardsPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'dashboardId',
   list: (_) => const DashboardsBody(),

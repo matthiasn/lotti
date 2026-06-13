@@ -58,11 +58,6 @@ void main() {
   group('CategoryIconStrings', () {
     test('should have non-empty string constants', () {
       expect(CategoryIconStrings.fallbackCharacter, isNotEmpty);
-      expect(CategoryIconStrings.chooseIconTitle, isNotEmpty);
-      expect(CategoryIconStrings.iconLabel, isNotEmpty);
-      expect(CategoryIconStrings.iconSelectionHint, isNotEmpty);
-      expect(CategoryIconStrings.createModeIconHint, isNotEmpty);
-      expect(CategoryIconStrings.chooseIconText, isNotEmpty);
       expect(CategoryIconStrings.invalidIconWarning, isNotEmpty);
     });
 

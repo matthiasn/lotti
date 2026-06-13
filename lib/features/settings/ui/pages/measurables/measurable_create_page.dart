@@ -21,6 +21,7 @@ class CreateMeasurablePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return MeasurableDetailsPage(
       dataType: _measurableDataType,
+      isCreateMode: true,
     );
   }
 }

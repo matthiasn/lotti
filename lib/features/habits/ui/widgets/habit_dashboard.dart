@@ -4,10 +4,13 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/sort.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/settings/settings_picker_field.dart';
 
+/// Dashboard picker for the habit editor, rendered as a
+/// [SettingsPickerField] so it matches the design-system fields around
+/// it. Selection happens in a single-page modal listing the dashboards.
 class SelectDashboardWidget extends ConsumerWidget {
   const SelectDashboardWidget({
     required this.habitId,
@@ -18,25 +21,19 @@ class SelectDashboardWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final controller = TextEditingController();
-
     final dashboardsAsync = ref.watch(habitDashboardsProvider);
     final state = ref.watch(habitSettingsControllerProvider(habitId));
-
-    final dashboardsById = <String, DashboardDefinition>{};
+    final notifier = ref.read(
+      habitSettingsControllerProvider(habitId).notifier,
+    );
 
     final dashboards = filteredSortedDashboards(
       dashboardsAsync.value ?? <DashboardDefinition>[],
     );
-
-    for (final dashboard in dashboards) {
-      dashboardsById[dashboard.id] = dashboard;
-    }
-
-    final currentHabitDefinition = state.habitDefinition;
-    final dashboard = dashboardsById[currentHabitDefinition.dashboardId];
-
-    controller.text = dashboard?.name ?? '';
+    final dashboardsById = <String, DashboardDefinition>{
+      for (final dashboard in dashboards) dashboard.id: dashboard,
+    };
+    final dashboard = dashboardsById[state.habitDefinition.dashboardId];
 
     void onTap() {
       ModalUtils.showSinglePageModal<void>(
@@ -58,11 +55,7 @@ class SelectDashboardWidget extends ConsumerWidget {
                   ...dashboards.map(
                     (dashboard) => SettingsCard(
                       onTap: () {
-                        ref
-                            .read(
-                              habitSettingsControllerProvider(habitId).notifier,
-                            )
-                            .setDashboard(dashboard.id);
+                        notifier.setDashboard(dashboard.id);
                         Navigator.pop(context);
                       },
                       title: dashboard.name,
@@ -76,42 +69,12 @@ class SelectDashboardWidget extends ConsumerWidget {
       );
     }
 
-    final undefined = state.habitDefinition.dashboardId == null;
-    final style = context.textTheme.titleMedium;
-
-    return TextField(
+    return SettingsPickerField(
+      label: context.messages.habitDashboardLabel,
+      valueText: dashboard?.name,
+      hintText: context.messages.habitDashboardHint,
+      onClear: dashboard != null ? () => notifier.setDashboard(null) : null,
       onTap: onTap,
-      readOnly: true,
-      focusNode: FocusNode(),
-      controller: controller,
-      decoration:
-          inputDecoration(
-            labelText: undefined ? '' : context.messages.habitDashboardLabel,
-            themeData: Theme.of(context),
-          ).copyWith(
-            suffixIcon: undefined
-                ? null
-                : GestureDetector(
-                    child: Icon(
-                      Icons.close_rounded,
-                      color: style?.color,
-                    ),
-                    onTap: () {
-                      controller.clear();
-                      ref
-                          .read(
-                            habitSettingsControllerProvider(habitId).notifier,
-                          )
-                          .setDashboard(null);
-                    },
-                  ),
-            hintText: context.messages.habitDashboardHint,
-            hintStyle: style?.copyWith(
-              color: context.colorScheme.outline.withAlpha(127),
-            ),
-            border: InputBorder.none,
-          ),
-      style: style,
     );
   }
 }

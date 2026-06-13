@@ -232,7 +232,7 @@ class HabitSettingsController extends Notifier<HabitSettingsState> {
     }
 
     final private = formData['private'] as bool? ?? false;
-    final active = !(formData['archived'] as bool? ?? false);
+    final active = formData['active'] as bool? ?? true;
     final priority = formData['priority'] as bool? ?? false;
 
     final dataType = state.habitDefinition.copyWith(

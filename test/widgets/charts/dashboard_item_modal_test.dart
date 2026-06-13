@@ -51,10 +51,17 @@ void main() {
         findsNWidgets(AggregationType.values.length),
       );
 
+      const localizedLabels = {
+        AggregationType.none: 'None',
+        AggregationType.dailySum: 'Daily sum',
+        AggregationType.dailyMax: 'Daily maximum',
+        AggregationType.dailyAvg: 'Daily average',
+        AggregationType.hourlySum: 'Hourly sum',
+      };
       for (final type in AggregationType.values) {
         final chip = tester.widget<ChoiceChip>(
           find.ancestor(
-            of: find.text(type.name),
+            of: find.text(localizedLabels[type]!),
             matching: find.byType(ChoiceChip),
           ),
         );
@@ -74,7 +81,7 @@ void main() {
         await tester.tap(find.text('open'));
         await tester.pumpAndSettle();
 
-        await tester.tap(find.text(AggregationType.dailyMax.name));
+        await tester.tap(find.text('Daily maximum'));
         await tester.pumpAndSettle();
 
         expect(updates, hasLength(1));
