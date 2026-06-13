@@ -247,10 +247,9 @@ void main() {
             await tester.pump(const Duration(milliseconds: 50));
           }
 
-          // Initial: countdown pill visible, no refresh affordance.
-          expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+          // Initial: wake cluster — run-now (refresh) + countdown + cancel.
           expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-          expect(find.byIcon(Icons.refresh_rounded), findsNothing);
+          expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
 
           // Advance wall-clock past nextWakeAt and let the periodic
           // timer fire; the mixin should call onCountdownExpired which
@@ -259,8 +258,7 @@ void main() {
           await tester.pump(const Duration(seconds: 1));
           await tester.pump();
 
-          // Wake cluster gone, refresh affordance back.
-          expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+          // Wake cluster collapsed back to the lone run-now refresh.
           expect(find.byIcon(Icons.close_rounded), findsNothing);
           expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
         });

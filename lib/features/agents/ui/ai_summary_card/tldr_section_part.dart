@@ -90,6 +90,9 @@ class TldrHeader extends StatelessWidget {
                     padding: const EdgeInsets.only(top: 2),
                     child: GestureDetector(
                       onTap: onAgentTap,
+                      // Make the whole padded box tappable, not just the
+                      // glyphs, so the secondary link is comfortably hittable.
+                      behavior: HitTestBehavior.opaque,
                       child: MouseRegion(
                         cursor: SystemMouseCursors.click,
                         child: Text(
@@ -116,6 +119,9 @@ class TldrHeader extends StatelessWidget {
 
     List<Widget> buildControls({required bool compactCountdown}) {
       return <Widget>[
+        // Focal playback control leads the cluster so it reads first and
+        // dominant; agent-status affordances trail it.
+        ?playbackControl,
         if (isRunning) const _ThinkingPill(),
         if (!isRunning && !hasCountdownCluster)
           _IconAffordance(
@@ -124,8 +130,10 @@ class TldrHeader extends StatelessWidget {
             onPressed: onRunNow,
           ),
         if (hasCountdownCluster) ...[
+          // Run-now uses the refresh glyph here too, so it never collides with
+          // the playback control's play triangle — shape stays meaningful.
           _IconAffordance(
-            icon: Icons.play_arrow_rounded,
+            icon: Icons.refresh_rounded,
             tooltip: messages.taskAgentRunNowTooltip,
             onPressed: onRunNow,
           ),
@@ -141,7 +149,6 @@ class TldrHeader extends StatelessWidget {
             compact: true,
           ),
         ],
-        ?playbackControl,
         if (hasMore) _ReadMorePill(expanded: expanded, onPressed: onToggle),
       ];
     }
