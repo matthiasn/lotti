@@ -6,10 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 class DashboardHealthBpChart extends ConsumerWidget {
   const DashboardHealthBpChart({
@@ -25,29 +26,29 @@ class DashboardHealthBpChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final systolicData =
-        ref
-            .watch(
-              healthObservationsControllerProvider(
-                healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-              ),
-            )
-            .value ??
-        [];
+    final tokens = context.designTokens;
+    final systolicColor = tokens.colors.alert.error.defaultColor;
+    final diastolicColor = tokens.colors.alert.info.defaultColor;
 
-    final diastolicData =
-        ref
-            .watch(
-              healthObservationsControllerProvider(
-                healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-              ),
-            )
-            .value ??
-        [];
+    final systolicAsync = ref.watch(
+      healthObservationsControllerProvider(
+        healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
+    );
+    final diastolicAsync = ref.watch(
+      healthObservationsControllerProvider(
+        healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
+    );
+    final systolicData = systolicAsync.value ?? const <Observation>[];
+    final diastolicData = diastolicAsync.value ?? const <Observation>[];
+    final isLoading =
+        (systolicAsync.isLoading && !systolicAsync.hasValue) ||
+        (diastolicAsync.isLoading && !diastolicAsync.hasValue);
 
     final rangeInDays = rangeEnd.difference(rangeStart).inDays;
 
@@ -76,23 +77,22 @@ class DashboardHealthBpChart extends ConsumerWidget {
           ),
           LineChartData(
             gridData: FlGridData(
+              drawVerticalLine: false,
               horizontalInterval: 10,
-              verticalInterval: double.maxFinite,
               getDrawingHorizontalLine: (value) {
                 if (value == 80.0) {
-                  return gridLineEmphasized.copyWith(
-                    color: Colors.blue.withAlpha(102),
+                  return chartEmphasisLine(
+                    diastolicColor.withValues(alpha: 0.5),
                   );
                 }
                 if (value == 120.0) {
-                  return gridLineEmphasized.copyWith(
-                    color: Colors.red.withAlpha(102),
+                  return chartEmphasisLine(
+                    systolicColor.withValues(alpha: 0.5),
                   );
                 }
 
-                return gridLine;
+                return chartGridLine(context);
               },
-              getDrawingVerticalLine: (value) => gridLine,
             ),
             clipData: const FlClipData.horizontal(),
             lineTouchData: LineTouchData(
@@ -102,16 +102,16 @@ class DashboardHealthBpChart extends ConsumerWidget {
                   horizontal: 8,
                   vertical: 3,
                 ),
-                getTooltipColor: (_) =>
-                    Theme.of(context).primaryColor.desaturate(),
+                getTooltipColor: (_) => tokens.colors.background.level03,
                 tooltipBorderRadius: BorderRadius.circular(8),
                 getTooltipItems: (List<LineBarSpot> spots) {
                   return spots.map((spot) {
                     return LineTooltipItem(
                       '',
-                      const TextStyle(
+                      TextStyle(
                         fontSize: fontSizeSmall,
                         fontWeight: FontWeight.w300,
+                        color: tokens.colors.text.highEmphasis,
                       ),
                       children: [
                         TextSpan(
@@ -144,7 +144,7 @@ class DashboardHealthBpChart extends ConsumerWidget {
                   showTitles: true,
                   interval: 10,
                   getTitlesWidget: leftTitleWidgets,
-                  reservedSize: 30,
+                  reservedSize: 40,
                   minIncluded: false,
                   maxIncluded: false,
                 ),
@@ -152,7 +152,7 @@ class DashboardHealthBpChart extends ConsumerWidget {
             ),
             borderData: FlBorderData(
               show: true,
-              border: Border.all(color: const Color(0xff37434d)),
+              border: Border.all(color: tokens.colors.decorative.level01),
             ),
             minX: rangeStart.millisecondsSinceEpoch.toDouble(),
             maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
@@ -167,10 +167,10 @@ class DashboardHealthBpChart extends ConsumerWidget {
                     )
                     .toList(),
                 isCurved: true,
-                color: Colors.red,
+                color: systolicColor,
                 belowBarData: BarAreaData(
                   show: true,
-                  color: Colors.red.withAlpha(26),
+                  color: systolicColor.withValues(alpha: 0.1),
                 ),
                 curveSmoothness: 0.1,
                 isStrokeCapRound: true,
@@ -187,10 +187,10 @@ class DashboardHealthBpChart extends ConsumerWidget {
                     .toList(),
                 isCurved: true,
                 curveSmoothness: 0.1,
-                color: Colors.blue,
+                color: diastolicColor,
                 belowBarData: BarAreaData(
                   show: true,
-                  color: Colors.blue.withAlpha(51),
+                  color: diastolicColor.withValues(alpha: 0.1),
                 ),
                 isStrokeCapRound: true,
                 dotData: const FlDotData(
@@ -203,6 +203,21 @@ class DashboardHealthBpChart extends ConsumerWidget {
         ),
       ),
       chartHeader: const BpChartInfoWidget(),
+      isLoading: isLoading,
+      isEmpty: systolicData.isEmpty && diastolicData.isEmpty,
+      emptyMessage: context.messages.dashboardChartNoData,
+      footer: DashboardChartLegend(
+        entries: [
+          DashboardLegendEntry(
+            color: systolicColor,
+            label: context.messages.dashboardHealthSystolic,
+          ),
+          DashboardLegendEntry(
+            color: diastolicColor,
+            label: context.messages.dashboardHealthDiastolic,
+          ),
+        ],
+      ),
       height: 220,
     );
   }
@@ -213,10 +228,8 @@ class BpChartInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Positioned(
-      top: 0,
-      left: 20,
-      child: Text('Blood Pressure', style: chartTitleStyle),
+    return DashboardChartHeader(
+      title: context.messages.dashboardHealthBloodPressure,
     );
   }
 }

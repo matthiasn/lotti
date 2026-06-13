@@ -8,7 +8,8 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart_info.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
-import 'package:lotti/utils/color.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class MeasurablesBarChart extends ConsumerWidget {
@@ -50,21 +51,18 @@ class MeasurablesBarChart extends ConsumerWidget {
             .value ??
         AggregationType.none;
 
-    final data =
-        ref
-            .watch(
-              measurableObservationsControllerProvider((
-                measurableDataTypeId: measurableDataTypeId,
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-                dashboardDefinedAggregationType: chartAggregationType,
-              )),
-            )
-            .value ??
-        [];
+    final observationsAsync = ref.watch(
+      measurableObservationsControllerProvider((
+        measurableDataTypeId: measurableDataTypeId,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        dashboardDefinedAggregationType: chartAggregationType,
+      )),
+    );
+    final data = observationsAsync.value ?? const <Observation>[];
+    final tokens = context.designTokens;
 
     return DashboardChart(
-      topMargin: 10,
       chart: chartAggregationType == AggregationType.none
           ? TimeSeriesLineChart(
               data: data,
@@ -80,13 +78,16 @@ class MeasurablesBarChart extends ConsumerWidget {
               unit: measurableDataType.unitName,
               transformationController: transformationController,
               colorByValue: (Observation observation) =>
-                  colorFromCssHex('#82E6CE'),
+                  tokens.colors.interactive.enabled,
             ),
       chartHeader: MeasurablesChartInfoWidget(
         measurableDataType,
         enableCreate: enableCreate,
         aggregationType: chartAggregationType,
       ),
+      isLoading: observationsAsync.isLoading && !observationsAsync.hasValue,
+      isEmpty: data.isEmpty,
+      emptyMessage: context.messages.dashboardChartNoData,
       height: 180,
     );
   }

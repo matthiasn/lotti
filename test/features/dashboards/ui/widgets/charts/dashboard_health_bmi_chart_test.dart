@@ -86,8 +86,14 @@ void main() {
         ),
       );
 
-      // Each range row contains one Container (the colour swatch).
-      expect(find.byType(Container), findsNWidgets(bmiRanges.length));
+      // Each range row contains one ColoredBox (the colour swatch).
+      expect(
+        find.descendant(
+          of: find.byType(BmiRangeLegend),
+          matching: find.byType(ColoredBox),
+        ),
+        findsNWidgets(bmiRanges.length),
+      );
     });
   });
 
@@ -170,7 +176,7 @@ void main() {
       );
 
       // NumberFormat('#,###.#') keeps one decimal place.
-      expect(find.text('68.3 kg - 82.7 kg'), findsOneWidget);
+      expect(find.text('68.3 kg – 82.7 kg'), findsOneWidget);
     });
 
     testWidgets('shows zero values formatted correctly when data is empty', (
@@ -194,10 +200,12 @@ void main() {
         ),
       );
 
-      expect(find.text('0 kg - 0 kg'), findsOneWidget);
+      expect(find.text('0 kg – 0 kg'), findsOneWidget);
     });
 
-    testWidgets('range text uses bold font weight', (tester) async {
+    testWidgets('range text uses an emphasised (semibold) font weight', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           const SizedBox(
@@ -222,10 +230,10 @@ void main() {
               w is Text &&
               w.data != null &&
               w.data!.contains('kg') &&
-              w.style?.fontWeight == FontWeight.bold,
+              w.style?.fontWeight == FontWeight.w600,
         ),
       );
-      expect(rangeText.data, '75 kg - 85 kg');
+      expect(rangeText.data, '75 kg – 85 kg');
     });
   });
 
@@ -309,7 +317,7 @@ void main() {
         await tester.pump();
 
         // findMin=68.0 → "68 kg", findMax=80.2 → "80.2 kg"
-        expect(find.text('68 kg - 80.2 kg'), findsOneWidget);
+        expect(find.text('68 kg – 80.2 kg'), findsOneWidget);
       },
     );
 
@@ -336,7 +344,7 @@ void main() {
       await tester.pump();
 
       // findMin and findMax return 0 when list is empty.
-      expect(find.text('0 kg - 0 kg'), findsOneWidget);
+      expect(find.text('0 kg – 0 kg'), findsOneWidget);
     });
 
     testWidgets('DashboardChart has height 320', (tester) async {

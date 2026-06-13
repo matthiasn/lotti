@@ -1,6 +1,8 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 import 'time_series_bar_chart_test_helpers.dart';
 
@@ -245,7 +247,7 @@ void main() {
       );
     });
 
-    testWidgets('left titles are shown with reservedSize 40', (tester) async {
+    testWidgets('left titles are shown with reservedSize 44', (tester) async {
       await hPumpChart(
         tester,
         data: [],
@@ -256,7 +258,10 @@ void main() {
       final barChart = tester.widget<BarChart>(find.byType(BarChart));
       final leftTitles = barChart.data.titlesData.leftTitles.sideTitles;
       expect(leftTitles.showTitles, isTrue);
-      expect(leftTitles.reservedSize, 40);
+      expect(leftTitles.reservedSize, 44);
+      // The endpoint ticks are suppressed so labels never clip the gutter.
+      expect(leftTitles.minIncluded, isFalse);
+      expect(leftTitles.maxIncluded, isFalse);
     });
 
     testWidgets('bottom titles are shown with reservedSize 30', (tester) async {
@@ -274,29 +279,46 @@ void main() {
     });
 
     testWidgets(
-      'grid data is not shown but has valid horizontal/vertical intervals',
+      'grid data draws only horizontal lines with a finite nice interval',
       (tester) async {
         await hPumpChart(
           tester,
-          data: [],
+          data: [Observation(DateTime(2024, 3, 10), 10)],
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
         );
 
         final barChart = tester.widget<BarChart>(find.byType(BarChart));
         final gridData = barChart.data.gridData;
-        expect(gridData.show, isFalse);
+        // Gridlines are drawn (default show == true), horizontally only.
+        expect(gridData.show, isTrue);
+        expect(gridData.drawVerticalLine, isFalse);
+        // The horizontal interval is the nice-axis tick interval, a finite
+        // rounded number — never double.maxFinite.
+        expect(gridData.horizontalInterval, isNot(double.maxFinite));
+        expect(gridData.horizontalInterval, greaterThan(0));
         expect(
           gridData.horizontalInterval,
-          double.maxFinite,
-          reason: 'horizontal interval should be maxFinite',
-        );
-        expect(
-          gridData.verticalInterval,
-          isNotNull,
-          reason: 'vertical interval should be set',
+          niceAxis(0, 10, zeroBased: true).interval,
         );
       },
     );
+
+    testWidgets('value axis is zero-based with a nice maxY', (tester) async {
+      // maxData = 10 → niceAxis(0, 10, zeroBased: true) → min 0, max 10.
+      await hPumpChart(
+        tester,
+        data: [Observation(DateTime(2024, 3, 10), 10)],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      final barChart = tester.widget<BarChart>(find.byType(BarChart));
+      final axis = niceAxis(0, 10, zeroBased: true);
+      expect(barChart.data.minY, 0);
+      expect(barChart.data.maxY, axis.max);
+      // The bar (toY 10) fits inside the nice axis.
+      expect(barChart.data.maxY, greaterThanOrEqualTo(10));
+    });
   });
 }

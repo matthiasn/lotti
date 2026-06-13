@@ -2,8 +2,8 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 import 'time_series_bar_chart_test_helpers.dart';
 
@@ -165,55 +165,67 @@ void main() {
     });
   });
 
-  group('TimeSeriesBarChart — grid interval by range length', () {
-    for (final testCase in [
-      (
-        label: '>182 days → gridInterval=30',
-        start: DateTime(2024),
-        end: DateTime(2024, 8), // ~213 days
-        expectedFactor: 30,
-      ),
-      (
-        label: '93–182 days → gridInterval=14',
-        start: DateTime(2024),
-        end: DateTime(2024, 4, 15), // ~105 days
-        expectedFactor: 14,
-      ),
-      (
-        label: '31–92 days → gridInterval=7',
-        start: DateTime(2024),
-        end: DateTime(2024, 3), // ~60 days
-        expectedFactor: 7,
-      ),
-      (
-        label: '<=30 days → gridInterval=1',
-        start: DateTime(2024, 3),
-        end: DateTime(2024, 3, 15), // 14 days
-        expectedFactor: 1,
-      ),
-    ]) {
-      testWidgets(testCase.label, (tester) async {
-        await hPumpChart(
-          tester,
-          data: [],
-          rangeStart: testCase.start,
-          rangeEnd: testCase.end,
-        );
+  group('TimeSeriesBarChart — horizontal grid interval from nice axis', () {
+    testWidgets('horizontalInterval matches the nice-axis tick interval', (
+      tester,
+    ) async {
+      // maxData=10 → niceAxis(0, 10, zeroBased: true) yields interval 5.
+      await hPumpChart(
+        tester,
+        data: [Observation(DateTime(2024, 3, 10), 10)],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
 
-        final barChart = tester.widget<BarChart>(find.byType(BarChart));
-        final expectedInterval =
-            Duration.millisecondsPerDay.toDouble() * testCase.expectedFactor;
-        expect(
-          barChart.data.gridData.verticalInterval,
-          expectedInterval,
-          reason: testCase.label,
-        );
-      });
-    }
+      final barChart = tester.widget<BarChart>(find.byType(BarChart));
+      final expected = niceAxis(0, 10, zeroBased: true).interval;
+      expect(barChart.data.gridData.horizontalInterval, expected);
+      // And the left-axis tick interval uses the same nice interval.
+      expect(
+        barChart.data.titlesData.leftTitles.sideTitles.interval,
+        expected,
+      );
+    });
+
+    testWidgets('horizontalInterval scales with larger data maxima', (
+      tester,
+    ) async {
+      // maxData=2400 → compact-friendly nice interval.
+      await hPumpChart(
+        tester,
+        data: [Observation(DateTime(2024, 3, 10), 2400)],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      final barChart = tester.widget<BarChart>(find.byType(BarChart));
+      final expected = niceAxis(0, 2400, zeroBased: true).interval;
+      expect(barChart.data.gridData.horizontalInterval, expected);
+      expect(barChart.data.gridData.horizontalInterval, greaterThan(0));
+    });
   });
 
   group('TimeSeriesBarChart — grid line callbacks', () {
-    testWidgets('getDrawingHorizontalLine returns gridLine', (tester) async {
+    testWidgets(
+      'getDrawingHorizontalLine returns the tokenized chart gridline',
+      (tester) async {
+        await hPumpChart(
+          tester,
+          data: [],
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        final element = tester.element(find.byType(BarChart));
+        final tokens = element.designTokens;
+        final barChart = tester.widget<BarChart>(find.byType(BarChart));
+        final result = barChart.data.gridData.getDrawingHorizontalLine(0);
+        expect(result.color, tokens.colors.decorative.level01);
+        expect(result.strokeWidth, 1);
+      },
+    );
+
+    testWidgets('vertical gridlines are disabled', (tester) async {
       await hPumpChart(
         tester,
         data: [],
@@ -222,26 +234,12 @@ void main() {
       );
 
       final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final result = barChart.data.gridData.getDrawingHorizontalLine(0);
-      expect(result, equals(gridLine));
-    });
-
-    testWidgets('getDrawingVerticalLine returns gridLine', (tester) async {
-      await hPumpChart(
-        tester,
-        data: [],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final result = barChart.data.gridData.getDrawingVerticalLine(0);
-      expect(result, equals(gridLine));
+      expect(barChart.data.gridData.drawVerticalLine, isFalse);
     });
   });
 
   group('TimeSeriesBarChart — tooltip callbacks', () {
-    testWidgets('getTooltipColor derives from the desaturated theme primary', (
+    testWidgets('getTooltipColor uses the level-03 design-system surface', (
       tester,
     ) async {
       await hPumpChart(
@@ -257,8 +255,8 @@ void main() {
       // Pass a BarChartGroupData to satisfy the callback signature.
       final group = barChart.data.barGroups.first;
       final color = tooltipData.getTooltipColor(group);
-      final theme = Theme.of(tester.element(find.byType(BarChart)));
-      expect(color, theme.primaryColor.desaturate());
+      final tokens = tester.element(find.byType(BarChart)).designTokens;
+      expect(color, tokens.colors.background.level03);
     });
 
     testWidgets('getTooltipItem formats numeric value with unit', (

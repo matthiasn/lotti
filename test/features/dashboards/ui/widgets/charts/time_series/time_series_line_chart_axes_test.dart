@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 import 'time_series_line_chart_test_helpers.dart';
@@ -226,7 +226,9 @@ void main() {
       expect(bar.belowBarData.show, isTrue);
     });
 
-    testWidgets('bar gradient uses gradientColors', (tester) async {
+    testWidgets('line uses the solid interactive-enabled token colour', (
+      tester,
+    ) async {
       await hPumpChart(
         tester,
         data: [Observation(DateTime(2024, 3, 10), 5)],
@@ -234,28 +236,33 @@ void main() {
         rangeEnd: rangeEnd,
       );
 
+      final tokens = tester.element(find.byType(LineChart)).designTokens;
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
       final bar = lineChart.data.lineBarsData.first;
-      expect(bar.gradient, isA<LinearGradient>());
-      final grad = bar.gradient! as LinearGradient;
-      expect(grad.colors, gradientColors);
+      // No gradient any more — a single solid stroke colour.
+      expect(bar.gradient, isNull);
+      expect(bar.color, tokens.colors.interactive.enabled);
     });
 
-    testWidgets(
-      'belowBarData gradient has same colour count as gradientColors',
-      (tester) async {
-        await hPumpChart(
-          tester,
-          data: [Observation(DateTime(2024, 3, 10), 5)],
-          rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
-        );
+    testWidgets('belowBarData is a translucent interactive-enabled fill', (
+      tester,
+    ) async {
+      await hPumpChart(
+        tester,
+        data: [Observation(DateTime(2024, 3, 10), 5)],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
 
-        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-        final bar = lineChart.data.lineBarsData.first;
-        final belowGrad = bar.belowBarData.gradient! as LinearGradient;
-        expect(belowGrad.colors, hasLength(gradientColors.length));
-      },
-    );
+      final tokens = tester.element(find.byType(LineChart)).designTokens;
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      final bar = lineChart.data.lineBarsData.first;
+      // The fill is a solid colour (not a gradient) at 0.12 alpha.
+      expect(bar.belowBarData.gradient, isNull);
+      expect(
+        bar.belowBarData.color,
+        tokens.colors.interactive.enabled.withValues(alpha: 0.12),
+      );
+    });
   });
 }

@@ -4084,6 +4084,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardAddMeasurementTitle => 'Bord de măsurătoari';
 
   @override
+  String get dashboardAddMeasurementTooltip => 'Adăugați o măsurătoare';
+
+  @override
   String get dashboardAddSurveyButton => 'Diagrame de Studiu';
 
   @override
@@ -4096,10 +4099,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardAddWorkoutTitle => 'Bord de Antrenament';
 
   @override
+  String get dashboardAggregationDailyAverage => 'Medie zilnică';
+
+  @override
+  String get dashboardAggregationDailyMax => 'Maxim zilnic';
+
+  @override
+  String get dashboardAggregationDailyTotal => 'Total zilnic';
+
+  @override
+  String get dashboardAggregationHourlyTotal => 'Total orar';
+
+  @override
   String get dashboardAggregationLabel => 'Agregare';
 
   @override
   String get dashboardCategoryLabel => 'Categorie';
+
+  @override
+  String get dashboardChartNoData => 'Nu există date în acest interval';
 
   @override
   String get dashboardCopyHint =>
@@ -4121,6 +4139,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardDescriptionLabel => 'Descriere';
 
   @override
+  String get dashboardHealthBloodPressure => 'Tensiune arterială';
+
+  @override
+  String get dashboardHealthDiastolic => 'Diastolică';
+
+  @override
+  String get dashboardHealthSystolic => 'Sistolică';
+
+  @override
   String get dashboardNameLabel => 'Numele tabloului de bord';
 
   @override
@@ -4128,6 +4155,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dashboardPrivateLabel => 'Privat';
+
+  @override
+  String get dashboardTakeSurveyTooltip => 'Completați chestionarul';
 
   @override
   String get defaultLanguage => 'Limbă implicită';

@@ -10,9 +10,13 @@ import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
+/// Legend for the BMI weight bands, rendered below the chart (in the card
+/// footer) so it never occludes the weight series.
 class BmiRangeLegend extends StatelessWidget {
   const BmiRangeLegend({
     super.key,
@@ -20,63 +24,14 @@ class BmiRangeLegend extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 40,
-      left: 40,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(77), //New
-              blurRadius: 8,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: ColoredBox(
-            color: Colors.white.withAlpha(191),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ...bmiRanges.reversed.map(
-                    (range) {
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: Container(
-                              width: 12,
-                              height: 12,
-                              color: colorFromCssHex(
-                                range.hexColor,
-                              ).withAlpha(178),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 6,
-                          ),
-                          Text(
-                            range.name,
-                            style: chartTitleStyle.copyWith(
-                              fontSize: 11,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
+    return DashboardChartLegend(
+      entries: [
+        for (final range in bmiRanges.reversed)
+          DashboardLegendEntry(
+            color: colorFromCssHex(range.hexColor),
+            label: range.name,
           ),
-        ),
-      ),
+      ],
     );
   }
 }
@@ -95,36 +50,19 @@ class BmiChartInfoWidget extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
     final minWeight = '${NumberFormat('#,###.#').format(minInRange)} kg';
     final maxWeight = '${NumberFormat('#,###.#').format(maxInRange)} kg';
 
-    return Positioned(
-      top: 0,
-      left: 20,
-      child: IgnorePointer(
-        child: Container(
-          width: MediaQuery.of(context).size.width - 30,
-          padding: const EdgeInsets.only(
-            right: 10,
-            left: 10,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                healthTypes[chartConfig.healthType]?.displayName ??
-                    chartConfig.healthType,
-                style: chartTitleStyle,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$minWeight - $maxWeight',
-                style: chartTitleStyle.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+    return DashboardChartHeader(
+      title:
+          healthTypes[chartConfig.healthType]?.displayName ??
+          chartConfig.healthType,
+      trailing: Text(
+        '$minWeight – $maxWeight',
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+          fontWeight: tokens.typography.weight.semiBold,
         ),
       ),
     );
@@ -147,17 +85,14 @@ class DashboardHealthBmiChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final weightData =
-        ref
-            .watch(
-              healthObservationsControllerProvider(
-                healthDataType: 'HealthDataType.WEIGHT',
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-              ),
-            )
-            .value ??
-        [];
+    final weightAsync = ref.watch(
+      healthObservationsControllerProvider(
+        healthDataType: 'HealthDataType.WEIGHT',
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
+    );
+    final weightData = weightAsync.value ?? const <Observation>[];
 
     final minInRange = findMin(weightData);
     final maxInRange = findMax(weightData);
@@ -173,8 +108,11 @@ class DashboardHealthBmiChart extends ConsumerWidget {
         minInRange: minInRange,
         maxInRange: maxInRange,
       ),
+      isLoading: weightAsync.isLoading && !weightAsync.hasValue,
+      isEmpty: weightData.isEmpty,
+      emptyMessage: context.messages.dashboardChartNoData,
+      footer: const BmiRangeLegend(),
       height: 320,
-      overlay: const BmiRangeLegend(),
     );
   }
 }

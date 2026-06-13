@@ -1,5 +1,4 @@
 import 'dart:core';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,7 +11,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bmi
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bp_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class HealthChartInfoWidget extends StatelessWidget {
@@ -26,24 +25,11 @@ class HealthChartInfoWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final healthType = healthTypes[chartConfig.healthType];
+    final unit = healthType?.unit ?? '';
 
-    return Positioned(
-      top: 0,
-      left: 20,
-      child: SizedBox(
-        width: max(MediaQuery.of(context).size.width, 300) - 20,
-        child: IgnorePointer(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                healthType?.displayName ?? chartConfig.healthType,
-                style: chartTitleStyle,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return DashboardChartHeader(
+      title: healthType?.displayName ?? chartConfig.healthType,
+      subtitle: unit.isEmpty ? null : unit,
     );
   }
 }
@@ -85,17 +71,14 @@ class DashboardHealthChart extends ConsumerWidget {
       );
     }
 
-    final data =
-        ref
-            .watch(
-              healthObservationsControllerProvider(
-                healthDataType: chartConfig.healthType,
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-              ),
-            )
-            .value ??
-        [];
+    final dataAsync = ref.watch(
+      healthObservationsControllerProvider(
+        healthDataType: chartConfig.healthType,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
+    );
+    final data = dataAsync.value ?? const <Observation>[];
 
     return DashboardChart(
       chart: isBarChart
@@ -119,6 +102,9 @@ class DashboardHealthChart extends ConsumerWidget {
               unit: healthType?.unit ?? '',
             ),
       chartHeader: HealthChartInfoWidget(chartConfig),
+      isLoading: dataAsync.isLoading && !dataAsync.hasValue,
+      isEmpty: data.isEmpty,
+      emptyMessage: context.messages.dashboardChartNoData,
       height: isBarChart ? 180 : 150,
     );
   }

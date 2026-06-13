@@ -1,11 +1,10 @@
 import 'dart:core';
-import 'dart:math';
 
-import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class MeasurablesChartInfoWidget extends StatelessWidget {
@@ -21,13 +20,14 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
   final bool enableCreate;
 
   Widget _buildModalTitle(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           measurableDataType.displayName,
-          style: context.textTheme.titleMedium?.copyWith(
+          style: theme.textTheme.titleMedium?.copyWith(
             color: colorScheme.onSurface,
             fontWeight: FontWeight.w600,
             letterSpacing: -0.2,
@@ -36,8 +36,7 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
         if (measurableDataType.description.isNotEmpty)
           Text(
             measurableDataType.description,
-            style: TextStyle(
-              fontSize: 12,
+            style: theme.textTheme.bodySmall?.copyWith(
               color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
             ),
           ),
@@ -59,61 +58,43 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
       );
     }
 
-    return Positioned(
-      top: 0,
-      left: 20,
-      child: SizedBox(
-        width: max(MediaQuery.of(context).size.width, 300) - 20,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${measurableDataType.displayName}'
-                    '${aggregationType != AggregationType.none ? ' ' : ''}'
-                    '${aggregationLabel(aggregationType)}',
-                    style: chartTitleStyle,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                  ),
-                  if (measurableDataType.description.isNotEmpty)
-                    Text(
-                      measurableDataType.description,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            if (enableCreate)
-              IconButton(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                onPressed: captureData,
-                icon: const Icon(Icons.add_rounded),
-              ),
-          ],
-        ),
-      ),
+    // The aggregation is surfaced as a quiet caption (e.g. "Daily total")
+    // rather than concatenating a developer enum like "[dailySum]" into the
+    // title; the human-readable description follows it.
+    final aggregation = aggregationDisplayLabel(context, aggregationType);
+    final subtitle = [
+      if (aggregation.isNotEmpty) aggregation,
+      if (measurableDataType.description.isNotEmpty)
+        measurableDataType.description,
+    ].join(' · ');
+
+    return DashboardChartHeader(
+      title: measurableDataType.displayName,
+      subtitle: subtitle,
+      action: enableCreate
+          ? DashboardChartAddButton(
+              tooltip: context.messages.dashboardAddMeasurementTooltip,
+              onPressed: captureData,
+            )
+          : null,
     );
   }
 }
 
-String aggregationLabel(AggregationType? aggregationType) {
-  if (aggregationType == null) {
-    return '';
+/// Localized, human-readable label for an [AggregationType] (empty for
+/// [AggregationType.none]).
+String aggregationDisplayLabel(BuildContext context, AggregationType type) {
+  final messages = context.messages;
+  switch (type) {
+    case AggregationType.none:
+      return '';
+    case AggregationType.dailySum:
+      return messages.dashboardAggregationDailyTotal;
+    case AggregationType.dailyMax:
+      return messages.dashboardAggregationDailyMax;
+    case AggregationType.dailyAvg:
+      return messages.dashboardAggregationDailyAverage;
+    case AggregationType.hourlySum:
+      return messages.dashboardAggregationHourlyTotal;
   }
-  return aggregationType != AggregationType.none
-      ? '[${EnumToString.convertToString(aggregationType)}]'
-      : '';
 }

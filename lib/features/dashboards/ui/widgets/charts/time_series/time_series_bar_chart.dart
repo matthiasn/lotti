@@ -8,11 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/state/chart_scale_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 class TimeSeriesBarChart extends ConsumerWidget {
   const TimeSeriesBarChart({
@@ -37,6 +37,7 @@ class TimeSeriesBarChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
     final inRange = daysInRange(rangeStart: rangeStart, rangeEnd: rangeEnd);
 
     final byDay = <String, Observation>{};
@@ -52,14 +53,6 @@ class TimeSeriesBarChart extends ConsumerWidget {
 
     final rangeInDays = rangeEnd.difference(rangeStart).inDays;
 
-    final gridInterval = rangeInDays > 182
-        ? 30
-        : rangeInDays > 92
-        ? 14
-        : rangeInDays > 30
-        ? 7
-        : 1;
-
     final screenWidth = MediaQuery.sizeOf(context).width;
     final barsWidth =
         (screenWidth - 150 - rangeInDays - screenWidth * 0.1) / rangeInDays;
@@ -67,6 +60,13 @@ class TimeSeriesBarChart extends ConsumerWidget {
     final scale = transformationController != null
         ? ref.watch(barWidthControllerProvider)
         : 1.0;
+
+    final maxVal = dataWithEmptyDays.fold<double>(
+      0,
+      (m, o) => max(m, o.value.toDouble()),
+    );
+    final axis = niceAxis(0, maxVal, zeroBased: true);
+    final barRadius = Radius.circular(tokens.radii.xs);
 
     final barGroups = dataWithEmptyDays
         .sortedBy((observation) => observation.dateTime)
@@ -76,9 +76,9 @@ class TimeSeriesBarChart extends ConsumerWidget {
             barRods: [
               BarChartRodData(
                 toY: observation.value.toDouble(),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(2),
-                  topRight: Radius.circular(2),
+                borderRadius: BorderRadius.only(
+                  topLeft: barRadius,
+                  topRight: barRadius,
                 ),
                 color: colorByValue(observation),
                 width: max(barsWidth, 1) * scale,
@@ -118,13 +118,12 @@ class TimeSeriesBarChart extends ConsumerWidget {
         ),
         BarChartData(
           groupsSpace: 5,
+          minY: 0,
+          maxY: axis.max,
           gridData: FlGridData(
-            show: false,
-            horizontalInterval: double.maxFinite,
-            verticalInterval:
-                Duration.millisecondsPerDay.toDouble() * gridInterval,
-            getDrawingHorizontalLine: (value) => gridLine,
-            getDrawingVerticalLine: (value) => gridLine,
+            drawVerticalLine: false,
+            horizontalInterval: axis.interval,
+            getDrawingHorizontalLine: (value) => chartGridLine(context),
           ),
           barTouchData: BarTouchData(
             touchTooltipData: BarTouchTooltipData(
@@ -133,8 +132,7 @@ class TimeSeriesBarChart extends ConsumerWidget {
                 horizontal: 8,
                 vertical: 3,
               ),
-              getTooltipColor: (_) =>
-                  Theme.of(context).primaryColor.desaturate(),
+              getTooltipColor: (_) => tokens.colors.background.level03,
               tooltipBorderRadius: BorderRadius.circular(8),
               getTooltipItem: (groupData, timestamp, rodData, foo) {
                 final formatted = valueInHours
@@ -144,7 +142,7 @@ class TimeSeriesBarChart extends ConsumerWidget {
                   '$formatted $unit\n'
                   '${chartDateFormatterYMD(groupData.x)}',
                   chartTooltipStyleBold.copyWith(
-                    color: context.colorScheme.onPrimary,
+                    color: tokens.colors.text.highEmphasis,
                   ),
                 );
               },
@@ -161,17 +159,20 @@ class TimeSeriesBarChart extends ConsumerWidget {
                 getTitlesWidget: bottomTitleWidgets,
               ),
             ),
-            leftTitles: const AxisTitles(
+            leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: leftTitleWidgets,
-                reservedSize: 40,
+                reservedSize: 44,
+                interval: axis.interval,
+                minIncluded: false,
+                maxIncluded: false,
               ),
             ),
           ),
           borderData: FlBorderData(
             show: true,
-            border: Border.all(color: const Color(0xff37434d)),
+            border: Border.all(color: tokens.colors.decorative.level01),
           ),
           barGroups: barGroups,
         ),

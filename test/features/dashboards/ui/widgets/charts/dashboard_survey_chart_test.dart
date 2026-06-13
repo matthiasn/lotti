@@ -75,7 +75,7 @@ void main() {
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     });
 
-    testWidgets('empty entity list produces one series with empty spots', (
+    testWidgets('empty entity list shows the no-data message, no chart', (
       tester,
     ) async {
       when(
@@ -88,14 +88,11 @@ void main() {
 
       await hPumpSurveyChart(tester, chartConfig: chartConfig);
 
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      // One series (CFQ11) with zero spots.
-      expect(lineChart.data.lineBarsData, hasLength(1));
-      expect(
-        lineChart.data.lineBarsData.first.spots,
-        isEmpty,
-        reason: 'No entities → no spots in the single series',
-      );
+      // No survey completions → the card renders the empty state, no chart.
+      expect(find.byType(LineChart), findsNothing);
+      expect(find.text('No data in this range'), findsOneWidget);
+      // The header still identifies the survey.
+      expect(find.text('CFQ11'), findsOneWidget);
     });
 
     testWidgets('survey entries produce one spot per entry per score key', (

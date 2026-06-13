@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../../../widget_test_utils.dart';
 
@@ -25,8 +26,6 @@ TitleMeta _titleMeta() => TitleMeta(
   rotationQuarterTurns: 0,
 );
 
-/// Pumps the [leftTitleWidgets] output for [value] and returns the rendered
-/// label string.
 Future<String> _renderedLabel(WidgetTester tester, double value) async {
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
@@ -40,6 +39,53 @@ Future<String> _renderedLabel(WidgetTester tester, double value) async {
 }
 
 void main() {
+  group('formatAxisValue', () {
+    test('keeps one fractional digit below 1000', () {
+      expect(formatAxisValue(50.5), '50.5');
+      expect(formatAxisValue(99.5), '99.5');
+      expect(formatAxisValue(100.5), '100.5');
+    });
+
+    test('drops the optional decimal for whole values below 1000', () {
+      expect(formatAxisValue(42), '42');
+      expect(formatAxisValue(0), '0');
+    });
+
+    test('uses compact notation at or above 1000 so labels never clip', () {
+      // Compact notation keeps thousands/ten-thousands short enough to fit the
+      // reserved gutter at narrow detail-pane widths.
+      expect(formatAxisValue(1500), '1.5K');
+      expect(formatAxisValue(2405), '2.4K');
+      expect(formatAxisValue(14278), '14.3K');
+    });
+  });
+
+  group('niceAxis', () {
+    test('produces rounded, evenly-spaced zero-based ticks for bars', () {
+      final axis = niceAxis(0, 14278, zeroBased: true);
+      expect(axis.min, 0);
+      expect(axis.max, greaterThanOrEqualTo(14278));
+      expect(axis.interval, 5000);
+      expect(axis.max, 15000);
+    });
+
+    test('brackets a non-zero-based range on nice round bounds', () {
+      final axis = niceAxis(51, 69);
+      expect(axis.interval, 5);
+      expect(axis.min, 50);
+      expect(axis.max, 70);
+      // The data is fully contained.
+      expect(axis.min, lessThanOrEqualTo(51));
+      expect(axis.max, greaterThanOrEqualTo(69));
+    });
+
+    test('never returns a zero interval for a degenerate range', () {
+      final axis = niceAxis(5, 5);
+      expect(axis.interval, greaterThan(0));
+      expect(axis.max, greaterThan(axis.min));
+    });
+  });
+
   group('leftTitleWidgets', () {
     testWidgets('renders a ChartLabel widget', (tester) async {
       await tester.pumpWidget(
@@ -52,59 +98,15 @@ void main() {
       expect(find.byType(ChartLabel), findsOneWidget);
     });
 
-    testWidgets(
-      'values at or below 100 keep one fractional digit (####.# branch)',
-      (tester) async {
-        // 50.5 → "50.5": the .# placeholder is filled by the non-zero fraction.
-        expect(await _renderedLabel(tester, 50.5), '50.5');
-      },
-    );
-
-    testWidgets(
-      'a whole value <= 100 drops the optional decimal (####.# branch)',
-      (tester) async {
-        // 42 → "42": the trailing .# is optional and omitted for a zero
-        // fraction, so no ".0" is appended.
-        expect(await _renderedLabel(tester, 42), '42');
-      },
-    );
-
-    testWidgets(
-      'a fractional value just below the boundary keeps its decimal',
-      (tester) async {
-        // 99.5 <= 100, so value > 100 is false and the ####.# format runs.
-        expect(await _renderedLabel(tester, 99.5), '99.5');
-      },
-    );
-
-    testWidgets(
-      'crossing above 100 switches to the no-decimal #### branch',
-      (tester) async {
-        // 100.5 > 100 is true, so the #### format rounds to "101" — proving
-        // the branch flips at exactly 100.
-        expect(await _renderedLabel(tester, 100.5), '101');
-      },
-    );
-
-    testWidgets(
-      'values above 100 are rendered without decimals (#### branch)',
-      (tester) async {
-        // 150.5 → "151": the #### format rounds to the nearest integer and
-        // drops the fractional part entirely.
-        expect(await _renderedLabel(tester, 150.5), '151');
-      },
-    );
-
-    testWidgets(
-      'a large whole value above 100 has no decimal point (#### branch)',
-      (tester) async {
-        expect(await _renderedLabel(tester, 1234), '1234');
-      },
-    );
+    testWidgets('formats the value compactly above 1000', (tester) async {
+      expect(await _renderedLabel(tester, 14278), '14.3K');
+    });
   });
 
   group('ChartLabel', () {
-    testWidgets('dims the text via the labelOpacity constant', (tester) async {
+    testWidgets('renders centered, legible (medium-emphasis) caption text', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const Scaffold(body: ChartLabel('hello')),
@@ -113,17 +115,13 @@ void main() {
       await tester.pump();
 
       expect(find.text('hello'), findsOneWidget);
-
-      final opacity = tester.widget<Opacity>(
-        find.ancestor(
-          of: find.text('hello'),
-          matching: find.byType(Opacity),
-        ),
-      );
-      expect(opacity.opacity, labelOpacity);
+      // No half-opacity overlay anymore — colour comes straight from the
+      // medium-emphasis token so axis labels stay readable.
+      expect(find.byType(Opacity), findsNothing);
 
       final text = tester.widget<Text>(find.text('hello'));
       expect(text.textAlign, TextAlign.center);
+      expect(text.style?.color, dsTokensLight.colors.text.mediumEmphasis);
     });
   });
 }

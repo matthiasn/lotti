@@ -4049,6 +4049,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardAddMeasurementTitle => 'Messwertdiagramme';
 
   @override
+  String get dashboardAddMeasurementTooltip => 'Messung hinzufügen';
+
+  @override
   String get dashboardAddSurveyButton => 'Umfragediagramme';
 
   @override
@@ -4061,10 +4064,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardAddWorkoutTitle => 'Trainingsdiagramme';
 
   @override
+  String get dashboardAggregationDailyAverage => 'Tagesdurchschnitt';
+
+  @override
+  String get dashboardAggregationDailyMax => 'Tägliches Maximum';
+
+  @override
+  String get dashboardAggregationDailyTotal => 'Tägliche Summe';
+
+  @override
+  String get dashboardAggregationHourlyTotal => 'Stündliche Summe';
+
+  @override
   String get dashboardAggregationLabel => 'Aggregationsart:';
 
   @override
   String get dashboardCategoryLabel => 'Kategorie';
+
+  @override
+  String get dashboardChartNoData => 'Keine Daten in diesem Zeitraum';
 
   @override
   String get dashboardCopyHint =>
@@ -4086,6 +4104,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardDescriptionLabel => 'Beschreibung (optional)';
 
   @override
+  String get dashboardHealthBloodPressure => 'Blutdruck';
+
+  @override
+  String get dashboardHealthDiastolic => 'Diastolisch';
+
+  @override
+  String get dashboardHealthSystolic => 'Systolisch';
+
+  @override
   String get dashboardNameLabel => 'Dashboard-Name';
 
   @override
@@ -4093,6 +4120,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dashboardPrivateLabel => 'Privat';
+
+  @override
+  String get dashboardTakeSurveyTooltip => 'Umfrage ausfüllen';
 
   @override
   String get defaultLanguage => 'Standardsprache';

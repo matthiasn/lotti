@@ -4046,6 +4046,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardAddMeasurementTitle => 'Měřicí grafy';
 
   @override
+  String get dashboardAddMeasurementTooltip => 'Přidat měření';
+
+  @override
   String get dashboardAddSurveyButton => 'Grafy průzkumů';
 
   @override
@@ -4058,10 +4061,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardAddWorkoutTitle => 'Grafy cvičení';
 
   @override
+  String get dashboardAggregationDailyAverage => 'Denní průměr';
+
+  @override
+  String get dashboardAggregationDailyMax => 'Denní maximum';
+
+  @override
+  String get dashboardAggregationDailyTotal => 'Denní součet';
+
+  @override
+  String get dashboardAggregationHourlyTotal => 'Hodinový součet';
+
+  @override
   String get dashboardAggregationLabel => 'Typ agregace:';
 
   @override
   String get dashboardCategoryLabel => 'Kategorie';
+
+  @override
+  String get dashboardChartNoData => 'Žádná data v tomto rozsahu';
 
   @override
   String get dashboardCopyHint => 'Uložit a zkopírovat konfiguraci panelu';
@@ -4083,6 +4101,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardDescriptionLabel => 'Popis (volitelné)';
 
   @override
+  String get dashboardHealthBloodPressure => 'Krevní tlak';
+
+  @override
+  String get dashboardHealthDiastolic => 'Diastolický';
+
+  @override
+  String get dashboardHealthSystolic => 'Systolický';
+
+  @override
   String get dashboardNameLabel => 'Název dashboardu';
 
   @override
@@ -4090,6 +4117,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dashboardPrivateLabel => 'Soukromý';
+
+  @override
+  String get dashboardTakeSurveyTooltip => 'Vyplnit dotazník';
 
   @override
   String get defaultLanguage => 'Výchozí jazyk';

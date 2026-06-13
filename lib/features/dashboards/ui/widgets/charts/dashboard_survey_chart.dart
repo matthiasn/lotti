@@ -9,7 +9,7 @@ import 'package:lotti/features/dashboards/state/survey_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/surveys/tools/run_surveys.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 class DashboardSurveyChart extends ConsumerWidget {
   const DashboardSurveyChart({
@@ -33,7 +33,8 @@ class DashboardSurveyChart extends ConsumerWidget {
       rangeEnd: rangeEnd,
     );
 
-    final items = ref.watch(provider).value ?? [];
+    final itemsAsync = ref.watch(provider);
+    final items = itemsAsync.value ?? const [];
 
     void onTapAdd() {
       if (chartConfig.surveyType == cfq11SurveyTaskName) {
@@ -74,7 +75,6 @@ class DashboardSurveyChart extends ConsumerWidget {
         : allSpots.map((spot) => spot.y).reduce(max);
 
     return DashboardChart(
-      topMargin: 10,
       chart: TimeSeriesMultiLineChart(
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
@@ -83,28 +83,16 @@ class DashboardSurveyChart extends ConsumerWidget {
         maxVal: maxVal,
         transformationController: transformationController,
       ),
-      chartHeader: Positioned(
-        top: 0,
-        left: 20,
-        child: SizedBox(
-          width: max(MediaQuery.of(context).size.width, 300) - 20,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                chartConfig.surveyName,
-                style: chartTitleStyle,
-              ),
-              const Spacer(),
-              IconButton(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                onPressed: onTapAdd,
-                icon: const Icon(Icons.add_rounded),
-              ),
-            ],
-          ),
+      chartHeader: DashboardChartHeader(
+        title: chartConfig.surveyName,
+        action: DashboardChartAddButton(
+          tooltip: context.messages.dashboardTakeSurveyTooltip,
+          onPressed: onTapAdd,
         ),
       ),
+      isLoading: itemsAsync.isLoading && !itemsAsync.hasValue,
+      isEmpty: items.isEmpty,
+      emptyMessage: context.messages.dashboardChartNoData,
       height: 180,
     );
   }

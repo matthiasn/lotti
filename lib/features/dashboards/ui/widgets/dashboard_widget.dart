@@ -7,7 +7,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_cha
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 
 class DashboardWidget extends ConsumerWidget {
@@ -76,30 +76,40 @@ class DashboardWidget extends ConsumerWidget {
       }
     });
 
+    final tokens = context.designTokens;
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: EdgeInsets.only(top: tokens.spacing.step5),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (showTitle)
-            Text(
-              dashboard.name,
-              style: taskTitleStyle,
-            ),
-          ...intersperse(const SizedBox(height: 16), items.whereType<Widget>()),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 10),
-                  child: Text(
-                    dashboard.description,
-                    style: chartTitleStyle,
-                  ),
+            Padding(
+              padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+              child: Text(
+                dashboard.name,
+                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                  color: tokens.colors.text.highEmphasis,
                 ),
               ),
-            ],
+            ),
+          ...intersperse(
+            SizedBox(height: tokens.spacing.cardItemSpacing),
+            items.whereType<Widget>(),
           ),
+          if (dashboard.description.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(
+                top: tokens.spacing.step4,
+                left: tokens.spacing.step2,
+                right: tokens.spacing.step2,
+              ),
+              child: Text(
+                dashboard.description,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/dashboards/state/chart_scale_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -68,12 +69,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       );
     }
 
+    final tokens = context.designTokens;
     return SliverBoxAdapterPage(
       title: dashboard.name,
       showBackButton: true,
       child: Column(
         children: [
-          const SizedBox(height: 15),
+          SizedBox(height: tokens.spacing.step5),
           TimeSpanSegmentedControl(
             timeSpanDays: timeSpanDays,
             onValueChanged: (int value) {
@@ -82,7 +84,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               });
             },
           ),
-          const SizedBox(height: 15),
+          SizedBox(height: tokens.spacing.step5),
           DashboardWidget(
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,

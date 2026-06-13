@@ -55,6 +55,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Time Analysis (desktop): tap the period label to open a calendar and jump
   straight to any date's period; the dashboard updates live behind the
   sheet as you pick.
+- Insights dashboards: the chart cards were rebuilt on the app design
+  system. Charts no longer sit in near-black boxes in dark mode; value axes
+  use rounded, evenly-spaced ticks with legible, never-clipped labels; line
+  charts use a higher-contrast series colour; blood-pressure and BMI charts
+  show an on-card legend (and the BMI range key moved below the plot so it
+  no longer covers the line); measurement headers read "Daily total" instead
+  of "[dailySum]" and carry the unit; and each chart shows an explicit "No
+  data in this range" state instead of a flat zero line. The add-value (+)
+  button on measurement and survey charts now stays inside the card on
+  desktop instead of being pushed off-screen.
 
 ## [0.9.1019]
 ### Changed

@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 import 'time_series_line_chart_test_helpers.dart';
@@ -74,7 +75,9 @@ void main() {
       expect(lineChart.data.lineBarsData.first.spots, isEmpty);
     });
 
-    testWidgets('minY is floor of minimum value minus 1', (tester) async {
+    testWidgets('minY/maxY are nice-axis bounds around the data', (
+      tester,
+    ) async {
       await hPumpChart(
         tester,
         data: [
@@ -86,27 +89,23 @@ void main() {
       );
 
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      // floor(7.3) - 1 = 7 - 1 = 6
-      expect(lineChart.data.minY, 6.0);
-    });
-
-    testWidgets('maxY is ceil of maximum value plus 1', (tester) async {
-      await hPumpChart(
-        tester,
-        data: [
-          Observation(DateTime(2024, 3, 5), 7.3),
-          Observation(DateTime(2024, 3, 15), 12.8),
-        ],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+      // Data spans floor(7.3)=7 .. ceil(12.8)=13 → niceAxis(7, 13).
+      final axis = niceAxis(7, 13);
+      expect(lineChart.data.minY, axis.min);
+      expect(lineChart.data.maxY, axis.max);
+      // Nice bounds wrap the data without clipping it.
+      expect(lineChart.data.minY, lessThanOrEqualTo(7.3));
+      expect(lineChart.data.maxY, greaterThanOrEqualTo(12.8));
+      // Left-axis tick interval is the same nice interval.
+      expect(
+        lineChart.data.titlesData.leftTitles.sideTitles.interval,
+        axis.interval,
       );
-
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      // ceil(12.8) + 1 = 13 + 1 = 14
-      expect(lineChart.data.maxY, 14.0);
     });
 
-    testWidgets('empty data uses fallback minY=-1 and maxY=2', (tester) async {
+    testWidgets('empty data uses nice-axis bounds of the 0..1 fallback', (
+      tester,
+    ) async {
       await hPumpChart(
         tester,
         data: [],
@@ -115,12 +114,13 @@ void main() {
       );
 
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      // minY = 0 - 1 = -1, maxY = 1 + 1 = 2
-      expect(lineChart.data.minY, -1.0);
-      expect(lineChart.data.maxY, 2.0);
+      // Empty data falls back to minY=0, maxY=1 → niceAxis(0, 1).
+      final axis = niceAxis(0, 1);
+      expect(lineChart.data.minY, axis.min);
+      expect(lineChart.data.maxY, axis.max);
     });
 
-    testWidgets('single observation: minY = floor-1 and maxY = ceil+1', (
+    testWidgets('single observation: nice bounds wrap the value', (
       tester,
     ) async {
       await hPumpChart(
@@ -131,9 +131,11 @@ void main() {
       );
 
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      // floor(50) - 1 = 49; ceil(50) + 1 = 51
-      expect(lineChart.data.minY, 49.0);
-      expect(lineChart.data.maxY, 51.0);
+      // floor(50)=50, ceil(50)=50 → niceAxis(50, 50).
+      final axis = niceAxis(50, 50);
+      expect(lineChart.data.minY, axis.min);
+      expect(lineChart.data.maxY, axis.max);
+      expect(lineChart.data.maxY, greaterThan(lineChart.data.minY));
     });
   });
 
@@ -158,78 +160,43 @@ void main() {
     });
   });
 
-  group('TimeSeriesLineChart — grid interval by range length', () {
-    for (final testCase in [
-      (
-        label: '>182 days → gridInterval=30',
-        start: DateTime(2024),
-        end: DateTime(2024, 8), // ~213 days
-        expectedFactor: 30,
-      ),
-      (
-        label: '93–182 days → gridInterval=14',
-        start: DateTime(2024),
-        end: DateTime(2024, 4, 15), // ~105 days
-        expectedFactor: 14,
-      ),
-      (
-        label: '31–92 days → gridInterval=7',
-        start: DateTime(2024),
-        end: DateTime(2024, 3), // ~60 days
-        expectedFactor: 7,
-      ),
-      (
-        label: '<=30 days → gridInterval=1',
-        start: DateTime(2024, 3),
-        end: DateTime(2024, 3, 15), // 14 days
-        expectedFactor: 1,
-      ),
-    ]) {
-      testWidgets(testCase.label, (tester) async {
+  group('TimeSeriesLineChart — grid line callbacks', () {
+    testWidgets(
+      'getDrawingHorizontalLine returns the tokenized chart gridline',
+      (tester) async {
         await hPumpChart(
           tester,
-          data: [],
-          rangeStart: testCase.start,
-          rangeEnd: testCase.end,
+          data: [Observation(DateTime(2024, 3, 10), 5)],
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
         );
 
+        final tokens = tester.element(find.byType(LineChart)).designTokens;
         final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-        final expectedInterval =
-            Duration.millisecondsPerDay.toDouble() * testCase.expectedFactor;
-        expect(
-          lineChart.data.gridData.verticalInterval,
-          expectedInterval,
-          reason: testCase.label,
-        );
-      });
-    }
-  });
+        final result = lineChart.data.gridData.getDrawingHorizontalLine(0);
+        expect(result.color, tokens.colors.decorative.level01);
+        expect(result.strokeWidth, 1);
+      },
+    );
 
-  group('TimeSeriesLineChart — grid line callbacks', () {
-    testWidgets('getDrawingHorizontalLine returns gridLine', (tester) async {
+    testWidgets('vertical gridlines are disabled and interval is nice', (
+      tester,
+    ) async {
       await hPumpChart(
         tester,
-        data: [],
+        data: [Observation(DateTime(2024, 3, 10), 12.8)],
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
       );
 
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      final result = lineChart.data.gridData.getDrawingHorizontalLine(0);
-      expect(result, equals(gridLine));
-    });
-
-    testWidgets('getDrawingVerticalLine returns gridLine', (tester) async {
-      await hPumpChart(
-        tester,
-        data: [],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+      expect(lineChart.data.gridData.drawVerticalLine, isFalse);
+      // Horizontal interval is the nice-axis tick interval, finite & positive.
+      expect(
+        lineChart.data.gridData.horizontalInterval,
+        isNot(double.maxFinite),
       );
-
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      final result = lineChart.data.gridData.getDrawingVerticalLine(0);
-      expect(result, equals(gridLine));
+      expect(lineChart.data.gridData.horizontalInterval, greaterThan(0));
     });
   });
 

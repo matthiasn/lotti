@@ -72,6 +72,8 @@ void main() {
       );
 
       expect(find.text('Resting Heart Rate'), findsOneWidget);
+      // The unit is surfaced as the header subtitle.
+      expect(find.text('bpm'), findsOneWidget);
     });
 
     testWidgets('falls back to raw healthType string when type is unknown', (
@@ -263,7 +265,7 @@ void main() {
     });
 
     testWidgets(
-      'renders TimeSeriesLineChart when provider returns empty list',
+      'shows the no-data message instead of a line chart when empty',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidget(
@@ -284,10 +286,12 @@ void main() {
 
         await tester.pump();
 
-        expect(find.byType(TimeSeriesLineChart), findsOneWidget);
-        // The embedded LineChart should have no spots.
-        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-        expect(lineChart.data.lineBarsData.first.spots, isEmpty);
+        // Empty observations → the card renders the empty state, no chart.
+        expect(find.byType(TimeSeriesLineChart), findsNothing);
+        expect(find.byType(LineChart), findsNothing);
+        expect(find.text('No data in this range'), findsOneWidget);
+        // The header still renders so the chart stays identifiable.
+        expect(find.text('Resting Heart Rate'), findsOneWidget);
       },
     );
 
@@ -464,34 +468,34 @@ void main() {
       );
     });
 
-    testWidgets('renders with empty data for bar-chart type — no crash', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          DashboardHealthChart(
-            chartConfig: stepsConfig,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-          ),
-          overrides: [
-            healthObservationsControllerProvider(
-              healthDataType: 'cumulative_step_count',
+    testWidgets(
+      'shows the no-data message instead of a bar chart when empty',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            DashboardHealthChart(
+              chartConfig: stepsConfig,
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
-          ],
-        ),
-      );
+            ),
+            overrides: [
+              healthObservationsControllerProvider(
+                healthDataType: 'cumulative_step_count',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            ],
+          ),
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      expect(find.byType(TimeSeriesBarChart), findsOneWidget);
-      // BarChart should have rendered bar groups.
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      // One group per day in range even when data is empty (filled with zeros).
-      expect(barChart.data.barGroups, isNotEmpty);
-    });
+        // Empty observations → the card renders the empty state, no chart.
+        expect(find.byType(TimeSeriesBarChart), findsNothing);
+        expect(find.byType(BarChart), findsNothing);
+        expect(find.text('No data in this range'), findsOneWidget);
+      },
+    );
   });
 
   // ------------------------------------------------------------------ //
