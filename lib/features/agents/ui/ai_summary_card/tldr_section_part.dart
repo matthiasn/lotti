@@ -346,12 +346,11 @@ class _IconAffordance extends StatelessWidget {
     return IconButton(
       icon: Icon(icon, size: compact ? 16 : 18, color: ai.metaText),
       tooltip: tooltip,
-      visualDensity: VisualDensity.compact,
       padding: EdgeInsets.zero,
-      constraints: BoxConstraints(
-        minWidth: compact ? 24 : 28,
-        minHeight: compact ? 24 : 28,
-      ),
+      // >=44pt tap target for every control (low-vision / magnifier /
+      // imprecise pointing), even though the glyph stays small so the
+      // control row reads calm.
+      constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
       onPressed: onPressed,
     );
   }
