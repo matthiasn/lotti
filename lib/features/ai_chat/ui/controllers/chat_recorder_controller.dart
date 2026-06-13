@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/ai_chat/ui/controllers/chat_amplitude_history.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -14,10 +15,7 @@ import 'package:record/record.dart' as record;
 
 export 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
 
-part 'chat_recorder_controller_realtime.dart';
-
-class ChatRecorderController extends Notifier<ChatRecorderState>
-    with _ChatRecorderRealtime {
+class ChatRecorderController extends Notifier<ChatRecorderState> {
   ChatRecorderController({
     record.AudioRecorder Function()? recorderFactory,
     int Function()? nowMillisProvider,
@@ -34,18 +32,13 @@ class ChatRecorderController extends Notifier<ChatRecorderState>
        _transcriptionServiceOverride = transcriptionService,
        _realtimeServiceOverride = realtimeTranscriptionService;
 
-  @override
   final record.AudioRecorder Function() _recorderFactory;
-  @override
   final int Function() _nowMillisProvider;
-  @override
   final Future<Directory> Function() _tempDirectoryProvider;
-  @override
   final ChatRecorderConfig _config;
   final AudioTranscriptionService? _transcriptionServiceOverride;
   final RealtimeTranscriptionService? _realtimeServiceOverride;
   late final AudioTranscriptionService _transcriptionService;
-  @override
   late final RealtimeTranscriptionService _realtimeService;
   _AppLifecycleObserver? _lifecycleObserver;
 
@@ -117,19 +110,13 @@ class ChatRecorderController extends Notifier<ChatRecorderState>
   @visibleForTesting
   Future<void>? disposeCleanupFuture;
 
-  @override
   record.AudioRecorder? _recorder;
   StreamSubscription<record.Amplitude>? _ampSub;
-  @override
   StreamSubscription<double>? _realtimeAmpSub;
-  @override
   Timer? _maxTimer;
-  @override
   Directory? _tempDir;
   String? _filePath;
-  @override
   bool _isStarting = false;
-  @override
   int _operationId = 0; // Incremented for each new operation to prevent races
 
   static const int _cleanupTimeoutSeconds = 2;
@@ -214,12 +201,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState>
             if (!ref.mounted) return;
 
             final dBFS = event.current;
-            final history = List<double>.from(state.amplitudeHistory)
-              ..add(dBFS);
-            if (history.length > _historyMax) history.removeAt(0);
             state = state.copyWith(
               status: ChatRecorderStatus.recording,
-              amplitudeHistory: history,
+              amplitudeHistory: appendAmplitudeSample(
+                state.amplitudeHistory,
+                dBFS,
+              ),
             );
           });
 
@@ -424,24 +411,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState>
   }
 
   // Normalize dBFS history to 0.05..1.0 range for UI
-  List<double> getNormalizedAmplitudeHistory() {
-    const minDBFS = -80;
-    const maxDBFS = -10;
-    const rangeDBFS = maxDBFS - minDBFS; // 70
-    const minNormalized = 0.05;
-    const maxNormalized = 1;
-    const rangeNormalized = maxNormalized - minNormalized; // 0.95
+  List<double> getNormalizedAmplitudeHistory() =>
+      normalizeAmplitudeHistory(state.amplitudeHistory);
 
-    return state.amplitudeHistory.map((dBFS) {
-      if (dBFS <= minDBFS) return minNormalized; // double
-      if (dBFS >= maxDBFS) return maxNormalized.toDouble();
-      final normalized = (dBFS - minDBFS) / rangeDBFS; // -80..-10 -> 0..1
-      final scaled = normalized * rangeNormalized + minNormalized;
-      return scaled.clamp(minNormalized, maxNormalized).toDouble();
-    }).toList();
-  }
-
-  @override
   Future<void> _cleanupInternal() async {
     try {
       await _ampSub?.cancel();
@@ -530,6 +502,210 @@ class ChatRecorderController extends Notifier<ChatRecorderState>
         useRealtimeMode: state.useRealtimeMode,
       );
     }
+  }
+
+  // ---------------------------------------------------------------
+  // Realtime (streaming) transcription
+  // ---------------------------------------------------------------
+
+  Future<void> startRealtime() async {
+    if (!ref.mounted) return;
+    if (_isStarting) {
+      state = state.copyWith(
+        error: 'Another operation is in progress',
+        errorType: ChatRecorderErrorType.concurrentOperation,
+      );
+      return;
+    }
+    if (state.status != ChatRecorderStatus.idle) return;
+
+    _isStarting = true;
+    final recorder = _recorderFactory();
+    try {
+      final hasPerm = await recorder.hasPermission();
+      if (!ref.mounted) {
+        await recorder.dispose();
+        return;
+      }
+      if (!hasPerm) {
+        state = state.copyWith(
+          error: 'Microphone permission denied. Please enable it in Settings.',
+          errorType: ChatRecorderErrorType.permissionDenied,
+        );
+        await recorder.dispose();
+        return;
+      }
+
+      // Start PCM stream at 16kHz mono (required by Mistral realtime API)
+      final pcmStream = await recorder.startStream(
+        const record.RecordConfig(
+          encoder: record.AudioEncoder.pcm16bits,
+          sampleRate: 16000,
+          numChannels: 1,
+        ),
+      );
+
+      if (!ref.mounted) {
+        await recorder.stop();
+        await recorder.dispose();
+        return;
+      }
+
+      _recorder = recorder;
+
+      final currentOpId = ++_operationId;
+
+      state = state.copyWith(
+        status: ChatRecorderStatus.realtimeRecording,
+        amplitudeHistory: [],
+      );
+
+      // Subscribe to amplitude values from the service for waveform display
+      _realtimeAmpSub = _realtimeService.amplitudeStream.listen((dbfs) {
+        if (currentOpId != _operationId || !ref.mounted) return;
+
+        state = state.copyWith(
+          status: ChatRecorderStatus.realtimeRecording,
+          amplitudeHistory: appendAmplitudeSample(
+            state.amplitudeHistory,
+            dbfs,
+          ),
+          partialTranscript: state.partialTranscript,
+        );
+      });
+
+      // Connect WebSocket and start streaming audio.
+      // The onDelta callback updates the UI with live transcript text.
+      await _realtimeService.startRealtimeTranscription(
+        pcmStream: pcmStream,
+        onDelta: (delta) {
+          if (currentOpId != _operationId || !ref.mounted) return;
+          final current = state.partialTranscript ?? '';
+          state = state.copyWith(
+            status: ChatRecorderStatus.realtimeRecording,
+            partialTranscript: '$current$delta',
+          );
+        },
+      );
+
+      // Safety timer — stops after configured max duration
+      _maxTimer?.cancel();
+      _maxTimer = Timer(Duration(seconds: _config.maxSeconds), () {
+        if (currentOpId == _operationId && ref.mounted) {
+          unawaited(stopRealtime());
+        }
+      });
+
+      getIt<DomainLogger>().log(
+        LogDomain.chat,
+        'chat_realtime_recording_started',
+        subDomain: 'startRealtime',
+      );
+    } catch (e) {
+      // Cancel realtime-specific subscriptions that may have been set up
+      // before the failure (e.g. amplitude subscription started before
+      // startRealtimeTranscription threw).
+      try {
+        await _realtimeAmpSub?.cancel();
+        _realtimeAmpSub = null;
+      } catch (_) {}
+
+      if (ref.mounted) {
+        state = state.copyWith(
+          status: ChatRecorderStatus.idle,
+          error: 'Failed to start realtime recording: $e',
+          errorType: ChatRecorderErrorType.startFailed,
+        );
+      }
+      await _cleanupInternal();
+    } finally {
+      _isStarting = false;
+    }
+  }
+
+  /// Stops a real-time transcription session and produces the final transcript.
+  ///
+  /// The stop sequence:
+  /// 1. Cancel delta subscription
+  /// 2. Cancel amplitude subscription
+  /// 3. Service stops (cancels PCM stream, stops recorder, sends endAudio,
+  ///    waits for `transcription.done`, writes WAV→M4A)
+  /// 4. Controller disposes the recorder
+  Future<void> stopRealtime() async {
+    if (!ref.mounted) return;
+    if (_recorder == null) return;
+
+    final currentOpId = _operationId;
+
+    _maxTimer?.cancel();
+
+    try {
+      await _realtimeAmpSub?.cancel();
+      _realtimeAmpSub = null;
+    } catch (e, s) {
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
+        e,
+        stackTrace: s,
+        subDomain: 'stopRealtime.cancelSubs',
+      );
+    }
+
+    // Set up an output path for the audio file
+    final baseTemp = await _tempDirectoryProvider();
+    if (!ref.mounted) return;
+    _tempDir = await Directory(
+      '${baseTemp.path}/lotti_chat_rec',
+    ).create(recursive: true);
+    if (!ref.mounted) return;
+    final outputPath = '${_tempDir!.path}/chat_rt_${_nowMillisProvider()}';
+
+    try {
+      final recorder = _recorder;
+      final result = await _realtimeService.stop(
+        stopRecorder: () async {
+          await recorder?.stop();
+        },
+        outputPath: outputPath,
+      );
+
+      if (currentOpId == _operationId && ref.mounted) {
+        state = state.copyWith(
+          status: ChatRecorderStatus.idle,
+          transcript: result.transcript,
+        );
+      }
+
+      getIt<DomainLogger>().log(
+        LogDomain.chat,
+        'chat_realtime_recording_stopped: '
+        'transcriptLen=${result.transcript.length}, '
+        'audioFile=${result.audioFilePath}, '
+        'usedFallback=${result.usedTranscriptFallback}',
+        subDomain: 'stopRealtime',
+      );
+    } catch (e) {
+      // Tear down the WebSocket and service subscriptions that
+      // service.stop() would have cleaned up on success.
+      try {
+        await _realtimeService.dispose();
+      } catch (_) {}
+      if (currentOpId == _operationId && ref.mounted) {
+        state = state.copyWith(
+          status: ChatRecorderStatus.idle,
+          error: 'Realtime transcription failed: $e',
+          errorType: ChatRecorderErrorType.transcriptionFailed,
+        );
+      }
+    } finally {
+      await _cleanupInternal();
+    }
+  }
+
+  /// Toggles between batch and realtime transcription mode.
+  void toggleRealtimeMode() {
+    if (!ref.mounted) return;
+    state = state.copyWith(useRealtimeMode: !state.useRealtimeMode);
   }
 }
 
