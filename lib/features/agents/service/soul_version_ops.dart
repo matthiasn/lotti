@@ -1,7 +1,155 @@
-part of 'soul_document_service.dart';
+import 'dart:developer' as developer;
 
-/// Soul-version lifecycle methods for [SoulDocumentService].
-mixin _SoulVersionOps on _SoulDocumentServiceBase {
+import 'package:clock/clock.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/soul_template_ops.dart'
+    show SoulTemplateOps;
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:uuid/uuid.dart';
+
+const _uuid = Uuid();
+const _logTag = 'SoulDocumentService';
+
+void _requireNonBlank(String fieldName, String value) {
+  if (value.trim().isEmpty) {
+    throw ArgumentError.value(value, fieldName, 'must not be blank');
+  }
+}
+
+/// Soul-document head and version lifecycle.
+///
+/// Owns the soul document entity (create/update/read/delete), its version
+/// chain (create version, update-and-version, rollback, history), and the
+/// active-version/head reads. [SoulTemplateOps] depends on this class for
+/// [getActiveSoulVersion] when resolving template assignments.
+class SoulVersionOps {
+  SoulVersionOps({
+    required this.repository,
+    required this.syncService,
+  });
+
+  final AgentRepository repository;
+  final AgentSyncService syncService;
+
+  /// Create a new soul document with its initial version and head pointer.
+  ///
+  /// Throws [StateError] if a soul with the given [soulId] already exists.
+  /// Throws [ArgumentError] if required text fields are blank.
+  Future<SoulDocumentEntity> createSoul({
+    required String displayName,
+    required String voiceDirective,
+    required String authoredBy,
+    String toneBounds = '',
+    String coachingStyle = '',
+    String antiSycophancyPolicy = '',
+    String? soulId,
+  }) async {
+    _requireNonBlank('displayName', displayName);
+    _requireNonBlank('voiceDirective', voiceDirective);
+    _requireNonBlank('authoredBy', authoredBy);
+
+    final id = soulId ?? _uuid.v4();
+    final versionId = _uuid.v4();
+    final headId = _uuid.v4();
+    final now = clock.now();
+
+    return syncService.runInTransaction(() async {
+      final existing = await getSoul(id);
+      if (existing != null) {
+        throw StateError('Soul document $id already exists');
+      }
+
+      final soul =
+          AgentDomainEntity.soulDocument(
+                id: id,
+                agentId: id,
+                displayName: displayName,
+                createdAt: now,
+                updatedAt: now,
+                vectorClock: null,
+              )
+              as SoulDocumentEntity;
+
+      final version = AgentDomainEntity.soulDocumentVersion(
+        id: versionId,
+        agentId: id,
+        version: 1,
+        status: SoulDocumentVersionStatus.active,
+        authoredBy: authoredBy,
+        createdAt: now,
+        vectorClock: null,
+        voiceDirective: voiceDirective,
+        toneBounds: toneBounds,
+        coachingStyle: coachingStyle,
+        antiSycophancyPolicy: antiSycophancyPolicy,
+      );
+
+      final head = AgentDomainEntity.soulDocumentHead(
+        id: headId,
+        agentId: id,
+        versionId: versionId,
+        updatedAt: now,
+        vectorClock: null,
+      );
+
+      await syncService.upsertEntity(soul);
+      await syncService.upsertEntity(version);
+      await syncService.upsertEntity(head);
+
+      developer.log(
+        'Created soul ${DomainLogger.sanitizeId(id)}',
+        name: _logTag,
+      );
+
+      return soul;
+    });
+  }
+
+  /// Fetch a soul document by its ID.
+  Future<SoulDocumentEntity?> getSoul(String soulId) async {
+    return repository.getSoulDocument(soulId);
+  }
+
+  /// Update mutable fields on a soul document (currently just display name).
+  ///
+  /// Rejects blank display names and skips the write when nothing changed.
+  Future<SoulDocumentEntity> updateSoul({
+    required String soulId,
+    String? displayName,
+  }) async {
+    final trimmed = displayName?.trim();
+    if (trimmed != null && trimmed.isEmpty) {
+      throw ArgumentError('displayName must not be blank');
+    }
+
+    final now = clock.now();
+
+    return syncService.runInTransaction(() async {
+      final soul = await getSoul(soulId);
+      if (soul == null) {
+        throw StateError('Soul document $soulId not found');
+      }
+
+      final newName = trimmed ?? soul.displayName;
+      if (newName == soul.displayName) return soul;
+
+      final updated = soul.copyWith(
+        displayName: newName,
+        updatedAt: now,
+      );
+      await syncService.upsertEntity(updated);
+      return updated;
+    });
+  }
+
+  /// List all non-deleted soul documents.
+  Future<List<SoulDocumentEntity>> getAllSouls() async {
+    return repository.getAllSoulDocuments();
+  }
+
   /// Create a new version of a soul document's personality directives.
   ///
   /// Archives **all** non-archived versions (not just the head-pointed one) to
@@ -178,7 +326,6 @@ mixin _SoulVersionOps on _SoulDocumentServiceBase {
   }
 
   /// Fetch the active version for a soul document.
-  @override
   Future<SoulDocumentVersionEntity?> getActiveSoulVersion(
     String soulId,
   ) async {

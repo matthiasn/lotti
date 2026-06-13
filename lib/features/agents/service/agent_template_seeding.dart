@@ -1,6 +1,30 @@
-part of 'agent_template_service.dart';
+import 'dart:developer' as developer;
 
-mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/seeded_directives.dart';
+import 'package:lotti/features/agents/service/agent_template_crud.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/services/domain_logging.dart';
+
+/// Idempotent seeding of default templates and their directive fields.
+///
+/// Creates the well-known default templates (Laura, Tom, Shepherd, etc.) and
+/// backfills directive fields on existing versions. All template reads and
+/// writes are delegated to [AgentTemplateCrud]; only [seedDirectiveFields]
+/// writes versions directly through the sync service.
+class AgentTemplateSeeding {
+  AgentTemplateSeeding({
+    required this.repository,
+    required this.syncService,
+    required this.crud,
+  });
+
+  final AgentRepository repository;
+  final AgentSyncService syncService;
+  final AgentTemplateCrud crud;
+
   /// Idempotent seed of default templates.
   ///
   /// Checks each default template independently, seeding only those that are
@@ -15,12 +39,12 @@ mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
       improver,
       metaImprover,
     ] = await Future.wait([
-      getTemplate(lauraTemplateId),
-      getTemplate(tomTemplateId),
-      getTemplate(dayAgentTemplateId),
-      getTemplate(projectTemplateId),
-      getTemplate(improverTemplateId),
-      getTemplate(metaImproverTemplateId),
+      crud.getTemplate(lauraTemplateId),
+      crud.getTemplate(tomTemplateId),
+      crud.getTemplate(dayAgentTemplateId),
+      crud.getTemplate(projectTemplateId),
+      crud.getTemplate(improverTemplateId),
+      crud.getTemplate(metaImproverTemplateId),
     ]);
 
     final defaultsAlreadySeeded =
@@ -37,7 +61,7 @@ mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
       );
     } else {
       if (laura == null) {
-        await createTemplate(
+        await crud.createTemplate(
           templateId: lauraTemplateId,
           displayName: 'Laura',
           kind: AgentTemplateKind.taskAgent,
@@ -53,7 +77,7 @@ mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
       }
 
       if (tom == null) {
-        await createTemplate(
+        await crud.createTemplate(
           templateId: tomTemplateId,
           displayName: 'Tom',
           kind: AgentTemplateKind.taskAgent,
@@ -69,7 +93,7 @@ mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
       }
 
       if (projectTemplate == null) {
-        await createTemplate(
+        await crud.createTemplate(
           templateId: projectTemplateId,
           displayName: 'Project Analyst',
           kind: AgentTemplateKind.projectAgent,
@@ -85,7 +109,7 @@ mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
       }
 
       if (dayAgent == null) {
-        await createTemplate(
+        await crud.createTemplate(
           templateId: dayAgentTemplateId,
           displayName: 'Shepherd',
           kind: AgentTemplateKind.dayAgent,
@@ -101,7 +125,7 @@ mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
       }
 
       if (improver == null) {
-        await createTemplate(
+        await crud.createTemplate(
           templateId: improverTemplateId,
           displayName: 'Template Improver',
           kind: AgentTemplateKind.templateImprover,
@@ -117,7 +141,7 @@ mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
       }
 
       if (metaImprover == null) {
-        await createTemplate(
+        await crud.createTemplate(
           templateId: metaImproverTemplateId,
           displayName: 'Meta Improver',
           kind: AgentTemplateKind.templateImprover,
@@ -162,10 +186,10 @@ mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
   ///
   /// Called automatically at the end of [seedDefaults].
   Future<void> seedDirectiveFields() async {
-    final templates = await listTemplates();
+    final templates = await crud.listTemplates();
 
     for (final template in templates) {
-      final activeVersion = await getActiveVersion(template.id);
+      final activeVersion = await crud.getActiveVersion(template.id);
       if (activeVersion == null) continue;
 
       // Skip versions that already have both new fields populated.
@@ -219,10 +243,10 @@ mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
   /// [seedDirectiveFields] intentionally leaves them alone; this targeted seed
   /// creates the phase-2 version and moves the head pointer.
   Future<void> seedDayAgentCaptureReconcileDirective() async {
-    final template = await getTemplate(dayAgentTemplateId);
+    final template = await crud.getTemplate(dayAgentTemplateId);
     if (template == null) return;
 
-    final activeVersion = await getActiveVersion(dayAgentTemplateId);
+    final activeVersion = await crud.getActiveVersion(dayAgentTemplateId);
     if (activeVersion == null) return;
 
     if (activeVersion.generalDirective.trim() ==
@@ -232,7 +256,7 @@ mixin _AgentTemplateSeeding on _AgentTemplateServiceBase, _AgentTemplateCrud {
       return;
     }
 
-    await createVersion(
+    await crud.createVersion(
       templateId: dayAgentTemplateId,
       directives: activeVersion.directives,
       generalDirective: dayAgentGeneralDirective,

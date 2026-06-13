@@ -1,6 +1,30 @@
-part of 'agent_template_service.dart';
+import 'package:lotti/features/agents/database/agent_database.dart'
+    show WakeRunLogData;
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/template_performance_metrics.dart';
+import 'package:lotti/features/agents/service/agent_template_crud.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 
-mixin _AgentTemplateMetrics on _AgentTemplateServiceBase, _AgentTemplateCrud {
+/// Performance metrics and evolution-data gathering for agent templates.
+///
+/// Computes per-template wake metrics via SQL aggregation and fetches the
+/// reports, observations, notes, sessions, and change counts needed to build
+/// an evolution session context. Shared reads (template version history,
+/// linked agents) are delegated to [AgentTemplateCrud].
+class AgentTemplateMetrics {
+  AgentTemplateMetrics({
+    required this.repository,
+    required this.syncService,
+    required this.crud,
+  });
+
+  final AgentRepository repository;
+  final AgentSyncService syncService;
+  final AgentTemplateCrud crud;
+
   /// Compute performance metrics for a template using SQL aggregation.
   ///
   /// All counts, sums, and min/max timestamps are computed in a single
@@ -10,7 +34,7 @@ mixin _AgentTemplateMetrics on _AgentTemplateServiceBase, _AgentTemplateCrud {
   ) async {
     final (agg, agents, totalWakes) = await (
       repository.aggregateWakeRunMetrics(templateId),
-      getAgentsForTemplate(templateId),
+      crud.getAgentsForTemplate(templateId),
       repository.countWakeRunsForTemplate(templateId),
     ).wait;
 
@@ -132,7 +156,7 @@ mixin _AgentTemplateMetrics on _AgentTemplateServiceBase, _AgentTemplateCrud {
     // First batch: all independent queries in parallel.
     final results = await (
       computeMetrics(templateId),
-      getVersionHistory(templateId, limit: 5),
+      crud.getVersionHistory(templateId, limit: 5),
       getRecentInstanceReports(templateId),
       getRecentInstanceObservations(templateId),
       getRecentEvolutionNotes(templateId, limit: 30),
@@ -191,7 +215,7 @@ mixin _AgentTemplateMetrics on _AgentTemplateServiceBase, _AgentTemplateCrud {
 
     // Check all template versions in parallel.
     final allVersions = await Future.wait(
-      templates.map((t) => getVersionHistory(t.id, limit: 1000000)),
+      templates.map((t) => crud.getVersionHistory(t.id, limit: 1000000)),
     );
     if (allVersions.any(
       (versions) => versions.any((v) => v.profileId == profileId),

@@ -1,6 +1,33 @@
-part of 'agent_template_service.dart';
+import 'dart:developer' as developer;
 
-mixin _AgentTemplateCrud on _AgentTemplateServiceBase {
+import 'package:clock/clock.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:uuid/uuid.dart';
+
+const _uuid = Uuid();
+
+/// Core CRUD and versioning operations for agent templates.
+///
+/// Owns the template entity → version → head lifecycle: create, update,
+/// version, rollback, soft-delete, and the various read/lookup helpers. The
+/// metrics and seeding collaborators delegate into this class for the shared
+/// reads (e.g. [getTemplate], [getVersionHistory], [getAgentsForTemplate]).
+class AgentTemplateCrud {
+  AgentTemplateCrud({
+    required this.repository,
+    required this.syncService,
+  });
+
+  final AgentRepository repository;
+  final AgentSyncService syncService;
+
   /// Create a new template with its initial version and head pointer.
   ///
   /// Returns the created [AgentTemplateEntity].
