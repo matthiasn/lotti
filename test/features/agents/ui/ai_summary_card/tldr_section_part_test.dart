@@ -8,11 +8,11 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
-import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
+import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../../tts/test_utils.dart';
 import '../../test_data/entity_factories.dart';
 import 'test_bench.dart';
 
@@ -94,7 +94,7 @@ void main() {
       },
     );
 
-    testWidgets('hides the summary playback affordance while the flag is off', (
+    testWidgets('hides the playback control while the flag is off', (
       tester,
     ) async {
       final bench = AgentTestBench(
@@ -104,10 +104,10 @@ void main() {
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.volume_up_rounded), findsNothing);
+      expect(find.byType(TtsPlayButton), findsNothing);
     });
 
-    testWidgets('shows the summary playback affordance when the flag is on', (
+    testWidgets('shows the playback control when the flag is on', (
       tester,
     ) async {
       final bench = AgentTestBench(
@@ -118,45 +118,48 @@ void main() {
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
-      expect(find.byIcon(Icons.volume_up_rounded), findsOneWidget);
+      expect(find.byType(TtsPlayButton), findsOneWidget);
     });
 
-    testWidgets('plays the TLDR through the MLX TTS model', (tester) async {
-      final mlxAudioChannel = _RecordingMlxAudioChannel();
+    testWidgets('plays the TLDR through the Supertonic engine', (tester) async {
+      final engine = FakeTtsEngine();
       final bench = AgentTestBench(
         enableSummaryTts: true,
-        mlxAudioChannel: mlxAudioChannel,
+        ttsEngine: engine,
         report: makeTestReport(tldr: 'Tldr line.'),
       );
 
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.volume_up_rounded));
-      await tester.pump();
+      await tester.tap(find.byType(TtsPlayButton));
+      // Drain the speak() future (ensure-model -> synthesize -> play)
+      // without pumpAndSettle, which would hang on the preparing spinner.
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
 
-      expect(mlxAudioChannel.spokenTexts, ['Tldr line.']);
-      expect(mlxAudioChannel.modelIds, [mlxAudioDefaultTtsModelId]);
+      expect(engine.calls.single.text, 'Tldr line.');
+      expect(engine.calls.single.voiceId, 'F1');
     });
 
-    testWidgets('shows an error toast when MLX summary playback fails', (
-      tester,
-    ) async {
-      final mlxAudioChannel = _RecordingMlxAudioChannel()
-        ..speakError = Exception('native TTS failed');
+    testWidgets('shows an error toast when synthesis fails', (tester) async {
+      final engine = FakeTtsEngine(throwOnSynthesize: true);
       final bench = AgentTestBench(
         enableSummaryTts: true,
-        mlxAudioChannel: mlxAudioChannel,
+        ttsEngine: engine,
         report: makeTestReport(tldr: 'Tldr line.'),
       );
 
       await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.byIcon(Icons.volume_up_rounded));
-      await tester.pump();
+      await tester.tap(find.byType(TtsPlayButton));
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
 
-      expect(mlxAudioChannel.spokenTexts, isEmpty);
+      expect(engine.calls, isEmpty);
       expect(find.text('Error'), findsOneWidget);
     });
 
@@ -264,24 +267,4 @@ void main() {
       },
     );
   });
-}
-
-class _RecordingMlxAudioChannel extends MlxAudioChannel {
-  final spokenTexts = <String>[];
-  final modelIds = <String>[];
-  Exception? speakError;
-
-  @override
-  Future<void> speakText({
-    required String text,
-    required String modelId,
-    String? language,
-  }) async {
-    final error = speakError;
-    if (error != null) {
-      throw error;
-    }
-    spokenTexts.add(text);
-    modelIds.add(modelId);
-  }
 }

@@ -17,10 +17,14 @@ typedef SynthesisCall = ({
 /// In-memory [TtsEngine] for tests: configurable support flag, returns a fixed
 /// file, and records every request.
 class FakeTtsEngine implements TtsEngine {
-  FakeTtsEngine({this.supported = true, File? output})
-    : _output = output ?? File('/tmp/fake_tts_output.wav');
+  FakeTtsEngine({
+    this.supported = true,
+    this.throwOnSynthesize = false,
+    File? output,
+  }) : _output = output ?? File('/tmp/fake_tts_output.wav');
 
   final bool supported;
+  final bool throwOnSynthesize;
   final File _output;
   final List<SynthesisCall> calls = <SynthesisCall>[];
 
@@ -34,6 +38,9 @@ class FakeTtsEngine implements TtsEngine {
     required String modelDirectory,
     required String language,
   }) async {
+    if (throwOnSynthesize) {
+      throw Exception('synthesis failed');
+    }
     calls.add((
       text: text,
       voiceId: voiceId,

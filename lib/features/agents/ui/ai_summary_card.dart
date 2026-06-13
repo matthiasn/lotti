@@ -14,11 +14,13 @@ import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
-import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tts/model/tts_playback_state.dart';
+import 'package:lotti/features/tts/state/tts_engine_provider.dart';
+import 'package:lotti/features/tts/state/tts_playback_controller.dart';
+import 'package:lotti/features/tts/ui/widgets/tts_play_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 
@@ -233,29 +235,32 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     }
   }
 
-  Future<void> _speakSummary(String text) async {
-    try {
-      await ref
-          .read(mlxAudioChannelProvider)
-          .speakText(
-            text: text,
-            modelId: mlxAudioDefaultTtsModelId,
-          );
-    } catch (error, stackTrace) {
-      developer.log(
-        'MLX summary playback failed',
-        name: 'AiSummaryCard',
-        error: error.runtimeType,
-        stackTrace: stackTrace,
-      );
-      if (mounted) {
-        context.showToast(
-          tone: DesignSystemToastTone.error,
-          title: context.messages.commonError,
-          clearQueue: true,
-        );
-      }
-    }
+  /// Builds the Supertonic playback control for [tldr], deriving its mode and
+  /// progress from the app-wide [TtsPlaybackController]. Only reflects an
+  /// active state when this card's task is the playing source so multiple
+  /// cards never animate for one utterance.
+  Widget _buildPlaybackControl(TtsPlaybackState playback, String tldr) {
+    final taskId = widget.taskId;
+    final active = playback.isActiveFor(taskId);
+    final mode = !active
+        ? TtsButtonMode.idle
+        : switch (playback.status) {
+            TtsPlaybackStatus.downloadingModel ||
+            TtsPlaybackStatus.synthesizing => TtsButtonMode.preparing,
+            TtsPlaybackStatus.playing => TtsButtonMode.playing,
+            _ => TtsButtonMode.idle,
+          };
+    final durationMs = playback.duration.inMilliseconds;
+    final progress = (mode == TtsButtonMode.playing && durationMs > 0)
+        ? playback.position.inMilliseconds / durationMs
+        : null;
+    final notifier = ref.read(ttsPlaybackControllerProvider.notifier);
+    return TtsPlayButton(
+      mode: mode,
+      progress: progress,
+      onPlay: () => notifier.speak(sourceId: taskId, text: tldr),
+      onStop: notifier.stop,
+    );
   }
 
   @override
@@ -283,8 +288,26 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final subtitle = templateName != null && templateName.isNotEmpty
         ? templateName
         : widget.identity.displayName;
-    final summaryTtsEnabled =
+    final ttsEnabled =
         ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ?? false;
+    final ttsEngineSupported = ref.watch(ttsEngineProvider).isSupported;
+    final playback = ref.watch(ttsPlaybackControllerProvider);
+    final playbackControl = ttsEnabled && tldr.isNotEmpty && ttsEngineSupported
+        ? _buildPlaybackControl(playback, tldr)
+        : null;
+
+    // Surface a toast when playback fails for this card's summary.
+    ref.listen(ttsPlaybackControllerProvider, (previous, next) {
+      if (next.status == TtsPlaybackStatus.error &&
+          next.sourceId == widget.taskId &&
+          previous?.status != TtsPlaybackStatus.error) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.commonError,
+          clearQueue: true,
+        );
+      }
+    });
 
     final agentStateAsync = ref.watch(agentStateProvider(agentId));
     final nextWakeAt = agentStateAsync.value?.mapOrNull(
@@ -341,9 +364,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
               expanded: _expanded,
               onToggle: () => setState(() => _expanded = !_expanded),
               onAgentTap: () => _openInternals(agentName: subtitle),
-              onSpeak: summaryTtsEnabled && tldr.isNotEmpty
-                  ? () => _speakSummary(tldr)
-                  : null,
+              playbackControl: playbackControl,
               isRunning: isRunning,
               showCountdown: showCountdown,
               nextWakeAt: nextWakeAt,

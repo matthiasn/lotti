@@ -27,21 +27,26 @@ class TtsSettingsController extends _$TtsSettingsController {
   }
 
   Future<void> _load() async {
-    final stored = await getIt<SettingsDb>().itemsByKeys({
-      ttsVoiceIdKey,
-      ttsModelIdKey,
-      ttsSpeedKey,
-    });
-    if (_userChanged) return;
-    const defaults = TtsSettings();
-    final storedSpeed = double.tryParse(stored[ttsSpeedKey] ?? '');
-    state = TtsSettings(
-      voiceId: stored[ttsVoiceIdKey] ?? defaults.voiceId,
-      modelId: stored[ttsModelIdKey] ?? defaults.modelId,
-      speed: storedSpeed == null
-          ? defaults.speed
-          : TtsSettings.clampSpeed(storedSpeed),
-    );
+    try {
+      final stored = await getIt<SettingsDb>().itemsByKeys({
+        ttsVoiceIdKey,
+        ttsModelIdKey,
+        ttsSpeedKey,
+      });
+      if (_userChanged) return;
+      const defaults = TtsSettings();
+      final storedSpeed = double.tryParse(stored[ttsSpeedKey] ?? '');
+      state = TtsSettings(
+        voiceId: stored[ttsVoiceIdKey] ?? defaults.voiceId,
+        modelId: stored[ttsModelIdKey] ?? defaults.modelId,
+        speed: storedSpeed == null
+            ? defaults.speed
+            : TtsSettings.clampSpeed(storedSpeed),
+      );
+    } on Object {
+      // Settings storage unavailable — keep the default preferences rather
+      // than failing the card that reads them.
+    }
   }
 
   /// Selects [voiceId] and persists it.

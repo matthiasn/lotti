@@ -15,13 +15,13 @@ class TldrHeader extends StatelessWidget {
     required this.expanded,
     required this.onToggle,
     required this.onAgentTap,
-    required this.onSpeak,
     required this.isRunning,
     required this.showCountdown,
     required this.nextWakeAt,
     required this.onRunNow,
     required this.onCancelTimer,
     required this.onCountdownExpired,
+    this.playbackControl,
     super.key,
   });
 
@@ -30,7 +30,11 @@ class TldrHeader extends StatelessWidget {
   final bool expanded;
   final VoidCallback onToggle;
   final VoidCallback onAgentTap;
-  final VoidCallback? onSpeak;
+
+  /// Slot for the playback control (the connector injects a Riverpod-aware
+  /// TtsPlayButton here so the header stays framework-free). `null` when the
+  /// feature flag is off, there's no TL;DR, or the engine is unsupported.
+  final Widget? playbackControl;
   final bool isRunning;
   final bool showCountdown;
   final DateTime? nextWakeAt;
@@ -112,21 +116,7 @@ class TldrHeader extends StatelessWidget {
 
     List<Widget> buildControls({required bool compactCountdown}) {
       return <Widget>[
-        if (isRunning)
-          SizedBox(
-            width: 28,
-            height: 28,
-            child: Center(
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: ai.accent,
-                ),
-              ),
-            ),
-          ),
+        if (isRunning) const _ThinkingPill(),
         if (!isRunning && !hasCountdownCluster)
           _IconAffordance(
             icon: Icons.refresh_rounded,
@@ -151,18 +141,18 @@ class TldrHeader extends StatelessWidget {
             compact: true,
           ),
         ],
-        if (onSpeak != null)
-          _IconAffordance(
-            icon: Icons.volume_up_rounded,
-            tooltip: messages.aiSummarySpeakTooltip,
-            onPressed: onSpeak!,
-          ),
+        ?playbackControl,
         if (hasMore) _ReadMorePill(expanded: expanded, onPressed: onToggle),
       ];
     }
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 14, 8, 10),
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step4,
+        tokens.spacing.step4,
+        tokens.spacing.step3,
+        tokens.spacing.step3,
+      ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           // Lay the leading block + control cluster out via a Wrap with
@@ -223,6 +213,56 @@ class _SparkleBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Icon(Icons.auto_awesome_rounded, size: 14, color: ai.accent),
+    );
+  }
+}
+
+/// Labelled "Thinking…" chip shown while the agent is running. A labelled
+/// chip (not a bare spinner) so agent activity never reads as audio loading.
+/// Mirrors the [_ReadMorePill] pill chrome for visual consistency.
+class _ThinkingPill extends StatelessWidget {
+  const _ThinkingPill();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    return Padding(
+      padding: const EdgeInsets.only(left: 6),
+      child: Container(
+        height: 26,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          color: ai.accentSoft,
+          borderRadius: BorderRadius.circular(13),
+          border: Border.all(color: ai.border),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 12,
+              height: 12,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                value: reduceMotion ? 1.0 : null,
+                color: ai.accent,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              context.messages.aiSummaryThinkingLabel,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: ai.accent,
+                fontWeight: FontWeight.w500,
+                height: 1,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
