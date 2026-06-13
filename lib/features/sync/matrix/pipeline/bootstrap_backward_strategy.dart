@@ -1,4 +1,7 @@
-part of 'catch_up_strategy.dart';
+import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
+import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:matrix/matrix.dart';
 
 /// Streams the room's visible history through [sink] in oldest-
 /// first pages, one page at a time. Used both by the "Fetch all
@@ -83,7 +86,7 @@ Future<BootstrapResult> collectHistoryForBootstrapImpl({
       // per-event seen-set.
       final page = <Event>[];
       for (final event in sorted) {
-        if (CatchUpStrategy._isStrictlyOlder(
+        if (CatchUpStrategy.isStrictlyOlder(
           event,
           anchorTs: oldestTsSoFar,
           anchorEventId: oldestEventIdSoFar,
