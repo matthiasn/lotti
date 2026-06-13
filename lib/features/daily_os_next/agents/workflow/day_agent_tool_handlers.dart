@@ -171,18 +171,18 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
     // Cap is keyed by (dayId, date) so an active multi-day planner can still
     // pre-warm each day; a single calendar-date key would let three planned
     // days exhaust one shared budget (ADR 0022 Decision 12).
-    final wakeCountKey = _scheduledWakeCountKey(now, dayId);
+    final wakeCountKey = scheduledWakeCountKey(now, dayId);
     final workspaceKey = dayAgentWorkspaceKey(dayId);
     try {
       await syncService.runInTransaction(() async {
         final state = await agentRepository.getAgentState(agentId);
         if (state == null) {
-          throw const _DayAgentToolException('Error: agent state not found.');
+          throw const DayAgentToolException('Error: agent state not found.');
         }
 
         final currentCount = state.toolCounterByKey[wakeCountKey] ?? 0;
         if (currentCount >= DayAgentWorkflow.maxScheduledWakeWritesPerDay) {
-          throw const _DayAgentToolException(
+          throw const DayAgentToolException(
             'Error: daily scheduled-wake cap reached.',
           );
         }
@@ -210,7 +210,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         await syncService.upsertEntity(
           state.copyWith(
             updatedAt: now,
-            toolCounterByKey: _nextToolCounterByKey(
+            toolCounterByKey: nextToolCounterByKey(
               state.toolCounterByKey,
               wakeCountKey,
               currentCount + 1,
@@ -224,7 +224,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
         success: true,
         output: 'Next wake scheduled for ${scheduledAt.toIso8601String()}.',
       );
-    } on _DayAgentToolException catch (e) {
+    } on DayAgentToolException catch (e) {
       return DayAgentToolResult(success: false, output: e.message);
     }
   }
@@ -334,13 +334,13 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
       if (hit.links.isNotEmpty) {
         buf
           ..writeln()
-          ..write('  links: ${hit.links.map(_formatLink).join(', ')}');
+          ..write('  links: ${hit.links.map(formatLink).join(', ')}');
       }
     }
     return DayAgentToolResult(success: true, output: buf.toString());
   }
 
-  Future<_TemplateContext?> _resolveTemplate(String agentId) async {
+  Future<TemplateContext?> _resolveTemplate(String agentId) async {
     final template = await templateService.getTemplateForAgent(agentId);
     if (template == null) return null;
 
@@ -351,7 +351,7 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
       template.id,
     );
 
-    return _TemplateContext(
+    return TemplateContext(
       template: template,
       version: version,
       soulVersion: soulVersion,

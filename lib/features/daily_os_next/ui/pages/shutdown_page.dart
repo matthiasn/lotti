@@ -3,14 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/shutdown_cards.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_panel.dart';
-import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-
-part 'shutdown_cards.dart';
 
 /// End-of-day surface. Mirrors `prototype/screens/closing.jsx →
 /// ShutdownDesktop`. Two columns, scrollable.
@@ -82,15 +80,15 @@ class _ShutdownBody extends ConsumerWidget {
     final right = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _MetricsCard(metrics: data.metrics),
+        MetricsCard(metrics: data.metrics),
         SizedBox(height: tokens.spacing.step5),
-        _ReflectionCard(forDate: forDate),
+        ReflectionCard(forDate: forDate),
         SizedBox(height: tokens.spacing.step5),
         // Durable "what I've learned" knowledge (ADR 0022) — confirm/edit/forget
         // the things the planner remembers about how you want to be planned.
         const KnowledgePanel(),
         SizedBox(height: tokens.spacing.step5),
-        _TomorrowNoteCard(note: data.tomorrowNote),
+        TomorrowNoteCard(note: data.tomorrowNote),
       ],
     );
 
@@ -118,7 +116,7 @@ class _ShutdownBody extends ConsumerWidget {
                   ),
           ),
         ),
-        const _ShutdownFooter(),
+        const ShutdownFooter(),
       ],
     );
   }

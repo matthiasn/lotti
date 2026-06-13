@@ -1,10 +1,23 @@
 // The day header and its single-line measurement machinery (a custom
 // multi-child render object that decides whether the plan toggle fits
-// inline) — part of the day_page library.
-part of 'day_page.dart';
+// inline). Split out of the day_page library; day_page imports this.
+import 'dart:async';
+import 'dart:math' as math;
 
-class _DayHeader extends StatelessWidget {
-  const _DayHeader({
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+
+enum _DayMenuAction { inspectAgent, knowledge, deletePlan }
+
+class DayHeader extends StatelessWidget {
+  const DayHeader({
     required this.dateStrip,
     required this.date,
     required this.selectedView,
@@ -13,6 +26,7 @@ class _DayHeader extends StatelessWidget {
     required this.onBack,
     required this.onInspectAgent,
     required this.onDeletePlan,
+    super.key,
   });
 
   final Widget? dateStrip;

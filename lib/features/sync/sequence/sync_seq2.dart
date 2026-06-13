@@ -51,7 +51,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
     String? jsonPath,
   }) async {
-    final gaps = _GapAccumulator();
+    final gaps = GapAccumulator();
     var newMissingDetected = false;
     final myHost = await _vectorClockService.getHost();
     final now = DateTime.now();
@@ -246,7 +246,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
                 i,
               );
               if (existing == null ||
-                  !_isResolvedSequenceStatusIndex(existing.status)) {
+                  !isResolvedSequenceStatusIndex(existing.status)) {
                 unresolvedGapDetected = true;
                 gaps.addRange(hostId: hostId, startCounter: i, endCounter: i);
               }

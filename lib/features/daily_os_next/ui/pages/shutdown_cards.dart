@@ -1,10 +1,17 @@
 // Shutdown's right-column cards — metrics 2x2, the reflection input,
-// and the for-tomorrow note. Part of the shutdown_page library so they
-// keep the page's private styling helpers in scope.
-part of 'shutdown_page.dart';
+// and the for-tomorrow note. Split out of the shutdown_page library; the
+// page imports these and reuses the shared styling helpers.
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _MetricsCard extends StatelessWidget {
-  const _MetricsCard({required this.metrics});
+class MetricsCard extends StatelessWidget {
+  const MetricsCard({required this.metrics, super.key});
 
   final ShutdownMetrics metrics;
 
@@ -102,16 +109,16 @@ class _MetricTile extends StatelessWidget {
   }
 }
 
-class _ReflectionCard extends ConsumerStatefulWidget {
-  const _ReflectionCard({required this.forDate});
+class ReflectionCard extends ConsumerStatefulWidget {
+  const ReflectionCard({required this.forDate, super.key});
 
   final DateTime forDate;
 
   @override
-  ConsumerState<_ReflectionCard> createState() => _ReflectionCardState();
+  ConsumerState<ReflectionCard> createState() => _ReflectionCardState();
 }
 
-class _ReflectionCardState extends ConsumerState<_ReflectionCard> {
+class _ReflectionCardState extends ConsumerState<ReflectionCard> {
   final _controller = TextEditingController();
   bool _submitted = false;
 
@@ -223,8 +230,8 @@ class _ReflectionCardState extends ConsumerState<_ReflectionCard> {
   }
 }
 
-class _TomorrowNoteCard extends StatelessWidget {
-  const _TomorrowNoteCard({required this.note});
+class TomorrowNoteCard extends StatelessWidget {
+  const TomorrowNoteCard({required this.note, super.key});
 
   final TomorrowNote note;
 
@@ -258,8 +265,8 @@ class _TomorrowNoteCard extends StatelessWidget {
   }
 }
 
-class _ShutdownFooter extends StatelessWidget {
-  const _ShutdownFooter();
+class ShutdownFooter extends StatelessWidget {
+  const ShutdownFooter({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -1,13 +1,16 @@
-part of 'day_agent_workflow.dart';
+import 'package:lotti/features/agents/memory/memory_links.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:uuid/uuid.dart';
 
-class _DayAgentToolException implements Exception {
-  const _DayAgentToolException(this.message);
+class DayAgentToolException implements Exception {
+  const DayAgentToolException(this.message);
 
   final String message;
 }
 
-class _MissingDraftDayPlanException implements Exception {
-  const _MissingDraftDayPlanException();
+class MissingDraftDayPlanException implements Exception {
+  const MissingDraftDayPlanException();
 
   @override
   String toString() {
@@ -15,8 +18,8 @@ class _MissingDraftDayPlanException implements Exception {
   }
 }
 
-class _MissingCaptureParseException implements Exception {
-  const _MissingCaptureParseException();
+class MissingCaptureParseException implements Exception {
+  const MissingCaptureParseException();
 
   @override
   String toString() {
@@ -25,8 +28,8 @@ class _MissingCaptureParseException implements Exception {
   }
 }
 
-class _TemplateContext {
-  const _TemplateContext({
+class TemplateContext {
+  const TemplateContext({
     required this.template,
     required this.version,
     required this.soulVersion,
@@ -37,8 +40,8 @@ class _TemplateContext {
   final SoulDocumentVersionEntity? soulVersion;
 }
 
-class _CaptureContext {
-  const _CaptureContext({
+class CaptureContext {
+  const CaptureContext({
     required this.capture,
     required this.taskCorpus,
   });
@@ -55,8 +58,8 @@ class _CaptureContext {
   };
 }
 
-class _DraftingContext {
-  const _DraftingContext({
+class DraftingContext {
+  const DraftingContext({
     this.baselinePlan,
     this.decidedTasks = const [],
     this.decidedCaptureItems = const [],
@@ -119,8 +122,8 @@ class _DraftingContext {
   }
 }
 
-class _RefineContext {
-  const _RefineContext({this.baselinePlan});
+class RefineContext {
+  const RefineContext({this.baselinePlan});
 
   final DayPlanEntity? baselinePlan;
 
@@ -161,10 +164,10 @@ class _RefineContext {
 
 /// Rendered durable-knowledge prompt blocks (ADR 0022): the always-on hook
 /// index and the scope-filtered full statements for the current wake.
-class _KnowledgeContext {
-  const _KnowledgeContext({required this.hookIndex, required this.statements});
+class KnowledgeContext {
+  const KnowledgeContext({required this.hookIndex, required this.statements});
 
-  const _KnowledgeContext.empty() : hookIndex = '', statements = '';
+  const KnowledgeContext.empty() : hookIndex = '', statements = '';
 
   final String hookIndex;
   final String statements;
@@ -172,11 +175,11 @@ class _KnowledgeContext {
 
 // ── Pure helpers (de-statified from DayAgentWorkflow) ──────────────────────
 
-const _uuid = Uuid();
+const workflowUuid = Uuid();
 
 const _maxRecentObservationCount = 20;
 
-String _formatLink(ResolvedMemoryLink link) {
+String formatLink(ResolvedMemoryLink link) {
   final wire = link.link.relation.wire;
   final id = link.link.entryId;
   if (!link.exists) return '$wire:$id (not found)';
@@ -184,7 +187,7 @@ String _formatLink(ResolvedMemoryLink link) {
   return '$wire:$id';
 }
 
-void _appendSoulPersonality(
+void appendSoulPersonality(
   StringBuffer buf,
   SoulDocumentVersionEntity soul,
 ) {
@@ -220,7 +223,7 @@ void _appendSoulPersonality(
   }
 }
 
-List<AgentMessageEntity> _recentObservations(
+List<AgentMessageEntity> recentObservations(
   List<AgentMessageEntity> observations,
 ) {
   final sorted = observations.toList()
@@ -235,7 +238,7 @@ List<AgentMessageEntity> _recentObservations(
   return sorted.sublist(sorted.length - _maxRecentObservationCount);
 }
 
-DateTime? _remainingScheduledWakeAt(
+DateTime? remainingScheduledWakeAt(
   AgentStateEntity state,
   DateTime now,
 ) {
@@ -246,20 +249,20 @@ DateTime? _remainingScheduledWakeAt(
   return null;
 }
 
-DateTime? _dateFromDayId(String dayId) {
+DateTime? dateFromDayId(String dayId) {
   const prefix = 'dayplan-';
   if (!dayId.startsWith(prefix)) return null;
   return DateTime.tryParse(dayId.substring(prefix.length));
 }
 
-String _extractPayloadText(AgentMessagePayloadEntity? payload) {
+String extractPayloadText(AgentMessagePayloadEntity? payload) {
   if (payload == null) return '(no content)';
   final text = payload.content['text'];
   if (text is String && text.isNotEmpty) return text;
   return '(no content)';
 }
 
-Map<String, int> _nextToolCounterByKey(
+Map<String, int> nextToolCounterByKey(
   Map<String, int> current,
   String wakeCountKey,
   int nextCount,
@@ -277,7 +280,7 @@ Map<String, int> _nextToolCounterByKey(
   };
 }
 
-String _scheduledWakeCountKey(DateTime now, String dayId) {
+String scheduledWakeCountKey(DateTime now, String dayId) {
   return 'day_agent_set_next_wake:$dayId:'
       '${now.toIso8601String().substring(0, 10)}';
 }

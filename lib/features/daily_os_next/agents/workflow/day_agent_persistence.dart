@@ -12,7 +12,7 @@ extension DayAgentPersistence on DayAgentWorkflow {
     WakeMemoryView? memoryView,
   }) async {
     try {
-      final payloadId = _uuid.v4();
+      final payloadId = workflowUuid.v4();
       // ADR 0020 v2 prompt records: when the read flipped, the `<day_log>`
       // section is a pure function of the synced event log — store the payload
       // WITHOUT the whole section plus the reconstruction marker. The day log
@@ -52,7 +52,7 @@ extension DayAgentPersistence on DayAgentWorkflow {
       );
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessage(
-          id: _uuid.v4(),
+          id: workflowUuid.v4(),
           agentId: agentId,
           threadId: threadId,
           kind: AgentMessageKind.user,
@@ -79,7 +79,7 @@ extension DayAgentPersistence on DayAgentWorkflow {
     required DateTime now,
   }) async {
     if (thoughtText == null || thoughtText.trim().isEmpty) return;
-    final payloadId = _uuid.v4();
+    final payloadId = workflowUuid.v4();
     await syncService.upsertEntity(
       AgentDomainEntity.agentMessagePayload(
         id: payloadId,
@@ -91,7 +91,7 @@ extension DayAgentPersistence on DayAgentWorkflow {
     );
     await syncService.upsertEntity(
       AgentDomainEntity.agentMessage(
-        id: _uuid.v4(),
+        id: workflowUuid.v4(),
         agentId: agentId,
         threadId: threadId,
         kind: AgentMessageKind.thought,
@@ -111,7 +111,7 @@ extension DayAgentPersistence on DayAgentWorkflow {
     required DateTime now,
   }) async {
     for (final observation in observations) {
-      final payloadId = _uuid.v4();
+      final payloadId = workflowUuid.v4();
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessagePayload(
           id: payloadId,
@@ -127,7 +127,7 @@ extension DayAgentPersistence on DayAgentWorkflow {
       );
       await syncService.upsertEntity(
         AgentDomainEntity.agentMessage(
-          id: _uuid.v4(),
+          id: workflowUuid.v4(),
           agentId: agentId,
           threadId: threadId,
           kind: AgentMessageKind.observation,
@@ -146,14 +146,14 @@ extension DayAgentPersistence on DayAgentWorkflow {
     required String runKey,
     required String threadId,
     required String modelId,
-    required _TemplateContext? templateCtx,
+    required TemplateContext? templateCtx,
     required DateTime now,
   }) async {
     if (usage == null || !usage.hasData) return;
 
     await syncService.upsertEntity(
       AgentDomainEntity.wakeTokenUsage(
-        id: _uuid.v4(),
+        id: workflowUuid.v4(),
         agentId: agentId,
         runKey: runKey,
         threadId: threadId,

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_gap_model.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -11,14 +12,11 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:meta/meta.dart';
 
-part 'sync_sequence_gap_materializer.dart';
-part 'sync_sequence_gap_model.dart';
 part 'sync_seq1.dart';
 part 'sync_seq2.dart';
 part 'sync_seq3.dart';
 part 'sync_seq4.dart';
-
-typedef _GapRange = ({String hostId, int startCounter, int endCounter});
+part 'sync_sequence_gap_materializer.dart';
 
 /// Service for managing the sync sequence log, which tracks received entries
 /// by (hostId, counter) pairs to detect gaps and enable backfill requests.

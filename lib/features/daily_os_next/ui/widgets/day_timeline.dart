@@ -8,6 +8,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_fold_surface.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -15,8 +16,6 @@ import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 export 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart';
-
-part 'day_timeline_fold_surface.dart';
 
 /// Hour-by-hour timeline rendering of a [DraftPlan]. Read-only in
 /// this milestone.
@@ -396,7 +395,7 @@ class _DayTimelineState extends State<DayTimeline> {
                           top: timelineTopInset,
                           right: tokens.spacing.step3,
                           height: totalHeight,
-                          child: _FoldRegionLayer(
+                          child: FoldRegionLayer(
                             foldingState: foldingState,
                             pxPerMinute: _pxPerMinute,
                             onToggleFoldRegion: _toggleFoldRegion,

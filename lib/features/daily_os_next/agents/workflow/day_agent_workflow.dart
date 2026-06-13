@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -26,7 +25,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake_context.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
@@ -39,16 +37,15 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_conte
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
+import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
-import 'package:uuid/uuid.dart';
 
 part 'day_agent_context_builder.dart';
 part 'day_agent_persistence.dart';
 part 'day_agent_tool_handlers.dart';
 part 'day_agent_prompt_builder.dart';
-part 'day_agent_workflow_models.dart';
 
 /// Assembles context and runs one Daily OS day-agent wake.
 class DayAgentWorkflow {
@@ -197,7 +194,7 @@ class DayAgentWorkflow {
       return const WakeResult(success: false, error: 'No active day ID');
     }
 
-    final dayDate = _dateFromDayId(resolvedDayId);
+    final dayDate = dateFromDayId(resolvedDayId);
     if (dayDate == null) {
       return WakeResult(
         success: false,
@@ -217,9 +214,9 @@ class DayAgentWorkflow {
       agentId,
       AgentMessageKind.observation,
     );
-    final recentObservations = _recentObservations(observations);
+    final recentObs = recentObservations(observations);
     final observationPayloads = await _resolveObservationPayloads(
-      recentObservations,
+      recentObs,
     );
     final templateCtx = await _resolveTemplate(agentId);
 
@@ -317,7 +314,7 @@ class DayAgentWorkflow {
       planDate: dayDate,
       now: now,
       triggerTokens: triggerTokens,
-      observations: recentObservations,
+      observations: recentObs,
       observationPayloads: observationPayloads,
       captureContext: captureContext,
       draftingContext: draftingContext,
@@ -410,7 +407,7 @@ class DayAgentWorkflow {
           }
         }
         if (!strategy.didPersistCaptureParse) {
-          throw const _MissingCaptureParseException();
+          throw const MissingCaptureParseException();
         }
       }
 
@@ -429,7 +426,7 @@ class DayAgentWorkflow {
           }
         }
         if (!strategy.didPersistDraftDayPlan) {
-          throw const _MissingDraftDayPlanException();
+          throw const MissingDraftDayPlanException();
         }
       }
 
@@ -470,7 +467,7 @@ class DayAgentWorkflow {
             updatedAt: now,
             consecutiveFailureCount: 0,
             wakeCounter: latestState.wakeCounter.increment(hostId),
-            scheduledWakeAt: _remainingScheduledWakeAt(latestState, now),
+            scheduledWakeAt: remainingScheduledWakeAt(latestState, now),
           ),
         );
 
@@ -500,7 +497,7 @@ class DayAgentWorkflow {
           latestState.copyWith(
             updatedAt: now,
             consecutiveFailureCount: latestState.consecutiveFailureCount + 1,
-            scheduledWakeAt: _remainingScheduledWakeAt(latestState, now),
+            scheduledWakeAt: remainingScheduledWakeAt(latestState, now),
           ),
         );
       } catch (stateError, stackTrace) {

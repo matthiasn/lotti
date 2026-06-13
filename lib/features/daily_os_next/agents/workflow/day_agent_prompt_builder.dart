@@ -4,7 +4,7 @@ part of 'day_agent_workflow.dart';
 /// definitions for [DayAgentWorkflow]. Split from the main workflow file for
 /// size; all members are library-private.
 extension DayAgentPromptBuilder on DayAgentWorkflow {
-  String _buildSystemPrompt(_TemplateContext? ctx) {
+  String _buildSystemPrompt(TemplateContext? ctx) {
     const captureToolLines =
         '- `submit_capture`: persist a user capture transcript and enqueue parsing.\n'
         '- `parse_capture_to_items`: persist capture phrases parsed from the current capture-submitted wake.\n'
@@ -159,7 +159,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     }
 
     if (ctx.soulVersion != null) {
-      _appendSoulPersonality(buf, ctx.soulVersion!);
+      appendSoulPersonality(buf, ctx.soulVersion!);
     }
 
     final operationalDirective = generalDirective.isNotEmpty
@@ -203,7 +203,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
 
   bool _requiresCaptureParse({
     required DailyOsPlannerWakeContext wakeContext,
-    required _CaptureContext? captureContext,
+    required CaptureContext? captureContext,
   }) {
     // A non-null capture context already implies a capture token resolved to
     // a loadable capture owned by this agent. Drafting/refine checks are
