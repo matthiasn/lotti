@@ -84,6 +84,10 @@ void main() {
 
     expect(indicator(tester), isNotNull);
     expect(indicator(tester)?.value, isNull); // indeterminate
+    // Distinct glyph from idle (play) and playing (stop), so the state is
+    // legible by shape alone even under reduced motion.
+    expect(find.byIcon(Icons.hourglass_empty), findsOneWidget);
+    expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
 
     await tester.tap(find.byType(TtsPlayButton));
     expect(stopped, 1);

@@ -51,9 +51,13 @@ class TtsPlayButton extends StatelessWidget {
       TtsButtonMode.preparing => messages.aiSummaryPreparingTooltip,
       TtsButtonMode.idle => messages.aiSummaryPlayTooltip,
     };
-    final glyph = mode == TtsButtonMode.playing
-        ? Icons.stop_rounded
-        : Icons.play_arrow_rounded;
+    // Three distinct glyphs so the states are legible by shape alone —
+    // including under reduced motion, where the ring/arc difference vanishes.
+    final glyph = switch (mode) {
+      TtsButtonMode.playing => Icons.stop_rounded,
+      TtsButtonMode.preparing => Icons.hourglass_empty,
+      TtsButtonMode.idle => Icons.play_arrow_rounded,
+    };
     // Idle plays; preparing/playing stop (preparing-stop cancels).
     final onTap = mode == TtsButtonMode.idle ? onPlay : onStop;
 
