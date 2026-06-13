@@ -1,35 +1,36 @@
-part of 'persistence_logic.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/health.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_collaborator_base.dart';
+import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
+import 'package:lotti/logic/services/metadata_service.dart'
+    show MetadataService;
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/utils/file_utils.dart';
 
-mixin _PersistenceEntries on _PersistenceLogicBase {
-  @override
-  Future<void> _recordJournalSequence(
-    JournalEntity entity, {
-    required String subDomain,
-  }) async {
-    final vectorClock = entity.meta.vectorClock;
-    final service = _sequenceLogService;
-    if (service == null || vectorClock == null) return;
-    try {
-      await service.recordSentEntry(
-        entryId: entity.meta.id,
-        vectorClock: vectorClock,
-      );
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.sync,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: subDomain,
-      );
-    }
-  }
+/// Metadata, link and entry-creation entry points of [PersistenceLogic].
+///
+/// Owns [createMetadata]/[updateMetadata] (delegating to [MetadataService]),
+/// the public `createXxxEntry` wrappers (routing through the facade to the
+/// create-ops builders), [createLink] and the core [createDbEntity] writer.
+class PersistenceEntries extends PersistenceCollaboratorBase {
+  PersistenceEntries(super.logic);
 
   Future<void> _recordEntryLinkSequence(
     EntryLink link, {
     required String subDomain,
   }) async {
     final vectorClock = link.vectorClock;
-    final service = _sequenceLogService;
+    final service = sequenceLogService;
     if (service == null || vectorClock == null) return;
     try {
       await service.recordSentEntryLink(
@@ -37,7 +38,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
         vectorClock: vectorClock,
       );
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.sync,
         exception,
         stackTrace: stackTrace,
@@ -50,7 +51,6 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
   /// deterministic UUID v5 ID.
   ///
   /// Delegates to [MetadataService.createMetadata].
-  @override
   Future<Metadata> createMetadata({
     DateTime? dateFrom,
     DateTime? dateTo,
@@ -60,7 +60,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
     String? categoryId,
     bool? starred,
     EntryFlag? flag,
-  }) => _metadataService.createMetadata(
+  }) => metadataService.createMetadata(
     dateFrom: dateFrom,
     dateTo: dateTo,
     uuidV5Input: uuidV5Input,
@@ -71,10 +71,10 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
     flag: flag,
   );
 
-  /// Updates existing [Metadata] with a new vector clock and optional field changes.
+  /// Updates existing [Metadata] with a new vector clock and optional field
+  /// changes.
   ///
   /// Delegates to [MetadataService.updateMetadata].
-  @override
   Future<Metadata> updateMetadata(
     Metadata metadata, {
     DateTime? dateFrom,
@@ -84,7 +84,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
     DateTime? deletedAt,
     List<String>? labelIds,
     bool clearLabelIds = false,
-  }) => _metadataService.updateMetadata(
+  }) => metadataService.updateMetadata(
     metadata,
     dateFrom: dateFrom,
     dateTo: dateTo,
@@ -96,22 +96,22 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
   );
 
   Future<QuantitativeEntry?> createQuantitativeEntry(QuantitativeData data) =>
-      createQuantitativeEntryImpl(data);
+      logic.createQuantitativeEntryImpl(data);
 
   Future<WorkoutEntry?> createWorkoutEntry(WorkoutData data) =>
-      createWorkoutEntryImpl(data);
+      logic.createWorkoutEntryImpl(data);
 
   Future<bool> createSurveyEntry({
     required SurveyData data,
     String? linkedId,
-  }) => createSurveyEntryImpl(data: data, linkedId: linkedId);
+  }) => logic.createSurveyEntryImpl(data: data, linkedId: linkedId);
 
   Future<MeasurementEntry?> createMeasurementEntry({
     required MeasurementData data,
     required bool private,
     String? linkedId,
     String? comment,
-  }) => createMeasurementEntryImpl(
+  }) => logic.createMeasurementEntryImpl(
     data: data,
     private: private,
     linkedId: linkedId,
@@ -123,7 +123,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
     required HabitDefinition? habitDefinition,
     String? linkedId,
     String? comment,
-  }) => createHabitCompletionEntryImpl(
+  }) => logic.createHabitCompletionEntryImpl(
     data: data,
     habitDefinition: habitDefinition,
     linkedId: linkedId,
@@ -135,7 +135,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
     required EntryText entryText,
     String? linkedId,
     String? categoryId,
-  }) => createTaskEntryImpl(
+  }) => logic.createTaskEntryImpl(
     data: data,
     entryText: entryText,
     linkedId: linkedId,
@@ -147,7 +147,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
     DateTime? dateFrom,
     String? linkedId,
     String? categoryId,
-  }) => createAiResponseEntryImpl(
+  }) => logic.createAiResponseEntryImpl(
     data: data,
     dateFrom: dateFrom,
     linkedId: linkedId,
@@ -159,7 +159,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
     required EntryText entryText,
     String? linkedId,
     String? categoryId,
-  }) => createEventEntryImpl(
+  }) => logic.createEventEntryImpl(
     data: data,
     entryText: entryText,
     linkedId: linkedId,
@@ -173,7 +173,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
     // Invariant: once the link upsert hits disk, the VC counter is claimed on
     // disk and MUST commit. If the upsert reports "no row changed", the
     // counter has no payload and must be burnt instead.
-    return _vectorClockService.withVcScope<bool>(
+    return vectorClockService.withVcScope<bool>(
       () async {
         final now = DateTime.now();
 
@@ -184,16 +184,16 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
           createdAt: now,
           updatedAt: now,
           hidden: false,
-          vectorClock: await _vectorClockService.getNextVectorClock(),
+          vectorClock: await vectorClockService.getNextVectorClock(),
         );
 
-        final res = await _journalDb.upsertEntryLink(link);
+        final res = await journalDb.upsertEntryLink(link);
         if (res == 0) return false;
         await _recordEntryLinkSequence(
           link,
           subDomain: 'createLink.recordSent',
         );
-        _updateNotifications.notify({
+        updateNotifications.notify({
           link.fromId,
           link.toId,
           linkNotification,
@@ -225,7 +225,6 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
     );
   }
 
-  @override
   Future<bool?> createDbEntity(
     JournalEntity journalEntity, {
     bool shouldAddGeolocation = true,
@@ -236,10 +235,10 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
       JournalEntity? linked;
       Set<String>? affectedIds;
 
-      final saved = await _vectorClockService.withVcScope<bool?>(
+      final saved = await vectorClockService.withVcScope<bool?>(
         () async {
           if (linkedId != null) {
-            linked = await _journalDb.journalEntityById(linkedId);
+            linked = await journalDb.journalEntityById(linkedId);
           }
 
           final withContext = journalEntity.copyWith(
@@ -249,7 +248,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
             ),
           );
 
-          final res = await _journalDb.updateJournalEntity(
+          final res = await journalDb.updateJournalEntity(
             withContext,
             overwrite: false,
           );
@@ -257,14 +256,14 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
           final saved = res.applied;
 
           if (!saved) {
-            await _vectorClockService.burnUnboundVectorClock(
+            await vectorClockService.burnUnboundVectorClock(
               withContext.meta.vectorClock,
               reason: 'createDbEntity write rejected id=${withContext.id}',
             );
           }
 
           if (saved) {
-            await _recordJournalSequence(
+            await recordJournalSequence(
               withContext,
               subDomain: 'createDbEntity.recordSent',
             );
@@ -278,7 +277,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
                   vectorClock: withContext.meta.vectorClock,
                   jsonPath: relativeEntityPath(journalEntity),
                   status: SyncEntryStatus.initial,
-                  originatingHostId: await _vectorClockService.getHost(),
+                  originatingHostId: await vectorClockService.getHost(),
                 ),
               );
             } catch (exception, stackTrace) {
@@ -325,7 +324,7 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
         );
       }
 
-      _updateNotifications.notify({
+      updateNotifications.notify({
         ...?affectedIds,
         labelUsageNotification,
       });
@@ -333,12 +332,12 @@ mixin _PersistenceEntries on _PersistenceLogicBase {
       await getIt<NotificationService>().updateBadge();
 
       if (shouldAddGeolocation) {
-        addGeolocation(journalEntity.id);
+        logic.addGeolocation(journalEntity.id);
       }
 
       return saved;
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,

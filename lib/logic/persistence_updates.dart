@@ -1,18 +1,46 @@
-part of 'persistence_logic.dart';
+import 'dart:async';
 
-mixin _PersistenceUpdates on _PersistenceLogicBase {
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/geolocation.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_collaborator_base.dart';
+import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
+import 'package:lotti/logic/services/geolocation_service.dart'
+    show GeolocationService;
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/utils/file_utils.dart';
+
+/// Update, geolocation and definition entry points of [PersistenceLogic].
+///
+/// Owns the public `updateXxx` wrappers (routing through the facade to the
+/// update-ops builders), [addGeolocation]/[addGeolocationAsync], the
+/// label-preserving [updateJournalEntity], the core [updateDbEntity] writer
+/// and the definition-op wrappers.
+class PersistenceUpdates extends PersistenceCollaboratorBase {
+  PersistenceUpdates(super.logic);
+
   Future<bool> updateJournalEntityText(
     String journalEntityId,
     EntryText entryText,
     DateTime dateTo,
-  ) => updateJournalEntityTextImpl(journalEntityId, entryText, dateTo);
+  ) => logic.updateJournalEntityTextImpl(journalEntityId, entryText, dateTo);
 
   Future<bool> updateJournalEntry({
     required String journalEntityId,
     EntryText? entryText,
     DateTime? dateFrom,
     DateTime? dateTo,
-  }) => updateJournalEntryImpl(
+  }) => logic.updateJournalEntryImpl(
     journalEntityId: journalEntityId,
     entryText: entryText,
     dateFrom: dateFrom,
@@ -24,7 +52,7 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
     required TaskData taskData,
     String? categoryId,
     EntryText? entryText,
-  }) => updateTaskImpl(
+  }) => logic.updateTaskImpl(
     journalEntityId: journalEntityId,
     taskData: taskData,
     categoryId: categoryId,
@@ -35,7 +63,7 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
     required String journalEntityId,
     required EventData data,
     EntryText? entryText,
-  }) => updateEventImpl(
+  }) => logic.updateEventImpl(
     journalEntityId: journalEntityId,
     data: data,
     entryText: entryText,
@@ -45,14 +73,16 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
   ///
   /// Delegates to [GeolocationService.addGeolocationAsync].
   FutureOr<Geolocation?> addGeolocationAsync(String journalEntityId) =>
-      _geolocationService.addGeolocationAsync(journalEntityId, updateDbEntity);
+      geolocationService.addGeolocationAsync(
+        journalEntityId,
+        logic.updateDbEntity,
+      );
 
   /// Fire-and-forget: add geolocation to entry.
   ///
   /// Delegates to [GeolocationService.addGeolocation].
-  @override
   void addGeolocation(String journalEntityId) {
-    _geolocationService.addGeolocation(journalEntityId, updateDbEntity);
+    geolocationService.addGeolocation(journalEntityId, logic.updateDbEntity);
   }
 
   Future<bool> updateJournalEntity(
@@ -64,7 +94,7 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
       // inside [updateMetadata] rolls back whenever the downstream write is
       // rejected (applied=false) or throws. Nested [withVcScope] calls from
       // [updateDbEntity] participate in this outer scope.
-      return await _vectorClockService.withVcScope<bool>(
+      return await vectorClockService.withVcScope<bool>(
         () async {
           // Preserve existing labels to avoid races with concurrent label
           // assignments. Label changes should go through LabelsRepository;
@@ -72,13 +102,13 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
           // stale in-memory entity.
           JournalEntity? current;
           try {
-            current = await _journalDb.journalEntityById(journalEntity.id);
+            current = await journalDb.journalEntityById(journalEntity.id);
           } catch (_) {
             // If we can't fetch current (e.g., in tests without a stub),
             // proceed without preservation.
             current = null;
           }
-          final updatedMeta = await updateMetadata(metadata);
+          final updatedMeta = await logic.updateMetadata(metadata);
           final preservedLabelIds = current?.meta.labelIds;
           final entityWithUpdatedMeta = journalEntity.copyWith(
             meta: updatedMeta.copyWith(labelIds: preservedLabelIds),
@@ -89,7 +119,7 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
             final priorityChanged =
                 current is! Task || current.data.priority != task.data.priority;
             if (priorityChanged) {
-              beforeNotify = () => _journalDb.updateTaskPriorityColumn(
+              beforeNotify = () => journalDb.updateTaskPriorityColumn(
                 id: task.id,
                 priority: task.data.priority.short,
                 rank: task.data.priority.rank,
@@ -97,20 +127,20 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
             }
           }
           final applied =
-              (await updateDbEntity(
+              (await logic.updateDbEntity(
                 entityWithUpdatedMeta,
                 beforeNotify: beforeNotify,
               )) ??
               false;
           if (applied) {
-            await _journalDb.addLabeled(entityWithUpdatedMeta);
+            await journalDb.addLabeled(entityWithUpdatedMeta);
           }
           return applied;
         },
         commitWhen: (applied) => applied,
       );
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -120,7 +150,6 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
     }
   }
 
-  @override
   Future<bool?> updateDbEntity(
     JournalEntity journalEntity, {
     String? linkedId,
@@ -129,9 +158,9 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
     Future<void> Function()? beforeNotify,
   }) async {
     try {
-      return await _vectorClockService.withVcScope<bool?>(
+      return await vectorClockService.withVcScope<bool?>(
         () async {
-          final updateResult = await _journalDb.updateJournalEntity(
+          final updateResult = await journalDb.updateJournalEntity(
             journalEntity,
             overrideComparison: overrideComparison,
           );
@@ -143,14 +172,14 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
             // this scope, so the scope itself has nothing to release on
             // rejection. Burn it explicitly so the counter does not linger
             // as plain `reserved`, outside the startup recovery path.
-            await _vectorClockService.burnUnboundVectorClock(
+            await vectorClockService.burnUnboundVectorClock(
               journalEntity.meta.vectorClock,
               reason: 'updateDbEntity write rejected id=${journalEntity.id}',
             );
           }
 
           if (applied) {
-            await _recordJournalSequence(
+            await recordJournalSequence(
               journalEntity,
               subDomain: 'updateDbEntity.recordSent',
             );
@@ -160,7 +189,7 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
             try {
               await beforeNotify();
             } catch (exception, stackTrace) {
-              _loggingService.error(
+              loggingService.error(
                 LogDomain.persistence,
                 exception,
                 stackTrace: stackTrace,
@@ -177,7 +206,7 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
           // parent was edited" (propagated match → defer to next 06:00).
           // UI providers continue to react to either form via the parent
           // ID matching helpers.
-          final parentIds = await _journalDb
+          final parentIds = await journalDb
               .parentLinkedEntityIds(journalEntity.id)
               .get();
 
@@ -192,9 +221,9 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
             labelUsageNotification,
           };
           if (isAgentExecution) {
-            _updateNotifications.notifyUiOnly(ids);
+            updateNotifications.notifyUiOnly(ids);
           } else {
-            _updateNotifications.notify(ids);
+            updateNotifications.notify(ids);
           }
 
           await getIt<Fts5Db>().insertText(
@@ -210,7 +239,7 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
                   vectorClock: journalEntity.meta.vectorClock,
                   jsonPath: relativeEntityPath(journalEntity),
                   status: SyncEntryStatus.update,
-                  originatingHostId: await _vectorClockService.getHost(),
+                  originatingHostId: await vectorClockService.getHost(),
                 ),
               );
             } catch (exception, stackTrace) {
@@ -244,7 +273,7 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
         commitWhen: (applied) => applied ?? false,
       );
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -259,15 +288,14 @@ mixin _PersistenceUpdates on _PersistenceLogicBase {
   }
 
   Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) =>
-      upsertEntityDefinitionImpl(entityDefinition);
+      logic.upsertEntityDefinitionImpl(entityDefinition);
 
-  @override
   Future<int> upsertDashboardDefinition(DashboardDefinition dashboard) =>
-      upsertDashboardDefinitionImpl(dashboard);
+      logic.upsertDashboardDefinitionImpl(dashboard);
 
   Future<void> setConfigFlag(ConfigFlag configFlag) =>
-      setConfigFlagImpl(configFlag);
+      logic.setConfigFlagImpl(configFlag);
 
   Future<int> deleteDashboardDefinition(DashboardDefinition dashboard) =>
-      deleteDashboardDefinitionImpl(dashboard);
+      logic.deleteDashboardDefinitionImpl(dashboard);
 }

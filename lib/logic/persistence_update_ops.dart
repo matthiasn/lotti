@@ -1,25 +1,39 @@
-part of 'persistence_logic.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/logic/persistence_collaborator_base.dart';
+import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
+import 'package:lotti/logic/persistence_logic_contract.dart';
+import 'package:lotti/services/domain_logging.dart';
 
-/// Entry-update operations of [PersistenceLogic]; same delegator pattern
-/// as the create part so mocks keep intercepting the public methods.
-mixin _PersistenceUpdateOps on _PersistenceLogicBase {
-  @override
+/// Entry-update operations of [PersistenceLogic].
+///
+/// Metadata updates and the DB write route back through the facade
+/// ([PersistenceLogicContract]) so test subclasses overriding those keep
+/// intercepting the calls.
+class PersistenceUpdateOps extends PersistenceCollaboratorBase {
+  PersistenceUpdateOps(super.logic);
+
   Future<bool> updateJournalEntityTextImpl(
     String journalEntityId,
     EntryText entryText,
     DateTime dateTo,
   ) async {
     try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+      final journalEntity = await journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
         return false;
       }
 
-      final newMeta = await updateMetadata(journalEntity.meta, dateTo: dateTo);
+      final newMeta = await logic.updateMetadata(
+        journalEntity.meta,
+        dateTo: dateTo,
+      );
 
       if (journalEntity is JournalEntry) {
-        await updateDbEntity(
+        await logic.updateDbEntity(
           journalEntity.copyWith(
             meta: newMeta,
             entryText: entryText,
@@ -28,7 +42,7 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
       }
 
       if (journalEntity is JournalAudio) {
-        await updateDbEntity(
+        await logic.updateDbEntity(
           journalEntity.copyWith(
             meta: newMeta.copyWith(
               flag: newMeta.flag == EntryFlag.import
@@ -41,7 +55,7 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
       }
 
       if (journalEntity is JournalImage) {
-        await updateDbEntity(
+        await logic.updateDbEntity(
           journalEntity.copyWith(
             meta: newMeta.copyWith(
               flag: newMeta.flag == EntryFlag.import
@@ -54,7 +68,7 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
       }
 
       if (journalEntity is MeasurementEntry) {
-        await updateDbEntity(
+        await logic.updateDbEntity(
           journalEntity.copyWith(
             meta: newMeta,
             entryText: entryText,
@@ -63,7 +77,7 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
       }
 
       if (journalEntity is HabitCompletionEntry) {
-        await updateDbEntity(
+        await logic.updateDbEntity(
           journalEntity.copyWith(
             meta: newMeta,
             entryText: entryText,
@@ -71,7 +85,7 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
         );
       }
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -85,7 +99,6 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
     return true;
   }
 
-  @override
   Future<bool> updateJournalEntryImpl({
     required String journalEntityId,
     EntryText? entryText,
@@ -97,13 +110,13 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
     }
 
     try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+      final journalEntity = await journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity is! JournalEntry) {
         return false;
       }
 
-      final newMeta = await updateMetadata(
+      final newMeta = await logic.updateMetadata(
         journalEntity.meta,
         dateFrom: dateFrom,
         dateTo: dateTo,
@@ -114,9 +127,9 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
         entryText: entryText ?? journalEntity.entryText,
       );
 
-      return await updateDbEntity(updated) ?? false;
+      return await logic.updateDbEntity(updated) ?? false;
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -126,7 +139,6 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
     }
   }
 
-  @override
   Future<bool> updateTaskImpl({
     required String journalEntityId,
     required TaskData taskData,
@@ -134,7 +146,7 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
     EntryText? entryText,
   }) async {
     try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+      final journalEntity = await journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
         return false;
@@ -143,14 +155,14 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
       await journalEntity.maybeMap(
         task: (Task task) async {
           final priorityChanged = task.data.priority != taskData.priority;
-          await updateDbEntity(
+          await logic.updateDbEntity(
             task.copyWith(
-              meta: await updateMetadata(journalEntity.meta),
+              meta: await logic.updateMetadata(journalEntity.meta),
               entryText: entryText ?? task.entryText,
               data: taskData,
             ),
             beforeNotify: priorityChanged
-                ? () => _journalDb.updateTaskPriorityColumn(
+                ? () => journalDb.updateTaskPriorityColumn(
                     id: journalEntityId,
                     priority: taskData.priority.short,
                     rank: taskData.priority.rank,
@@ -159,7 +171,7 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
           );
         },
         orElse: () async {
-          _loggingService.error(
+          loggingService.error(
             LogDomain.persistence,
             'not a task',
             subDomain: 'updateTask',
@@ -167,7 +179,7 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
         },
       );
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -177,14 +189,13 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
     return true;
   }
 
-  @override
   Future<bool> updateEventImpl({
     required String journalEntityId,
     required EventData data,
     EntryText? entryText,
   }) async {
     try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
+      final journalEntity = await journalDb.journalEntityById(journalEntityId);
 
       if (journalEntity == null) {
         return false;
@@ -192,16 +203,16 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
 
       await journalEntity.maybeMap(
         event: (JournalEvent event) async {
-          await updateDbEntity(
+          await logic.updateDbEntity(
             event.copyWith(
-              meta: await updateMetadata(journalEntity.meta),
+              meta: await logic.updateMetadata(journalEntity.meta),
               entryText: entryText,
               data: data,
             ),
           );
         },
         orElse: () async {
-          _loggingService.error(
+          loggingService.error(
             LogDomain.persistence,
             'not an event',
             subDomain: 'updateEvent',
@@ -209,7 +220,7 @@ mixin _PersistenceUpdateOps on _PersistenceLogicBase {
         },
       );
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,

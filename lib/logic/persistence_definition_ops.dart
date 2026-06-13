@@ -1,13 +1,21 @@
-part of 'persistence_logic.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_collaborator_base.dart';
+import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/notification_service.dart';
 
 /// Entity/dashboard definition and config-flag operations of
-/// [PersistenceLogic]; same delegator pattern as the create part.
-mixin _PersistenceDefinitionOps on _PersistenceLogicBase {
-  @override
+/// [PersistenceLogic].
+class PersistenceDefinitionOps extends PersistenceCollaboratorBase {
+  PersistenceDefinitionOps(super.logic);
+
   Future<int> upsertEntityDefinitionImpl(
     EntityDefinition entityDefinition,
   ) async {
-    final linesAffected = await _journalDb.upsertEntityDefinition(
+    final linesAffected = await journalDb.upsertEntityDefinition(
       entityDefinition,
     );
     final typeNotification = switch (entityDefinition) {
@@ -17,7 +25,7 @@ mixin _PersistenceDefinitionOps on _PersistenceLogicBase {
       MeasurableDataType() => measurablesNotification,
       LabelDefinition() => labelsNotification,
     };
-    _updateNotifications.notify({entityDefinition.id, typeNotification});
+    updateNotifications.notify({entityDefinition.id, typeNotification});
     await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: entityDefinition,
@@ -27,12 +35,11 @@ mixin _PersistenceDefinitionOps on _PersistenceLogicBase {
     return linesAffected;
   }
 
-  @override
   Future<int> upsertDashboardDefinitionImpl(
     DashboardDefinition dashboard,
   ) async {
-    final linesAffected = await _journalDb.upsertDashboardDefinition(dashboard);
-    _updateNotifications.notify({dashboard.id, dashboardsNotification});
+    final linesAffected = await journalDb.upsertDashboardDefinition(dashboard);
+    updateNotifications.notify({dashboard.id, dashboardsNotification});
     await outboxService.enqueueMessage(
       SyncMessage.entityDefinition(
         entityDefinition: dashboard,
@@ -49,10 +56,9 @@ mixin _PersistenceDefinitionOps on _PersistenceLogicBase {
     return linesAffected;
   }
 
-  @override
   Future<void> setConfigFlagImpl(ConfigFlag configFlag) async {
-    final previous = await _journalDb.getConfigFlagByName(configFlag.name);
-    await _journalDb.upsertConfigFlag(configFlag);
+    final previous = await journalDb.getConfigFlagByName(configFlag.name);
+    await journalDb.upsertConfigFlag(configFlag);
     if (previous?.status != configFlag.status) {
       await outboxService.enqueueMessage(
         SyncMessage.configFlag(
@@ -63,15 +69,14 @@ mixin _PersistenceDefinitionOps on _PersistenceLogicBase {
       );
     }
     if (configFlag.name == 'private') {
-      _updateNotifications.notify({privateToggleNotification});
+      updateNotifications.notify({privateToggleNotification});
     }
   }
 
-  @override
   Future<int> deleteDashboardDefinitionImpl(
     DashboardDefinition dashboard,
   ) async {
-    final linesAffected = await upsertDashboardDefinition(
+    final linesAffected = await logic.upsertDashboardDefinition(
       dashboard.copyWith(
         deletedAt: DateTime.now(),
       ),

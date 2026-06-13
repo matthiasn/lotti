@@ -1,31 +1,47 @@
-part of 'persistence_logic.dart';
+import 'dart:convert';
+
+import 'package:clock/clock.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/health.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_collaborator_base.dart';
+import 'package:lotti/logic/persistence_logic.dart' show PersistenceLogic;
+import 'package:lotti/logic/persistence_logic_contract.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/utils/entry_utils.dart';
 
 /// Entry-creation operations of [PersistenceLogic].
 ///
-/// Implementation bodies live here; the class keeps thin delegators so
-/// mocktail mocks of [PersistenceLogic] still intercept every public
-/// method (extension methods cannot be mocked).
-mixin _PersistenceCreateOps on _PersistenceLogicBase {
-  @override
+/// Implements the `*Impl` builders. Metadata creation and the DB write go
+/// back through the facade ([PersistenceLogicContract]) so test subclasses
+/// that override those methods keep intercepting the calls.
+class PersistenceCreateOps extends PersistenceCollaboratorBase {
+  PersistenceCreateOps(super.logic);
+
   Future<QuantitativeEntry?> createQuantitativeEntryImpl(
     QuantitativeData data,
   ) async {
     try {
       final journalEntity = QuantitativeEntry(
         data: data,
-        meta: await createMetadata(
+        meta: await logic.createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
           uuidV5Input: json.encode(data),
         ),
       );
-      await createDbEntity(
+      await logic.createDbEntity(
         journalEntity,
         shouldAddGeolocation: false,
       );
       return journalEntity;
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -36,26 +52,25 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     return null;
   }
 
-  @override
   Future<WorkoutEntry?> createWorkoutEntryImpl(WorkoutData data) async {
     try {
       final workout = WorkoutEntry(
         data: data,
-        meta: await createMetadata(
+        meta: await logic.createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
           uuidV5Input: data.id,
         ),
       );
 
-      await createDbEntity(
+      await logic.createDbEntity(
         workout,
         shouldAddGeolocation: false,
       );
 
       return workout;
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -66,7 +81,6 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     return null;
   }
 
-  @override
   Future<bool> createSurveyEntryImpl({
     required SurveyData data,
     String? linkedId,
@@ -74,16 +88,16 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     try {
       final journalEntity = JournalEntity.survey(
         data: data,
-        meta: await createMetadata(
+        meta: await logic.createMetadata(
           dateFrom: data.taskResult.startDate,
           dateTo: data.taskResult.endDate,
           uuidV5Input: json.encode(data),
         ),
       );
 
-      await createDbEntity(journalEntity, linkedId: linkedId);
+      await logic.createDbEntity(journalEntity, linkedId: linkedId);
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -94,7 +108,6 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     return true;
   }
 
-  @override
   Future<MeasurementEntry?> createMeasurementEntryImpl({
     required MeasurementData data,
     required bool private,
@@ -104,7 +117,7 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     try {
       final measurementEntry = MeasurementEntry(
         data: data,
-        meta: await createMetadata(
+        meta: await logic.createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
           uuidV5Input: json.encode(data),
@@ -119,17 +132,17 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
           data.dateFrom.difference(clock.now()).inMinutes.abs() < 1 &&
           data.dateTo.difference(clock.now()).inMinutes.abs() < 1;
 
-      await createDbEntity(
+      await logic.createDbEntity(
         measurementEntry,
         linkedId: linkedId,
         shouldAddGeolocation: shouldAddGeolocation,
       );
 
-      _updateNotifications.notify({measurementEntry.data.dataTypeId});
+      updateNotifications.notify({measurementEntry.data.dataTypeId});
 
       return measurementEntry;
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -140,7 +153,6 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     return null;
   }
 
-  @override
   Future<HabitCompletionEntry?> createHabitCompletionEntryImpl({
     required HabitCompletionData data,
     required HabitDefinition? habitDefinition,
@@ -150,7 +162,7 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     try {
       final habitCompletionEntry = HabitCompletionEntry(
         data: data,
-        meta: await createMetadata(
+        meta: await logic.createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
           uuidV5Input: json.encode(data),
@@ -165,7 +177,7 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
           data.dateFrom.difference(clock.now()).inMinutes.abs() < 1 &&
           data.dateTo.difference(clock.now()).inMinutes.abs() < 1;
 
-      final saved = await createDbEntity(
+      final saved = await logic.createDbEntity(
         habitCompletionEntry,
         linkedId: linkedId,
         shouldAddGeolocation: shouldAddGeolocation,
@@ -184,7 +196,7 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
 
       return habitCompletionEntry;
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -195,7 +207,6 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     return null;
   }
 
-  @override
   Future<Task?> createTaskEntryImpl({
     required TaskData data,
     required EntryText entryText,
@@ -206,7 +217,7 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
       final task = Task(
         data: data,
         entryText: entryText,
-        meta: await createMetadata(
+        meta: await logic.createMetadata(
           dateFrom: data.dateFrom,
           dateTo: data.dateTo,
           uuidV5Input: json.encode(data),
@@ -215,11 +226,11 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
         ),
       );
 
-      await createDbEntity(task, linkedId: linkedId);
+      await logic.createDbEntity(task, linkedId: linkedId);
 
       return task;
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -230,7 +241,6 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     return null;
   }
 
-  @override
   Future<AiResponseEntry?> createAiResponseEntryImpl({
     required AiResponseData data,
     DateTime? dateFrom,
@@ -240,7 +250,7 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     try {
       final aiResponse = AiResponseEntry(
         data: data,
-        meta: await createMetadata(
+        meta: await logic.createMetadata(
           dateFrom: dateFrom ?? DateTime.now(),
           dateTo: DateTime.now(),
           uuidV5Input: json.encode(data),
@@ -249,15 +259,15 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
         ),
       );
 
-      await createDbEntity(aiResponse, linkedId: linkedId);
+      await logic.createDbEntity(aiResponse, linkedId: linkedId);
 
       if (linkedId != null) {
-        _updateNotifications.notify({linkedId});
+        updateNotifications.notify({linkedId});
       }
 
       return aiResponse;
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
@@ -268,7 +278,6 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
     return null;
   }
 
-  @override
   Future<JournalEvent?> createEventEntryImpl({
     required EventData data,
     required EntryText entryText,
@@ -279,17 +288,17 @@ mixin _PersistenceCreateOps on _PersistenceLogicBase {
       final journalEvent = JournalEvent(
         data: data,
         entryText: entryText,
-        meta: await createMetadata(
+        meta: await logic.createMetadata(
           starred: true,
           categoryId: categoryId,
         ),
       );
 
-      await createDbEntity(journalEvent, linkedId: linkedId);
+      await logic.createDbEntity(journalEvent, linkedId: linkedId);
 
       return journalEvent;
     } catch (exception, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.persistence,
         exception,
         stackTrace: stackTrace,
