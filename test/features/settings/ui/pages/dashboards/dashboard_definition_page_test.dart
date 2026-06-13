@@ -906,8 +906,7 @@ void main() {
         // exercises onConfirmAddHealthType deterministically.
         final healthSelect = tester.widget<ChartMultiSelect<HealthTypeConfig>>(
           find.byWidgetPredicate(
-            (w) =>
-                w is ChartMultiSelect<HealthTypeConfig>,
+            (w) => w is ChartMultiSelect<HealthTypeConfig>,
           ),
         );
         healthSelect.onConfirm([healthTypes['HealthDataType.WEIGHT']]);
@@ -957,8 +956,7 @@ void main() {
         final workoutSelect = tester
             .widget<ChartMultiSelect<DashboardWorkoutItem>>(
               find.byWidgetPredicate(
-                (w) =>
-                    w is ChartMultiSelect<DashboardWorkoutItem>,
+                (w) => w is ChartMultiSelect<DashboardWorkoutItem>,
               ),
             );
         workoutSelect.onConfirm([workoutType]);
