@@ -48,26 +48,29 @@ void main() {
       },
     );
 
-    testWidgets('countdown pill renders next to a play button when scheduled', (
-      tester,
-    ) async {
-      await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
-        final state = makeTestState(
-          nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30),
-        );
-        final bench = AgentTestBench(
-          state: state,
-          report: makeTestReport(tldr: 'Tldr line.'),
-        );
+    testWidgets(
+      'countdown pill renders next to the run-now button when scheduled',
+      (
+        tester,
+      ) async {
+        await withClock(Clock.fixed(DateTime(2026, 5, 4, 12)), () async {
+          final state = makeTestState(
+            nextWakeAt: DateTime(2026, 5, 4, 12, 0, 30),
+          );
+          final bench = AgentTestBench(
+            state: state,
+            report: makeTestReport(tldr: 'Tldr line.'),
+          );
 
-        await tester.pumpWidget(bench.build());
-        await tester.pumpAndSettle();
+          await tester.pumpWidget(bench.build());
+          await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
-        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
-        expect(find.text('0:30'), findsOneWidget);
-      });
-    });
+          expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
+          expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+          expect(find.text('0:30'), findsOneWidget);
+        });
+      },
+    );
 
     testWidgets('long scheduled wake countdown uses h:mm:ss format', (
       tester,
@@ -87,7 +90,7 @@ void main() {
         await tester.pumpWidget(bench.build());
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
         expect(find.byIcon(Icons.close_rounded), findsOneWidget);
         expect(find.text('5:39:14'), findsOneWidget);
         expect(find.text('339:14'), findsNothing);
@@ -120,7 +123,7 @@ void main() {
 
         verify(() => taskAgentService.cancelScheduledWake(any())).called(1);
 
-        expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+        expect(find.byIcon(Icons.close_rounded), findsNothing);
         expect(find.byIcon(Icons.refresh_rounded), findsOneWidget);
       });
     });
