@@ -1,15 +1,31 @@
-part of 'agent_repository.dart';
+import 'package:drift/drift.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/database/agent_repo_core.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart'
+    show AgentRepository, AttentionPlanningInputs;
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/attention_negotiation.dart';
 
-/// Attention-claim and standing-agreement projection queries and
-/// rebuild/refresh machinery of [AgentRepository]. The class keeps thin
-/// delegators for the public methods so mocktail mocks of the repository
-/// keep intercepting them.
-mixin _AgentAttentionProjection on _AgentRepositoryBase {
+/// Attention-claim and standing-agreement projection queries plus the
+/// rebuild/refresh machinery for [AgentRepository]. Collaborator extracted from
+/// the former `_AgentAttentionProjection` mixin; the repository keeps thin
+/// delegators so mocks keep intercepting the public methods.
+///
+/// The projection hydrates source rows by primary-key batch lookup through
+/// [AgentRepoCore.getEntitiesByIds] so the synced log remains the source of
+/// truth.
+class AgentAttentionProjection {
+  AgentAttentionProjection(this._db, this._core);
+
+  final AgentDatabase _db;
+  final AgentRepoCore _core;
+
   /// Fetch attention claims visible to a time range via the local indexed
   /// projection. This is the planner read path: it never scans
   /// `agent_entities` or filters deserialized JSON to discover claims.
-  @override
-  Future<List<AttentionRequestEntity>> getAttentionClaimsForWindowImpl({
+  Future<List<AttentionRequestEntity>> getAttentionClaimsForWindow({
     required DateTime start,
     required DateTime end,
     Set<AttentionClaimStatus> statuses = const {
@@ -56,7 +72,7 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
     final requestIds = [
       for (final row in rows) row.read<String>('request_id'),
     ];
-    final entitiesById = await getEntitiesByIds(requestIds);
+    final entitiesById = await _core.getEntitiesByIds(requestIds);
     return [
       for (final requestId in requestIds)
         if (entitiesById[requestId] case final AttentionRequestEntity request)
@@ -69,8 +85,7 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
   ///
   /// Uses `attention_claim_index(target_kind, target_id, status, ...)`; it does
   /// not scan `agent_entities` or deserialize source rows to discover matches.
-  @override
-  Future<List<AttentionRequestEntity>> getAttentionClaimsForTargetImpl({
+  Future<List<AttentionRequestEntity>> getAttentionClaimsForTarget({
     required String targetKind,
     required String targetId,
     Set<AttentionClaimStatus> statuses = const {
@@ -126,7 +141,7 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
     final requestIds = [
       for (final row in rows) row.read<String>('request_id'),
     ];
-    final entitiesById = await getEntitiesByIds(requestIds);
+    final entitiesById = await _core.getEntitiesByIds(requestIds);
     return [
       for (final requestId in requestIds)
         if (entitiesById[requestId] case final AttentionRequestEntity request)
@@ -136,8 +151,7 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
 
   /// Fetch the claim and standing-agreement inputs a day planner needs for a
   /// window. Both reads use projection indexes rather than source-table scans.
-  @override
-  Future<AttentionPlanningInputs> getAttentionPlanningInputsForWindowImpl({
+  Future<AttentionPlanningInputs> getAttentionPlanningInputsForWindow({
     required DateTime start,
     required DateTime end,
     Set<AttentionClaimStatus> claimStatuses = const {
@@ -154,13 +168,13 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
     int agreementLimit = 200,
   }) async {
     final (claims, standingAgreements) = await (
-      getAttentionClaimsForWindowImpl(
+      getAttentionClaimsForWindow(
         start: start,
         end: end,
         statuses: claimStatuses,
         limit: claimLimit,
       ),
-      getStandingAgreementsForWindowImpl(
+      getStandingAgreementsForWindow(
         start: start,
         end: end,
         statuses: agreementStatuses,
@@ -181,8 +195,7 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
   /// `agent_entities` or filters deserialized JSON to discover agreements.
   /// The projection returns agreement ids, then the source rows are hydrated by
   /// primary-key batch lookup so the synced log remains the source of truth.
-  @override
-  Future<List<StandingAgreementEntity>> getStandingAgreementsForWindowImpl({
+  Future<List<StandingAgreementEntity>> getStandingAgreementsForWindow({
     required DateTime start,
     required DateTime end,
     Set<StandingAgreementStatus> statuses = const {
@@ -248,7 +261,7 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
     final agreementIds = [
       for (final row in rows) row.read<String>('agreement_id'),
     ];
-    final entitiesById = await getEntitiesByIds(agreementIds);
+    final entitiesById = await _core.getEntitiesByIds(agreementIds);
     return [
       for (final agreementId in agreementIds)
         if (entitiesById[agreementId] case final StandingAgreementEntity entity)
@@ -260,8 +273,7 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
   ///
   /// This is for migrations, repair, and diagnostics. Planner reads must use
   /// `getAttentionClaimsForWindow`, not a source-table scan.
-  @override
-  Future<void> rebuildAttentionClaimProjectionImpl() async {
+  Future<void> rebuildAttentionClaimProjection() async {
     await _db.transaction(() async {
       await _db.customStatement('DELETE FROM attention_claim_index');
       final rows = await _db
@@ -289,8 +301,7 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
   ///
   /// This is for migrations, repair, and diagnostics. Planner reads must use
   /// `getStandingAgreementsForWindow`, not a source-table scan.
-  @override
-  Future<void> rebuildStandingAgreementProjectionImpl() async {
+  Future<void> rebuildStandingAgreementProjection() async {
     await _db.transaction(() async {
       await _db.customStatement('DELETE FROM standing_agreement_index');
       final rows = await _db
@@ -314,8 +325,9 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
     });
   }
 
-  @override
-  Future<void> _refreshAttentionClaimProjectionForEntity(
+  /// Refresh the attention-claim projection row implied by [entity] after a
+  /// write. Called transactionally from [AgentRepoCore.upsertEntity].
+  Future<void> refreshAttentionClaimProjectionForEntity(
     AgentDomainEntity entity,
   ) async {
     final requestId = switch (entity) {
@@ -327,8 +339,9 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
     await _refreshAttentionClaimProjection(requestId);
   }
 
-  @override
-  Future<void> _refreshStandingAgreementProjectionForEntity(
+  /// Refresh the standing-agreement projection row implied by [entity] after a
+  /// write. Called transactionally from [AgentRepoCore.upsertEntity].
+  Future<void> refreshStandingAgreementProjectionForEntity(
     AgentDomainEntity entity,
   ) async {
     if (entity is! StandingAgreementEntity) return;

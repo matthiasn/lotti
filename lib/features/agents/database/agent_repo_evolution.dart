@@ -1,6 +1,31 @@
-part of 'agent_repository.dart';
+import 'package:drift/drift.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/database/agent_proposal_ledger.dart';
+import 'package:lotti/features/agents/database/agent_repo_core.dart';
+import 'package:lotti/features/agents/database/agent_repo_internals.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart'
+    show AgentRepository;
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
 
-mixin _AgentRepoEvolution on _AgentRepositoryBase {
+/// Evolution-session, scheduled-wake, change-set, and link-discovery queries of
+/// [AgentRepository]. Collaborator extracted from the former
+/// `_AgentRepoEvolution` mixin; the repository keeps thin delegators so mocks
+/// keep intercepting.
+///
+/// Depends on [AgentRepoCore] for entity hydration and on
+/// [AgentProposalLedger] for the heavy proposal-ledger assembly exposed via
+/// [getProposalLedger].
+class AgentRepoEvolution {
+  AgentRepoEvolution(this._db, this._core, this._ledger);
+
+  final AgentDatabase _db;
+  final AgentRepoCore _core;
+  final AgentProposalLedger _ledger;
+
   Future<List<AgentStateEntity>> getDueScheduledAgentStates(
     DateTime now,
   ) async {
@@ -186,7 +211,7 @@ mixin _AgentRepoEvolution on _AgentRepositoryBase {
   Future<EvolutionSessionRecapEntity?> getEvolutionSessionRecap(
     String sessionId,
   ) async {
-    final entity = await getEntity(evolutionSessionRecapId(sessionId));
+    final entity = await _core.getEntity(evolutionSessionRecapId(sessionId));
     return entity?.mapOrNull(evolutionSessionRecap: (recap) => recap);
   }
 
@@ -259,7 +284,7 @@ mixin _AgentRepoEvolution on _AgentRepositoryBase {
     // When filtering by taskId in Dart, over-fetch from DB to compensate for
     // rows that will be discarded. Without a dedicated taskId column we cannot
     // filter at the SQL level.
-    final dbLimit = taskId != null ? limit * _overFetchMultiplier : limit;
+    final dbLimit = taskId != null ? limit * overFetchMultiplier : limit;
     final rows = await _db.getPendingChangeSetsForAgent(agentId, dbLimit).get();
     var results = rows
         .map(AgentDbConversions.fromEntityRow)
@@ -285,7 +310,7 @@ mixin _AgentRepoEvolution on _AgentRepositoryBase {
     String? taskId,
     int limit = 20,
   }) async {
-    final dbLimit = taskId != null ? limit * _overFetchMultiplier : limit;
+    final dbLimit = taskId != null ? limit * overFetchMultiplier : limit;
     final rows = await _db.getRecentDecisionsForAgent(agentId, dbLimit).get();
     var results = rows
         .map(AgentDbConversions.fromEntityRow)
@@ -297,13 +322,14 @@ mixin _AgentRepoEvolution on _AgentRepositoryBase {
     return results.take(limit).toList();
   }
 
-  /// See `AgentProposalLedger`.
+  /// Build a [ProposalLedger] for [taskId] under [agentId]. See
+  /// [AgentProposalLedger.getProposalLedger].
   Future<ProposalLedger> getProposalLedger(
     String agentId, {
     required String taskId,
     int changeSetFetchLimit = 200,
     int resolvedLimit = 50,
-  }) => getProposalLedgerImpl(
+  }) => _ledger.getProposalLedger(
     agentId,
     taskId: taskId,
     changeSetFetchLimit: changeSetFetchLimit,
@@ -338,29 +364,4 @@ mixin _AgentRepoEvolution on _AgentRepositoryBase {
     if (rows.isEmpty) return null;
     return AgentDbConversions.fromLinkRow(rows.first);
   }
-
-  /// Insert or update a link using on-conflict update semantics against the
-  /// primary key (`id`).
-  ///
-  /// `agent_links` additionally carries two partial unique indexes that
-  /// `insertOnConflictUpdate`'s primary-key-only ON CONFLICT clause does
-  /// NOT handle:
-  ///  - `idx_unique_soul_per_template` on `(from_id)` where
-  ///    `type = 'soul_assignment' AND deleted_at IS NULL`.
-  ///  - `idx_unique_improver_per_template` on `(to_id)` where
-  ///    `type = 'improver_target' AND deleted_at IS NULL`.
-  ///
-  /// When a sync-incoming link carries the same `from_id` / `to_id` as an
-  /// existing active row but a different `id`, the insert hits the
-  /// partial unique index and throws `SqliteException(2067)`. The v6
-  /// migration uses the same pattern to de-duplicate pre-existing rows:
-  /// we preemptively soft-delete the conflicting active row under the
-  /// same transaction, then insert. The soft-deleted row stays in the
-  /// table for audit, and the new incoming link takes over the unique
-  /// slot for that template.
-  ///
-  /// Skipping this step leaves the sync apply path throwing retriable
-  /// apply errors that exhaust after 10 attempts and mark the queue row
-  /// `abandoned` — a silent data drop even though the payload itself
-  /// is valid.
 }

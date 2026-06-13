@@ -1,6 +1,33 @@
-part of 'agent_repository.dart';
+import 'package:drift/drift.dart';
+import 'package:lotti/features/agents/database/agent_attention_projection.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/database/agent_repo_internals.dart';
+import 'package:lotti/features/agents/database/agent_repo_queries.dart'
+    show AgentRepoQueries;
+import 'package:lotti/features/agents/database/agent_repository.dart'
+    show AgentRepository;
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 
-mixin _AgentRepoCore on _AgentRepositoryBase {
+/// Entity CRUD, transaction scoping, and the shared batched-read primitives for
+/// [AgentRepository]. Collaborator extracted from the former `_AgentRepoCore`
+/// mixin; the repository keeps thin delegators so mocks keep intercepting.
+///
+/// [upsertEntity] refreshes the attention/standing projections through
+/// [AgentAttentionProjection], which is injected lazily because the projection
+/// in turn reads source rows via [getEntitiesByIds] on this class.
+class AgentRepoCore {
+  AgentRepoCore(this._db);
+
+  final AgentDatabase _db;
+
+  /// The projection collaborator used by [upsertEntity] to keep the local
+  /// attention/standing indexes in sync. Wired by [AgentRepository] after both
+  /// collaborators are constructed (Core ↔ projection form a cycle).
+  late final AgentAttentionProjection projection;
+
   /// Run [action] inside a database transaction.
   ///
   /// All operations within the callback are committed atomically; if any
@@ -16,8 +43,8 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
   /// target (ON CONFLICT DO UPDATE — updates supplied columns in place).
   Future<void> upsertEntity(AgentDomainEntity entity) async {
     final companion = AgentDbConversions.toEntityCompanion(entity);
-    final affectsAttentionClaims = _affectsAttentionClaimProjection(entity);
-    final affectsStandingAgreements = _affectsStandingAgreementProjection(
+    final affectsAttentionClaims = affectsAttentionClaimProjection(entity);
+    final affectsStandingAgreements = affectsStandingAgreementProjection(
       entity,
     );
     if (!affectsAttentionClaims && !affectsStandingAgreements) {
@@ -28,16 +55,15 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
     await _db.transaction(() async {
       await _db.into(_db.agentEntities).insertOnConflictUpdate(companion);
       if (affectsAttentionClaims) {
-        await _refreshAttentionClaimProjectionForEntity(entity);
+        await projection.refreshAttentionClaimProjectionForEntity(entity);
       }
       if (affectsStandingAgreements) {
-        await _refreshStandingAgreementProjectionForEntity(entity);
+        await projection.refreshStandingAgreementProjectionForEntity(entity);
       }
     });
   }
 
   /// Fetch a single entity by its [id], or `null` if not found.
-  @override
   Future<AgentDomainEntity?> getEntity(String id) async {
     final rows = await _db.getAgentEntityById(id).get();
     if (rows.isEmpty) return null;
@@ -50,7 +76,7 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
   /// row is soft-deleted) are simply absent from the map.
   ///
   /// Issues one `WHERE id IN (?, …)` query per
-  /// [_sqliteInClauseChunkSize] batch against the primary-key index
+  /// [sqliteInClauseChunkSize] batch against the primary-key index
   /// instead of N per-id round-trips. The 2026-05-10 desktop
   /// slow_queries log captured 2 484 hits/day for `SELECT * FROM
   /// agent_entities WHERE id = ? AND deleted_at IS NULL` — all from
@@ -69,12 +95,11 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
   /// per-id fan-out it replaces.
   ///
   /// Empty input returns an empty map without touching the database.
-  @override
   Future<Map<String, AgentDomainEntity>> getEntitiesByIds(
     Iterable<String> ids,
   ) async {
     final result = <String, AgentDomainEntity>{};
-    for (final chunk in _sqliteInClauseChunks(ids)) {
+    for (final chunk in sqliteInClauseChunks(ids)) {
       final placeholders = List.filled(chunk.length, '?').join(', ');
       final rows = await _db
           .customSelect(
@@ -95,14 +120,17 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
     return result;
   }
 
-  @override
-  Future<List<AgentDomainEntity>> _latestEntitiesByAgentIds({
+  /// Fetch the newest non-deleted entity per agent for [agentIds] filtered by
+  /// [type] (and optionally [subtype]). Shared batched read used by the
+  /// state/head latest-per-agent lookups in this class and in
+  /// [AgentRepoQueries].
+  Future<List<AgentDomainEntity>> latestEntitiesByAgentIds({
     required Iterable<String> agentIds,
     required String type,
     String? subtype,
   }) async {
     final result = <AgentDomainEntity>[];
-    for (final chunk in _sqliteInClauseChunks(agentIds)) {
+    for (final chunk in sqliteInClauseChunks(agentIds)) {
       final placeholders = List.filled(chunk.length, '?').join(', ');
       final subtypePredicate = subtype == null ? '' : 'AND subtype = ? ';
       final rows = await _db
@@ -205,93 +233,6 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
     return metas;
   }
 
-  /// See `AgentAttentionProjection`.
-  Future<List<AttentionRequestEntity>> getAttentionClaimsForWindow({
-    required DateTime start,
-    required DateTime end,
-    Set<AttentionClaimStatus> statuses = const {
-      AttentionClaimStatus.open,
-      AttentionClaimStatus.proposed,
-      AttentionClaimStatus.partiallySatisfied,
-      AttentionClaimStatus.deferred,
-    },
-    int limit = 200,
-  }) => getAttentionClaimsForWindowImpl(
-    start: start,
-    end: end,
-    statuses: statuses,
-    limit: limit,
-  );
-
-  /// See `AgentAttentionProjection`.
-  Future<List<AttentionRequestEntity>> getAttentionClaimsForTarget({
-    required String targetKind,
-    required String targetId,
-    Set<AttentionClaimStatus> statuses = const {
-      AttentionClaimStatus.open,
-      AttentionClaimStatus.proposed,
-      AttentionClaimStatus.partiallySatisfied,
-      AttentionClaimStatus.deferred,
-    },
-    int limit = 50,
-  }) => getAttentionClaimsForTargetImpl(
-    targetKind: targetKind,
-    targetId: targetId,
-    statuses: statuses,
-    limit: limit,
-  );
-
-  /// See `AgentAttentionProjection`.
-  Future<AttentionPlanningInputs> getAttentionPlanningInputsForWindow({
-    required DateTime start,
-    required DateTime end,
-    Set<AttentionClaimStatus> claimStatuses = const {
-      AttentionClaimStatus.open,
-      AttentionClaimStatus.proposed,
-      AttentionClaimStatus.partiallySatisfied,
-      AttentionClaimStatus.deferred,
-    },
-    Set<StandingAgreementStatus> agreementStatuses = const {
-      StandingAgreementStatus.active,
-    },
-    Set<StandingAgreementScope>? agreementScopes,
-    int claimLimit = 200,
-    int agreementLimit = 200,
-  }) => getAttentionPlanningInputsForWindowImpl(
-    start: start,
-    end: end,
-    claimStatuses: claimStatuses,
-    agreementStatuses: agreementStatuses,
-    agreementScopes: agreementScopes,
-    claimLimit: claimLimit,
-    agreementLimit: agreementLimit,
-  );
-
-  /// See `AgentAttentionProjection`.
-  Future<List<StandingAgreementEntity>> getStandingAgreementsForWindow({
-    required DateTime start,
-    required DateTime end,
-    Set<StandingAgreementStatus> statuses = const {
-      StandingAgreementStatus.active,
-    },
-    Set<StandingAgreementScope>? scopes,
-    int limit = 200,
-  }) => getStandingAgreementsForWindowImpl(
-    start: start,
-    end: end,
-    statuses: statuses,
-    scopes: scopes,
-    limit: limit,
-  );
-
-  /// See `AgentAttentionProjection`.
-  Future<void> rebuildAttentionClaimProjection() =>
-      rebuildAttentionClaimProjectionImpl();
-
-  /// See `AgentAttentionProjection`.
-  Future<void> rebuildStandingAgreementProjection() =>
-      rebuildStandingAgreementProjectionImpl();
-
   /// Fetch the latest [AgentStateEntity] for [agentId], or `null` if none
   /// exists.
   ///
@@ -327,7 +268,7 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
   Future<Map<String, AgentStateEntity>> getAgentStatesByAgentIds(
     List<String> agentIds,
   ) async {
-    final latestEntities = await _latestEntitiesByAgentIds(
+    final latestEntities = await latestEntitiesByAgentIds(
       agentIds: agentIds,
       type: AgentEntityTypes.agentState,
     );
@@ -395,7 +336,7 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
   Future<Map<String, SoulDocumentVersionEntity>>
   getActiveSoulDocumentVersionsBySoulIds(List<String> soulIds) async {
     final versionIdsBySoulId = <String, String>{};
-    final latestHeads = await _latestEntitiesByAgentIds(
+    final latestHeads = await latestEntitiesByAgentIds(
       agentIds: soulIds,
       type: AgentEntityTypes.soulDocumentHead,
     );
@@ -417,7 +358,4 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
           entry.key: v,
     };
   }
-
-  /// Fetch messages for [agentId] filtered by [kind], optionally capped at
-  /// [limit] rows (most-recent first).
 }

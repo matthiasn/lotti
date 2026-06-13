@@ -1,9 +1,23 @@
-part of 'agent_repository.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/database/agent_repo_internals.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart'
+    show AgentRepository;
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/model/proposal_ledger_status.dart';
 
-/// Proposal-ledger assembly of [AgentRepository] — the heaviest single
-/// query in the repository. The class keeps a thin delegator so mocks
+/// Proposal-ledger assembly for [AgentRepository] — the heaviest single query
+/// in the repository. Collaborator extracted from the former
+/// `_AgentProposalLedger` mixin; the repository keeps a thin delegator so mocks
 /// keep intercepting the public method.
-mixin _AgentProposalLedger on _AgentRepositoryBase {
+class AgentProposalLedger {
+  AgentProposalLedger(this._db);
+
+  final AgentDatabase _db;
+
   /// Build a [ProposalLedger] for [taskId] under [agentId] — every
   /// [ChangeItem] the agent has ever produced for this task, annotated with
   /// its current lifecycle status and (if resolved) who resolved it.
@@ -23,8 +37,7 @@ mixin _AgentProposalLedger on _AgentRepositoryBase {
   /// are capped at [resolvedLimit] most-recent decisions to keep the LLM
   /// prompt bounded. Historical rows with a resolved parent but a stale
   /// embedded pending item and no decision are filtered out entirely.
-  @override
-  Future<ProposalLedger> getProposalLedgerImpl(
+  Future<ProposalLedger> getProposalLedger(
     String agentId, {
     required String taskId,
     int changeSetFetchLimit = 200,
@@ -40,14 +53,14 @@ mixin _AgentProposalLedger on _AgentRepositoryBase {
       _db
           .getPendingChangeSetsForAgent(
             agentId,
-            changeSetFetchLimit * _overFetchMultiplier,
+            changeSetFetchLimit * overFetchMultiplier,
           )
           .get(),
       _db.getChangeSetsForAgent(agentId, changeSetFetchLimit).get(),
       _db
           .getRecentDecisionsForAgent(
             agentId,
-            resolvedLimit * _overFetchMultiplier,
+            resolvedLimit * overFetchMultiplier,
           )
           .get(),
     ]);

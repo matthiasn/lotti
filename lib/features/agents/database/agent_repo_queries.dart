@@ -1,6 +1,29 @@
-part of 'agent_repository.dart';
+import 'package:drift/drift.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/database/agent_repo_core.dart';
+import 'package:lotti/features/agents/database/agent_repo_links.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart'
+    show AgentRepository;
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 
-mixin _AgentRepoQueries on _AgentRepositoryBase {
+/// Read queries for reports, templates, soul documents, and message threads of
+/// [AgentRepository]. Collaborator extracted from the former `_AgentRepoQueries`
+/// mixin; the repository keeps thin delegators so mocks keep intercepting.
+///
+/// Depends on [AgentRepoCore] for entity hydration and the latest-per-agent
+/// primitive, and on [AgentRepoLinks] for the link lookups that resolve
+/// project/task agents to their reports.
+class AgentRepoQueries {
+  AgentRepoQueries(this._db, this._core, this._links);
+
+  final AgentDatabase _db;
+  final AgentRepoCore _core;
+  final AgentRepoLinks _links;
+
   Future<List<AgentMessageEntity>> getMessagesByKind(
     String agentId,
     AgentMessageKind kind, {
@@ -52,7 +75,7 @@ mixin _AgentRepoQueries on _AgentRepositoryBase {
     final head = await getReportHead(agentId, scope);
     if (head == null) return null;
 
-    final entity = await getEntity(head.reportId);
+    final entity = await _core.getEntity(head.reportId);
     return entity?.mapOrNull(agentReport: (e) => e);
   }
 
@@ -68,7 +91,7 @@ mixin _AgentRepoQueries on _AgentRepositoryBase {
     if (agentIds.isEmpty) return {};
 
     final reportIdsByAgentId = <String, String>{};
-    final latestHeads = await _latestEntitiesByAgentIds(
+    final latestHeads = await _core.latestEntitiesByAgentIds(
       agentIds: agentIds,
       type: AgentEntityTypes.agentReportHead,
       subtype: scope,
@@ -84,7 +107,7 @@ mixin _AgentRepoQueries on _AgentRepositoryBase {
     if (allReportIds.isEmpty) return {};
 
     final reportsById = <String, AgentReportEntity>{};
-    final entitiesById = await getEntitiesByIds(allReportIds);
+    final entitiesById = await _core.getEntitiesByIds(allReportIds);
     for (final entity in entitiesById.values) {
       if (entity case final AgentReportEntity report) {
         reportsById[report.id] = report;
@@ -110,7 +133,7 @@ mixin _AgentRepoQueries on _AgentRepositoryBase {
   Future<AgentReportEntity?> getLatestProjectReportForProjectId(
     String projectId,
   ) async {
-    final links = (await getLinksTo(
+    final links = (await _links.getLinksTo(
       projectId,
       type: AgentLinkTypes.agentProject,
     )).orderedPrimaryFirst();
@@ -142,7 +165,7 @@ mixin _AgentRepoQueries on _AgentRepositoryBase {
   ) async {
     if (taskIds.isEmpty) return {};
 
-    final linksByTaskId = await getLinksToMultiple(
+    final linksByTaskId = await _links.getLinksToMultiple(
       taskIds,
       type: AgentLinkTypes.agentTask,
     );
@@ -234,7 +257,7 @@ mixin _AgentRepoQueries on _AgentRepositoryBase {
     final head = await getTemplateHead(templateId);
     if (head == null) return null;
 
-    final entity = await getEntity(head.versionId);
+    final entity = await _core.getEntity(head.versionId);
     return entity?.mapOrNull(agentTemplateVersion: (e) => e);
   }
 
@@ -265,7 +288,7 @@ mixin _AgentRepoQueries on _AgentRepositoryBase {
   /// Returns `null` if no entity with [soulId] exists or if it is not a
   /// soul document.
   Future<SoulDocumentEntity?> getSoulDocument(String soulId) async {
-    final entity = await getEntity(soulId);
+    final entity = await _core.getEntity(soulId);
     return entity?.mapOrNull(soulDocument: (e) => e);
   }
 
@@ -306,7 +329,7 @@ mixin _AgentRepoQueries on _AgentRepositoryBase {
     final head = await getSoulDocumentHead(soulId);
     if (head == null) return null;
 
-    final entity = await getEntity(head.versionId);
+    final entity = await _core.getEntity(head.versionId);
     return entity?.mapOrNull(soulDocumentVersion: (e) => e);
   }
 
@@ -390,9 +413,4 @@ mixin _AgentRepoQueries on _AgentRepositoryBase {
       throw StateError('No wake_run_log row found for runKey: $runKey');
     }
   }
-
-  /// Fetch agent states whose `scheduledWakeAt` is at or before [now].
-  ///
-  /// Uses a single SQL query with `json_extract` on the serialized column
-  /// to avoid an N+1 fetch pattern.
 }

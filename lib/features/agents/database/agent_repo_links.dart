@@ -1,6 +1,26 @@
-part of 'agent_repository.dart';
+import 'package:drift/drift.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/database/agent_repo_internals.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart'
+    show AgentRepository;
+import 'package:lotti/features/agents/database/agent_repository_exception.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/services/domain_logging.dart';
+import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
-mixin _AgentRepoLinks on _AgentRepositoryBase {
+/// Link CRUD, wake-run log, saga log, and hard-delete operations for
+/// [AgentRepository]. Collaborator extracted from the former `_AgentRepoLinks`
+/// mixin; the repository keeps thin delegators so mocks keep intercepting.
+class AgentRepoLinks {
+  AgentRepoLinks(this._db, this._domainLogger);
+
+  final AgentDatabase _db;
+  final DomainLogger? _domainLogger;
+
   Future<void> upsertLink(model.AgentLink link) async {
     final companion = AgentDbConversions.toLinkCompanion(link);
     final type = AgentDbConversions.linkType(link);
@@ -126,7 +146,6 @@ mixin _AgentRepoLinks on _AgentRepositoryBase {
 
   /// Fetch non-deleted links pointing to [toId], optionally filtered by
   /// [type].
-  @override
   Future<List<model.AgentLink>> getLinksTo(
     String toId, {
     String? type,
@@ -145,13 +164,12 @@ mixin _AgentRepoLinks on _AgentRepositoryBase {
   ///
   /// Issues chunked `IN (...)` queries instead of N separate lookups. IDs not
   /// present in the result map have no matching links.
-  @override
   Future<Map<String, List<model.AgentLink>>> getLinksToMultiple(
     List<String> toIds, {
     required String type,
   }) async {
     final result = <String, List<model.AgentLink>>{};
-    for (final chunk in _sqliteInClauseChunks(toIds)) {
+    for (final chunk in sqliteInClauseChunks(toIds)) {
       final placeholders = List.filled(chunk.length, '?').join(', ');
       final rows = await _db
           .customSelect(
@@ -187,7 +205,7 @@ mixin _AgentRepoLinks on _AgentRepositoryBase {
     required String type,
   }) async {
     final result = <String, List<model.AgentLink>>{};
-    for (final chunk in _sqliteInClauseChunks(fromIds)) {
+    for (final chunk in sqliteInClauseChunks(fromIds)) {
       final placeholders = List.filled(chunk.length, '?').join(', ');
       final rows = await _db
           .customSelect(
