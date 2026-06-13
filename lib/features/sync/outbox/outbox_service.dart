@@ -1,43 +1,34 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/outbox/outbox_enqueue_writer.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_scheduling.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
-import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
-
-part 'outbox_enqueue_dispatch.dart';
-part 'outbox_enqueue_dispatch_links.dart';
-part 'outbox_enqueue_dispatch_agents.dart';
 
 part 'outbox_service_send.dart';
 
@@ -229,6 +220,20 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   final MatrixService? _matrixService;
   final Stream<List<ConnectivityResult>>? _connectivityStream;
   final SyncSequenceLogService? _sequenceLogService;
+
+  /// Per-message-type enqueue collaborator behind [enqueueMessage]. Created
+  /// lazily so the tear-off of [enqueueNextSendRequest] dispatches virtually
+  /// (test subclasses overriding it observe the writer's scheduling calls).
+  late final OutboxEnqueueWriter _enqueueWriter = OutboxEnqueueWriter(
+    journalDb: _journalDb,
+    loggingService: _loggingService,
+    syncDatabase: _syncDatabase,
+    documentsDirectory: _documentsDirectory,
+    saveJson: _saveJson,
+    safePayloadFullPath: _safePayloadFullPath,
+    enqueueNextSendRequest: enqueueNextSendRequest,
+    sequenceLogService: _sequenceLogService,
+  );
   @override
   final StreamController<void> _loginGateEventsController =
       StreamController<void>.broadcast();
@@ -341,7 +346,10 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
       final host = await _vectorClockService.getHost();
 
       // Prepare message (attach links, add originating host ID, merge covered clocks)
-      final messageToEnqueue = await _prepareMessage(syncMessage, host);
+      final messageToEnqueue = await _enqueueWriter.prepareMessage(
+        syncMessage,
+        host,
+      );
 
       final jsonString = json.encode(messageToEnqueue);
       final jsonByteLength = utf8.encode(jsonString).length;
@@ -357,62 +365,65 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
 
       // Dispatch by message type using pattern matching
       final merged = await switch (messageToEnqueue) {
-        final SyncJournalEntity msg => _enqueueJournalEntity(
+        final SyncJournalEntity msg => _enqueueWriter.enqueueJournalEntity(
           msg: msg,
           commonFields: commonFields,
           host: host,
           hostHash: hostHash,
         ),
-        final SyncEntryLink msg => _enqueueEntryLink(
+        final SyncEntryLink msg => _enqueueWriter.enqueueEntryLink(
           msg: msg,
           commonFields: commonFields,
           host: host,
           hostHash: hostHash,
         ),
-        final SyncEntityDefinition msg => _enqueueEntityDefinition(
-          msg: msg,
-          commonFields: commonFields,
-          host: host,
-          hostHash: hostHash,
-        ),
-        final SyncAiConfig msg => _enqueueAiConfig(
-          msg: msg,
-          commonFields: commonFields,
-        ),
-        final SyncAiConfigDelete msg => _enqueueAiConfigDelete(
+        final SyncEntityDefinition msg =>
+          _enqueueWriter.enqueueEntityDefinition(
+            msg: msg,
+            commonFields: commonFields,
+            host: host,
+            hostHash: hostHash,
+          ),
+        final SyncAiConfig msg => _enqueueWriter.enqueueAiConfig(
           msg: msg,
           commonFields: commonFields,
         ),
-        final SyncConfigFlag msg => _enqueueConfigFlag(
+        final SyncAiConfigDelete msg => _enqueueWriter.enqueueAiConfigDelete(
           msg: msg,
           commonFields: commonFields,
         ),
-        final SyncThemingSelection msg => _enqueueThemingSelection(
+        final SyncConfigFlag msg => _enqueueWriter.enqueueConfigFlag(
           msg: msg,
           commonFields: commonFields,
         ),
-        final SyncNotification msg => _enqueueNotification(
+        final SyncThemingSelection msg =>
+          _enqueueWriter.enqueueThemingSelection(
+            msg: msg,
+            commonFields: commonFields,
+          ),
+        final SyncNotification msg => _enqueueWriter.enqueueNotification(
           msg: msg,
           commonFields: commonFields,
         ),
         final SyncNotificationStateUpdate msg =>
-          _enqueueNotificationStateUpdate(
+          _enqueueWriter.enqueueNotificationStateUpdate(
             msg: msg,
             commonFields: commonFields,
           ),
-        final SyncBackfillRequest msg => _enqueueBackfillRequest(
+        final SyncBackfillRequest msg => _enqueueWriter.enqueueBackfillRequest(
           msg: msg,
           commonFields: commonFields,
         ),
-        final SyncBackfillResponse msg => _enqueueBackfillResponse(
+        final SyncBackfillResponse msg =>
+          _enqueueWriter.enqueueBackfillResponse(
+            msg: msg,
+            commonFields: commonFields,
+          ),
+        final SyncAgentEntity msg => _enqueueWriter.enqueueAgentEntity(
           msg: msg,
           commonFields: commonFields,
         ),
-        final SyncAgentEntity msg => _enqueueAgentEntity(
-          msg: msg,
-          commonFields: commonFields,
-        ),
-        final SyncAgentLink msg => _enqueueAgentLink(
+        final SyncAgentLink msg => _enqueueWriter.enqueueAgentLink(
           msg: msg,
           commonFields: commonFields,
         ),
@@ -429,7 +440,7 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
         // this method; this arm exists only so the freezed-sealed switch
         // stays exhaustive.
         SyncOutboxBundle() => throw StateError('unreachable'),
-        final SyncSyncNodeProfile msg => _enqueueSyncNodeProfile(
+        final SyncSyncNodeProfile msg => _enqueueWriter.enqueueSyncNodeProfile(
           msg: msg,
           commonFields: commonFields,
         ),
@@ -467,10 +478,6 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   /// long as nothing is wrong.
   @override
   final Duration _postDrainSettle;
-
-  // ---------------------------------------------------------------------------
-  // Message preparation helpers
-  // ---------------------------------------------------------------------------
 
   Future<void> dispose() async {
     _isDisposed = true;
