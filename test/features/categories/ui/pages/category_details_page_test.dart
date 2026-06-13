@@ -13,12 +13,12 @@ import 'package:lotti/features/categories/ui/widgets/category_color_picker.dart'
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.dart';
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
@@ -517,7 +517,7 @@ void main() {
           final confirmButton = find
               .descendant(
                 of: find.byType(AlertDialog),
-                matching: find.byType(LottiTertiaryButton),
+                matching: find.byType(DesignSystemButton),
               )
               .last;
           await tester.tap(confirmButton);
@@ -564,7 +564,7 @@ void main() {
         final cancelInDialog = find
             .descendant(
               of: find.byType(AlertDialog),
-              matching: find.byType(LottiTertiaryButton),
+              matching: find.byType(DesignSystemButton),
             )
             .first;
         await tester.tap(cancelInDialog);

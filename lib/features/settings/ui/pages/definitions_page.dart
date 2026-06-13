@@ -30,13 +30,6 @@ class DefinitionsPage extends ConsumerWidget {
 
     final items =
         <({String title, String subtitle, IconData icon, VoidCallback onTap})>[
-          if (enableHabits)
-            (
-              title: context.messages.settingsHabitsTitle,
-              subtitle: context.messages.settingsHabitsSubtitle,
-              icon: Icons.repeat_rounded,
-              onTap: () => context.beamToNamed('/settings/habits'),
-            ),
           (
             title: context.messages.settingsCategoriesTitle,
             subtitle: context.messages.settingsCategoriesSubtitle,
@@ -49,6 +42,13 @@ class DefinitionsPage extends ConsumerWidget {
             icon: Icons.label_rounded,
             onTap: () => context.beamToNamed('/settings/labels'),
           ),
+          if (enableHabits)
+            (
+              title: context.messages.settingsHabitsTitle,
+              subtitle: context.messages.settingsHabitsSubtitle,
+              icon: Icons.repeat_rounded,
+              onTap: () => context.beamToNamed('/settings/habits'),
+            ),
           if (enableDashboards)
             (
               title: context.messages.settingsDashboardsTitle,

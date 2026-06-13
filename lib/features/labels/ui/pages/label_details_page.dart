@@ -15,7 +15,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
@@ -158,11 +157,13 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
             ),
           ),
           actions: [
-            LottiTertiaryButton(
-              onPressed: () => Navigator.pop(dialogContext),
+            DesignSystemButton(
               label: dialogContext.messages.cancelButton,
+              variant: DesignSystemButtonVariant.secondary,
+              onPressed: () => Navigator.pop(dialogContext),
             ),
-            LottiTertiaryButton(
+            DesignSystemButton(
+              variant: DesignSystemButtonVariant.danger,
               onPressed: () async {
                 // Close the dialog using its own context
                 Navigator.pop(dialogContext);
@@ -180,7 +181,6 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                 );
               },
               label: dialogContext.messages.settingsLabelsDeleteConfirmAction,
-              isDestructive: true,
             ),
           ],
         ),

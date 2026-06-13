@@ -14,6 +14,7 @@ import 'package:lotti/features/categories/ui/widgets/category_language_dropdown.
 import 'package:lotti/features/categories/ui/widgets/category_name_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_speech_dictionary.dart';
 import 'package:lotti/features/categories/ui/widgets/category_switch_tiles.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -21,7 +22,6 @@ import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
@@ -470,11 +470,13 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
         title: Text(context.messages.categoryDeleteTitle),
         content: Text(context.messages.categoryDeleteConfirmation),
         actions: [
-          LottiTertiaryButton(
-            onPressed: () => Navigator.of(context).pop(),
+          DesignSystemButton(
             label: context.messages.cancelButton,
+            variant: DesignSystemButtonVariant.secondary,
+            onPressed: () => Navigator.of(context).pop(),
           ),
-          LottiTertiaryButton(
+          DesignSystemButton(
+            variant: DesignSystemButtonVariant.danger,
             onPressed: () async {
               // Pop the confirm dialog first, then beam back to the
               // list once the row is gone.
@@ -488,7 +490,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
               }
             },
             label: context.messages.categoryDeleteConfirm,
-            isDestructive: true,
           ),
         ],
       ),

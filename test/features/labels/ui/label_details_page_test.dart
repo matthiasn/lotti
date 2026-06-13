@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -17,7 +18,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_delete_row.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
@@ -271,7 +271,7 @@ void main() {
       final confirmButton = find
           .descendant(
             of: find.byType(AlertDialog),
-            matching: find.byType(LottiTertiaryButton),
+            matching: find.byType(DesignSystemButton),
           )
           .last;
       await tester.tap(confirmButton);
@@ -845,7 +845,7 @@ void main() {
         final cancelButton = find
             .descendant(
               of: find.byType(AlertDialog),
-              matching: find.byType(LottiTertiaryButton),
+              matching: find.byType(DesignSystemButton),
             )
             .first;
         await tester.tap(cancelButton);
