@@ -1,11 +1,20 @@
-part of 'desktop_task_header.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/color.dart';
 
 /// Single chip row holding actionable metadata + the right-pinned status
 /// pill. On wide viewports the chips wrap on the left and status sits at
 /// the far right; below the breakpoint the chips wrap above and status
 /// drops to its own right-aligned line.
-class _MetaRow extends StatelessWidget {
-  const _MetaRow({
+class MetaRow extends StatelessWidget {
+  const MetaRow({
     required this.priority,
     required this.status,
     required this.dueDate,
@@ -16,6 +25,7 @@ class _MetaRow extends StatelessWidget {
     required this.onDueDateTap,
     required this.onLabelTap,
     required this.onAddLabelTap,
+    super.key,
   });
 
   final TaskPriority priority;

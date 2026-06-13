@@ -1,16 +1,15 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
-import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
-import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_generate.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_generate_more.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
-import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
@@ -18,112 +17,66 @@ import 'package:lotti/features/ai/repository/openai_transcription_repository.dar
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:uuid/uuid.dart';
 
 part 'cloud_inference_repository.g.dart';
 
+/// Facade over the cloud-inference generate collaborators.
+///
+/// Owns a [Ref] plus the provider-/HTTP-backed sub-repositories and wires them
+/// into two stateless collaborators — [CloudInferenceGenerate] (text/image
+/// prompts) and [CloudInferenceGenerateMore] (audio, multi-turn, image
+/// generation, model install, cleanup) — sharing a single
+/// [CloudInferenceRequestHelpers]. Every public method delegates to the owning
+/// collaborator so the mockable surface and all call sites stay unchanged.
 class CloudInferenceRepository {
-  CloudInferenceRepository(this.ref, {http.Client? httpClient})
-    : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
-      _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
-      _dashScopeRepository = ref.read(dashScopeInferenceRepositoryProvider),
-      _mistralRepository = MistralInferenceRepository(httpClient: httpClient),
-      _mistralTranscriptionRepository = MistralTranscriptionRepository(
-        httpClient: httpClient,
-      ),
-      _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
-      _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient),
-      _openAiTranscriptionRepository = OpenAiTranscriptionRepository(
-        httpClient: httpClient,
-      );
+  CloudInferenceRepository(this.ref, {http.Client? httpClient}) {
+    final ollamaRepository = ref.read(ollamaInferenceRepositoryProvider);
+    final geminiRepository = ref.read(geminiInferenceRepositoryProvider);
+    final dashScopeRepository = ref.read(dashScopeInferenceRepositoryProvider);
+    final mistralRepository = MistralInferenceRepository(
+      httpClient: httpClient,
+    );
+    final mistralTranscriptionRepository = MistralTranscriptionRepository(
+      httpClient: httpClient,
+    );
+    final whisperRepository = WhisperInferenceRepository(
+      httpClient: httpClient,
+    );
+    final voxtralRepository = VoxtralInferenceRepository(
+      httpClient: httpClient,
+    );
+    final openAiTranscriptionRepository = OpenAiTranscriptionRepository(
+      httpClient: httpClient,
+    );
+
+    const helpers = CloudInferenceRequestHelpers();
+
+    _generate = CloudInferenceGenerate(
+      ollamaRepository: ollamaRepository,
+      geminiRepository: geminiRepository,
+      mistralRepository: mistralRepository,
+      helpers: helpers,
+    );
+
+    _generateMore = CloudInferenceGenerateMore(
+      ref: ref,
+      ollamaRepository: ollamaRepository,
+      geminiRepository: geminiRepository,
+      dashScopeRepository: dashScopeRepository,
+      mistralRepository: mistralRepository,
+      mistralTranscriptionRepository: mistralTranscriptionRepository,
+      whisperRepository: whisperRepository,
+      voxtralRepository: voxtralRepository,
+      openAiTranscriptionRepository: openAiTranscriptionRepository,
+      helpers: helpers,
+    );
+  }
 
   final Ref ref;
-  final OllamaInferenceRepository _ollamaRepository;
-  final GeminiInferenceRepository _geminiRepository;
-  final DashScopeInferenceRepository _dashScopeRepository;
-  final MistralInferenceRepository _mistralRepository;
-  final MistralTranscriptionRepository _mistralTranscriptionRepository;
-  final WhisperInferenceRepository _whisperRepository;
-  final VoxtralInferenceRepository _voxtralRepository;
-  final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
-
-  /// Helper method to create common request parameters
-  CreateChatCompletionRequest _createBaseRequest({
-    required List<ChatCompletionMessage> messages,
-    required String model,
-    double? temperature,
-    int? maxCompletionTokens,
-    int? maxTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
-    bool stream = true,
-  }) {
-    final ChatCompletionToolChoiceOption? effectiveToolChoice;
-    if (toolChoice != null) {
-      effectiveToolChoice = toolChoice;
-    } else if (tools != null && tools.isNotEmpty) {
-      effectiveToolChoice = const ChatCompletionToolChoiceOption.mode(
-        ChatCompletionToolChoiceMode.auto,
-      );
-    } else {
-      effectiveToolChoice = null;
-    }
-
-    return CreateChatCompletionRequest(
-      messages: messages,
-      model: ChatCompletionModel.modelId(model),
-      temperature: temperature,
-      maxCompletionTokens: maxCompletionTokens,
-      maxTokens: maxTokens,
-      reasoningEffort: reasoningEffort,
-      stream: stream,
-      tools: tools,
-      toolChoice: effectiveToolChoice,
-    );
-  }
-
-  /// Filters out Anthropic ping messages from the stream
-  Stream<CreateChatCompletionStreamResponse> _filterAnthropicPings(
-    Stream<CreateChatCompletionStreamResponse> stream,
-  ) {
-    // Use where to filter out errors instead of handleError
-    final controller = StreamController<CreateChatCompletionStreamResponse>();
-
-    stream.listen(
-      controller.add,
-      onError: (Object error, StackTrace stackTrace) {
-        // Check if this is specifically an Anthropic ping message error
-        final errorString = error.toString();
-
-        // Anthropic ping messages cause a specific null subtype error when parsing choices
-        final isAnthropicPingError =
-            errorString.contains(
-              "type 'Null' is not a subtype of type 'List<dynamic>'",
-            ) &&
-            errorString.contains('choices');
-
-        if (isAnthropicPingError) {
-          // Log but don't propagate the error
-          developer.log(
-            'Skipping Anthropic ping message',
-            name: 'CloudInferenceRepository',
-            error: error,
-            stackTrace: stackTrace,
-          );
-          return;
-        }
-        // Propagate other errors
-        controller.addError(error, stackTrace);
-      },
-      onDone: controller.close,
-    );
-
-    return controller.stream;
-  }
+  late final CloudInferenceGenerate _generate;
+  late final CloudInferenceGenerateMore _generateMore;
 
   Stream<CreateChatCompletionStreamResponse> generate(
     String prompt, {
@@ -138,98 +91,20 @@ class CloudInferenceRepository {
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
     GeminiThinkingMode? geminiThinkingMode,
-  }) {
-    developer.log(
-      'CloudInferenceRepository.generate called with:\n'
-      '  model: $model\n'
-      '  provider: ${provider?.inferenceProviderType}\n'
-      '  tools: ${tools?.length ?? 0} - ${tools?.map((t) => t.function.name).join(', ') ?? 'none'}\n'
-      '  systemMessage: ${systemMessage != null && systemMessage.length > 100 ? '${systemMessage.substring(0, 100)}...' : systemMessage}',
-      name: 'CloudInferenceRepository',
-    );
-
-    // For Ollama, use the dedicated repository
-    if (provider != null &&
-        provider.inferenceProviderType == InferenceProviderType.ollama) {
-      return _ollamaRepository.generateText(
-        prompt: prompt,
-        model: model,
-        temperature: temperature ?? 0.7, // Default if not specified
-        systemMessage: systemMessage,
-        maxCompletionTokens: maxCompletionTokens,
-        provider: provider,
-        tools: tools,
-      );
-    }
-
-    // For Gemini, use the native Gemini repository to enable thinking config
-    if (provider != null &&
-        provider.inferenceProviderType == InferenceProviderType.gemini) {
-      final finalThinking = _resolveGeminiThinkingConfig(
-        mode: geminiThinkingMode,
-      );
-      return _geminiRepository.generateText(
-        prompt: prompt,
-        model: model,
-        temperature: temperature ?? 0.7, // Default if not specified
-        systemMessage: systemMessage,
-        maxCompletionTokens: maxCompletionTokens,
-        provider: provider,
-        tools: tools,
-        toolChoice: toolChoice,
-        thinkingConfig: finalThinking,
-      );
-    }
-
-    // For Mistral, use the dedicated repository to handle streaming format differences
-    if (provider != null &&
-        provider.inferenceProviderType == InferenceProviderType.mistral) {
-      return _mistralRepository.generateText(
-        prompt: prompt,
-        model: model,
-        baseUrl: baseUrl,
-        apiKey: apiKey,
-        systemMessage: systemMessage,
-        temperature: temperature,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-        toolChoice: toolChoice,
-      );
-    }
-
-    final client =
-        overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
-
-    if (tools != null && tools.isNotEmpty) {
-      developer.log(
-        'Passing ${tools.length} tools to OpenAI API: ${tools.map((t) => t.function.name).join(', ')}',
-        name: 'CloudInferenceRepository',
-      );
-    }
-
-    final res = client.createChatCompletionStream(
-      request: _createBaseRequest(
-        messages: [
-          if (systemMessage != null)
-            ChatCompletionMessage.system(content: systemMessage),
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string(prompt),
-          ),
-        ],
-        model: model,
-        temperature: temperature,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-        toolChoice: toolChoice,
-      ),
-    );
-
-    return _filterAnthropicPings(res).asBroadcastStream();
-  }
+  }) => _generate.generate(
+    prompt,
+    model: model,
+    temperature: temperature,
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+    systemMessage: systemMessage,
+    maxCompletionTokens: maxCompletionTokens,
+    overrideClient: overrideClient,
+    provider: provider,
+    tools: tools,
+    toolChoice: toolChoice,
+    geminiThinkingMode: geminiThinkingMode,
+  );
 
   Stream<CreateChatCompletionStreamResponse> generateWithImages(
     String prompt, {
@@ -244,98 +119,21 @@ class CloudInferenceRepository {
     List<ChatCompletionTool>? tools,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
-  }) {
-    final client =
-        overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
+  }) => _generate.generateWithImages(
+    prompt,
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+    model: model,
+    temperature: temperature,
+    images: images,
+    maxCompletionTokens: maxCompletionTokens,
+    overrideClient: overrideClient,
+    provider: provider,
+    tools: tools,
+    systemMessage: systemMessage,
+    geminiThinkingMode: geminiThinkingMode,
+  );
 
-    // For Ollama, use the dedicated repository
-    if (provider?.inferenceProviderType == InferenceProviderType.ollama) {
-      return _ollamaRepository.generateWithImages(
-        prompt: prompt,
-        model: model,
-        temperature: temperature ?? 0.7, // Default if not specified
-        images: images,
-        maxCompletionTokens: maxCompletionTokens,
-        provider: provider!,
-        systemMessage: systemMessage,
-      );
-    }
-
-    // For other providers, use the standard OpenAI-compatible format
-    final reasoningEffort =
-        provider?.inferenceProviderType == InferenceProviderType.gemini &&
-            GeminiThinkingConfig.isGemini3(model)
-        ? _geminiReasoningEffort(
-            model,
-            geminiThinkingMode ?? GeminiThinkingMode.low,
-          )
-        : null;
-
-    if (tools != null && tools.isNotEmpty) {
-      developer.log(
-        'Passing ${tools.length} tools to image API: ${tools.map((t) => t.function.name).join(', ')}',
-        name: 'CloudInferenceRepository',
-      );
-    }
-
-    final res = client.createChatCompletionStream(
-      request: _createBaseRequest(
-        messages: [
-          if (systemMessage != null)
-            ChatCompletionMessage.system(content: systemMessage),
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.parts(
-              [
-                ChatCompletionMessageContentPart.text(text: prompt),
-                ...images.map(
-                  (image) {
-                    return ChatCompletionMessageContentPart.image(
-                      imageUrl: ChatCompletionMessageImageUrl(
-                        url: 'data:image/jpeg;base64,$image',
-                      ),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ],
-        model: model,
-        temperature: temperature,
-        maxTokens: maxCompletionTokens,
-        tools: tools,
-        reasoningEffort: reasoningEffort,
-      ),
-    );
-
-    return res.asBroadcastStream();
-  }
-
-  /// Generates AI responses with audio input using different providers
-  ///
-  /// This method handles different inference providers:
-  /// - FastWhisper: Uses local FastWhisper server for transcription
-  /// - Whisper: Uses OpenAI's Whisper API via our Python proxy server
-  /// - Other providers: Uses standard OpenAI-compatible format
-  ///
-  /// Args:
-  ///   prompt: The text prompt to send with the audio
-  ///   model: The model identifier to use
-  ///   audioBase64: Base64 encoded audio data
-  ///   baseUrl: The base URL for the API
-  ///   apiKey: The API key for authentication
-  ///   provider: The inference provider configuration
-  ///   maxCompletionTokens: Maximum tokens for completion
-  ///   overrideClient: Optional client override for testing
-  ///   audioFormat: The actual format of the audio data (wav or mp3).
-  ///     Required for Mistral/OpenAI chat completions. Defaults to mp3.
-  ///
-  /// Returns:
-  ///   Stream of chat completion responses
   Stream<CreateChatCompletionStreamResponse> generateWithAudio(
     String prompt, {
     required String model,
@@ -352,175 +150,23 @@ class CloudInferenceRepository {
     List<String>? speechDictionaryTerms,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
-  }) {
-    // For Whisper, use the dedicated repository
-    if (provider.inferenceProviderType == InferenceProviderType.whisper) {
-      return _whisperRepository.transcribeAudio(
-        model: model,
-        audioBase64: audioBase64,
-        baseUrl: baseUrl,
-        prompt: prompt, // Optional parameter
-        maxCompletionTokens: maxCompletionTokens,
-      );
-    }
+  }) => _generateMore.generateWithAudio(
+    prompt,
+    model: model,
+    audioBase64: audioBase64,
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+    provider: provider,
+    maxCompletionTokens: maxCompletionTokens,
+    overrideClient: overrideClient,
+    tools: tools,
+    stream: stream,
+    audioFormat: audioFormat,
+    speechDictionaryTerms: speechDictionaryTerms,
+    systemMessage: systemMessage,
+    geminiThinkingMode: geminiThinkingMode,
+  );
 
-    // For MLX Audio, stay inside the app process through the native Swift
-    // bridge. The bridge reports unsupported on x86 macOS and on platforms
-    // where the Swift SDK is not linked.
-    if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
-      return Stream.fromFuture(
-        ref
-            .read(mlxAudioChannelProvider)
-            .transcribeBase64Audio(
-              modelId: model,
-              audioBase64: audioBase64,
-              speechDictionaryTerms: speechDictionaryTerms ?? const [],
-              enableSpeakerDiarization: true,
-            )
-            .then(
-              (result) => CreateChatCompletionStreamResponse(
-                id: 'mlx-audio-${const Uuid().v4()}',
-                choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: result.text,
-                    ),
-                    index: 0,
-                  ),
-                ],
-                object: 'chat.completion.chunk',
-                created: 0,
-              ),
-            ),
-      );
-    }
-
-    final client =
-        overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
-
-    // For Voxtral, use the dedicated repository
-    if (provider.inferenceProviderType == InferenceProviderType.voxtral) {
-      return _voxtralRepository.transcribeAudio(
-        model: model,
-        audioBase64: audioBase64,
-        baseUrl: baseUrl,
-        prompt: prompt,
-        maxCompletionTokens: maxCompletionTokens,
-        stream: stream,
-      );
-    }
-
-    // For OpenAI transcription models (gpt-4o-transcribe), use the dedicated
-    // transcription repository. These models require the /v1/audio/transcriptions
-    // endpoint, not chat completions. The app records in M4A format which OpenAI
-    // accepts directly - no conversion needed.
-    if (provider.inferenceProviderType == InferenceProviderType.openAi &&
-        OpenAiTranscriptionRepository.isOpenAiTranscriptionModel(model)) {
-      developer.log(
-        'Using OpenAI transcription endpoint for model: $model',
-        name: 'CloudInferenceRepository',
-      );
-      return _openAiTranscriptionRepository.transcribeAudio(
-        model: model,
-        audioBase64: audioBase64,
-        apiKey: apiKey,
-        prompt: prompt,
-      );
-    }
-
-    // For Mistral transcription models, use the dedicated transcription endpoint.
-    // Mistral's /v1/audio/transcriptions accepts M4A natively via multipart.
-    if (provider.inferenceProviderType == InferenceProviderType.mistral &&
-        MistralTranscriptionRepository.isMistralTranscriptionModel(model)) {
-      developer.log(
-        'Using Mistral transcription endpoint for model: $model',
-        name: 'CloudInferenceRepository',
-      );
-      return _mistralTranscriptionRepository.transcribeAudio(
-        model: model,
-        audioBase64: audioBase64,
-        baseUrl: baseUrl,
-        apiKey: apiKey,
-        contextBias: speechDictionaryTerms,
-      );
-    }
-
-    // For all other providers (OpenAI chat models, Gemini, etc.), use the standard
-    // OpenAI-compatible chat completions format with audio content parts.
-    if (tools != null && tools.isNotEmpty) {
-      developer.log(
-        'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.function.name).join(', ')}',
-        name: 'CloudInferenceRepository',
-      );
-    }
-
-    final effectiveAudioBase64 =
-        provider.inferenceProviderType.requiresDataUriForAudio
-        ? 'data:;base64,$audioBase64'
-        : audioBase64;
-    final reasoningEffort =
-        provider.inferenceProviderType == InferenceProviderType.gemini &&
-            GeminiThinkingConfig.isGemini3(model)
-        ? _geminiReasoningEffort(
-            model,
-            geminiThinkingMode ?? GeminiThinkingMode.low,
-          )
-        : null;
-
-    return client
-        .createChatCompletionStream(
-          request: _createBaseRequest(
-            messages: [
-              if (systemMessage != null)
-                ChatCompletionMessage.system(content: systemMessage),
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.parts(
-                  [
-                    ChatCompletionMessageContentPart.text(text: prompt),
-                    ChatCompletionMessageContentPart.audio(
-                      inputAudio: ChatCompletionMessageInputAudio(
-                        data: effectiveAudioBase64,
-                        format: audioFormat,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            model: model,
-            maxCompletionTokens: maxCompletionTokens,
-            tools: tools,
-            reasoningEffort: reasoningEffort,
-            stream: stream,
-          ),
-        )
-        .asBroadcastStream();
-  }
-
-  /// Generate with full conversation history for multi-turn interactions.
-  ///
-  /// This method properly routes to provider-specific multi-turn implementations:
-  /// - Gemini: Uses native Gemini API with thought signature support
-  /// - Others: Fall back to single-prompt mode (conversation flattened)
-  ///
-  /// Parameters:
-  /// - [messages]: Full conversation history
-  /// - [model]: Model ID
-  /// - [temperature]: Sampling temperature
-  /// - [provider]: Provider configuration
-  /// - [tools]: Optional function declarations
-  /// - [toolChoice]: Optional override of the tool-selection policy. When
-  ///   provided, it replaces the default `auto` behavior — useful for forcing
-  ///   a terminal tool call (e.g. `update_report`) when a weaker model failed
-  ///   to emit it on its own. Honored by Gemini and the OpenAI-compatible
-  ///   branch; Ollama ignores it.
-  /// - [thoughtSignatures]: Optional signatures from previous turns (Gemini only)
-  /// - [signatureCollector]: Optional collector for new signatures (Gemini only)
-  /// - [turnIndex]: Current turn number for unique tool call ID generation
   Stream<CreateChatCompletionStreamResponse> generateWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -533,217 +179,41 @@ class CloudInferenceRepository {
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
     GeminiThinkingMode? geminiThinkingMode,
-  }) {
-    developer.log(
-      'CloudInferenceRepository.generateWithMessages called with:\n'
-      '  model: $model\n'
-      '  provider: ${provider.inferenceProviderType}\n'
-      '  messages: ${messages.length}\n'
-      '  tools: ${tools?.length ?? 0}\n'
-      '  hasSignatures: ${thoughtSignatures?.isNotEmpty ?? false}',
-      name: 'CloudInferenceRepository',
-    );
-
-    // For Gemini, use the native multi-turn API with signature support
-    if (provider.inferenceProviderType == InferenceProviderType.gemini) {
-      final finalThinking = _resolveGeminiThinkingConfig(
-        mode: geminiThinkingMode,
-      );
-
-      // Extract system message from messages if present
-      final systemMessage = messages
-          .firstWhereOrNull((m) => m.role == ChatCompletionMessageRole.system)
-          ?.mapOrNull(system: (s) => s.content);
-
-      return _geminiRepository.generateTextWithMessages(
-        messages: messages,
-        model: model,
-        temperature: temperature ?? 0.7, // Default if not specified
-        thinkingConfig: finalThinking,
-        provider: provider,
-        thoughtSignatures: thoughtSignatures,
-        systemMessage: systemMessage,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-        toolChoice: toolChoice,
-        signatureCollector: signatureCollector,
-        turnIndex: turnIndex,
-      );
-    }
-
-    // For Ollama, use the dedicated repository
-    if (provider.inferenceProviderType == InferenceProviderType.ollama) {
-      return _ollamaRepository.generateTextWithMessages(
-        messages: messages,
-        model: model,
-        temperature: temperature ?? 0.7, // Default if not specified
-        provider: provider,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-      );
-    }
-
-    // For Mistral, use the dedicated repository to handle streaming format differences
-    if (provider.inferenceProviderType == InferenceProviderType.mistral) {
-      return _mistralRepository.generateTextWithMessages(
-        messages: messages,
-        model: model,
-        baseUrl: provider.baseUrl,
-        apiKey: provider.apiKey,
-        temperature: temperature,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-        toolChoice: toolChoice,
-      );
-    }
-
-    // For other providers (OpenAI, OpenRouter, Anthropic), use full message history
-    final client = OpenAIClient(
-      baseUrl: provider.baseUrl,
-      apiKey: provider.apiKey,
-    );
-
-    if (tools != null && tools.isNotEmpty) {
-      developer.log(
-        'Passing ${tools.length} tools to multi-turn API: ${tools.map((t) => t.function.name).join(', ')}',
-        name: 'CloudInferenceRepository',
-      );
-    }
-
-    final res = client.createChatCompletionStream(
-      request: _createBaseRequest(
-        messages: messages,
-        model: model,
-        temperature: temperature,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-        toolChoice: toolChoice,
-      ),
-    );
-
-    return _filterAnthropicPings(res).asBroadcastStream();
-  }
-
-  GeminiThinkingConfig _resolveGeminiThinkingConfig({
-    GeminiThinkingMode? mode,
-  }) {
-    final base = GeminiThinkingConfig.fromMode(
-      mode ?? GeminiThinkingMode.low,
-    );
-
-    // Always capture thoughts for thinking-capable models (budget != 0) so
-    // they're available in the AI response modal's Thoughts tab. The chat UI
-    // still decides whether inline thinking is displayed.
-    return GeminiThinkingConfig(
-      thinkingBudget: base.thinkingBudget,
-      thinkingMode: base.thinkingMode,
-      includeThoughts: base.thinkingBudget != 0,
-    );
-  }
-
-  /// Maps a [GeminiThinkingMode] to the OpenAI-compatible `reasoning_effort`
-  /// value for [model], collapsing modes that the model does not support
-  /// (non-Flash Gemini 3 only accepts low/high) via
-  /// [GeminiThinkingConfig.effectiveMode].
-  ReasoningEffort _geminiReasoningEffort(
-    String model,
-    GeminiThinkingMode mode,
-  ) {
-    return switch (GeminiThinkingConfig.effectiveMode(model, mode)) {
-      GeminiThinkingMode.minimal => ReasoningEffort.minimal,
-      GeminiThinkingMode.low => ReasoningEffort.low,
-      GeminiThinkingMode.medium => ReasoningEffort.medium,
-      GeminiThinkingMode.high => ReasoningEffort.high,
-    };
-  }
-
-  // Delegate Ollama-specific methods to OllamaInferenceRepository
+  }) => _generateMore.generateWithMessages(
+    messages: messages,
+    model: model,
+    temperature: temperature,
+    provider: provider,
+    maxCompletionTokens: maxCompletionTokens,
+    tools: tools,
+    toolChoice: toolChoice,
+    thoughtSignatures: thoughtSignatures,
+    signatureCollector: signatureCollector,
+    turnIndex: turnIndex,
+    geminiThinkingMode: geminiThinkingMode,
+  );
 
   /// Install a model in Ollama with progress tracking
   Stream<OllamaPullProgress> installModel(String modelName, String baseUrl) =>
-      _ollamaRepository.installModel(modelName, baseUrl);
-
-  // -------------------------------------------------------------------------
-  // Image generation
-  // -------------------------------------------------------------------------
+      _generateMore.installModel(modelName, baseUrl);
 
   /// Generates an image using a provider-specific image generation API.
-  ///
-  /// Supported providers:
-  /// - **Gemini**: Uses Gemini's native image generation API
-  /// - **Alibaba**: Uses DashScope's native SSE streaming API (Wan models)
-  ///
-  /// Parameters:
-  /// - [prompt]: The text prompt describing the image to generate.
-  /// - [model]: The model ID (e.g., 'models/gemini-3-pro-image-preview').
-  /// - [provider]: The inference provider configuration.
-  /// - [systemMessage]: Optional system instruction for guiding generation.
-  /// - [referenceImages]: Optional list of reference images for visual context.
-  ///
-  /// Returns a [GeneratedImage] containing the image bytes and MIME type.
-  /// Throws an exception if the provider doesn't support image generation.
   Future<GeneratedImage> generateImage({
     required String prompt,
     required String model,
     required AiConfigInferenceProvider provider,
     String? systemMessage,
     List<ProcessedReferenceImage>? referenceImages,
-  }) async {
-    developer.log(
-      'CloudInferenceRepository.generateImage called with:\n'
-      '  model: $model\n'
-      '  provider: ${provider.inferenceProviderType}\n'
-      '  promptLength: ${prompt.length}\n'
-      '  referenceImages: ${referenceImages?.length ?? 0}',
-      name: 'CloudInferenceRepository',
-    );
-
-    switch (provider.inferenceProviderType) {
-      case InferenceProviderType.gemini:
-        return _geminiRepository.generateImage(
-          prompt: prompt,
-          model: model,
-          provider: provider,
-          systemMessage: systemMessage,
-          referenceImages: referenceImages,
-        );
-      case InferenceProviderType.alibaba:
-        // Note: DashScope's Wan model does not support systemMessage.
-        // It supports at most one reference image in interleave mode.
-        return _dashScopeRepository.generateImage(
-          prompt: prompt,
-          model: model,
-          provider: provider,
-          referenceImages: referenceImages,
-        );
-      case InferenceProviderType.anthropic:
-      case InferenceProviderType.genericOpenAi:
-      case InferenceProviderType.mistral:
-      case InferenceProviderType.mlxAudio:
-      case InferenceProviderType.nebiusAiStudio:
-      case InferenceProviderType.openAi:
-      case InferenceProviderType.openRouter:
-      case InferenceProviderType.ollama:
-      case InferenceProviderType.voxtral:
-      case InferenceProviderType.whisper:
-        throw UnsupportedError(
-          'Image generation is not supported for '
-          '${provider.inferenceProviderType} providers',
-        );
-    }
-  }
+  }) => _generateMore.generateImage(
+    prompt: prompt,
+    model: model,
+    provider: provider,
+    systemMessage: systemMessage,
+    referenceImages: referenceImages,
+  );
 
   /// Closes HTTP clients held by sub-repositories that this instance owns.
-  ///
-  /// Ollama/Gemini/DashScope are sourced from their own providers and are
-  /// closed by their own `ref.onDispose` hooks.
-  void close() {
-    _mistralRepository.close();
-    _mistralTranscriptionRepository.close();
-    _whisperRepository.close();
-    _voxtralRepository.close();
-    _openAiTranscriptionRepository.close();
-  }
+  void close() => _generateMore.close();
 }
 
 @riverpod

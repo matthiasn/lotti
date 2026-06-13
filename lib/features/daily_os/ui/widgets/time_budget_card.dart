@@ -5,10 +5,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
-import 'package:lotti/features/daily_os/state/task_view_preference_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
-import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
-import 'package:lotti/features/tasks/util/due_date_utils.dart';
+import 'package:lotti/features/daily_os/ui/widgets/budget_card_indicators.dart';
+import 'package:lotti/features/daily_os/ui/widgets/budget_card_task_list.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -17,11 +16,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
 
-part 'budget_card_indicators.dart';
-part 'budget_card_task_list.dart';
-
 /// Formats a duration as "Xh Ym" or "Xm".
-@visibleForTesting
 String formatCompactDuration(Duration duration) {
   if (duration.inHours > 0) {
     final hours = duration.inHours;
@@ -33,7 +28,7 @@ String formatCompactDuration(Duration duration) {
 }
 
 /// Returns the appropriate color for a task status.
-Color _getTaskStatusColor(BuildContext context, TaskStatus status) {
+Color getTaskStatusColor(BuildContext context, TaskStatus status) {
   final isLight = Theme.of(context).brightness == Brightness.light;
   return switch (status) {
     TaskOpen() => context.colorScheme.outline,
@@ -201,7 +196,7 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
                   // Task completion indicator (if has tasks)
                   if (hasTasks) ...[
                     const SizedBox(width: 8),
-                    _TaskCompletionIndicator(
+                    TaskCompletionIndicator(
                       tasks: progress.taskProgressItems,
                     ),
                   ],
@@ -249,7 +244,7 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
                   curve: Curves.easeInOut,
                   alignment: Alignment.topCenter,
                   child: _isExpanded
-                      ? _TaskListContent(
+                      ? TaskListContent(
                           tasks: progress.taskProgressItems,
                           categoryId: progress.categoryId,
                         )
@@ -296,7 +291,7 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
       return Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          _NoBudgetBadge(
+          NoBudgetBadge(
             message: context.messages.dailyOsNoBudgetWarning,
           ),
         ],
@@ -309,8 +304,8 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
 
     // Build the badge widget
     final badge = showNoBudgetBadge
-        ? _NoBudgetBadge(message: context.messages.dailyOsNoBudgetWarning)
-        : _StatusText(progress: progress);
+        ? NoBudgetBadge(message: context.messages.dailyOsNoBudgetWarning)
+        : StatusText(progress: progress);
 
     return Row(
       children: [
@@ -337,7 +332,7 @@ class _TimeBudgetCardState extends ConsumerState<TimeBudgetCard> {
         const SizedBox(width: 8),
 
         // Progress bar (fixed width)
-        _MiniProgressBar(progress: progress),
+        MiniProgressBar(progress: progress),
 
         // Flexible spacer to push badge to the right
         const Expanded(child: SizedBox.shrink()),

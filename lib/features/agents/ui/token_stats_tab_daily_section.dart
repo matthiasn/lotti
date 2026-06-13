@@ -1,11 +1,19 @@
-part of 'token_stats_tab.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/daily_token_usage.dart';
+import 'package:lotti/features/agents/ui/token_stats_tab.dart';
+import 'package:lotti/features/agents/ui/token_stats_tab_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 
-class _DailyUsageSection extends StatefulWidget {
-  const _DailyUsageSection({
+class DailyUsageSection extends StatefulWidget {
+  const DailyUsageSection({
     required this.days,
     required this.dailyAsync,
     required this.comparisonAsync,
     required this.onDaysChanged,
+    super.key,
   });
 
   final int days;
@@ -14,10 +22,10 @@ class _DailyUsageSection extends StatefulWidget {
   final ValueChanged<int> onDaysChanged;
 
   @override
-  State<_DailyUsageSection> createState() => _DailyUsageSectionState();
+  State<DailyUsageSection> createState() => _DailyUsageSectionState();
 }
 
-class _DailyUsageSectionState extends State<_DailyUsageSection> {
+class _DailyUsageSectionState extends State<DailyUsageSection> {
   int? _selectedIndex;
 
   @override
@@ -27,7 +35,7 @@ class _DailyUsageSectionState extends State<_DailyUsageSection> {
   }
 
   @override
-  void didUpdateWidget(covariant _DailyUsageSection oldWidget) {
+  void didUpdateWidget(covariant DailyUsageSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.days != widget.days) {
       _selectedIndex = widget.days - 1;
@@ -66,7 +74,7 @@ class _DailyUsageSectionState extends State<_DailyUsageSection> {
             Padding(
               padding: EdgeInsets.only(top: tokens.spacing.step1),
               child: Text(
-                '${_formatTokenCount(periodTotal)} '
+                '${formatTokenCount(periodTotal)} '
                 '${context.messages.agentStatsTokensUnit}'
                 '${periodWakes > 0 ? ' · $periodWakes ${context.messages.agentStatsWakesLabel.toLowerCase()}' : ''}',
                 style: context.textTheme.bodySmall?.copyWith(
@@ -96,7 +104,7 @@ class _DailyUsageSectionState extends State<_DailyUsageSection> {
                   comparisonAsync: widget.comparisonAsync,
                 ),
                 SizedBox(height: tokens.spacing.step5),
-                _InteractiveWeeklyChart(
+                InteractiveWeeklyChart(
                   days: daysList,
                   selectedIndex: _selectedIndex,
                   onBarTap: (i) => setState(
@@ -104,14 +112,14 @@ class _DailyUsageSectionState extends State<_DailyUsageSection> {
                   ),
                 ),
                 SizedBox(height: tokens.spacing.step3),
-                const _ChartLegend(),
+                const ChartLegend(),
                 // Detail panel for selected day.
                 if (_selectedIndex != null &&
                     daysList != null &&
                     _selectedIndex! < daysList.length)
                   Padding(
                     padding: EdgeInsets.only(top: tokens.spacing.step4),
-                    child: _SelectedDayDetail(day: daysList[_selectedIndex!]),
+                    child: SelectedDayDetail(day: daysList[_selectedIndex!]),
                   ),
               ],
             ),
@@ -201,7 +209,7 @@ class _ComparisonSummary extends StatelessWidget {
 
     if (comparison.isAtAverage) return const SizedBox.shrink();
 
-    final timeStr = _currentTimeString();
+    final timeStr = currentTimeString();
     final message = comparison.isAboveAverage
         ? context.messages.agentStatsUsageAboveAverage(timeStr)
         : context.messages.agentStatsUsageBelowAverage(timeStr);
@@ -232,14 +240,14 @@ class _ComparisonMetrics extends StatelessWidget {
       children: [
         _MetricColumn(
           label: context.messages.agentStatsAverageLabel,
-          value: _formatTokenCount(comparison.averageTokensByTimeOfDay),
+          value: formatTokenCount(comparison.averageTokensByTimeOfDay),
           unit: context.messages.agentStatsTokensUnit,
           valueColor: context.colorScheme.onSurfaceVariant,
         ),
         SizedBox(width: tokens.spacing.step7),
         _MetricColumn(
           label: context.messages.agentStatsTodayLabel,
-          value: _formatTokenCount(comparison.todayTokens),
+          value: formatTokenCount(comparison.todayTokens),
           unit: context.messages.agentStatsTokensUnit,
           valueColor: comparison.isAboveAverage
               ? tokens.colors.alert.warning.defaultColor
@@ -303,5 +311,3 @@ class _MetricColumn extends StatelessWidget {
     );
   }
 }
-
-// ── Interactive Weekly Chart ────────────────────────────────────────────────

@@ -24,6 +24,7 @@ export 'package:lotti/features/agents/model/observation_record.dart'
     show ObservationRecord;
 
 part 'task_agent_tool_handlers.dart';
+part 'task_agent_change_handlers.dart';
 
 /// Callback that resolves a journal entity's category ID from its entity ID.
 typedef ResolveCategoryId = Future<String?> Function(String entityId);
@@ -465,6 +466,13 @@ class TaskAgentStrategy extends ConversationStrategy {
   @visibleForTesting
   static Map<String, dynamic> debugParseToolArguments(String raw) =>
       _parseToolArguments(raw);
+
+  /// Test seam for the pure human-summary formatter.
+  @visibleForTesting
+  static String debugGenerateHumanSummary(
+    String toolName,
+    Map<String, dynamic> args,
+  ) => TaskAgentChangeHandlers._generateHumanSummary(toolName, args);
 
   /// Parses tool call arguments from raw JSON, with resilience for common
   /// local model quirks (markdown fencing, trailing text, etc.).

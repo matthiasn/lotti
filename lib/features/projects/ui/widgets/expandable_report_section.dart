@@ -1,4 +1,11 @@
-part of 'shared_widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
+import 'package:lotti/features/agents/ui/report_content_parser.dart';
+import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/markdown_link_utils.dart';
 
 class ExpandableReportSection extends StatefulWidget {
   const ExpandableReportSection({

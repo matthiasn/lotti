@@ -1,13 +1,28 @@
-part of 'day_timeline.dart';
+import 'dart:math' as math;
 
-class _BlockPosition extends StatelessWidget {
-  const _BlockPosition({
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/tasks/state/task_focus_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
+
+class BlockPosition extends StatelessWidget {
+  const BlockPosition({
     required this.block,
     required this.windowStart,
     required this.foldingState,
     required this.pxPerMinute,
     required this.tracked,
     required this.onRename,
+    super.key,
   });
 
   final TimeBlock block;
@@ -394,12 +409,13 @@ class _BlockContent extends StatelessWidget {
   }
 }
 
-class _NowLine extends StatelessWidget {
-  const _NowLine({
+class NowLine extends StatelessWidget {
+  const NowLine({
     required this.windowStart,
     required this.now,
     required this.foldingState,
     required this.pxPerMinute,
+    super.key,
   });
 
   final DateTime windowStart;

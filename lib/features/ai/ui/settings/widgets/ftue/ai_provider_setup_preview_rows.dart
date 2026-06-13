@@ -1,11 +1,20 @@
-part of 'ai_provider_setup_preview_modal.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_models.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _NewModelsSection extends StatelessWidget {
-  const _NewModelsSection({
+class NewModelsSection extends StatelessWidget {
+  const NewModelsSection({
     required this.models,
     required this.excluded,
     required this.accent,
     required this.onToggle,
+    super.key,
   });
 
   final List<KnownModel> models;
@@ -106,8 +115,8 @@ class _ModelRow extends StatelessWidget {
   }
 }
 
-class _AlreadyAddedSection extends StatelessWidget {
-  const _AlreadyAddedSection({required this.models});
+class AlreadyAddedSection extends StatelessWidget {
+  const AlreadyAddedSection({required this.models, super.key});
 
   final List<AiConfigModel> models;
 
@@ -303,7 +312,7 @@ class _ChipRow extends StatelessWidget {
 // in release the workflow falls back to the empty-preset path in
 // `show()`, which skips the modal cleanly instead of crashing.
 
-AiProviderSetupPreviewPreset? _geminiPreset() {
+AiProviderSetupPreviewPreset? geminiPreset() {
   final known = getFtueKnownModels();
   assert(known != null, 'Gemini FTUE known-model lookup returned null');
   if (known == null) return null;
@@ -315,7 +324,7 @@ AiProviderSetupPreviewPreset? _geminiPreset() {
   );
 }
 
-AiProviderSetupPreviewPreset? _openAiPreset() {
+AiProviderSetupPreviewPreset? openAiPreset() {
   final known = getOpenAiFtueKnownModels();
   assert(known != null, 'OpenAI FTUE known-model lookup returned null');
   if (known == null) return null;
@@ -332,7 +341,7 @@ AiProviderSetupPreviewPreset? _openAiPreset() {
   );
 }
 
-AiProviderSetupPreviewPreset? _mistralPreset() {
+AiProviderSetupPreviewPreset? mistralPreset() {
   final known = getMistralFtueKnownModels();
   assert(known != null, 'Mistral FTUE known-model lookup returned null');
   if (known == null) return null;
@@ -344,7 +353,7 @@ AiProviderSetupPreviewPreset? _mistralPreset() {
   );
 }
 
-AiProviderSetupPreviewPreset? _alibabaPreset() {
+AiProviderSetupPreviewPreset? alibabaPreset() {
   final known = getAlibabaFtueKnownModels();
   assert(known != null, 'Alibaba FTUE known-model lookup returned null');
   if (known == null) return null;
@@ -362,7 +371,7 @@ AiProviderSetupPreviewPreset? _alibabaPreset() {
   );
 }
 
-AiProviderSetupPreviewPreset? _anthropicPreset() {
+AiProviderSetupPreviewPreset? anthropicPreset() {
   final known = getAnthropicFtueKnownModels();
   assert(known != null, 'Anthropic FTUE known-model lookup returned null');
   if (known == null) return null;
@@ -374,7 +383,7 @@ AiProviderSetupPreviewPreset? _anthropicPreset() {
   );
 }
 
-AiProviderSetupPreviewPreset _ollamaPreset() {
+AiProviderSetupPreviewPreset ollamaPreset() {
   // Ollama serves locally-pulled models. No preset model list — the
   // caller short-circuits via `skipsPreviewFor` and goes straight to
   // the result modal.

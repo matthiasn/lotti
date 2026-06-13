@@ -1,7 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -462,57 +461,6 @@ void main() {
       // Should not have checked version or fetched releases
       verifyNever(() => mockService.fetchIndex());
     });
-  });
-
-  group('isNewerVersion', () {
-    test('worked examples across part boundaries', () {
-      expect(WhatsNewController.isNewerVersion('0.9.804', '0.9.802'), isTrue);
-      expect(WhatsNewController.isNewerVersion('0.9.802', '0.9.804'), isFalse);
-      expect(WhatsNewController.isNewerVersion('0.9.802', '0.9.802'), isFalse);
-      expect(WhatsNewController.isNewerVersion('1.0.0', '0.9.999'), isTrue);
-      expect(WhatsNewController.isNewerVersion('100.0.0', '0.9.980'), isTrue);
-      // More parts on equal prefix counts as newer.
-      expect(WhatsNewController.isNewerVersion('1.0.0.1', '1.0.0'), isTrue);
-      // Unparseable parts are treated as 0.
-      expect(WhatsNewController.isNewerVersion('1.x.0', '1.0.0'), isFalse);
-      expect(WhatsNewController.isNewerVersion('1.1.0', '1.x.0'), isTrue);
-    });
-
-    glados.Glados3<int, int, int>(
-      glados.IntAnys(glados.any).intInRange(0, 100),
-      glados.IntAnys(glados.any).intInRange(0, 100),
-      glados.IntAnys(glados.any).intInRange(0, 100),
-      glados.ExploreConfig(numRuns: 160),
-    ).test(
-      'irreflexive, asymmetric, and bump-sensitive over generated versions',
-      (major, minor, patch) {
-        final version = '$major.$minor.$patch';
-
-        // A version is never newer than itself.
-        expect(WhatsNewController.isNewerVersion(version, version), isFalse);
-
-        // Bumping any single part makes it newer — and the comparison is
-        // asymmetric.
-        final bumps = [
-          '${major + 1}.$minor.$patch',
-          '$major.${minor + 1}.$patch',
-          '$major.$minor.${patch + 1}',
-        ];
-        for (final bumped in bumps) {
-          expect(
-            WhatsNewController.isNewerVersion(bumped, version),
-            isTrue,
-            reason: '$bumped vs $version',
-          );
-          expect(
-            WhatsNewController.isNewerVersion(version, bumped),
-            isFalse,
-            reason: '$version vs $bumped',
-          );
-        }
-      },
-      tags: 'glados',
-    );
   });
 
   group('version gating through build', () {

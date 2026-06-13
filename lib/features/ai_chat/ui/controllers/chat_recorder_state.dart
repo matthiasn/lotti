@@ -1,5 +1,3 @@
-part of 'chat_recorder_controller.dart';
-
 enum ChatRecorderStatus { idle, recording, realtimeRecording, processing }
 
 enum ChatRecorderErrorType {
@@ -79,18 +77,3 @@ class ChatRecorderConfig {
 
 /// Observes app lifecycle to stop realtime recording when app is backgrounded.
 ///
-/// Only triggers on [AppLifecycleState.paused] (actual backgrounding), not on
-/// [AppLifecycleState.inactive], which fires for transient events like
-/// notification center pulls or incoming calls on iOS.
-class _AppLifecycleObserver extends WidgetsBindingObserver {
-  _AppLifecycleObserver({required this.onPaused});
-
-  final VoidCallback onPaused;
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.paused) {
-      onPaused();
-    }
-  }
-}

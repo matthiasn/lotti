@@ -1,8 +1,8 @@
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/logic/mock_day_agent_capture.dart';
+import 'package:lotti/features/daily_os_next/logic/mock_day_agent_planning.dart';
 import 'package:meta/meta.dart';
-
-part 'mock_day_agent_fixtures.dart';
 
 /// Scripted [DayAgentInterface] for the Capture + Reconcile preview.
 ///
@@ -12,179 +12,74 @@ part 'mock_day_agent_fixtures.dart';
 /// independently. Every call carries an artificial latency so the
 /// loading states render in real conditions.
 ///
-/// The mock keeps its own in-memory "broken link" tracker so the
-/// `breakCaptureLink` action visibly mutates the returned parsed
+/// A thin facade over two scripted collaborators: [MockDayAgentCapture]
+/// (capture/reconcile/draft) and [MockDayAgentPlanning] (refine/shutdown).
+/// The capture collaborator keeps its own in-memory "broken link" tracker
+/// so the `breakCaptureLink` action visibly mutates the returned parsed
 /// items across calls.
 class MockDayAgent implements DayAgentInterface {
+  /// Creates a scripted day agent and wires its collaborators.
   MockDayAgent({
-    this.parseLatency = const Duration(milliseconds: 220),
-    this.pendingLatency = const Duration(milliseconds: 180),
-    this.triageLatency = const Duration(milliseconds: 120),
-    this.draftLatency = const Duration(milliseconds: 400),
-    this.summarizeLatency = const Duration(milliseconds: 120),
+    Duration parseLatency = const Duration(milliseconds: 220),
+    Duration pendingLatency = const Duration(milliseconds: 180),
+    Duration triageLatency = const Duration(milliseconds: 120),
+    Duration draftLatency = const Duration(milliseconds: 400),
+    Duration summarizeLatency = const Duration(milliseconds: 120),
     DateTime Function()? clock,
-  }) : _clock = clock ?? DateTime.now;
+  }) : _capture = MockDayAgentCapture(
+         parseLatency: parseLatency,
+         pendingLatency: pendingLatency,
+         triageLatency: triageLatency,
+         draftLatency: draftLatency,
+         clock: clock ?? DateTime.now,
+       ),
+       _planning = MockDayAgentPlanning(
+         draftLatency: draftLatency,
+         triageLatency: triageLatency,
+         summarizeLatency: summarizeLatency,
+         pendingLatency: pendingLatency,
+       );
 
-  final Duration parseLatency;
-  final Duration pendingLatency;
-  final Duration triageLatency;
-  final Duration draftLatency;
-  final Duration summarizeLatency;
-  final DateTime Function() _clock;
-
-  int _captureSeq = 0;
-
-  /// Items that have had their link broken in this session — keyed
-  /// by parsed-item id. Subsequent `parseCaptureToItems` calls
-  /// rebuild the same list with those entries downgraded to NEW.
-  final Set<String> _brokenLinks = <String>{};
+  final MockDayAgentCapture _capture;
+  final MockDayAgentPlanning _planning;
 
   @override
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
     String? audioId,
-  }) async {
-    await Future<void>.delayed(parseLatency);
-    _captureSeq++;
-    return CaptureId('mock_capture_$_captureSeq');
-  }
+  }) => _capture.submitCapture(
+    transcript: transcript,
+    capturedAt: capturedAt,
+    audioId: audioId,
+  );
 
   @override
-  Future<DraftPlan?> currentPlanForDate(DateTime date) async => null;
+  Future<DraftPlan?> currentPlanForDate(DateTime date) =>
+      _capture.currentPlanForDate(date);
 
   @override
-  Future<bool> deletePlanForDate(DateTime date) async => true;
+  Future<bool> deletePlanForDate(DateTime date) =>
+      _capture.deletePlanForDate(date);
 
   @override
-  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async {
-    await Future<void>.delayed(parseLatency);
-    const items = <ParsedItem>[
-      ParsedItem(
-        id: 'p_deck_review',
-        kind: ParsedItemKind.matched,
-        title: 'Send the leadership deck to Sarah',
-        category: _work,
-        confidence: ParsedItemConfidence.high,
-        spokenPhrase: 'send the deck to Sarah',
-        matchedTaskId: 't_deck_review',
-        matchedTaskTitle: 'Deck review — Q2 leadership update',
-        matchedTaskState: 'In progress · 2 sessions',
-        estimateMinutes: 60,
-      ),
-      ParsedItem(
-        id: 'p_invoices',
-        kind: ParsedItemKind.newTask,
-        title: 'Review outstanding invoices',
-        category: _work,
-        confidence: ParsedItemConfidence.high,
-        estimateMinutes: 45,
-        timeAnchor: 'before 11am',
-      ),
-      ParsedItem(
-        id: 'p_call_mom',
-        kind: ParsedItemKind.newTask,
-        title: 'Call mom re: Sunday',
-        category: _meals,
-        // Medium = parser is uncertain enough to surface the
-        // warning tag on the foot row. Low would mean "confidently
-        // a new task" and would suppress the warning.
-        confidence: ParsedItemConfidence.medium,
-        estimateMinutes: 15,
-      ),
-      ParsedItem(
-        id: 'p_run_done',
-        kind: ParsedItemKind.update,
-        title: 'Morning run',
-        category: _health,
-        confidence: ParsedItemConfidence.high,
-        spokenPhrase: 'did my run already',
-        matchedTaskId: 't_morning_run',
-        matchedTaskTitle: 'Morning run · 5km',
-        matchedTaskState: 'Recurring · daily',
-        proposedUpdate: 'Mark done for today',
-      ),
-    ];
-
-    if (_brokenLinks.isEmpty) return items;
-    return [
-      for (final item in items)
-        if (_brokenLinks.contains(item.id))
-          ParsedItem(
-            id: item.id,
-            kind: ParsedItemKind.newTask,
-            title: item.matchedTaskTitle ?? item.title,
-            category: item.category,
-            confidence: item.confidence,
-            estimateMinutes: item.estimateMinutes,
-            timeAnchor: item.timeAnchor,
-          )
-        else
-          item,
-    ];
-  }
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) =>
+      _capture.parseCaptureToItems(id);
 
   @override
-  Future<List<PendingItem>> surfacePendingDecisions({
-    DateTime? forDate,
-  }) async {
-    await Future<void>.delayed(pendingLatency);
-    return const [
-      PendingItem(
-        taskId: 't_onboarding_doc',
-        title: 'Finish the Onboarding doc',
-        category: _work,
-        reason: PendingItemReason.inProgress,
-        note: 'Started Wednesday, 40m in',
-        sessionCount: 1,
-      ),
-      PendingItem(
-        taskId: 't_dentist',
-        title: 'Reschedule dentist',
-        category: _health,
-        reason: PendingItemReason.overdue,
-        note: 'Was due Monday',
-        overdueByDays: 3,
-      ),
-      PendingItem(
-        taskId: 't_dnd_book',
-        title: 'Read 30 pages',
-        category: _study,
-        reason: PendingItemReason.missedRecurring,
-        note: 'Last skipped Thursday',
-      ),
-    ];
-  }
+  Future<List<PendingItem>> surfacePendingDecisions({DateTime? forDate}) =>
+      _capture.surfacePendingDecisions(forDate: forDate);
 
   @override
-  Future<ParsedItem> breakCaptureLink(String parsedItemId) async {
-    await Future<void>.delayed(triageLatency);
-    _brokenLinks.add(parsedItemId);
-    final list = await parseCaptureToItems(const CaptureId('mock_capture'));
-    return list.firstWhere(
-      (item) => item.id == parsedItemId,
-      orElse: () => throw StateError(
-        'Mock day agent: parsed item $parsedItemId is no longer in the '
-        'scripted list. This should not happen in tests.',
-      ),
-    );
-  }
+  Future<ParsedItem> breakCaptureLink(String parsedItemId) =>
+      _capture.breakCaptureLink(parsedItemId);
 
   @override
   Future<TriageResult> applyTriage({
     required String taskId,
     required TriageAction action,
     DateTime? deferTo,
-  }) async {
-    await Future<void>.delayed(triageLatency);
-    return TriageResult(
-      taskId: taskId,
-      action: action,
-      deferredTo: action == TriageAction.defer
-          ? (deferTo ?? _clock().add(const Duration(days: 1)))
-          : null,
-    );
-  }
+  }) => _capture.applyTriage(taskId: taskId, action: action, deferTo: deferTo);
 
   @override
   Future<DraftPlan> draftDayPlan({
@@ -193,460 +88,62 @@ class MockDayAgent implements DayAgentInterface {
     required DateTime dayDate,
     List<String> decidedCaptureItemIds = const [],
     List<TimeBlock> calendarBlocks = const [],
-    // ignored: mock returns immediately, has no poll loop to cancel.
     bool Function()? isCancelled,
-  }) async {
-    await Future<void>.delayed(draftLatency);
-    final start = DateTime(dayDate.year, dayDate.month, dayDate.day);
-    DateTime at(int hour, int minute) =>
-        start.add(Duration(hours: hour, minutes: minute));
-
-    final blocks = <TimeBlock>[
-      TimeBlock(
-        id: 'b_deep_work',
-        title: 'Send the leadership deck to Sarah',
-        start: at(8, 30),
-        end: at(10, 30),
-        type: TimeBlockType.ai,
-        state: TimeBlockState.drafted,
-        category: _work,
-        taskId: 't_deck_review',
-        reason:
-            'Your deepest focus runs 8:30–10:30. Pulling this in before '
-            'the 11am ping from Sarah.',
-        sessionIndex: 3,
-        sessionTotal: 4,
-      ),
-      TimeBlock(
-        id: 'b_invoices',
-        title: 'Review outstanding invoices',
-        start: at(10, 45),
-        end: at(11, 30),
-        type: TimeBlockType.ai,
-        state: TimeBlockState.drafted,
-        category: _work,
-        reason:
-            'You said "before eleven" — sliding right after the deck '
-            'with a 15-min buffer.',
-      ),
-      TimeBlock(
-        id: 'b_buffer_lunch',
-        title: 'Buffer',
-        start: at(11, 30),
-        end: at(12, 30),
-        type: TimeBlockType.buffer,
-        state: TimeBlockState.drafted,
-        category: _buffer,
-      ),
-      TimeBlock(
-        id: 'b_team_sync',
-        title: 'Team sync — pricing',
-        start: at(13, 0),
-        end: at(13, 30),
-        type: TimeBlockType.cal,
-        state: TimeBlockState.committed,
-        category: _work,
-      ),
-      TimeBlock(
-        id: 'b_run_review',
-        title: 'Onboarding doc — second wind',
-        start: at(15, 30),
-        end: at(16, 30),
-        type: TimeBlockType.ai,
-        state: TimeBlockState.drafted,
-        category: _work,
-        taskId: 't_onboarding_doc',
-        reason:
-            'You started this on Wednesday and stopped 40m in. Placing it '
-            'in your 3pm second-wind window.',
-      ),
-    ];
-
-    final allBlocks = [...calendarBlocks, ...blocks]
-      ..sort((a, b) => a.start.compareTo(b.start));
-
-    final bands = [
-      EnergyBand(
-        start: at(7, 0),
-        end: at(10, 30),
-        level: EnergyLevel.high,
-        label: 'HIGH ENERGY',
-      ),
-      EnergyBand(
-        start: at(13, 0),
-        end: at(15, 0),
-        level: EnergyLevel.low,
-        label: 'LOW ENERGY',
-      ),
-      EnergyBand(
-        start: at(15, 0),
-        end: at(17, 0),
-        level: EnergyLevel.secondWind,
-        label: 'SECOND WIND',
-      ),
-    ];
-
-    final scheduled = allBlocks
-        .where((b) => b.state != TimeBlockState.dropped)
-        .fold<int>(0, (acc, b) => acc + b.duration.inMinutes);
-
-    final actualBlocks = <TimeBlock>[
-      TimeBlock(
-        id: 'a_deck_review',
-        title: 'Deck review — Q2 leadership update',
-        start: at(8, 35),
-        end: at(10, 10),
-        type: TimeBlockType.manual,
-        state: TimeBlockState.completed,
-        category: _work,
-        taskId: 't_deck_review',
-      ),
-      TimeBlock(
-        id: 'a_morning_run',
-        title: 'Morning run · 5km',
-        start: at(12, 5),
-        end: at(12, 33),
-        type: TimeBlockType.manual,
-        state: TimeBlockState.completed,
-        category: _health,
-        taskId: 't_morning_run',
-      ),
-      TimeBlock(
-        id: 'a_onboarding',
-        title: 'Finish the Onboarding doc',
-        start: at(15, 35),
-        end: at(16, 15),
-        type: TimeBlockType.manual,
-        state: TimeBlockState.inProgress,
-        category: _work,
-        taskId: 't_onboarding_doc',
-      ),
-    ];
-
-    return DraftPlan(
-      dayDate: start,
-      blocks: allBlocks,
-      actualBlocks: actualBlocks,
-      bands: bands,
-      capacityMinutes: 480,
-      scheduledMinutes: scheduled,
-      agendaItems: _agendaFor(allBlocks),
-    );
-  }
-
-  /// Roll the placed blocks up into one [AgendaItem] per task. Blocks
-  /// without a taskId (buffers, calendar events) are not surfaced on
-  /// the Agenda — that screen is intent-first.
-  List<AgendaItem> _agendaFor(List<TimeBlock> blocks) {
-    final byTask = <String, List<TimeBlock>>{};
-    for (final block in blocks) {
-      final id = block.taskId;
-      if (id == null) continue;
-      byTask.putIfAbsent(id, () => <TimeBlock>[]).add(block);
-    }
-
-    AgendaItem buildItem(String taskId, List<TimeBlock> linked) {
-      final outcome = _scriptedOutcome(taskId);
-      final estimate = linked.fold<int>(
-        0,
-        (acc, b) => acc + b.duration.inMinutes,
-      );
-      final state = linked.any((b) => b.state == TimeBlockState.inProgress)
-          ? AgendaItemState.inProgress
-          : AgendaItemState.open;
-      return AgendaItem(
-        id: 'agenda_$taskId',
-        taskId: taskId,
-        title: linked.first.title,
-        category: linked.first.category,
-        linkedBlockIds: linked.map((b) => b.id).toList(),
-        outcome: outcome,
-        totalEstimateMinutes: estimate,
-        progress: _scriptedProgress(taskId),
-        state: state,
-      );
-    }
-
-    return byTask.entries
-        .map((entry) => buildItem(entry.key, entry.value))
-        .toList();
-  }
-
-  int _diffSeq = 0;
+  }) => _capture.draftDayPlan(
+    captureId: captureId,
+    decidedTaskIds: decidedTaskIds,
+    dayDate: dayDate,
+    decidedCaptureItemIds: decidedCaptureItemIds,
+    calendarBlocks: calendarBlocks,
+    isCancelled: isCancelled,
+  );
 
   @override
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
     required String voiceTranscript,
-    // ignored: mock returns immediately, has no poll loop to cancel.
     bool Function()? isCancelled,
-  }) async {
-    await Future<void>.delayed(draftLatency);
-    _diffSeq++;
+  }) => _planning.proposePlanDiff(
+    currentPlan: currentPlan,
+    voiceTranscript: voiceTranscript,
+    isCancelled: isCancelled,
+  );
 
-    // No blocks → no meaningful scripted reshape; return an empty diff
-    // instead of crashing on `currentPlan.blocks.first`. The Refine
-    // controller treats an empty diff as immediately resolved, so the
-    // UI cleanly bounces back to idle.
-    if (currentPlan.blocks.isEmpty) {
-      return PlanDiff(
-        id: 'diff_$_diffSeq',
-        transcript: voiceTranscript,
-        changes: const [],
-        updatedPlan: currentPlan,
-      );
-    }
-
-    // Find the deep-work block and slide it 30 minutes earlier; drop
-    // the second-wind onboarding block; add a buffer at 4 pm. This is
-    // a scripted reshape — the real agent will derive these from the
-    // transcript.
-    final deck = currentPlan.blocks.firstWhere(
-      (b) => b.id == 'b_deep_work',
-      orElse: () => currentPlan.blocks.first,
-    );
-    final onboarding = currentPlan.blocks.firstWhere(
-      (b) => b.id == 'b_run_review',
-      orElse: () => currentPlan.blocks.last,
-    );
-
-    final movedDeck = TimeBlock(
-      id: deck.id,
-      title: deck.title,
-      start: deck.start.subtract(const Duration(minutes: 30)),
-      end: deck.end.subtract(const Duration(minutes: 30)),
-      type: deck.type,
-      state: deck.state,
-      category: deck.category,
-      taskId: deck.taskId,
-      reason: 'Moved earlier to clear afternoon for the new buffer.',
-      sessionIndex: deck.sessionIndex,
-      sessionTotal: deck.sessionTotal,
-      location: deck.location,
-    );
-
-    final addedBuffer = TimeBlock(
-      id: 'b_buffer_pm',
-      title: 'Buffer',
-      start: onboarding.start.add(const Duration(hours: 1)),
-      end: onboarding.start.add(const Duration(hours: 2)),
-      type: TimeBlockType.buffer,
-      state: TimeBlockState.drafted,
-      category: _buffer,
-    );
-
-    final updatedBlocks =
-        [
-          for (final block in currentPlan.blocks)
-            if (block.id == deck.id)
-              movedDeck
-            else if (block.id == onboarding.id)
-              null
-            else
-              block,
-          addedBuffer,
-        ].whereType<TimeBlock>().toList()..sort(
-          (a, b) => a.start.compareTo(b.start),
-        );
-
-    final scheduled = updatedBlocks
-        .where((b) => b.state != TimeBlockState.dropped)
-        .fold<int>(0, (acc, b) => acc + b.duration.inMinutes);
-
-    final updatedPlan = currentPlan.copyWith(
-      blocks: updatedBlocks,
-      scheduledMinutes: scheduled,
-      agendaItems: _agendaFor(updatedBlocks),
-    );
-
-    return PlanDiff(
-      id: 'diff_$_diffSeq',
-      transcript: voiceTranscript,
-      changes: [
-        PlanDiffChange(
-          id: 'c_moved_deck',
-          kind: PlanDiffChangeKind.moved,
-          title: deck.title,
-          category: deck.category,
-          reason: 'Earlier start matches your high-energy window.',
-          affectedBlockId: deck.id,
-          fromStart: deck.start,
-          fromEnd: deck.end,
-          toStart: movedDeck.start,
-          toEnd: movedDeck.end,
-        ),
-        PlanDiffChange(
-          id: 'c_dropped_onboarding',
-          kind: PlanDiffChangeKind.dropped,
-          title: onboarding.title,
-          category: onboarding.category,
-          reason: 'Dropped per your "skip onboarding" request.',
-          affectedBlockId: onboarding.id,
-          fromStart: onboarding.start,
-          fromEnd: onboarding.end,
-        ),
-        PlanDiffChange(
-          id: 'c_added_buffer',
-          kind: PlanDiffChangeKind.added,
-          title: 'Afternoon buffer',
-          category: _buffer,
-          reason: 'Protects recovery time after lunch.',
-          affectedBlockId: addedBuffer.id,
-          toStart: addedBuffer.start,
-          toEnd: addedBuffer.end,
-        ),
-      ],
-      updatedPlan: updatedPlan,
-    );
-  }
-
-  // [itemIndices] is intentionally ignored here. The scripted mock has no
-  // "diff baseline" to splice individual changes against (the real
-  // adapter rebuilds plans from the persisted change set), so it returns
-  // the post-accept plan in full regardless of selection. Tests that
-  // need to assert partial-accept semantics override these methods on a
-  // local subclass (see `_RecordingRefineAgent` in
-  // refine_controller_test.dart).
   @override
   Future<DraftPlan> acceptDiff(
     PlanDiff diff, {
     List<int>? itemIndices,
-  }) async {
-    await Future<void>.delayed(triageLatency);
-    return diff.updatedPlan;
-  }
+  }) => _planning.acceptDiff(diff, itemIndices: itemIndices);
 
   @override
   Future<DraftPlan> revertDiff({
     required PlanDiff diff,
     required DraftPlan originalPlan,
     List<int>? itemIndices,
-  }) async {
-    await Future<void>.delayed(triageLatency);
-    return originalPlan;
-  }
+  }) => _planning.revertDiff(
+    diff: diff,
+    originalPlan: originalPlan,
+    itemIndices: itemIndices,
+  );
 
   @override
   Future<List<LearningCard>> summarizeRecentPatterns({
     required DateTime asOf,
     int lookbackDays = 7,
-  }) async {
-    await Future<void>.delayed(summarizeLatency);
-    return const [
-      LearningCard(
-        id: 'l_yesterday',
-        overline: 'YESTERDAY',
-        summary: 'Strong morning, distracted afternoon.',
-        bullets: [
-          LearningBullet(
-            text: '2h 40m of focus before 11am — your best of the week.',
-            tone: LearningBulletTone.positive,
-          ),
-          LearningBullet(
-            text: 'Three context switches between 2 and 4pm.',
-            tone: LearningBulletTone.warning,
-          ),
-          LearningBullet(
-            text: 'Workout moved to evening (again).',
-            tone: LearningBulletTone.info,
-          ),
-        ],
-      ),
-      LearningCard(
-        id: 'l_week',
-        overline: 'THIS WEEK SO FAR',
-        summary: 'Mornings holding, afternoons slipping.',
-        bullets: [
-          LearningBullet(
-            text: 'Deep work earlier · 3 days running.',
-            tone: LearningBulletTone.positive,
-          ),
-          LearningBullet(
-            text: 'Onboarding doc carried over twice.',
-            tone: LearningBulletTone.warning,
-          ),
-          LearningBullet(
-            text: 'You shipped 4 of the 5 items you committed to.',
-            tone: LearningBulletTone.positive,
-          ),
-        ],
-      ),
-      LearningCard(
-        id: 'l_nudge',
-        overline: 'GENTLE NUDGE',
-        summary:
-            'You pushed deep work later three days running. '
-            'Protect mornings today?',
-        bullets: [],
-        kind: LearningCardKind.nudge,
-      ),
-    ];
-  }
+  }) => _planning.summarizeRecentPatterns(
+    asOf: asOf,
+    lookbackDays: lookbackDays,
+  );
 
   @override
-  Future<DraftPlan> commitDay(DraftPlan plan) async {
-    await Future<void>.delayed(triageLatency);
-    return plan.copyWith(
-      state: DayState.committed,
-      blocks: [
-        for (final block in plan.blocks)
-          // Drafted blocks read as solid after commit; cal events and
-          // already-committed blocks stay where they are.
-          if (block.state == TimeBlockState.drafted)
-            TimeBlock(
-              id: block.id,
-              title: block.title,
-              start: block.start,
-              end: block.end,
-              type: block.type,
-              state: TimeBlockState.committed,
-              category: block.category,
-              taskId: block.taskId,
-              reason: block.reason,
-              sessionIndex: block.sessionIndex,
-              sessionTotal: block.sessionTotal,
-              location: block.location,
-            )
-          else
-            block,
-      ],
-    );
-  }
+  Future<DraftPlan> commitDay(DraftPlan plan) => _planning.commitDay(plan);
 
   @override
   Future<DraftPlan> renameBlock({
     required DraftPlan plan,
     required String blockId,
     required String title,
-  }) async {
-    await Future<void>.delayed(triageLatency);
-    final trimmedTitle = title.trim();
-    if (trimmedTitle.isEmpty) {
-      throw StateError('Block title must not be blank.');
-    }
-    final block = plan.blocks.where((b) => b.id == blockId).firstOrNull;
-    if (block == null) {
-      throw StateError('No block $blockId on the plan for ${plan.dayDate}.');
-    }
-    if (block.taskId != null && block.taskId!.isNotEmpty) {
-      throw StateError(
-        'Block $blockId is task-linked — rename the task instead.',
-      );
-    }
-    return plan.copyWith(
-      blocks: [
-        for (final b in plan.blocks)
-          if (b.id == blockId) b.copyWith(title: trimmedTitle) else b,
-      ],
-      agendaItems: [
-        for (final item in plan.agendaItems)
-          if (item.taskId == null && item.linkedBlockIds.contains(blockId))
-            item.copyWith(title: trimmedTitle)
-          else
-            item,
-      ],
-    );
-  }
+  }) => _planning.renameBlock(plan: plan, blockId: blockId, title: title);
 
   @override
   Future<
@@ -656,118 +153,52 @@ class MockDayAgent implements DayAgentInterface {
       ShutdownMetrics metrics,
     })
   >
-  surfaceShutdownData({required DateTime forDate}) async {
-    await Future<void>.delayed(summarizeLatency);
-    return (
-      completed: const [
-        CompletedItem(
-          taskId: 't_deck_review',
-          title: 'Deck review — Q2 leadership update',
-          category: _work,
-          durationMinutes: 95,
-          note: 'Two focus sessions, draft sent to Sarah.',
-        ),
-        CompletedItem(
-          taskId: 't_morning_run',
-          title: 'Morning run · 5km',
-          category: _health,
-          durationMinutes: 28,
-        ),
-      ],
-      carryover: const [
-        CarryoverItem(
-          taskId: 't_onboarding_doc',
-          title: 'Finish the Onboarding doc',
-          category: _work,
-          reason: 'Ran out of time — started, 40m in.',
-          suggestedTarget: '→ tomorrow morning',
-        ),
-        CarryoverItem(
-          taskId: 't_invoices',
-          title: 'Review outstanding invoices',
-          category: _work,
-          reason: 'Skipped — afternoon ran long.',
-          suggestedTarget: '→ tomorrow afternoon',
-        ),
-      ],
-      metrics: const ShutdownMetrics(
-        focusMinutes: 215,
-        flowSessions: 3,
-        contextSwitches: 5,
-        contextSwitchesWeekAvg: 8,
-        energyScore: 7.4,
-        energyDeltaVsWeek: 0.6,
-      ),
-    );
-  }
+  surfaceShutdownData({required DateTime forDate}) =>
+      _planning.surfaceShutdownData(forDate: forDate);
 
   @override
   Future<void> recordReflection({
     required DateTime forDate,
     required String text,
     required ReflectionSource source,
-  }) async {
-    await Future<void>.delayed(triageLatency);
-  }
+  }) => _planning.recordReflection(
+    forDate: forDate,
+    text: text,
+    source: source,
+  );
 
   @override
   Future<void> recordCarryoverDecision({
     required String taskId,
     required CarryoverAction action,
     DateTime? when,
-  }) async {
-    await Future<void>.delayed(triageLatency);
-  }
+  }) => _planning.recordCarryoverDecision(
+    taskId: taskId,
+    action: action,
+    when: when,
+  );
 
   @override
-  Future<TomorrowNote> generateTomorrowNote({
-    required DateTime forDate,
-  }) async {
-    await Future<void>.delayed(summarizeLatency);
-    return const TomorrowNote(
-      body:
-          "You started the Onboarding doc and stopped 40m in. I'll start "
-          'the draft with it placed in your morning, alongside the '
-          'carryover, and ask if you want to keep that.',
-      maturity: 1,
-    );
-  }
+  Future<TomorrowNote> generateTomorrowNote({required DateTime forDate}) =>
+      _planning.generateTomorrowNote(forDate: forDate);
 
   @override
   Future<List<TaskCorpusItem>> surfaceTaskCorpus({
     TaskCorpusState stateFilter = TaskCorpusState.all,
     String? categoryId,
     String? query,
-  }) async {
-    await Future<void>.delayed(pendingLatency);
-    const all = _scriptedTaskCorpus;
-    return [
-      for (final item in all)
-        if (_matchesFilter(item, stateFilter, categoryId, query)) item,
-    ];
-  }
+  }) => _planning.surfaceTaskCorpus(
+    stateFilter: stateFilter,
+    categoryId: categoryId,
+    query: query,
+  );
 
-  /// Test seam for [_matchesFilter] — pure corpus-filter predicate.
+  /// Test seam for the pure corpus-filter predicate.
   @visibleForTesting
   bool debugMatchesFilter(
     TaskCorpusItem item,
     TaskCorpusState state,
     String? categoryId,
     String? query,
-  ) => _matchesFilter(item, state, categoryId, query);
-
-  bool _matchesFilter(
-    TaskCorpusItem item,
-    TaskCorpusState state,
-    String? categoryId,
-    String? query,
-  ) {
-    if (state != TaskCorpusState.all && item.state != state) return false;
-    if (categoryId != null && item.category.id != categoryId) return false;
-    if (query != null && query.trim().isNotEmpty) {
-      final q = query.trim().toLowerCase();
-      if (!item.title.toLowerCase().contains(q)) return false;
-    }
-    return true;
-  }
+  ) => _planning.matchesFilter(item, state, categoryId, query);
 }

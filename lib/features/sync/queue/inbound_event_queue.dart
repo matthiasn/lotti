@@ -5,198 +5,23 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_event_classifier.dart';
+import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
+import 'package:lotti/features/sync/queue/inbound_queue_resurrection.dart';
+import 'package:lotti/features/sync/queue/queue_depth_emitter.dart';
+import 'package:lotti/features/sync/queue/queue_marker_advancer.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
 export 'package:lotti/database/sync_db.dart' show InboundEventProducer;
-
-part 'inbound_queue_resurrection.dart';
-
-/// Public result of a queue-side enqueue call. `accepted + dupes +
-/// filteredOutByType + deferredPendingDecryption` always equals the
-/// number of events passed in.
-class EnqueueResult {
-  const EnqueueResult({
-    required this.accepted,
-    required this.duplicatesDropped,
-    required this.filteredOutByType,
-    required this.deferredPendingDecryption,
-    required this.oldestTsAccepted,
-    required this.newestTsAccepted,
-  });
-
-  final int accepted;
-  final int duplicatesDropped;
-
-  /// Rejected because [MatrixEventClassifier.isSyncPayloadEvent] was
-  /// false — state events, redactions, etc. (F4).
-  final int filteredOutByType;
-
-  /// Rejected because the Matrix event was still encrypted at enqueue
-  /// time. The caller (usually `PendingDecryptionPen`) is expected to
-  /// retain the event and re-submit once decryption completes (F3).
-  final int deferredPendingDecryption;
-
-  final int oldestTsAccepted;
-  final int newestTsAccepted;
-
-  static const empty = EnqueueResult(
-    accepted: 0,
-    duplicatesDropped: 0,
-    filteredOutByType: 0,
-    deferredPendingDecryption: 0,
-    oldestTsAccepted: 0,
-    newestTsAccepted: 0,
-  );
-}
-
-/// Retry classification the worker hands back to the queue.
-enum RetryReason {
-  missingBase,
-  retriable,
-  decryptionPending,
-
-  /// Waiting for an attachment JSON (descriptor or agent entity
-  /// payload) to land on disk. Retried with a longer backoff ladder
-  /// and a wall-clock timeout instead of the generic attempt cap —
-  /// see `ApplyOutcome.pendingAttachment`.
-  pendingAttachment,
-}
-
-/// A queue row materialised for the worker. [rawJson] is the bytes the
-/// worker passes to `Event.fromJson(room, ...)` at apply time; the
-/// queue itself does not keep SDK objects alive.
-class InboundQueueEntry {
-  const InboundQueueEntry({
-    required this.queueId,
-    required this.eventId,
-    required this.roomId,
-    required this.originTs,
-    required this.producer,
-    required this.enqueuedAt,
-    required this.attempts,
-    required this.leaseUntil,
-    required this.rawJson,
-  });
-
-  final int queueId;
-  final String eventId;
-  final String roomId;
-  final int originTs;
-  final InboundEventProducer producer;
-  final int enqueuedAt;
-  final int attempts;
-  final int leaseUntil;
-  final String rawJson;
-
-  /// Materialises the stored event against the given [room]. The room
-  /// must belong to the same client the event was enqueued from.
-  Event toEvent(Room room) {
-    final decoded = jsonDecode(rawJson) as Map<String, dynamic>;
-    return Event.fromJson(decoded, room);
-  }
-}
-
-class QueueDepthSignal {
-  const QueueDepthSignal({
-    required this.total,
-    required this.byProducer,
-    required this.oldestEnqueuedAt,
-    this.abandoned = 0,
-  });
-
-  /// Active depth — `enqueued` + `leased` + `retrying`. Never
-  /// includes `applied` or `abandoned` rows so "queue is empty"
-  /// still means "nothing to drain."
-  final int total;
-  final Map<InboundEventProducer, int> byProducer;
-  final int? oldestEnqueuedAt;
-
-  /// Count of abandoned ledger rows — sync events the worker gave
-  /// up on after exhausting retries. Feeds the Sync Settings badge
-  /// + "Retry skipped" action.
-  final int abandoned;
-}
-
-class QueueStats {
-  const QueueStats({
-    required this.total,
-    required this.byProducer,
-    required this.readyNow,
-    required this.oldestEnqueuedAt,
-    this.applied = 0,
-    this.abandoned = 0,
-    this.retrying = 0,
-  });
-
-  /// Active-queue depth — rows the worker can still drain (`enqueued`
-  /// + `leased` + `retrying`). Excludes `applied` and `abandoned` so
-  /// callers that throttle against depth (bootstrap back-pressure,
-  /// UI) do not inflate their numbers with the ledger history.
-  final int total;
-  final Map<InboundEventProducer, int> byProducer;
-  final int readyNow;
-  final int? oldestEnqueuedAt;
-
-  /// Count of `status='applied'` rows — the ledger of everything the
-  /// queue has successfully committed. Diagnostic / UI only.
-  final int applied;
-
-  /// Count of `status='abandoned'` rows — events the worker gave up
-  /// on. Resurrection via `AttachmentIndex.pathRecorded` or
-  /// `JournalDb.updateStream` (or a user-triggered retry) flips them
-  /// back to `enqueued`.
-  final int abandoned;
-
-  /// Count of `status='retrying'` rows with a future `next_due_at`.
-  final int retrying;
-}
+export 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 
 const _logSubEnqueue = 'queue.enqueue';
 const _logSubCommit = 'queue.commit';
 const _logSubRetry = 'queue.retry';
 const _logSubSkip = 'queue.skip';
 const _logSubPrune = 'queue.prune';
-const _logSubResurrect = 'queue.resurrect';
-
-// Status constants mirroring the `status` column values on
-// `inbound_event_queue`. Lifecycle diagram:
-//
-//     enqueued ─► leased ─┬─► applied  (commitApplied)
-//         ▲               ├─► retrying ─► leased ...
-//         │               └─► abandoned (markSkipped after max attempts)
-//         │
-//         └── resurrectByPath / resurrectAll (from abandoned)
-const _statusEnqueued = 'enqueued';
-const _statusLeased = 'leased';
-const _statusRetrying = 'retrying';
-const _statusApplied = 'applied';
-const _statusAbandoned = 'abandoned';
-
-// Statuses the worker can still drain. Peek + clamp queries filter
-// on this set so the applied ledger (bounded only by retention, not
-// by correctness) never touches the hot paths.
-const List<String> _activeStatuses = <String>[
-  _statusEnqueued,
-  _statusLeased,
-  _statusRetrying,
-];
-
-// Peek eligibility. Includes `leased` so crash recovery works: a
-// worker that died mid-apply left its rows in `leased` state with a
-// non-zero `lease_until`. Once that timestamp elapses the row is
-// peekable again (the `lease_until <= now` predicate in
-// `peekBatchReady` still gates it). Under normal operation the
-// worker transitions `leased` → `applied`/`retrying`/`abandoned`
-// via its outcome switch, so this set is effectively `enqueued` +
-// `retrying` most of the time.
-const List<String> _peekStatuses = <String>[
-  _statusEnqueued,
-  _statusRetrying,
-  _statusLeased,
-];
 
 /// Durable inbound queue for Matrix sync events. See §3 of
 /// `docs/sync/2026-04-21_inbound_event_queue_implementation_plan.md`.
@@ -213,14 +38,19 @@ class InboundQueue {
   final SyncActivitySignaler? _activitySignaler;
   final Duration _leaseDuration;
 
-  final StreamController<QueueDepthSignal> _depthCtl =
-      StreamController<QueueDepthSignal>.broadcast();
+  late final QueueDepthEmitter _depthEmitter = QueueDepthEmitter(
+    loadStats: stats,
+  );
+  late final QueueMarkerAdvancer _markerAdvancer = QueueMarkerAdvancer(_db);
+  late final InboundQueueResurrection _resurrection = InboundQueueResurrection(
+    db: _db,
+    logging: _logging,
+    onDepthChanged: _depthEmitter.schedule,
+  );
 
-  Stream<QueueDepthSignal> get depthChanges => _depthCtl.stream;
+  Stream<QueueDepthSignal> get depthChanges => _depthEmitter.changes;
 
-  Future<void> dispose() async {
-    await _depthCtl.close();
-  }
+  Future<void> dispose() => _depthEmitter.dispose();
 
   /// Runs [body] inside a single `sync_db` transaction so a batch of
   /// `commitApplied` / `scheduleRetry` / `markSkipped` calls coalesce
@@ -229,46 +59,14 @@ class InboundQueue {
   /// caller has already opened a transaction — the coalescing happens
   /// transparently.
   ///
-  /// While the body runs, intermediate `_emitDepth` calls are held
-  /// back: firing them unawaited inside the transaction zone captures
-  /// the transaction's executor, which is invalid after commit and
-  /// trips drift's "transaction used after being closed" guard. A
-  /// single post-commit emission fires if anything inside the body
-  /// would have emitted.
-  Future<T> runInTransaction<T>(Future<T> Function() body) async {
-    // Only the OUTERMOST caller owns the dirty flag. A nested
-    // runInTransaction (enqueueBatch from inside an outer batch, for
-    // example) must not clear a dirty bit the outer batch already set,
-    // or the outer finalizer would skip its post-commit emission.
-    final isOutermost = _inBatchMode == 0;
-    _inBatchMode++;
-    if (isOutermost) {
-      _batchDirty = false;
-    }
-    try {
-      return await _db.transaction(body);
-    } finally {
-      _inBatchMode--;
-      if (isOutermost && _batchDirty) {
-        _batchDirty = false;
-        // Fire outside the transaction zone so `stats()` uses the
-        // root executor, not the now-closed transaction executor.
-        unawaited(_emitDepth());
-      }
-    }
-  }
-
-  int _inBatchMode = 0;
-  bool _batchDirty = false;
-
-  void _scheduleDepthEmit() {
-    if (_depthCtl.isClosed) return;
-    if (_inBatchMode > 0) {
-      _batchDirty = true;
-      return;
-    }
-    unawaited(_emitDepth());
-  }
+  /// While the body runs, intermediate depth emissions are held back
+  /// by [QueueDepthEmitter.holdDuring]: firing them unawaited inside
+  /// the transaction zone captures the transaction's executor, which
+  /// is invalid after commit and trips drift's "transaction used after
+  /// being closed" guard. A single post-commit emission fires if
+  /// anything inside the body would have emitted.
+  Future<T> runInTransaction<T>(Future<T> Function() body) =>
+      _depthEmitter.holdDuring(() => _db.transaction(body));
 
   // ---------------------------------------------------------------- enqueue
 
@@ -318,11 +116,11 @@ class InboundQueue {
           enqueuedAt: nowMs,
           // Enqueue in the drainable state; `peekBatchReady` will
           // flip it to `leased` atomically.
-          status: const Value(_statusEnqueued),
+          status: const Value(InboundQueueStatuses.enqueued),
           // Populate `json_path` from the Lotti sync payload when
           // present so `AttachmentIndex.pathRecorded` can match the
           // abandoned row later and resurrect it.
-          jsonPath: Value(_extractJsonPath(event)),
+          jsonPath: Value(extractJsonPath(event)),
         ),
         ts: ts,
       ));
@@ -360,7 +158,7 @@ class InboundQueue {
     );
 
     if (accepted > 0) {
-      _scheduleDepthEmit();
+      _depthEmitter.schedule();
     }
 
     return EnqueueResult(
@@ -404,6 +202,17 @@ class InboundQueue {
     }
   }
 
+  Future<int> _countTotal() async {
+    final table = _db.inboundEventQueue;
+    final count = table.queueId.count();
+    final row =
+        await (_db.selectOnly(table)
+              ..addColumns([count])
+              ..where(table.status.isIn(InboundQueueStatuses.active)))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
   // ------------------------------------------------------------------ peek
 
   /// Returns up to [maxBatch] entries ready now (origin_ts ascending,
@@ -440,7 +249,7 @@ class InboundQueue {
     final probe = _db.selectOnly(probeTable)
       ..addColumns([probeTable.queueId])
       ..where(
-        probeTable.status.isIn(_peekStatuses) &
+        probeTable.status.isIn(InboundQueueStatuses.peekable) &
             probeTable.nextDueAt.isSmallerOrEqualValue(nowMs) &
             probeTable.leaseUntil.isSmallerOrEqualValue(nowMs),
       )
@@ -453,7 +262,7 @@ class InboundQueue {
       final query = _db.select(_db.inboundEventQueue)
         ..where(
           (t) =>
-              t.status.isIn(_peekStatuses) &
+              t.status.isIn(InboundQueueStatuses.peekable) &
               t.nextDueAt.isSmallerOrEqualValue(nowMs) &
               t.leaseUntil.isSmallerOrEqualValue(nowMs),
         )
@@ -473,33 +282,14 @@ class InboundQueue {
       )..where((t) => t.queueId.isIn(ids))).write(
         InboundEventQueueCompanion(
           leaseUntil: Value(leaseUntilMs),
-          status: const Value(_statusLeased),
+          status: const Value(InboundQueueStatuses.leased),
         ),
       );
-      return [for (final r in rows) _entryFromRow(r, leaseUntilMs)];
+      return [
+        for (final r in rows)
+          InboundQueueEntry.fromRow(r, leaseUntil: leaseUntilMs),
+      ];
     });
-  }
-
-  InboundQueueEntry _entryFromRow(
-    InboundEventQueueItem row,
-    int leaseUntil,
-  ) => InboundQueueEntry(
-    queueId: row.queueId,
-    eventId: row.eventId,
-    roomId: row.roomId,
-    originTs: row.originTs,
-    producer: _producerFromName(row.producer),
-    enqueuedAt: row.enqueuedAt,
-    attempts: row.attempts,
-    leaseUntil: leaseUntil,
-    rawJson: row.rawJson,
-  );
-
-  InboundEventProducer _producerFromName(String name) {
-    for (final p in InboundEventProducer.values) {
-      if (p.name == name) return p;
-    }
-    return InboundEventProducer.live;
   }
 
   // ---------------------------------------------------------------- commit
@@ -511,7 +301,8 @@ class InboundQueue {
   /// retained for traceability; retention is owned by a follow-up
   /// pruner, not by the hot path.
   ///
-  /// Clamping (the real correctness fix): the marker advancement
+  /// Clamping (the real correctness fix) is owned by
+  /// [QueueMarkerAdvancer.advanceIfNewer]: the marker advancement
   /// considers the candidate `entry.originTs` but also the minimum
   /// `origin_ts` across *other* still-active rows for the same room.
   /// If an older row is still `enqueued`/`leased`/`retrying`, the
@@ -526,14 +317,14 @@ class InboundQueue {
         _db.inboundEventQueue,
       )..where((t) => t.queueId.equals(entry.queueId))).write(
         InboundEventQueueCompanion(
-          status: const Value(_statusApplied),
+          status: const Value(InboundQueueStatuses.applied),
           committedAt: Value(nowMs),
           // Drop the lease so the row no longer counts against any
           // concurrent peeker; status already excludes it from peeks.
           leaseUntil: const Value(0),
         ),
       );
-      markerAdvanced = await _advanceMarkerIfNewer(entry);
+      markerAdvanced = await _markerAdvancer.advanceIfNewer(entry);
     });
 
     _logging.log(
@@ -545,116 +336,7 @@ class InboundQueue {
       subDomain: _logSubCommit,
     );
     _activitySignaler?.pulseRx();
-    _scheduleDepthEmit();
-  }
-
-  /// Advances `queue_markers` for [entry]'s room if the candidate
-  /// timestamp — clamped against any still-active queue rows for the
-  /// same room — strictly moves the marker forward. Bypasses
-  /// `TimelineEventOrdering.isNewer` because `isNewer` treats a null
-  /// stored event id as "no marker" — but the marker can legitimately
-  /// carry a non-zero timestamp with a null event id (right after a
-  /// placeholder advance). Guarding on the timestamp directly, with
-  /// the durable event id as a tiebreaker only when both sides are
-  /// durable, prevents a later durable event with an older timestamp
-  /// from regressing `lastAppliedTs` (F2).
-  ///
-  /// The clamp: an older row still in `enqueued`/`leased`/`retrying`
-  /// for the same room pins the candidate marker at `oldestActive −
-  /// 1`. This is what makes bounded retries safe under the ledger
-  /// model — a poison row held as `abandoned` *does not* pin the
-  /// marker (it is out of the active set by design), but the same
-  /// event is still visible in the ledger for diagnostics and can be
-  /// resurrected by signal or user action.
-  Future<bool> _advanceMarkerIfNewer(InboundQueueEntry entry) async {
-    final marker = await (_db.select(
-      _db.queueMarkers,
-    )..where((t) => t.roomId.equals(entry.roomId))).getSingleOrNull();
-
-    // Probe the oldest still-active row for this room, excluding the
-    // row we're about to transition out of the active set (commit or
-    // abandon — caller is responsible for the status flip already).
-    final oldestActive = await _oldestActiveOriginTs(
-      roomId: entry.roomId,
-      excludeQueueId: entry.queueId,
-    );
-    final clampedCandidateTs = oldestActive == null
-        ? entry.originTs
-        : (entry.originTs < oldestActive ? entry.originTs : oldestActive - 1);
-
-    final storedTs = marker?.lastAppliedTs ?? 0;
-    final storedEventId = marker?.lastAppliedEventId;
-    final shouldAdvance =
-        storedTs == 0 ||
-        clampedCandidateTs > storedTs ||
-        (clampedCandidateTs == entry.originTs &&
-            entry.originTs == storedTs &&
-            (storedEventId == null ||
-                entry.eventId.compareTo(storedEventId) > 0));
-
-    if (!shouldAdvance) return false;
-
-    // Only attach a durable event id when the candidate ts matches
-    // the entry itself (i.e. we were not clamped). A clamp by some
-    // older active row means the marker advances to `oldestActive -
-    // 1`, which does not correspond to a specific event — leave the
-    // event id slot null so later commits can attach a real one.
-    final attachEventId =
-        clampedCandidateTs == entry.originTs && entry.eventId.startsWith(r'$');
-    final nextSeq = (marker?.lastAppliedCommitSeq ?? 0) + 1;
-    await _db
-        .into(_db.queueMarkers)
-        .insertOnConflictUpdate(
-          QueueMarkersCompanion.insert(
-            roomId: entry.roomId,
-            lastAppliedEventId: Value(
-              attachEventId ? entry.eventId : marker?.lastAppliedEventId,
-            ),
-            lastAppliedTs: Value(clampedCandidateTs),
-            lastAppliedCommitSeq: Value(nextSeq),
-          ),
-        );
-    return true;
-  }
-
-  /// Returns the minimum `origin_ts` among active (`enqueued`,
-  /// `leased`, `retrying`) rows for [roomId], excluding the row with
-  /// `queue_id = excludeQueueId` so the in-flight commit/abandon
-  /// does not pin the marker against itself. Null when no other
-  /// active row exists.
-  Future<int?> _oldestActiveOriginTs({
-    required String roomId,
-    required int excludeQueueId,
-  }) async {
-    final table = _db.inboundEventQueue;
-    final minTs = table.originTs.min();
-    // `status IN ('enqueued','leased','retrying')` is inlined as a
-    // literal SQL fragment via `CustomExpression` so the SQLite planner
-    // can prove this query's WHERE implies the partial index's WHERE
-    // clause (`idx_inbound_event_queue_active_room_ts`, declared
-    // `WHERE status IN ('enqueued','leased','retrying')`). Drift's
-    // `t.status.isIn(_clampStatuses)` binds the three status values as
-    // parameters; the planner can't see them at plan time, the
-    // partial-index match fails, and the predicate falls back to a
-    // rowid B-tree walk filtered by `room_id` + status equality. The
-    // 2026-05-12 desktop super_slow log captured this as `SEARCH
-    // inbound_event_queue` (no index name) at up to 862 ms per call.
-    // Literal values mirror `_statusEnqueued`, `_statusLeased`, and
-    // `_statusRetrying` declared at the top of this file — the
-    // partial-index DDL in `lib/database/sync_db.dart` uses the same
-    // string literals.
-    final row =
-        await (_db.selectOnly(table)
-              ..addColumns([minTs])
-              ..where(
-                table.roomId.equals(roomId) &
-                    const CustomExpression<bool>(
-                      "status IN ('enqueued','leased','retrying')",
-                    ) &
-                    table.queueId.equals(excludeQueueId).not(),
-              ))
-            .getSingle();
-    return row.read(minTs);
+    _depthEmitter.schedule();
   }
 
   // ----------------------------------------------------------------- retry
@@ -675,7 +357,7 @@ class InboundQueue {
         // Drop the lease so another drain iteration can pick up the
         // entry once the backoff elapses.
         leaseUntil: const Value(0),
-        status: const Value(_statusRetrying),
+        status: const Value(InboundQueueStatuses.retrying),
         lastErrorReason: Value(reason.name),
       ),
     );
@@ -690,10 +372,10 @@ class InboundQueue {
     // The retrying count is part of `QueueStats` and is observed by
     // diagnostics + tests; without an emit here, a leased→retrying
     // transition is invisible to depth subscribers until the next
-    // unrelated mutation. `_scheduleDepthEmit` is batch-aware, so a
+    // unrelated mutation. The emitter's schedule is batch-aware, so a
     // retry inside `runInTransaction` defers to the post-commit
     // emission instead of firing mid-transaction.
-    _scheduleDepthEmit();
+    _depthEmitter.schedule();
   }
 
   /// Flips [entry] to `status='abandoned'` when the worker gives up
@@ -714,13 +396,13 @@ class InboundQueue {
         _db.inboundEventQueue,
       )..where((t) => t.queueId.equals(entry.queueId))).write(
         InboundEventQueueCompanion(
-          status: const Value(_statusAbandoned),
+          status: const Value(InboundQueueStatuses.abandoned),
           abandonedAt: Value(nowMs),
           lastErrorReason: Value(resolvedReason),
           leaseUntil: const Value(0),
         ),
       );
-      markerAdvanced = await _advanceMarkerIfNewer(entry);
+      markerAdvanced = await _markerAdvancer.advanceIfNewer(entry);
     });
     _logging.log(
       LogDomain.sync,
@@ -728,26 +410,26 @@ class InboundQueue {
       'markerAdvanced=$markerAdvanced',
       subDomain: _logSubSkip,
     );
-    _scheduleDepthEmit();
+    _depthEmitter.schedule();
   }
 
   // ----------------------------------------------------------- resurrect
 
-  /// See [InboundQueueResurrection].
+  /// See [InboundQueueResurrection.resurrectByPath].
   Future<int> resurrectByPath(String path, {int hardCap = 50}) =>
-      resurrectByPathImpl(path, hardCap: hardCap);
+      _resurrection.resurrectByPath(path, hardCap: hardCap);
 
-  /// See [InboundQueueResurrection].
+  /// See [InboundQueueResurrection.resurrectByPaths].
   Future<int> resurrectByPaths(Iterable<String> paths, {int hardCap = 50}) =>
-      resurrectByPathsImpl(paths, hardCap: hardCap);
+      _resurrection.resurrectByPaths(paths, hardCap: hardCap);
 
-  /// See [InboundQueueResurrection].
+  /// See [InboundQueueResurrection.resurrectAll].
   Future<int> resurrectAll({int hardCap = 50}) =>
-      resurrectAllImpl(hardCap: hardCap);
+      _resurrection.resurrectAll(hardCap: hardCap);
 
-  /// See [InboundQueueResurrection].
+  /// See [InboundQueueResurrection.resurrectByReason].
   Future<int> resurrectByReason(String reasonName, {int hardCap = 50}) =>
-      resurrectByReasonImpl(reasonName, hardCap: hardCap);
+      _resurrection.resurrectByReason(reasonName, hardCap: hardCap);
 
   /// Flips every *active* entry belonging to a room other than
   /// [currentRoomId] to `abandoned`, preserving the ledger but
@@ -768,7 +450,7 @@ class InboundQueue {
         'WHERE room_id != ? '
         "  AND status IN ('enqueued', 'leased', 'retrying')",
         variables: [
-          Variable.withString(_statusAbandoned),
+          Variable.withString(InboundQueueStatuses.abandoned),
           Variable.withInt(nowMs),
           Variable.withString('strandedRoom'),
           Variable.withString(currentRoomId),
@@ -782,28 +464,9 @@ class InboundQueue {
         'queue.prune currentRoom=$currentRoomId abandoned=$moved',
         subDomain: _logSubPrune,
       );
-      _scheduleDepthEmit();
+      _depthEmitter.schedule();
     }
     return moved;
-  }
-
-  /// Best-effort helper to extract `jsonPath` from the Lotti sync
-  /// message content. Returns null when the event is not a sync
-  /// payload or the content shape does not match (defensive against
-  /// SDK event shape drift). A null result means the row cannot be
-  /// resurrected by path — manual "Retry all" still works.
-  static String? _extractJsonPath(Event event) {
-    try {
-      final content = event.content;
-      final raw = content['jsonPath'] ?? content['json_path'];
-      if (raw is String && raw.isNotEmpty) {
-        return raw.startsWith('/') ? raw : '/$raw';
-      }
-    } catch (_) {
-      // Intentionally empty: diagnostic-only; adapter will still
-      // record the path on apply failure if we miss it here.
-    }
-    return null;
   }
 
   // ---------------------------------------------------------------- stats
@@ -817,7 +480,7 @@ class InboundQueue {
   /// previous shape did three full-table scans plus a TEMP B-TREE on
   /// every poll because no index covered `(status, producer)` —
   /// production slow-query log captured 1014 ms / 2244 ms hits at
-  /// `_emitDepth` cadence. The v20 partial index
+  /// depth-emit cadence. The v20 partial index
   /// `idx_inbound_event_queue_status_producer_enqueued` makes the
   /// pivot index-only over a tight key range, and Dart pivots the
   /// (≤ statuses × producers) result rows into the existing
@@ -856,27 +519,27 @@ class InboundQueue {
       if (cnt <= 0 || status == null || producerName == null) continue;
       final rowOldest = row.read(oldestCol);
 
-      if (_activeStatuses.contains(status)) {
+      if (InboundQueueStatuses.active.contains(status)) {
         total += cnt;
-        final p = _producerFromName(producerName);
+        final p = producerFromName(producerName);
         byProducer[p] = (byProducer[p] ?? 0) + cnt;
         if (rowOldest != null && (oldest == null || rowOldest < oldest)) {
           oldest = rowOldest;
         }
       }
       switch (status) {
-        case _statusApplied:
+        case InboundQueueStatuses.applied:
           applied += cnt;
-        case _statusAbandoned:
+        case InboundQueueStatuses.abandoned:
           abandoned += cnt;
-        case _statusRetrying:
+        case InboundQueueStatuses.retrying:
           retrying += cnt;
       }
     }
 
     // Ready-now keeps its own probe: the predicate is
-    // `status IN _peekStatuses AND next_due_at <= now AND
-    // lease_until <= now`, which the (status, next_due_at,
+    // `status IN InboundQueueStatuses.peekable AND next_due_at <= now
+    // AND lease_until <= now`, which the (status, next_due_at,
     // lease_until) index satisfies as a per-status range scan and
     // does not align with the (status, producer, enqueued_at)
     // pivot's grouping.
@@ -884,7 +547,7 @@ class InboundQueue {
         await (_db.selectOnly(table)
               ..addColumns([countCol])
               ..where(
-                table.status.isIn(_peekStatuses) &
+                table.status.isIn(InboundQueueStatuses.peekable) &
                     table.nextDueAt.isSmallerOrEqualValue(nowMs) &
                     table.leaseUntil.isSmallerOrEqualValue(nowMs),
               ))
@@ -922,61 +585,4 @@ class InboundQueue {
     final value = row.data['ready_at'];
     return value is int ? value : null;
   }
-
-  Future<int> _countTotal() async {
-    final table = _db.inboundEventQueue;
-    final count = table.queueId.count();
-    final row =
-        await (_db.selectOnly(table)
-              ..addColumns([count])
-              ..where(table.status.isIn(_activeStatuses)))
-            .getSingle();
-    return row.read(count) ?? 0;
-  }
-
-  Future<void> _emitDepth() async {
-    // Coalesce rapid successive calls so only one stats() scan is in
-    // flight at a time; callers that arrive during the scan simply flip
-    // the "rerun" flag so the final state is eventually emitted.
-    if (_depthCtl.isClosed) return;
-    if (_emitInFlight) {
-      _emitPendingRerun = true;
-      return;
-    }
-    _emitInFlight = true;
-    try {
-      do {
-        _emitPendingRerun = false;
-        QueueStats snapshot;
-        try {
-          snapshot = await stats();
-        } catch (_) {
-          // The stats call issues multiple aggregate queries; if
-          // dispose() closes the controller (and the test tears down
-          // the DB) during one of those async gaps, drift throws.
-          // Swallow here because the emission is strictly diagnostic.
-          if (_depthCtl.isClosed) return;
-          rethrow;
-        }
-        // Re-check after the async gap — dispose() may have closed the
-        // controller while we were computing stats (common in test
-        // teardown, where the assertion completes before the fire-and-
-        // forget `_emitDepth` that was kicked off from enqueue/commit).
-        if (_depthCtl.isClosed) return;
-        _depthCtl.add(
-          QueueDepthSignal(
-            total: snapshot.total,
-            byProducer: snapshot.byProducer,
-            oldestEnqueuedAt: snapshot.oldestEnqueuedAt,
-            abandoned: snapshot.abandoned,
-          ),
-        );
-      } while (_emitPendingRerun && !_depthCtl.isClosed);
-    } finally {
-      _emitInFlight = false;
-    }
-  }
-
-  bool _emitInFlight = false;
-  bool _emitPendingRerun = false;
 }

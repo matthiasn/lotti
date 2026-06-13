@@ -211,8 +211,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // No highlight: neither the pulsing nor the timer border overlays.
-      expect(_byPrivateType('_PulsingBorder'), findsNothing);
-      expect(_byPrivateType('_TimerBorder'), findsNothing);
+      expect(_byPrivateType('PulsingBorder'), findsNothing);
+      expect(_byPrivateType('TimerBorder'), findsNothing);
     });
 
     testWidgets('renders with highlight when isHighlighted=true', (
@@ -238,7 +238,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // The scroll highlight mounts the pulsing border overlay.
-      expect(_byPrivateType('_PulsingBorder'), findsOneWidget);
+      expect(_byPrivateType('PulsingBorder'), findsOneWidget);
     });
 
     testWidgets('highlight toggles from false to true', (tester) async {
@@ -276,7 +276,7 @@ void main() {
 
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
-      expect(_byPrivateType('_PulsingBorder'), findsNothing);
+      expect(_byPrivateType('PulsingBorder'), findsNothing);
 
       // Ensure button is visible before tapping (may be below fold)
       await tester.ensureVisible(find.text('Highlight'));
@@ -285,7 +285,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // The pulsing border overlay appears once highlighted.
-      expect(_byPrivateType('_PulsingBorder'), findsOneWidget);
+      expect(_byPrivateType('PulsingBorder'), findsOneWidget);
     });
 
     testWidgets('highlight toggles from true to false', (tester) async {
@@ -326,7 +326,7 @@ void main() {
 
       // Verify button exists; highlight overlay starts present.
       expect(find.text('Clear'), findsOneWidget);
-      expect(_byPrivateType('_PulsingBorder'), findsOneWidget);
+      expect(_byPrivateType('PulsingBorder'), findsOneWidget);
 
       // The button can sit below the fold: bring it on screen so the tap
       // actually lands (the old warnIfMissed: false silently missed it).
@@ -336,7 +336,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Clearing the highlight removes the overlay.
-      expect(_byPrivateType('_PulsingBorder'), findsNothing);
+      expect(_byPrivateType('PulsingBorder'), findsNothing);
     });
 
     testWidgets('showAiEntry and isHighlighted work together', (tester) async {
@@ -359,7 +359,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(_byPrivateType('_PulsingBorder'), findsOneWidget);
+      expect(_byPrivateType('PulsingBorder'), findsOneWidget);
     });
   });
 
@@ -401,7 +401,7 @@ void main() {
 
       // The static timer border overlay renders, without leaving a
       // ticker active (the timer border does not animate).
-      expect(_byPrivateType('_TimerBorder'), findsOneWidget);
+      expect(_byPrivateType('TimerBorder'), findsOneWidget);
       expect(tester.binding.transientCallbackCount, 0);
     });
 
@@ -466,8 +466,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // Plain card: no border overlay of either kind.
-      expect(_byPrivateType('_TimerBorder'), findsNothing);
-      expect(_byPrivateType('_PulsingBorder'), findsNothing);
+      expect(_byPrivateType('TimerBorder'), findsNothing);
+      expect(_byPrivateType('PulsingBorder'), findsNothing);
     });
 
     testWidgets('scroll highlight renders when only isHighlighted=true', (
@@ -493,8 +493,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // The pulsing glow renders; the timer border does not.
-      expect(_byPrivateType('_PulsingBorder'), findsOneWidget);
-      expect(_byPrivateType('_TimerBorder'), findsNothing);
+      expect(_byPrivateType('PulsingBorder'), findsOneWidget);
+      expect(_byPrivateType('TimerBorder'), findsNothing);
     });
 
     testWidgets('timer highlight takes precedence in rendering order', (
@@ -522,8 +522,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       // The timer border wins; the pulsing highlight is not mounted.
-      expect(_byPrivateType('_TimerBorder'), findsOneWidget);
-      expect(_byPrivateType('_PulsingBorder'), findsNothing);
+      expect(_byPrivateType('TimerBorder'), findsOneWidget);
+      expect(_byPrivateType('PulsingBorder'), findsNothing);
     });
   });
 

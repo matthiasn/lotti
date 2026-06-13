@@ -1,6 +1,23 @@
-// The project row and its meta-span builder — part of the
-// project_list_shared library so it shares the row layout constants.
-part of 'project_list_shared.dart';
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
+import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
+import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// Horizontal padding applied to a project row's content. Exposed so the
+/// owning list (`project_list_shared.dart`) can align dividers to the same
+/// inset.
+const kProjectRowHorizontalPadding = 16.0;
+
+const _kProjectRowGap = 16.0;
+const _kProjectRowVerticalPadding = 6.0;
 
 /// A single project row in the list, with task-progress ring, task count,
 /// due label, and status tag.
@@ -14,7 +31,7 @@ class ProjectRow extends ConsumerWidget {
     required this.onTap,
     this.backgroundTopInset = 0,
     this.backgroundBottomInset = 0,
-    this.contentHorizontalPadding = _kProjectRowHorizontalPadding,
+    this.contentHorizontalPadding = kProjectRowHorizontalPadding,
     super.key,
   });
 
@@ -160,4 +177,96 @@ List<InlineSpan> _metaSpans(
     ),
     TextSpan(text: '$taskCount · $dueLabel', style: metaStyle),
   ];
+}
+
+Color _progressRingColor(
+  BuildContext context,
+  ProjectTaskRollupData taskRollup,
+) {
+  final completionPercent = taskRollup.completionPercent;
+
+  if (completionPercent >= 80) {
+    return ShowcasePalette.timeGreen(context);
+  }
+  if (completionPercent >= 50) {
+    return ShowcasePalette.amber(context);
+  }
+  return ShowcasePalette.error(context);
+}
+
+class _TinyProgressRing extends StatelessWidget {
+  const _TinyProgressRing({
+    required this.progress,
+    required this.progressColor,
+    required this.trackColor,
+    super.key,
+  });
+
+  final double progress;
+  final Color progressColor;
+  final Color trackColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: 16,
+      child: CustomPaint(
+        painter: _TinyProgressRingPainter(
+          progress: progress,
+          trackColor: trackColor,
+          progressColor: progressColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _TinyProgressRingPainter extends CustomPainter {
+  const _TinyProgressRingPainter({
+    required this.progress,
+    required this.trackColor,
+    required this.progressColor,
+  });
+
+  final double progress;
+  final Color trackColor;
+  final Color progressColor;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const strokeWidth = 2.285714;
+    const inset = strokeWidth / 2;
+    final rect = Rect.fromLTWH(
+      inset,
+      inset,
+      size.width - strokeWidth,
+      size.height - strokeWidth,
+    );
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas
+      ..drawArc(rect, -math.pi / 2, math.pi * 2, false, trackPaint)
+      ..drawArc(
+        rect,
+        -math.pi / 2,
+        math.pi * 2 * progress.clamp(0.0, 1.0),
+        false,
+        progressPaint,
+      );
+  }
+
+  @override
+  bool shouldRepaint(covariant _TinyProgressRingPainter oldDelegate) =>
+      oldDelegate.progress != progress ||
+      oldDelegate.trackColor != trackColor ||
+      oldDelegate.progressColor != progressColor;
 }

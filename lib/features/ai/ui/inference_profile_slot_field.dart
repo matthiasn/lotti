@@ -1,13 +1,23 @@
-part of 'inference_profile_form.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/ui/inference_profile_form.dart';
+import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/selection/selection_modal_base.dart';
 
 /// A slot picker field that shows the selected model and opens a picker modal.
-class _ModelSlotField extends ConsumerWidget {
-  const _ModelSlotField({
+class ModelSlotField extends ConsumerWidget {
+  const ModelSlotField({
     required this.label,
     required this.modelId,
     required this.onModelSelected,
     required this.filter,
     this.required = false,
+    super.key,
   });
 
   final String label;
@@ -39,7 +49,7 @@ class _ModelSlotField extends ConsumerWidget {
 
     final filteredModels = allModels.where(filter).toList();
 
-    final selectedModel = _resolveModelSlot(modelId, allModels);
+    final selectedModel = resolveModelSlot(modelId, allModels);
 
     return InkWell(
       onTap: filteredModels.isNotEmpty
@@ -159,7 +169,7 @@ class _SlotModelPickerContentState extends State<_SlotModelPickerContent> {
 
     // Resolve the slot value with the shared exact-id/unique-provider-id
     // rule so an ambiguous legacy id never marks multiple rows selected.
-    final resolvedSelectedId = _resolveModelSlot(
+    final resolvedSelectedId = resolveModelSlot(
       widget.selectedModelId,
       widget.models,
     )?.id;

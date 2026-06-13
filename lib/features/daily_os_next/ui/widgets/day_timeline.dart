@@ -6,22 +6,16 @@ import 'package:clock/clock.dart';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_fold_surface.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
-import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/utils/consts.dart';
 
-part 'day_timeline_block.dart';
-part 'day_timeline_fold_surface.dart';
+export 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_block.dart';
 
 /// Hour-by-hour timeline rendering of a [DraftPlan]. Read-only in
 /// this milestone.
@@ -401,7 +395,7 @@ class _DayTimelineState extends State<DayTimeline> {
                           top: timelineTopInset,
                           right: tokens.spacing.step3,
                           height: totalHeight,
-                          child: _FoldRegionLayer(
+                          child: FoldRegionLayer(
                             foldingState: foldingState,
                             pxPerMinute: _pxPerMinute,
                             onToggleFoldRegion: _toggleFoldRegion,
@@ -725,7 +719,7 @@ class _TimelinePane extends StatelessWidget {
                       pxPerMinute: pxPerMinute,
                     ),
                 for (final block in blocks)
-                  _BlockPosition(
+                  BlockPosition(
                     block: block,
                     windowStart: windowStart,
                     foldingState: foldingState,
@@ -736,7 +730,7 @@ class _TimelinePane extends StatelessWidget {
                         : (title) => onRenameBlock!(block, title),
                   ),
                 if (now != null)
-                  _NowLine(
+                  NowLine(
                     windowStart: windowStart,
                     now: now!,
                     foldingState: foldingState,

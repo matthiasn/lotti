@@ -1,9 +1,13 @@
-part of '../ai_summary_card.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _KindChip extends StatelessWidget {
-  const _KindChip({required this.meta});
+class KindChip extends StatelessWidget {
+  const KindChip({required this.meta, super.key});
 
-  final _KindMeta meta;
+  final KindMeta meta;
 
   @override
   Widget build(BuildContext context) {
@@ -30,11 +34,12 @@ class _KindChip extends StatelessWidget {
   }
 }
 
-class _RowActions extends StatelessWidget {
-  const _RowActions({
+class RowActions extends StatelessWidget {
+  const RowActions({
     required this.busy,
     required this.onReject,
     required this.onConfirm,
+    super.key,
   });
 
   final bool busy;
@@ -145,8 +150,8 @@ class _SquareIconButton extends StatelessWidget {
   }
 }
 
-class _ResolvedTag extends StatelessWidget {
-  const _ResolvedTag({required this.status});
+class ResolvedTag extends StatelessWidget {
+  const ResolvedTag({required this.status, super.key});
 
   final ChangeItemStatus? status;
 

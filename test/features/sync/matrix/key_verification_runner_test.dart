@@ -12,117 +12,15 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-// ignore_for_file: cascade_invocations, unnecessary_lambdas
-
-// MockKeyVerification and MockDeviceKeys come from the centralized
-// test/mocks/mocks.dart.
-
-enum _GeneratedVerificationStepKind {
-  ready,
-  key,
-  doneStep,
-  cancelStep,
-  customStep,
-}
-
-class _GeneratedVerificationTransition {
-  const _GeneratedVerificationTransition({
-    required this.kind,
-    required this.isDone,
-    required this.slot,
-  });
-
-  final _GeneratedVerificationStepKind kind;
-  final bool isDone;
-  final int slot;
-
-  String? get sdkStep {
-    switch (kind) {
-      case _GeneratedVerificationStepKind.ready:
-        return null;
-      case _GeneratedVerificationStepKind.key:
-        return 'm.key.verification.key';
-      case _GeneratedVerificationStepKind.doneStep:
-        return EventTypes.KeyVerificationDone;
-      case _GeneratedVerificationStepKind.cancelStep:
-        return 'm.key.verification.cancel';
-      case _GeneratedVerificationStepKind.customStep:
-        return 'generated.verification.step.$slot';
-    }
-  }
-
-  String get runnerStep => sdkStep ?? '';
-
-  bool get isTerminal =>
-      isDone ||
-      sdkStep == EventTypes.KeyVerificationDone ||
-      sdkStep == 'm.key.verification.cancel';
-
-  KeyVerificationEmoji get emoji => KeyVerificationEmoji((slot % 6) + 1);
-
-  @override
-  String toString() {
-    return '_GeneratedVerificationTransition('
-        'kind: $kind, '
-        'isDone: $isDone, '
-        'slot: $slot'
-        ')';
-  }
-}
-
-class _GeneratedVerificationScenario {
-  const _GeneratedVerificationScenario(this.transitions);
-
-  final List<_GeneratedVerificationTransition> transitions;
-
-  @override
-  String toString() => '_GeneratedVerificationScenario($transitions)';
-}
-
-extension _AnyGeneratedVerificationScenario on glados.Any {
-  glados.Generator<_GeneratedVerificationStepKind> get verificationStepKind =>
-      glados.AnyUtils(this).choose(_GeneratedVerificationStepKind.values);
-
-  glados.Generator<_GeneratedVerificationTransition>
-  get verificationTransition => glados.CombinableAny(this).combine3(
-    verificationStepKind,
-    glados.BoolAny(this).bool,
-    glados.IntAnys(this).intInRange(0, 24),
-    (
-      _GeneratedVerificationStepKind kind,
-      bool isDone,
-      int slot,
-    ) => _GeneratedVerificationTransition(
-      kind: kind,
-      isDone: isDone,
-      slot: slot,
-    ),
-  );
-
-  glados.Generator<_GeneratedVerificationScenario> get verificationScenario =>
-      glados.ListAnys(this)
-          .listWithLengthInRange(1, 12, verificationTransition)
-          .map(_GeneratedVerificationScenario.new);
-}
-
-/// Creates the synchronous broadcast controller every runner test publishes
-/// state changes through, registering its closure as a test teardown. Must be
-/// called from within a test body so [addTearDown] is in scope.
-StreamController<KeyVerificationRunner> _runnerController() {
-  final controller = StreamController<KeyVerificationRunner>.broadcast(
-    sync: true,
-  );
-  addTearDown(controller.close);
-  return controller;
-}
+import 'key_verification_runner_test_helpers.dart';
+// ignore_for_file: cascade_invocations
 
 void main() {
   group('KeyVerificationRunner', () {
     test(
       'publishes emoji state changes and stops when verification completes',
       () {
-        final controller = _runnerController();
+        final controller = runnerController();
 
         fakeAsync((async) {
           final verification = MockKeyVerification();
@@ -180,7 +78,7 @@ void main() {
     test(
       'invokes completion callback exactly once when done state changes',
       () {
-        final controller = _runnerController();
+        final controller = runnerController();
 
         fakeAsync((async) {
           final verification = MockKeyVerification();
@@ -227,7 +125,7 @@ void main() {
       'generated SDK updates publish only real state changes and restore '
       'the previous handler at terminal states',
       (scenario) {
-        final controller = _runnerController();
+        final controller = runnerController();
 
         fakeAsync((async) {
           final verification = MockKeyVerification();
@@ -338,18 +236,18 @@ void main() {
     test(
       'delegates accept and cancel actions to the key verification object',
       () {
-        final controller = _runnerController();
+        final controller = runnerController();
 
         fakeAsync((async) {
           final verification = MockKeyVerification();
           when(
-            () => verification.acceptVerification(),
+            verification.acceptVerification,
           ).thenAnswer((_) => Future<void>.value());
           when(
-            () => verification.acceptSas(),
+            verification.acceptSas,
           ).thenAnswer((_) => Future<void>.value());
           when(
-            () => verification.cancel(),
+            verification.cancel,
           ).thenAnswer((_) => Future<void>.value());
           when(() => verification.isDone).thenReturn(false);
 
@@ -377,9 +275,9 @@ void main() {
           runner.cancelVerification();
 
           verifyInOrder([
-            () => verification.acceptVerification(),
-            () => verification.acceptSas(),
-            () => verification.cancel(),
+            verification.acceptVerification,
+            verification.acceptSas,
+            verification.cancel,
           ]);
 
           async.elapse(const Duration(milliseconds: 300));
@@ -501,7 +399,7 @@ void main() {
 
   group('KeyVerificationRunner - SDK onUpdate forwarding', () {
     test('forwards SDK onUpdate to the previous handler', () {
-      final controller = _runnerController();
+      final controller = runnerController();
 
       fakeAsync((async) {
         final verification = MockKeyVerification();
@@ -539,7 +437,7 @@ void main() {
     });
 
     test('cancel step stops the timer', () {
-      final controller = _runnerController();
+      final controller = runnerController();
 
       fakeAsync((async) {
         final verification = MockKeyVerification();
@@ -598,7 +496,7 @@ void main() {
         },
       );
       when(
-        () => deviceKeys.startVerification(),
+        deviceKeys.startVerification,
       ).thenAnswer((_) async => verification);
       when(() => verification.lastStep).thenReturn(null);
       when(() => verification.sasEmojis).thenReturn([]);
@@ -612,7 +510,7 @@ void main() {
         service: service,
       );
 
-      verify(() => deviceKeys.startVerification()).called(1);
+      verify(deviceKeys.startVerification).called(1);
       expect(emittedRunners, isNotEmpty);
 
       final runner = emittedRunners.first;

@@ -95,7 +95,7 @@ Today the automatic path is narrower than the direct one:
 - automatic: `tryTranscribe()` and `tryAnalyzeImage()`
 - direct: transcription, image analysis, prompt generation, image-prompt generation, and image generation
 
-`promptGeneration` and `imagePromptGeneration` share the same dispatch arm in `triggerSkillProvider`: both route to `runner.runPromptGeneration()`, whose `runPromptGenerationImpl` derives the persisted response type from `skill.skillType.toResponseType` so the same runner serves both skill types.
+`promptGeneration` and `imagePromptGeneration` share the same dispatch arm in `triggerSkillProvider`: both route to `runner.runPromptGeneration()`, which derives the persisted response type from `skill.skillType.toResponseType` so the same runner serves both skill types.
 
 ```mermaid
 flowchart TD
@@ -363,10 +363,12 @@ Implementation details that matter:
 
 ## AI Activity Visualization
 
-`ui/animation/ai_state_shader_animation.dart` contains the shader-based AI
-activity visualizations (shader routes, assets, and the program cache in the
-library file, with the voice and thinking widget/painter families in the
-`ai_voice_input_shader.dart` and `ai_thinking_line_shader.dart` part files).
+`ui/animation/ai_state_shader_animation.dart` is the barrel for the
+shader-based AI activity visualizations. It holds the shader routes, assets,
+the program cache, and the shared `aiSetShaderColor` uniform helper, and it
+re-exports the voice and thinking widget/painter families from the standalone
+`ai_voice_input_shader.dart` and `ai_thinking_line_shader.dart` libraries
+(each imports the barrel back for the shared routes/cache/helper).
 Widgetbook remains the tuning surface via
 `widgetbook/ai_shader_animations_widgetbook.dart`; production task details use
 the decoder-bars thinking shader in the task action bar while inference is

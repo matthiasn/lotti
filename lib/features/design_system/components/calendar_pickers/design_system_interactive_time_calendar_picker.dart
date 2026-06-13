@@ -1,4 +1,9 @@
-part of 'design_system_time_calendar_picker.dart';
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_time_calendar_picker.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 class DesignSystemInteractiveTimeCalendarPicker extends StatefulWidget {
   const DesignSystemInteractiveTimeCalendarPicker({
@@ -30,7 +35,7 @@ class _DesignSystemInteractiveTimeCalendarPickerState
   @override
   void initState() {
     super.initState();
-    _selectedDate = _dateOnly(widget.initialSelectedDate);
+    _selectedDate = dateOnly(widget.initialSelectedDate);
     _visibleMonth = DateTime(_selectedDate.year, _selectedDate.month);
   }
 
@@ -47,7 +52,7 @@ class _DesignSystemInteractiveTimeCalendarPickerState
             : 0.16,
       ),
       pageBuilder: (dialogContext, animation, secondaryAnimation) {
-        final geometry = _TimeCalendarGeometry.fromTokens(
+        final geometry = TimeCalendarGeometry.fromTokens(
           dialogContext.designTokens,
         );
 
@@ -74,7 +79,7 @@ class _DesignSystemInteractiveTimeCalendarPickerState
                             .monthDialog,
                         visibleMonth: _visibleMonth,
                         selectedDate: _selectedDate,
-                        currentDate: _dateOnly(widget.currentDate),
+                        currentDate: dateOnly(widget.currentDate),
                         onMonthPressed: Navigator.of(dialogContext).pop,
                       ),
                     ),
@@ -117,7 +122,7 @@ class _DesignSystemInteractiveTimeCalendarPickerState
 
   void _selectDay(DateTime date) {
     setState(() {
-      _selectedDate = _dateOnly(date);
+      _selectedDate = dateOnly(date);
       _visibleMonth = DateTime(date.year, date.month);
     });
   }
@@ -129,7 +134,7 @@ class _DesignSystemInteractiveTimeCalendarPickerState
       presentation: widget.presentation,
       visibleMonth: _visibleMonth,
       selectedDate: _selectedDate,
-      currentDate: _dateOnly(widget.currentDate),
+      currentDate: dateOnly(widget.currentDate),
       onMonthYearPressed: _showMonthDialog,
       onPreviousPressed: () => _changeMonth(-1),
       onNextPressed: () => _changeMonth(1),
@@ -138,12 +143,13 @@ class _DesignSystemInteractiveTimeCalendarPickerState
   }
 }
 
-class _MonthSelectionDialogCard extends StatefulWidget {
-  const _MonthSelectionDialogCard({
+class MonthSelectionDialogCard extends StatefulWidget {
+  const MonthSelectionDialogCard({
     required this.mode,
     required this.visibleMonth,
     required this.selectedMonth,
     this.onMonthPressed,
+    super.key,
   });
 
   final DesignSystemTimeCalendarPickerMode mode;
@@ -152,11 +158,11 @@ class _MonthSelectionDialogCard extends StatefulWidget {
   final ValueChanged<DateTime>? onMonthPressed;
 
   @override
-  State<_MonthSelectionDialogCard> createState() =>
+  State<MonthSelectionDialogCard> createState() =>
       _MonthSelectionDialogCardState();
 }
 
-class _MonthSelectionDialogCardState extends State<_MonthSelectionDialogCard> {
+class _MonthSelectionDialogCardState extends State<MonthSelectionDialogCard> {
   late int _visibleYear;
 
   @override
@@ -167,8 +173,8 @@ class _MonthSelectionDialogCardState extends State<_MonthSelectionDialogCard> {
 
   @override
   Widget build(BuildContext context) {
-    final palette = _TimeCalendarPalette.fromMode(widget.mode);
-    final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
+    final palette = TimeCalendarPalette.fromMode(widget.mode);
+    final geometry = TimeCalendarGeometry.fromTokens(context.designTokens);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
     final months = List.generate(
       12,
@@ -176,7 +182,7 @@ class _MonthSelectionDialogCardState extends State<_MonthSelectionDialogCard> {
           DateFormat.MMM(localeTag).format(DateTime(_visibleYear, index + 1)),
     );
 
-    return _CalendarMaterialCard(
+    return CalendarMaterialCard(
       palette: palette,
       geometry: geometry,
       padding: geometry.monthDialogPadding,
@@ -184,7 +190,7 @@ class _MonthSelectionDialogCardState extends State<_MonthSelectionDialogCard> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _MonthHeader(
+          MonthHeader(
             palette: palette,
             geometry: geometry,
             label: '$_visibleYear',
@@ -197,7 +203,7 @@ class _MonthSelectionDialogCardState extends State<_MonthSelectionDialogCard> {
             Row(
               children: [
                 for (var column = 0; column < 4; column++)
-                  _MonthButton(
+                  MonthButton(
                     palette: palette,
                     label: months[row * 4 + column],
                     selected:

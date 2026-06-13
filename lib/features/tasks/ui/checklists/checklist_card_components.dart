@@ -1,7 +1,15 @@
-part of 'checklist_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
+import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
-class _Header extends StatelessWidget {
-  const _Header({
+class Header extends StatelessWidget {
+  const Header({
     required this.title,
     required this.isExpanded,
     required this.isEditingTitle,
@@ -19,6 +27,7 @@ class _Header extends StatelessWidget {
     this.onDelete,
     this.onExportMarkdown,
     this.onShareMarkdown,
+    super.key,
   });
 
   final String title;
@@ -145,13 +154,14 @@ class _Header extends StatelessWidget {
 // Sorting mode header — drag handle + title + progress, no chevron/menu.
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SortingHeader extends StatelessWidget {
-  const _SortingHeader({
+class SortingHeader extends StatelessWidget {
+  const SortingHeader({
     required this.title,
     required this.completedCount,
     required this.totalCount,
     required this.completionRate,
     this.reorderIndex,
+    super.key,
   });
 
   final String title;
@@ -519,5 +529,26 @@ class _HeaderMenu extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Body — item list + add field
+// Progress ring helper
 // ─────────────────────────────────────────────────────────────────────────────
+
+/// Bright green progress ring used in checklist headers.
+Widget buildChecklistProgressRing({
+  required double completionRate,
+  required Color lowEmphasisColor,
+  required String semanticsLabel,
+  double size = 20,
+  double strokeWidth = 3,
+}) {
+  return SizedBox(
+    width: size,
+    height: size,
+    child: CircularProgressIndicator(
+      color: successColor,
+      backgroundColor: lowEmphasisColor.withValues(alpha: 0.3),
+      value: completionRate,
+      strokeWidth: strokeWidth,
+      semanticsLabel: semanticsLabel,
+    ),
+  );
+}

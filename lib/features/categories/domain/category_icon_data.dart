@@ -1,4 +1,6 @@
-part of 'category_icon.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 
 /// Icon glyph for every [CategoryIcon]. Exhaustiveness is enforced by
 /// the all-values loop in `category_icon_test.dart`.

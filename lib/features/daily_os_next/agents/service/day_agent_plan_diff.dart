@@ -1,9 +1,19 @@
-part of 'day_agent_plan_service.dart';
+import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart'
+    show DayAgentCaptureException;
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
+import 'package:uuid/uuid.dart';
+
+const _uuid = Uuid();
 
 // Plan-diff machinery: change parsing, validation, application, and the
 // snapshot/change model types.
 
-_DiffChange _parseDiffChange({
+PlanDiffChange parsePlanDiffChange({
   required Object? raw,
   required DayPlanEntity plan,
   required Map<String, PlannedBlock> blockById,
@@ -12,19 +22,19 @@ _DiffChange _parseDiffChange({
     throw const DayAgentCaptureException('change must be an object');
   }
   final data = raw.cast<String, dynamic>();
-  final actionName = _requiredString(data, 'action');
-  final action = parseEnumByName(_DiffAction.values, actionName);
+  final actionName = requiredStringArg(data, 'action');
+  final action = parseEnumByName(PlanDiffAction.values, actionName);
   if (action == null) {
     throw DayAgentCaptureException(
       'change action must be moved, added, or dropped (got "$actionName")',
     );
   }
-  final reason = _requiredString(data, 'reason');
-  final blockId = _optionalString(data['blockId']);
-  final from = _optionalBlockSnapshot(data['from'], 'from', plan);
-  final to = _optionalBlockSnapshot(data['to'], 'to', plan);
+  final reason = requiredStringArg(data, 'reason');
+  final blockId = optionalStringArg(data['blockId']);
+  final from = optionalBlockSnapshot(data['from'], 'from', plan);
+  final to = optionalBlockSnapshot(data['to'], 'to', plan);
   switch (action) {
-    case _DiffAction.moved:
+    case PlanDiffAction.moved:
       if (blockId == null) {
         throw const DayAgentCaptureException(
           'moved change requires blockId',
@@ -43,7 +53,7 @@ _DiffChange _parseDiffChange({
           'moved change requires `from`',
         );
       }
-    case _DiffAction.added:
+    case PlanDiffAction.added:
       if (to == null) {
         throw const DayAgentCaptureException('added change requires `to`');
       }
@@ -62,7 +72,7 @@ _DiffChange _parseDiffChange({
           'added change requires `to.categoryId`',
         );
       }
-    case _DiffAction.dropped:
+    case PlanDiffAction.dropped:
       if (blockId == null) {
         throw const DayAgentCaptureException(
           'dropped change requires blockId',
@@ -79,7 +89,7 @@ _DiffChange _parseDiffChange({
         );
       }
   }
-  return _DiffChange(
+  return PlanDiffChange(
     action: action,
     reason: reason,
     blockId: blockId,
@@ -88,7 +98,7 @@ _DiffChange _parseDiffChange({
   );
 }
 
-_BlockSnapshot? _optionalBlockSnapshot(
+PlanBlockSnapshot? optionalBlockSnapshot(
   Object? raw,
   String label,
   DayPlanEntity plan,
@@ -98,20 +108,20 @@ _BlockSnapshot? _optionalBlockSnapshot(
     throw DayAgentCaptureException('`$label` must be an object');
   }
   final data = raw.cast<String, dynamic>();
-  final start = _optionalDateTime(data['start']);
-  final end = _optionalDateTime(data['end']);
+  final start = optionalDateTimeArg(data['start']);
+  final end = optionalDateTimeArg(data['end']);
   if (start != null && end != null && !end.isAfter(start)) {
     throw DayAgentCaptureException(
       '`$label.end` must be after `$label.start`',
     );
   }
   if (start != null) {
-    _assertWithinDay(start, plan.planDate, '$label.start');
+    assertWithinDay(start, plan.planDate, '$label.start');
   }
   if (end != null) {
-    _assertWithinDay(end, plan.planDate, '$label.end');
+    assertWithinDay(end, plan.planDate, '$label.end');
   }
-  final typeRaw = _optionalString(data['type']);
+  final typeRaw = optionalStringArg(data['type']);
   final type = typeRaw == null
       ? null
       : parseEnumByName(PlannedBlockType.values, typeRaw);
@@ -120,18 +130,18 @@ _BlockSnapshot? _optionalBlockSnapshot(
       '`$label.type` must be ai, cal, buffer, or manual (got "$typeRaw")',
     );
   }
-  return _BlockSnapshot(
+  return PlanBlockSnapshot(
     start: start,
     end: end,
-    title: _optionalString(data['title']),
-    categoryId: _optionalString(data['categoryId']),
-    taskId: _optionalString(data['taskId']),
+    title: optionalStringArg(data['title']),
+    categoryId: optionalStringArg(data['categoryId']),
+    taskId: optionalStringArg(data['taskId']),
     type: type,
-    reason: _optionalString(data['reason']),
+    reason: optionalStringArg(data['reason']),
   );
 }
 
-void _assertWithinDay(
+void assertWithinDay(
   DateTime time,
   DateTime planDate,
   String label,
@@ -145,8 +155,8 @@ void _assertWithinDay(
   }
 }
 
-String _formatChangeSummary(
-  _DiffChange change,
+String formatPlanChangeSummary(
+  PlanDiffChange change,
   Map<String, PlannedBlock> blockById,
 ) {
   String fmt(DateTime? time) =>
@@ -155,17 +165,17 @@ String _formatChangeSummary(
   final title =
       change.to?.title ?? change.from?.title ?? liveBlock?.title ?? 'block';
   switch (change.action) {
-    case _DiffAction.moved:
+    case PlanDiffAction.moved:
       final fromStart = fmt(change.from?.start ?? liveBlock?.startTime);
       final fromEnd = fmt(change.from?.end ?? liveBlock?.endTime);
       final toStart = fmt(change.to?.start);
       final toEnd = fmt(change.to?.end);
       return 'Move "$title" from $fromStart–$fromEnd to $toStart–$toEnd';
-    case _DiffAction.added:
+    case PlanDiffAction.added:
       final start = fmt(change.to?.start);
       final end = fmt(change.to?.end);
       return 'Add "$title" at $start–$end';
-    case _DiffAction.dropped:
+    case PlanDiffAction.dropped:
       final start = fmt(change.from?.start ?? liveBlock?.startTime);
       final end = fmt(change.from?.end ?? liveBlock?.endTime);
       return 'Drop "$title" at $start–$end';
@@ -186,7 +196,7 @@ String _formatChangeSummary(
 ///     override against [allowedCategoryIds].
 ///   * `drop_block` only needs the blockId still to exist in the
 ///     simulated set.
-void _validateApplicableBatch(
+void validateApplicablePlanDiffBatch(
   Iterable<MapEntry<int, ChangeItem>> entries,
   DayPlanEntity plan,
   Set<String> allowedCategoryIds,
@@ -310,12 +320,12 @@ void _validateApplicableBatch(
   }
 }
 
-List<PlannedBlock> _applyItem(
+List<PlannedBlock> applyPlanDiffItem(
   ChangeItem item,
   List<PlannedBlock> blocks, {
   required PlannedBlockState addedBlockState,
 }) {
-  // Defensive: `_validateApplicableBatch` runs immediately before this
+  // Defensive: `validateApplicablePlanDiffBatch` runs immediately before this
   // and rejects every malformed item, so the assertions below should be
   // unreachable in normal flow. They exist so an accidental future
   // bypass surfaces a clean `DayAgentCaptureException` instead of a
@@ -334,7 +344,7 @@ List<PlannedBlock> _applyItem(
       final block = out[index];
       // NB: `args['reason']` is the change-level rationale (why the user
       // wants this edit); the per-block reason override travels under
-      // `args['blockReason']` per `_DiffChange.toArgs()`. Mixing them
+      // `args['blockReason']` per `PlanDiffChange.toArgs()`. Mixing them
       // would overwrite the block's placement reason with the diff
       // motivation.
       out[index] = block.copyWith(
@@ -353,7 +363,7 @@ List<PlannedBlock> _applyItem(
     case 'add_block':
       out.add(
         PlannedBlock(
-          id: 'block_${DayAgentPlanService._uuid.v4()}',
+          id: 'block_${_uuid.v4()}',
           categoryId: args['categoryId'] as String,
           startTime: _argDate(args, 'toStart')!,
           endTime: _argDate(args, 'toEnd')!,
@@ -377,7 +387,7 @@ List<PlannedBlock> _applyItem(
   return out;
 }
 
-PlannedBlockState _stateForAcceptedAddedBlock(
+PlannedBlockState stateForAcceptedAddedBlock(
   DayPlanStatus planStatus,
 ) {
   return planStatus.maybeMap(
@@ -399,10 +409,10 @@ PlannedBlockType? _argType(Map<String, dynamic> args) {
   return parseEnumByName(PlannedBlockType.values, raw);
 }
 
-enum _DiffAction { moved, added, dropped }
+enum PlanDiffAction { moved, added, dropped }
 
-class _DiffChange {
-  const _DiffChange({
+class PlanDiffChange {
+  const PlanDiffChange({
     required this.action,
     required this.reason,
     this.blockId,
@@ -410,16 +420,16 @@ class _DiffChange {
     this.to,
   });
 
-  final _DiffAction action;
+  final PlanDiffAction action;
   final String reason;
   final String? blockId;
-  final _BlockSnapshot? from;
-  final _BlockSnapshot? to;
+  final PlanBlockSnapshot? from;
+  final PlanBlockSnapshot? to;
 
   String get toolName => switch (action) {
-    _DiffAction.moved => 'move_block',
-    _DiffAction.added => 'add_block',
-    _DiffAction.dropped => 'drop_block',
+    PlanDiffAction.moved => 'move_block',
+    PlanDiffAction.added => 'add_block',
+    PlanDiffAction.dropped => 'drop_block',
   };
 
   Map<String, dynamic> toArgs() {
@@ -457,8 +467,8 @@ class _DiffChange {
   }
 }
 
-class _BlockSnapshot {
-  const _BlockSnapshot({
+class PlanBlockSnapshot {
+  const PlanBlockSnapshot({
     this.start,
     this.end,
     this.title,

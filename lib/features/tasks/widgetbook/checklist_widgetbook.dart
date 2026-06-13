@@ -3,11 +3,9 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/widgetbook/checklist_mock_data.dart';
+import 'package:lotti/features/tasks/widgetbook/checklist_widgetbook_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:widgetbook/widgetbook.dart';
-
-part 'checklist_widgetbook_widgets.dart';
 
 WidgetbookFolder buildChecklistWidgetbookFolder() {
   return WidgetbookFolder(
@@ -165,7 +163,7 @@ class _ChecklistShowcasePageState extends State<ChecklistShowcasePage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _Header(
+              Header(
                 title: ChecklistMockData.checklistTitle,
                 completedCount: _completedCount,
                 totalCount: _items.length,
@@ -176,12 +174,12 @@ class _ChecklistShowcasePageState extends State<ChecklistShowcasePage> {
                     setState(() => _isExpanded = !_isExpanded),
               ),
               if (_isExpanded && _items.isNotEmpty) ...[
-                _FilterTabs(
+                FilterTabs(
                   filter: _filter,
                   tokens: tokens,
                   onFilterChanged: (f) => setState(() => _filter = f),
                 ),
-                _ItemsColumn(
+                ItemsColumn(
                   items: filtered,
                   tokens: tokens,
                   onToggle: _toggleItem,
@@ -196,7 +194,7 @@ class _ChecklistShowcasePageState extends State<ChecklistShowcasePage> {
                   color: tokens.colors.decorative.level01,
                 ),
                 const SizedBox(height: 8),
-                _AddItemField(
+                AddItemField(
                   controller: _addController,
                   focusNode: _addFocus,
                   hintText: messages.checklistAddItem,

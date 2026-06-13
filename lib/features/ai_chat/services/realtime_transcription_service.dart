@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,13 +6,13 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
-import 'package:lotti/features/ai/util/audio_converter_channel.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
-import 'package:lotti/features/ai/util/pcm_amplitude.dart';
+import 'package:lotti/features/ai_chat/services/realtime_audio_buffer.dart';
+import 'package:lotti/features/ai_chat/services/realtime_audio_writer.dart';
+import 'package:lotti/features/ai_chat/services/realtime_transcript_merge.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:meta/meta.dart';
 
 enum _RealtimeBackendKind { mistral, mlxAudio }
 
@@ -34,22 +33,21 @@ class RealtimeTranscriptionService {
     this._ref, {
     MistralRealtimeTranscriptionRepository? repository,
     MlxAudioChannel? mlxAudioChannel,
+    RealtimeAudioBuffer? audioBuffer,
+    RealtimeAudioWriter? audioWriter,
     this._doneTimeout = const Duration(seconds: 10),
   }) : _repository = repository ?? MistralRealtimeTranscriptionRepository(),
-       _mlxAudioChannel = mlxAudioChannel ?? MlxAudioChannel();
+       _mlxAudioChannel = mlxAudioChannel ?? MlxAudioChannel(),
+       _audioBuffer = audioBuffer ?? RealtimeAudioBuffer(),
+       _audioWriter = audioWriter ?? RealtimeAudioWriter();
 
   final Ref _ref;
   final MistralRealtimeTranscriptionRepository _repository;
   final MlxAudioChannel _mlxAudioChannel;
   final Duration _doneTimeout;
-  final _pcmBuffer = BytesBuilder(copy: false);
-  final _amplitudeController = StreamController<double>.broadcast();
+  final RealtimeAudioBuffer _audioBuffer;
+  final RealtimeAudioWriter _audioWriter;
   final _deltaBuffer = StringBuffer();
-
-  /// Maximum PCM buffer size: ~2 minutes at 16kHz × 16-bit × mono = ~3.84 MB.
-  /// Beyond this, older audio is discarded (transcription still works via
-  /// WebSocket streaming — the buffer is only for the saved audio file).
-  static const _maxPcmBufferBytes = 3840000;
 
   StreamSubscription<Uint8List>? _pcmSubscription;
   StreamSubscription<String>? _deltaSubscription;
@@ -62,7 +60,7 @@ class RealtimeTranscriptionService {
   bool _isActive = false;
 
   /// Stream of amplitude values (dBFS) computed from PCM chunks.
-  Stream<double> get amplitudeStream => _amplitudeController.stream;
+  Stream<double> get amplitudeStream => _audioBuffer.amplitudeStream;
 
   /// Whether a real-time transcription session is active.
   bool get isActive => _isActive;
@@ -144,7 +142,7 @@ class RealtimeTranscriptionService {
     }
 
     _isActive = true;
-    _pcmBuffer.clear();
+    _audioBuffer.clear();
     _deltaBuffer.clear();
     _detectedLanguage = null;
     _lastMlxConfirmedText = '';
@@ -169,7 +167,7 @@ class RealtimeTranscriptionService {
     _pcmSubscription = pcmStream.listen(
       (chunk) {
         _repository.sendAudioChunk(chunk);
-        _bufferPcmAndAmplitude(chunk);
+        _audioBuffer.addChunk(chunk);
       },
       onError: (Object error) {
         getIt<DomainLogger>().error(
@@ -253,7 +251,10 @@ class RealtimeTranscriptionService {
       // 4. Wait for transcription.done — timeout starts here so the full
       //    budget applies to waiting for the server, not recorder shutdown.
       final done = await doneCompleter.future.timeout(_doneTimeout);
-      transcript = _moreCompleteTranscript(done.text, _deltaBuffer.toString());
+      transcript = moreCompleteTranscript(
+        finalText: done.text,
+        accumulatedText: _deltaBuffer.toString(),
+      );
     } on TimeoutException {
       // Read delta buffer *after* the timeout so any late-arriving deltas
       // (from audio already in-flight when we cancelled the PCM subscription)
@@ -273,7 +274,10 @@ class RealtimeTranscriptionService {
     final detectedLanguage = _detectedLanguage;
 
     // 5. Write temp WAV and convert to M4A
-    final audioFilePath = await _saveAudio(outputPath);
+    final audioFilePath = await _audioWriter.saveAudio(
+      pcm: _audioBuffer.toBytes(),
+      outputPath: outputPath,
+    );
 
     // 6. Disconnect
     await _cleanup();
@@ -371,7 +375,7 @@ class RealtimeTranscriptionService {
             );
           }),
         );
-        _bufferPcmAndAmplitude(chunk);
+        _audioBuffer.addChunk(chunk);
       },
       onError: (Object error) {
         getIt<DomainLogger>().error(
@@ -401,7 +405,10 @@ class RealtimeTranscriptionService {
       await _mlxAudioChannel.stopRealtimeTranscription();
 
       final done = await doneCompleter.future.timeout(_doneTimeout);
-      transcript = _moreCompleteTranscript(done.text, _deltaBuffer.toString());
+      transcript = moreCompleteTranscript(
+        finalText: done.text,
+        accumulatedText: _deltaBuffer.toString(),
+      );
     } on TimeoutException {
       transcript = _deltaBuffer.toString();
       usedFallback = true;
@@ -422,7 +429,10 @@ class RealtimeTranscriptionService {
       );
     }
 
-    final audioFilePath = await _saveAudio(outputPath);
+    final audioFilePath = await _audioWriter.saveAudio(
+      pcm: _audioBuffer.toBytes(),
+      outputPath: outputPath,
+    );
     await _cleanup();
 
     return RealtimeStopResult(
@@ -441,7 +451,7 @@ class RealtimeTranscriptionService {
       return;
     }
 
-    final delta = _confirmedTextDelta(
+    final delta = confirmedTextDelta(
       previous: _lastMlxConfirmedText,
       next: text,
     );
@@ -451,176 +461,10 @@ class RealtimeTranscriptionService {
     onDelta(delta);
   }
 
-  String _moreCompleteTranscript(String finalText, String accumulatedText) {
-    final trimmedFinal = finalText.trim();
-    final trimmedAccumulated = accumulatedText.trim();
-    if (trimmedAccumulated.length > trimmedFinal.length) {
-      return accumulatedText;
-    }
-    return finalText;
-  }
-
-  /// Test-only access to the MLX confirmed-text delta extraction, so its
-  /// algebra can be property-tested without driving the realtime pipeline.
-  @visibleForTesting
-  String debugConfirmedTextDelta({
-    required String previous,
-    required String next,
-  }) => _confirmedTextDelta(previous: previous, next: next);
-
-  String _confirmedTextDelta({
-    required String previous,
-    required String next,
-  }) {
-    if (previous.isEmpty || next.startsWith(previous)) {
-      return next.substring(previous.length);
-    }
-    if (previous.startsWith(next)) {
-      return '';
-    }
-
-    final overlapLength = _suffixPrefixOverlapLength(previous, next);
-    if (overlapLength > 0) {
-      return next.substring(overlapLength);
-    }
-
-    return next.substring(_commonPrefixLength(previous, next));
-  }
-
-  int _suffixPrefixOverlapLength(String previous, String next) {
-    final maxLength = previous.length < next.length
-        ? previous.length
-        : next.length;
-    for (var length = maxLength; length > 0; length--) {
-      if (previous.endsWith(next.substring(0, length))) {
-        return length;
-      }
-    }
-    return 0;
-  }
-
-  int _commonPrefixLength(String a, String b) {
-    final maxLength = a.length < b.length ? a.length : b.length;
-    for (var i = 0; i < maxLength; i++) {
-      if (a.codeUnitAt(i) != b.codeUnitAt(i)) {
-        return i;
-      }
-    }
-    return maxLength;
-  }
-
-  void _bufferPcmAndAmplitude(Uint8List chunk) {
-    final newTotal = _pcmBuffer.length + chunk.length;
-    if (newTotal > _maxPcmBufferBytes) {
-      final existing = _pcmBuffer.takeBytes();
-      if (chunk.length >= _maxPcmBufferBytes) {
-        _pcmBuffer.add(
-          chunk.sublist(chunk.length - _maxPcmBufferBytes),
-        );
-      } else {
-        final excess = newTotal - _maxPcmBufferBytes;
-        final kept = existing.length - excess;
-        final merged = Uint8List(kept + chunk.length)
-          ..setRange(0, kept, existing, excess)
-          ..setRange(kept, kept + chunk.length, chunk);
-        _pcmBuffer.add(merged);
-      }
-    } else {
-      _pcmBuffer.add(chunk);
-    }
-
-    if (!_amplitudeController.isClosed) {
-      final dbfs = computeDbfsFromPcm16(chunk);
-      _amplitudeController.add(dbfs);
-    }
-  }
-
-  Future<String?> _saveAudio(String outputPath) async {
-    if (_pcmBuffer.length == 0) return null;
-
-    final tempWavPath =
-        '${Directory.systemTemp.path}/lotti_rt_'
-        '${DateTime.now().millisecondsSinceEpoch}.wav';
-
-    try {
-      await _writeTempWav(tempWavPath);
-
-      // Attempt M4A conversion
-      final m4aPath = outputPath.endsWith('.m4a')
-          ? outputPath
-          : '$outputPath.m4a';
-
-      final converted = await AudioConverterChannel.convertWavToM4a(
-        inputPath: tempWavPath,
-        outputPath: m4aPath,
-      );
-
-      if (converted) {
-        // Delete temp WAV on successful conversion
-        try {
-          await File(tempWavPath).delete();
-        } catch (_) {}
-        return m4aPath;
-      } else {
-        // Move WAV to final location as fallback
-        final wavOutputPath = outputPath.endsWith('.wav')
-            ? outputPath
-            : '$outputPath.wav';
-        await File(tempWavPath).rename(wavOutputPath);
-        return wavOutputPath;
-      }
-    } catch (e) {
-      getIt<DomainLogger>().error(
-        LogDomain.speech,
-        e,
-        subDomain: 'saveAudio',
-      );
-      // Try to keep the WAV if it exists
-      if (File(tempWavPath).existsSync()) {
-        return tempWavPath;
-      }
-      return null;
-    }
-  }
-
-  Future<void> _writeTempWav(String path) async {
-    final pcmData = _pcmBuffer.toBytes();
-    final dataSize = pcmData.length;
-
-    // WAV header: 44 bytes
-    // PCM 16-bit signed LE, 16kHz, mono
-    const sampleRate = 16000;
-    const channels = 1;
-    const bitsPerSample = 16;
-    const byteRate = sampleRate * channels * bitsPerSample ~/ 8;
-    const blockAlign = channels * bitsPerSample ~/ 8;
-
-    final header = ByteData(44)
-      // RIFF header
-      ..setUint32(0, 0x52494646) // 'RIFF'
-      ..setUint32(4, 36 + dataSize, Endian.little) // file size - 8
-      ..setUint32(8, 0x57415645) // 'WAVE'
-      // fmt chunk
-      ..setUint32(12, 0x666D7420) // 'fmt '
-      ..setUint32(16, 16, Endian.little) // chunk size
-      ..setUint16(20, 1, Endian.little) // PCM format
-      ..setUint16(22, channels, Endian.little)
-      ..setUint32(24, sampleRate, Endian.little)
-      ..setUint32(28, byteRate, Endian.little)
-      ..setUint16(32, blockAlign, Endian.little)
-      ..setUint16(34, bitsPerSample, Endian.little)
-      // data chunk
-      ..setUint32(36, 0x64617461) // 'data'
-      ..setUint32(40, dataSize, Endian.little);
-
-    final file = File(path);
-    final sink = file.openWrite()
-      ..add(header.buffer.asUint8List())
-      ..add(pcmData);
-    await sink.flush();
-    await sink.close();
-  }
-
+  /// Cancels backend subscriptions, resets per-session state, and
+  /// disconnects the active backend. The audio buffer is left intact —
+  /// `stop` reads it just before calling this, and the next
+  /// [startRealtimeTranscription] clears it.
   Future<void> _cleanup() async {
     _isActive = false;
     await _deltaSubscription?.cancel();

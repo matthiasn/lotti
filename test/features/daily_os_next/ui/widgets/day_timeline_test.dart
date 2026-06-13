@@ -7,6 +7,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_fold_surface.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';

@@ -1,4 +1,11 @@
-part of 'ai_settings_cards.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_card_action_menu.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 class AiProfileCard extends StatelessWidget {
   const AiProfileCard({
@@ -43,7 +50,7 @@ class AiProfileCard extends StatelessWidget {
       messages: messages,
     );
     final radius = BorderRadius.circular(tokens.radii.l);
-    // The icon tile dimension matches the default `_ProviderIconTile`
+    // The icon tile dimension matches the default `AiProviderIconTile`
     // size. Indenting the description by exactly this column + the
     // header gap keeps the description flush with the profile name
     // without hardcoding token-arithmetic literals further down.
@@ -91,7 +98,7 @@ class AiProfileCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  _ProviderIconTile(
+                  AiProviderIconTile(
                     accent: visual.accent,
                     surface: visual.surface,
                     providerType: providerType,

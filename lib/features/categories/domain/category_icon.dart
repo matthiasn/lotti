@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
+import 'package:lotti/features/categories/domain/category_icon_data.dart';
+import 'package:lotti/features/categories/domain/category_icon_names.dart';
 import 'package:lotti/services/dev_logger.dart';
 
-part 'category_icon_data.dart';
-part 'category_icon_names.dart';
+export 'package:lotti/features/categories/domain/category_icon_data.dart';
+export 'package:lotti/features/categories/domain/category_icon_names.dart';
 
 /// Constants for CategoryIcon functionality.
 ///

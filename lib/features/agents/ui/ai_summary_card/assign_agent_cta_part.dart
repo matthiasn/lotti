@@ -1,11 +1,25 @@
-part of '../ai_summary_card.dart';
+import 'dart:developer' as developer;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Compact CTA shown on the task details page when no agent is yet
 /// attached to the task. Tapping it opens the same template-picker
 /// modal that `TaskAgentReportSection` used to surface; the actual
 /// flow is in [_createTaskAgent] below.
-class _AssignAgentCta extends ConsumerWidget {
-  const _AssignAgentCta({required this.taskId});
+class AssignAgentCta extends ConsumerWidget {
+  const AssignAgentCta({required this.taskId, super.key});
 
   final String taskId;
 

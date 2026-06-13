@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:lotti/classes/journal_entities.dart';
@@ -8,34 +7,16 @@ import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/agents/tools/attention_request_handler.dart';
-import 'package:lotti/features/agents/tools/checklist_migration_handler.dart';
-import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
-import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
-import 'package:lotti/features/agents/tools/task_label_handler.dart';
-import 'package:lotti/features/agents/tools/task_language_handler.dart';
-import 'package:lotti/features/agents/tools/task_status_handler.dart';
-import 'package:lotti/features/agents/tools/task_title_handler.dart';
-import 'package:lotti/features/agents/tools/time_entry_handler.dart';
-import 'package:lotti/features/agents/tools/time_entry_update_handler.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart'
     show TaskAgentWorkflow;
-import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
-import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
-import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
-import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
-import 'package:lotti/features/ai/functions/task_priority_handler.dart';
-import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/agents/workflow/task_tool_handlers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
-import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:openai_dart/openai_dart.dart';
-import 'package:uuid/uuid.dart';
 
 /// Dispatches tool calls from the Task Agent to the appropriate journal-domain
 /// handlers.
@@ -71,8 +52,6 @@ class TaskToolDispatcher {
   final AgentSyncService? syncService;
   final String? requestingAgentId;
 
-  static const _uuid = Uuid();
-
   /// Executes a tool handler by delegating to the appropriate existing
   /// journal-domain handler.
   ///
@@ -104,19 +83,19 @@ class TaskToolDispatcher {
 
     switch (toolName) {
       case TaskAgentToolNames.setTaskTitle:
-        return _handleSetTaskTitle(taskEntity, args, taskId);
+        return handleSetTaskTitle(taskEntity, args, taskId);
 
       case TaskAgentToolNames.updateTaskEstimate:
-        return _handleProcessToolCall(taskEntity, toolName, args, taskId);
+        return handleProcessToolCall(taskEntity, toolName, args, taskId);
 
       case TaskAgentToolNames.updateTaskDueDate:
-        return _handleProcessToolCall(taskEntity, toolName, args, taskId);
+        return handleProcessToolCall(taskEntity, toolName, args, taskId);
 
       case TaskAgentToolNames.updateTaskPriority:
-        return _handleProcessToolCall(taskEntity, toolName, args, taskId);
+        return handleProcessToolCall(taskEntity, toolName, args, taskId);
 
       case TaskAgentToolNames.addChecklistItem:
-        return _handleBatchChecklist(
+        return handleBatchChecklist(
           taskEntity,
           TaskAgentToolNames.addMultipleChecklistItems,
           {
@@ -126,10 +105,10 @@ class TaskToolDispatcher {
         );
 
       case TaskAgentToolNames.addMultipleChecklistItems:
-        return _handleBatchChecklist(taskEntity, toolName, args, taskId);
+        return handleBatchChecklist(taskEntity, toolName, args, taskId);
 
       case TaskAgentToolNames.updateChecklistItem:
-        return _handleChecklistUpdate(
+        return handleChecklistUpdate(
           taskEntity,
           TaskAgentToolNames.updateChecklistItems,
           {
@@ -139,10 +118,10 @@ class TaskToolDispatcher {
         );
 
       case TaskAgentToolNames.updateChecklistItems:
-        return _handleChecklistUpdate(taskEntity, toolName, args, taskId);
+        return handleChecklistUpdate(taskEntity, toolName, args, taskId);
 
       case TaskAgentToolNames.assignTaskLabel:
-        return _handleAssignLabels(
+        return handleAssignLabels(
           taskEntity,
           {
             'labels': [args],
@@ -151,35 +130,35 @@ class TaskToolDispatcher {
         );
 
       case TaskAgentToolNames.assignTaskLabels:
-        return _handleAssignLabels(taskEntity, args, taskId);
+        return handleAssignLabels(taskEntity, args, taskId);
 
       case TaskAgentToolNames.setTaskLanguage:
-        return _handleSetLanguage(taskEntity, args, taskId);
+        return handleSetLanguage(taskEntity, args, taskId);
 
       case TaskAgentToolNames.setTaskStatus:
-        return _handleSetStatus(taskEntity, args, taskId);
+        return handleSetStatus(taskEntity, args, taskId);
 
       case TaskAgentToolNames.createFollowUpTask:
-        return _handleCreateFollowUpTask(args, taskId);
+        return handleCreateFollowUpTask(args, taskId);
 
       case TaskAgentToolNames.migrateChecklistItem:
       case TaskAgentToolNames.migrateChecklistItems:
-        return _handleMigrateChecklistItem(args, taskId);
+        return handleMigrateChecklistItem(args, taskId);
 
       case TaskAgentToolNames.createTimeEntry:
-        return _handleCreateTimeEntry(args, taskId);
+        return handleCreateTimeEntry(args, taskId);
 
       case TaskAgentToolNames.updateTimeEntry:
-        return _handleUpdateTimeEntry(args, taskId);
+        return handleUpdateTimeEntry(args, taskId);
 
       case TaskAgentToolNames.updateRunningTimer:
-        return _handleUpdateRunningTimer(args, taskId);
+        return handleUpdateRunningTimer(args, taskId);
 
       case TaskAgentToolNames.requestAttention:
-        return _handleRequestAttention(taskEntity, args);
+        return handleRequestAttention(taskEntity, args);
 
       case TaskAgentToolNames.resolveAttentionRequest:
-        return _handleResolveAttentionRequest(taskEntity, args);
+        return handleResolveAttentionRequest(taskEntity, args);
 
       default:
         return ToolExecutionResult(
@@ -188,474 +167,5 @@ class TaskToolDispatcher {
           errorMessage: 'Tool $toolName is not registered for the Task Agent',
         );
     }
-  }
-
-  Future<ToolExecutionResult> _handleSetTaskTitle(
-    Task task,
-    Map<String, dynamic> args,
-    String taskId,
-  ) async {
-    final titleArg = args['title'];
-    // Type guard only — emptiness is validated by TaskTitleHandler.handle.
-    if (titleArg is! String) {
-      return ToolExecutionResult(
-        success: false,
-        output: 'Error: "title" must be a string, got ${titleArg.runtimeType}',
-        errorMessage: 'Type validation failed for title',
-      );
-    }
-
-    // Note: we deliberately do NOT short-circuit on a populated existing
-    // title here. User-confirmed renames route through this dispatcher
-    // too, and the user already explicitly approved them — blocking
-    // those would contradict the "existing title goes through
-    // confirmation" contract. The "agent auto-apply must never overwrite
-    // a non-empty title" invariant is enforced one layer up, in
-    // `TaskAgentStrategy._shouldAutoApplyInitialTitle`, with a fresh
-    // resolver re-read immediately before dispatch.
-    final handler = TaskTitleHandler(
-      task: task,
-      journalRepository: journalRepository,
-    );
-    final result = await handler.handle(titleArg);
-    return ToolExecutionResult.fromHandlerResult(
-      success: result.success,
-      message: result.message,
-      didWrite: result.didWrite,
-      error: result.error,
-      entityId: taskId,
-    );
-  }
-
-  Future<ToolExecutionResult> _handleProcessToolCall(
-    Task task,
-    String toolName,
-    Map<String, dynamic> args,
-    String taskId,
-  ) async {
-    // Validate the expected string argument for string-typed tools.
-    final expectedStringKey = switch (toolName) {
-      TaskAgentToolNames.updateTaskDueDate => 'dueDate',
-      TaskAgentToolNames.updateTaskPriority => 'priority',
-      _ => null,
-    };
-    if (expectedStringKey != null) {
-      final value = args[expectedStringKey];
-      if (value is! String || value.isEmpty) {
-        return ToolExecutionResult(
-          success: false,
-          output:
-              'Error: "$expectedStringKey" must be a non-empty string, '
-              'got ${value.runtimeType}',
-          errorMessage: 'Type validation failed for $expectedStringKey',
-        );
-      }
-    }
-
-    // Validate minutes for estimate tool — accept int, double, or numeric
-    // string since the handler's parseMinutes() handles all three. Only
-    // reject null / clearly wrong types up front.
-    if (toolName == TaskAgentToolNames.updateTaskEstimate) {
-      final value = args['minutes'];
-      if (value == null) {
-        return const ToolExecutionResult(
-          success: false,
-          output: 'Error: "minutes" is required',
-          errorMessage: 'Missing minutes parameter',
-        );
-      }
-    }
-
-    final toolCall = ChatCompletionMessageToolCall(
-      id: 'agent_${toolName}_${_uuid.v4()}',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: toolName,
-        arguments: jsonEncode(args),
-      ),
-    );
-
-    // Only estimate, due date, and priority tools are routed here by the
-    // caller (dispatch).
-    switch (toolName) {
-      case TaskAgentToolNames.updateTaskEstimate:
-        final handler = TaskEstimateHandler(
-          task: task,
-          journalRepository: journalRepository,
-        );
-        // Omit the optional manager parameter — the strategy layer adds the
-        // tool response with the real call ID. Passing a manager here would
-        // cause the handler to emit a duplicate response with the synthetic ID.
-        final result = await handler.processToolCall(toolCall);
-        return ToolExecutionResult.fromHandlerResult(
-          success: result.success,
-          message: result.message,
-          didWrite: result.didWrite,
-          error: result.error,
-          entityId: taskId,
-        );
-
-      case TaskAgentToolNames.updateTaskDueDate:
-        final handler = TaskDueDateHandler(
-          task: task,
-          journalRepository: journalRepository,
-        );
-        final result = await handler.processToolCall(toolCall);
-        return ToolExecutionResult.fromHandlerResult(
-          success: result.success,
-          message: result.message,
-          didWrite: result.didWrite,
-          error: result.error,
-          entityId: taskId,
-        );
-
-      case TaskAgentToolNames.updateTaskPriority:
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: journalRepository,
-        );
-        final result = await handler.processToolCall(toolCall);
-        return ToolExecutionResult.fromHandlerResult(
-          success: result.success,
-          message: result.message,
-          didWrite: result.didWrite,
-          error: result.error,
-          entityId: taskId,
-        );
-
-      default:
-        throw StateError(
-          'Unexpected tool $toolName routed to _handleProcessToolCall',
-        );
-    }
-  }
-
-  Future<ToolExecutionResult> _handleAssignLabels(
-    Task task,
-    Map<String, dynamic> args,
-    String taskId,
-  ) async {
-    final labels = args['labels'];
-    if (labels is! List) {
-      return ToolExecutionResult(
-        success: false,
-        output:
-            'Error: "labels" must be an array, '
-            'got ${labels.runtimeType}',
-        errorMessage: 'Type validation failed for labels',
-      );
-    }
-
-    final processor = LabelAssignmentProcessor(
-      db: journalDb,
-      repository: labelsRepository,
-    );
-    final handler = TaskLabelHandler(
-      task: task,
-      processor: processor,
-    );
-    final result = await handler.handle(args);
-    return ToolExecutionResult.fromHandlerResult(
-      success: result.success,
-      message: result.message,
-      didWrite: result.didWrite,
-      error: result.error,
-      entityId: taskId,
-    );
-  }
-
-  Future<ToolExecutionResult> _handleSetLanguage(
-    Task task,
-    Map<String, dynamic> args,
-    String taskId,
-  ) async {
-    final languageCode = args['languageCode'];
-    if (languageCode is! String) {
-      return ToolExecutionResult(
-        success: false,
-        output:
-            'Error: "languageCode" must be a string, '
-            'got ${languageCode.runtimeType}',
-        errorMessage: 'Type validation failed for languageCode',
-      );
-    }
-
-    final handler = TaskLanguageHandler(
-      task: task,
-      journalRepository: journalRepository,
-    );
-    final result = await handler.handle(languageCode);
-    return ToolExecutionResult.fromHandlerResult(
-      success: result.success,
-      message: result.message,
-      didWrite: result.didWrite,
-      error: result.error,
-      entityId: taskId,
-    );
-  }
-
-  Future<ToolExecutionResult> _handleSetStatus(
-    Task task,
-    Map<String, dynamic> args,
-    String taskId,
-  ) async {
-    final status = args['status'];
-    if (status is! String) {
-      return ToolExecutionResult(
-        success: false,
-        output:
-            'Error: "status" must be a string, '
-            'got ${status.runtimeType}',
-        errorMessage: 'Type validation failed for status',
-      );
-    }
-
-    final reason = args['reason'];
-    final handler = TaskStatusHandler(
-      task: task,
-      journalRepository: journalRepository,
-    );
-    final result = await handler.handle(
-      status,
-      reason: reason is String ? reason : null,
-    );
-    return ToolExecutionResult.fromHandlerResult(
-      success: result.success,
-      message: result.message,
-      didWrite: result.didWrite,
-      error: result.error,
-      entityId: taskId,
-    );
-  }
-
-  Future<ToolExecutionResult> _handleBatchChecklist(
-    Task task,
-    String toolName,
-    Map<String, dynamic> args,
-    String taskId,
-  ) async {
-    final items = args['items'];
-    if (items is! List || items.isEmpty) {
-      return ToolExecutionResult(
-        success: false,
-        output:
-            'Error: "items" must be a non-empty array, '
-            'got ${items.runtimeType}',
-        errorMessage: 'Type validation failed for items',
-      );
-    }
-
-    final autoChecklistService = AutoChecklistService(
-      checklistRepository: checklistRepository,
-    );
-
-    final handler = LottiBatchChecklistHandler(
-      task: task,
-      autoChecklistService: autoChecklistService,
-      checklistRepository: checklistRepository,
-    );
-
-    final toolCall = ChatCompletionMessageToolCall(
-      id: 'agent_${toolName}_${_uuid.v4()}',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: toolName,
-        arguments: jsonEncode(args),
-      ),
-    );
-
-    final parseResult = handler.processFunctionCall(toolCall);
-    if (!parseResult.success) {
-      return ToolExecutionResult(
-        success: false,
-        output: parseResult.error ?? 'Failed to parse checklist items',
-        errorMessage: parseResult.error,
-      );
-    }
-
-    final count = await handler.createBatchItems(parseResult);
-    return ToolExecutionResult(
-      // Return success=true as long as parsing succeeded — a count of 0
-      // just means no items were created (no-op). This mirrors
-      // _handleChecklistUpdate and prevents redundant LLM retries.
-      success: true,
-      output: handler.createToolResponse(parseResult),
-      mutatedEntityId: count > 0 ? taskId : null,
-      // Surface creation failures so monitoring/auditing can detect them
-      // without failing the LLM call.
-      errorMessage: handler.failedItems.isNotEmpty
-          ? '${handler.failedItems.length} item(s) failed to be created'
-          : null,
-    );
-  }
-
-  Future<ToolExecutionResult> _handleChecklistUpdate(
-    Task task,
-    String toolName,
-    Map<String, dynamic> args,
-    String taskId,
-  ) async {
-    final items = args['items'];
-    if (items is! List || items.isEmpty) {
-      return ToolExecutionResult(
-        success: false,
-        output:
-            'Error: "items" must be a non-empty array, '
-            'got ${items.runtimeType}',
-        errorMessage: 'Type validation failed for items',
-      );
-    }
-
-    final handler = LottiChecklistUpdateHandler(
-      task: task,
-      checklistRepository: checklistRepository,
-    );
-
-    final toolCall = ChatCompletionMessageToolCall(
-      id: 'agent_${toolName}_${_uuid.v4()}',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: toolName,
-        arguments: jsonEncode(args),
-      ),
-    );
-
-    final parseResult = handler.processFunctionCall(toolCall);
-    if (!parseResult.success) {
-      return ToolExecutionResult(
-        success: false,
-        output: parseResult.error ?? 'Failed to parse checklist updates',
-        errorMessage: parseResult.error,
-      );
-    }
-
-    final count = await handler.executeUpdates(parseResult);
-    final hasRealFailures =
-        count == 0 &&
-        handler.skippedItems.any(
-          (s) => s.reason != 'No changes detected',
-        );
-    return ToolExecutionResult(
-      // Return success=true as long as parsing succeeded — a count of 0
-      // just means all items were already in the requested state (no-op).
-      success: true,
-      output: handler.createToolResponse(parseResult),
-      mutatedEntityId: count > 0 ? taskId : null,
-      // Surface real failures (not found, wrong task, DB error) so
-      // monitoring/auditing can detect them without failing the LLM call.
-      errorMessage: hasRealFailures
-          ? 'All ${handler.skippedItems.length} item(s) skipped or failed'
-          : null,
-    );
-  }
-
-  Future<ToolExecutionResult> _handleCreateFollowUpTask(
-    Map<String, dynamic> args,
-    String sourceTaskId,
-  ) async {
-    final handler = FollowUpTaskHandler(
-      persistenceLogic: persistenceLogic,
-      journalDb: journalDb,
-      domainLogger: domainLogger,
-      taskAgentService: taskAgentService,
-      projectRepository: projectRepository,
-    );
-    return handler.handle(sourceTaskId, args);
-  }
-
-  Future<ToolExecutionResult> _handleMigrateChecklistItem(
-    Map<String, dynamic> args,
-    String sourceTaskId,
-  ) async {
-    final handler = ChecklistMigrationHandler(
-      checklistRepository: checklistRepository,
-      journalDb: journalDb,
-      domainLogger: domainLogger,
-    );
-    return handler.handle(sourceTaskId, args);
-  }
-
-  Future<ToolExecutionResult> _handleCreateTimeEntry(
-    Map<String, dynamic> args,
-    String taskId,
-  ) async {
-    final handler = TimeEntryHandler(
-      persistenceLogic: persistenceLogic,
-      journalDb: journalDb,
-      timeService: timeService,
-      domainLogger: domainLogger,
-    );
-    return handler.handle(taskId, args);
-  }
-
-  Future<ToolExecutionResult> _handleUpdateRunningTimer(
-    Map<String, dynamic> args,
-    String taskId,
-  ) async {
-    final handler = RunningTimerUpdateHandler(
-      persistenceLogic: persistenceLogic,
-      timeService: timeService,
-      domainLogger: domainLogger,
-    );
-    return handler.handle(taskId, args);
-  }
-
-  Future<ToolExecutionResult> _handleUpdateTimeEntry(
-    Map<String, dynamic> args,
-    String taskId,
-  ) async {
-    final handler = TimeEntryUpdateHandler(
-      persistenceLogic: persistenceLogic,
-      journalDb: journalDb,
-      timeService: timeService,
-      domainLogger: domainLogger,
-    );
-    return handler.handle(taskId, args);
-  }
-
-  Future<ToolExecutionResult> _handleRequestAttention(
-    Task task,
-    Map<String, dynamic> args,
-  ) async {
-    final repository = agentRepository;
-    final sync = syncService;
-    final agentId = requestingAgentId;
-    if (repository == null || sync == null || agentId == null) {
-      return const ToolExecutionResult(
-        success: false,
-        output: 'Error: request_attention is not configured.',
-        errorMessage: 'request_attention is not configured',
-      );
-    }
-
-    final handler = AttentionRequestHandler(
-      agentRepository: repository,
-      syncService: sync,
-      requestingAgentId: agentId,
-    );
-    return handler.handle(task, args);
-  }
-
-  Future<ToolExecutionResult> _handleResolveAttentionRequest(
-    Task task,
-    Map<String, dynamic> args,
-  ) async {
-    final repository = agentRepository;
-    final sync = syncService;
-    final agentId = requestingAgentId;
-    if (repository == null || sync == null || agentId == null) {
-      return const ToolExecutionResult(
-        success: false,
-        output: 'Error: resolve_attention_request is not configured.',
-        errorMessage: 'resolve_attention_request is not configured',
-      );
-    }
-
-    final handler = AttentionRequestHandler(
-      agentRepository: repository,
-      syncService: sync,
-      requestingAgentId: agentId,
-    );
-    return handler.resolve(task, args);
   }
 }

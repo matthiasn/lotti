@@ -1,7 +1,25 @@
-part of 'conflict_detail_route.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/beamer/beamer_delegates.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_cards.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_footer.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
+import 'package:lotti/features/sync/ui/widgets/conflicts/title_diff.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _LoadingScaffold extends StatelessWidget {
-  const _LoadingScaffold();
+/// Diameter of the small status dot rendered inside the count pill.
+const double _kCountPillDotSize = 5;
+
+/// Icon sizes for the back chip and the summary banner glyph. The
+/// design system has no icon-size token; named here so they're not
+/// re-typed at the call sites.
+const double _kBackChipIconSize = 20;
+const double _kSummaryIconSize = 18;
+
+class LoadingScaffold extends StatelessWidget {
+  const LoadingScaffold({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -12,8 +30,8 @@ class _LoadingScaffold extends StatelessWidget {
   }
 }
 
-class _ErrorBody extends StatelessWidget {
-  const _ErrorBody({required this.error});
+class ErrorBody extends StatelessWidget {
+  const ErrorBody({required this.error, super.key});
 
   final Object? error;
 
@@ -32,8 +50,8 @@ class _ErrorBody extends StatelessWidget {
   }
 }
 
-class _ConflictPickerScaffold extends StatelessWidget {
-  const _ConflictPickerScaffold({
+class ConflictPickerScaffold extends StatelessWidget {
+  const ConflictPickerScaffold({
     required this.conflict,
     required this.local,
     required this.remote,
@@ -41,13 +59,14 @@ class _ConflictPickerScaffold extends StatelessWidget {
     required this.onSelect,
     required this.onApply,
     required this.onEditMerge,
+    super.key,
   });
 
   final Conflict conflict;
   final JournalEntity local;
   final JournalEntity remote;
-  final _Side? selected;
-  final ValueChanged<_Side> onSelect;
+  final ConflictSide? selected;
+  final ValueChanged<ConflictSide> onSelect;
   final VoidCallback onApply;
   final VoidCallback onEditMerge;
 
@@ -55,10 +74,10 @@ class _ConflictPickerScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final localTitle = _firstLine(local);
-    final remoteTitle = _firstLine(remote);
+    final localTitle = firstLine(local);
+    final remoteTitle = firstLine(remote);
     final titleDiff = computeTitleDiff(localTitle, remoteTitle);
-    final differingFields = _differingFieldLabels(local, remote, messages);
+    final differingFields = differingFieldLabels(local, remote, messages);
 
     // The body and the sticky footer must agree on `isStacked` — the
     // body's `LayoutBuilder` sees the panel width while
@@ -67,7 +86,7 @@ class _ConflictPickerScaffold extends StatelessWidget {
     // pass the result to both surfaces.
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isStacked = constraints.maxWidth < _kStackedBreakpoint;
+        final isStacked = constraints.maxWidth < kConflictStackedBreakpoint;
         return Scaffold(
           backgroundColor: tokens.colors.background.level01,
           body: SafeArea(
@@ -90,32 +109,32 @@ class _ConflictPickerScaffold extends StatelessWidget {
                         _LeadCopy(isStacked: isStacked),
                         SizedBox(height: tokens.spacing.step4),
                         _SummaryBanner(
-                          entityType: _entityTypeLabel(local, messages),
+                          entityType: entityTypeLabel(local, messages),
                           createdAt: conflict.createdAt,
                           differingFields: differingFields,
                         ),
                         SizedBox(height: tokens.spacing.step5),
-                        _CardsLayout(
+                        CardsLayout(
                           isStacked: isStacked,
-                          localCard: _DiffCard(
-                            side: _Side.local,
+                          localCard: DiffCard(
+                            side: ConflictSide.local,
                             entity: local,
                             titleSegments: titleDiff.local,
-                            isSelected: selected == _Side.local,
+                            isSelected: selected == ConflictSide.local,
                             isStacked: isStacked,
-                            onTap: () => onSelect(_Side.local),
+                            onTap: () => onSelect(ConflictSide.local),
                           ),
-                          remoteCard: _DiffCard(
-                            side: _Side.remote,
+                          remoteCard: DiffCard(
+                            side: ConflictSide.remote,
                             entity: remote,
                             titleSegments: titleDiff.remote,
-                            isSelected: selected == _Side.remote,
+                            isSelected: selected == ConflictSide.remote,
                             isStacked: isStacked,
-                            onTap: () => onSelect(_Side.remote),
+                            onTap: () => onSelect(ConflictSide.remote),
                           ),
                         ),
                         SizedBox(height: tokens.spacing.step4),
-                        _PickerRow(
+                        PickerRow(
                           selected: selected,
                           isStacked: isStacked,
                           onSelect: onSelect,
@@ -128,7 +147,7 @@ class _ConflictPickerScaffold extends StatelessWidget {
               ],
             ),
           ),
-          bottomNavigationBar: _ConflictFooter(
+          bottomNavigationBar: ConflictFooter(
             selected: selected,
             isStacked: isStacked,
             applyEnabled: selected != null,
@@ -306,7 +325,7 @@ class _SummaryBanner extends StatelessWidget {
     final colors = tokens.colors;
     final amber = colors.conflict.diverged.color;
     final messages = context.messages;
-    final ago = _formatTimeAgo(DateTime.now().difference(createdAt), messages);
+    final ago = formatTimeAgo(DateTime.now().difference(createdAt), messages);
     final line1 = messages.conflictBannerDivergedAgo(entityType, ago);
     final subline = differingFields.isEmpty
         ? null

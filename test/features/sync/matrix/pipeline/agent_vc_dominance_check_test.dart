@@ -3,166 +3,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/sync/matrix/pipeline/agent_vc_dominance_check.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-
-/// Unit tests for the standalone VC-dominance check. The class is
-/// performance-critical — it runs once per incoming agent attachment
-/// and the hot path was previously a 36 ms per-call `SELECT *` that
-/// fired 1600+ times per hour during a sync drain. The tests cover:
-///
-///   * every early-exit shape the caller relies on to stay
-///     conservative (null incoming VC, unparseable path, no local
-///     row, malformed local VC JSON, concurrent clocks — all should
-///     return false so the ingestor proceeds with the download),
-///   * the cache invariants (hit, TTL expiry, capacity eviction),
-///   * the three `VclockStatus` outcomes that `VectorClock.compare`
-///     can return, pinned to the "skip download" vs "proceed" bit
-///     the caller keys on.
-enum _GeneratedAgentVcPathKind {
-  entity,
-  link,
-  wrongPrefix,
-  noExtension,
-  empty,
-}
-
-enum _GeneratedIncomingVcKind { absent, present }
-
-enum _GeneratedLocalVcKind {
-  missing,
-  missingVectorClock,
-  malformedVectorClock,
-  dominates,
-  equal,
-  older,
-  concurrent,
-  invalid,
-}
-
-class _GeneratedAgentVcScenario {
-  const _GeneratedAgentVcScenario({
-    required this.pathKind,
-    required this.incomingKind,
-    required this.localKind,
-    required this.slot,
-  });
-
-  final _GeneratedAgentVcPathKind pathKind;
-  final _GeneratedIncomingVcKind incomingKind;
-  final _GeneratedLocalVcKind localKind;
-  final int slot;
-
-  String get id => 'generated-$slot';
-
-  String get relativePath {
-    switch (pathKind) {
-      case _GeneratedAgentVcPathKind.entity:
-        return '/agent_entities/$id.json';
-      case _GeneratedAgentVcPathKind.link:
-        return '/agent_links/$id.json';
-      case _GeneratedAgentVcPathKind.wrongPrefix:
-        return '/attachments/$id.json';
-      case _GeneratedAgentVcPathKind.noExtension:
-        return '/agent_entities/$id';
-      case _GeneratedAgentVcPathKind.empty:
-        return '';
-    }
-  }
-
-  VectorClock? get incomingVc {
-    switch (incomingKind) {
-      case _GeneratedIncomingVcKind.absent:
-        return null;
-      case _GeneratedIncomingVcKind.present:
-        return const VectorClock({'host': 3});
-    }
-  }
-
-  Map<String, dynamic>? get localVcJson {
-    switch (localKind) {
-      case _GeneratedLocalVcKind.dominates:
-        return {'host': 4};
-      case _GeneratedLocalVcKind.equal:
-        return {'host': 3};
-      case _GeneratedLocalVcKind.older:
-        return {'host': 2};
-      case _GeneratedLocalVcKind.concurrent:
-        return {'other': 3};
-      case _GeneratedLocalVcKind.invalid:
-        return {'host': -1};
-      case _GeneratedLocalVcKind.missing:
-      case _GeneratedLocalVcKind.missingVectorClock:
-      case _GeneratedLocalVcKind.malformedVectorClock:
-        return null;
-    }
-  }
-
-  String serialized() {
-    switch (localKind) {
-      case _GeneratedLocalVcKind.missing:
-        throw StateError('missing local row has no serialized value');
-      case _GeneratedLocalVcKind.missingVectorClock:
-        return '{"id":"$id","deletedAt":null}';
-      case _GeneratedLocalVcKind.malformedVectorClock:
-        return '{"id":"$id","vectorClock":"nope","deletedAt":null}';
-      case _GeneratedLocalVcKind.dominates:
-      case _GeneratedLocalVcKind.equal:
-      case _GeneratedLocalVcKind.older:
-      case _GeneratedLocalVcKind.concurrent:
-      case _GeneratedLocalVcKind.invalid:
-        return '{"id":"$id","vectorClock":${_jsonVc(localVcJson!)},"deletedAt":null}';
-    }
-  }
-
-  bool get validLookupPath =>
-      pathKind == _GeneratedAgentVcPathKind.entity ||
-      pathKind == _GeneratedAgentVcPathKind.link;
-
-  bool get expected =>
-      validLookupPath &&
-      incomingKind == _GeneratedIncomingVcKind.present &&
-      (localKind == _GeneratedLocalVcKind.dominates ||
-          localKind == _GeneratedLocalVcKind.equal);
-
-  @override
-  String toString() {
-    return '_GeneratedAgentVcScenario('
-        'pathKind: $pathKind, '
-        'incomingKind: $incomingKind, '
-        'localKind: $localKind, '
-        'slot: $slot'
-        ')';
-  }
-}
-
-extension _AnyGeneratedAgentVcScenario on glados.Any {
-  glados.Generator<_GeneratedAgentVcPathKind> get agentVcPathKind =>
-      glados.AnyUtils(this).choose(_GeneratedAgentVcPathKind.values);
-
-  glados.Generator<_GeneratedIncomingVcKind> get incomingVcKind =>
-      glados.AnyUtils(this).choose(_GeneratedIncomingVcKind.values);
-
-  glados.Generator<_GeneratedLocalVcKind> get localVcKind =>
-      glados.AnyUtils(this).choose(_GeneratedLocalVcKind.values);
-
-  glados.Generator<_GeneratedAgentVcScenario> get agentVcScenario =>
-      glados.CombinableAny(this).combine4(
-        agentVcPathKind,
-        incomingVcKind,
-        localVcKind,
-        glados.IntAnys(this).intInRange(0, 8),
-        (
-          _GeneratedAgentVcPathKind pathKind,
-          _GeneratedIncomingVcKind incomingKind,
-          _GeneratedLocalVcKind localKind,
-          int slot,
-        ) => _GeneratedAgentVcScenario(
-          pathKind: pathKind,
-          incomingKind: incomingKind,
-          localKind: localKind,
-          slot: slot,
-        ),
-      );
-}
+import 'agent_vc_dominance_check_test_helpers.dart';
 
 void main() {
   late AgentDatabase db;
@@ -181,7 +22,7 @@ void main() {
     String type = 'agent',
   }) async {
     final serialized =
-        '{"id":"$id","vectorClock":${_jsonVc(vc)},"deletedAt":null}';
+        '{"id":"$id","vectorClock":${jsonVc(vc)},"deletedAt":null}';
     await db.customStatement(
       'INSERT INTO agent_entities '
       '(id, agent_id, type, created_at, updated_at, serialized, schema_version) '
@@ -210,7 +51,7 @@ void main() {
     String type = 'agent_state',
   }) async {
     final serialized =
-        '{"id":"$id","vectorClock":${_jsonVc(vc)},"deletedAt":null}';
+        '{"id":"$id","vectorClock":${jsonVc(vc)},"deletedAt":null}';
     await db.customStatement(
       'INSERT INTO agent_links '
       '(id, from_id, to_id, type, created_at, updated_at, serialized, schema_version) '
@@ -446,7 +287,7 @@ void main() {
         await db.customStatement(
           'UPDATE agent_entities SET serialized = ? WHERE id = ?',
           [
-            '{"id":"cached","vectorClock":${_jsonVc({'h': 1})},"deletedAt":null}',
+            '{"id":"cached","vectorClock":${jsonVc({'h': 1})},"deletedAt":null}',
             'cached',
           ],
         );
@@ -480,7 +321,7 @@ void main() {
         await db.customStatement(
           'UPDATE agent_entities SET serialized = ? WHERE id = ?',
           [
-            '{"id":"expire","vectorClock":${_jsonVc({'h': 1})},"deletedAt":null}',
+            '{"id":"expire","vectorClock":${jsonVc({'h': 1})},"deletedAt":null}',
             'expire',
           ],
         );
@@ -521,7 +362,7 @@ void main() {
         await db.customStatement(
           'UPDATE agent_entities SET serialized = ? WHERE id = ?',
           [
-            '{"id":"first","vectorClock":${_jsonVc({'h': 1})},"deletedAt":null}',
+            '{"id":"first","vectorClock":${jsonVc({'h': 1})},"deletedAt":null}',
             'first',
           ],
         );
@@ -548,12 +389,12 @@ void main() {
       const now = '2024-03-15T00:00:00.000';
 
       try {
-        if (scenario.localKind != _GeneratedLocalVcKind.missing) {
+        if (scenario.localKind != GeneratedLocalVcKind.missing) {
           switch (scenario.pathKind) {
-            case _GeneratedAgentVcPathKind.entity:
-            case _GeneratedAgentVcPathKind.wrongPrefix:
-            case _GeneratedAgentVcPathKind.noExtension:
-            case _GeneratedAgentVcPathKind.empty:
+            case GeneratedAgentVcPathKind.entity:
+            case GeneratedAgentVcPathKind.wrongPrefix:
+            case GeneratedAgentVcPathKind.noExtension:
+            case GeneratedAgentVcPathKind.empty:
               await generatedDb.customStatement(
                 'INSERT INTO agent_entities '
                 '(id, agent_id, type, created_at, updated_at, serialized, schema_version) '
@@ -567,7 +408,7 @@ void main() {
                   scenario.serialized(),
                 ],
               );
-            case _GeneratedAgentVcPathKind.link:
+            case GeneratedAgentVcPathKind.link:
               await generatedDb.customStatement(
                 'INSERT INTO agent_links '
                 '(id, from_id, to_id, type, created_at, updated_at, serialized, schema_version) '
@@ -597,9 +438,4 @@ void main() {
     },
     tags: 'glados',
   );
-}
-
-String _jsonVc(Map<String, dynamic> vc) {
-  final entries = vc.entries.map((e) => '"${e.key}":${e.value}').join(',');
-  return '{$entries}';
 }

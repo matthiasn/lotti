@@ -5,15 +5,20 @@ import 'dart:developer' as developer;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/repository/gemini_chunk_factories.dart';
+import 'package:lotti/features/ai/repository/gemini_image_generation.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:lotti/features/ai/repository/gemini_multiturn_inference.dart';
+import 'package:lotti/features/ai/repository/gemini_payload_processing.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_parser.dart';
+import 'package:lotti/features/ai/repository/gemini_stream_sender.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-part 'gemini_multiturn_inference.dart';
-part 'gemini_chunk_factories.dart';
-part 'gemini_image_generation.dart';
+export 'package:lotti/features/ai/repository/gemini_inference_payloads.dart'
+    show GeneratedImage;
 
 /// Gemini inference over raw HTTP with OpenAI-compatible streaming output.
 ///
@@ -45,9 +50,14 @@ part 'gemini_image_generation.dart';
 /// framing cleanup.
 class GeminiInferenceRepository {
   GeminiInferenceRepository({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+    : this._(httpClient ?? http.Client());
+
+  GeminiInferenceRepository._(http.Client httpClient)
+    : _httpClient = httpClient,
+      _streamSender = GeminiStreamSender(httpClient: httpClient);
 
   final http.Client _httpClient;
+  final GeminiStreamSender _streamSender;
 
   // -------------------------------------------------------------------------
   // Configuration constants
@@ -64,21 +74,9 @@ class GeminiInferenceRepository {
   /// limit—most responses are far smaller.
   static const int kMaxStreamingChars = 1000000;
 
-  /// Timeout for establishing the initial streaming connection.
-  /// This covers the HTTP handshake, not the full response duration.
-  static const Duration kInitialRequestTimeout = Duration(seconds: 30);
-
   /// Timeout for non-streaming (fallback) requests.
   /// Longer than streaming since we wait for the complete response.
   static const Duration kNonStreamingTimeout = Duration(seconds: 60);
-
-  /// Maximum retry attempts for rate-limited (429) or temporarily
-  /// unavailable (503) responses.
-  static const int kMaxRetries = 3;
-
-  /// Base delay for exponential backoff on retries.
-  /// Actual delay doubles with each attempt: 500ms, 1s, 2s.
-  static const Duration kRetryBaseDelay = Duration(milliseconds: 500);
 
   /// Generates text via Gemini's streaming API with thinking and function-calling support.
   ///
@@ -146,7 +144,7 @@ class GeminiInferenceRepository {
         ..body = jsonEncode(body);
     }
 
-    final streamed = await _sendStreamWithRateLimitBackoff(
+    final streamed = await _streamSender.send(
       buildRequest: buildStreamRequest,
       context:
           'Gemini streamGenerateContent (model=$model, baseUrl=${provider.baseUrl})',
@@ -244,7 +242,7 @@ class GeminiInferenceRepository {
             // Emit thinking block once we transition to regular text/content
             if (inThinking) {
               emittedAny = true;
-              yield _createThinkingChunk(
+              yield createThinkingChunk(
                 id: idPrefix,
                 created: created,
                 model: model,
@@ -261,7 +259,7 @@ class GeminiInferenceRepository {
               emittedAny = true;
               visibleChars += text.length;
               totalCharsEmitted = visibleChars + thinkingChars;
-              yield _createTextChunk(
+              yield createTextChunk(
                 id: idPrefix,
                 created: created,
                 model: model,
@@ -288,7 +286,7 @@ class GeminiInferenceRepository {
               // Single-turn is always turn 0
               final toolCallId = 'tool_turn0_$currentIndex';
 
-              _captureSignatureIfPresent(
+              captureSignatureIfPresent(
                 part: p,
                 toolCallId: toolCallId,
                 functionName: name,
@@ -296,7 +294,7 @@ class GeminiInferenceRepository {
                 signatureCollector: signatureCollector,
               );
 
-              yield _createToolCallChunk(
+              yield createToolCallChunk(
                 id: idPrefix,
                 created: created,
                 model: model,
@@ -315,7 +313,7 @@ class GeminiInferenceRepository {
     // Flush any remaining thinking at end of stream
     if (inThinking && thinkingBuffer.isNotEmpty) {
       emittedAny = true;
-      yield _createThinkingChunk(
+      yield createThinkingChunk(
         id: idPrefix,
         created: created,
         model: model,
@@ -325,7 +323,7 @@ class GeminiInferenceRepository {
 
     // Emit final response with usage metadata if available
     if (promptTokens != null || candidatesTokens != null) {
-      yield _createUsageChunk(
+      yield createUsageChunk(
         id: idPrefix,
         created: created,
         model: model,
@@ -357,7 +355,7 @@ class GeminiInferenceRepository {
           .timeout(kNonStreamingTimeout);
       if (fallbackResp.statusCode >= 200 && fallbackResp.statusCode < 300) {
         final decoded = jsonDecode(fallbackResp.body) as Map<String, dynamic>;
-        final payload = _processGeminiPayload(
+        final payload = processGeminiPayload(
           decoded,
           includeThoughts: thinkingConfig.includeThoughts,
         );
@@ -370,7 +368,7 @@ class GeminiInferenceRepository {
         }
 
         if (payload.thinking.isNotEmpty) {
-          yield _createThinkingChunk(
+          yield createThinkingChunk(
             id: idPrefix,
             created: created,
             model: model,
@@ -378,7 +376,7 @@ class GeminiInferenceRepository {
           );
         }
         if (payload.visible.isNotEmpty) {
-          yield _createTextChunk(
+          yield createTextChunk(
             id: idPrefix,
             created: created,
             model: model,
@@ -421,151 +419,9 @@ class GeminiInferenceRepository {
     }
   }
 
-  /// Send a HTTP streamed request with exponential backoff for rate limiting
-  /// (429/503) and an initial handshake timeout. Builds a fresh request per attempt.
-  Future<http.StreamedResponse> _sendStreamWithRateLimitBackoff({
-    required http.Request Function() buildRequest,
-    required String context,
-    int maxRetries = kMaxRetries,
-    Duration baseDelay = kRetryBaseDelay,
-  }) async {
-    var attempt = 0;
-    while (true) {
-      attempt++;
-      try {
-        final req = buildRequest();
-        final resp = await _httpClient
-            .send(req)
-            .timeout(kInitialRequestTimeout);
-        if (resp.statusCode == 429 || resp.statusCode == 503) {
-          if (attempt > maxRetries) return resp; // let caller inspect body
-          // Honor Retry-After header if present (seconds)
-          final retryAfter = resp.headers['retry-after'];
-          Duration delay;
-          if (retryAfter != null) {
-            final secs = int.tryParse(retryAfter.trim());
-            delay = secs != null
-                ? Duration(seconds: secs)
-                : baseDelay * (1 << (attempt - 1));
-          } else {
-            delay = baseDelay * (1 << (attempt - 1));
-          }
-          developer.log(
-            'Rate limited (${resp.statusCode}) during $context; retrying in ${delay.inMilliseconds}ms (attempt $attempt/$maxRetries)...',
-            name: 'GeminiInferenceRepository',
-          );
-          await Future<void>.delayed(delay);
-          continue;
-        }
-        return resp;
-      } on TimeoutException {
-        if (attempt > maxRetries) rethrow;
-        final delay = baseDelay * (1 << (attempt - 1));
-        developer.log(
-          'Timeout during $context; retrying in ${delay.inMilliseconds}ms (attempt $attempt/$maxRetries)...',
-          name: 'GeminiInferenceRepository',
-        );
-        await Future<void>.delayed(delay);
-      }
-    }
-  }
-
-  /// Processes a decoded Gemini response (non-streaming) into compact outputs.
-  ///
-  /// This is used by the fallback path when streaming produces no events.
-  /// Extracts thinking, visible text, tool calls, and usage metadata from
-  /// a complete Gemini response payload.
-  ///
-  /// [turnIndex] is used for generating unique tool call IDs across turns.
-  static _ProcessedPayload _processGeminiPayload(
-    Map<String, dynamic> decoded, {
-    required bool includeThoughts,
-    int turnIndex = 0,
-  }) {
-    final tb = StringBuffer();
-    final cb = StringBuffer();
-    final toolChunks = <ChatCompletionStreamMessageToolCallChunk>[];
-    final signatures = <String, String>{};
-    var toolIndex = 0;
-
-    final candidates = decoded['candidates'];
-    if (candidates is List && candidates.isNotEmpty) {
-      final first = candidates.first;
-      final content = first is Map<String, dynamic> ? first['content'] : null;
-      if (content is Map<String, dynamic>) {
-        final parts = content['parts'];
-        if (parts is List) {
-          for (final p in parts) {
-            if (p is! Map<String, dynamic>) continue;
-            final isThought = p['thought'] == true;
-            final text = p['text'];
-            if (isThought && includeThoughts) {
-              if (text is String && text.isNotEmpty) tb.write(text);
-            } else if (text is String && text.isNotEmpty) {
-              cb.write(text);
-            }
-            final fc = p['functionCall'];
-            if (fc is Map<String, dynamic>) {
-              final name = fc['name']?.toString() ?? '';
-              final args = jsonEncode(fc['args'] ?? {});
-              final idx = toolIndex++;
-              // Use turn-prefixed ID for uniqueness across conversation turns
-              final toolCallId = 'tool_turn${turnIndex}_$idx';
-
-              // Capture thought signature using shared helper
-              final signature = extractThoughtSignature(p);
-              if (signature != null) {
-                signatures[toolCallId] = signature;
-              }
-
-              toolChunks.add(
-                ChatCompletionStreamMessageToolCallChunk(
-                  index: idx,
-                  id: toolCallId,
-                  function: ChatCompletionStreamMessageFunctionCall(
-                    name: name,
-                    arguments: args,
-                  ),
-                ),
-              );
-            }
-          }
-        }
-      }
-    }
-
-    // Parse usage metadata
-    CompletionUsage? usage;
-    final usageMetadata = decoded['usageMetadata'];
-    if (usageMetadata is Map<String, dynamic>) {
-      final promptTokens = usageMetadata['promptTokenCount'] as int?;
-      final candidatesTokens = usageMetadata['candidatesTokenCount'] as int?;
-      final thoughtsTokens = usageMetadata['thoughtsTokenCount'] as int?;
-
-      if (promptTokens != null || candidatesTokens != null) {
-        usage = CompletionUsage(
-          promptTokens: promptTokens,
-          completionTokens: candidatesTokens,
-          totalTokens: (promptTokens ?? 0) + (candidatesTokens ?? 0),
-          completionTokensDetails: thoughtsTokens != null
-              ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
-              : null,
-        );
-      }
-    }
-
-    return _ProcessedPayload(
-      thinking: tb.toString(),
-      visible: cb.toString(),
-      toolChunks: toolChunks,
-      signatures: signatures,
-      usage: usage,
-    );
-  }
-
   /// Multi-turn streaming over an explicit message history. Thin delegator
-  /// to [GeminiMultiTurnInference.generateTextWithMessagesImpl] so the
-  /// method remains a mockable class member.
+  /// to [generateGeminiTextWithMessages] so the method remains a mockable
+  /// class member.
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -579,7 +435,8 @@ class GeminiInferenceRepository {
     ChatCompletionToolChoiceOption? toolChoice,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
-  }) => generateTextWithMessagesImpl(
+  }) => generateGeminiTextWithMessages(
+    sender: _streamSender,
     messages: messages,
     model: model,
     temperature: temperature,
@@ -594,16 +451,16 @@ class GeminiInferenceRepository {
     turnIndex: turnIndex,
   );
 
-  /// Image generation. Thin delegator to
-  /// [GeminiImageGeneration.generateImageImpl] so the method remains a
-  /// mockable class member.
+  /// Image generation. Thin delegator to [generateGeminiImage] so the method
+  /// remains a mockable class member.
   Future<GeneratedImage> generateImage({
     required String prompt,
     required String model,
     required AiConfigInferenceProvider provider,
     String? systemMessage,
     List<ProcessedReferenceImage>? referenceImages,
-  }) => generateImageImpl(
+  }) => generateGeminiImage(
+    httpClient: _httpClient,
     prompt: prompt,
     model: model,
     provider: provider,
@@ -615,79 +472,3 @@ class GeminiInferenceRepository {
 // ---------------------------------------------------------------------------
 // Internal data structures
 // ---------------------------------------------------------------------------
-
-/// Internal helper result for consolidated (non-streaming) Gemini payloads.
-class _ProcessedPayload {
-  _ProcessedPayload({
-    required this.thinking,
-    required this.visible,
-    required this.toolChunks,
-    required this.signatures,
-    this.usage,
-  });
-
-  final String thinking;
-  final String visible;
-  final List<ChatCompletionStreamMessageToolCallChunk> toolChunks;
-  final CompletionUsage? usage;
-
-  /// Thought signatures captured from function calls, keyed by tool call ID.
-  final Map<String, String> signatures;
-}
-
-/// Extracts a thought signature from a Gemini response part.
-///
-/// Gemini 3 models include `thoughtSignature` as a **sibling** to `functionCall`
-/// at the part level (not nested inside `functionCall`). For example:
-/// ```json
-/// {
-///   "functionCall": { "name": "...", "args": {...} },
-///   "thoughtSignature": "<encrypted-signature>"
-/// }
-/// ```
-///
-/// For parallel function calls, only the first call receives a signature.
-/// These signatures must be included in subsequent multi-turn requests to
-/// maintain reasoning context; without them, Gemini 3 returns 400 errors.
-///
-/// Returns null if no signature is present (normal for Gemini 2.x or non-thinking mode).
-String? extractThoughtSignature(Map<String, dynamic> part) {
-  return part['thoughtSignature']?.toString();
-}
-
-// ---------------------------------------------------------------------------
-// Image generation data structures
-// ---------------------------------------------------------------------------
-
-/// Represents a generated image from the Gemini image generation API.
-///
-/// Contains the raw image bytes and MIME type (typically 'image/png').
-/// This is used as the return type for `generateImage` (see
-/// [GeminiImageGeneration]).
-class GeneratedImage {
-  const GeneratedImage({
-    required this.bytes,
-    required this.mimeType,
-  });
-
-  /// The raw image data bytes.
-  final List<int> bytes;
-
-  /// The MIME type of the image (e.g., 'image/png', 'image/jpeg').
-  final String mimeType;
-
-  /// Returns the file extension for this image's MIME type.
-  String get extension {
-    switch (mimeType) {
-      case 'image/jpeg':
-        return 'jpg';
-      case 'image/gif':
-        return 'gif';
-      case 'image/webp':
-        return 'webp';
-      case 'image/png':
-      default:
-        return 'png';
-    }
-  }
-}

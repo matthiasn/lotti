@@ -1,71 +1,13 @@
-// ignore_for_file: avoid_redundant_argument_values
-
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/journal/state/journal_page_controller.dart';
-import 'package:lotti/features/journal/state/journal_page_scope.dart';
-import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/search/entry_type_filter.dart';
-import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
-import '../../test_utils/fake_journal_page_controller.dart';
-import '../../widget_test_utils.dart';
-
-/// Default state for config-flag tests where no call tracking is needed.
-const _defaultState = JournalPageState(
-  selectedEntryTypes: [],
-  match: '',
-  filters: {},
-  showPrivateEntries: true,
-  showTasks: false,
-  fullTextMatches: {},
-  pagingController: null,
-  taskStatuses: [],
-  selectedTaskStatuses: {},
-  selectedCategoryIds: {},
-  selectedLabelIds: {},
-);
-
-/// Mounts [EntryTypeFilter] with the shared GetIt registration and the
-/// 3-provider override block that every test in this file needs.
-///
-/// [controllerFactory] defaults to a tracking-free fake; pass a closure
-/// returning a shared [FakeJournalPageController] for interaction tests.
-/// [pumpAfterMount] pumps one frame after mounting (disable for tests that
-/// assert on the pre-first-event loading state).
-Future<void> _pumpFilter(
-  WidgetTester tester,
-  MockJournalDb mockDb, {
-  JournalPageController Function()? controllerFactory,
-  bool pumpAfterMount = true,
-}) async {
-  if (GetIt.I.isRegistered<JournalDb>()) {
-    GetIt.I.unregister<JournalDb>();
-  }
-  GetIt.I.registerSingleton<JournalDb>(mockDb);
-  await tester.pumpWidget(
-    makeTestableWidgetWithScaffold(
-      const EntryTypeFilter(),
-      overrides: [
-        journalDbProvider.overrideWithValue(mockDb),
-        journalPageScopeProvider.overrideWithValue(false),
-        journalPageControllerProvider(false).overrideWith(
-          controllerFactory ?? () => FakeJournalPageController(_defaultState),
-        ),
-      ],
-    ),
-  );
-  if (pumpAfterMount) {
-    await tester.pump();
-  }
-}
+import 'entry_type_filter_test_helpers.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -95,7 +37,7 @@ void main() {
           },
         ]),
       );
-      await _pumpFilter(tester, mockDb);
+      await hPumpFilter(tester, mockDb);
 
       // Assert: 'Event' chip text is NOT found
       expect(find.text('Event'), findsNothing);
@@ -120,7 +62,7 @@ void main() {
           },
         ]),
       );
-      await _pumpFilter(tester, mockDb);
+      await hPumpFilter(tester, mockDb);
 
       // Assert: 'Event' chip text IS found
       expect(find.text('Event'), findsOneWidget);
@@ -137,7 +79,7 @@ void main() {
       when(() => mockDb.watchConfigFlags()).thenAnswer(
         (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
       );
-      await _pumpFilter(tester, mockDb);
+      await hPumpFilter(tester, mockDb);
 
       // Assert: JournalEvent is filtered out (default false behavior)
       expect(find.text('Event'), findsNothing);
@@ -152,7 +94,7 @@ void main() {
         (_) => flagController.stream,
       );
 
-      await _pumpFilter(tester, mockDb, pumpAfterMount: false);
+      await hPumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Initial: flag OFF, verify Event chip hidden
       flagController.add({
@@ -198,7 +140,7 @@ void main() {
           },
         ]),
       );
-      await _pumpFilter(tester, mockDb);
+      await hPumpFilter(tester, mockDb);
 
       // Assert: Habit chip is hidden
       expect(find.text('Habit'), findsNothing);
@@ -219,7 +161,7 @@ void main() {
           },
         ]),
       );
-      await _pumpFilter(tester, mockDb);
+      await hPumpFilter(tester, mockDb);
 
       // Assert: Habit chip is visible
       expect(find.text('Habit'), findsOneWidget);
@@ -240,7 +182,7 @@ void main() {
             },
           ]),
         );
-        await _pumpFilter(tester, mockDb);
+        await hPumpFilter(tester, mockDb);
 
         // Assert: Measured and Health chips are hidden
         expect(find.text('Measured'), findsNothing);
@@ -263,7 +205,7 @@ void main() {
           },
         ]),
       );
-      await _pumpFilter(tester, mockDb);
+      await hPumpFilter(tester, mockDb);
 
       // Assert: Measured and Health chips are visible
       expect(find.text('Measured'), findsOneWidget);
@@ -277,7 +219,7 @@ void main() {
         (_) => flagController.stream,
       );
 
-      await _pumpFilter(tester, mockDb, pumpAfterMount: false);
+      await hPumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Emit initial value: Events enabled
       flagController.add({
@@ -314,7 +256,7 @@ void main() {
         (_) => flagController.stream,
       );
 
-      await _pumpFilter(tester, mockDb, pumpAfterMount: false);
+      await hPumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Emit initial value (empty = flags disabled)
       flagController.add(<ConfigFlag>{});
@@ -344,7 +286,7 @@ void main() {
         (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
       );
 
-      await _pumpFilter(tester, mockDb, pumpAfterMount: false);
+      await hPumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Initial state: all flags loading (empty set means no flags active)
       await tester.pump();
@@ -374,7 +316,7 @@ void main() {
           },
         ]),
       );
-      await _pumpFilter(tester, mockDb);
+      await hPumpFilter(tester, mockDb);
 
       // Assert: Event chip visible (flag loaded and true)
       expect(find.text('Event'), findsOneWidget);
@@ -393,7 +335,7 @@ void main() {
         (_) => flagController.stream,
       );
 
-      await _pumpFilter(tester, mockDb, pumpAfterMount: false);
+      await hPumpFilter(tester, mockDb, pumpAfterMount: false);
 
       // Initial: Events enabled
       flagController.add({
@@ -435,356 +377,5 @@ void main() {
 
       await flagController.close();
     });
-  });
-
-  group('EntryTypeChip interaction tests', () {
-    late FakeJournalPageController fakeController;
-    late MockJournalDb mockDb;
-
-    setUp(() {
-      mockDb = MockJournalDb();
-      // Enable all flags so all chips are visible
-      when(() => mockDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          {
-            const ConfigFlag(
-              name: enableEventsFlag,
-              description: 'Enable Events?',
-              status: true,
-            ),
-            const ConfigFlag(
-              name: enableHabitsPageFlag,
-              description: 'Enable Habits Page?',
-              status: true,
-            ),
-            const ConfigFlag(
-              name: enableDashboardsPageFlag,
-              description: 'Enable Dashboards Page?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-    });
-
-    tearDown(() async {
-      await GetIt.I.reset();
-    });
-
-    testWidgets('tapping entry type chip calls toggleSelectedEntryTypes', (
-      tester,
-    ) async {
-      const state = JournalPageState(
-        taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: {'OPEN'},
-        selectedEntryTypes: [],
-      );
-      fakeController = FakeJournalPageController(state);
-
-      await _pumpFilter(
-        tester,
-        mockDb,
-        controllerFactory: () => fakeController,
-        pumpAfterMount: false,
-      );
-
-      await tester.pump();
-
-      // Find and tap the Task chip
-      await tester.tap(find.text('Task'));
-      await tester.pump();
-
-      // Verify toggleSelectedEntryTypes was called with 'Task'
-      expect(fakeController.toggledEntryTypes, contains('Task'));
-    });
-
-    testWidgets('long pressing entry type chip calls selectSingleEntryType', (
-      tester,
-    ) async {
-      const state = JournalPageState(
-        taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: {'OPEN'},
-        selectedEntryTypes: ['Task', 'JournalEntry'],
-      );
-      fakeController = FakeJournalPageController(state);
-
-      await _pumpFilter(
-        tester,
-        mockDb,
-        controllerFactory: () => fakeController,
-        pumpAfterMount: false,
-      );
-
-      await tester.pump();
-
-      // Long press the Text chip
-      await tester.longPress(find.text('Text'));
-      await tester.pump();
-
-      // Verify selectSingleEntryType was called
-      expect(fakeController.singleEntryTypeCalls, contains('JournalEntry'));
-    });
-
-    testWidgets('selected entry type chip shows selected state', (
-      tester,
-    ) async {
-      const state = JournalPageState(
-        taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: {'OPEN'},
-        selectedEntryTypes: ['Task'],
-      );
-      fakeController = FakeJournalPageController(state);
-
-      await _pumpFilter(
-        tester,
-        mockDb,
-        controllerFactory: () => fakeController,
-        pumpAfterMount: false,
-      );
-
-      await tester.pump();
-
-      // Find the FilterChoiceChip for Task - it should be selected
-      final taskChipFinder = find.ancestor(
-        of: find.text('Task'),
-        matching: find.byType(FilterChoiceChip),
-      );
-      expect(taskChipFinder, findsOneWidget);
-
-      final taskChip = tester.widget<FilterChoiceChip>(taskChipFinder);
-      expect(taskChip.isSelected, isTrue);
-
-      // Find the FilterChoiceChip for Text - it should NOT be selected
-      final textChipFinder = find.ancestor(
-        of: find.text('Text'),
-        matching: find.byType(FilterChoiceChip),
-      );
-      expect(textChipFinder, findsOneWidget);
-
-      final textChip = tester.widget<FilterChoiceChip>(textChipFinder);
-      expect(textChip.isSelected, isFalse);
-    });
-
-    testWidgets('displays correct labels for all entry types', (tester) async {
-      const state = JournalPageState(
-        taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: {'OPEN'},
-        selectedEntryTypes: [],
-      );
-      fakeController = FakeJournalPageController(state);
-
-      await _pumpFilter(
-        tester,
-        mockDb,
-        controllerFactory: () => fakeController,
-        pumpAfterMount: false,
-      );
-
-      await tester.pump();
-
-      // Verify all entry type labels are present
-      // Labels come from app_en.arb localization
-      expect(find.text('Task'), findsOneWidget);
-      expect(find.text('Text'), findsOneWidget); // JournalEntry
-      expect(find.text('Audio'), findsOneWidget); // JournalAudio
-      expect(find.text('Photo'), findsOneWidget); // JournalImage
-      expect(find.text('Event'), findsOneWidget); // JournalEvent
-      expect(find.text('Habit'), findsOneWidget); // HabitCompletionEntry
-      expect(find.text('Measured'), findsOneWidget); // MeasurementEntry
-      expect(find.text('Health'), findsOneWidget); // QuantitativeEntry
-      expect(find.text('Survey'), findsOneWidget); // SurveyEntry
-      expect(find.text('Workout'), findsOneWidget); // WorkoutEntry
-      expect(find.text('Checklist'), findsOneWidget); // Checklist
-      expect(find.text('To Do'), findsOneWidget); // ChecklistItem
-      expect(find.text('AI Response'), findsOneWidget); // AiResponse
-      // The "All" chip should also be present
-      expect(find.text('All'), findsOneWidget);
-    });
-  });
-
-  group('EntryTypeAllChip interaction tests', () {
-    late FakeJournalPageController fakeController;
-    late MockJournalDb mockDb;
-
-    setUp(() {
-      mockDb = MockJournalDb();
-      // Enable all flags so all chips are visible
-      when(() => mockDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          {
-            const ConfigFlag(
-              name: enableEventsFlag,
-              description: 'Enable Events?',
-              status: true,
-            ),
-            const ConfigFlag(
-              name: enableHabitsPageFlag,
-              description: 'Enable Habits Page?',
-              status: true,
-            ),
-            const ConfigFlag(
-              name: enableDashboardsPageFlag,
-              description: 'Enable Dashboards Page?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-    });
-
-    tearDown(() async {
-      await GetIt.I.reset();
-    });
-
-    testWidgets(
-      'tapping All chip when not all selected calls selectAllEntryTypes',
-      (tester) async {
-        const state = JournalPageState(
-          taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-          selectedTaskStatuses: {'OPEN'},
-          selectedEntryTypes: ['Task'], // Only one selected, not all
-        );
-        fakeController = FakeJournalPageController(state);
-
-        await _pumpFilter(
-          tester,
-          mockDb,
-          controllerFactory: () => fakeController,
-          pumpAfterMount: false,
-        );
-
-        await tester.pump();
-
-        // Tap the "All" chip
-        await tester.tap(find.text('All'));
-        await tester.pump();
-
-        // Verify selectAllEntryTypes was called
-        expect(fakeController.selectAllEntryTypesCalled, equals(1));
-      },
-    );
-
-    testWidgets(
-      'tapping All chip when all selected calls clearSelectedEntryTypes',
-      (tester) async {
-        // All entry types that are enabled by the flags
-        final allEntryTypes = [
-          'Task',
-          'JournalEntry',
-          'JournalEvent',
-          'JournalAudio',
-          'JournalImage',
-          'MeasurementEntry',
-          'SurveyEntry',
-          'WorkoutEntry',
-          'HabitCompletionEntry',
-          'QuantitativeEntry',
-          'Checklist',
-          'ChecklistItem',
-          'AiResponse',
-        ];
-
-        final state = JournalPageState(
-          taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
-          selectedTaskStatuses: const {'OPEN'},
-          selectedEntryTypes: allEntryTypes,
-        );
-        fakeController = FakeJournalPageController(state);
-
-        await _pumpFilter(
-          tester,
-          mockDb,
-          controllerFactory: () => fakeController,
-          pumpAfterMount: false,
-        );
-
-        await tester.pump();
-
-        // Tap the "All" chip
-        await tester.tap(find.text('All'));
-        await tester.pump();
-
-        // Verify clearSelectedEntryTypes was called
-        expect(fakeController.clearSelectedEntryTypesCalled, equals(1));
-      },
-    );
-
-    testWidgets('All chip shows selected state when all types are selected', (
-      tester,
-    ) async {
-      // All entry types that are enabled by the flags
-      final allEntryTypes = [
-        'Task',
-        'JournalEntry',
-        'JournalEvent',
-        'JournalAudio',
-        'JournalImage',
-        'MeasurementEntry',
-        'SurveyEntry',
-        'WorkoutEntry',
-        'HabitCompletionEntry',
-        'QuantitativeEntry',
-        'Checklist',
-        'ChecklistItem',
-        'AiResponse',
-      ];
-
-      final state = JournalPageState(
-        taskStatuses: const ['OPEN', 'GROOMED', 'IN PROGRESS'],
-        selectedTaskStatuses: const {'OPEN'},
-        selectedEntryTypes: allEntryTypes,
-      );
-      fakeController = FakeJournalPageController(state);
-
-      await _pumpFilter(
-        tester,
-        mockDb,
-        controllerFactory: () => fakeController,
-        pumpAfterMount: false,
-      );
-
-      await tester.pump();
-
-      // Find the "All" FilterChoiceChip
-      final allChipFinder = find.ancestor(
-        of: find.text('All'),
-        matching: find.byType(FilterChoiceChip),
-      );
-      expect(allChipFinder, findsOneWidget);
-
-      final allChip = tester.widget<FilterChoiceChip>(allChipFinder);
-      expect(allChip.isSelected, isTrue);
-    });
-
-    testWidgets(
-      'All chip shows unselected state when not all types are selected',
-      (tester) async {
-        const state = JournalPageState(
-          taskStatuses: ['OPEN', 'GROOMED', 'IN PROGRESS'],
-          selectedTaskStatuses: {'OPEN'},
-          selectedEntryTypes: ['Task', 'JournalEntry'], // Only some selected
-        );
-        fakeController = FakeJournalPageController(state);
-
-        await _pumpFilter(
-          tester,
-          mockDb,
-          controllerFactory: () => fakeController,
-          pumpAfterMount: false,
-        );
-
-        await tester.pump();
-
-        // Find the "All" FilterChoiceChip
-        final allChipFinder = find.ancestor(
-          of: find.text('All'),
-          matching: find.byType(FilterChoiceChip),
-        );
-        expect(allChipFinder, findsOneWidget);
-
-        final allChip = tester.widget<FilterChoiceChip>(allChipFinder);
-        expect(allChip.isSelected, isFalse);
-      },
-    );
   });
 }

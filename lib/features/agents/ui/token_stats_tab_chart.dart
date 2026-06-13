@@ -1,10 +1,19 @@
-part of 'token_stats_tab.dart';
+import 'dart:math' as math;
 
-class _InteractiveWeeklyChart extends StatelessWidget {
-  const _InteractiveWeeklyChart({
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/features/agents/model/daily_token_usage.dart';
+import 'package:lotti/features/agents/ui/token_stats_tab.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
+
+class InteractiveWeeklyChart extends StatelessWidget {
+  const InteractiveWeeklyChart({
     required this.days,
     required this.selectedIndex,
     required this.onBarTap,
+    super.key,
   });
 
   final List<DailyTokenUsage>? days;
@@ -54,7 +63,7 @@ class _InteractiveWeeklyChart extends StatelessWidget {
               if (avgTotal > 0)
                 Positioned.fill(
                   child: CustomPaint(
-                    painter: _AverageDashedLinePainter(
+                    painter: AverageDashedLinePainter(
                       fraction: avgFraction,
                       color: context.colorScheme.onSurfaceVariant.withValues(
                         alpha: 0.4,
@@ -265,8 +274,8 @@ class _DayBar extends StatelessWidget {
 
 // ── Selected Day Detail ─────────────────────────────────────────────────────
 
-class _SelectedDayDetail extends StatelessWidget {
-  const _SelectedDayDetail({required this.day});
+class SelectedDayDetail extends StatelessWidget {
+  const SelectedDayDetail({required this.day, super.key});
 
   final DailyTokenUsage day;
 
@@ -296,7 +305,7 @@ class _SelectedDayDetail extends StatelessWidget {
               ),
               const Spacer(),
               Text(
-                _formatTokenCount(day.totalTokens),
+                formatTokenCount(day.totalTokens),
                 style: context.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w700,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -351,7 +360,7 @@ class _SelectedDayDetail extends StatelessWidget {
                 if (day.tokensPerWake > 0)
                   _MiniMetric(
                     label: context.messages.agentStatsTokensPerWakeLabel,
-                    value: _formatTokenCount(day.tokensPerWake),
+                    value: formatTokenCount(day.tokensPerWake),
                   ),
                 if (day.tokensPerWake > 0)
                   SizedBox(width: tokens.spacing.step5),
@@ -415,7 +424,7 @@ class _TokenBreakdownRow extends StatelessWidget {
         SizedBox(
           width: 52,
           child: Text(
-            _formatTokenCount(value),
+            formatTokenCount(value),
             textAlign: TextAlign.end,
             style: context.textTheme.bodySmall?.copyWith(
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -462,13 +471,13 @@ class _MiniMetric extends StatelessWidget {
 
 // ── Chart Legend ─────────────────────────────────────────────────────────────
 
-class _ChartLegend extends StatelessWidget {
-  const _ChartLegend();
+class ChartLegend extends StatelessWidget {
+  const ChartLegend({super.key});
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final timeStr = _currentTimeString();
+    final timeStr = currentTimeString();
 
     return Row(
       children: [
@@ -515,5 +524,3 @@ class _LegendDot extends StatelessWidget {
     );
   }
 }
-
-// ── Per-Model Charts Section ────────────────────────────────────────────────

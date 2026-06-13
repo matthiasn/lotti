@@ -1,10 +1,27 @@
-part of 'sync_sequence_log_service.dart';
+import 'dart:math' as math;
 
-/// Large-gap materialization and covered-counter bookkeeping of
-/// [SyncSequenceLogService] — the private heavy lifting behind the
-/// receive path.
-extension SyncSequenceGapMaterializer on SyncSequenceLogService {
-  Future<int> _materializeLargeGap({
+import 'package:drift/drift.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_cache.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_tracer.dart';
+import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
+
+/// Large-gap materialization and covered-counter bookkeeping for the sync
+/// sequence log — the heavy lifting behind the receive path.
+class SyncSequenceGapMaterializer {
+  SyncSequenceGapMaterializer({
+    required this._syncDatabase,
+    required this._cache,
+    required this._tracer,
+  });
+
+  final SyncDatabase _syncDatabase;
+  final SyncSequenceCache _cache;
+  final SyncSequenceTracer _tracer;
+
+  Future<int> materializeLargeGap({
     required String hostId,
     required int startCounter,
     required int endCounter,
@@ -13,7 +30,7 @@ extension SyncSequenceGapMaterializer on SyncSequenceLogService {
     required DateTime now,
   }) async {
     if (gapSize >= SyncTuning.extremeGapWarningSize) {
-      _trace(
+      _tracer.trace(
         'extremeGapDetected hostId=$hostId gapSize=$gapSize '
         'start=$startCounter end=$endCounter '
         'chunkSize=${SyncTuning.gapMaterializationChunkSize}',
@@ -62,7 +79,7 @@ extension SyncSequenceGapMaterializer on SyncSequenceLogService {
     return insertedCount;
   }
 
-  List<VectorClock> _filterCoveredVectorClocks(
+  List<VectorClock> filterCoveredVectorClocks(
     List<VectorClock>? coveredVectorClocks,
     VectorClock current,
   ) {
@@ -88,7 +105,7 @@ extension SyncSequenceGapMaterializer on SyncSequenceLogService {
   /// yet in the sequence log. This pre-emptively marks them as received before
   /// gap detection can mark them as missing, preventing unnecessary backfill
   /// requests for counters that were superseded before being sent.
-  Future<void> _markCoveredCountersAsReceived({
+  Future<void> markCoveredCountersAsReceived({
     required List<VectorClock> coveredVectorClocks,
     required String entryId,
     required SyncSequencePayloadType payloadType,
@@ -148,7 +165,7 @@ extension SyncSequenceGapMaterializer on SyncSequenceLogService {
           markedCount++;
           affectedHosts.add(hostId);
           if (existing.status == SyncSequenceStatus.requested.index) {
-            _trace(
+            _tracer.trace(
               'recordReceivedEntry: requestedResolved (covered) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
               subDomain: 'sequence.requestedResolved',
             );
@@ -163,8 +180,8 @@ extension SyncSequenceGapMaterializer on SyncSequenceLogService {
       // gap detection in the same recordReceivedEntry call sees the updated
       // contiguous watermark. Without this, the stale cached watermark causes
       // repeated gap detection events for counters that were just resolved.
-      affectedHosts.forEach(_invalidateCacheForHost);
-      _trace(
+      affectedHosts.forEach(_cache.invalidateCacheForHost);
+      _tracer.trace(
         'markCoveredCountersAsReceived: marked $markedCount counters as received for entry=$entryId',
         subDomain: 'sequence.coveredClocks',
       );

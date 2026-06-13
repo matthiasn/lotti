@@ -3,103 +3,14 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
-import 'package:lotti/features/ai/repository/vector_search_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_query_runner.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-final _testDate = DateTime(2024, 3, 15);
-
-Task _makeTask({
-  required String id,
-  required DateTime createdAt,
-  DateTime? due,
-  String? categoryId,
-}) {
-  return Task(
-    data: TaskData(
-      status: TaskStatus.open(
-        id: 'status-$id',
-        createdAt: createdAt,
-        utcOffset: 0,
-      ),
-      title: 'Task $id',
-      statusHistory: const [],
-      dateFrom: createdAt,
-      dateTo: createdAt,
-      due: due,
-    ),
-    meta: Metadata(
-      id: id,
-      createdAt: createdAt,
-      dateFrom: createdAt,
-      dateTo: createdAt,
-      updatedAt: createdAt,
-      categoryId: categoryId,
-    ),
-  );
-}
-
-JournalEntry _makeEntry({
-  required String id,
-  required DateTime createdAt,
-}) {
-  return JournalEntry(
-    entryText: EntryText(plainText: 'Entry $id', markdown: 'Entry $id'),
-    meta: Metadata(
-      id: id,
-      createdAt: createdAt,
-      dateFrom: createdAt,
-      dateTo: createdAt,
-      updatedAt: createdAt,
-    ),
-  );
-}
-
-JournalQueryParams _defaultParams({
-  bool showTasks = false,
-  Set<String> selectedEntryTypes = const {},
-  Set<String> selectedCategoryIds = const {},
-  Set<String> selectedProjectIds = const {},
-  Set<String> selectedLabelIds = const {},
-  Set<String> selectedPriorities = const {},
-  Set<String> selectedTaskStatuses = const {'OPEN', 'GROOMED', 'IN PROGRESS'},
-  TaskSortOption sortOption = TaskSortOption.byPriority,
-  AgentAssignmentFilter agentAssignmentFilter = AgentAssignmentFilter.all,
-  Set<DisplayFilter> filters = const {},
-  String query = '',
-  bool enableVectorSearch = false,
-  SearchMode searchMode = SearchMode.fullText,
-  bool enableEvents = true,
-  bool enableHabits = true,
-  bool enableDashboards = true,
-}) {
-  return JournalQueryParams(
-    showTasks: showTasks,
-    selectedEntryTypes: selectedEntryTypes,
-    selectedCategoryIds: selectedCategoryIds,
-    selectedProjectIds: selectedProjectIds,
-    selectedLabelIds: selectedLabelIds,
-    selectedPriorities: selectedPriorities,
-    selectedTaskStatuses: selectedTaskStatuses,
-    sortOption: sortOption,
-    agentAssignmentFilter: agentAssignmentFilter,
-    filters: filters,
-    query: query,
-    enableVectorSearch: enableVectorSearch,
-    searchMode: searchMode,
-    enableEvents: enableEvents,
-    enableHabits: enableHabits,
-    enableDashboards: enableDashboards,
-  );
-}
+import 'journal_query_runner_test_helpers.dart';
 
 void main() {
   late MockJournalDb mockJournalDb;
@@ -199,12 +110,12 @@ void main() {
 
   group('sortByDueDate', () {
     test('sorts tasks with due dates before tasks without', () {
-      final withDue = _makeTask(
+      final withDue = hMakeTask(
         id: 'with-due',
         createdAt: DateTime(2024, 1, 1),
         due: DateTime(2024, 6, 15),
       );
-      final withoutDue = _makeTask(
+      final withoutDue = hMakeTask(
         id: 'without-due',
         createdAt: DateTime(2024, 1, 2),
       );
@@ -216,12 +127,12 @@ void main() {
     });
 
     test('sorts tasks by due date ascending (soonest first)', () {
-      final sooner = _makeTask(
+      final sooner = hMakeTask(
         id: 'sooner',
         createdAt: DateTime(2024, 1, 1),
         due: DateTime(2024, 3, 1),
       );
-      final later = _makeTask(
+      final later = hMakeTask(
         id: 'later',
         createdAt: DateTime(2024, 1, 2),
         due: DateTime(2024, 9, 1),
@@ -234,12 +145,12 @@ void main() {
     });
 
     test('preserves creation date order for same due date', () {
-      final newer = _makeTask(
+      final newer = hMakeTask(
         id: 'newer',
         createdAt: DateTime(2024, 2, 1),
         due: DateTime(2024, 6, 15),
       );
-      final older = _makeTask(
+      final older = hMakeTask(
         id: 'older',
         createdAt: DateTime(2024, 1, 1),
         due: DateTime(2024, 6, 15),
@@ -253,21 +164,21 @@ void main() {
     });
 
     test('handles mixed tasks with and without due dates', () {
-      final dueSoon = _makeTask(
+      final dueSoon = hMakeTask(
         id: 'due-soon',
         createdAt: DateTime(2024, 1, 1),
         due: DateTime(2024, 3, 1),
       );
-      final dueLate = _makeTask(
+      final dueLate = hMakeTask(
         id: 'due-late',
         createdAt: DateTime(2024, 1, 2),
         due: DateTime(2024, 12, 1),
       );
-      final noDue1 = _makeTask(
+      final noDue1 = hMakeTask(
         id: 'no-due-newer',
         createdAt: DateTime(2024, 3, 1),
       );
-      final noDue2 = _makeTask(
+      final noDue2 = hMakeTask(
         id: 'no-due-older',
         createdAt: DateTime(2024, 1, 1),
       );
@@ -286,15 +197,15 @@ void main() {
     test(
       'handles all tasks without due dates (falls back to creation date)',
       () {
-        final newest = _makeTask(
+        final newest = hMakeTask(
           id: 'newest',
           createdAt: DateTime(2024, 6, 1),
         );
-        final middle = _makeTask(
+        final middle = hMakeTask(
           id: 'middle',
           createdAt: DateTime(2024, 3, 1),
         );
-        final oldest = _makeTask(
+        final oldest = hMakeTask(
           id: 'oldest',
           createdAt: DateTime(2024, 1, 1),
         );
@@ -365,7 +276,7 @@ void main() {
   group('runQuery - journal entries', () {
     test('calls getJournalEntities for showTasks=false', () {
       fakeAsync((async) {
-        final entry = _makeEntry(id: 'e-1', createdAt: _testDate);
+        final entry = hMakeEntry(id: 'e-1', createdAt: hTestDate);
 
         when(
           () => mockJournalDb.getJournalEntities(
@@ -380,7 +291,7 @@ void main() {
           ),
         ).thenAnswer((_) async => [entry]);
 
-        final params = _defaultParams();
+        final params = hDefaultParams();
 
         late List<JournalEntity> result;
         runner.runQuery(params, 0, fullTextMatches: {}).then((r) => result = r);
@@ -405,7 +316,7 @@ void main() {
 
     test('passes categoryIds when selectedCategoryIds is non-empty', () {
       fakeAsync((async) {
-        final params = _defaultParams(
+        final params = hDefaultParams(
           selectedCategoryIds: {'cat-1', 'cat-2'},
         );
 
@@ -435,7 +346,7 @@ void main() {
 
     test('passes correct types filtered by feature flags', () {
       fakeAsync((async) {
-        final params = _defaultParams(
+        final params = hDefaultParams(
           selectedEntryTypes: {'JournalEntry', 'JournalEvent', 'Task'},
           enableEvents: false,
         );
@@ -468,7 +379,7 @@ void main() {
   group('runQuery - tasks without post-filter', () {
     test('calls getTasks with correct params', () {
       fakeAsync((async) {
-        final task = _makeTask(id: 'task-1', createdAt: _testDate);
+        final task = hMakeTask(id: 'task-1', createdAt: hTestDate);
 
         when(
           () => mockJournalDb.getTasks(
@@ -484,7 +395,7 @@ void main() {
           ),
         ).thenAnswer((_) async => [task]);
 
-        final params = _defaultParams(
+        final params = hDefaultParams(
           showTasks: true,
           selectedTaskStatuses: {'OPEN'},
         );
@@ -513,12 +424,12 @@ void main() {
 
     test('uses getTasksSortedByDueDate when sortOption is byDueDate', () {
       fakeAsync((async) {
-        final taskWithDue = _makeTask(
+        final taskWithDue = hMakeTask(
           id: 'with-due',
           createdAt: DateTime(2024, 1, 2),
           due: DateTime(2024, 6, 1),
         );
-        final taskNoDue = _makeTask(
+        final taskNoDue = hMakeTask(
           id: 'no-due',
           createdAt: DateTime(2024, 1, 1),
         );
@@ -537,7 +448,7 @@ void main() {
           ),
         ).thenAnswer((_) async => [taskWithDue, taskNoDue]);
 
-        final params = _defaultParams(
+        final params = hDefaultParams(
           showTasks: true,
           sortOption: TaskSortOption.byDueDate,
         );
@@ -564,562 +475,4 @@ void main() {
       });
     });
   });
-
-  group('runQuery - tasks with post-filter', () {
-    test('post-filters by project IDs', () {
-      fakeAsync((async) {
-        final taskInProject = _makeTask(
-          id: 'in-project',
-          createdAt: _testDate,
-        );
-        final taskNotInProject = _makeTask(
-          id: 'not-in-project',
-          createdAt: _testDate,
-        );
-
-        when(
-          () => mockJournalDb.getTasks(
-            ids: any(named: 'ids'),
-            starredStatuses: any(named: 'starredStatuses'),
-            taskStatuses: any(named: 'taskStatuses'),
-            categoryIds: any(named: 'categoryIds'),
-            labelIds: any(named: 'labelIds'),
-            priorities: any(named: 'priorities'),
-            sortByDate: any(named: 'sortByDate'),
-            limit: any(named: 'limit'),
-            offset: any(named: 'offset'),
-          ),
-        ).thenAnswer(
-          (_) async => [taskInProject, taskNotInProject],
-        );
-
-        when(
-          () => mockJournalDb.getTaskIdsForProjects({'proj-1'}),
-        ).thenAnswer((_) async => {'in-project'});
-
-        final params = _defaultParams(
-          showTasks: true,
-          selectedProjectIds: {'proj-1'},
-        );
-
-        int? capturedOffset;
-        late List<JournalEntity> result;
-        runner
-            .runQuery(
-              params,
-              0,
-              fullTextMatches: {},
-              setPostFilterNextRawOffset: (offset) {
-                capturedOffset = offset;
-              },
-            )
-            .then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result, hasLength(1));
-        expect(result.first.meta.id, equals('in-project'));
-        expect(capturedOffset, isNotNull);
-      });
-    });
-
-    test('post-filters by agent assignment (hasAgent)', () {
-      fakeAsync((async) {
-        final mockAgentDb = MockAgentDatabase();
-        getIt.registerSingleton<AgentDatabase>(mockAgentDb);
-
-        when(
-          mockAgentDb.getAgentTaskLinkToIds,
-        ).thenReturn(MockSelectable<String>(['agent-task']));
-
-        final agentTask = _makeTask(
-          id: 'agent-task',
-          createdAt: _testDate,
-        );
-        final noAgentTask = _makeTask(
-          id: 'no-agent-task',
-          createdAt: _testDate,
-        );
-
-        when(
-          () => mockJournalDb.getTasks(
-            ids: any(named: 'ids'),
-            starredStatuses: any(named: 'starredStatuses'),
-            taskStatuses: any(named: 'taskStatuses'),
-            categoryIds: any(named: 'categoryIds'),
-            labelIds: any(named: 'labelIds'),
-            priorities: any(named: 'priorities'),
-            sortByDate: any(named: 'sortByDate'),
-            limit: any(named: 'limit'),
-            offset: any(named: 'offset'),
-          ),
-        ).thenAnswer((_) async => [agentTask, noAgentTask]);
-
-        final params = _defaultParams(
-          showTasks: true,
-          agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
-        );
-
-        late List<JournalEntity> result;
-        runner.runQuery(params, 0, fullTextMatches: {}).then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result, hasLength(1));
-        expect(result.first.meta.id, equals('agent-task'));
-      });
-    });
-
-    test('post-filters by agent assignment (noAgent)', () {
-      fakeAsync((async) {
-        final mockAgentDb = MockAgentDatabase();
-        getIt.registerSingleton<AgentDatabase>(mockAgentDb);
-
-        when(
-          mockAgentDb.getAgentTaskLinkToIds,
-        ).thenReturn(MockSelectable<String>(['agent-task']));
-
-        final agentTask = _makeTask(
-          id: 'agent-task',
-          createdAt: _testDate,
-        );
-        final noAgentTask = _makeTask(
-          id: 'no-agent-task',
-          createdAt: _testDate,
-        );
-
-        when(
-          () => mockJournalDb.getTasks(
-            ids: any(named: 'ids'),
-            starredStatuses: any(named: 'starredStatuses'),
-            taskStatuses: any(named: 'taskStatuses'),
-            categoryIds: any(named: 'categoryIds'),
-            labelIds: any(named: 'labelIds'),
-            priorities: any(named: 'priorities'),
-            sortByDate: any(named: 'sortByDate'),
-            limit: any(named: 'limit'),
-            offset: any(named: 'offset'),
-          ),
-        ).thenAnswer((_) async => [agentTask, noAgentTask]);
-
-        final params = _defaultParams(
-          showTasks: true,
-          agentAssignmentFilter: AgentAssignmentFilter.noAgent,
-        );
-
-        late List<JournalEntity> result;
-        runner.runQuery(params, 0, fullTextMatches: {}).then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result, hasLength(1));
-        expect(result.first.meta.id, equals('no-agent-task'));
-      });
-    });
-
-    test(
-      'fetches a second chunk when the first is fully filtered out, applies '
-      'both filters simultaneously, and stops on a partial chunk',
-      () {
-        fakeAsync((async) {
-          const chunk = JournalQueryRunner.pageSize;
-          final mockAgentDb = MockAgentDatabase();
-          getIt.registerSingleton<AgentDatabase>(mockAgentDb);
-
-          // Agent links: both-match and agent-only carry an agent link.
-          when(
-            mockAgentDb.getAgentTaskLinkToIds,
-          ).thenReturn(MockSelectable<String>(['both-match', 'agent-only']));
-
-          // Project membership: only both-match belongs to proj-1.
-          when(
-            () => mockJournalDb.getTaskIdsForProjects({'proj-1'}),
-          ).thenAnswer((_) async => {'both-match'});
-
-          // Chunk 1 (offset 0): a full page of tasks, none of which match
-          // the project filter -> the loop must fetch a second chunk.
-          final chunk1 = List.generate(
-            chunk,
-            (i) => _makeTask(id: 'c1-$i', createdAt: _testDate),
-          );
-          // Chunk 2 (offset = chunk): partial (2 < pageSize) -> loop exits
-          // after consuming it. agent-only fails the project filter; only
-          // both-match survives both filters.
-          final chunk2 = [
-            _makeTask(id: 'both-match', createdAt: _testDate),
-            _makeTask(id: 'agent-only', createdAt: _testDate),
-          ];
-          when(
-            () => mockJournalDb.getTasks(
-              ids: any(named: 'ids'),
-              starredStatuses: any(named: 'starredStatuses'),
-              taskStatuses: any(named: 'taskStatuses'),
-              categoryIds: any(named: 'categoryIds'),
-              labelIds: any(named: 'labelIds'),
-              priorities: any(named: 'priorities'),
-              sortByDate: any(named: 'sortByDate'),
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-            ),
-          ).thenAnswer((invocation) async {
-            final offset = invocation.namedArguments[#offset] as int?;
-            return offset == 0 ? chunk1 : chunk2;
-          });
-
-          final params = _defaultParams(
-            showTasks: true,
-            selectedProjectIds: {'proj-1'},
-            agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
-          );
-
-          int? capturedOffset;
-          late List<JournalEntity> result;
-          runner
-              .runQuery(
-                params,
-                0,
-                fullTextMatches: {},
-                setPostFilterNextRawOffset: (offset) => capturedOffset = offset,
-              )
-              .then((r) => result = r);
-          async.flushMicrotasks();
-
-          expect(result, hasLength(1));
-          expect(result.single.meta.id, 'both-match');
-          // Both chunks were consumed: full chunk + 2 partial rows.
-          expect(capturedOffset, chunk + 2);
-        });
-      },
-    );
-
-    test('calls setPostFilterNextRawOffset with correct offset', () {
-      fakeAsync((async) {
-        final tasks = List.generate(
-          3,
-          (i) => _makeTask(id: 'task-$i', createdAt: _testDate),
-        );
-
-        when(
-          () => mockJournalDb.getTasks(
-            ids: any(named: 'ids'),
-            starredStatuses: any(named: 'starredStatuses'),
-            taskStatuses: any(named: 'taskStatuses'),
-            categoryIds: any(named: 'categoryIds'),
-            labelIds: any(named: 'labelIds'),
-            priorities: any(named: 'priorities'),
-            sortByDate: any(named: 'sortByDate'),
-            limit: any(named: 'limit'),
-            offset: any(named: 'offset'),
-          ),
-        ).thenAnswer((_) async => tasks);
-
-        // Only task-0 is in the project
-        when(
-          () => mockJournalDb.getTaskIdsForProjects({'proj-1'}),
-        ).thenAnswer((_) async => {'task-0'});
-
-        final params = _defaultParams(
-          showTasks: true,
-          selectedProjectIds: {'proj-1'},
-        );
-
-        int? capturedOffset;
-        late List<JournalEntity> result;
-        runner
-            .runQuery(
-              params,
-              0,
-              fullTextMatches: {},
-              setPostFilterNextRawOffset: (offset) {
-                capturedOffset = offset;
-              },
-            )
-            .then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result, hasLength(1));
-        // Consumed all 3 rows (< fetchChunk of 50), so offset = 0 + 3
-        expect(capturedOffset, equals(3));
-      });
-    });
-  });
-
-  group('getAgentLinkedTaskIds', () {
-    test('caches result across multiple calls', () {
-      fakeAsync((async) {
-        final mockAgentDb = MockAgentDatabase();
-        getIt.registerSingleton<AgentDatabase>(mockAgentDb);
-
-        when(
-          mockAgentDb.getAgentTaskLinkToIds,
-        ).thenReturn(MockSelectable<String>(['linked-1', 'linked-2']));
-
-        late Set<String> result1;
-        late Set<String> result2;
-
-        runner.getAgentLinkedTaskIds().then((r) => result1 = r);
-        async.flushMicrotasks();
-
-        runner.getAgentLinkedTaskIds().then((r) => result2 = r);
-        async.flushMicrotasks();
-
-        expect(result1, equals({'linked-1', 'linked-2'}));
-        expect(result2, equals({'linked-1', 'linked-2'}));
-
-        // Database should only be queried once due to caching
-        verify(mockAgentDb.getAgentTaskLinkToIds).called(1);
-      });
-    });
-
-    test('clearCache resets the cache', () {
-      fakeAsync((async) {
-        final mockAgentDb = MockAgentDatabase();
-        getIt.registerSingleton<AgentDatabase>(mockAgentDb);
-
-        when(
-          mockAgentDb.getAgentTaskLinkToIds,
-        ).thenReturn(MockSelectable<String>(['linked-1']));
-
-        late Set<String> result1;
-        runner.getAgentLinkedTaskIds().then((r) => result1 = r);
-        async.flushMicrotasks();
-
-        expect(result1, equals({'linked-1'}));
-
-        // Clear cache and call again
-        runner.clearCache();
-
-        when(
-          mockAgentDb.getAgentTaskLinkToIds,
-        ).thenReturn(MockSelectable<String>(['linked-1', 'linked-3']));
-
-        late Set<String> result2;
-        runner.getAgentLinkedTaskIds().then((r) => result2 = r);
-        async.flushMicrotasks();
-
-        expect(result2, equals({'linked-1', 'linked-3'}));
-
-        // Database queried twice: once before clear, once after
-        verify(mockAgentDb.getAgentTaskLinkToIds).called(2);
-      });
-    });
-  });
-
-  group('runVectorSearch', () {
-    test(
-      'returns empty result when VectorSearchRepository is not registered',
-      () {
-        fakeAsync((async) {
-          final params = _defaultParams(
-            query: 'test query',
-            enableVectorSearch: true,
-          );
-
-          late JournalVectorSearchResult result;
-          runner.runVectorSearch(params).then((r) => result = r);
-          async.flushMicrotasks();
-
-          expect(result.entities, isEmpty);
-          expect(result.elapsed, equals(Duration.zero));
-          expect(result.distances, isEmpty);
-        });
-      },
-    );
-
-    test('returns results with telemetry from repository', () {
-      fakeAsync((async) {
-        final mockVectorRepo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(mockVectorRepo);
-
-        final task = _makeTask(id: 'vec-task', createdAt: _testDate);
-        final vectorResult = VectorSearchResult(
-          entities: [task],
-          elapsed: const Duration(milliseconds: 150),
-          distances: {'vec-task': 0.42},
-        );
-
-        when(
-          () => mockVectorRepo.searchRelatedTasks(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer((_) async => vectorResult);
-
-        final params = _defaultParams(
-          showTasks: true,
-          query: 'semantic search',
-          enableVectorSearch: true,
-        );
-
-        late JournalVectorSearchResult result;
-        runner.runVectorSearch(params).then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result.entities, hasLength(1));
-        expect(result.entities.first.meta.id, equals('vec-task'));
-        expect(result.elapsed, equals(const Duration(milliseconds: 150)));
-        expect(result.distances, equals({'vec-task': 0.42}));
-      });
-    });
-
-    test('calls searchRelatedEntries when showTasks is false', () {
-      fakeAsync((async) {
-        final mockVectorRepo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(mockVectorRepo);
-
-        final entry = _makeEntry(id: 'vec-entry', createdAt: _testDate);
-        final vectorResult = VectorSearchResult(
-          entities: [entry],
-          elapsed: const Duration(milliseconds: 80),
-          distances: {'vec-entry': 0.3},
-        );
-
-        when(
-          () => mockVectorRepo.searchRelatedEntries(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer((_) async => vectorResult);
-
-        final params = _defaultParams(
-          showTasks: false,
-          query: 'semantic search',
-          enableVectorSearch: true,
-        );
-
-        late JournalVectorSearchResult result;
-        runner.runVectorSearch(params).then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result.entities, hasLength(1));
-        expect(result.entities.first.meta.id, equals('vec-entry'));
-
-        verify(
-          () => mockVectorRepo.searchRelatedEntries(
-            query: 'semantic search',
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).called(1);
-        verifyNever(
-          () => mockVectorRepo.searchRelatedTasks(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        );
-      });
-    });
-
-    test('passes null categoryIds when selectedCategoryIds is empty', () {
-      fakeAsync((async) {
-        final mockVectorRepo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(mockVectorRepo);
-
-        final vectorResult = VectorSearchResult(
-          entities: <JournalEntity>[],
-          elapsed: const Duration(milliseconds: 10),
-        );
-
-        when(
-          () => mockVectorRepo.searchRelatedEntries(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer((_) async => vectorResult);
-
-        final params = _defaultParams(
-          query: 'test query',
-          enableVectorSearch: true,
-          // selectedCategoryIds defaults to empty set
-        );
-
-        late JournalVectorSearchResult result;
-        runner.runVectorSearch(params).then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result.entities, isEmpty);
-
-        // Verify categoryIds was passed as null (not an empty set).
-        verify(
-          () => mockVectorRepo.searchRelatedEntries(
-            query: 'test query',
-            categoryIds: null,
-          ),
-        ).called(1);
-      });
-    });
-
-    test('returns empty result when repository throws', () {
-      fakeAsync((async) {
-        final mockVectorRepo = MockVectorSearchRepository();
-        getIt.registerSingleton<VectorSearchRepository>(mockVectorRepo);
-
-        when(
-          () => mockVectorRepo.searchRelatedTasks(
-            query: any(named: 'query'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenThrow(Exception('embedding service unavailable'));
-
-        final params = _defaultParams(
-          showTasks: true,
-          query: 'broken search',
-          enableVectorSearch: true,
-        );
-
-        late JournalVectorSearchResult result;
-        runner.runVectorSearch(params).then((r) => result = r);
-        async.flushMicrotasks();
-
-        expect(result.entities, isEmpty);
-        expect(result.elapsed, equals(Duration.zero));
-        expect(result.distances, isEmpty);
-      });
-    });
-  });
-}
-
-/// A generated mix of tasks with and without due dates, with deliberately
-/// colliding due dates and varied dateFrom values so every branch of the
-/// sortByDueDate comparator (due vs due, due vs none, tie-breaks) is hit.
-class _DueDateSortScenario {
-  _DueDateSortScenario({
-    required int withDueCount,
-    required int withoutDueCount,
-    required int seed,
-  }) : tasks = [
-         for (var i = 0; i < withDueCount; i++)
-           _makeTask(
-             id: 'due-$i',
-             createdAt: DateTime(2024, 3, 1 + (seed * 7 + i) % 28),
-             // % 5 keeps the due-date pool small so ties are frequent.
-             due: DateTime(2024, 6, 1 + (seed + i * 3) % 5),
-           ),
-         for (var i = 0; i < withoutDueCount; i++)
-           _makeTask(
-             id: 'free-$i',
-             createdAt: DateTime(2024, 4, 1 + (seed * 5 + i) % 28),
-           ),
-       ] {
-    // Deterministic interleave so the input order is not pre-sorted.
-    if (seed.isOdd) {
-      tasks = tasks.reversed.toList();
-    }
-  }
-
-  List<Task> tasks;
-
-  @override
-  String toString() =>
-      '_DueDateSortScenario(${tasks.map((t) => '${t.meta.id}@'
-          '${t.data.due}').join(', ')})';
-}
-
-extension _AnyDueDateSortScenario on glados.Any {
-  glados.Generator<_DueDateSortScenario> get dueDateSortScenario => combine3(
-    intInRange(0, 7),
-    intInRange(0, 7),
-    intInRange(0, 1000),
-    (int withDue, int withoutDue, int seed) => _DueDateSortScenario(
-      withDueCount: withDue,
-      withoutDueCount: withoutDue,
-      seed: seed,
-    ),
-  );
 }

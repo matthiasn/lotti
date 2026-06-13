@@ -5,17 +5,14 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_models.dart';
-import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_rows.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 export 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_models.dart';
-
-part 'ai_provider_setup_preview_rows.dart';
 
 class AiProviderSetupPreviewModal extends StatefulWidget {
   const AiProviderSetupPreviewModal({
@@ -40,12 +37,12 @@ class AiProviderSetupPreviewModal extends StatefulWidget {
   /// preset wired in.
   static AiProviderSetupPreviewPreset? presetFor(InferenceProviderType type) {
     return switch (type) {
-      InferenceProviderType.gemini => _geminiPreset(),
-      InferenceProviderType.openAi => _openAiPreset(),
-      InferenceProviderType.mistral => _mistralPreset(),
-      InferenceProviderType.alibaba => _alibabaPreset(),
-      InferenceProviderType.anthropic => _anthropicPreset(),
-      InferenceProviderType.ollama => _ollamaPreset(),
+      InferenceProviderType.gemini => geminiPreset(),
+      InferenceProviderType.openAi => openAiPreset(),
+      InferenceProviderType.mistral => mistralPreset(),
+      InferenceProviderType.alibaba => alibabaPreset(),
+      InferenceProviderType.anthropic => anthropicPreset(),
+      InferenceProviderType.ollama => ollamaPreset(),
       _ => null,
     };
   }
@@ -197,7 +194,7 @@ class _AiProviderSetupPreviewModalState
           accent: accent,
         ),
         SizedBox(height: tokens.spacing.step5),
-        _NewModelsSection(
+        NewModelsSection(
           models: widget.preset.models,
           excluded: _excluded,
           accent: accent,
@@ -205,7 +202,7 @@ class _AiProviderSetupPreviewModalState
         ),
         if (widget.existingModels.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.step5),
-          _AlreadyAddedSection(models: widget.existingModels),
+          AlreadyAddedSection(models: widget.existingModels),
         ],
         SizedBox(height: tokens.spacing.step5),
         _CategoryFooter(categoryName: widget.preset.categoryName),

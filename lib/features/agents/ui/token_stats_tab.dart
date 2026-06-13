@@ -6,17 +6,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/model/daily_token_usage.dart';
 import 'package:lotti/features/agents/state/token_stats_providers.dart';
-import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
+import 'package:lotti/features/agents/ui/token_stats_tab_daily_section.dart';
+import 'package:lotti/features/agents/ui/token_stats_tab_per_model_section.dart';
 import 'package:lotti/features/agents/ui/wake_activity_chart.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
-
-part 'token_stats_tab_daily_section.dart';
-part 'token_stats_tab_chart.dart';
-part 'token_stats_tab_per_model_section.dart';
 
 /// Stats tab showing token usage in an iOS battery-usage-inspired layout.
 ///
@@ -53,14 +50,14 @@ class _TokenStatsTabState extends ConsumerState<TokenStatsTab> {
       children: [
         const WakeActivityChart(),
         SizedBox(height: tokens.spacing.step4),
-        _DailyUsageSection(
+        DailyUsageSection(
           days: _days,
           dailyAsync: dailyAsync,
           comparisonAsync: comparisonAsync,
           onDaysChanged: (days) => setState(() => _days = days),
         ),
         SizedBox(height: tokens.spacing.step6),
-        _PerModelChartsSection(byModelAsync: byModelAsync),
+        PerModelChartsSection(byModelAsync: byModelAsync),
         SizedBox(height: tokens.spacing.step6),
         _SourceBreakdownSection(breakdownAsync: breakdownAsync),
       ],
@@ -221,8 +218,8 @@ class _SourceListTile extends StatelessWidget {
 
 /// Paints a dashed horizontal line at [fraction] of the canvas height
 /// (measured from the bottom), directly on the canvas with no layout overhead.
-class _AverageDashedLinePainter extends CustomPainter {
-  _AverageDashedLinePainter({
+class AverageDashedLinePainter extends CustomPainter {
+  AverageDashedLinePainter({
     required this.fraction,
     required this.color,
   });
@@ -252,13 +249,13 @@ class _AverageDashedLinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_AverageDashedLinePainter oldDelegate) =>
+  bool shouldRepaint(AverageDashedLinePainter oldDelegate) =>
       fraction != oldDelegate.fraction || color != oldDelegate.color;
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-String _currentTimeString() {
+String currentTimeString() {
   final now = clock.now().toLocal();
   return '${now.hour.toString().padLeft(2, '0')}:'
       '${now.minute.toString().padLeft(2, '0')}';
@@ -266,7 +263,7 @@ String _currentTimeString() {
 
 final NumberFormat _compactFormat = NumberFormat.compact();
 
-String _formatTokenCount(int tokens) => _compactFormat.format(tokens);
+String formatTokenCount(int tokens) => _compactFormat.format(tokens);
 
 String _formatDuration(Duration duration) {
   final hours = duration.inHours;

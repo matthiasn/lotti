@@ -1,6 +1,8 @@
 import 'dart:developer' as developer show log;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/features/agents/classifier/feedback_item_classifiers.dart';
+import 'package:lotti/features/agents/classifier/feedback_text_classifier.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -9,20 +11,7 @@ import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
-import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:meta/meta.dart';
-
-/// Well-known feedback source identifiers.
-abstract final class FeedbackSources {
-  static const decision = 'decision';
-  static const observation = 'observation';
-  static const metric = 'metric';
-  static const rating = 'rating';
-  static const evolutionSession = 'evolution_session';
-  static const directiveChurn = 'directive_churn';
-}
 
 /// Extracts and classifies feedback from agent observations and decisions.
 ///
@@ -41,10 +30,6 @@ class FeedbackExtractionService {
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
 
-  /// Inclusive date-range check shared by all extraction stages.
-  static bool _isInWindow(DateTime dt, DateTime since, DateTime until) =>
-      !dt.isBefore(since) && !dt.isAfter(until);
-
   /// Extract and classify feedback for a template within a time window.
   ///
   /// Scans observations, decisions, and reports from all instances of
@@ -62,7 +47,7 @@ class FeedbackExtractionService {
     }
     final items = <ClassifiedFeedbackItem>[];
 
-    bool inWindow(DateTime dt) => _isInWindow(dt, since, effectiveUntil);
+    bool inWindow(DateTime dt) => isInWindow(dt, since, effectiveUntil);
 
     // 1. Classify decisions (single template-level query with SQL filter).
     final allDecisions = await agentRepository.getRecentDecisionsForTemplate(
@@ -186,7 +171,7 @@ class FeedbackExtractionService {
     // 3. Classify reports by confidence
     final windowReports = reports.where((r) => inWindow(r.createdAt));
     for (final report in windowReports) {
-      final classified = _classifyReport(report);
+      final classified = classifyReport(report);
       if (classified != null) {
         items.add(classified);
       }
@@ -195,7 +180,7 @@ class FeedbackExtractionService {
     // 4. Classify wake run ratings
     final windowRuns = wakeRuns.where((r) => inWindow(r.createdAt));
     for (final run in windowRuns) {
-      final classified = _classifyWakeRunRating(run);
+      final classified = classifyWakeRunRating(run);
       if (classified != null) {
         items.add(classified);
       }
@@ -257,83 +242,8 @@ class FeedbackExtractionService {
     ChangeDecisionEntity decision,
   ) =>
       decision.verdict == ChangeDecisionVerdict.rejected &&
-      _isChecklistTool(decision.toolName) &&
-      !_decisionHasExplanatoryContext(decision);
-
-  static bool _isChecklistTool(String toolName) => switch (toolName) {
-    TaskAgentToolNames.addChecklistItem ||
-    TaskAgentToolNames.addMultipleChecklistItems ||
-    TaskAgentToolNames.updateChecklistItem ||
-    TaskAgentToolNames.updateChecklistItems ||
-    TaskAgentToolNames.migrateChecklistItem ||
-    TaskAgentToolNames.migrateChecklistItems => true,
-    _ => false,
-  };
-
-  static bool _decisionHasExplanatoryContext(ChangeDecisionEntity decision) {
-    if (_isMeaningfulSignalText(decision.rejectionReason)) return true;
-    return argsContainExplanatoryContext(decision.args);
-  }
-
-  @visibleForTesting
-  static bool argsContainExplanatoryContext(Map<String, dynamic>? args) {
-    if (args == null || args.isEmpty) return false;
-
-    const explanatoryKeys = {
-      'reason',
-      'rejectionreason',
-      'note',
-      'notes',
-      'comment',
-      'comments',
-      'feedback',
-      'explanation',
-      'why',
-    };
-
-    // Normalize keys by lowercasing and stripping separators so that
-    // variants like `rejection_reason`, `rejection-reason`, and
-    // `rejectionReason` all match the allowlist entry `rejectionreason`.
-    String normalizeKey(String key) =>
-        key.toLowerCase().replaceAll(RegExp('[_-]'), '');
-
-    bool containsContext(Object? value, {String? key}) {
-      final isExplanatoryKey =
-          key != null && explanatoryKeys.contains(normalizeKey(key));
-      if (value is String) {
-        return isExplanatoryKey && _isMeaningfulSignalText(value);
-      }
-      if (value is Map) {
-        return value.entries.any(
-          (entry) {
-            final entryKey = entry.key.toString();
-            // If the parent key is explanatory, propagate it so nested
-            // string values are still recognized as having explanatory
-            // context (e.g. {'feedback': {'text': 'too early'}}).
-            final effectiveKey =
-                explanatoryKeys.contains(normalizeKey(entryKey))
-                ? entryKey
-                : (isExplanatoryKey ? key : entryKey);
-            return containsContext(entry.value, key: effectiveKey);
-          },
-        );
-      }
-      if (value is Iterable) {
-        return value.any((entry) => containsContext(entry, key: key));
-      }
-      return false;
-    }
-
-    return args.entries.any(
-      (entry) => containsContext(entry.value, key: entry.key),
-    );
-  }
-
-  static bool _isMeaningfulSignalText(String? value) {
-    if (value == null) return false;
-    final normalized = value.trim();
-    return normalized.isNotEmpty && normalized.length >= 4;
-  }
+      isChecklistTool(decision.toolName) &&
+      !decisionHasExplanatoryContext(decision);
 
   /// Build a human-readable detail string for a decision.
   ///
@@ -378,7 +288,7 @@ class FeedbackExtractionService {
     AgentMessageEntity observation, {
     AgentMessagePayloadEntity? payload,
   }) {
-    final detail = _observationDetailText(payload);
+    final detail = observationDetailText(payload);
     final priority = _extractObservationPriority(payload);
     final obsCategory = _extractObservationCategory(payload);
 
@@ -448,285 +358,6 @@ class FeedbackExtractionService {
     };
   }
 
-  /// Keyword-based heuristic for classifying text sentiment.
-  ///
-  /// Scans the lowercase text for positive and negative indicator words/phrases
-  /// and returns the dominant sentiment. Returns [FeedbackSentiment.neutral]
-  /// when signals are balanced or absent.
-  @visibleForTesting
-  static FeedbackSentiment classifyTextSentiment(String text) {
-    final lower = text.toLowerCase();
-
-    var positiveScore = 0;
-    var negativeScore = 0;
-
-    for (final keyword in positiveSentimentKeywords) {
-      if (lower.contains(keyword)) positiveScore++;
-    }
-    for (final keyword in negativeSentimentKeywords) {
-      if (lower.contains(keyword)) negativeScore++;
-    }
-
-    if (positiveScore > negativeScore) return FeedbackSentiment.positive;
-    if (negativeScore > positiveScore) return FeedbackSentiment.negative;
-    return FeedbackSentiment.neutral;
-  }
-
-  @visibleForTesting
-  static const positiveSentimentKeywords = [
-    'success',
-    'completed',
-    'approved',
-    'confirmed',
-    'improved',
-    'resolved',
-    'fixed',
-    'accomplished',
-    'achieved',
-    'excellent',
-    'good',
-    'great',
-    'well done',
-    'on track',
-    'progress',
-    'ahead of schedule',
-    'passed',
-    'accepted',
-    'positive',
-    'helpful',
-    'efficient',
-    'effective',
-    'reliable',
-    'consistent',
-    'satisfied',
-    'exceeded',
-    'upgraded',
-    'optimized',
-    'stable',
-  ];
-
-  @visibleForTesting
-  static const negativeSentimentKeywords = [
-    'fail',
-    'error',
-    'issue',
-    'problem',
-    'bug',
-    'crash',
-    'reject',
-    'declined',
-    'timeout',
-    'timed out',
-    'slow',
-    'degraded',
-    'broken',
-    'missing',
-    'incorrect',
-    'wrong',
-    'bad',
-    'poor',
-    'unstable',
-    'regression',
-    'overdue',
-    'behind schedule',
-    'abandoned',
-    'blocked',
-    'stale',
-    'negative',
-    'inconsistent',
-    'unreliable',
-    'warning',
-    'critical',
-    'severe',
-  ];
-
-  /// Extract a displayable detail string from an observation payload.
-  static String _observationDetailText(AgentMessagePayloadEntity? payload) {
-    if (payload == null) return 'Observation recorded';
-    final text = payload.content['text'];
-    if (text is String && text.trim().isNotEmpty) {
-      return truncateAgentText(text, 200);
-    }
-    return 'Observation recorded';
-  }
-
-  /// Rule-based classification for reports by confidence score.
-  ClassifiedFeedbackItem? _classifyReport(AgentReportEntity report) {
-    final confidence = report.confidence;
-    if (confidence == null) return null;
-
-    final sentiment = confidence > 0.7
-        ? FeedbackSentiment.positive
-        : confidence < 0.3
-        ? FeedbackSentiment.negative
-        : FeedbackSentiment.neutral;
-
-    return ClassifiedFeedbackItem(
-      sentiment: sentiment,
-      category: FeedbackCategory.accuracy,
-      source: FeedbackSources.metric,
-      detail: 'Report confidence: ${confidence.toStringAsFixed(2)}',
-      agentId: report.agentId,
-      sourceEntityId: report.id,
-      confidence: confidence,
-    );
-  }
-
-  /// Map a numeric rating to a sentiment.
-  ///
-  /// Shared by wake-run and evolution-session classification.
-  static FeedbackSentiment _sentimentFromRating(double rating) => rating >= 4.0
-      ? FeedbackSentiment.positive
-      : rating <= 2.0
-      ? FeedbackSentiment.negative
-      : FeedbackSentiment.neutral;
-
-  /// Classify wake run user ratings.
-  ClassifiedFeedbackItem? _classifyWakeRunRating(WakeRunLogData wakeRun) {
-    final rating = wakeRun.userRating;
-    if (rating == null) return null;
-
-    final sentiment = _sentimentFromRating(rating);
-
-    return ClassifiedFeedbackItem(
-      sentiment: sentiment,
-      category: FeedbackCategory.general,
-      source: FeedbackSources.rating,
-      detail: 'Wake run rated ${rating.toStringAsFixed(1)}',
-      agentId: wakeRun.agentId,
-      confidence: 1,
-    );
-  }
-
-  /// Extract feedback from evolution sessions created by improver agents
-  /// governed by [templateId].
-  ///
-  /// This is the meta-feedback layer: when the target is an improver template,
-  /// the most meaningful signals come from how well those improver agents
-  /// performed their rituals (evolution session outcomes).
-  Future<List<ClassifiedFeedbackItem>> _extractEvolutionSessionFeedback({
-    required String templateId,
-    required DateTime since,
-    required DateTime until,
-  }) async {
-    // Get all agent instances governed by this template.
-    final agents = await templateService.getAgentsForTemplate(templateId);
-    if (agents.isEmpty) return [];
-
-    // Resolve each agent's target template ID (the template it improves).
-    final states = await Future.wait(
-      agents.map((agent) => agentRepository.getAgentState(agent.agentId)),
-    );
-    final targetTemplateIds = states
-        .map((state) => state?.slots.activeTemplateId)
-        .whereType<String>()
-        .toSet();
-    if (targetTemplateIds.isEmpty) return [];
-
-    // Query evolution sessions and versions for all target templates in
-    // parallel.
-    final results = await Future.wait(
-      targetTemplateIds.map((targetId) async {
-        final (sessions, versions) = await (
-          templateService.getEvolutionSessions(targetId, limit: 50),
-          templateService.getVersionHistory(targetId),
-        ).wait;
-        return (
-          targetId: targetId,
-          sessions: sessions,
-          versions: versions,
-        );
-      }),
-    );
-
-    final items = <ClassifiedFeedbackItem>[];
-
-    for (final result in results) {
-      final windowSessions = result.sessions.where(
-        (s) => _isInWindow(s.createdAt, since, until),
-      );
-
-      for (final session in windowSessions) {
-        items.add(_classifyEvolutionSession(session, result.targetId));
-      }
-
-      // Directive churn detection: count template versions created in window.
-      final windowVersions = result.versions.where(
-        (v) => _isInWindow(v.createdAt, since, until),
-      );
-      final versionCount = windowVersions.length;
-      if (versionCount > ImproverSlotDefaults.maxDirectiveChurnVersions) {
-        items.add(
-          ClassifiedFeedbackItem(
-            sentiment: FeedbackSentiment.negative,
-            category: FeedbackCategory.general,
-            source: FeedbackSources.directiveChurn,
-            detail:
-                'Excessive directive churn: $versionCount versions '
-                'created for template ${result.targetId} in feedback window '
-                '(threshold: '
-                '${ImproverSlotDefaults.maxDirectiveChurnVersions})',
-            agentId: templateId,
-            confidence: 1,
-          ),
-        );
-      }
-    }
-
-    return items;
-  }
-
-  /// Classify a single evolution session into a feedback item.
-  ClassifiedFeedbackItem _classifyEvolutionSession(
-    EvolutionSessionEntity session,
-    String targetTemplateId,
-  ) {
-    final rating = session.userRating;
-
-    if (session.status == EvolutionSessionStatus.abandoned) {
-      return ClassifiedFeedbackItem(
-        sentiment: FeedbackSentiment.negative,
-        category: FeedbackCategory.general,
-        source: FeedbackSources.evolutionSession,
-        detail:
-            'Evolution session #${session.sessionNumber} for '
-            'template $targetTemplateId was abandoned',
-        agentId: session.agentId,
-        sourceEntityId: session.id,
-        confidence: 1,
-      );
-    }
-
-    if (session.status == EvolutionSessionStatus.completed && rating != null) {
-      final sentiment = _sentimentFromRating(rating);
-
-      return ClassifiedFeedbackItem(
-        sentiment: sentiment,
-        category: FeedbackCategory.general,
-        source: FeedbackSources.evolutionSession,
-        detail:
-            'Evolution session #${session.sessionNumber} for '
-            'template $targetTemplateId completed with rating '
-            '${rating.toStringAsFixed(1)}',
-        agentId: session.agentId,
-        sourceEntityId: session.id,
-        confidence: 1,
-      );
-    }
-
-    // Completed without rating or still active.
-    return ClassifiedFeedbackItem(
-      sentiment: FeedbackSentiment.neutral,
-      category: FeedbackCategory.general,
-      source: FeedbackSources.evolutionSession,
-      detail:
-          'Evolution session #${session.sessionNumber} for '
-          'template $targetTemplateId: ${session.status.name}',
-      agentId: session.agentId,
-      sourceEntityId: session.id,
-    );
-  }
-
   /// Extract and aggregate feedback across ALL templates sharing a soul.
   ///
   /// Returns a map of template ID → [ClassifiedFeedback] for use by the
@@ -776,5 +407,84 @@ class FeedbackExtractionService {
     return Map.fromEntries(
       results.whereType<MapEntry<String, ClassifiedFeedback>>(),
     );
+  }
+
+  /// Extract feedback from evolution sessions created by improver agents
+  /// governed by [templateId].
+  ///
+  /// This is the meta-feedback layer: when the target is an improver template,
+  /// the most meaningful signals come from how well those improver agents
+  /// performed their rituals (evolution session outcomes).
+
+  Future<List<ClassifiedFeedbackItem>> _extractEvolutionSessionFeedback({
+    required String templateId,
+    required DateTime since,
+    required DateTime until,
+  }) async {
+    // Get all agent instances governed by this template.
+    final agents = await templateService.getAgentsForTemplate(templateId);
+    if (agents.isEmpty) return [];
+
+    // Resolve each agent's target template ID (the template it improves).
+    final states = await Future.wait(
+      agents.map((agent) => agentRepository.getAgentState(agent.agentId)),
+    );
+    final targetTemplateIds = states
+        .map((state) => state?.slots.activeTemplateId)
+        .whereType<String>()
+        .toSet();
+    if (targetTemplateIds.isEmpty) return [];
+
+    // Query evolution sessions and versions for all target templates in
+    // parallel.
+    final results = await Future.wait(
+      targetTemplateIds.map((targetId) async {
+        final (sessions, versions) = await (
+          templateService.getEvolutionSessions(targetId, limit: 50),
+          templateService.getVersionHistory(targetId),
+        ).wait;
+        return (
+          targetId: targetId,
+          sessions: sessions,
+          versions: versions,
+        );
+      }),
+    );
+
+    final items = <ClassifiedFeedbackItem>[];
+
+    for (final result in results) {
+      final windowSessions = result.sessions.where(
+        (s) => isInWindow(s.createdAt, since, until),
+      );
+
+      for (final session in windowSessions) {
+        items.add(classifyEvolutionSession(session, result.targetId));
+      }
+
+      // Directive churn detection: count template versions created in window.
+      final windowVersions = result.versions.where(
+        (v) => isInWindow(v.createdAt, since, until),
+      );
+      final versionCount = windowVersions.length;
+      if (versionCount > ImproverSlotDefaults.maxDirectiveChurnVersions) {
+        items.add(
+          ClassifiedFeedbackItem(
+            sentiment: FeedbackSentiment.negative,
+            category: FeedbackCategory.general,
+            source: FeedbackSources.directiveChurn,
+            detail:
+                'Excessive directive churn: $versionCount versions '
+                'created for template ${result.targetId} in feedback window '
+                '(threshold: '
+                '${ImproverSlotDefaults.maxDirectiveChurnVersions})',
+            agentId: templateId,
+            confidence: 1,
+          ),
+        );
+      }
+    }
+
+    return items;
   }
 }

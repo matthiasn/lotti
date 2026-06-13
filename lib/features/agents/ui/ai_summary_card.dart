@@ -4,36 +4,26 @@ import 'dart:developer' as developer;
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
-import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
-import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
-import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/tldr_section_part.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/consts.dart';
 
-part 'ai_summary_card/assign_agent_cta_part.dart';
-part 'ai_summary_card/proposal_kind_part.dart';
-part 'ai_summary_card/proposal_row_part.dart';
-part 'ai_summary_card/proposal_row_widgets_part.dart';
-part 'ai_summary_card/proposals_section_part.dart';
-part 'ai_summary_card/tldr_section_part.dart';
+export 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
+export 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
 
 /// Unified AI summary card for the task details column.
 ///
@@ -75,7 +65,7 @@ class AiSummaryCard extends ConsumerWidget {
       error: (_, _) => const SizedBox.shrink(),
       data: (agentEntity) {
         final identity = agentEntity?.mapOrNull(agent: (e) => e);
-        if (identity == null) return _AssignAgentCta(taskId: taskId);
+        if (identity == null) return AssignAgentCta(taskId: taskId);
         return _AiSummaryShell(
           taskId: taskId,
           identity: identity,
@@ -345,7 +335,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _TldrHeader(
+            TldrHeader(
               agentName: subtitle,
               hasMore: tldr.isNotEmpty || additionalReport != null,
               expanded: _expanded,
@@ -368,7 +358,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
               },
             ),
             if (tldr.isNotEmpty)
-              _TldrBody(
+              TldrBody(
                 tldr: tldr,
                 expanded: _expanded,
                 additionalReport: additionalReport,
@@ -379,7 +369,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
             // avoids briefly rendering the "No open proposals"
             // placeholder during the initial async fetch.
             if (list != null)
-              _ProposalsSection(
+              ProposalsSection(
                 key: widget.proposalsFocusKey,
                 open: list.open,
                 resolved: list.activity,

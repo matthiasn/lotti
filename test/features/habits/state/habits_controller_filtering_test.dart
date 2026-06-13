@@ -1,0 +1,495 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/habits/repository/habits_repository.dart';
+import 'package:lotti/features/habits/state/habits_controller.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  late MockHabitsRepository mockRepository;
+  late MockNavService mockNavService;
+  late StreamController<List<HabitDefinition>> definitionsController;
+  late StreamController<Set<String>> updateController;
+  late StreamController<int> navIndexController;
+  late ProviderContainer container;
+
+  const habitsTabIndex = 3;
+  const otherTabIndex = 0;
+
+  // Use fixed dates for deterministic tests
+  final lastWeek = DateTime(2025, 12, 23);
+
+  final testHabit1 = HabitDefinition(
+    id: 'habit-1',
+    name: 'Test Habit 1',
+    description: 'Description 1',
+    createdAt: lastWeek,
+    updatedAt: lastWeek,
+    vectorClock: null,
+    private: false,
+    active: true,
+    activeFrom: lastWeek,
+    categoryId: 'cat-1',
+    habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+  );
+
+  final testHabit2 = HabitDefinition(
+    id: 'habit-2',
+    name: 'Test Habit 2',
+    description: 'Description 2',
+    createdAt: lastWeek,
+    updatedAt: lastWeek,
+    vectorClock: null,
+    private: false,
+    active: true,
+    activeFrom: lastWeek,
+    categoryId: 'cat-2',
+    habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+  );
+
+  final testHabit3 = HabitDefinition(
+    id: 'habit-3',
+    name: 'Test Habit 3',
+    description: 'Description 3',
+    createdAt: lastWeek,
+    updatedAt: lastWeek,
+    vectorClock: null,
+    private: false,
+    active: true,
+    activeFrom: lastWeek,
+    categoryId: 'cat-1',
+    habitSchedule: HabitSchedule.daily(
+      requiredCompletions: 1,
+      // Show from 18:00 onwards - should be in pendingLater
+      showFrom: DateTime(2025, 12, 30, 18),
+    ),
+  );
+
+  HabitCompletionEntry createCompletion({
+    required String id,
+    required String habitId,
+    required DateTime date,
+    required HabitCompletionType completionType,
+    DateTime? writtenAt,
+  }) {
+    final effectiveWrittenAt = writtenAt ?? date;
+    return HabitCompletionEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: effectiveWrittenAt,
+        updatedAt: effectiveWrittenAt,
+        dateFrom: date,
+        dateTo: date,
+        private: false,
+      ),
+      data: HabitCompletionData(
+        dateFrom: date,
+        dateTo: date,
+        habitId: habitId,
+        completionType: completionType,
+      ),
+    );
+  }
+
+  setUp(() async {
+    mockRepository = MockHabitsRepository();
+    mockNavService = MockNavService();
+    definitionsController = StreamController.broadcast();
+    updateController = StreamController.broadcast();
+    navIndexController = StreamController<int>.broadcast();
+
+    when(
+      mockRepository.watchHabitDefinitions,
+    ).thenAnswer((_) => definitionsController.stream);
+
+    when(
+      () => mockRepository.getHabitCompletionsInRange(
+        rangeStart: any(named: 'rangeStart'),
+      ),
+    ).thenAnswer((_) async => []);
+
+    when(
+      () => mockRepository.updateStream,
+    ).thenAnswer((_) => updateController.stream);
+
+    when(() => mockNavService.habitsIndex).thenReturn(habitsTabIndex);
+    when(() => mockNavService.index).thenReturn(habitsTabIndex);
+    when(
+      mockNavService.getIndexStream,
+    ).thenAnswer((_) => navIndexController.stream);
+
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<NavService>(mockNavService);
+      },
+    );
+
+    container = ProviderContainer(
+      overrides: [
+        habitsRepositoryProvider.overrideWithValue(mockRepository),
+      ],
+    );
+  });
+
+  tearDown(() async {
+    await definitionsController.close();
+    await updateController.close();
+    await navIndexController.close();
+    container.dispose();
+    await tearDownTestGetIt();
+  });
+
+  group('setInfoYmd', () {
+    test('calculates percentage correctly', () async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      final testDateYmd = testDate.ymd;
+
+      // 2 habits, 1 success, 1 fail = 50% success, 0% skipped, 50% fail
+      final completions = [
+        createCompletion(
+          id: 'c1',
+          habitId: 'habit-1',
+          date: testDate,
+          completionType: HabitCompletionType.success,
+        ),
+        createCompletion(
+          id: 'c2',
+          habitId: 'habit-2',
+          date: testDate,
+          completionType: HabitCompletionType.fail,
+        ),
+      ];
+
+      when(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) async => completions);
+
+      final controller = container.read(habitsControllerProvider.notifier);
+      await pumpEventQueue();
+
+      definitionsController.add([testHabit1, testHabit2]);
+      await pumpEventQueue();
+
+      controller.setInfoYmd(testDateYmd);
+
+      final state = container.read(habitsControllerProvider);
+      expect(state.selectedInfoYmd, testDateYmd);
+      expect(state.successPercentage, 50);
+      expect(state.skippedPercentage, 0);
+      expect(state.failedPercentage, 50);
+    });
+
+    test('clamps failed percentage when total exceeds 100', () async {
+      final testDate = DateTime(2024, 3, 15, 10, 30);
+      final testDateYmd = testDate.ymd;
+
+      // Edge case: success + skip + fail > 100 (shouldn't happen but test clamp)
+      final completions = [
+        createCompletion(
+          id: 'c1',
+          habitId: 'habit-1',
+          date: testDate,
+          completionType: HabitCompletionType.success,
+        ),
+      ];
+
+      when(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) async => completions);
+
+      final controller = container.read(habitsControllerProvider.notifier);
+      await pumpEventQueue();
+
+      definitionsController.add([testHabit1]);
+      await pumpEventQueue();
+
+      controller.setInfoYmd(testDateYmd);
+
+      final state = container.read(habitsControllerProvider);
+      // Total should not exceed 100
+      final total =
+          state.successPercentage +
+          state.skippedPercentage +
+          state.failedPercentage;
+      expect(total, lessThanOrEqualTo(100));
+    });
+
+    test('clears selectedInfoYmd after debounce', () {
+      fakeAsync((async) {
+        container
+            .read(habitsControllerProvider.notifier)
+            .setInfoYmd('2025-12-30');
+        expect(
+          container.read(habitsControllerProvider).selectedInfoYmd,
+          '2025-12-30',
+        );
+
+        // Advance time past debounce (15 seconds)
+        async.elapse(const Duration(seconds: 16));
+
+        expect(
+          container.read(habitsControllerProvider).selectedInfoYmd,
+          isEmpty,
+        );
+      });
+    });
+  });
+
+  group('Category filtering', () {
+    // The controller uses DateTime.now() internally to determine "today",
+    // so completion dates must match the real wall-clock date.
+    late DateTime controllerToday;
+
+    setUp(() {
+      controllerToday = DateTime.now(); // ignore: avoid_DateTime_now
+    });
+
+    test('filters openNow by selected category', () async {
+      when(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final controller = container.read(habitsControllerProvider.notifier);
+      await pumpEventQueue();
+
+      // testHabit1 has cat-1, testHabit2 has cat-2
+      definitionsController.add([testHabit1, testHabit2]);
+      await pumpEventQueue();
+
+      // Before filtering - both habits should be in openNow
+      var state = container.read(habitsControllerProvider);
+      expect(state.openNow.length, 2);
+
+      // Filter by cat-1
+      controller.toggleSelectedCategoryIds('cat-1');
+      await pumpEventQueue();
+
+      state = container.read(habitsControllerProvider);
+      expect(state.openNow.length, 1);
+      expect(state.openNow.first.id, 'habit-1');
+    });
+
+    test('filters completed by selected category', () async {
+      // Both habits completed today
+      final completions = [
+        createCompletion(
+          id: 'c1',
+          habitId: 'habit-1',
+          date: controllerToday,
+          completionType: HabitCompletionType.success,
+        ),
+        createCompletion(
+          id: 'c2',
+          habitId: 'habit-2',
+          date: controllerToday,
+          completionType: HabitCompletionType.success,
+        ),
+      ];
+
+      when(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) async => completions);
+
+      final controller = container.read(habitsControllerProvider.notifier);
+      await pumpEventQueue();
+
+      definitionsController.add([testHabit1, testHabit2]);
+      await pumpEventQueue();
+
+      // Both should be completed
+      var state = container.read(habitsControllerProvider);
+      expect(state.completed.length, 2);
+
+      // Filter by cat-2
+      controller.toggleSelectedCategoryIds('cat-2');
+      await pumpEventQueue();
+
+      state = container.read(habitsControllerProvider);
+      expect(state.completed.length, 1);
+      expect(state.completed.first.id, 'habit-2');
+    });
+
+    test('filters pendingLater by selected category', () async {
+      when(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      final controller = container.read(habitsControllerProvider.notifier);
+      await pumpEventQueue();
+
+      // testHabit3 has showFrom: 18 (pending later) and cat-1
+      definitionsController.add([testHabit1, testHabit3]);
+      await pumpEventQueue();
+
+      // Filter by cat-1 - both habits have cat-1
+      controller.toggleSelectedCategoryIds('cat-1');
+      await pumpEventQueue();
+
+      final state = container.read(habitsControllerProvider);
+      // testHabit3 should be in pendingLater (if current time < 18:00)
+      // testHabit1 should be in openNow
+      expect(
+        state.openNow.map((h) => h.id),
+        contains('habit-1'),
+      );
+    });
+  });
+
+  group('nav-index visibility trigger', () {
+    test(
+      'recomputes when tab transitions from inactive to active',
+      () async {
+        // Init container so the controller subscribes to the streams.
+        container.read(habitsControllerProvider);
+        await pumpEventQueue();
+
+        // Now that subscriptions are live, emit definitions.
+        definitionsController.add([testHabit1]);
+        await pumpEventQueue();
+
+        // Simulate user switching away.
+        navIndexController.add(otherTabIndex);
+        await pumpEventQueue();
+
+        final stateWhileAway = container.read(habitsControllerProvider);
+        // Sanity check: definitions made it into the cache before we
+        // measure the visibility-trigger effect.
+        expect(stateWhileAway.openNow.map((h) => h.id), ['habit-1']);
+
+        // Count completion fetches from here on: the reactivation edge
+        // must refetch, which is a concrete, copyWith-proof signal.
+        var fetches = 0;
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) async {
+          fetches++;
+          return [];
+        });
+
+        // Switching back to habits must re-run the aggregation, even
+        // though completions and definitions did not change.
+        navIndexController.add(habitsTabIndex);
+        await pumpEventQueue();
+
+        expect(fetches, 1);
+        final stateOnReturn = container.read(habitsControllerProvider);
+        expect(stateOnReturn.openNow.map((h) => h.id), ['habit-1']);
+      },
+    );
+
+    test('does not recompute on inactive transitions or on→on', () async {
+      container.read(habitsControllerProvider);
+      await pumpEventQueue();
+      definitionsController.add([testHabit1]);
+      await pumpEventQueue();
+
+      // Count completion fetches from here on: none of the following
+      // transitions sit on the inactive→active edge, so none may refetch.
+      var fetches = 0;
+      when(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) async {
+        fetches++;
+        return [];
+      });
+
+      // habits → habits should be a no-op (already active).
+      navIndexController.add(habitsTabIndex);
+      await pumpEventQueue();
+      expect(fetches, 0);
+
+      // habits → other should not trigger a recompute.
+      navIndexController.add(otherTabIndex);
+      await pumpEventQueue();
+      expect(fetches, 0);
+
+      // other → other should not trigger a recompute either.
+      navIndexController.add(otherTabIndex);
+      await pumpEventQueue();
+      expect(fetches, 0);
+    });
+  });
+
+  group('countHabitsWithStreak — properties', () {
+    glados.Glados(
+      glados.CombinableAny(glados.any).combine2(
+        // Per habit: a bitmask over the 10-day universe of candidate days.
+        glados.ListAnys(glados.any).listWithLengthInRange(
+          0,
+          8,
+          glados.any.intInRange(0, 1 << 10),
+        ),
+        // Streak window: a bitmask selecting which days must be covered.
+        glados.any.intInRange(0, 1 << 10),
+        (List<int> habitMasks, int streakMask) =>
+            (habitMasks: habitMasks, streakMask: streakMask),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'counts exactly the habits whose day sets cover the streak window',
+      (scenario) {
+        // January window: multi-day Duration arithmetic is DST-safe here.
+        final universe = <String>[
+          for (var d = 0; d < 10; d++) DateTime(2024, 1, 10 + d).ymd,
+        ];
+        Set<String> daysFromMask(int mask) => {
+          for (var d = 0; d < 10; d++)
+            if (mask & (1 << d) != 0) universe[d],
+        };
+
+        final habitSuccessDays = <String, Set<String>>{
+          for (var i = 0; i < scenario.habitMasks.length; i++)
+            'habit-$i': daysFromMask(scenario.habitMasks[i]),
+        };
+        final streakDays = daysFromMask(scenario.streakMask).toList();
+
+        final count = countHabitsWithStreak(habitSuccessDays, streakDays);
+
+        // Oracle via bit arithmetic: habit covers the window iff its mask
+        // has every streak bit set.
+        final expected = scenario.habitMasks
+            .where((mask) => mask & scenario.streakMask == scenario.streakMask)
+            .length;
+        expect(
+          count,
+          expected,
+          reason: 'masks=${scenario.habitMasks} streak=${scenario.streakMask}',
+        );
+        // Bound: never counts more habits than exist.
+        expect(count, lessThanOrEqualTo(habitSuccessDays.length));
+        // Empty window: every habit trivially qualifies.
+        if (scenario.streakMask == 0) {
+          expect(count, habitSuccessDays.length);
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}

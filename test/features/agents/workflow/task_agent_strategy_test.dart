@@ -2337,6 +2337,15 @@ void main() {
         },
       );
 
+      test('debug summary formatter falls back for unsupported tools', () {
+        final summary = TaskAgentStrategy.debugGenerateHumanSummary(
+          'future_deferred_tool',
+          {'alpha': 1, 'beta': 2},
+        );
+
+        expect(summary, 'future_deferred_tool(alpha, beta)');
+      });
+
       test(
         'returns Skipped response when addItem reports a within-wake duplicate',
         () async {

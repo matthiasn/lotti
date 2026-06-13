@@ -1,18 +1,13 @@
-import 'dart:developer' as developer;
-
-import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart'
     show WakeRunLogData;
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
+import 'package:lotti/features/agents/service/agent_template_crud.dart';
+import 'package:lotti/features/agents/service/agent_template_metrics.dart';
+import 'package:lotti/features/agents/service/agent_template_seeding.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
-import 'package:lotti/services/domain_logging.dart';
-import 'package:uuid/uuid.dart';
 
 /// Thrown when a template cannot be deleted because active agents reference it.
 class TemplateInUseException implements Exception {
@@ -78,6 +73,11 @@ const kDefaultAgentTemplateModelId = 'models/gemini-3-flash-preview';
 /// Provides operations for creating, versioning, listing, and managing
 /// agent templates — reusable blueprints that define an agent's directives,
 /// model, and category bindings.
+///
+/// The service is a thin facade: it instantiates three collaborators
+/// ([AgentTemplateCrud], [AgentTemplateMetrics], [AgentTemplateSeeding]) and
+/// delegates every public method to the one that owns it. Metrics and seeding
+/// share the CRUD collaborator for template reads and version writes.
 class AgentTemplateService {
   AgentTemplateService({
     required this.repository,
@@ -87,11 +87,26 @@ class AgentTemplateService {
   final AgentRepository repository;
   final AgentSyncService syncService;
 
-  static const _uuid = Uuid();
+  late final AgentTemplateCrud _crud = AgentTemplateCrud(
+    repository: repository,
+    syncService: syncService,
+  );
+
+  late final AgentTemplateMetrics _metrics = AgentTemplateMetrics(
+    repository: repository,
+    syncService: syncService,
+    crud: _crud,
+  );
+
+  late final AgentTemplateSeeding _seeding = AgentTemplateSeeding(
+    repository: repository,
+    syncService: syncService,
+    crud: _crud,
+  );
+
+  // ── CRUD ────────────────────────────────────────────────────────────────
 
   /// Create a new template with its initial version and head pointer.
-  ///
-  /// Returns the created [AgentTemplateEntity].
   Future<AgentTemplateEntity> createTemplate({
     required String displayName,
     required AgentTemplateKind kind,
@@ -103,871 +118,176 @@ class AgentTemplateService {
     Set<String> categoryIds = const {},
     String? templateId,
     String? profileId,
-  }) async {
-    final tplId = templateId ?? _uuid.v4();
-    final versionId = _uuid.v4();
-    final headId = _uuid.v4();
-    final now = clock.now();
-
-    final template =
-        AgentDomainEntity.agentTemplate(
-              id: tplId,
-              agentId: tplId,
-              displayName: displayName,
-              kind: kind,
-              modelId: modelId,
-              profileId: profileId,
-              categoryIds: categoryIds,
-              createdAt: now,
-              updatedAt: now,
-              vectorClock: null,
-            )
-            as AgentTemplateEntity;
-
-    final version = AgentDomainEntity.agentTemplateVersion(
-      id: versionId,
-      agentId: tplId,
-      version: 1,
-      status: AgentTemplateVersionStatus.active,
-      directives: directives,
-      generalDirective: generalDirective,
-      reportDirective: reportDirective,
-      authoredBy: authoredBy,
-      createdAt: now,
-      vectorClock: null,
-      modelId: modelId,
-      profileId: profileId,
-    );
-
-    final head = AgentDomainEntity.agentTemplateHead(
-      id: headId,
-      agentId: tplId,
-      versionId: versionId,
-      updatedAt: now,
-      vectorClock: null,
-    );
-
-    await syncService.runInTransaction(() async {
-      await syncService.upsertEntity(template);
-      await syncService.upsertEntity(version);
-      await syncService.upsertEntity(head);
-    });
-
-    developer.log(
-      'Created template ${DomainLogger.sanitizeId(tplId)}',
-      name: 'AgentTemplateService',
-    );
-
-    return template;
-  }
+  }) => _crud.createTemplate(
+    displayName: displayName,
+    kind: kind,
+    modelId: modelId,
+    directives: directives,
+    authoredBy: authoredBy,
+    generalDirective: generalDirective,
+    reportDirective: reportDirective,
+    categoryIds: categoryIds,
+    templateId: templateId,
+    profileId: profileId,
+  );
 
   /// Update template-level fields (display name, model ID).
-  ///
-  /// When [modelId] changes, a new template version is created so the model
-  /// is historically tracked per-version.
   Future<AgentTemplateEntity> updateTemplate({
     required String templateId,
     String? displayName,
     String? modelId,
     String? profileId,
     bool clearProfileId = false,
-  }) async {
-    final now = clock.now();
-
-    return syncService.runInTransaction(() async {
-      final template = await getTemplate(templateId);
-      if (template == null) {
-        throw StateError('Template $templateId not found');
-      }
-
-      final modelChanged = modelId != null && modelId != template.modelId;
-      final effectiveProfileId = clearProfileId
-          ? null
-          : (profileId ?? template.profileId);
-      final profileChanged = effectiveProfileId != template.profileId;
-
-      final updated = template.copyWith(
-        displayName: displayName ?? template.displayName,
-        modelId: modelId ?? template.modelId,
-        profileId: effectiveProfileId,
-        updatedAt: now,
-      );
-      await syncService.upsertEntity(updated);
-
-      // When the model or profile changes, create a new version so the change
-      // is recorded in the version history.
-      if (modelChanged || profileChanged) {
-        final activeVersion = await repository.getActiveTemplateVersion(
-          templateId,
-        );
-        if (activeVersion != null) {
-          await createVersion(
-            templateId: templateId,
-            directives: activeVersion.directives,
-            generalDirective: activeVersion.generalDirective,
-            reportDirective: activeVersion.reportDirective,
-            authoredBy: 'system:config_change',
-          );
-        }
-      }
-
-      developer.log(
-        'Updated template ${DomainLogger.sanitizeId(templateId)}',
-        name: 'AgentTemplateService',
-      );
-
-      return updated;
-    });
-  }
+  }) => _crud.updateTemplate(
+    templateId: templateId,
+    displayName: displayName,
+    modelId: modelId,
+    profileId: profileId,
+    clearProfileId: clearProfileId,
+  );
 
   /// Create a new version of an existing template.
-  ///
-  /// Archives the current active version, creates the new version as active,
-  /// and updates the head pointer.
   Future<AgentTemplateVersionEntity> createVersion({
     required String templateId,
     required String directives,
     required String authoredBy,
     String generalDirective = '',
     String reportDirective = '',
-  }) async {
-    final now = clock.now();
-    final newVersionId = _uuid.v4();
-
-    return syncService.runInTransaction(() async {
-      // Validate that the template exists.
-      final template = await getTemplate(templateId);
-      if (template == null) {
-        throw StateError('Template $templateId not found');
-      }
-
-      // Archive ALL non-head versions to ensure no stale active statuses.
-      final currentHead = await repository.getTemplateHead(templateId);
-      final allVersions = await getVersionHistory(templateId, limit: -1);
-      for (final version in allVersions) {
-        if (version.status != AgentTemplateVersionStatus.archived) {
-          final archived = version.copyWith(
-            status: AgentTemplateVersionStatus.archived,
-          );
-          await syncService.upsertEntity(archived);
-        }
-      }
-
-      // Determine next version number.
-      final nextVersion = await repository.getNextTemplateVersionNumber(
-        templateId,
-      );
-
-      // Create the new version, recording the template's configured model ID
-      // and profile ID.
-      final newVersion =
-          AgentDomainEntity.agentTemplateVersion(
-                id: newVersionId,
-                agentId: templateId,
-                version: nextVersion,
-                status: AgentTemplateVersionStatus.active,
-                directives: directives,
-                generalDirective: generalDirective,
-                reportDirective: reportDirective,
-                authoredBy: authoredBy,
-                createdAt: now,
-                vectorClock: null,
-                modelId: template.modelId,
-                profileId: template.profileId,
-              )
-              as AgentTemplateVersionEntity;
-      await syncService.upsertEntity(newVersion);
-
-      // Update head pointer (reuse existing head ID if present).
-      final headId = currentHead?.id ?? _uuid.v4();
-      final updatedHead = AgentDomainEntity.agentTemplateHead(
-        id: headId,
-        agentId: templateId,
-        versionId: newVersionId,
-        updatedAt: now,
-        vectorClock: null,
-      );
-      await syncService.upsertEntity(updatedHead);
-
-      developer.log(
-        'Created version $nextVersion for template '
-        '${DomainLogger.sanitizeId(templateId)}',
-        name: 'AgentTemplateService',
-      );
-
-      return newVersion;
-    });
-  }
+  }) => _crud.createVersion(
+    templateId: templateId,
+    directives: directives,
+    authoredBy: authoredBy,
+    generalDirective: generalDirective,
+    reportDirective: reportDirective,
+  );
 
   /// Fetch a single template by its [templateId].
-  Future<AgentTemplateEntity?> getTemplate(String templateId) async {
-    final entity = await repository.getEntity(templateId);
-    return entity?.mapOrNull(agentTemplate: (e) => e);
-  }
+  Future<AgentTemplateEntity?> getTemplate(String templateId) =>
+      _crud.getTemplate(templateId);
 
   /// List all non-deleted templates.
-  Future<List<AgentTemplateEntity>> listTemplates() async {
-    return repository.getAllTemplates();
-  }
+  Future<List<AgentTemplateEntity>> listTemplates() => _crud.listTemplates();
 
   /// Fetch the active version for a template.
-  Future<AgentTemplateVersionEntity?> getActiveVersion(
-    String templateId,
-  ) async {
-    return repository.getActiveTemplateVersion(templateId);
-  }
+  Future<AgentTemplateVersionEntity?> getActiveVersion(String templateId) =>
+      _crud.getActiveVersion(templateId);
 
   /// Resolve the template assigned to an agent via a templateAssignment link.
-  Future<AgentTemplateEntity?> getTemplateForAgent(String agentId) async {
-    final links = await repository.getLinksTo(
-      agentId,
-      type: AgentLinkTypes.templateAssignment,
-    );
-    if (links.isEmpty) return null;
-    return getTemplate(links.selectPrimary().fromId);
-  }
+  Future<AgentTemplateEntity?> getTemplateForAgent(String agentId) =>
+      _crud.getTemplateForAgent(agentId);
 
   /// Resolve assigned templates for multiple agents in bulk.
-  ///
-  /// Hydrates list views with two SQL round trips (assignment links, then
-  /// template entities) instead of the per-agent `getTemplateForAgent` chain.
   Future<Map<String, AgentTemplateEntity>> getTemplatesForAgents(
     Iterable<String> agentIds,
-  ) async {
-    final idList = agentIds.toSet().toList(growable: false);
-    if (idList.isEmpty) return {};
-
-    final linksByAgentId = await repository.getLinksToMultiple(
-      idList,
-      type: AgentLinkTypes.templateAssignment,
-    );
-
-    final templateIdByAgentId = <String, String>{};
-    for (final entry in linksByAgentId.entries) {
-      final links = entry.value;
-      if (links.isEmpty) continue;
-      templateIdByAgentId[entry.key] = links.selectPrimary().fromId;
-    }
-    if (templateIdByAgentId.isEmpty) return {};
-
-    final entitiesById = await repository.getEntitiesByIds(
-      templateIdByAgentId.values,
-    );
-    return {
-      for (final entry in templateIdByAgentId.entries)
-        if (entitiesById[entry.value] case final AgentTemplateEntity template)
-          entry.key: template,
-    };
-  }
+  ) => _crud.getTemplatesForAgents(agentIds);
 
   /// Reverse lookup: find all agent instances assigned to a template.
-  ///
-  /// Returns the full [AgentIdentityEntity] for each linked agent, which
-  /// enables lifecycle-aware checks (e.g., filtering out destroyed agents).
-  Future<List<AgentIdentityEntity>> getAgentsForTemplate(
-    String templateId,
-  ) async {
-    final links = await repository.getLinksFrom(
-      templateId,
-      type: AgentLinkTypes.templateAssignment,
-    );
-    final agents = <AgentIdentityEntity>[];
-    for (final link in links) {
-      final entity = await repository.getEntity(link.toId);
-      if (entity is AgentIdentityEntity) {
-        agents.add(entity);
-      }
-    }
-    return agents;
-  }
+  Future<List<AgentIdentityEntity>> getAgentsForTemplate(String templateId) =>
+      _crud.getAgentsForTemplate(templateId);
 
   /// List templates whose category IDs contain [categoryId].
   Future<List<AgentTemplateEntity>> listTemplatesForCategory(
     String categoryId,
-  ) async {
-    final all = await repository.getAllTemplates();
-    return all.where((t) => t.categoryIds.contains(categoryId)).toList();
-  }
+  ) => _crud.listTemplatesForCategory(categoryId);
 
   /// Soft-delete a template.
-  ///
-  /// Fails if the template has active (non-destroyed) agent instances.
-  /// Destroyed agents preserve their links for audit but do not block deletion.
-  Future<void> deleteTemplate(String templateId) async {
-    final agents = await getAgentsForTemplate(templateId);
-    final activeAgents = agents
-        .where((a) => a.lifecycle != AgentLifecycle.destroyed)
-        .toList();
-
-    if (activeAgents.isNotEmpty) {
-      throw TemplateInUseException(
-        templateId: templateId,
-        activeCount: activeAgents.length,
-      );
-    }
-
-    final now = clock.now();
-
-    await syncService.runInTransaction(() async {
-      final template = await getTemplate(templateId);
-      if (template == null) return;
-
-      // Soft-delete the template itself.
-      await syncService.upsertEntity(
-        template.copyWith(deletedAt: now, updatedAt: now),
-      );
-
-      // Soft-delete the head pointer so it no longer appears in queries.
-      final head = await repository.getTemplateHead(templateId);
-      if (head != null) {
-        await syncService.upsertEntity(
-          head.copyWith(deletedAt: now, updatedAt: now),
-        );
-      }
-
-      // Soft-delete all versions for this template.
-      final versions = await repository.getEntitiesByAgentId(
-        templateId,
-        type: AgentEntityTypes.agentTemplateVersion,
-      );
-      for (final entity in versions) {
-        final version = entity.mapOrNull(agentTemplateVersion: (v) => v);
-        if (version != null) {
-          await syncService.upsertEntity(
-            version.copyWith(deletedAt: now),
-          );
-        }
-      }
-    });
-
-    developer.log(
-      'Soft-deleted template ${DomainLogger.sanitizeId(templateId)}',
-      name: 'AgentTemplateService',
-    );
-  }
+  Future<void> deleteTemplate(String templateId) =>
+      _crud.deleteTemplate(templateId);
 
   /// Move the head pointer to an existing version.
-  ///
-  /// Validates that the target version exists and belongs to this template
-  /// before updating the head pointer.
   Future<void> rollbackToVersion({
     required String templateId,
     required String versionId,
-  }) async {
-    final now = clock.now();
-
-    await syncService.runInTransaction(() async {
-      final head = await repository.getTemplateHead(templateId);
-      if (head == null) {
-        throw StateError('No head found for template $templateId');
-      }
-
-      // Validate that the target version exists and belongs to this template.
-      final versionEntity = await repository.getEntity(versionId);
-      final validVersion = versionEntity?.mapOrNull(
-        agentTemplateVersion: (v) => v.agentId == templateId ? v : null,
-      );
-      if (validVersion == null) {
-        throw StateError(
-          'No version $versionId found for template $templateId',
-        );
-      }
-
-      // Archive ALL versions to ensure no stale active statuses.
-      final allVersions = await getVersionHistory(templateId, limit: -1);
-      for (final version in allVersions) {
-        if (version.status != AgentTemplateVersionStatus.archived) {
-          await syncService.upsertEntity(
-            version.copyWith(
-              status: AgentTemplateVersionStatus.archived,
-            ),
-          );
-        }
-      }
-
-      // Reactivate the target version.
-      await syncService.upsertEntity(
-        validVersion.copyWith(
-          status: AgentTemplateVersionStatus.active,
-        ),
-      );
-
-      // Update the head pointer.
-      final updatedHead = head.copyWith(
-        versionId: versionId,
-        updatedAt: now,
-      );
-      await syncService.upsertEntity(updatedHead);
-    });
-
-    developer.log(
-      'Rolled back template ${DomainLogger.sanitizeId(templateId)} '
-      'to version ${DomainLogger.sanitizeId(versionId)}',
-      name: 'AgentTemplateService',
-    );
-  }
+  }) => _crud.rollbackToVersion(templateId: templateId, versionId: versionId);
 
   /// Fetch versions for a template, sorted newest-first.
-  ///
-  /// Returns up to [limit] versions (default 100).
   Future<List<AgentTemplateVersionEntity>> getVersionHistory(
     String templateId, {
     int limit = 100,
-  }) async {
-    final entities = await repository.getEntitiesByAgentId(
-      templateId,
-      type: AgentEntityTypes.agentTemplateVersion,
-      limit: limit,
-    );
-    final versions = entities.whereType<AgentTemplateVersionEntity>().toList()
-      ..sort((a, b) => b.version.compareTo(a.version));
-    return versions;
-  }
+  }) => _crud.getVersionHistory(templateId, limit: limit);
+
+  // ── Metrics & evolution data ──────────────────────────────────────────────
 
   /// Compute performance metrics for a template using SQL aggregation.
-  ///
-  /// All counts, sums, and min/max timestamps are computed in a single
-  /// database query, avoiding the need to load all rows into memory.
-  Future<TemplatePerformanceMetrics> computeMetrics(
-    String templateId,
-  ) async {
-    final (agg, agents, totalWakes) = await (
-      repository.aggregateWakeRunMetrics(templateId),
-      getAgentsForTemplate(templateId),
-      repository.countWakeRunsForTemplate(templateId),
-    ).wait;
-
-    final terminalCount = agg.successCount + agg.failureCount;
-    final successRate = terminalCount > 0
-        ? agg.successCount / terminalCount
-        : 0.0;
-    final durationSumMs = agg.durationSumMs ?? 0;
-    final averageDuration = agg.durationCount > 0
-        ? Duration(milliseconds: durationSumMs ~/ agg.durationCount)
-        : null;
-
-    return TemplatePerformanceMetrics(
-      templateId: templateId,
-      totalWakes: totalWakes,
-      successCount: agg.successCount,
-      failureCount: agg.failureCount,
-      successRate: successRate,
-      averageDuration: averageDuration,
-      firstWakeAt: agg.firstWakeAt,
-      lastWakeAt: agg.lastWakeAt,
-      activeInstanceCount: agents
-          .where((a) => a.lifecycle == AgentLifecycle.active)
-          .length,
-    );
-  }
+  Future<TemplatePerformanceMetrics> computeMetrics(String templateId) =>
+      _metrics.computeMetrics(templateId);
 
   /// Return the uncapped lifetime wake count for [templateId].
-  Future<int> getLifetimeWakeCount(String templateId) {
-    return repository.countWakeRunsForTemplate(templateId);
-  }
+  Future<int> getLifetimeWakeCount(String templateId) =>
+      _metrics.getLifetimeWakeCount(templateId);
 
-  /// Fetch wake runs for [templateId] in the inclusive `[since, until]`
-  /// window.
+  /// Fetch wake runs for [templateId] in the inclusive `[since, until]` window.
   Future<List<WakeRunLogData>> getWakeRunsInWindow(
     String templateId, {
     required DateTime since,
     required DateTime until,
-  }) {
-    return repository.getWakeRunsForTemplateInWindow(
-      templateId,
-      since: since,
-      until: until,
-    );
-  }
+  }) => _metrics.getWakeRunsInWindow(templateId, since: since, until: until);
 
   /// Fetch token usage for [templateId] created on or after [since].
   Future<List<WakeTokenUsageEntity>> getTokenUsageSince(
     String templateId, {
     required DateTime since,
-  }) {
-    return repository.getTokenUsageForTemplateSince(
-      templateId,
-      since: since,
-    );
-  }
-
-  // ── Evolution data fetching ─────────────────────────────────────────────
+  }) => _metrics.getTokenUsageSince(templateId, since: since);
 
   /// Fetch the N most recent reports from all instances of this template.
   Future<List<AgentReportEntity>> getRecentInstanceReports(
     String templateId, {
     int limit = 10,
-  }) {
-    return repository.getRecentReportsByTemplate(templateId, limit: limit);
-  }
+  }) => _metrics.getRecentInstanceReports(templateId, limit: limit);
 
   /// Fetch the N most recent observation messages from all instances of this
   /// template.
   Future<List<AgentMessageEntity>> getRecentInstanceObservations(
     String templateId, {
     int limit = 10,
-  }) {
-    return repository.getRecentObservationsByTemplate(templateId, limit: limit);
-  }
+  }) => _metrics.getRecentInstanceObservations(templateId, limit: limit);
 
   /// Fetch evolution notes for a template, newest-first.
   Future<List<EvolutionNoteEntity>> getRecentEvolutionNotes(
     String templateId, {
     int limit = 50,
-  }) {
-    return repository.getEvolutionNotes(templateId, limit: limit);
-  }
+  }) => _metrics.getRecentEvolutionNotes(templateId, limit: limit);
 
   /// Fetch evolution sessions for a template, newest-first.
   Future<List<EvolutionSessionEntity>> getEvolutionSessions(
     String templateId, {
     int limit = 10,
-  }) {
-    return repository.getEvolutionSessions(templateId, limit: limit);
-  }
+  }) => _metrics.getEvolutionSessions(templateId, limit: limit);
 
   /// Fetch persisted recaps for completed ritual sessions, newest-first.
   Future<List<EvolutionSessionRecapEntity>> getEvolutionSessionRecaps(
     String templateId, {
     int limit = 50,
-  }) {
-    return repository.getEvolutionSessionRecaps(templateId, limit: limit);
-  }
+  }) => _metrics.getEvolutionSessionRecaps(templateId, limit: limit);
 
   /// Fetch the recap for a single ritual session.
   Future<EvolutionSessionRecapEntity?> getEvolutionSessionRecap(
     String sessionId,
-  ) {
-    return repository.getEvolutionSessionRecap(sessionId);
-  }
+  ) => _metrics.getEvolutionSessionRecap(sessionId);
 
   /// Count entities changed since [since] for all instances of [templateId].
-  Future<int> countChangesSince(String templateId, DateTime? since) {
-    return repository.countChangedSinceForTemplate(templateId, since);
-  }
+  Future<int> countChangesSince(String templateId, DateTime? since) =>
+      _metrics.countChangesSince(templateId, since);
 
   /// Gather all data needed for an evolution session context in parallel.
-  ///
-  /// This fetches metrics, version history, instance reports/observations,
-  /// evolution notes, sessions, observation payloads, and change counts in
-  /// as few sequential round-trips as possible.
-  Future<EvolutionDataBundle> gatherEvolutionData(String templateId) async {
-    // First batch: all independent queries in parallel.
-    final results = await (
-      computeMetrics(templateId),
-      getVersionHistory(templateId, limit: 5),
-      getRecentInstanceReports(templateId),
-      getRecentInstanceObservations(templateId),
-      getRecentEvolutionNotes(templateId, limit: 30),
-      getEvolutionSessions(templateId),
-    ).wait;
-
-    final metrics = results.$1;
-    final recentVersions = results.$2;
-    final reports = results.$3;
-    final observations = results.$4;
-    final notes = results.$5;
-    final sessions = results.$6;
-
-    // Second batch: depends on first batch results.
-    final payloadIds = observations
-        .map((obs) => obs.contentEntryId)
-        .whereType<String>();
-    final payloadEntitiesFuture = Future.wait(
-      payloadIds.map(repository.getEntity),
-    );
-
-    final lastSessionDate = sessions.isNotEmpty
-        ? sessions.first.createdAt
-        : null;
-    final changesSinceFuture = countChangesSince(templateId, lastSessionDate);
-
-    final batchResults = await (payloadEntitiesFuture, changesSinceFuture).wait;
-
-    final observationPayloads = <String, AgentMessagePayloadEntity>{
-      for (final entity
-          in batchResults.$1.whereType<AgentMessagePayloadEntity>())
-        entity.id: entity,
-    };
-
-    return EvolutionDataBundle(
-      metrics: metrics,
-      recentVersions: recentVersions,
-      instanceReports: reports,
-      instanceObservations: observations,
-      pastNotes: notes,
-      sessions: sessions,
-      observationPayloads: observationPayloads,
-      changesSinceLastSession: batchResults.$2,
-    );
-  }
+  Future<EvolutionDataBundle> gatherEvolutionData(String templateId) =>
+      _metrics.gatherEvolutionData(templateId);
 
   /// Checks whether any templates, template versions, or agent configs
   /// reference the given [profileId].
-  ///
-  /// Returns `true` if the profile is in use and should not be deleted.
-  Future<bool> profileInUse(String profileId) async {
-    final templates = await repository.getAllTemplates();
-    for (final t in templates) {
-      if (t.profileId == profileId) return true;
-    }
+  Future<bool> profileInUse(String profileId) =>
+      _metrics.profileInUse(profileId);
 
-    // Check all template versions in parallel.
-    final allVersions = await Future.wait(
-      templates.map((t) => getVersionHistory(t.id, limit: 1000000)),
-    );
-    if (allVersions.any(
-      (versions) => versions.any((v) => v.profileId == profileId),
-    )) {
-      return true;
-    }
-
-    // Check agent identity configs.
-    final agents = await repository.getAllAgentIdentities();
-    for (final agent in agents) {
-      if (agent.config.profileId == profileId) return true;
-    }
-
-    return false;
-  }
+  // ── Seeding ───────────────────────────────────────────────────────────────
 
   /// Idempotent seed of default templates.
-  ///
-  /// Checks each default template independently, seeding only those that are
-  /// missing. This handles partial-seed scenarios (e.g., Laura exists but Tom
-  /// does not).
-  Future<void> seedDefaults() async {
-    final [
-      laura,
-      tom,
-      dayAgent,
-      projectTemplate,
-      improver,
-      metaImprover,
-    ] = await Future.wait([
-      getTemplate(lauraTemplateId),
-      getTemplate(tomTemplateId),
-      getTemplate(dayAgentTemplateId),
-      getTemplate(projectTemplateId),
-      getTemplate(improverTemplateId),
-      getTemplate(metaImproverTemplateId),
-    ]);
-
-    final defaultsAlreadySeeded =
-        laura != null &&
-        tom != null &&
-        dayAgent != null &&
-        projectTemplate != null &&
-        improver != null &&
-        metaImprover != null;
-    if (defaultsAlreadySeeded) {
-      developer.log(
-        'Default templates already seeded, skipping',
-        name: 'AgentTemplateService',
-      );
-    } else {
-      if (laura == null) {
-        await createTemplate(
-          templateId: lauraTemplateId,
-          displayName: 'Laura',
-          kind: AgentTemplateKind.taskAgent,
-          modelId: kDefaultAgentTemplateModelId,
-          directives:
-              'You are Laura, a diligent task management agent. '
-              'You help users organize, prioritize, and complete their tasks '
-              'efficiently. You write clear, actionable reports.',
-          generalDirective: taskAgentGeneralDirective,
-          reportDirective: taskAgentReportDirective,
-          authoredBy: 'system',
-        );
-      }
-
-      if (tom == null) {
-        await createTemplate(
-          templateId: tomTemplateId,
-          displayName: 'Tom',
-          kind: AgentTemplateKind.taskAgent,
-          modelId: kDefaultAgentTemplateModelId,
-          directives:
-              'You are Tom, a creative and analytical task agent. '
-              'You help users think through problems, break down complex tasks, '
-              'and find innovative solutions. You write insightful reports.',
-          generalDirective: taskAgentGeneralDirective,
-          reportDirective: taskAgentReportDirective,
-          authoredBy: 'system',
-        );
-      }
-
-      if (projectTemplate == null) {
-        await createTemplate(
-          templateId: projectTemplateId,
-          displayName: 'Project Analyst',
-          kind: AgentTemplateKind.projectAgent,
-          modelId: kDefaultAgentTemplateModelId,
-          directives:
-              'You are a project-level agent. You synthesize progress across '
-              'linked tasks, highlight delivery risks, and keep the project '
-              'report current with concise, actionable summaries.',
-          generalDirective: projectAgentGeneralDirective,
-          reportDirective: projectAgentReportDirective,
-          authoredBy: 'system',
-        );
-      }
-
-      if (dayAgent == null) {
-        await createTemplate(
-          templateId: dayAgentTemplateId,
-          displayName: 'Shepherd',
-          kind: AgentTemplateKind.dayAgent,
-          modelId: kDefaultAgentTemplateModelId,
-          directives:
-              'You are Shepherd, a Daily OS planning agent. You help the user '
-              'shape one realistic day at a time, protect capacity, and learn '
-              'from each day without taking control away from the user.',
-          generalDirective: dayAgentGeneralDirective,
-          reportDirective: dayAgentReportDirective,
-          authoredBy: 'system',
-        );
-      }
-
-      if (improver == null) {
-        await createTemplate(
-          templateId: improverTemplateId,
-          displayName: 'Template Improver',
-          kind: AgentTemplateKind.templateImprover,
-          modelId: kDefaultAgentTemplateModelId,
-          directives:
-              'You are a template improvement agent. You analyze '
-              'feedback from agent instances, identify patterns in user '
-              'decisions, and propose directive improvements during weekly '
-              'one-on-one rituals.',
-          generalDirective: templateImproverGeneralDirective,
-          authoredBy: 'system',
-        );
-      }
-
-      if (metaImprover == null) {
-        await createTemplate(
-          templateId: metaImproverTemplateId,
-          displayName: 'Meta Improver',
-          kind: AgentTemplateKind.templateImprover,
-          modelId: kDefaultAgentTemplateModelId,
-          directives:
-              'You are a meta-improver agent. You evaluate and improve '
-              'the template-improver agents themselves. Your focus is on:\n'
-              '- Improver ritual effectiveness: Are the one-on-one sessions '
-              'producing useful directive proposals?\n'
-              '- Directive churn stability: Are improvers making too many '
-              'changes too frequently, or is the rate of change appropriate?\n'
-              '- Acceptance rates: Are users approving or rejecting the '
-              'proposals? What patterns emerge from the decisions?\n'
-              '- Session outcome trends: Are user ratings of evolution sessions '
-              'improving, stable, or declining over time?\n\n'
-              'You do NOT evaluate task-level agent performance directly. '
-              'Your scope is the effectiveness of the improvement process '
-              'itself.',
-          generalDirective: templateImproverGeneralDirective,
-          authoredBy: 'system',
-        );
-      }
-
-      developer.log(
-        'Seeded default templates (Laura, Tom, Shepherd, Template Improver, '
-        'Meta Improver, Project Analyst)',
-        name: 'AgentTemplateService',
-      );
-    }
-
-    // Seed new directive fields for any existing versions that lack them.
-    await seedDirectiveFields();
-    await seedDayAgentCaptureReconcileDirective();
-  }
+  Future<void> seedDefaults() => _seeding.seedDefaults();
 
   /// Populate `generalDirective` and `reportDirective` on existing template
   /// versions where both fields are empty.
-  ///
-  /// This is a one-time migration that writes fresh, purpose-built directives
-  /// based on the template's kind. It does NOT copy the old `directives` blob
-  /// — instead it writes clean content appropriate for each field.
-  ///
-  /// Called automatically at the end of [seedDefaults].
-  Future<void> seedDirectiveFields() async {
-    final templates = await listTemplates();
-
-    for (final template in templates) {
-      final activeVersion = await getActiveVersion(template.id);
-      if (activeVersion == null) continue;
-
-      // Skip versions that already have both new fields populated.
-      if (activeVersion.generalDirective.isNotEmpty &&
-          activeVersion.reportDirective.isNotEmpty) {
-        continue;
-      }
-
-      final (general, report) = switch (template.kind) {
-        AgentTemplateKind.taskAgent => (
-          taskAgentGeneralDirective,
-          taskAgentReportDirective,
-        ),
-        AgentTemplateKind.dayAgent => (
-          dayAgentGeneralDirective,
-          dayAgentReportDirective,
-        ),
-        AgentTemplateKind.templateImprover => (
-          templateImproverGeneralDirective,
-          templateImproverReportDirective,
-        ),
-        AgentTemplateKind.projectAgent => (
-          projectAgentGeneralDirective,
-          projectAgentReportDirective,
-        ),
-      };
-
-      final updated = activeVersion.copyWith(
-        generalDirective: activeVersion.generalDirective.isNotEmpty
-            ? activeVersion.generalDirective
-            : general,
-        reportDirective: activeVersion.reportDirective.isNotEmpty
-            ? activeVersion.reportDirective
-            : report,
-      );
-      await syncService.upsertEntity(updated);
-
-      developer.log(
-        'Seeded directive fields for template '
-        '${DomainLogger.sanitizeId(template.id)} '
-        '(v${activeVersion.version})',
-        name: 'AgentTemplateService',
-      );
-    }
-  }
+  Future<void> seedDirectiveFields() => _seeding.seedDirectiveFields();
 
   /// Advances existing Shepherd templates to the capture/reconcile directive.
-  ///
-  /// Fresh installs already create v1 with the current directive constants.
-  /// Existing phase-1 installs have a non-empty older general directive, so
-  /// [seedDirectiveFields] intentionally leaves them alone; this targeted seed
-  /// creates the phase-2 version and moves the head pointer.
-  Future<void> seedDayAgentCaptureReconcileDirective() async {
-    final template = await getTemplate(dayAgentTemplateId);
-    if (template == null) return;
-
-    final activeVersion = await getActiveVersion(dayAgentTemplateId);
-    if (activeVersion == null) return;
-
-    if (activeVersion.generalDirective.trim() ==
-            dayAgentGeneralDirective.trim() &&
-        activeVersion.reportDirective.trim() ==
-            dayAgentReportDirective.trim()) {
-      return;
-    }
-
-    await createVersion(
-      templateId: dayAgentTemplateId,
-      directives: activeVersion.directives,
-      generalDirective: dayAgentGeneralDirective,
-      reportDirective: dayAgentReportDirective,
-      authoredBy: 'system',
-    );
-  }
+  Future<void> seedDayAgentCaptureReconcileDirective() =>
+      _seeding.seedDayAgentCaptureReconcileDirective();
 }

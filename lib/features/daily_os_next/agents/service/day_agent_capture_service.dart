@@ -16,6 +16,10 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_reads.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_corpus_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_triage_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -23,8 +27,8 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
-part 'day_agent_corpus_service.dart';
-part 'day_agent_triage_service.dart';
+const _uuid = Uuid();
+const _overdueLookbackDays = 7;
 
 /// Task creation seam for capture-derived NEW items.
 typedef DayAgentTaskFactory =
@@ -38,8 +42,14 @@ typedef DayAgentTaskFactory =
     });
 
 /// Backend implementation for Daily OS capture and reconcile tools.
+///
+/// Owns the capture/parse/link pipeline directly (heavily entangled with the
+/// shared instance state) and delegates the cohesive corpus-matching and
+/// reconcile-triage flows to the [DayAgentCorpusService] and
+/// [DayAgentTriageService] collaborators. Public methods stay one-line
+/// delegators so mocks of the service still intercept the surface.
 class DayAgentCaptureService {
-  /// Creates a capture/reconcile service.
+  /// Creates a capture/reconcile service and wires its collaborators.
   DayAgentCaptureService({
     required this.agentRepository,
     required this.syncService,
@@ -50,7 +60,20 @@ class DayAgentCaptureService {
     required this.domainLogger,
     DayAgentTaskFactory? taskFactory,
     this.onPersistedStateChanged,
-  }) : _taskFactory = taskFactory ?? _defaultTaskFactory;
+  }) : _taskFactory = taskFactory ?? _defaultTaskFactory,
+       _reads = DayAgentCaptureReads(agentRepository: agentRepository) {
+    _corpus = DayAgentCorpusService(
+      journalDb: journalDb,
+      fts5Db: fts5Db,
+      reads: _reads,
+    );
+    _triage = DayAgentTriageService(
+      journalDb: journalDb,
+      journalRepository: journalRepository,
+      reads: _reads,
+      onPersistedStateChanged: onPersistedStateChanged,
+    );
+  }
 
   /// Agent entity/link repository.
   final AgentRepository agentRepository;
@@ -78,10 +101,9 @@ class DayAgentCaptureService {
   /// Callback fired when persisted state changes.
   final void Function(String id)? onPersistedStateChanged;
 
-  static const _uuid = Uuid();
-  static const _maxCorpusTasks = 200;
-  static const _maxMatchCandidates = 8;
-  static const _overdueLookbackDays = 7;
+  final DayAgentCaptureReads _reads;
+  late final DayAgentCorpusService _corpus;
+  late final DayAgentTriageService _triage;
 
   /// Executes a non-foundation day-agent tool.
   Future<DayAgentDirectToolResult> executeTool({
@@ -157,7 +179,7 @@ class DayAgentCaptureService {
               // is queryable by day and a parse wake can resolve its day from
               // the capture even when one planner owns many days.
               dayId: dayAgentIdForDate(effectiveCapturedAt),
-              audioRef: _blankToNull(audioRef),
+              audioRef: blankToNull(audioRef),
             )
             as CaptureEntity;
 
@@ -224,8 +246,8 @@ class DayAgentCaptureService {
   Future<List<Map<String, Object?>>> buildTaskCorpusSnapshot({
     required Set<String> allowedCategoryIds,
     required DateTime day,
-    int limit = _maxCorpusTasks,
-  }) => buildTaskCorpusSnapshotImpl(
+    int limit = DayAgentCorpusService.maxCorpusTasks,
+  }) => _corpus.buildTaskCorpusSnapshot(
     allowedCategoryIds: allowedCategoryIds,
     day: day,
     limit: limit,
@@ -237,7 +259,7 @@ class DayAgentCaptureService {
     required String agentId,
     required String phrase,
     String? categoryHint,
-  }) => matchToCorpusImpl(
+  }) => _corpus.matchToCorpus(
     agentId: agentId,
     phrase: phrase,
     categoryHint: categoryHint,
@@ -333,16 +355,16 @@ class DayAgentCaptureService {
 
     final items = <DayAgentPendingItem>[
       for (final task in overdue)
-        if (_categoryAllowed(task.meta.categoryId, identity.allowedCategoryIds))
+        if (categoryAllowed(task.meta.categoryId, identity.allowedCategoryIds))
           pendingItemFromTask(task, DayAgentPendingKind.overdue),
       for (final task in inProgress)
-        if (_categoryAllowed(task.meta.categoryId, identity.allowedCategoryIds))
+        if (categoryAllowed(task.meta.categoryId, identity.allowedCategoryIds))
           pendingItemFromTask(task, DayAgentPendingKind.inProgress),
       for (final task in missedRecurring)
-        if (_categoryAllowed(task.meta.categoryId, identity.allowedCategoryIds))
+        if (categoryAllowed(task.meta.categoryId, identity.allowedCategoryIds))
           pendingItemFromTask(task, DayAgentPendingKind.missedRecurring),
       for (final task in dueToday)
-        if (_categoryAllowed(task.meta.categoryId, identity.allowedCategoryIds))
+        if (categoryAllowed(task.meta.categoryId, identity.allowedCategoryIds))
           pendingItemFromTask(task, DayAgentPendingKind.dueToday),
     ];
     return dedupeAndSortPendingItems(items);
@@ -355,7 +377,7 @@ class DayAgentCaptureService {
     required String taskId,
     required String action,
     DateTime? deferTo,
-  }) => applyTriageImpl(
+  }) => _triage.applyTriage(
     agentId: agentId,
     taskId: taskId,
     action: action,
@@ -424,6 +446,10 @@ class DayAgentCaptureService {
       ..call(captureItemId);
     return updated;
   }
+
+  // ---------------------------------------------------------------------------
+  // Direct-tool dispatch handlers (driven by [executeTool]).
+  // ---------------------------------------------------------------------------
 
   Future<Map<String, Object?>> _submitCaptureTool(
     String agentId,
@@ -531,7 +557,7 @@ class DayAgentCaptureService {
     final identity = await _requireIdentity(agentId);
     final phrase = _requiredString(args, 'phrase');
     final categoryId = _requiredString(args, 'category');
-    if (!_categoryAllowed(categoryId, identity.allowedCategoryIds)) {
+    if (!categoryAllowed(categoryId, identity.allowedCategoryIds)) {
       throw DayAgentCaptureException('category $categoryId is not allowed');
     }
     final now = clock.now();
@@ -599,6 +625,10 @@ class DayAgentCaptureService {
     };
   }
 
+  // ---------------------------------------------------------------------------
+  // Capture/parse persistence helpers.
+  // ---------------------------------------------------------------------------
+
   Future<_ParsedItemWithLink?> _parseModelItem({
     required String agentId,
     required String captureId,
@@ -610,7 +640,7 @@ class DayAgentCaptureService {
     final data = raw.cast<String, dynamic>();
     final title = _requiredString(data, 'title');
     final categoryId = _requiredString(data, 'categoryId');
-    if (!_categoryAllowed(categoryId, allowedCategoryIds)) return null;
+    if (!categoryAllowed(categoryId, allowedCategoryIds)) return null;
 
     final score = _requiredScore(data);
     final classification = classifyParsedItemMatch(score);
@@ -638,8 +668,8 @@ class DayAgentCaptureService {
     if (matchedTaskId != null) {
       matchedTask = await _taskOrNull(matchedTaskId);
       if (matchedTask == null ||
-          _isClosedTask(matchedTask) ||
-          !_categoryAllowed(matchedTask.meta.categoryId, allowedCategoryIds)) {
+          isClosedTask(matchedTask) ||
+          !categoryAllowed(matchedTask.meta.categoryId, allowedCategoryIds)) {
         matchedTaskId = null;
         matchedTask = null;
         kind = ParsedItemKind.newTask;
@@ -721,11 +751,8 @@ class DayAgentCaptureService {
     }
   }
 
-  Future<AgentIdentityEntity> _requireIdentity(String agentId) async {
-    final entity = await agentRepository.getEntity(agentId);
-    if (entity is AgentIdentityEntity) return entity;
-    throw DayAgentCaptureException('agent $agentId not found');
-  }
+  Future<AgentIdentityEntity> _requireIdentity(String agentId) =>
+      _reads.requireIdentity(agentId);
 
   Future<ParsedItemEntity> _requireParsedItem(String parsedItemId) async {
     final entity = await agentRepository.getEntity(parsedItemId);
@@ -742,177 +769,6 @@ class DayAgentCaptureService {
   Future<Task?> _taskOrNull(String taskId) async {
     final entity = await journalDb.journalEntityById(taskId);
     return entity is Task ? entity : null;
-  }
-
-  static Task _withStatus(Task task, TaskStatus status) {
-    return task.copyWith(
-      data: task.data.copyWith(
-        status: status,
-        statusHistory: [...task.data.statusHistory, status],
-      ),
-    );
-  }
-
-  static Task _withDueToday(Task task, DateTime now) {
-    final updated = task.copyWith(
-      data: task.data.copyWith(due: _endOfDay(now)),
-    );
-    final status = task.data.status.toDbString;
-    if (status == 'BLOCKED' || status == 'ON HOLD') {
-      return _withStatus(
-        updated,
-        TaskStatus.open(
-          id: _uuid.v4(),
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
-        ),
-      );
-    }
-    return updated;
-  }
-
-  static Map<String, Object?> _parsedItemJson(ParsedItemEntity item) => {
-    'id': item.id,
-    'captureId': item.captureId,
-    'kind': item.kind.name,
-    'title': item.title,
-    'categoryId': item.categoryId,
-    'confidence': item.confidence.name,
-    'confidenceScore': item.confidenceScore,
-    'lowConfidence': item.lowConfidence,
-    'spokenPhrase': item.spokenPhrase,
-    'matchedTaskId': item.matchedTaskId,
-    'estimateMinutes': item.estimateMinutes,
-    'timeAnchor': item.timeAnchor,
-    'proposedUpdate': item.proposedUpdate,
-  };
-
-  static double _requiredScore(Map<String, dynamic> args) {
-    final raw = args['confidenceScore'] ?? args['confidence'];
-    final score = raw is num ? raw.toDouble() : null;
-    if (score == null || score.isNaN || score < 0 || score > 1) {
-      throw const DayAgentCaptureException(
-        'confidenceScore must be a number between 0 and 1',
-      );
-    }
-    return score;
-  }
-
-  static String _requiredString(Map<String, dynamic> args, String key) {
-    final value = _optionalString(args[key]);
-    if (value == null) {
-      throw DayAgentCaptureException('$key must not be empty');
-    }
-    return value;
-  }
-
-  static String? _optionalString(Object? value) {
-    if (value is! String) return null;
-    return _blankToNull(value);
-  }
-
-  static int? _optionalInt(Object? value) {
-    if (value is int) return value;
-    if (value is num && value.isFinite && value % 1 == 0) return value.toInt();
-    return null;
-  }
-
-  static DateTime? _optionalDateTime(Object? raw) {
-    if (raw is! String || raw.trim().isEmpty) return null;
-    return DateTime.tryParse(raw.trim());
-  }
-
-  static DateTime? _dueFromAnchor(String? raw, DateTime now) {
-    if (raw == null) return null;
-    final trimmed = raw.trim();
-    final due = switch (trimmed.toLowerCase()) {
-      'today' => _endOfDay(now),
-      'tomorrow' => _endOfDay(now.add(const Duration(days: 1))),
-      _ => DateTime.tryParse(trimmed),
-    };
-    if (due == null) {
-      // Surfacing this as a structured failure (rather than silently dropping
-      // the anchor) prevents `create_task_from_phrase` from persisting an
-      // undated task when the model produces a malformed `dueAnchor`.
-      throw DayAgentCaptureException(
-        'dueAnchor must be "today", "tomorrow", or a valid ISO-8601 '
-        'date-time; got "$raw"',
-      );
-    }
-    return due;
-  }
-
-  static String? _blankToNull(String? value) {
-    final trimmed = value?.trim();
-    if (trimmed == null || trimmed.isEmpty) return null;
-    return trimmed;
-  }
-
-  static Set<String>? _categoryFilterForHint({
-    required Set<String> allowedCategoryIds,
-    required String? categoryHint,
-  }) {
-    if (categoryHint == null) {
-      return allowedCategoryIds.isEmpty ? null : allowedCategoryIds;
-    }
-    if (allowedCategoryIds.isNotEmpty &&
-        !allowedCategoryIds.contains(categoryHint)) {
-      return const <String>{};
-    }
-    return {categoryHint};
-  }
-
-  static bool _categoryAllowed(String? categoryId, Set<String>? allowed) {
-    if (allowed == null || allowed.isEmpty) return true;
-    return categoryId != null && allowed.contains(categoryId);
-  }
-
-  static bool _isClosedTask(Task task) {
-    const closedTaskStatuses = {'DONE', 'REJECTED'};
-    return closedTaskStatuses.contains(task.data.status.toDbString);
-  }
-
-  static DateTime _endOfDay(DateTime date) {
-    // Preserve the input's UTC/local zone so callers comparing the resulting
-    // `due` against other UTC timestamps (created_at, etc.) don't get a
-    // local→UTC offset surprise.
-    return date.isUtc
-        ? DateTime.utc(date.year, date.month, date.day, 23, 59, 59, 999)
-        : DateTime(date.year, date.month, date.day, 23, 59, 59, 999);
-  }
-
-  static Future<Task?> _defaultTaskFactory({
-    required String title,
-    required String categoryId,
-    required DateTime now,
-    int? estimateMinutes,
-    DateTime? due,
-    String? profileId,
-  }) {
-    return getIt<PersistenceLogic>().createTaskEntry(
-      data: TaskData(
-        status: TaskStatus.open(
-          id: _uuid.v4(),
-          createdAt: now,
-          utcOffset: now.timeZoneOffset.inMinutes,
-        ),
-        title: title,
-        statusHistory: const [],
-        dateTo: now,
-        dateFrom: now,
-        estimate: Duration(minutes: estimateMinutes ?? 0),
-        due: due,
-        profileId: profileId,
-      ),
-      entryText: EntryText(plainText: title, markdown: title),
-      categoryId: categoryId,
-    );
-  }
-
-  static DateTime? _dateFromDayId(String dayId) {
-    const prefix = 'dayplan-';
-    if (!dayId.startsWith(prefix)) return null;
-    return DateTime.tryParse(dayId.substring(prefix.length));
   }
 }
 
@@ -963,4 +819,113 @@ class _ParsedItemWithLink {
 
   final ParsedItemEntity entity;
   final AgentLink? taskLink;
+}
+
+// -----------------------------------------------------------------------------
+// Pure arg-parsing/task-shaping helpers local to the capture tool dispatch.
+// -----------------------------------------------------------------------------
+
+Map<String, Object?> _parsedItemJson(ParsedItemEntity item) => {
+  'id': item.id,
+  'captureId': item.captureId,
+  'kind': item.kind.name,
+  'title': item.title,
+  'categoryId': item.categoryId,
+  'confidence': item.confidence.name,
+  'confidenceScore': item.confidenceScore,
+  'lowConfidence': item.lowConfidence,
+  'spokenPhrase': item.spokenPhrase,
+  'matchedTaskId': item.matchedTaskId,
+  'estimateMinutes': item.estimateMinutes,
+  'timeAnchor': item.timeAnchor,
+  'proposedUpdate': item.proposedUpdate,
+};
+
+double _requiredScore(Map<String, dynamic> args) {
+  final raw = args['confidenceScore'] ?? args['confidence'];
+  final score = raw is num ? raw.toDouble() : null;
+  if (score == null || score.isNaN || score < 0 || score > 1) {
+    throw const DayAgentCaptureException(
+      'confidenceScore must be a number between 0 and 1',
+    );
+  }
+  return score;
+}
+
+String _requiredString(Map<String, dynamic> args, String key) {
+  final value = _optionalString(args[key]);
+  if (value == null) {
+    throw DayAgentCaptureException('$key must not be empty');
+  }
+  return value;
+}
+
+String? _optionalString(Object? value) {
+  if (value is! String) return null;
+  return blankToNull(value);
+}
+
+int? _optionalInt(Object? value) {
+  if (value is int) return value;
+  if (value is num && value.isFinite && value % 1 == 0) return value.toInt();
+  return null;
+}
+
+DateTime? _optionalDateTime(Object? raw) {
+  if (raw is! String || raw.trim().isEmpty) return null;
+  return DateTime.tryParse(raw.trim());
+}
+
+DateTime? _dueFromAnchor(String? raw, DateTime now) {
+  if (raw == null) return null;
+  final trimmed = raw.trim();
+  final due = switch (trimmed.toLowerCase()) {
+    'today' => endOfDay(now),
+    'tomorrow' => endOfDay(now.add(const Duration(days: 1))),
+    _ => DateTime.tryParse(trimmed),
+  };
+  if (due == null) {
+    // Surfacing this as a structured failure (rather than silently dropping
+    // the anchor) prevents `create_task_from_phrase` from persisting an
+    // undated task when the model produces a malformed `dueAnchor`.
+    throw DayAgentCaptureException(
+      'dueAnchor must be "today", "tomorrow", or a valid ISO-8601 '
+      'date-time; got "$raw"',
+    );
+  }
+  return due;
+}
+
+Future<Task?> _defaultTaskFactory({
+  required String title,
+  required String categoryId,
+  required DateTime now,
+  int? estimateMinutes,
+  DateTime? due,
+  String? profileId,
+}) {
+  return getIt<PersistenceLogic>().createTaskEntry(
+    data: TaskData(
+      status: TaskStatus.open(
+        id: _uuid.v4(),
+        createdAt: now,
+        utcOffset: now.timeZoneOffset.inMinutes,
+      ),
+      title: title,
+      statusHistory: const [],
+      dateTo: now,
+      dateFrom: now,
+      estimate: Duration(minutes: estimateMinutes ?? 0),
+      due: due,
+      profileId: profileId,
+    ),
+    entryText: EntryText(plainText: title, markdown: title),
+    categoryId: categoryId,
+  );
+}
+
+DateTime? _dateFromDayId(String dayId) {
+  const prefix = 'dayplan-';
+  if (!dayId.startsWith(prefix)) return null;
+  return DateTime.tryParse(dayId.substring(prefix.length));
 }

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -2060,21 +2062,18 @@ void main() {
       final v1 = makeTestTemplateVersion(
         id: 'ver-1',
         // Stale active status from a previous bug:
-        // ignore: avoid_redundant_argument_values
         status: AgentTemplateVersionStatus.active,
       );
       final v2 = makeTestTemplateVersion(
         id: 'ver-2',
         version: 2,
         // Also stale active:
-        // ignore: avoid_redundant_argument_values
         status: AgentTemplateVersionStatus.active,
       );
       final v3 = makeTestTemplateVersion(
         id: 'ver-3',
         version: 3,
         // Current head — active:
-        // ignore: avoid_redundant_argument_values
         status: AgentTemplateVersionStatus.active,
       );
 
@@ -2304,7 +2303,6 @@ void main() {
           id: 'older',
           fromId: 'tpl-old',
           toId: 'agent-a',
-          // ignore: avoid_redundant_argument_values
           createdAt: DateTime(2024, 1, 1),
         );
         final newer = makeTestTemplateAssignmentLink(
@@ -2910,13 +2908,11 @@ void main() {
     test('archives current, reactivates target, updates head', () async {
       final currentVersion = makeTestTemplateVersion(
         id: 'ver-old',
-        // ignore: avoid_redundant_argument_values
         status: AgentTemplateVersionStatus.active,
       );
       final head = makeTestTemplateHead(versionId: 'ver-old');
       final targetVersion = makeTestTemplateVersion(
         id: 'ver-new',
-        // ignore: avoid_redundant_argument_values
         agentId: kTestTemplateId,
         status: AgentTemplateVersionStatus.archived,
       );
@@ -3983,14 +3979,14 @@ void main() {
     test('delegates to repository with default limit', () async {
       final reports = [makeTestReport(id: 'r1'), makeTestReport(id: 'r2')];
       when(
-        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId),
+        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId, limit: 10),
       ).thenAnswer((_) async => reports);
 
       final result = await service.getRecentInstanceReports(kTestTemplateId);
 
       expect(result, hasLength(2));
       verify(
-        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId),
+        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId, limit: 10),
       ).called(1);
     });
 
@@ -4015,6 +4011,7 @@ void main() {
       when(
         () => mockRepo.getRecentObservationsByTemplate(
           kTestTemplateId,
+          limit: 10,
         ),
       ).thenAnswer((_) async => obs);
 
@@ -4033,7 +4030,7 @@ void main() {
         makeTestEvolutionNote(id: 'n2', kind: EvolutionNoteKind.decision),
       ];
       when(
-        () => mockRepo.getEvolutionNotes(kTestTemplateId),
+        () => mockRepo.getEvolutionNotes(kTestTemplateId, limit: 50),
       ).thenAnswer((_) async => notes);
 
       final result = await service.getRecentEvolutionNotes(kTestTemplateId);
@@ -4054,7 +4051,7 @@ void main() {
         ),
       ];
       when(
-        () => mockRepo.getEvolutionSessions(kTestTemplateId),
+        () => mockRepo.getEvolutionSessions(kTestTemplateId, limit: 10),
       ).thenAnswer((_) async => sessions);
 
       final result = await service.getEvolutionSessions(kTestTemplateId);
@@ -4121,16 +4118,19 @@ void main() {
         ),
       ).thenAnswer((_) async => [makeTestTemplateVersion()]);
       when(
-        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId),
+        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId, limit: 10),
       ).thenAnswer((_) async => []);
       when(
-        () => mockRepo.getRecentObservationsByTemplate(kTestTemplateId),
+        () => mockRepo.getRecentObservationsByTemplate(
+          kTestTemplateId,
+          limit: 10,
+        ),
       ).thenAnswer((_) async => defaultObs);
       when(
         () => mockRepo.getEvolutionNotes(kTestTemplateId, limit: 30),
       ).thenAnswer((_) async => []);
       when(
-        () => mockRepo.getEvolutionSessions(kTestTemplateId),
+        () => mockRepo.getEvolutionSessions(kTestTemplateId, limit: 10),
       ).thenAnswer((_) async => defaultSessions);
       when(
         () => mockRepo.countChangedSinceForTemplate(
@@ -4203,11 +4203,13 @@ void main() {
       when(
         () => generatedRepository.getRecentReportsByTemplate(
           _generatedTemplateId,
+          limit: 10,
         ),
       ).thenAnswer((_) async => scenario.reports);
       when(
         () => generatedRepository.getRecentObservationsByTemplate(
           _generatedTemplateId,
+          limit: 10,
         ),
       ).thenAnswer((_) async => scenario.observations);
       when(
@@ -4217,7 +4219,10 @@ void main() {
         ),
       ).thenAnswer((_) async => scenario.notes);
       when(
-        () => generatedRepository.getEvolutionSessions(_generatedTemplateId),
+        () => generatedRepository.getEvolutionSessions(
+          _generatedTemplateId,
+          limit: 10,
+        ),
       ).thenAnswer((_) async => scenario.sessions);
       for (final slot in _GeneratedGatherPayloadSlot.values) {
         final contentEntryId = slot.contentEntryId;
@@ -4338,7 +4343,7 @@ void main() {
       stubGatherDependencies(sessions: [session]);
       // Override specific stubs for this test.
       when(
-        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId),
+        () => mockRepo.getRecentReportsByTemplate(kTestTemplateId, limit: 10),
       ).thenAnswer((_) async => [report]);
       when(
         () => mockRepo.getEvolutionNotes(kTestTemplateId, limit: 30),
@@ -4371,7 +4376,6 @@ void main() {
 
     test('uses first session createdAt as since date', () async {
       final session = makeTestEvolutionSession(
-        // ignore: avoid_redundant_argument_values
         createdAt: DateTime(2024, 6, 1),
       );
       stubGatherDependencies(sessions: [session]);
@@ -4381,7 +4385,6 @@ void main() {
       verify(
         () => mockRepo.countChangedSinceForTemplate(
           kTestTemplateId,
-          // ignore: avoid_redundant_argument_values
           DateTime(2024, 6, 1),
         ),
       ).called(1);
@@ -4444,7 +4447,6 @@ void main() {
     test('nextSessionNumber handles single session', () {
       final bundle = makeTestEvolutionDataBundle(
         sessions: [
-          // ignore: avoid_redundant_argument_values
           makeTestEvolutionSession(id: 's1', sessionNumber: 1),
         ],
       );
@@ -4618,7 +4620,7 @@ void main() {
         makeTestEvolutionSessionRecap(id: 'recap-2', sessionId: 'session-2'),
       ];
       when(
-        () => mockRepo.getEvolutionSessionRecaps(kTestTemplateId),
+        () => mockRepo.getEvolutionSessionRecaps(kTestTemplateId, limit: 50),
       ).thenAnswer((_) async => recaps);
 
       final result = await service.getEvolutionSessionRecaps(kTestTemplateId);
@@ -4626,7 +4628,7 @@ void main() {
       expect(result, hasLength(2));
       expect(result.first.id, 'recap-1');
       verify(
-        () => mockRepo.getEvolutionSessionRecaps(kTestTemplateId),
+        () => mockRepo.getEvolutionSessionRecaps(kTestTemplateId, limit: 50),
       ).called(1);
     });
 
@@ -4729,7 +4731,7 @@ void main() {
           () => generatedRepository.getEntitiesByAgentId(
             template.id,
             type: AgentEntityTypes.agentTemplateVersion,
-            limit: 1000000,
+            limit: -1,
           ),
         ).thenAnswer(
           (_) async => scenario.templates[index].versionEntities(index),
@@ -4752,7 +4754,7 @@ void main() {
             () => generatedRepository.getEntitiesByAgentId(
               template.id,
               type: AgentEntityTypes.agentTemplateVersion,
-              limit: 1000000,
+              limit: -1,
             ),
           );
         }
@@ -4765,7 +4767,7 @@ void main() {
           () => generatedRepository.getEntitiesByAgentId(
             template.id,
             type: AgentEntityTypes.agentTemplateVersion,
-            limit: 1000000,
+            limit: -1,
           ),
         ).called(1);
       }

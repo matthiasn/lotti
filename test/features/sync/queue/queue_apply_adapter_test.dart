@@ -1,261 +1,20 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
-import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../../test_data/test_data.dart';
-
-// Local mock: the centralized `MockSyncEventProcessor` ships concrete
-// default `prepare`/`apply` overrides, so `when(() => processor.prepare(
-// event: any(named: 'event')))` would call the real method and leak the
-// unconsumed matcher. This file stubs both via `when()`, so it needs the
-// bare-Mock variant.
-class _MockSyncEventProcessor extends Mock implements SyncEventProcessor {}
-
-class _MockPreparedSyncEvent extends Mock implements PreparedSyncEvent {}
-
-enum _GeneratedAdapterPrepareOutcome {
-  ready,
-  nullPrepared,
-  pendingDescriptor,
-  pendingPath,
-  retriableIo,
-  permanentThrow,
-}
-
-enum _GeneratedAdapterApplyOutcome {
-  applied,
-  pendingDescriptor,
-  pendingPath,
-  retriableIo,
-  retriableThrow,
-}
-
-enum _GeneratedAdapterMessageKind {
-  journalEntity,
-  entryLink,
-  configFlag,
-  themingSelection,
-  backfillRequest,
-}
-
-class _GeneratedAdapterScenario {
-  const _GeneratedAdapterScenario({
-    required this.prepareOutcome,
-    required this.applyOutcome,
-    required this.messageKind,
-    required this.usePrepareBatch,
-    required this.slot,
-  });
-
-  final _GeneratedAdapterPrepareOutcome prepareOutcome;
-  final _GeneratedAdapterApplyOutcome applyOutcome;
-  final _GeneratedAdapterMessageKind messageKind;
-  final bool usePrepareBatch;
-  final int slot;
-
-  bool get prepareReady =>
-      prepareOutcome == _GeneratedAdapterPrepareOutcome.ready;
-
-  ApplyOutcome get expectedOutcome {
-    switch (prepareOutcome) {
-      case _GeneratedAdapterPrepareOutcome.ready:
-        return _expectedApplyOutcome;
-      case _GeneratedAdapterPrepareOutcome.nullPrepared:
-      case _GeneratedAdapterPrepareOutcome.permanentThrow:
-        return ApplyOutcome.permanentSkip;
-      case _GeneratedAdapterPrepareOutcome.pendingDescriptor:
-      case _GeneratedAdapterPrepareOutcome.pendingPath:
-        return ApplyOutcome.pendingAttachment;
-      case _GeneratedAdapterPrepareOutcome.retriableIo:
-        return ApplyOutcome.retriable;
-    }
-  }
-
-  ApplyOutcome get _expectedApplyOutcome {
-    switch (applyOutcome) {
-      case _GeneratedAdapterApplyOutcome.applied:
-        return ApplyOutcome.applied;
-      case _GeneratedAdapterApplyOutcome.pendingDescriptor:
-      case _GeneratedAdapterApplyOutcome.pendingPath:
-        return ApplyOutcome.pendingAttachment;
-      case _GeneratedAdapterApplyOutcome.retriableIo:
-      case _GeneratedAdapterApplyOutcome.retriableThrow:
-        return ApplyOutcome.retriable;
-    }
-  }
-
-  Object prepareException() {
-    switch (prepareOutcome) {
-      case _GeneratedAdapterPrepareOutcome.pendingDescriptor:
-        return const FileSystemException(
-          'attachment descriptor not yet available',
-        );
-      case _GeneratedAdapterPrepareOutcome.pendingPath:
-        return FileSystemException(
-          'missing',
-          '/agent_entities/generated-$slot.json',
-        );
-      case _GeneratedAdapterPrepareOutcome.retriableIo:
-        return FileSystemException('disk busy', '/tmp/generated-$slot.json');
-      case _GeneratedAdapterPrepareOutcome.permanentThrow:
-        return StateError('generated prepare failure');
-      case _GeneratedAdapterPrepareOutcome.ready:
-      case _GeneratedAdapterPrepareOutcome.nullPrepared:
-        throw StateError('prepare outcome has no exception: $prepareOutcome');
-    }
-  }
-
-  Object applyException() {
-    switch (applyOutcome) {
-      case _GeneratedAdapterApplyOutcome.pendingDescriptor:
-        return const FileSystemException(
-          'attachment descriptor not yet available',
-        );
-      case _GeneratedAdapterApplyOutcome.pendingPath:
-        return FileSystemException('missing', '/images/generated-$slot.jpg');
-      case _GeneratedAdapterApplyOutcome.retriableIo:
-        return FileSystemException('disk busy', '/tmp/generated-$slot.json');
-      case _GeneratedAdapterApplyOutcome.retriableThrow:
-        return StateError('generated apply failure');
-      case _GeneratedAdapterApplyOutcome.applied:
-        throw StateError('apply outcome has no exception: $applyOutcome');
-    }
-  }
-
-  SyncMessage syncMessage() {
-    switch (messageKind) {
-      case _GeneratedAdapterMessageKind.journalEntity:
-        return SyncMessage.journalEntity(
-          id: 'entity-$slot',
-          jsonPath: '/entities/$slot.json',
-          vectorClock: null,
-          status: SyncEntryStatus.initial,
-        );
-      case _GeneratedAdapterMessageKind.entryLink:
-        return SyncMessage.entryLink(
-          entryLink: EntryLink.basic(
-            id: 'link-$slot',
-            fromId: 'from-$slot',
-            toId: 'to-$slot',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-          ),
-          status: SyncEntryStatus.initial,
-        );
-      case _GeneratedAdapterMessageKind.configFlag:
-        return SyncMessage.configFlag(
-          name: 'generated-flag-$slot',
-          description: 'Generated flag',
-          status: slot.isEven,
-        );
-      case _GeneratedAdapterMessageKind.themingSelection:
-        return SyncMessage.themingSelection(
-          lightThemeName: 'light-$slot',
-          darkThemeName: 'dark-$slot',
-          themeMode: 'system',
-          updatedAt: slot,
-          status: SyncEntryStatus.update,
-        );
-      case _GeneratedAdapterMessageKind.backfillRequest:
-        return SyncMessage.backfillRequest(
-          entries: const <BackfillRequestEntry>[],
-          requesterId: 'host-$slot',
-        );
-    }
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedAdapterScenario('
-        'prepareOutcome: $prepareOutcome, '
-        'applyOutcome: $applyOutcome, '
-        'messageKind: $messageKind, '
-        'usePrepareBatch: $usePrepareBatch, '
-        'slot: $slot'
-        ')';
-  }
-}
-
-extension _AnyGeneratedAdapterScenario on glados.Any {
-  glados.Generator<_GeneratedAdapterPrepareOutcome> get adapterPrepareOutcome =>
-      glados.AnyUtils(this).choose(_GeneratedAdapterPrepareOutcome.values);
-
-  glados.Generator<_GeneratedAdapterApplyOutcome> get adapterApplyOutcome =>
-      glados.AnyUtils(this).choose(_GeneratedAdapterApplyOutcome.values);
-
-  glados.Generator<_GeneratedAdapterMessageKind> get adapterMessageKind =>
-      glados.AnyUtils(this).choose(_GeneratedAdapterMessageKind.values);
-
-  glados.Generator<_GeneratedAdapterScenario> get adapterScenario =>
-      glados.CombinableAny(this).combine5(
-        adapterPrepareOutcome,
-        adapterApplyOutcome,
-        adapterMessageKind,
-        glados.IntAnys(this).intInRange(0, 2),
-        glados.IntAnys(this).intInRange(0, 8),
-        (
-          _GeneratedAdapterPrepareOutcome prepareOutcome,
-          _GeneratedAdapterApplyOutcome applyOutcome,
-          _GeneratedAdapterMessageKind messageKind,
-          int usePrepareBatchSlot,
-          int slot,
-        ) => _GeneratedAdapterScenario(
-          prepareOutcome: prepareOutcome,
-          applyOutcome: applyOutcome,
-          messageKind: messageKind,
-          usePrepareBatch: usePrepareBatchSlot == 1,
-          slot: slot,
-        ),
-      );
-}
-
-InboundQueueEntry _buildEntry({
-  required String eventId,
-  required String roomId,
-  required int originTsMs,
-}) {
-  final content = <String, dynamic>{'msgtype': syncMessageType};
-  final json = <String, dynamic>{
-    'event_id': eventId,
-    'room_id': roomId,
-    'origin_server_ts': originTsMs,
-    'type': EventTypes.Message,
-    'sender': '@tester:example.org',
-    'content': content,
-  };
-  return InboundQueueEntry(
-    queueId: 1,
-    eventId: eventId,
-    roomId: roomId,
-    originTs: originTsMs,
-    producer: InboundEventProducer.live,
-    enqueuedAt: originTsMs,
-    attempts: 0,
-    leaseUntil: 0,
-    rawJson: jsonEncode(json),
-  );
-}
+import 'queue_apply_adapter_test_helpers.dart';
 
 void main() {
-  late _MockSyncEventProcessor processor;
+  late AdapterMockSyncEventProcessor processor;
   late JournalDb journalDb;
   late MockDomainLogger logging;
   late MockRoom room;
@@ -263,11 +22,11 @@ void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(MockEvent());
-    registerFallbackValue(_MockPreparedSyncEvent());
+    registerFallbackValue(AdapterMockPreparedSyncEvent());
   });
 
   setUp(() {
-    processor = _MockSyncEventProcessor();
+    processor = AdapterMockSyncEventProcessor();
     journalDb = JournalDb(inMemoryDatabase: true);
     logging = MockDomainLogger();
     room = MockRoom();
@@ -290,37 +49,37 @@ void main() {
   ).test(
     'generated prepare/apply matrices classify outcomes with or without cache',
     (scenario) async {
-      final localProcessor = _MockSyncEventProcessor();
+      final localProcessor = AdapterMockSyncEventProcessor();
       final localJournalDb = JournalDb(inMemoryDatabase: true);
       final localLogging = MockDomainLogger();
       final localRoom = MockRoom();
       when(() => localRoom.id).thenReturn('!r:example.org');
-      final entry = _buildEntry(
+      final entry = hBuildEntry(
         eventId: '\$generated-${scenario.slot}',
         roomId: '!r',
         originTsMs: scenario.slot + 1,
       );
-      final prepared = _MockPreparedSyncEvent();
+      final prepared = AdapterMockPreparedSyncEvent();
 
       try {
         switch (scenario.prepareOutcome) {
-          case _GeneratedAdapterPrepareOutcome.ready:
+          case GeneratedAdapterPrepareOutcome.ready:
             when(
               () => localProcessor.prepare(event: any(named: 'event')),
             ).thenAnswer((_) async => prepared);
             when(() => prepared.syncMessage).thenReturn(scenario.syncMessage());
             switch (scenario.applyOutcome) {
-              case _GeneratedAdapterApplyOutcome.applied:
+              case GeneratedAdapterApplyOutcome.applied:
                 when(
                   () => localProcessor.apply(
                     prepared: prepared,
                     journalDb: localJournalDb,
                   ),
                 ).thenAnswer((_) async => null);
-              case _GeneratedAdapterApplyOutcome.pendingDescriptor:
-              case _GeneratedAdapterApplyOutcome.pendingPath:
-              case _GeneratedAdapterApplyOutcome.retriableIo:
-              case _GeneratedAdapterApplyOutcome.retriableThrow:
+              case GeneratedAdapterApplyOutcome.pendingDescriptor:
+              case GeneratedAdapterApplyOutcome.pendingPath:
+              case GeneratedAdapterApplyOutcome.retriableIo:
+              case GeneratedAdapterApplyOutcome.retriableThrow:
                 when(
                   () => localProcessor.apply(
                     prepared: prepared,
@@ -328,14 +87,14 @@ void main() {
                   ),
                 ).thenThrow(scenario.applyException());
             }
-          case _GeneratedAdapterPrepareOutcome.nullPrepared:
+          case GeneratedAdapterPrepareOutcome.nullPrepared:
             when(
               () => localProcessor.prepare(event: any(named: 'event')),
             ).thenAnswer((_) async => null);
-          case _GeneratedAdapterPrepareOutcome.pendingDescriptor:
-          case _GeneratedAdapterPrepareOutcome.pendingPath:
-          case _GeneratedAdapterPrepareOutcome.retriableIo:
-          case _GeneratedAdapterPrepareOutcome.permanentThrow:
+          case GeneratedAdapterPrepareOutcome.pendingDescriptor:
+          case GeneratedAdapterPrepareOutcome.pendingPath:
+          case GeneratedAdapterPrepareOutcome.retriableIo:
+          case GeneratedAdapterPrepareOutcome.permanentThrow:
             when(
               () => localProcessor.prepare(event: any(named: 'event')),
             ).thenThrow(scenario.prepareException());
@@ -394,7 +153,7 @@ void main() {
   });
 
   test('prepare returning null maps to permanentSkip', () async {
-    final entry = _buildEntry(
+    final entry = hBuildEntry(
       eventId: r'$none',
       roomId: '!r',
       originTsMs: 1,
@@ -415,7 +174,7 @@ void main() {
   test(
     'FileSystemException during prepare maps to retriable',
     () async {
-      final entry = _buildEntry(
+      final entry = hBuildEntry(
         eventId: r'$fs',
         roomId: '!r',
         originTsMs: 1,
@@ -429,12 +188,12 @@ void main() {
   );
 
   test('successful prepare + apply maps to applied', () async {
-    final entry = _buildEntry(
+    final entry = hBuildEntry(
       eventId: r'$ok',
       roomId: '!r',
       originTsMs: 1,
     );
-    final prepared = _MockPreparedSyncEvent();
+    final prepared = AdapterMockPreparedSyncEvent();
     when(
       () => processor.prepare(event: any(named: 'event')),
     ).thenAnswer((_) async => prepared);
@@ -456,12 +215,12 @@ void main() {
   });
 
   test('FileSystemException during apply maps to retriable', () async {
-    final entry = _buildEntry(
+    final entry = hBuildEntry(
       eventId: r'$fsApply',
       roomId: '!r',
       originTsMs: 1,
     );
-    final prepared = _MockPreparedSyncEvent();
+    final prepared = AdapterMockPreparedSyncEvent();
     when(
       () => processor.prepare(event: any(named: 'event')),
     ).thenAnswer((_) async => prepared);
@@ -479,7 +238,7 @@ void main() {
   test(
     'generic exception during prepare maps to permanentSkip',
     () async {
-      final entry = _buildEntry(
+      final entry = hBuildEntry(
         eventId: r'$preparePermanent',
         roomId: '!r',
         originTsMs: 1,
@@ -508,7 +267,7 @@ void main() {
       'backs off on the human-scale ladder instead of the sub-second '
       'retriable curve',
       () async {
-        final entry = _buildEntry(
+        final entry = hBuildEntry(
           eventId: r'$waitsForDescriptor',
           roomId: '!r',
           originTsMs: 1,
@@ -529,7 +288,7 @@ void main() {
       'pendingAttachment — the standard signature for a sync event '
       'that arrived before its attachment JSON landed on disk',
       () async {
-        final entry = _buildEntry(
+        final entry = hBuildEntry(
           eventId: r'$audioRace',
           roomId: '!r',
           originTsMs: 1,
@@ -553,7 +312,7 @@ void main() {
       'also maps to pendingAttachment so agent-entity payload races '
       'share the same long-ladder retry path',
       () async {
-        final entry = _buildEntry(
+        final entry = hBuildEntry(
           eventId: r'$agentRace',
           roomId: '!r',
           originTsMs: 1,
@@ -578,7 +337,7 @@ void main() {
       'classification must not accidentally promote every IO '
       'failure to the long retry ladder',
       () async {
-        final entry = _buildEntry(
+        final entry = hBuildEntry(
           eventId: r'$genericIo',
           roomId: '!r',
           originTsMs: 1,
@@ -602,12 +361,12 @@ void main() {
       'also maps to pendingAttachment so the decoded payload still '
       'waits for its JSON on the long ladder',
       () async {
-        final entry = _buildEntry(
+        final entry = hBuildEntry(
           eventId: r'$applyWaitsForDescriptor',
           roomId: '!r',
           originTsMs: 1,
         );
-        final prepared = _MockPreparedSyncEvent();
+        final prepared = AdapterMockPreparedSyncEvent();
         when(
           () => processor.prepare(event: any(named: 'event')),
         ).thenAnswer((_) async => prepared);
@@ -632,11 +391,11 @@ void main() {
       'entry — not the sum of all prepares — is the batch critical '
       'path',
       () async {
-        final a = _buildEntry(eventId: r'$a', roomId: '!r:x', originTsMs: 1);
-        final b = _buildEntry(eventId: r'$b', roomId: '!r:x', originTsMs: 2);
-        final c = _buildEntry(eventId: r'$c', roomId: '!r:x', originTsMs: 3);
+        final a = hBuildEntry(eventId: r'$a', roomId: '!r:x', originTsMs: 1);
+        final b = hBuildEntry(eventId: r'$b', roomId: '!r:x', originTsMs: 2);
+        final c = hBuildEntry(eventId: r'$c', roomId: '!r:x', originTsMs: 3);
 
-        final prepared = _MockPreparedSyncEvent();
+        final prepared = AdapterMockPreparedSyncEvent();
         final allStarted = Completer<void>();
         final release = Completer<void>();
         var prepareCalls = 0;
@@ -665,13 +424,13 @@ void main() {
       'apply consumes the cached prepared payload so prepare runs '
       'exactly once when the caller invoked prepareBatch first',
       () async {
-        final entry = _buildEntry(
+        final entry = hBuildEntry(
           eventId: r'$cached',
           roomId: '!r:x',
           originTsMs: 1,
         );
 
-        final prepared = _MockPreparedSyncEvent();
+        final prepared = AdapterMockPreparedSyncEvent();
         when(
           () => processor.prepare(event: any(named: 'event')),
         ).thenAnswer((_) async => prepared);
@@ -701,18 +460,18 @@ void main() {
       'missing — a prepareBatch that skipped an eventId must not '
       'silently drop its apply',
       () async {
-        final batched = _buildEntry(
+        final batched = hBuildEntry(
           eventId: r'$batched',
           roomId: '!r:x',
           originTsMs: 1,
         );
-        final late = _buildEntry(
+        final late = hBuildEntry(
           eventId: r'$late',
           roomId: '!r:x',
           originTsMs: 2,
         );
 
-        final prepared = _MockPreparedSyncEvent();
+        final prepared = AdapterMockPreparedSyncEvent();
         when(
           () => processor.prepare(event: any(named: 'event')),
         ).thenAnswer((_) async => prepared);
@@ -740,7 +499,7 @@ void main() {
       'apply without re-preparing — e.g. pendingAttachment caught at '
       'prepare time must not trigger a second prepare during apply',
       () async {
-        final entry = _buildEntry(
+        final entry = hBuildEntry(
           eventId: r'$pending',
           roomId: '!r:x',
           originTsMs: 1,
@@ -771,233 +530,6 @@ void main() {
       () async {
         await build().bindPrepareBatch()(const [], room);
         verifyNever(() => processor.prepare(event: any(named: 'event')));
-      },
-    );
-  });
-
-  group('writesJournalDb classifies sync payload families', () {
-    // These tests pin the per-variant outcome of the adapter's
-    // wrap-or-bypass decision. The wrap path costs the journal writer
-    // lock for the whole `apply` duration; misclassifying a
-    // non-journal payload as wrapped silently re-introduces the
-    // reader-stall regression we just fixed (super-slow log showed
-    // hundreds of ms of queued reads behind unrelated sync applies).
-    // Misclassifying a journal-writing payload as bypass would split
-    // the journal upsert + linked_entries writes across two
-    // transactions and break atomicity on a mid-apply crash. Locking
-    // the table down per-variant means a future `SyncMessage` factory
-    // without a corresponding case here will fail compilation rather
-    // than silently inheriting a wrong default.
-
-    bool wraps(SyncMessage message) =>
-        QueueApplyAdapter.writesJournalDbForTesting(message);
-
-    test('SyncJournalEntity bypasses outer wrap (owns its own narrow tx)', () {
-      const message = SyncMessage.journalEntity(
-        id: 'entity-id',
-        jsonPath: '/entity.json',
-        vectorClock: null,
-        status: SyncEntryStatus.initial,
-      );
-      expect(wraps(message), isFalse);
-    });
-
-    test('SyncEntryLink wraps — writes to linked_entries (JournalDb)', () {
-      final link = EntryLink.basic(
-        id: 'link-id',
-        fromId: 'from',
-        toId: 'to',
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: null,
-      );
-      final message = SyncMessage.entryLink(
-        entryLink: link,
-        status: SyncEntryStatus.initial,
-      );
-      expect(wraps(message), isTrue);
-    });
-
-    test(
-      'SyncEntityDefinition wraps — writes to *_definitions (JournalDb)',
-      () {
-        final message = SyncMessage.entityDefinition(
-          entityDefinition: measurableWater,
-          status: SyncEntryStatus.initial,
-        );
-        expect(wraps(message), isTrue);
-      },
-    );
-
-    test('SyncAiConfig bypasses outer wrap (writes to ai_config_db)', () {
-      final message = SyncMessage.aiConfig(
-        aiConfig: fallbackAiConfig,
-        status: SyncEntryStatus.initial,
-      );
-      expect(wraps(message), isFalse);
-    });
-
-    test('SyncAiConfigDelete bypasses outer wrap (ai_config_db)', () {
-      const message = SyncMessage.aiConfigDelete(id: 'cfg-id');
-      expect(wraps(message), isFalse);
-    });
-
-    test('SyncConfigFlag wraps — writes to config_flags (JournalDb)', () {
-      const message = SyncMessage.configFlag(
-        name: 'enableDailyOs',
-        description: 'Enable DailyOS Page?',
-        status: true,
-      );
-      expect(wraps(message), isTrue);
-    });
-
-    test('SyncThemingSelection bypasses outer wrap (settings_db)', () {
-      const message = SyncMessage.themingSelection(
-        lightThemeName: 'light',
-        darkThemeName: 'dark',
-        themeMode: 'system',
-        updatedAt: 1,
-        status: SyncEntryStatus.initial,
-      );
-      expect(wraps(message), isFalse);
-    });
-
-    test('SyncBackfillRequest wraps conservatively', () {
-      const message = SyncMessage.backfillRequest(
-        entries: <BackfillRequestEntry>[],
-        requesterId: 'host-1',
-      );
-      expect(wraps(message), isTrue);
-    });
-
-    test('SyncBackfillResponse wraps conservatively', () {
-      const message = SyncMessage.backfillResponse(
-        hostId: 'host-1',
-        counter: 1,
-        deleted: false,
-        unresolvable: false,
-      );
-      expect(wraps(message), isTrue);
-    });
-
-    test('SyncAgentEntity bypasses outer wrap (agent_db)', () {
-      const message = SyncMessage.agentEntity(
-        status: SyncEntryStatus.initial,
-        jsonPath: '/agent_entities/a1.json',
-      );
-      expect(wraps(message), isFalse);
-    });
-
-    test('SyncAgentLink bypasses outer wrap (agent_db)', () {
-      const message = SyncMessage.agentLink(
-        status: SyncEntryStatus.initial,
-        jsonPath: '/agent_links/l1.json',
-      );
-      expect(wraps(message), isFalse);
-    });
-
-    test('SyncAgentBundle bypasses outer wrap (agent_db loop)', () {
-      const message = SyncMessage.agentBundle(
-        agentId: 'agent-1',
-        wakeRunKey: 'wake-1',
-      );
-      expect(wraps(message), isFalse);
-    });
-
-    test('SyncNotification bypasses outer wrap (notifications_db)', () {
-      const message = SyncMessage.notification(
-        id: 'notification-id',
-        jsonPath: '/notifications/notification-id.json',
-        vectorClock: VectorClock({'host-1': 1}),
-        originatingHostId: 'host-1',
-      );
-      expect(wraps(message), isFalse);
-    });
-
-    test(
-      'SyncNotificationStateUpdate bypasses outer wrap (notifications_db)',
-      () {
-        const message = SyncMessage.notificationStateUpdate(
-          id: 'notification-id',
-          vectorClock: VectorClock({'host-1': 1}),
-          originatingHostId: 'host-1',
-        );
-        expect(wraps(message), isFalse);
-      },
-    );
-
-    test('SyncOutboxBundle wraps — unpacks into journal/linked_entries', () {
-      const message = SyncMessage.outboxBundle(
-        children: <SyncMessage>[],
-      );
-      expect(wraps(message), isTrue);
-    });
-  });
-
-  group('apply respects the writesJournalDb classifier', () {
-    test(
-      'a journalEntity-shaped payload bypasses the outer transaction wrap '
-      'so cross-DB awaits inside `apply` (sync-sequence log, pre-write '
-      'reads) do not hold the journal writer lock',
-      () async {
-        final entry = _buildEntry(
-          eventId: r'$bypass-wrap',
-          roomId: '!r',
-          originTsMs: 1,
-        );
-        final prepared = _MockPreparedSyncEvent();
-        const message = SyncMessage.journalEntity(
-          id: 'entity-id',
-          jsonPath: '/entity.json',
-          vectorClock: null,
-          status: SyncEntryStatus.initial,
-        );
-        when(() => prepared.syncMessage).thenReturn(message);
-        when(
-          () => processor.prepare(event: any(named: 'event')),
-        ).thenAnswer((_) async => prepared);
-        when(
-          () => processor.apply(
-            prepared: any(named: 'prepared'),
-            journalDb: journalDb,
-          ),
-        ).thenAnswer((_) async => null);
-
-        final outcome = await build().bind()(entry, room);
-        expect(outcome, ApplyOutcome.applied);
-        // The classifier introspected the prepared payload; the apply
-        // still ran. We do not assert on transaction state directly
-        // because the JournalDb is in-memory and a transaction wrap is
-        // observable only via the writer lock — but the predicate test
-        // group above pins the wrap/bypass decision per variant.
-        verify(() => prepared.syncMessage).called(1);
-      },
-    );
-
-    test(
-      'a payload that throws when its syncMessage is read falls back to '
-      'the safe wrapped path — the existing test mocks rely on this so '
-      'the change cannot retroactively break them',
-      () async {
-        final entry = _buildEntry(
-          eventId: r'$throws',
-          roomId: '!r',
-          originTsMs: 1,
-        );
-        final prepared = _MockPreparedSyncEvent();
-        // No stub for syncMessage → mocktail throws on access.
-        when(
-          () => processor.prepare(event: any(named: 'event')),
-        ).thenAnswer((_) async => prepared);
-        when(
-          () => processor.apply(
-            prepared: any(named: 'prepared'),
-            journalDb: journalDb,
-          ),
-        ).thenAnswer((_) async => null);
-
-        final outcome = await build().bind()(entry, room);
-        expect(outcome, ApplyOutcome.applied);
       },
     );
   });

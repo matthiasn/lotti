@@ -1,6 +1,3 @@
-@Timeout(Duration(minutes: 4))
-library;
-
 import 'dart:io';
 import 'dart:math' as math;
 
@@ -83,24 +80,26 @@ void main() {
           ),
         );
       }
-      for (final entity in batch) {
-        await db.updateJournalEntity(entity);
-      }
-      // Sprinkle task links over 10% of entries so the correlated
-      // subquery's cost is exercised, not bypassed.
-      final linkAt = DateTime(2024);
-      for (var i = 0; i < entryCount; i += 10) {
-        await db.upsertEntryLink(
-          EntryLink.basic(
-            id: 'link-$i',
-            fromId: 'perf-task-${i % 50}',
-            toId: 'perf-entry-$i',
-            createdAt: linkAt,
-            updatedAt: linkAt,
-            vectorClock: const VectorClock(<String, int>{}),
-          ),
-        );
-      }
+      await db.transaction(() async {
+        for (final entity in batch) {
+          await db.updateJournalEntity(entity);
+        }
+        // Sprinkle task links over 10% of entries so the correlated
+        // subquery's cost is exercised, not bypassed.
+        final linkAt = DateTime(2024);
+        for (var i = 0; i < entryCount; i += 10) {
+          await db.upsertEntryLink(
+            EntryLink.basic(
+              id: 'link-$i',
+              fromId: 'perf-task-${i % 50}',
+              toId: 'perf-entry-$i',
+              createdAt: linkAt,
+              updatedAt: linkAt,
+              vectorClock: const VectorClock(<String, int>{}),
+            ),
+          );
+        }
+      });
 
       final repository = InsightsRepository(db);
       final ytdRange = resolvePreset(InsightsRangePreset.ytd, now);
@@ -172,5 +171,6 @@ void main() {
       // All six presets together must beat the single-switch budget.
       expect(bestHotMs, lessThan(200));
     },
+    timeout: const Timeout(Duration(minutes: 4)),
   );
 }

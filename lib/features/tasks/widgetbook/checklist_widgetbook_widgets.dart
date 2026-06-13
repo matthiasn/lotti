@@ -1,11 +1,16 @@
-part of 'checklist_widgetbook.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/colors.dart';
 
 // ---------------------------------------------------------------------------
 // Header
 // ---------------------------------------------------------------------------
 
-class _Header extends StatelessWidget {
-  const _Header({
+class Header extends StatelessWidget {
+  const Header({
     required this.title,
     required this.completedCount,
     required this.totalCount,
@@ -13,6 +18,7 @@ class _Header extends StatelessWidget {
     required this.isExpanded,
     required this.tokens,
     required this.onToggleExpand,
+    super.key,
   });
 
   final String title;
@@ -131,11 +137,12 @@ class _ProgressRow extends StatelessWidget {
 
 const _tabAccentColor = Color.fromRGBO(94, 212, 184, 1);
 
-class _FilterTabs extends StatelessWidget {
-  const _FilterTabs({
+class FilterTabs extends StatelessWidget {
+  const FilterTabs({
     required this.filter,
     required this.tokens,
     required this.onFilterChanged,
+    super.key,
   });
 
   final ChecklistFilter filter;
@@ -238,8 +245,8 @@ class _TabChip extends StatelessWidget {
 // Items (Column, not scrollable — no scroll fight)
 // ---------------------------------------------------------------------------
 
-class _ItemsColumn extends StatelessWidget {
-  const _ItemsColumn({
+class ItemsColumn extends StatelessWidget {
+  const ItemsColumn({
     required this.items,
     required this.tokens,
     required this.onToggle,
@@ -247,6 +254,7 @@ class _ItemsColumn extends StatelessWidget {
     required this.onArchive,
     required this.onDelete,
     required this.onReorder,
+    super.key,
   });
 
   final List<ChecklistItemData> items;
@@ -547,13 +555,14 @@ class _InlineEditFieldState extends State<_InlineEditField> {
 // Add item field
 // ---------------------------------------------------------------------------
 
-class _AddItemField extends StatelessWidget {
-  const _AddItemField({
+class AddItemField extends StatelessWidget {
+  const AddItemField({
     required this.controller,
     required this.focusNode,
     required this.hintText,
     required this.tokens,
     required this.onSubmitted,
+    super.key,
   });
 
   final TextEditingController controller;

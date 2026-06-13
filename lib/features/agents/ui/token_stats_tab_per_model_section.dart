@@ -1,7 +1,15 @@
-part of 'token_stats_tab.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/daily_token_usage.dart';
+import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
+import 'package:lotti/features/agents/ui/token_stats_tab.dart';
+import 'package:lotti/features/agents/ui/token_stats_tab_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 
-class _PerModelChartsSection extends StatelessWidget {
-  const _PerModelChartsSection({required this.byModelAsync});
+class PerModelChartsSection extends StatelessWidget {
+  const PerModelChartsSection({required this.byModelAsync, super.key});
 
   final AsyncValue<Map<String, List<DailyTokenUsage>>> byModelAsync;
 
@@ -76,7 +84,7 @@ class _ModelChartCardState extends State<_ModelChartCard> {
                 ),
               ),
               Text(
-                _formatTokenCount(totalTokens),
+                formatTokenCount(totalTokens),
                 style: context.textTheme.bodySmall?.copyWith(
                   color: context.colorScheme.onSurfaceVariant,
                   fontFeatures: const [FontFeature.tabularFigures()],
@@ -92,7 +100,7 @@ class _ModelChartCardState extends State<_ModelChartCard> {
             ],
           ),
           SizedBox(height: tokens.spacing.step3),
-          _InteractiveWeeklyChart(
+          InteractiveWeeklyChart(
             days: widget.days,
             selectedIndex: _selectedIndex,
             onBarTap: (i) => setState(
@@ -102,7 +110,7 @@ class _ModelChartCardState extends State<_ModelChartCard> {
           if (_selectedIndex != null && _selectedIndex! < widget.days.length)
             Padding(
               padding: EdgeInsets.only(top: tokens.spacing.step3),
-              child: _SelectedDayDetail(
+              child: SelectedDayDetail(
                 day: widget.days[_selectedIndex!],
               ),
             ),
@@ -111,5 +119,3 @@ class _ModelChartCardState extends State<_ModelChartCard> {
     );
   }
 }
-
-// ── Source Breakdown Section ─────────────────────────────────────────────────

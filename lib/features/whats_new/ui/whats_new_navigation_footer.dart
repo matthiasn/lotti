@@ -1,12 +1,16 @@
-part of 'whats_new_modal.dart';
+import 'dart:ui';
 
-class _NavigationFooter extends StatelessWidget {
-  const _NavigationFooter({
+import 'package:flutter/material.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+
+class NavigationFooter extends StatelessWidget {
+  const NavigationFooter({
     required this.totalReleases,
     required this.currentRelease,
     required this.colorScheme,
     required this.onNavigate,
     required this.onMarkAllSeen,
+    super.key,
   });
 
   final int totalReleases;
@@ -199,5 +203,3 @@ class _IndicatorDots extends StatelessWidget {
     );
   }
 }
-
-/// Custom dialog type that allows configurable max height (90% of screen).

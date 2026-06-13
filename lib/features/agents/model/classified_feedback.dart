@@ -68,3 +68,13 @@ extension ClassifiedFeedbackX on ClassifiedFeedback {
   List<ClassifiedFeedbackItem> get excellenceNotes =>
       critical.where((i) => i.sentiment == FeedbackSentiment.positive).toList();
 }
+
+/// Well-known feedback source identifiers.
+abstract final class FeedbackSources {
+  static const decision = 'decision';
+  static const observation = 'observation';
+  static const metric = 'metric';
+  static const rating = 'rating';
+  static const evolutionSession = 'evolution_session';
+  static const directiveChurn = 'directive_churn';
+}

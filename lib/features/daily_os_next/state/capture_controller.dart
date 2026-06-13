@@ -11,6 +11,9 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/daily_os_next/state/capture_dbfs.dart';
+import 'package:lotti/features/daily_os_next/state/capture_state.dart';
+import 'package:lotti/features/daily_os_next/state/realtime_transcript_selection.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -18,7 +21,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart' as record;
 
-part 'capture_state.dart';
+export 'package:lotti/features/daily_os_next/state/capture_state.dart';
 
 /// Drives the Capture screen's recording lifecycle.
 ///
@@ -63,21 +66,6 @@ class CaptureController extends Notifier<CaptureState> {
 
   /// Rolling-window size for the live waveform (~1.6s at 20ms cadence).
   static const _maxAmplitudeSamples = 80;
-
-  /// dBFS floor used to normalise amplitudes into 0..1. Values below
-  /// this clamp to 0; -45 keeps speech visible without amplifying room
-  /// noise into oscillating full-height bars.
-  static const _minDbfs = -45.0;
-
-  static const double _minVisualDbfs = CaptureState.defaultDbfs;
-
-  /// Minimum extra characters the full-file batch transcript must have
-  /// over the realtime `done` text before we prefer the batch result.
-  /// Realtime and batch routinely differ by a few characters of
-  /// punctuation/whitespace; this margin avoids swapping out a good
-  /// realtime transcript for a near-identical batch one and only kicks
-  /// in when batch is meaningfully longer (i.e. realtime truncated).
-  static const _batchTranscriptOvertakeMargin = 8;
 
   late final AudioRecorderRepository _recorder =
       _recorderOverride ?? AudioRecorderRepository();
@@ -234,13 +222,13 @@ class CaptureController extends Notifier<CaptureState> {
     _realtimeAmpSub = _realtimeService.amplitudeStream.listen(
       (dbfs) {
         if (state.phase != CapturePhase.listening) return;
-        final next = [...state.amplitudes, _normaliseDbfs(dbfs)];
+        final next = [...state.amplitudes, normaliseDbfs(dbfs)];
         final clipped = next.length > _maxAmplitudeSamples
             ? next.sublist(next.length - _maxAmplitudeSamples)
             : next;
         state = state.copyWith(
           amplitudes: clipped,
-          dbfs: _sanitizeVisualDbfs(dbfs),
+          dbfs: sanitizeVisualDbfs(dbfs),
         );
       },
       onError: (Object _) {
@@ -337,13 +325,13 @@ class CaptureController extends Notifier<CaptureState> {
 
   void _onBatchAmplitude(record.Amplitude amp) {
     if (state.phase != CapturePhase.listening) return;
-    final next = [...state.amplitudes, _normaliseDbfs(amp.current)];
+    final next = [...state.amplitudes, normaliseDbfs(amp.current)];
     final clipped = next.length > _maxAmplitudeSamples
         ? next.sublist(next.length - _maxAmplitudeSamples)
         : next;
     state = state.copyWith(
       amplitudes: clipped,
-      dbfs: _sanitizeVisualDbfs(amp.current),
+      dbfs: sanitizeVisualDbfs(amp.current),
     );
   }
 
@@ -469,41 +457,6 @@ class CaptureController extends Notifier<CaptureState> {
       amplitudes: const <double>[],
       audioId: journalAudio?.meta.id,
     );
-  }
-
-  Future<String> _resolveRealtimeFinalTranscript({
-    required RealtimeStopResult result,
-    required String realtimeTranscript,
-  }) async {
-    if (!_verifyRealtimeTranscript) return realtimeTranscript;
-
-    final audioFilePath = result.audioFilePath;
-    if (audioFilePath == null || audioFilePath.isEmpty) {
-      return realtimeTranscript;
-    }
-
-    try {
-      final batchTranscript = (await _transcriber.transcribe(
-        audioFilePath,
-      )).trim();
-      if (batchTranscript.isEmpty) return realtimeTranscript;
-      if (realtimeTranscript.isEmpty || result.usedTranscriptFallback) {
-        return batchTranscript;
-      }
-
-      // Realtime `done` can occasionally be shorter than the spoken capture.
-      // Keep realtime when it agrees, but let full-file transcription repair
-      // obvious truncation before the user reaches the editable transcript.
-      if (batchTranscript.length >
-          realtimeTranscript.length + _batchTranscriptOvertakeMargin) {
-        return batchTranscript;
-      }
-    } catch (_) {
-      // Final verification is best-effort. Realtime still gives the user an
-      // editable transcript if the batch transcriber is unavailable.
-    }
-
-    return realtimeTranscript;
   }
 
   Future<void> _finishListeningBatch() async {
@@ -675,15 +628,35 @@ class CaptureController extends Notifier<CaptureState> {
     _activeIsRealtime = null;
   }
 
-  static double _normaliseDbfs(double dbfs) {
-    if (dbfs.isNaN || dbfs.isInfinite) return 0;
-    final clamped = dbfs.clamp(_minDbfs, 0.0);
-    return (clamped - _minDbfs) / -_minDbfs;
-  }
+  /// Runs the optional full-file verification pass over the realtime
+  /// transcript. The transcription round-trip and the verify gate are
+  /// controller-coupled; the final string selection delegates to the pure
+  /// [selectFinalTranscript].
+  Future<String> _resolveRealtimeFinalTranscript({
+    required RealtimeStopResult result,
+    required String realtimeTranscript,
+  }) async {
+    if (!_verifyRealtimeTranscript) return realtimeTranscript;
 
-  static double _sanitizeVisualDbfs(double dbfs) {
-    if (dbfs.isNaN || dbfs.isInfinite) return _minVisualDbfs;
-    return dbfs.clamp(_minVisualDbfs, 0.0);
+    final audioFilePath = result.audioFilePath;
+    if (audioFilePath == null || audioFilePath.isEmpty) {
+      return realtimeTranscript;
+    }
+
+    try {
+      final batchTranscript = (await _transcriber.transcribe(
+        audioFilePath,
+      )).trim();
+      return selectFinalTranscript(
+        realtimeTranscript: realtimeTranscript,
+        batchTranscript: batchTranscript,
+        usedTranscriptFallback: result.usedTranscriptFallback,
+      );
+    } catch (_) {
+      // Final verification is best-effort. Realtime still gives the user an
+      // editable transcript if the batch transcriber is unavailable.
+      return realtimeTranscript;
+    }
   }
 }
 

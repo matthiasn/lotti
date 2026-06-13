@@ -1,4 +1,8 @@
-part of 'catch_up_strategy.dart';
+import 'package:collection/collection.dart';
+import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
+import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:matrix/matrix.dart';
 
 /// Forward-walks the server's timeline from [anchorEventId] to the
 /// current tip and streams each page through [sink]. Use this on
@@ -121,7 +125,7 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
       // iterations the filter strips everything we already sent.
       final page = <Event>[];
       for (final event in sorted) {
-        if (!CatchUpStrategy._isStrictlyAfter(
+        if (!CatchUpStrategy.isStrictlyAfter(
           event,
           anchorTs: anchorTs,
           anchorEventId: anchorEventId,
@@ -129,7 +133,7 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
           continue;
         }
         if (newestTsSoFar != null &&
-            !CatchUpStrategy._isStrictlyAfter(
+            !CatchUpStrategy.isStrictlyAfter(
               event,
               anchorTs: newestTsSoFar,
               anchorEventId: newestEventIdSoFar,

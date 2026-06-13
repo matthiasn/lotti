@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
+import 'package:lotti/features/agents/ui/listing/widgets/agent_list_toolbar_search.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-
-part 'agent_list_toolbar_popover.dart';
-part 'agent_list_toolbar_search.dart';
 
 /// Toolbar row: Filters / Group by / Sort buttons, search input, count.
 ///
@@ -86,7 +84,7 @@ class AgentListToolbar extends StatelessWidget {
                 );
           final search = ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 280),
-            child: _SearchField(
+            child: SearchField(
               value: state.search,
               onChanged: (v) => onChanged(state.copyWith(search: v)),
               placeholder: searchPlaceholder,
@@ -135,7 +133,7 @@ class AgentListToolbar extends StatelessWidget {
               SizedBox(height: tokens.spacing.step3),
               SizedBox(
                 width: double.infinity,
-                child: _SearchField(
+                child: SearchField(
                   value: state.search,
                   onChanged: (v) => onChanged(state.copyWith(search: v)),
                   placeholder: searchPlaceholder,
@@ -230,7 +228,7 @@ class _FiltersButton extends StatelessWidget {
     return _ToolbarButton(
       icon: Icons.tune,
       emphasised: activeCount > 0,
-      onTap: () => _showFiltersPopover(
+      onTap: () => showFiltersPopover(
         context: context,
         state: state,
         onChanged: onChanged,
@@ -264,7 +262,7 @@ class _GroupByButton extends StatelessWidget {
     return _ToolbarButton(
       icon: Icons.layers_outlined,
       onTap: () async {
-        final next = await _showSingleSelectPopover<String>(
+        final next = await showSingleSelectPopover<String>(
           context: context,
           current: current.id,
           options: [for (final a in axes) (a.id, a.label)],
@@ -307,7 +305,7 @@ class _SortButton extends StatelessWidget {
     return _ToolbarButton(
       icon: Icons.sort,
       onTap: () async {
-        final next = await _showSingleSelectPopover<String>(
+        final next = await showSingleSelectPopover<String>(
           context: context,
           current: current.id,
           options: [for (final a in axes) (a.id, a.label)],

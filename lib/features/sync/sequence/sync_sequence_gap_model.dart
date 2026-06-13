@@ -1,6 +1,10 @@
-part of 'sync_sequence_log_service.dart';
+import 'dart:collection';
 
-class _GapAccumulator {
+import 'package:lotti/database/sync_db.dart';
+
+typedef _GapRange = ({String hostId, int startCounter, int endCounter});
+
+class GapAccumulator {
   final List<_GapRange> _ranges = [];
   int _count = 0;
 
@@ -91,7 +95,7 @@ class _GapEntriesView extends ListBase<({String hostId, int counter})> {
 
 // Delegates to [SyncSequenceStatusX.isResolved] (the single source of truth in
 // sync_db.dart) so the watermark "resolved" set is defined in exactly one place.
-bool _isResolvedSequenceStatusIndex(int status) =>
+bool isResolvedSequenceStatusIndex(int status) =>
     status >= 0 &&
     status < SyncSequenceStatus.values.length &&
     SyncSequenceStatus.values[status].isResolved;

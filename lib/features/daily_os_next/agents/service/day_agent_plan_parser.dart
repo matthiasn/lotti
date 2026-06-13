@@ -1,10 +1,19 @@
-part of 'day_agent_plan_service.dart';
+import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart'
+    show DayAgentCaptureException;
+import 'package:uuid/uuid.dart';
+
+const _uuid = Uuid();
 
 // Pure parsing/option helpers shared by the plan service. Library-private
 // top-level functions so the class and the other parts call them
 // unqualified.
 
-PlannedBlock _parsePlannedBlock({
+PlannedBlock parsePlannedBlock({
   required Object? raw,
   required DateTime day,
   required Set<String> allowedCategoryIds,
@@ -16,21 +25,21 @@ PlannedBlock _parsePlannedBlock({
     throw const DayAgentCaptureException('block must be an object');
   }
   final data = raw.cast<String, dynamic>();
-  final type = _optionalEnum(
+  final type = optionalEnumArg(
     PlannedBlockType.values,
-    _optionalString(data['type']),
+    optionalStringArg(data['type']),
   );
-  final state = _optionalEnum(
+  final state = optionalEnumArg(
     PlannedBlockState.values,
-    _optionalString(data['state']),
+    optionalStringArg(data['state']),
   );
   final blockType = type ?? PlannedBlockType.ai;
-  final categoryId = _requiredString(data, 'categoryId');
-  if (!_categoryAllowed(categoryId, allowedCategoryIds)) {
+  final categoryId = requiredStringArg(data, 'categoryId');
+  if (!categoryAllowed(categoryId, allowedCategoryIds)) {
     throw DayAgentCaptureException('categoryId $categoryId is not allowed');
   }
-  final start = _requiredDateTime(data, 'start');
-  final end = _requiredDateTime(data, 'end');
+  final start = requiredDateTimeArg(data, 'start');
+  final end = requiredDateTimeArg(data, 'end');
   if (!end.isAfter(start)) {
     throw const DayAgentCaptureException('block end must be after start');
   }
@@ -52,13 +61,13 @@ PlannedBlock _parsePlannedBlock({
       'current time',
     );
   }
-  final reason = _optionalString(data['reason']);
+  final reason = optionalStringArg(data['reason']);
   if (blockType == PlannedBlockType.ai && reason == null) {
     throw const DayAgentCaptureException(
       'AI planned blocks require a non-empty reason',
     );
   }
-  final taskId = _optionalString(data['taskId']);
+  final taskId = optionalStringArg(data['taskId']);
   // Always validate — an empty `decidedTaskIds` is not a license for the
   // model to reference arbitrary task IDs; with no decided tasks the only
   // permitted references are tasks the user has already authorised via
@@ -71,22 +80,20 @@ PlannedBlock _parsePlannedBlock({
     );
   }
   return PlannedBlock(
-    id:
-        _optionalString(data['id']) ??
-        'block_${DayAgentPlanService._uuid.v4()}',
+    id: optionalStringArg(data['id']) ?? 'block_${_uuid.v4()}',
     categoryId: categoryId,
     startTime: start,
     endTime: end,
-    note: _optionalString(data['note']),
+    note: optionalStringArg(data['note']),
     taskId: taskId,
-    title: _requiredString(data, 'title'),
+    title: requiredStringArg(data, 'title'),
     type: blockType,
     state: blockState,
     reason: reason,
   );
 }
 
-DayAgentEnergyBand _parseEnergyBand({
+DayAgentEnergyBand parseEnergyBand({
   required Object? raw,
   required DateTime day,
 }) {
@@ -94,8 +101,8 @@ DayAgentEnergyBand _parseEnergyBand({
     throw const DayAgentCaptureException('energyBand must be an object');
   }
   final data = raw.cast<String, dynamic>();
-  final start = _requiredDateTime(data, 'start');
-  final end = _requiredDateTime(data, 'end');
+  final start = requiredDateTimeArg(data, 'start');
+  final end = requiredDateTimeArg(data, 'end');
   if (!end.isAfter(start)) {
     throw const DayAgentCaptureException(
       'energyBand end must be after start',
@@ -108,9 +115,9 @@ DayAgentEnergyBand _parseEnergyBand({
       'energyBands must stay within the planDate day',
     );
   }
-  final level = _optionalEnum(
+  final level = optionalEnumArg(
     DayAgentEnergyLevel.values,
-    _requiredString(data, 'level'),
+    requiredStringArg(data, 'level'),
   );
   if (level == null) {
     throw const DayAgentCaptureException(
@@ -121,11 +128,11 @@ DayAgentEnergyBand _parseEnergyBand({
     start: start,
     end: end,
     level: level,
-    label: _requiredString(data, 'label'),
+    label: requiredStringArg(data, 'label'),
   );
 }
 
-List<PinnedTaskRef> _pinnedTasksFor(List<PlannedBlock> blocks) {
+List<PinnedTaskRef> pinnedTasksFor(List<PlannedBlock> blocks) {
   final seen = <String>{};
   final out = <PinnedTaskRef>[];
   for (final block in blocks) {
@@ -142,13 +149,13 @@ List<PinnedTaskRef> _pinnedTasksFor(List<PlannedBlock> blocks) {
   return out;
 }
 
-int _scheduledMinutesFor(List<PlannedBlock> blocks) {
+int scheduledMinutesFor(List<PlannedBlock> blocks) {
   return blocks
       .where((block) => block.state != PlannedBlockState.dropped)
       .fold<int>(0, (sum, block) => sum + block.duration.inMinutes);
 }
 
-Map<String, Object?> _planJson(DayPlanEntity plan) => {
+Map<String, Object?> planJson(DayPlanEntity plan) => {
   'planId': plan.id,
   'dayId': plan.dayId,
   'captureId': plan.captureId,
@@ -156,11 +163,11 @@ Map<String, Object?> _planJson(DayPlanEntity plan) => {
   'state': 'drafted',
   'capacityMinutes': plan.capacityMinutes,
   'scheduledMinutes': plan.scheduledMinutes,
-  'blocks': [for (final block in plan.data.plannedBlocks) _blockJson(block)],
+  'blocks': [for (final block in plan.data.plannedBlocks) blockJson(block)],
   'energyBands': [for (final band in plan.energyBands) band.toJson()],
 };
 
-Map<String, Object?> _blockJson(PlannedBlock block) => {
+Map<String, Object?> blockJson(PlannedBlock block) => {
   'id': block.id,
   'title': block.title,
   'taskId': block.taskId,
@@ -173,20 +180,20 @@ Map<String, Object?> _blockJson(PlannedBlock block) => {
   'note': block.note,
 };
 
-List<Object?> _objectList(Object? raw, String name) {
+List<Object?> objectListArg(Object? raw, String name) {
   if (raw == null) return const <Object?>[];
   if (raw is List) return raw;
   throw DayAgentCaptureException('$name must be an array');
 }
 
-List<String> _stringList(Object? raw) {
+List<String> stringListArg(Object? raw) {
   if (raw == null) return const <String>[];
   if (raw is! List) {
     throw const DayAgentCaptureException('decidedTaskIds must be an array');
   }
   final out = <String>[];
   for (final value in raw) {
-    final parsed = _optionalString(value);
+    final parsed = optionalStringArg(value);
     if (parsed == null) {
       throw const DayAgentCaptureException(
         'decidedTaskIds must contain non-empty strings',
@@ -197,8 +204,8 @@ List<String> _stringList(Object? raw) {
   return out;
 }
 
-DateTime _requiredDateTime(Map<String, dynamic> args, String key) {
-  final date = _optionalDateTime(args[key]);
+DateTime requiredDateTimeArg(Map<String, dynamic> args, String key) {
+  final date = optionalDateTimeArg(args[key]);
   if (date == null) {
     throw DayAgentCaptureException(
       '$key must be a valid ISO-8601 date-time',
@@ -207,20 +214,20 @@ DateTime _requiredDateTime(Map<String, dynamic> args, String key) {
   return date;
 }
 
-String _requiredString(Map<String, dynamic> args, String key) {
-  final value = _optionalString(args[key]);
+String requiredStringArg(Map<String, dynamic> args, String key) {
+  final value = optionalStringArg(args[key]);
   if (value == null) {
     throw DayAgentCaptureException('$key must not be empty');
   }
   return value;
 }
 
-String? _optionalString(Object? value) {
+String? optionalStringArg(Object? value) {
   if (value is! String) return null;
-  return _blankToNull(value);
+  return blankToNull(value);
 }
 
-int? _optionalInt(Object? value) {
+int? optionalIntArg(Object? value) {
   if (value is int) return value;
   if (value is num) {
     if (value % 1 != 0) {
@@ -231,34 +238,34 @@ int? _optionalInt(Object? value) {
   return null;
 }
 
-DateTime? _optionalDateTime(Object? raw) {
+DateTime? optionalDateTimeArg(Object? raw) {
   if (raw is! String || raw.trim().isEmpty) return null;
   return DateTime.tryParse(raw.trim());
 }
 
-T? _optionalEnum<T extends Enum>(List<T> values, String? raw) {
+T? optionalEnumArg<T extends Enum>(List<T> values, String? raw) {
   if (raw == null) return null;
   return parseEnumByName(values, raw);
 }
 
-String? _blankToNull(String? value) {
+String? blankToNull(String? value) {
   final trimmed = value?.trim();
   if (trimmed == null || trimmed.isEmpty) return null;
   return trimmed;
 }
 
-bool _categoryAllowed(String? categoryId, Set<String>? allowed) {
+bool categoryAllowed(String? categoryId, Set<String>? allowed) {
   if (allowed == null || allowed.isEmpty) return true;
   return categoryId != null && allowed.contains(categoryId);
 }
 
-DateTime? _dateFromDayId(String dayId) {
+DateTime? dateFromDayId(String dayId) {
   const prefix = 'dayplan-';
   if (!dayId.startsWith(prefix)) return null;
   return DateTime.tryParse(dayId.substring(prefix.length));
 }
 
-String _dayIdFromPlanEntityId(String planEntityId) {
+String dayIdFromPlanEntityId(String planEntityId) {
   const prefix = 'day_agent_plan:';
   if (planEntityId.startsWith(prefix)) {
     return planEntityId.substring(prefix.length);
@@ -266,7 +273,7 @@ String _dayIdFromPlanEntityId(String planEntityId) {
   return planEntityId;
 }
 
-List<int> _selectIndices({
+List<int> selectIndices({
   required List<int>? itemIndices,
   required int itemCount,
 }) {

@@ -1,9 +1,36 @@
-part of 'inbound_event_queue.dart';
+import 'package:clock/clock.dart';
+import 'package:drift/drift.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:matrix/matrix.dart';
 
-/// Resurrection layer of [InboundQueue]: re-arming skipped entries by
-/// path, reason, or wholesale. The class keeps thin delegators so
+const _logSubResurrect = 'queue.resurrect';
+
+/// Resurrection layer of `InboundQueue`: re-arming skipped entries by
+/// path, reason, or wholesale. The queue keeps thin delegators so
 /// `MockInboundQueue` keeps intercepting the public API.
-extension InboundQueueResurrection on InboundQueue {
+class InboundQueueResurrection {
+  InboundQueueResurrection({
+    required this._db,
+    required this._logging,
+    required this._onDepthChanged,
+  });
+
+  final SyncDatabase _db;
+  final DomainLogger _logging;
+
+  /// Invoked after any pass that actually resurrected rows so the
+  /// owning queue can emit a fresh depth signal.
+  final void Function() _onDepthChanged;
+
+  /// Maximum number of paths bound per `json_path IN (...)` chunk in
+  /// [resurrectByPaths]. SQLite's default `SQLITE_MAX_VARIABLE_NUMBER`
+  /// is 999; chunking at 900 leaves headroom for the implicit
+  /// `resurrection_count` parameter and any future additions to
+  /// [_resurrectWhere] without bumping into the cap.
+  static const int _resurrectByPathsChunkSize = 900;
+
   /// Flips abandoned rows whose `json_path` matches [path] back to
   /// `enqueued` so the worker re-attempts them. Intended for the
   /// `AttachmentIndex.pathRecorded` signal — when an attachment JSON
@@ -16,7 +43,7 @@ extension InboundQueueResurrection on InboundQueue {
   /// discard them manually from the Skipped-events page.
   ///
   /// Returns the number of rows resurrected.
-  Future<int> resurrectByPathImpl(
+  Future<int> resurrectByPath(
     String path, {
     int hardCap = 50,
   }) async {
@@ -26,13 +53,6 @@ extension InboundQueueResurrection on InboundQueue {
       diagnostic: 'path=$path',
     );
   }
-
-  /// Maximum number of paths bound per `json_path IN (...)` chunk in
-  /// [resurrectByPaths]. SQLite's default `SQLITE_MAX_VARIABLE_NUMBER`
-  /// is 999; chunking at 900 leaves headroom for the implicit
-  /// `resurrection_count` parameter and any future additions to
-  /// `_resurrectWhere` without bumping into the cap.
-  static const int _resurrectByPathsChunkSize = 900;
 
   /// Bulk variant of [resurrectByPath] — flips abandoned rows whose
   /// `json_path` is in [paths] back to `enqueued`. Issues one
@@ -59,7 +79,7 @@ extension InboundQueueResurrection on InboundQueue {
   ///
   /// Empty input returns 0 without touching the database. Duplicate
   /// paths are deduplicated to keep each IN-list short.
-  Future<int> resurrectByPathsImpl(
+  Future<int> resurrectByPaths(
     Iterable<String> paths, {
     int hardCap = 50,
   }) async {
@@ -89,7 +109,7 @@ extension InboundQueueResurrection on InboundQueue {
   /// Resurrects every abandoned row for the current (and any other)
   /// room that is still below [hardCap]. Used by the Skipped-events
   /// page's "Retry all" action.
-  Future<int> resurrectAllImpl({int hardCap = 50}) async {
+  Future<int> resurrectAll({int hardCap = 50}) async {
     return _resurrectWhere(
       null,
       hardCap: hardCap,
@@ -108,7 +128,7 @@ extension InboundQueueResurrection on InboundQueue {
   /// prevents thrash on a genuinely poisoned event; a finer-grained
   /// mapping (e.g. blocking-entry-id column) can ship in a follow-up
   /// if the broad pass proves too chatty.
-  Future<int> resurrectByReasonImpl(
+  Future<int> resurrectByReason(
     String reasonName, {
     int hardCap = 50,
   }) async {
@@ -137,7 +157,7 @@ extension InboundQueueResurrection on InboundQueue {
     // `idx_inbound_event_queue_abandoned_reason`,
     // `idx_inbound_event_queue_abandoned_reason_resurrection`),
     // each declared with the literal `WHERE status = 'abandoned'`.
-    // Drift's `t.status.equals(_statusAbandoned)` binds the value as a
+    // Drift's `t.status.equals(...)` binds the value as a
     // parameter; the planner can't see it at plan time, the
     // partial-index match fails, and resurrectByReason / resurrectByPath
     // fall back to scanning the full append-only ledger. The
@@ -180,7 +200,7 @@ extension InboundQueueResurrection on InboundQueue {
         '    abandoned_at = NULL '
         'WHERE queue_id IN (${List.filled(ids.length, '?').join(', ')})',
         variables: [
-          Variable.withString(_statusEnqueued),
+          Variable.withString(InboundQueueStatuses.enqueued),
           Variable.withInt(nowMs),
           ...ids.map(Variable.withInt),
         ],
@@ -197,10 +217,27 @@ extension InboundQueueResurrection on InboundQueue {
       subDomain: _logSubResurrect,
     );
     if (updated > 0) {
-      _scheduleDepthEmit();
+      _onDepthChanged();
     }
     return updated;
   }
+}
 
-  // ---------------------------------------------------------------- prune
+/// Best-effort helper to extract `jsonPath` from the Lotti sync
+/// message content. Returns null when the event is not a sync
+/// payload or the content shape does not match (defensive against
+/// SDK event shape drift). A null result means the row cannot be
+/// resurrected by path — manual "Retry all" still works.
+String? extractJsonPath(Event event) {
+  try {
+    final content = event.content;
+    final raw = content['jsonPath'] ?? content['json_path'];
+    if (raw is String && raw.isNotEmpty) {
+      return raw.startsWith('/') ? raw : '/$raw';
+    }
+  } catch (_) {
+    // Intentionally empty: diagnostic-only; adapter will still
+    // record the path on apply failure if we miss it here.
+  }
+  return null;
 }

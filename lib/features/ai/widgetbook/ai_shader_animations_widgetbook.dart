@@ -13,7 +13,10 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:record/record.dart' as record;
 import 'package:widgetbook/widgetbook.dart';
 
-part 'ai_shader_animation_cases.dart';
+part 'ai_shader_animation_configs.dart';
+part 'ai_shader_animation_use_cases.dart';
+part 'ai_shader_animation_recorder_preview.dart';
+part 'ai_shader_animation_signal_widgets.dart';
 
 WidgetbookFolder buildAiWidgetbookFolder() {
   return WidgetbookFolder(

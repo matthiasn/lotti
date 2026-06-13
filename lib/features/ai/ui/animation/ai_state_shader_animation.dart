@@ -1,12 +1,23 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-part 'ai_thinking_line_shader.dart';
-part 'ai_voice_input_shader.dart';
+export 'package:lotti/features/ai/ui/animation/ai_thinking_line_shader.dart';
+export 'package:lotti/features/ai/ui/animation/ai_voice_input_shader.dart';
 
 typedef AiShaderProgramLoader = Future<ui.FragmentProgram> Function();
+
+/// Writes an RGBA [color] into four consecutive shader floats starting
+/// at [index]. Shared by the voice-input and thinking-line shader
+/// painters so both encode colors into their fragment uniforms the
+/// same way.
+void aiSetShaderColor(ui.FragmentShader shader, int index, Color color) {
+  shader
+    ..setFloat(index, color.r)
+    ..setFloat(index + 1, color.g)
+    ..setFloat(index + 2, color.b)
+    ..setFloat(index + 3, color.a);
+}
 
 enum AiVoiceShaderRoute {
   elasticMembrane,

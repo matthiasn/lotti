@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ollama_api_client.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -21,12 +22,12 @@ void main() {
     registerFallbackValue(FakeRequest());
     registerFallbackValue(Uri.parse('http://localhost:11434'));
     // Use zero retry delay across this file to avoid real-time backoffs
-    OllamaInferenceRepository.retryBaseDelay = Duration.zero;
+    OllamaApiClient.retryBaseDelay = Duration.zero;
   });
 
   tearDownAll(() {
     // Restore default for other suites
-    OllamaInferenceRepository.retryBaseDelay = const Duration(seconds: 2);
+    OllamaApiClient.retryBaseDelay = const Duration(seconds: 2);
   });
 
   setUp(() {
@@ -2280,19 +2281,19 @@ void main() {
   group('shouldEnableThinking', () {
     test('returns true for Gemma 4 models', () {
       expect(
-        OllamaInferenceRepository.shouldEnableThinking('gemma4:e4b'),
+        OllamaApiClient.shouldEnableThinking('gemma4:e4b'),
         isTrue,
       );
       expect(
-        OllamaInferenceRepository.shouldEnableThinking('gemma4:26b'),
+        OllamaApiClient.shouldEnableThinking('gemma4:26b'),
         isTrue,
       );
       expect(
-        OllamaInferenceRepository.shouldEnableThinking('gemma4:31b'),
+        OllamaApiClient.shouldEnableThinking('gemma4:31b'),
         isTrue,
       );
       expect(
-        OllamaInferenceRepository.shouldEnableThinking(
+        OllamaApiClient.shouldEnableThinking(
           'gemma4:26b-a4b-it-q4_K_M',
         ),
         isTrue,
@@ -2301,23 +2302,23 @@ void main() {
 
     test('returns false for non-Gemma 4 models', () {
       expect(
-        OllamaInferenceRepository.shouldEnableThinking('qwen3.5:9b'),
+        OllamaApiClient.shouldEnableThinking('qwen3.5:9b'),
         isFalse,
       );
       expect(
-        OllamaInferenceRepository.shouldEnableThinking('qwen3.5:27b'),
+        OllamaApiClient.shouldEnableThinking('qwen3.5:27b'),
         isFalse,
       );
       expect(
-        OllamaInferenceRepository.shouldEnableThinking('gemma3:12b'),
+        OllamaApiClient.shouldEnableThinking('gemma3:12b'),
         isFalse,
       );
       expect(
-        OllamaInferenceRepository.shouldEnableThinking('llama3:8b'),
+        OllamaApiClient.shouldEnableThinking('llama3:8b'),
         isFalse,
       );
       expect(
-        OllamaInferenceRepository.shouldEnableThinking('mxbai-embed-large'),
+        OllamaApiClient.shouldEnableThinking('mxbai-embed-large'),
         isFalse,
       );
     });

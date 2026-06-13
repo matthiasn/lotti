@@ -1,4 +1,5 @@
-part of 'known_models.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 
 /// MLX Audio models embedded via the Apple Swift SDK.
 ///

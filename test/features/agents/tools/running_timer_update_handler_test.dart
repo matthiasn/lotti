@@ -11,178 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-
-enum _GeneratedRunningSummaryShape {
-  absent,
-  valid,
-  paddedValid,
-  empty,
-  tooLong,
-  nonString,
-}
-
-enum _GeneratedTimerIdShape {
-  absent,
-  exact,
-  paddedExact,
-  wrong,
-  empty,
-  nonString,
-}
-
-enum _GeneratedCurrentTimerShape {
-  none,
-  journalMatchingId,
-  journalDifferentId,
-  measurementMatchingId,
-}
-
-enum _GeneratedLinkedSourceShape { sameSource, otherSource, none }
-
-class _GeneratedRunningTimerUpdateScenario {
-  const _GeneratedRunningTimerUpdateScenario({
-    required this.summaryShape,
-    required this.timerIdShape,
-    required this.currentShape,
-    required this.linkedSourceShape,
-    required this.persistenceSucceeds,
-    required this.seed,
-  });
-
-  final _GeneratedRunningSummaryShape summaryShape;
-  final _GeneratedTimerIdShape timerIdShape;
-  final _GeneratedCurrentTimerShape currentShape;
-  final _GeneratedLinkedSourceShape linkedSourceShape;
-  final bool persistenceSucceeds;
-  final int seed;
-
-  Object? get rawSummary => switch (summaryShape) {
-    _GeneratedRunningSummaryShape.absent => null,
-    _GeneratedRunningSummaryShape.valid => 'Generated timer summary $seed',
-    _GeneratedRunningSummaryShape.paddedValid =>
-      '  Generated timer summary $seed  ',
-    _GeneratedRunningSummaryShape.empty => '   ',
-    _GeneratedRunningSummaryShape.tooLong => 'x' * 501,
-    _GeneratedRunningSummaryShape.nonString => seed,
-  };
-
-  Object? get rawTimerId => switch (timerIdShape) {
-    _GeneratedTimerIdShape.absent => null,
-    _GeneratedTimerIdShape.exact => 'timer-entry-001',
-    _GeneratedTimerIdShape.paddedExact => ' timer-entry-001 ',
-    _GeneratedTimerIdShape.wrong => 'wrong-timer-$seed',
-    _GeneratedTimerIdShape.empty => '   ',
-    _GeneratedTimerIdShape.nonString => seed,
-  };
-
-  Map<String, dynamic> get args => {
-    if (summaryShape != _GeneratedRunningSummaryShape.absent)
-      'summary': rawSummary,
-    if (timerIdShape != _GeneratedTimerIdShape.absent) 'timerId': rawTimerId,
-  };
-
-  String? get trimmedSummary {
-    final summary = rawSummary;
-    return summary is String ? summary.trim() : null;
-  }
-
-  String? get trimmedTimerId {
-    final timerId = rawTimerId;
-    return timerId is String ? timerId.trim() : null;
-  }
-
-  String get currentId => switch (currentShape) {
-    _GeneratedCurrentTimerShape.none => 'none',
-    _GeneratedCurrentTimerShape.journalMatchingId ||
-    _GeneratedCurrentTimerShape.measurementMatchingId => 'timer-entry-001',
-    _GeneratedCurrentTimerShape.journalDifferentId => 'active-other-$seed',
-  };
-
-  bool get hasInvalidSummary =>
-      trimmedSummary == null ||
-      trimmedSummary!.isEmpty ||
-      trimmedSummary!.length > 500;
-
-  bool get hasInvalidTimerId =>
-      trimmedTimerId == null || trimmedTimerId!.isEmpty;
-
-  bool get hasNoActiveTimer => currentShape == _GeneratedCurrentTimerShape.none;
-
-  bool get hasSourceMismatch =>
-      linkedSourceShape != _GeneratedLinkedSourceShape.sameSource;
-
-  bool get hasTimerIdMismatch => currentId != trimmedTimerId;
-
-  bool get hasUnsupportedCurrentEntity =>
-      currentShape == _GeneratedCurrentTimerShape.measurementMatchingId;
-
-  bool get shouldAttemptPersist =>
-      !hasInvalidSummary &&
-      !hasInvalidTimerId &&
-      !hasNoActiveTimer &&
-      !hasSourceMismatch &&
-      !hasTimerIdMismatch &&
-      !hasUnsupportedCurrentEntity;
-
-  bool get shouldSucceed => shouldAttemptPersist && persistenceSucceeds;
-
-  EntryText get expectedEntryText => EntryText(
-    plainText: '$trimmedSummary [generated]',
-  );
-
-  @override
-  String toString() {
-    return '_GeneratedRunningTimerUpdateScenario('
-        'summaryShape: $summaryShape, '
-        'timerIdShape: $timerIdShape, '
-        'currentShape: $currentShape, '
-        'linkedSourceShape: $linkedSourceShape, '
-        'persistenceSucceeds: $persistenceSucceeds, '
-        'currentId: $currentId)';
-  }
-}
-
-extension _AnyRunningTimerUpdateScenario on glados.Any {
-  glados.Generator<_GeneratedRunningSummaryShape>
-  get generatedRunningSummaryShape =>
-      glados.AnyUtils(this).choose(_GeneratedRunningSummaryShape.values);
-
-  glados.Generator<_GeneratedTimerIdShape> get generatedTimerIdShape =>
-      glados.AnyUtils(this).choose(_GeneratedTimerIdShape.values);
-
-  glados.Generator<_GeneratedCurrentTimerShape>
-  get generatedCurrentTimerShape =>
-      glados.AnyUtils(this).choose(_GeneratedCurrentTimerShape.values);
-
-  glados.Generator<_GeneratedLinkedSourceShape>
-  get generatedLinkedSourceShape =>
-      glados.AnyUtils(this).choose(_GeneratedLinkedSourceShape.values);
-
-  glados.Generator<_GeneratedRunningTimerUpdateScenario>
-  get runningTimerUpdateScenario => glados.CombinableAny(this).combine6(
-    generatedRunningSummaryShape,
-    generatedTimerIdShape,
-    generatedCurrentTimerShape,
-    generatedLinkedSourceShape,
-    glados.BoolAny(this).bool,
-    glados.IntAnys(this).intInRange(0, 10000),
-    (
-      _GeneratedRunningSummaryShape summaryShape,
-      _GeneratedTimerIdShape timerIdShape,
-      _GeneratedCurrentTimerShape currentShape,
-      _GeneratedLinkedSourceShape linkedSourceShape,
-      bool persistenceSucceeds,
-      int seed,
-    ) => _GeneratedRunningTimerUpdateScenario(
-      summaryShape: summaryShape,
-      timerIdShape: timerIdShape,
-      currentShape: currentShape,
-      linkedSourceShape: linkedSourceShape,
-      persistenceSucceeds: persistenceSucceeds,
-      seed: seed,
-    ),
-  );
-}
+import 'running_timer_update_handler_test_helpers.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -459,12 +288,12 @@ void main() {
         );
 
         final current = switch (scenario.currentShape) {
-          _GeneratedCurrentTimerShape.none => null,
-          _GeneratedCurrentTimerShape.journalMatchingId ||
-          _GeneratedCurrentTimerShape.journalDifferentId => makeRunningTimer(
+          GeneratedCurrentTimerShape.none => null,
+          GeneratedCurrentTimerShape.journalMatchingId ||
+          GeneratedCurrentTimerShape.journalDifferentId => makeRunningTimer(
             id: scenario.currentId,
           ),
-          _GeneratedCurrentTimerShape.measurementMatchingId =>
+          GeneratedCurrentTimerShape.measurementMatchingId =>
             JournalEntity.measurement(
               meta: Metadata(
                 id: scenario.currentId,
@@ -483,11 +312,11 @@ void main() {
         };
 
         final linkedFrom = switch (scenario.linkedSourceShape) {
-          _GeneratedLinkedSourceShape.sameSource => makeSourceTask(),
-          _GeneratedLinkedSourceShape.otherSource => makeSourceTask(
+          GeneratedLinkedSourceShape.sameSource => makeSourceTask(),
+          GeneratedLinkedSourceShape.otherSource => makeSourceTask(
             id: otherTaskId,
           ),
-          _GeneratedLinkedSourceShape.none => null,
+          GeneratedLinkedSourceShape.none => null,
         };
 
         when(localTimeService.getCurrent).thenReturn(current);

@@ -1,7 +1,11 @@
-part of 'checklist_card.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _Body extends StatelessWidget {
-  const _Body({
+class Body extends StatelessWidget {
+  const Body({
     required this.itemIds,
     required this.checklistId,
     required this.taskId,
@@ -10,6 +14,7 @@ class _Body extends StatelessWidget {
     required this.activeTotalCount,
     required this.focusNode,
     required this.onCreateItem,
+    super.key,
   });
 
   final List<String> itemIds;
@@ -236,29 +241,4 @@ class _AddItemFieldState extends State<_AddItemField> {
       ),
     );
   }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Progress ring helper
-// ─────────────────────────────────────────────────────────────────────────────
-
-/// Bright green progress ring used in checklist headers.
-Widget buildChecklistProgressRing({
-  required double completionRate,
-  required Color lowEmphasisColor,
-  required String semanticsLabel,
-  double size = 20,
-  double strokeWidth = 3,
-}) {
-  return SizedBox(
-    width: size,
-    height: size,
-    child: CircularProgressIndicator(
-      color: successColor,
-      backgroundColor: lowEmphasisColor.withValues(alpha: 0.3),
-      value: completionRate,
-      strokeWidth: strokeWidth,
-      semanticsLabel: semanticsLabel,
-    ),
-  );
 }

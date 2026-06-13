@@ -337,13 +337,215 @@ class JournalPageController extends _$JournalPageController {
     );
   }
 
-  String _getCategoryFiltersKey() {
-    return _showTasks ? tasksCategoryFiltersKey : journalCategoryFiltersKey;
+  // ---------------------------------------------------------------
+  // Search and query
+  // ---------------------------------------------------------------
+
+  Future<void> setSearchString(String query) async {
+    _query = query;
+    await refreshQuery();
   }
 
+  Future<void> refreshQuery({bool preserveVisibleItems = false}) async {
+    _queryRunner.clearCache();
+    _emitState();
+
+    final pagingController = state.pagingController;
+    if (pagingController == null) {
+      DevLogger.warning(
+        name: 'JournalPageController',
+        message: 'refreshQuery called but pagingController is null',
+      );
+      return;
+    }
+
+    if (preserveVisibleItems &&
+        pagingController is JournalPagingController &&
+        pagingController.hasVisibleItems) {
+      await pagingController.refreshLoadedPages(
+        runQuery: _runQuery,
+        requiresSequential: _requiresSequentialRetainedRefresh,
+        pageSize: pageSize,
+        isMounted: () => ref.mounted,
+        onPostFilterOffset: (offset) => _postFilterNextRawOffset = offset,
+        onLeadingItems: _rememberLeadingTaskIds,
+      );
+      return;
+    }
+
+    pagingController
+      ..refresh()
+      ..fetchNextPage();
+  }
+
+  /// Tab index that this controller's page lives at, derived from
+  /// `showTasks`. The tasks tab is always at index 0; the journal tab
+  /// position depends on which other tabs are enabled, so we ask the
+  /// NavService for it.
+  int _myTabIndex(NavService navService) =>
+      _showTasks ? navService.tasksIndex : navService.journalIndex;
+
+  /// Drains a deferred refresh when this controller's tab becomes the
+  /// active top-level tab. Updates from the DB stream while the tab is
+  /// hidden are coalesced via `_needsRefreshOnVisible`; this method
+  /// fires the held-back refresh on the inactive→active edge.
+  void _handleNavIndex(int newIndex) {
+    if (!ref.mounted) return;
+
+    final isVisible = newIndex == _myTabIndex(getIt<NavService>());
+    if (!_isVisible && isVisible && _needsRefreshOnVisible) {
+      _needsRefreshOnVisible = false;
+      unawaited(refreshQuery(preserveVisibleItems: true));
+    }
+    _isVisible = isVisible;
+  }
+
+  /// Test-only entry point that lets tests drive the visibility edge
+  /// without standing up a full NavService stream. Equivalent to a
+  /// nav-index emission whose value resolves to `isVisible`.
+  /// Test-only seam for [_getNextPageKey] — the pure page-key computation
+  /// over a [PagingState] (plus the one-shot post-filter offset).
+  @visibleForTesting
+  int? debugGetNextPageKey(
+    PagingState<int, JournalEntity> pagingState, {
+    bool consumePostFilterOffset = true,
+  }) => _getNextPageKey(
+    pagingState,
+    consumePostFilterOffset: consumePostFilterOffset,
+  );
+
+  /// Test-only seam to read/seed the one-shot post-filter raw offset.
+  @visibleForTesting
+  int? get debugPostFilterNextRawOffset => _postFilterNextRawOffset;
+
+  @visibleForTesting
+  set debugPostFilterNextRawOffset(int? value) =>
+      _postFilterNextRawOffset = value;
+
+  @visibleForTesting
+  void debugSetVisibility({required bool isVisible}) {
+    _handleNavIndex(
+      isVisible ? _myTabIndex(getIt<NavService>()) : -1,
+    );
+  }
+
+  Future<List<JournalEntity>> _fetchPage(int pageKey) async {
+    try {
+      final items = await _runQuery(pageKey);
+      if (pageKey == 0) _rememberLeadingTaskIds(items);
+      return items;
+    } catch (error, stackTrace) {
+      if (kDebugMode) print('Error in _fetchPage: $error\n$stackTrace');
+      rethrow;
+    }
+  }
+
+  Future<List<JournalEntity>> _runQuery(
+    int pageKey, {
+    void Function(int? nextRawOffset)? setPostFilterNextRawOffset,
+  }) async {
+    final applyOffset =
+        setPostFilterNextRawOffset ??
+        (int? value) => _postFilterNextRawOffset = value;
+
+    final params = _buildQueryParams();
+
+    if (params.enableVectorSearch &&
+        params.searchMode == SearchMode.vector &&
+        params.query.isNotEmpty &&
+        pageKey == 0) {
+      return _runVectorSearchWithTelemetry(params);
+    }
+
+    _fullTextMatches = await _queryRunner.fts5Search(params.query);
+    return _queryRunner.runQuery(
+      params,
+      pageKey,
+      fullTextMatches: _fullTextMatches,
+      setPostFilterNextRawOffset: applyOffset,
+    );
+  }
+
+  Future<List<JournalEntity>> _runVectorSearchWithTelemetry(
+    JournalQueryParams params,
+  ) async {
+    state = state.copyWith(
+      vectorSearchInFlight: true,
+      vectorSearchElapsed: Duration.zero,
+      vectorSearchResultCount: 0,
+      vectorSearchDistances: const {},
+    );
+    final result = await _queryRunner.runVectorSearch(params);
+    state = state.copyWith(
+      vectorSearchInFlight: false,
+      vectorSearchElapsed: result.elapsed,
+      vectorSearchResultCount: result.entities.length,
+      vectorSearchDistances: result.distances,
+    );
+    return result.entities;
+  }
+
+  JournalQueryParams _buildQueryParams() {
+    // An empty selection means "no status filter" → query across all statuses
+    // rather than returning zero rows because `task_status IN ()` matches
+    // nothing.
+    final effectiveTaskStatuses = _selectedTaskStatuses.isEmpty
+        ? allTaskStatusValues.toSet()
+        : _selectedTaskStatuses;
+    return JournalQueryParams(
+      showTasks: _showTasks,
+      selectedEntryTypes: _selectedEntryTypes,
+      selectedCategoryIds: _selectedCategoryIds,
+      selectedProjectIds: _selectedProjectIds,
+      selectedLabelIds: _selectedLabelIds,
+      selectedPriorities: _selectedPriorities,
+      selectedTaskStatuses: effectiveTaskStatuses,
+      sortOption: _sortOption,
+      agentAssignmentFilter: _agentAssignmentFilter,
+      filters: _filters,
+      query: _query,
+      enableVectorSearch: _enableVectorSearch,
+      searchMode: _searchMode,
+      enableEvents: _enableEvents,
+      enableHabits: _enableHabits,
+      enableDashboards: _enableDashboards,
+    );
+  }
+
+  /// Test-only seam for [_requiresSequentialRetainedRefresh].
+  @visibleForTesting
+  bool get debugRequiresSequentialRetainedRefresh =>
+      _requiresSequentialRetainedRefresh;
+
+  bool get _requiresSequentialRetainedRefresh =>
+      _showTasks &&
+      (_agentAssignmentFilter != AgentAssignmentFilter.all ||
+          _selectedProjectIds.isNotEmpty);
+
+  void _rememberLeadingTaskIds(Iterable<JournalEntity> items) {
+    if (!_showTasks) return;
+    _lastIds = items.map((entity) => entity.meta.id).toSet();
+  }
+
+  // Getters for testing
+  bool get isVisible => _isVisible;
+  Set<String> get selectedEntryTypesInternal => _selectedEntryTypes;
+  Set<DisplayFilter> get filtersInternal => _filters;
+  bool get enableEvents => _enableEvents;
+  bool get enableHabits => _enableHabits;
+  bool get enableDashboards => _enableDashboards;
+  bool get enableVectorSearchInternal => _enableVectorSearch;
+  SearchMode get searchModeInternal => _searchMode;
+
   // ---------------------------------------------------------------
-  // Public API — filter toggles
+  // Filter mutation + persistence
   // ---------------------------------------------------------------
+
+  String _getCategoryFiltersKey() {
+    return _showTasks
+        ? JournalPageController.tasksCategoryFiltersKey
+        : JournalPageController.journalCategoryFiltersKey;
+  }
 
   void setFilters(Set<DisplayFilter> filters) {
     _filters = filters;
@@ -569,10 +771,6 @@ class JournalPageController extends _$JournalPageController {
     await _persistTasksFilterWithoutRefresh();
   }
 
-  // ---------------------------------------------------------------
-  // Persistence
-  // ---------------------------------------------------------------
-
   Future<void> _loadPersistedFilters() async {
     final perTabKey = _getCategoryFiltersKey();
     final tasksFilter = await _persistence.loadFilters(perTabKey);
@@ -639,204 +837,4 @@ class JournalPageController extends _$JournalPageController {
     await refreshQuery();
     await _persistence.saveEntryTypes(_selectedEntryTypes);
   }
-
-  // ---------------------------------------------------------------
-  // Search and query
-  // ---------------------------------------------------------------
-
-  Future<void> setSearchString(String query) async {
-    _query = query;
-    await refreshQuery();
-  }
-
-  Future<void> refreshQuery({bool preserveVisibleItems = false}) async {
-    _queryRunner.clearCache();
-    _emitState();
-
-    final pagingController = state.pagingController;
-    if (pagingController == null) {
-      DevLogger.warning(
-        name: 'JournalPageController',
-        message: 'refreshQuery called but pagingController is null',
-      );
-      return;
-    }
-
-    if (preserveVisibleItems &&
-        pagingController is JournalPagingController &&
-        pagingController.hasVisibleItems) {
-      await pagingController.refreshLoadedPages(
-        runQuery: _runQuery,
-        requiresSequential: _requiresSequentialRetainedRefresh,
-        pageSize: pageSize,
-        isMounted: () => ref.mounted,
-        onPostFilterOffset: (offset) => _postFilterNextRawOffset = offset,
-        onLeadingItems: _rememberLeadingTaskIds,
-      );
-      return;
-    }
-
-    pagingController
-      ..refresh()
-      ..fetchNextPage();
-  }
-
-  /// Tab index that this controller's page lives at, derived from
-  /// `showTasks`. The tasks tab is always at index 0; the journal tab
-  /// position depends on which other tabs are enabled, so we ask the
-  /// NavService for it.
-  int _myTabIndex(NavService navService) =>
-      _showTasks ? navService.tasksIndex : navService.journalIndex;
-
-  /// Drains a deferred refresh when this controller's tab becomes the
-  /// active top-level tab. Updates from the DB stream while the tab is
-  /// hidden are coalesced via `_needsRefreshOnVisible`; this method
-  /// fires the held-back refresh on the inactive→active edge.
-  void _handleNavIndex(int newIndex) {
-    if (!ref.mounted) return;
-
-    final isVisible = newIndex == _myTabIndex(getIt<NavService>());
-    if (!_isVisible && isVisible && _needsRefreshOnVisible) {
-      _needsRefreshOnVisible = false;
-      unawaited(refreshQuery(preserveVisibleItems: true));
-    }
-    _isVisible = isVisible;
-  }
-
-  /// Test-only entry point that lets tests drive the visibility edge
-  /// without standing up a full NavService stream. Equivalent to a
-  /// nav-index emission whose value resolves to `isVisible`.
-  /// Test-only seam for [_getNextPageKey] — the pure page-key computation
-  /// over a [PagingState] (plus the one-shot post-filter offset).
-  @visibleForTesting
-  int? debugGetNextPageKey(
-    PagingState<int, JournalEntity> pagingState, {
-    bool consumePostFilterOffset = true,
-  }) => _getNextPageKey(
-    pagingState,
-    consumePostFilterOffset: consumePostFilterOffset,
-  );
-
-  /// Test-only seam to read/seed the one-shot post-filter raw offset.
-  @visibleForTesting
-  int? get debugPostFilterNextRawOffset => _postFilterNextRawOffset;
-
-  @visibleForTesting
-  set debugPostFilterNextRawOffset(int? value) =>
-      _postFilterNextRawOffset = value;
-
-  @visibleForTesting
-  void debugSetVisibility({required bool isVisible}) {
-    _handleNavIndex(
-      isVisible ? _myTabIndex(getIt<NavService>()) : -1,
-    );
-  }
-
-  Future<List<JournalEntity>> _fetchPage(int pageKey) async {
-    try {
-      final items = await _runQuery(pageKey);
-      if (pageKey == 0) _rememberLeadingTaskIds(items);
-      return items;
-    } catch (error, stackTrace) {
-      if (kDebugMode) print('Error in _fetchPage: $error\n$stackTrace');
-      rethrow;
-    }
-  }
-
-  Future<List<JournalEntity>> _runQuery(
-    int pageKey, {
-    void Function(int? nextRawOffset)? setPostFilterNextRawOffset,
-  }) async {
-    final applyOffset =
-        setPostFilterNextRawOffset ??
-        (int? value) => _postFilterNextRawOffset = value;
-
-    final params = _buildQueryParams();
-
-    if (params.enableVectorSearch &&
-        params.searchMode == SearchMode.vector &&
-        params.query.isNotEmpty &&
-        pageKey == 0) {
-      return _runVectorSearchWithTelemetry(params);
-    }
-
-    _fullTextMatches = await _queryRunner.fts5Search(params.query);
-    return _queryRunner.runQuery(
-      params,
-      pageKey,
-      fullTextMatches: _fullTextMatches,
-      setPostFilterNextRawOffset: applyOffset,
-    );
-  }
-
-  Future<List<JournalEntity>> _runVectorSearchWithTelemetry(
-    JournalQueryParams params,
-  ) async {
-    state = state.copyWith(
-      vectorSearchInFlight: true,
-      vectorSearchElapsed: Duration.zero,
-      vectorSearchResultCount: 0,
-      vectorSearchDistances: const {},
-    );
-    final result = await _queryRunner.runVectorSearch(params);
-    state = state.copyWith(
-      vectorSearchInFlight: false,
-      vectorSearchElapsed: result.elapsed,
-      vectorSearchResultCount: result.entities.length,
-      vectorSearchDistances: result.distances,
-    );
-    return result.entities;
-  }
-
-  JournalQueryParams _buildQueryParams() {
-    // An empty selection means "no status filter" → query across all statuses
-    // rather than returning zero rows because `task_status IN ()` matches
-    // nothing.
-    final effectiveTaskStatuses = _selectedTaskStatuses.isEmpty
-        ? allTaskStatusValues.toSet()
-        : _selectedTaskStatuses;
-    return JournalQueryParams(
-      showTasks: _showTasks,
-      selectedEntryTypes: _selectedEntryTypes,
-      selectedCategoryIds: _selectedCategoryIds,
-      selectedProjectIds: _selectedProjectIds,
-      selectedLabelIds: _selectedLabelIds,
-      selectedPriorities: _selectedPriorities,
-      selectedTaskStatuses: effectiveTaskStatuses,
-      sortOption: _sortOption,
-      agentAssignmentFilter: _agentAssignmentFilter,
-      filters: _filters,
-      query: _query,
-      enableVectorSearch: _enableVectorSearch,
-      searchMode: _searchMode,
-      enableEvents: _enableEvents,
-      enableHabits: _enableHabits,
-      enableDashboards: _enableDashboards,
-    );
-  }
-
-  /// Test-only seam for [_requiresSequentialRetainedRefresh].
-  @visibleForTesting
-  bool get debugRequiresSequentialRetainedRefresh =>
-      _requiresSequentialRetainedRefresh;
-
-  bool get _requiresSequentialRetainedRefresh =>
-      _showTasks &&
-      (_agentAssignmentFilter != AgentAssignmentFilter.all ||
-          _selectedProjectIds.isNotEmpty);
-
-  void _rememberLeadingTaskIds(Iterable<JournalEntity> items) {
-    if (!_showTasks) return;
-    _lastIds = items.map((entity) => entity.meta.id).toSet();
-  }
-
-  // Getters for testing
-  bool get isVisible => _isVisible;
-  Set<String> get selectedEntryTypesInternal => _selectedEntryTypes;
-  Set<DisplayFilter> get filtersInternal => _filters;
-  bool get enableEvents => _enableEvents;
-  bool get enableHabits => _enableHabits;
-  bool get enableDashboards => _enableDashboards;
-  bool get enableVectorSearchInternal => _enableVectorSearch;
-  SearchMode get searchModeInternal => _searchMode;
 }

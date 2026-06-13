@@ -1,20 +1,17 @@
 import 'dart:async';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/features/whats_new/ui/whats_new_hero_banner.dart';
+import 'package:lotti/features/whats_new/ui/whats_new_navigation_footer.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
-
-part 'whats_new_hero_banner.dart';
-part 'whats_new_navigation_footer.dart';
 
 /// Modal that displays "What's New" content for all unseen releases.
 ///
@@ -280,13 +277,13 @@ class WhatsNewModal {
     return WoltModalSheetPage(
       hasTopBarLayer: false,
       backgroundColor: ModalUtils.getModalBackgroundColor(context),
-      heroImage: _HeroBanner(
+      heroImage: HeroBanner(
         imageUrl: content.bannerImageUrl,
         version: content.release.version,
         isLatest: isLatest,
       ),
       heroImageHeight: bannerHeight,
-      stickyActionBar: _NavigationFooter(
+      stickyActionBar: NavigationFooter(
         totalReleases: totalReleases,
         currentRelease: currentIndex,
         colorScheme: colorScheme,

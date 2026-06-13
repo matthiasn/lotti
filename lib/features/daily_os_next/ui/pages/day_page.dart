@@ -1,10 +1,7 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     as agent_providers;
@@ -13,6 +10,7 @@ import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.d
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_page_header.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/text_scale_policy.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
@@ -21,20 +19,14 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/edge_fade.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_nudge.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
-
-part 'day_page_header.dart';
-
-enum _DayMenuAction { inspectAgent, knowledge, deletePlan }
 
 /// Hosts the two projections of the [DraftPlan] — Agenda (intent) and
 /// Day (mechanics) — with a pill toggle at the top.
@@ -226,7 +218,7 @@ class _DayPageState extends ConsumerState<DayPage> {
           padding: EdgeInsets.only(bottom: bottomNavHeight),
           child: Column(
             children: [
-              _DayHeader(
+              DayHeader(
                 dateStrip: widget.dateStrip,
                 date: widget.draft.dayDate,
                 selectedView: _view,

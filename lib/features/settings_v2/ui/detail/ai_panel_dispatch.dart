@@ -1,29 +1,12 @@
-part of 'panel_registry.dart';
-
-// --- Step 9 builders --------------------------------------------------------
-// AI Settings: list ↔ provider/model/profile detail dispatch.
-//
-// Unlike categories / labels / dashboards (each of which has ONE detail
-// kind keyed off a single path parameter), the AI panel has three
-// orthogonal detail surfaces — provider, model, inference profile —
-// reachable from three different tab bodies in the list. The generic
-// `DetailIdDispatch` only handles one id key, so the AI panel uses a
-// custom `AiPanelDispatch` widget that reads all three keys off the
-// route and picks whichever is present.
-//
-// URL space:
-//   /settings/ai                        → list (AiSettingsBody)
-//   /settings/ai/provider/<providerId>  → AiProviderDetailPage
-//   /settings/ai/model/<modelId>        → InferenceModelEditPage
-//   /settings/ai/profile/<profileId>    → InferenceProfileDetailPage
-//                                          (resolves id → AiConfig via
-//                                          Riverpod and hands the loaded
-//                                          profile to InferenceProfileForm)
-//
-// The legacy `/settings/ai/profiles` leaf renders InferenceProfilePage
-// directly and is unrelated — it's the seeded-profile list, not the
-// per-profile edit form.
-Widget _aiPanel(BuildContext context) => const AiPanelDispatch();
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:lotti/features/ai/ui/inference_profile_form.dart';
+import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
+import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
+import 'package:lotti/features/settings_v2/ui/detail/panel_registry.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 
 /// Multi-kind dispatcher for the AI Settings panel. Watches the
 /// settings route ValueNotifier and renders one of:
@@ -153,77 +136,3 @@ AiPanelSelection aiPanelSelectionFor(DesktopSettingsRoute? route) {
     child: AiSettingsBody(hideTabBar: true, hideHeader: true),
   );
 }
-
-// Per-leaf desktop bodies for the AI sidebar children. Each renders
-// `AiSettingsBody` pinned to one tab with the in-pane TabBar AND the
-// page header hidden so the sidebar leaf / breadcrumb naming isn't
-// duplicated above the list. The `ai-profiles` panel now points at
-// the v3 profiles tab body — the legacy `InferenceProfilesBody` is
-// still kept around for any direct `/settings/ai/profiles` deep-links
-// in older bookmarks, but the v2 panel registry no longer uses it.
-Widget _aiProvidersPanel(BuildContext context) => const AiSettingsBody(
-  initialTab: AiSettingsTab.providers,
-  hideTabBar: true,
-  hideHeader: true,
-);
-Widget _aiModelsPanel(BuildContext context) => const AiSettingsBody(
-  initialTab: AiSettingsTab.models,
-  hideTabBar: true,
-  hideHeader: true,
-);
-Widget _aiProfilesPanel(BuildContext context) => const AiSettingsBody(
-  initialTab: AiSettingsTab.profiles,
-  hideTabBar: true,
-  hideHeader: true,
-);
-Widget _agentsPanel(BuildContext context) => const AgentSettingsBody();
-
-// Stats and pending-wakes are read-only views with no detail/create
-// flow, so they reuse `AgentSettingsBody` directly. The body resolves
-// its tab from the URL on desktop, so the explicit `initialTab`
-// argument here is just a fallback for mobile / test contexts where
-// `NavService` isn't desktop-driven.
-Widget _agentsStatsPanel(BuildContext context) =>
-    const AgentSettingsBody(initialTab: AgentSettingsTab.stats);
-Widget _agentsPendingWakesPanel(BuildContext context) =>
-    const AgentSettingsBody(initialTab: AgentSettingsTab.pendingWakes);
-
-// Agent panels follow the same list ↔ detail/create pattern as the
-// other dynamic-list panels (categories, labels, dashboards, …) — the
-// floating "+" beams to `/settings/agents/<tab>/create`, list rows
-// beam to `/settings/agents/<tab>/<id>`. Each tab has its own id key
-// (`templateId` / `soulId` / `agentId`).
-Widget _agentsTemplatesPanel(BuildContext context) => DetailIdDispatch(
-  idParamKey: 'templateId',
-  list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.templates),
-  create: (_, _) => const AgentTemplateDetailPage(),
-  detail: (_, id) => AgentTemplateDetailPage(
-    key: ValueKey('settings-v2-agent-template-$id'),
-    templateId: id,
-  ),
-);
-
-Widget _agentsSoulsPanel(BuildContext context) => DetailIdDispatch(
-  idParamKey: 'soulId',
-  list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.souls),
-  create: (_, _) => const AgentSoulDetailPage(),
-  detail: (_, id) => AgentSoulDetailPage(
-    key: ValueKey('settings-v2-agent-soul-$id'),
-    soulId: id,
-  ),
-);
-
-Widget _agentsInstancesPanel(BuildContext context) => DetailIdDispatch(
-  idParamKey: 'agentId',
-  list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.instances),
-  // Instances are created indirectly (from a template) — there is no
-  // `/settings/agents/instances/create` route in beamer, so the
-  // create branch is structurally unreachable. Fall back to the list
-  // defensively rather than crashing if a stray URL ever arrives.
-  create: (_, _) =>
-      const AgentSettingsBody(initialTab: AgentSettingsTab.instances),
-  detail: (_, id) => AgentDetailPage(
-    key: ValueKey('settings-v2-agent-instance-$id'),
-    agentId: id,
-  ),
-);

@@ -1,10 +1,8 @@
-import 'package:collection/collection.dart';
+import 'package:lotti/features/sync/matrix/pipeline/bootstrap_backward_strategy.dart';
+import 'package:lotti/features/sync/matrix/pipeline/bootstrap_forward_strategy.dart';
 import 'package:lotti/features/sync/matrix/timeline_ordering.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
-
-part 'bootstrap_backward_strategy.dart';
-part 'bootstrap_forward_strategy.dart';
 
 /// Signature for a reconnect backfill/pagination function.
 ///
@@ -294,7 +292,7 @@ class CatchUpStrategy {
   /// anchor under lexicographic `(ts, eventId)` ordering. When the
   /// anchor is null (first-pass bootstrap), every event is considered
   /// older so the initial page is emitted in full.
-  static bool _isStrictlyOlder(
+  static bool isStrictlyOlder(
     Event event, {
     required num? anchorTs,
     required String? anchorEventId,
@@ -369,7 +367,7 @@ class CatchUpStrategy {
     now: now,
   );
 
-  static bool _isStrictlyAfter(
+  static bool isStrictlyAfter(
     Event event, {
     required num? anchorTs,
     required String? anchorEventId,

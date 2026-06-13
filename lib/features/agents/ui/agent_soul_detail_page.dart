@@ -5,9 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
-import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_history_card.dart';
+import 'package:lotti/features/agents/ui/agent_soul_detail_info_tab.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -18,8 +17,6 @@ import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
-
-part 'agent_soul_detail_info_tab.dart';
 
 /// Detail page for creating or editing a soul document.
 ///
@@ -306,7 +303,7 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
             ],
           ),
           // Info tab
-          _InfoTabContent(
+          InfoTabContent(
             soulId: widget.soulId!,
             onDelete: () => _handleDelete(context),
           ),

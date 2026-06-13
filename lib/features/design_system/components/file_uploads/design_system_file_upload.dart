@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
-import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
-part 'design_system_file_upload_item.dart';
+export 'package:lotti/features/design_system/components/file_uploads/design_system_file_upload_item.dart';
 
 // ──────────────────────────────────────────────────────────────
 // Drop zone

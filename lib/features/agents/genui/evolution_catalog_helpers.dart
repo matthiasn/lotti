@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -122,5 +125,204 @@ Widget metricChip(String label, String value) {
         ),
       ),
     ],
+  );
+}
+
+// ── Feedback widget helpers ─────────────────────────────────────────────────────────
+
+Widget sentimentChip(String label, int count, Color color) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(
+      color: color.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: color.withValues(alpha: 0.3)),
+    ),
+    child: Text(
+      '$count $label',
+      style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
+    ),
+  );
+}
+
+Widget feedbackLine({required String detail, required String sentiment}) {
+  final color = switch (sentiment) {
+    'negative' => AgentPalette.red,
+    'positive' => AgentPalette.green,
+    _ => AgentPalette.orange,
+  };
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 2),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 4,
+          height: 16,
+          margin: const EdgeInsets.only(top: 2),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            detail,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.8),
+              fontSize: 12,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget highPrioritySectionHeader(String label, int count, Color color) {
+  return Row(
+    children: [
+      Container(
+        width: 4,
+        height: 14,
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(2),
+        ),
+      ),
+      const SizedBox(width: 8),
+      Text(
+        '$label ($count)',
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ],
+  );
+}
+
+Widget highPriorityItemTile({
+  required String agentId,
+  required String detail,
+  required Color accentColor,
+}) {
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 4,
+          height: 16,
+          margin: const EdgeInsets.only(top: 2),
+          decoration: BoxDecoration(
+            color: accentColor,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 8),
+        if (agentId.isNotEmpty) ...[
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 120),
+            child: Text(
+              '[$agentId]',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
+        Expanded(
+          child: Text(
+            detail,
+            style: TextStyle(
+              color: Colors.white.withValues(alpha: 0.9),
+              fontSize: 12,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget categoryBar({
+  required String name,
+  required int count,
+  required int positiveCount,
+  required int negativeCount,
+  required int totalCount,
+}) {
+  final fraction = totalCount > 0 ? count / totalCount : 0.0;
+  final neutralCount = max(0, count - positiveCount - negativeCount);
+
+  return Padding(
+    padding: const EdgeInsets.symmetric(vertical: 3),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                name,
+                style: TextStyle(
+                  color: Colors.white.withValues(alpha: 0.7),
+                  fontSize: 11,
+                ),
+              ),
+            ),
+            Text(
+              '$count',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.5),
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 3),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(2),
+          child: SizedBox(
+            height: 6,
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: fraction,
+              child: Row(
+                children: [
+                  if (negativeCount > 0)
+                    Expanded(
+                      flex: negativeCount,
+                      child: Container(color: AgentPalette.red),
+                    ),
+                  if (positiveCount > 0)
+                    Expanded(
+                      flex: positiveCount,
+                      child: Container(color: AgentPalette.green),
+                    ),
+                  if (neutralCount > 0)
+                    Expanded(
+                      flex: neutralCount,
+                      child: Container(color: AgentPalette.orange),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    ),
   );
 }

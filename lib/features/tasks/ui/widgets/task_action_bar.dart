@@ -11,14 +11,12 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_action_bar_buttons.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/widgets/misc/timer_navigation.dart';
-
-part 'task_action_bar_buttons.dart';
 
 /// Sticky action bar pinned to the bottom of the task details page.
 ///
@@ -56,9 +54,9 @@ class TaskActionBar extends ConsumerStatefulWidget {
   @visibleForTesting
   static const Key trackTimeKey = ValueKey('task-action-bar-track-time');
 
-  /// Stable test key for the inset stop button that appears inside the
-  /// pill while tracking. Tapping it stops the timer.
-  @visibleForTesting
+  /// Key for the inset stop button that appears inside the pill while
+  /// tracking. Tapping it stops the timer. Referenced at runtime by the
+  /// extracted [TrackTimePill] and also used as a stable test key.
   static const Key trackTimeStopKey = ValueKey(
     'task-action-bar-track-time-stop',
   );
@@ -85,20 +83,20 @@ class TaskActionBar extends ConsumerStatefulWidget {
 
   /// Round-button diameter and pill height. The design system has no
   /// dedicated icon-button-size token; this matches `tokens.spacing.step9`
-  /// (48), the standard hit-target.
-  @visibleForTesting
+  /// (48), the standard hit-target. Referenced at runtime by the extracted
+  /// [TrackTimePill].
   static const double buttonSize = 48;
 
-  /// Icon glyph size inside both the pill and round buttons.
-  @visibleForTesting
+  /// Icon glyph size inside both the pill and round buttons. Referenced at
+  /// runtime by the extracted [TrackTimePill].
   static const double iconSize = 20;
 
-  /// Stop control size inside the Track time pill.
-  @visibleForTesting
+  /// Stop control size inside the Track time pill. Referenced at runtime by
+  /// the extracted [TrackTimePill].
   static const double pillStopButtonSize = 32;
 
-  /// Stop glyph size inside the Track time pill's stop control.
-  @visibleForTesting
+  /// Stop glyph size inside the Track time pill's stop control. Referenced
+  /// at runtime by the extracted [TrackTimePill].
   static const double pillStopIconSize = 18;
 
   /// Minimum [LayoutBuilder] inner width at which the checklist
@@ -320,7 +318,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _TrackTimePill(
+                    TrackTimePill(
                       key: TaskActionBar.trackTimeKey,
                       isTracking: isTracking,
                       label: elapsedLabel,

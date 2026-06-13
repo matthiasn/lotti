@@ -1,14 +1,42 @@
-part of '../ai_summary_card.dart';
+import 'dart:async';
+import 'dart:developer' as developer;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_kind_part.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_widgets_part.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// Width threshold below which the proposal row drops its explicit
+/// confirm/reject buttons. The whole row stays swipeable (right →
+/// confirm, left → dismiss); on narrow phones the chevron-style
+/// icon buttons just consume too much horizontal space and crowd the
+/// proposal text. Matches `AgentInternalsPanel.mobileBreakpoint` so
+/// the AI surface flips between compact and comfortable layouts at
+/// the same screen size.
+const double _proposalRowCompactWidth = 600;
+
+bool isCompactWidth(BuildContext context) =>
+    MediaQuery.sizeOf(context).width < _proposalRowCompactWidth;
 
 /// Single swipeable proposal row: swipe right to confirm, left to
 /// dismiss, with wiggle hint + busy spinner state handling.
-class _ProposalRow extends ConsumerStatefulWidget {
-  const _ProposalRow({
+class ProposalRow extends ConsumerStatefulWidget {
+  const ProposalRow({
     required PendingSuggestion this.suggestion,
     this.isFirst = false,
+    super.key,
   }) : entry = null;
 
-  const _ProposalRow.fromLedger({required LedgerEntry this.entry})
+  const ProposalRow.fromLedger({required LedgerEntry this.entry, super.key})
     : suggestion = null,
       isFirst = false;
 
@@ -22,10 +50,10 @@ class _ProposalRow extends ConsumerStatefulWidget {
   bool get isResolved => entry != null;
 
   @override
-  ConsumerState<_ProposalRow> createState() => _ProposalRowState();
+  ConsumerState<ProposalRow> createState() => _ProposalRowState();
 }
 
-class _ProposalRowState extends ConsumerState<_ProposalRow>
+class _ProposalRowState extends ConsumerState<ProposalRow>
     with SingleTickerProviderStateMixin {
   static const double _swipeTrigger = 70;
 
@@ -259,9 +287,9 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    final kind = _resolveKind(_toolName, _args);
-    final kindMeta = _kindMeta(context, kind);
-    final cleanText = _cleanText(_humanSummary, kindMeta.label);
+    final kind = resolveKind(_toolName, _args);
+    final meta = kindMeta(context, kind);
+    final cleanText = _cleanText(_humanSummary, meta.label);
 
     // Combine the user's drag offset with any hint-wiggle so the
     // gradient backdrop and the row translation stay in sync.
@@ -350,7 +378,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _KindChip(meta: kindMeta),
+                    KindChip(meta: meta),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
@@ -366,8 +394,8 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
                     ),
                     const SizedBox(width: 10),
                     if (widget.isResolved)
-                      _ResolvedTag(status: _resolvedStatus)
-                    else if (_isCompactWidth(context))
+                      ResolvedTag(status: _resolvedStatus)
+                    else if (isCompactWidth(context))
                       // On narrow viewports the buttons take up too
                       // much horizontal space — rely on swipe alone
                       // (the `GestureDetector` above accepts a swipe
@@ -376,7 +404,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
                       // the swipe threshold).
                       const SizedBox.shrink()
                     else
-                      _RowActions(
+                      RowActions(
                         busy: _busy,
                         onReject: _reject,
                         onConfirm: _confirm,
@@ -404,7 +432,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
   String? _cachedCleanInputKey;
 
   String _cleanText(String summary, String kindLabel) {
-    final key = '$kindLabel\u0000$summary';
+    final key = '$kindLabel $summary';
     if (_cachedCleanInputKey == key) return _cachedCleanText!;
     final pattern = RegExp(
       '^\\s*${RegExp.escape(kindLabel)}\\b[\\s:]*',

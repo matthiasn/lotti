@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -194,9 +195,9 @@ class ChangeSetBuilder {
     }
 
     if (toolName == TaskAgentToolNames.updateRunningTimer) {
-      final timerId = _runningTimerIdFromArgs(args);
+      final timerId = runningTimerIdFromArgs(args);
       _items.removeWhere(
-        (item) => _isRunningTimerUpdateForTimer(item, timerId),
+        (item) => isRunningTimerUpdateForTimer(item, timerId),
       );
     }
 
@@ -271,7 +272,7 @@ class ChangeSetBuilder {
         return freshEntity is ChangeSetEntity ? freshEntity : cs;
       }),
     );
-    final proposedRunningTimerIds = _runningTimerIds(_items);
+    final proposedRunningTimerIds = runningTimerIds(_items);
 
     // Extract items from existing change sets that should block a new
     // identical proposal. Confirmed items were applied; retracted items
@@ -282,13 +283,13 @@ class ChangeSetBuilder {
         for (final item in cs.items)
           if (item.status != ChangeItemStatus.confirmed &&
               item.status != ChangeItemStatus.retracted &&
-              !(_isRunningTimerUpdate(item) &&
+              !(isRunningTimerUpdate(item) &&
                   item.status == ChangeItemStatus.pending &&
-                  proposedRunningTimerIds.contains(_runningTimerId(item))))
+                  proposedRunningTimerIds.contains(runningTimerId(item))))
             item,
     ];
 
-    final deduped = _deduplicateItems(
+    final deduped = deduplicateItems(
       _items,
       existingItems,
       rejectedFingerprints: rejectedFingerprints,
@@ -296,9 +297,9 @@ class ChangeSetBuilder {
     );
     if (deduped.isEmpty) return null;
 
-    final dedupedRunningTimerIds = _runningTimerIds(deduped);
+    final dedupedRunningTimerIds = runningTimerIds(deduped);
     final supersededRunningTimerItems = dedupedRunningTimerIds.isNotEmpty
-        ? _locatePendingRunningTimerUpdates(
+        ? locatePendingRunningTimerUpdates(
             freshExistingSets,
             dedupedRunningTimerIds,
           )
@@ -307,7 +308,7 @@ class ChangeSetBuilder {
           >[];
     final currentExistingSets = supersededRunningTimerItems.isEmpty
         ? freshExistingSets
-        : _markItemsRetracted(
+        : markItemsRetracted(
             freshExistingSets,
             supersededRunningTimerItems,
           );
@@ -362,7 +363,7 @@ class ChangeSetBuilder {
       for (final cs in existingPendingSets) {
         if (cs.id != survivor.id) {
           final current = currentExistingSetsById[cs.id] ?? cs;
-          await syncService.upsertEntity(_retireConsolidatedSet(current));
+          await syncService.upsertEntity(retireConsolidatedSet(current));
         }
       }
 
@@ -454,124 +455,6 @@ class ChangeSetBuilder {
         subDomain: 'ChangeSetBuilder',
       );
     }
-  }
-
-  /// Returns items from [proposed] that do not already exist in [existing],
-  /// comparing on `toolName` and `args` only (ignoring `humanSummary`).
-  ///
-  /// [rejectedFingerprints] are merged into the dedup set so that items
-  /// rejected in previously-resolved change sets are still blocked.
-  /// [rejectedDisplayKeys] does the same for verbatim user-facing summaries.
-  static List<ChangeItem> _deduplicateItems(
-    List<ChangeItem> proposed,
-    List<ChangeItem> existing, {
-    Set<String> rejectedFingerprints = const {},
-    Set<String> rejectedDisplayKeys = const {},
-  }) {
-    if (existing.isEmpty &&
-        rejectedFingerprints.isEmpty &&
-        rejectedDisplayKeys.isEmpty) {
-      return proposed;
-    }
-    final existingHashes = {
-      ...existing.map(ChangeItem.fingerprint),
-      ...rejectedFingerprints,
-    };
-    final existingDisplayKeys = {
-      ...rejectedDisplayKeys,
-      for (final item in existing)
-        if (ChangeItem.displayDuplicateKey(item) case final String key) key,
-    };
-    return proposed.where((item) {
-      if (existingHashes.contains(ChangeItem.fingerprint(item))) {
-        return false;
-      }
-      final displayKey = ChangeItem.displayDuplicateKey(item);
-      return displayKey == null || !existingDisplayKeys.contains(displayKey);
-    }).toList();
-  }
-
-  static ChangeSetEntity _retireConsolidatedSet(ChangeSetEntity set) {
-    return set.copyWith(
-      items: [
-        for (final item in set.items)
-          item.status == ChangeItemStatus.pending
-              ? item.copyWith(status: ChangeItemStatus.retracted)
-              : item,
-      ],
-      status: ChangeSetStatus.resolved,
-      resolvedAt: clock.now(),
-    );
-  }
-
-  static bool _isRunningTimerUpdate(ChangeItem item) =>
-      item.toolName == TaskAgentToolNames.updateRunningTimer;
-
-  static String? _runningTimerId(ChangeItem item) =>
-      _runningTimerIdFromArgs(item.args);
-
-  static String? _runningTimerIdFromArgs(Map<String, dynamic> args) {
-    final timerId = args['timerId'];
-    if (timerId is! String) return null;
-    final trimmed = timerId.trim();
-    return trimmed.isEmpty ? null : trimmed;
-  }
-
-  static bool _isRunningTimerUpdateForTimer(
-    ChangeItem item,
-    String? timerId,
-  ) => _isRunningTimerUpdate(item) && _runningTimerId(item) == timerId;
-
-  static Set<String?> _runningTimerIds(Iterable<ChangeItem> items) => {
-    for (final item in items)
-      if (_isRunningTimerUpdate(item)) _runningTimerId(item),
-  };
-
-  static List<({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})>
-  _locatePendingRunningTimerUpdates(
-    List<ChangeSetEntity> sets,
-    Set<String?> timerIds,
-  ) {
-    final matches =
-        <({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})>[];
-    for (final set in sets) {
-      for (var i = 0; i < set.items.length; i++) {
-        final item = set.items[i];
-        if (_isRunningTimerUpdate(item) &&
-            item.status == ChangeItemStatus.pending &&
-            timerIds.contains(_runningTimerId(item))) {
-          matches.add((changeSet: set, itemIndex: i, item: item));
-        }
-      }
-    }
-    return matches;
-  }
-
-  static List<ChangeSetEntity> _markItemsRetracted(
-    List<ChangeSetEntity> sets,
-    List<({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})> matches,
-  ) {
-    final indexesBySetId = <String, Set<int>>{};
-    for (final match in matches) {
-      indexesBySetId
-          .putIfAbsent(match.changeSet.id, () => <int>{})
-          .add(match.itemIndex);
-    }
-
-    return [
-      for (final set in sets)
-        if (!indexesBySetId.containsKey(set.id))
-          set
-        else
-          set.copyWith(
-            items: [
-              for (var i = 0; i < set.items.length; i++)
-                indexesBySetId[set.id]!.contains(i)
-                    ? set.items[i].copyWith(status: ChangeItemStatus.retracted)
-                    : set.items[i],
-            ],
-          ),
-    ];
   }
 
   Future<void> _recordSupersededRunningTimerRetractions(

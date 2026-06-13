@@ -1,11 +1,17 @@
-part of 'agent_list_toolbar.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
+import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _FiltersPopoverPanel extends StatefulWidget {
-  const _FiltersPopoverPanel({
+class FiltersPopoverPanel extends StatefulWidget {
+  const FiltersPopoverPanel({
     required this.tokens,
     required this.state,
     required this.onChanged,
     required this.axes,
+    super.key,
   });
 
   final DsTokens tokens;
@@ -14,10 +20,10 @@ class _FiltersPopoverPanel extends StatefulWidget {
   final List<AgentListFilterAxis> axes;
 
   @override
-  State<_FiltersPopoverPanel> createState() => _FiltersPopoverPanelState();
+  State<FiltersPopoverPanel> createState() => _FiltersPopoverPanelState();
 }
 
-class _FiltersPopoverPanelState extends State<_FiltersPopoverPanel> {
+class _FiltersPopoverPanelState extends State<FiltersPopoverPanel> {
   late AgentListFilterState _local;
 
   @override
@@ -56,7 +62,7 @@ class _FiltersPopoverPanelState extends State<_FiltersPopoverPanel> {
                 onClear: () => _push(_local.clearAxis(widget.axes[i].id)),
               ),
               for (final option in widget.axes[i].options)
-                _PopRow(
+                PopRow(
                   label: option.label,
                   selected: _local
                       .selectionsFor(widget.axes[i].id)
@@ -128,13 +134,14 @@ class _PopHeader extends StatelessWidget {
   }
 }
 
-class _PopRow extends StatelessWidget {
-  const _PopRow({
+class PopRow extends StatelessWidget {
+  const PopRow({
     required this.label,
     required this.selected,
     this.count,
     this.swatchHue,
     this.onTap,
+    super.key,
   });
 
   final String label;

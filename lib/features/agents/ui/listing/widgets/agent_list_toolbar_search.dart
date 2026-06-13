@@ -1,20 +1,26 @@
-part of 'agent_list_toolbar.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
+import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
+import 'package:lotti/features/agents/ui/listing/widgets/agent_list_toolbar_popover.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _SearchField extends StatefulWidget {
-  const _SearchField({
+class SearchField extends StatefulWidget {
+  const SearchField({
     required this.value,
     required this.onChanged,
     required this.placeholder,
+    super.key,
   });
   final String value;
   final ValueChanged<String> onChanged;
   final String placeholder;
 
   @override
-  State<_SearchField> createState() => _SearchFieldState();
+  State<SearchField> createState() => _SearchFieldState();
 }
 
-class _SearchFieldState extends State<_SearchField> {
+class _SearchFieldState extends State<SearchField> {
   late final TextEditingController _controller;
   late final FocusNode _focusNode;
   bool _focused = false;
@@ -32,7 +38,7 @@ class _SearchFieldState extends State<_SearchField> {
   }
 
   @override
-  void didUpdateWidget(covariant _SearchField oldWidget) {
+  void didUpdateWidget(covariant SearchField oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Sync external clears (e.g. "Clear all") into the field.
     if (widget.value != _controller.text) {
@@ -141,7 +147,7 @@ class _SearchFieldState extends State<_SearchField> {
 
 /// Anchored single-select popover used by Group by / Sort. Returns the
 /// selected option id (string) or null if dismissed.
-Future<T?> _showSingleSelectPopover<T>({
+Future<T?> showSingleSelectPopover<T>({
   required BuildContext context,
   required T current,
   required List<(T, String)> options,
@@ -179,7 +185,7 @@ Future<T?> _showSingleSelectPopover<T>({
           value: value,
           padding: EdgeInsets.zero,
           height: 32,
-          child: _PopRow(label: label, selected: value == current),
+          child: PopRow(label: label, selected: value == current),
         ),
     ],
   );
@@ -188,7 +194,7 @@ Future<T?> _showSingleSelectPopover<T>({
 /// Anchored multi-select popover used by Filters. One section per
 /// [AgentListFilterAxis] supplied; per-section "Clear" link wipes that
 /// axis's selections.
-Future<void> _showFiltersPopover({
+Future<void> showFiltersPopover({
   required BuildContext context,
   required AgentListFilterState state,
   required ValueChanged<AgentListFilterState> onChanged,
@@ -218,7 +224,7 @@ Future<void> _showFiltersPopover({
             left: position.dx,
             top: position.dy + size.height + 6,
             width: 240,
-            child: _FiltersPopoverPanel(
+            child: FiltersPopoverPanel(
               tokens: tokens,
               state: state,
               onChanged: onChanged,

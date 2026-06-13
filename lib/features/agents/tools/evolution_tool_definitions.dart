@@ -1,7 +1,7 @@
-part of 'agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// Backing list for [AgentToolRegistry.evolutionAgentTools].
-const _evolutionAgentTools = <AgentToolDefinition>[
+const evolutionAgentToolList = <AgentToolDefinition>[
   AgentToolDefinition(
     name: EvolutionToolNames.proposeDirectives,
     description:

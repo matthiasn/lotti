@@ -1,4 +1,7 @@
-part of 'design_system_calendar_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_picker.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 @immutable
 class DesignSystemCalendarMonthRailSection {
@@ -28,9 +31,10 @@ class DesignSystemCalendarMonthRailItem {
   final String? semanticsLabel;
 }
 
-class _CalendarMonthRail extends StatelessWidget {
-  const _CalendarMonthRail({
+class CalendarMonthRail extends StatelessWidget {
+  const CalendarMonthRail({
     required this.monthSections,
+    super.key,
   });
 
   final List<DesignSystemCalendarMonthRailSection> monthSections;
@@ -74,7 +78,7 @@ class _CalendarYearDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
+    final geometry = CalendarPickerGeometry.fromTokens(tokens);
     final labelColor = tokens.colors.decorative.level02;
 
     return Padding(
@@ -117,7 +121,7 @@ class _CalendarMonthRailButtonState extends State<_CalendarMonthRailButton> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
+    final geometry = CalendarPickerGeometry.fromTokens(tokens);
     final enabled = widget.item.onPressed != null;
 
     final backgroundColor = switch ((widget.item.selected, _hovered)) {

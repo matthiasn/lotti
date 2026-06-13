@@ -1,4 +1,8 @@
-part of 'day_timeline.dart';
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Formats an absolute hour-of-day marker for the timeline rail and the
 /// fold-region range labels, e.g. `08:00`. Hour `24` is the exclusive
@@ -9,11 +13,12 @@ String formatTimelineHourLabel(int hour) {
   return '${displayHour.toString().padLeft(2, '0')}:00';
 }
 
-class _FoldRegionLayer extends StatelessWidget {
-  const _FoldRegionLayer({
+class FoldRegionLayer extends StatelessWidget {
+  const FoldRegionLayer({
     required this.foldingState,
     required this.pxPerMinute,
     required this.onToggleFoldRegion,
+    super.key,
   });
 
   final TimelineFoldingState foldingState;

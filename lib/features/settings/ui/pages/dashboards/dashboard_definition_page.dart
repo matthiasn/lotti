@@ -18,7 +18,6 @@ import 'package:lotti/features/settings/ui/widgets/form/settings_form_text_field
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -30,7 +29,7 @@ import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
-part 'edit_dashboard_page.dart';
+export 'package:lotti/features/settings/ui/pages/dashboards/edit_dashboard_page.dart';
 
 class DashboardDefinitionPage extends StatefulWidget {
   const DashboardDefinitionPage({

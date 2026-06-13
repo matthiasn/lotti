@@ -22,7 +22,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     if (room == null) {
       throw StateError('collectHistory: no current room');
     }
-    final sink = _ProgressForwardingSink(
+    final sink = ProgressForwardingSink(
       inner: QueueBootstrapSink(
         queue: _queue,
         logging: _logging,
@@ -76,9 +76,9 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
       // *something* — the backward walk is still useful for the
       // case where the gap happens to live at the cache's oldest
       // end (small, contiguous reconnect windows).
-      if (forward != _BootstrapOutcome.errorNoProgress) {
+      if (forward != BootstrapOutcome.errorNoProgress) {
         _updateBarrenBridgeFlagForward(forward);
-        return forward == _BootstrapOutcome.completed;
+        return forward == BootstrapOutcome.completed;
       }
       _logging.log(
         LogDomain.sync,
@@ -94,7 +94,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     );
   }
 
-  Future<_BootstrapOutcome> _runForwardBootstrap({
+  Future<BootstrapOutcome> _runForwardBootstrap({
     required Room room,
     required String anchorEventId,
   }) async {
@@ -105,7 +105,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
                 processAttachment: _processAttachment,
               )
               as BootstrapSink;
-    final countingSink = _TotalAcceptedCountingSink(innerSink);
+    final countingSink = TotalAcceptedCountingSink(innerSink);
     final result = await CatchUpStrategy.collectForwardForBootstrap(
       room: room,
       sink: countingSink,
@@ -122,14 +122,14 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     );
     return switch (result.stopReason) {
       BootstrapStopReason.serverExhausted ||
-      BootstrapStopReason.boundaryReached => _BootstrapOutcome.completed,
-      BootstrapStopReason.sinkCancelled => _BootstrapOutcome.incomplete,
+      BootstrapStopReason.boundaryReached => BootstrapOutcome.completed,
+      BootstrapStopReason.sinkCancelled => BootstrapOutcome.incomplete,
       // No pages + error means "anchor unresolvable": the context
       // fetch returned an empty chunk or threw. Signal the caller so
       // it can fall back to the backward walk.
       BootstrapStopReason.error when result.totalPages == 0 =>
-        _BootstrapOutcome.errorNoProgress,
-      BootstrapStopReason.error => _BootstrapOutcome.incomplete,
+        BootstrapOutcome.errorNoProgress,
+      BootstrapStopReason.error => BootstrapOutcome.incomplete,
     };
   }
 
@@ -154,7 +154,7 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     // Count accepted events across every page so we can detect the
     // "boundaryReached with totalAccepted==0" case that marks the
     // bridge barren — the gap-recovery trigger reads this flag.
-    final countingSink = _TotalAcceptedCountingSink(innerSink);
+    final countingSink = TotalAcceptedCountingSink(innerSink);
     final result = await CatchUpStrategy.collectHistoryForBootstrap(
       room: room,
       sink: countingSink,
@@ -205,14 +205,14 @@ extension QueueGapRecovery on QueuePipelineCoordinator {
     }
   }
 
-  void _updateBarrenBridgeFlagForward(_BootstrapOutcome outcome) {
+  void _updateBarrenBridgeFlagForward(BootstrapOutcome outcome) {
     // Forward-walk semantics: anchor resolved and we walked to the
     // tip (or cap). Whether anything was accepted or not, the cache-
     // wedge scenario that drove the barren-bridge recovery does not
     // apply to this path — the forward walk fetches server state
     // directly. Clearing the flag prevents a later gap-detected
     // signal from triggering a redundant unbounded backward walk.
-    if (outcome == _BootstrapOutcome.completed) {
+    if (outcome == BootstrapOutcome.completed) {
       _lastBarrenBridgeAt = null;
     }
   }

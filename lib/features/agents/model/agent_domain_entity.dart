@@ -11,6 +11,14 @@ import 'package:lotti/features/sync/vector_clock.dart';
 part 'agent_domain_entity.freezed.dart';
 part 'agent_domain_entity.g.dart';
 
+/// The single sealed domain entity persisted and synced by the agents
+/// subsystem. Every variant below is one row shape in the unified agent
+/// store: they share one Drift table, one `fromJson` discriminator, and one
+/// sync/outbox path, and consumers fold over them with exhaustive
+/// `.when`/`.map`. The type is intentionally one unit — a freezed union's
+/// `const factory` constructors are members of one class body and cannot span
+/// part files. See the agents README "Persistence Model" for the per-variant
+/// reference.
 @Freezed(fallbackUnion: 'unknown')
 abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// Agent identity and lifecycle.

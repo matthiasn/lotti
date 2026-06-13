@@ -1,4 +1,18 @@
-part of 'modern_action_items.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/audio_utils.dart';
+import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/media_file_actions.dart';
+import 'package:lotti/utils/platform.dart';
+import 'package:share_plus/share_plus.dart';
+
+typedef MediaFileRevealCallback = Future<void> Function(String filePath);
 
 class ModernSpeechItem extends ConsumerWidget {
   const ModernSpeechItem({
@@ -154,5 +168,3 @@ class ModernShareItem extends ConsumerWidget {
     );
   }
 }
-
-/// Modern styled unlink action item

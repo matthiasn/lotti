@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:async';
 
 import 'package:clock/clock.dart';
@@ -191,6 +193,7 @@ void main() {
         () => bench.planService.summarizeRecentPatterns(
           agentId: agentId,
           asOf: _asOf,
+          lookbackDays: 7,
         ),
       ).thenAnswer(
         (_) async => [
@@ -2643,36 +2646,6 @@ void main() {
     setUp(() {
       bench = _TestBench.create();
     });
-
-    glados.Glados2(
-      glados.any.intInRange(0, 365),
-      glados.any.intInRange(0, 365),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'debugDaysBetween is antisymmetric and ignores time-of-day',
-      (a, b) {
-        // Date-only arithmetic on calendar days built from components is
-        // DST-safe; mixing in hours proves the date-only truncation.
-        final base = DateTime(2024);
-        final d1 = DateTime(2024, 1, 1 + a, 9, 30);
-        final d2 = DateTime(2024, 1, 1 + b, 22, 15);
-
-        final forward = bench.adapter.debugDaysBetween(d1, d2);
-        final backward = bench.adapter.debugDaysBetween(d2, d1);
-
-        expect(forward, -backward, reason: 'a=$a b=$b');
-        expect(forward, b - a, reason: 'calendar-day oracle from $base');
-        // Same calendar day, any times → zero.
-        expect(
-          bench.adapter.debugDaysBetween(
-            DateTime(2024, 1, 1 + a),
-            DateTime(2024, 1, 1 + a, 23, 59),
-          ),
-          0,
-        );
-      },
-      tags: 'glados',
-    );
 
     glados.Glados<String>(
       glados.AnyUtils(glados.any).choose(const [

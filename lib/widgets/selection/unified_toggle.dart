@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 
-part 'unified_toggle_field.dart';
+export 'package:lotti/widgets/selection/unified_toggle_field.dart';
 
 // Constants for better maintainability
 class _UnifiedToggleConstants {

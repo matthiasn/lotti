@@ -1,6 +1,5 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -865,44 +864,5 @@ void main() {
         });
       });
     });
-  });
-  // ---------------------------------------------------------------------------
-  // Glados property for the same-day predicate (via debug seam): reflexive,
-  // symmetric, time-of-day-insensitive, and strict across day boundaries.
-  // ---------------------------------------------------------------------------
-  group('debugIsSameDay — properties', () {
-    glados.Glados3(
-      glados.IntAnys(glados.any).intInRange(0, 730),
-      glados.IntAnys(glados.any).intInRange(0, 1440),
-      glados.IntAnys(glados.any).intInRange(0, 1440),
-      glados.ExploreConfig(numRuns: 120),
-    ).test('same-day iff the calendar date matches, regardless of time', (
-      dayOffset,
-      minutesA,
-      minutesB,
-    ) {
-      final base = DateTime(2026).add(Duration(days: dayOffset));
-      final a = base.add(Duration(minutes: minutesA));
-      final b = base.add(Duration(minutes: minutesB));
-
-      final sameCalendarDay = a.day == b.day && a.month == b.month;
-      expect(
-        TimeEntryHandler.debugIsSameDay(a, b),
-        sameCalendarDay,
-        reason: '$a vs $b',
-      );
-      // Symmetry + reflexivity.
-      expect(
-        TimeEntryHandler.debugIsSameDay(b, a),
-        TimeEntryHandler.debugIsSameDay(a, b),
-      );
-      expect(TimeEntryHandler.debugIsSameDay(a, a), isTrue);
-
-      // Crossing a whole day always breaks the predicate.
-      expect(
-        TimeEntryHandler.debugIsSameDay(a, a.add(const Duration(days: 1))),
-        isFalse,
-      );
-    }, tags: 'glados');
   });
 }

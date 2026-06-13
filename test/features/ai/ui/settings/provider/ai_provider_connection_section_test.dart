@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_connection_section.dart';
 
 void main() {
   group('maskApiKey', () {

@@ -6,12 +6,14 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
+import 'package:lotti/features/ai_chat/ui/controllers/chat_amplitude_history.dart';
+import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart' as record;
 
-part 'chat_recorder_state.dart';
+export 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
 
 class ChatRecorderController extends Notifier<ChatRecorderState> {
   ChatRecorderController({
@@ -117,7 +119,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   bool _isStarting = false;
   int _operationId = 0; // Incremented for each new operation to prevent races
 
-  static const int _historyMax = 200; // ~10s at 50ms; UI will sample to fit
   static const int _cleanupTimeoutSeconds = 2;
   static const int _fileDeleteTimeoutSeconds = 2;
 
@@ -200,12 +201,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
             if (!ref.mounted) return;
 
             final dBFS = event.current;
-            final history = List<double>.from(state.amplitudeHistory)
-              ..add(dBFS);
-            if (history.length > _historyMax) history.removeAt(0);
             state = state.copyWith(
               status: ChatRecorderStatus.recording,
-              amplitudeHistory: history,
+              amplitudeHistory: appendAmplitudeSample(
+                state.amplitudeHistory,
+                dBFS,
+              ),
             );
           });
 
@@ -365,6 +366,148 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   ///
   /// The recorder streams PCM audio to the service, which forwards it to the
   /// WebSocket. Transcription deltas update `partialTranscript` live.
+
+  void _onAppPaused() {
+    if (state.status == ChatRecorderStatus.realtimeRecording) {
+      unawaited(stopRealtime());
+    }
+  }
+
+  // Transcribes audio with streaming updates to partialTranscript
+  Future<String> _transcribe(String filePath, int operationId) async {
+    final buffer = StringBuffer();
+    var chunkCount = 0;
+
+    await for (final chunk in _transcriptionService.transcribeStream(
+      filePath,
+    )) {
+      chunkCount++;
+      buffer.write(chunk);
+
+      getIt<DomainLogger>().log(
+        LogDomain.chat,
+        'chat_transcription_chunk_received: chunk=$chunkCount, '
+        'chunkLen=${chunk.length}, totalLen=${buffer.length}',
+        subDomain: 'transcribe',
+      );
+
+      // Update partialTranscript for progressive UI feedback
+      // Only if this operation is still current and ref is valid
+      if (operationId == _operationId && ref.mounted) {
+        state = state.copyWith(
+          status: ChatRecorderStatus.processing,
+          partialTranscript: buffer.toString(),
+        );
+      }
+    }
+
+    getIt<DomainLogger>().log(
+      LogDomain.chat,
+      'chat_transcription_completed: totalChunks=$chunkCount, '
+      'totalLen=${buffer.length}',
+      subDomain: 'transcribe',
+    );
+    return buffer.toString();
+  }
+
+  // Normalize dBFS history to 0.05..1.0 range for UI
+  List<double> getNormalizedAmplitudeHistory() =>
+      normalizeAmplitudeHistory(state.amplitudeHistory);
+
+  Future<void> _cleanupInternal() async {
+    try {
+      await _ampSub?.cancel();
+      _ampSub = null;
+    } catch (e, s) {
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
+        e,
+        stackTrace: s,
+        subDomain: 'cleanup.ampSub',
+      );
+    }
+    try {
+      await _recorder?.dispose();
+    } catch (e, s) {
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
+        e,
+        stackTrace: s,
+        subDomain: 'cleanup.recorder',
+      );
+    }
+    _recorder = null;
+    _maxTimer?.cancel();
+    _maxTimer = null;
+    try {
+      if (_filePath != null) {
+        final f = File(_filePath!);
+        try {
+          await f.delete().timeout(
+            const Duration(seconds: _fileDeleteTimeoutSeconds),
+          );
+        } on PathNotFoundException catch (e, s) {
+          // Log and continue; file already gone
+          getIt<DomainLogger>().error(
+            LogDomain.chat,
+            e,
+            stackTrace: s,
+            subDomain: 'cleanup.fileNotFound',
+          );
+        }
+      }
+    } catch (e) {
+      // Log cleanup errors instead of surfacing to user state
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
+        e,
+        subDomain: 'cleanup',
+      );
+    }
+    try {
+      if (_tempDir != null) {
+        try {
+          await _tempDir!
+              .delete(recursive: true)
+              .timeout(const Duration(seconds: _cleanupTimeoutSeconds));
+        } on PathNotFoundException catch (e, s) {
+          // Log and continue; directory already gone
+          getIt<DomainLogger>().error(
+            LogDomain.chat,
+            e,
+            stackTrace: s,
+            subDomain: 'cleanup.tempDirNotFound',
+          );
+        }
+      }
+    } catch (e, s) {
+      getIt<DomainLogger>().error(
+        LogDomain.chat,
+        e,
+        stackTrace: s,
+        subDomain: 'cleanup.tempDir',
+      );
+    }
+    _tempDir = null;
+    _filePath = null;
+    // Keep amplitude history so UI shows a bit of trailing bars until next start
+  }
+
+  void clearResult() {
+    if (!ref.mounted) return;
+    if (state.transcript != null || state.error != null) {
+      state = ChatRecorderState(
+        status: state.status,
+        amplitudeHistory: state.amplitudeHistory,
+        useRealtimeMode: state.useRealtimeMode,
+      );
+    }
+  }
+
+  // ---------------------------------------------------------------
+  // Realtime (streaming) transcription
+  // ---------------------------------------------------------------
+
   Future<void> startRealtime() async {
     if (!ref.mounted) return;
     if (_isStarting) {
@@ -421,11 +564,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
       _realtimeAmpSub = _realtimeService.amplitudeStream.listen((dbfs) {
         if (currentOpId != _operationId || !ref.mounted) return;
 
-        final history = List<double>.from(state.amplitudeHistory)..add(dbfs);
-        if (history.length > _historyMax) history.removeAt(0);
         state = state.copyWith(
           status: ChatRecorderStatus.realtimeRecording,
-          amplitudeHistory: history,
+          amplitudeHistory: appendAmplitudeSample(
+            state.amplitudeHistory,
+            dbfs,
+          ),
           partialTranscript: state.partialTranscript,
         );
       });
@@ -563,160 +707,25 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     if (!ref.mounted) return;
     state = state.copyWith(useRealtimeMode: !state.useRealtimeMode);
   }
-
-  void _onAppPaused() {
-    if (state.status == ChatRecorderStatus.realtimeRecording) {
-      unawaited(stopRealtime());
-    }
-  }
-
-  // Transcribes audio with streaming updates to partialTranscript
-  Future<String> _transcribe(String filePath, int operationId) async {
-    final buffer = StringBuffer();
-    var chunkCount = 0;
-
-    await for (final chunk in _transcriptionService.transcribeStream(
-      filePath,
-    )) {
-      chunkCount++;
-      buffer.write(chunk);
-
-      getIt<DomainLogger>().log(
-        LogDomain.chat,
-        'chat_transcription_chunk_received: chunk=$chunkCount, '
-        'chunkLen=${chunk.length}, totalLen=${buffer.length}',
-        subDomain: 'transcribe',
-      );
-
-      // Update partialTranscript for progressive UI feedback
-      // Only if this operation is still current and ref is valid
-      if (operationId == _operationId && ref.mounted) {
-        state = state.copyWith(
-          status: ChatRecorderStatus.processing,
-          partialTranscript: buffer.toString(),
-        );
-      }
-    }
-
-    getIt<DomainLogger>().log(
-      LogDomain.chat,
-      'chat_transcription_completed: totalChunks=$chunkCount, '
-      'totalLen=${buffer.length}',
-      subDomain: 'transcribe',
-    );
-    return buffer.toString();
-  }
-
-  // Normalize dBFS history to 0.05..1.0 range for UI
-  List<double> getNormalizedAmplitudeHistory() {
-    const minDBFS = -80;
-    const maxDBFS = -10;
-    const rangeDBFS = maxDBFS - minDBFS; // 70
-    const minNormalized = 0.05;
-    const maxNormalized = 1;
-    const rangeNormalized = maxNormalized - minNormalized; // 0.95
-
-    return state.amplitudeHistory.map((dBFS) {
-      if (dBFS <= minDBFS) return minNormalized; // double
-      if (dBFS >= maxDBFS) return maxNormalized.toDouble();
-      final normalized = (dBFS - minDBFS) / rangeDBFS; // -80..-10 -> 0..1
-      final scaled = normalized * rangeNormalized + minNormalized;
-      return scaled.clamp(minNormalized, maxNormalized).toDouble();
-    }).toList();
-  }
-
-  Future<void> _cleanupInternal() async {
-    try {
-      await _ampSub?.cancel();
-      _ampSub = null;
-    } catch (e, s) {
-      getIt<DomainLogger>().error(
-        LogDomain.chat,
-        e,
-        stackTrace: s,
-        subDomain: 'cleanup.ampSub',
-      );
-    }
-    try {
-      await _recorder?.dispose();
-    } catch (e, s) {
-      getIt<DomainLogger>().error(
-        LogDomain.chat,
-        e,
-        stackTrace: s,
-        subDomain: 'cleanup.recorder',
-      );
-    }
-    _recorder = null;
-    _maxTimer?.cancel();
-    _maxTimer = null;
-    try {
-      if (_filePath != null) {
-        final f = File(_filePath!);
-        try {
-          await f.delete().timeout(
-            const Duration(seconds: _fileDeleteTimeoutSeconds),
-          );
-        } on PathNotFoundException catch (e, s) {
-          // Log and continue; file already gone
-          getIt<DomainLogger>().error(
-            LogDomain.chat,
-            e,
-            stackTrace: s,
-            subDomain: 'cleanup.fileNotFound',
-          );
-        }
-      }
-    } catch (e) {
-      // Log cleanup errors instead of surfacing to user state
-      getIt<DomainLogger>().error(
-        LogDomain.chat,
-        e,
-        subDomain: 'cleanup',
-      );
-    }
-    try {
-      if (_tempDir != null) {
-        try {
-          await _tempDir!
-              .delete(recursive: true)
-              .timeout(const Duration(seconds: _cleanupTimeoutSeconds));
-        } on PathNotFoundException catch (e, s) {
-          // Log and continue; directory already gone
-          getIt<DomainLogger>().error(
-            LogDomain.chat,
-            e,
-            stackTrace: s,
-            subDomain: 'cleanup.tempDirNotFound',
-          );
-        }
-      }
-    } catch (e, s) {
-      getIt<DomainLogger>().error(
-        LogDomain.chat,
-        e,
-        stackTrace: s,
-        subDomain: 'cleanup.tempDir',
-      );
-    }
-    _tempDir = null;
-    _filePath = null;
-    // Keep amplitude history so UI shows a bit of trailing bars until next start
-  }
-
-  void clearResult() {
-    if (!ref.mounted) return;
-    if (state.transcript != null || state.error != null) {
-      state = ChatRecorderState(
-        status: state.status,
-        amplitudeHistory: state.amplitudeHistory,
-        useRealtimeMode: state.useRealtimeMode,
-      );
-    }
-  }
 }
 
 final chatRecorderControllerProvider =
     NotifierProvider.autoDispose<ChatRecorderController, ChatRecorderState>(
       ChatRecorderController.new,
     );
+
+/// Only triggers on [AppLifecycleState.paused] (actual backgrounding), not on
+/// [AppLifecycleState.inactive], which fires for transient events like
+/// notification center pulls or incoming calls on iOS.
+class _AppLifecycleObserver extends WidgetsBindingObserver {
+  _AppLifecycleObserver({required this.onPaused});
+
+  final VoidCallback onPaused;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      onPaused();
+    }
+  }
+}

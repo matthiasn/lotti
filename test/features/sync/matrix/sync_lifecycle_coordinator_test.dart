@@ -3,183 +3,18 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-// MockMatrixSyncGateway / MockMatrixSessionManager / MockSyncRoomManager come
-// from the centralized test/mocks/mocks.dart. SyncPipeline has no centralized
-// mock, so MockPipeline is declared locally.
-class MockPipeline extends Mock implements SyncPipeline {}
-
-class _FakeClient extends Fake implements Client {}
-
-class _ManualLoginStateStream extends Stream<LoginState> {
-  void Function(LoginState)? handler;
-
-  @override
-  StreamSubscription<LoginState> listen(
-    void Function(LoginState event)? onData, {
-    Function? onError,
-    void Function()? onDone,
-    bool? cancelOnError,
-  }) {
-    handler = onData;
-    return _NoopLoginStateSubscription();
-  }
-}
-
-class _NoopLoginStateSubscription implements StreamSubscription<LoginState> {
-  @override
-  Future<void> cancel() async {}
-
-  @override
-  Future<E> asFuture<E>([E? futureValue]) => Completer<E>().future;
-
-  @override
-  bool get isPaused => false;
-
-  @override
-  void onData(void Function(LoginState data)? handleData) {}
-
-  @override
-  void onDone(void Function()? handleDone) {}
-
-  @override
-  void onError(Function? handleError) {}
-
-  @override
-  void pause([Future<void>? resumeSignal]) {}
-
-  @override
-  void resume() {}
-}
-
-enum _GeneratedLifecycleOperationKind {
-  loggedInEvent,
-  loggedOutEvent,
-  reconcileLoggedIn,
-  reconcileLoggedOut,
-  initializeAgain,
-  disposeCoordinator,
-}
-
-class _GeneratedLifecycleOperation {
-  const _GeneratedLifecycleOperation(this.kind);
-
-  final _GeneratedLifecycleOperationKind kind;
-
-  @override
-  String toString() => kind.name;
-}
-
-class _GeneratedLifecycleExpected {
-  const _GeneratedLifecycleExpected({
-    required this.pipelineStarts,
-    required this.pipelineDisposes,
-    required this.finalActive,
-  });
-
-  final int pipelineStarts;
-  final int pipelineDisposes;
-  final bool finalActive;
-}
-
-class _GeneratedLifecycleScenario {
-  const _GeneratedLifecycleScenario({
-    required this.initiallyLoggedIn,
-    required this.operations,
-  });
-
-  final bool initiallyLoggedIn;
-  final List<_GeneratedLifecycleOperation> operations;
-
-  _GeneratedLifecycleExpected expected() {
-    var active = initiallyLoggedIn;
-    var subscriptionActive = true;
-    var disposed = false;
-    var starts = initiallyLoggedIn ? 1 : 0;
-    var disposes = 0;
-
-    for (final operation in operations) {
-      switch (operation.kind) {
-        case _GeneratedLifecycleOperationKind.loggedInEvent:
-          if (!disposed && subscriptionActive && !active) {
-            active = true;
-            starts++;
-          }
-        case _GeneratedLifecycleOperationKind.loggedOutEvent:
-          if (!disposed && subscriptionActive && active) {
-            active = false;
-            disposes++;
-          }
-        case _GeneratedLifecycleOperationKind.reconcileLoggedIn:
-          if (!disposed && !active) {
-            active = true;
-            starts++;
-          }
-        case _GeneratedLifecycleOperationKind.reconcileLoggedOut:
-          if (!disposed && active) {
-            active = false;
-            disposes++;
-          }
-        case _GeneratedLifecycleOperationKind.initializeAgain:
-          break;
-        case _GeneratedLifecycleOperationKind.disposeCoordinator:
-          disposed = true;
-          subscriptionActive = false;
-          active = false;
-      }
-    }
-
-    return _GeneratedLifecycleExpected(
-      pipelineStarts: starts,
-      pipelineDisposes: disposes,
-      finalActive: active,
-    );
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedLifecycleScenario('
-        'initiallyLoggedIn: $initiallyLoggedIn, '
-        'operations: $operations'
-        ')';
-  }
-}
-
-extension _AnyGeneratedLifecycleScenario on glados.Any {
-  glados.Generator<_GeneratedLifecycleOperationKind>
-  get lifecycleOperationKind =>
-      glados.AnyUtils(this).choose(_GeneratedLifecycleOperationKind.values);
-
-  glados.Generator<_GeneratedLifecycleOperation> get lifecycleOperation =>
-      lifecycleOperationKind.map(_GeneratedLifecycleOperation.new);
-
-  glados.Generator<_GeneratedLifecycleScenario> get lifecycleScenario =>
-      glados.CombinableAny(this).combine2(
-        glados.BoolAny(this).bool,
-        glados.ListAnys(
-          this,
-        ).listWithLengthInRange(0, 28, lifecycleOperation),
-        (
-          bool initiallyLoggedIn,
-          List<_GeneratedLifecycleOperation> operations,
-        ) => _GeneratedLifecycleScenario(
-          initiallyLoggedIn: initiallyLoggedIn,
-          operations: operations,
-        ),
-      );
-}
+import 'sync_lifecycle_coordinator_test_helpers.dart';
 
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
-    registerFallbackValue(_FakeClient());
+    registerFallbackValue(FakeClient());
   });
 
   group('SyncLifecycleCoordinator with pipeline', () {
@@ -346,7 +181,7 @@ void main() {
           // Use a stream that captures the listener so we can invoke it
           // directly after dispose has set _isDisposed = true. This simulates
           // a delivery that races with subscription cancellation.
-          final manual = _ManualLoginStateStream();
+          final manual = ManualLoginStateStream();
           when(() => gateway.loginStateChanges).thenAnswer((_) => manual);
           when(() => sessionManager.isLoggedIn()).thenReturn(false);
 
@@ -584,19 +419,19 @@ void main() {
 
           for (final operation in scenario.operations) {
             switch (operation.kind) {
-              case _GeneratedLifecycleOperationKind.loggedInEvent:
+              case GeneratedLifecycleOperationKind.loggedInEvent:
                 loginStates.add(LoginState.loggedIn);
-              case _GeneratedLifecycleOperationKind.loggedOutEvent:
+              case GeneratedLifecycleOperationKind.loggedOutEvent:
                 loginStates.add(LoginState.loggedOut);
-              case _GeneratedLifecycleOperationKind.reconcileLoggedIn:
+              case GeneratedLifecycleOperationKind.reconcileLoggedIn:
                 loggedIn = true;
                 unawaited(coord.reconcileLifecycleState());
-              case _GeneratedLifecycleOperationKind.reconcileLoggedOut:
+              case GeneratedLifecycleOperationKind.reconcileLoggedOut:
                 loggedIn = false;
                 unawaited(coord.reconcileLifecycleState());
-              case _GeneratedLifecycleOperationKind.initializeAgain:
+              case GeneratedLifecycleOperationKind.initializeAgain:
                 unawaited(coord.initialize());
-              case _GeneratedLifecycleOperationKind.disposeCoordinator:
+              case GeneratedLifecycleOperationKind.disposeCoordinator:
                 unawaited(coord.dispose());
             }
             async.flushMicrotasks();

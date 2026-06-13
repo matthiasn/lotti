@@ -1,7 +1,12 @@
-part of 'task_detail_pane.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _AiSummaryCard extends StatelessWidget {
-  const _AiSummaryCard({required this.summary});
+class AiSummaryCard extends StatelessWidget {
+  const AiSummaryCard({required this.summary, super.key});
 
   final String summary;
 
@@ -67,8 +72,8 @@ class _AiSummaryCard extends StatelessWidget {
   }
 }
 
-class _DescriptionCard extends StatelessWidget {
-  const _DescriptionCard({required this.description});
+class DescriptionCard extends StatelessWidget {
+  const DescriptionCard({required this.description, super.key});
 
   final String description;
 
@@ -101,8 +106,8 @@ class _DescriptionCard extends StatelessWidget {
   }
 }
 
-class _TimeTrackerCard extends StatelessWidget {
-  const _TimeTrackerCard({required this.record});
+class TimeTrackerCard extends StatelessWidget {
+  const TimeTrackerCard({required this.record, super.key});
 
   final TaskRecord record;
 
@@ -229,8 +234,8 @@ class _TimeEntryTile extends StatelessWidget {
   }
 }
 
-class _ChecklistCard extends StatelessWidget {
-  const _ChecklistCard({required this.record});
+class ChecklistCard extends StatelessWidget {
+  const ChecklistCard({required this.record, super.key});
 
   final TaskRecord record;
 
@@ -336,8 +341,8 @@ class _ChecklistCard extends StatelessWidget {
   }
 }
 
-class _AudioCard extends StatelessWidget {
-  const _AudioCard({required this.entries});
+class AudioCard extends StatelessWidget {
+  const AudioCard({required this.entries, super.key});
 
   final List<TaskShowcaseAudioEntry> entries;
 

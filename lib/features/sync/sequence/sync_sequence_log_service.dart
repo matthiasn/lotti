@@ -1,380 +1,138 @@
-import 'dart:collection';
-import 'dart:math' as math;
-
-import 'package:clock/clock.dart';
-import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_backfill_queries.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_backfill_responder.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_cache.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_gap_materializer.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_missing_notifier.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_receiver.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_sender.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_tracer.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:meta/meta.dart';
 
-part 'sync_sequence_gap_materializer.dart';
-part 'sync_sequence_gap_model.dart';
-
-typedef _GapRange = ({String hostId, int startCounter, int endCounter});
-
 /// Service for managing the sync sequence log, which tracks received entries
 /// by (hostId, counter) pairs to detect gaps and enable backfill requests.
+///
+/// This is a thin facade. It instantiates a set of collaborators and delegates
+/// every public method to the one that owns it:
+///
+/// - [SyncSequenceCache] — the SINGLE owner of every mutable in-memory cache
+///   (per-host activity / watermark / materialized-bound maps and the
+///   last-sent LRU). Injected into every collaborator that records or reads
+///   sequence data so dedup and watermark bookkeeping stay coherent.
+/// - [SyncSequenceTracer] — sync-domain log routing shared by all collaborators.
+/// - [SyncSequenceMissingNotifier] — owns the deferred "missing entries
+///   detected" notification state surfaced via [onMissingEntriesDetected] and
+///   [runWithDeferredMissingEntries].
+/// - [SyncSequenceGapMaterializer] — large-gap materialization and
+///   covered-counter bookkeeping.
+/// - [SyncSequenceSender] — records entries sent by this device.
+/// - [SyncSequenceReceiver] — records received entries and detects gaps.
+/// - [SyncSequenceBackfillResponder] — handles incoming backfill responses and
+///   pending-hint resolution.
+/// - [SyncSequenceBackfillQueries] — read-mostly backfill queries and the
+///   journal/link/agent population path.
 class SyncSequenceLogService {
   SyncSequenceLogService({
-    required this._syncDatabase,
-    required this._vectorClockService,
-    required this._loggingService,
-    this._domainLogger,
-  });
-
-  final SyncDatabase _syncDatabase;
-  final VectorClockService _vectorClockService;
-  final DomainLogger _loggingService;
-  final DomainLogger? _domainLogger;
-  void Function()? onMissingEntriesDetected;
-  int _deferredMissingEntriesDepth = 0;
-  bool _pendingMissingEntriesDetected = false;
-
-  void _trace(String message, {String? subDomain}) {
-    final sub = subDomain ?? 'sequence';
-    final domainLogger = _domainLogger;
-    if (domainLogger != null) {
-      domainLogger.log(LogDomain.sync, message, subDomain: sub);
-      return;
-    }
-    // Fallback for callers that did not inject a DomainLogger (e.g. tests).
-    // Emitting directly under the `sync` domain keeps sync-file routing in
-    // DomainLogger working so the log line still lands in the sync file.
-    _loggingService.log(
-      LogDomain.sync,
-      message,
-      subDomain: sub,
+    required SyncDatabase syncDatabase,
+    required VectorClockService vectorClockService,
+    required DomainLogger loggingService,
+    DomainLogger? domainLogger,
+  }) {
+    _cache = SyncSequenceCache(syncDatabase);
+    _tracer = SyncSequenceTracer(
+      loggingService: loggingService,
+      domainLogger: domainLogger,
+    );
+    _missingNotifier = SyncSequenceMissingNotifier(tracer: _tracer);
+    _gapMaterializer = SyncSequenceGapMaterializer(
+      syncDatabase: syncDatabase,
+      cache: _cache,
+      tracer: _tracer,
+    );
+    _sender = SyncSequenceSender(
+      syncDatabase: syncDatabase,
+      vectorClockService: vectorClockService,
+      cache: _cache,
+      tracer: _tracer,
+    );
+    _backfillResponder = SyncSequenceBackfillResponder(
+      syncDatabase: syncDatabase,
+      cache: _cache,
+      tracer: _tracer,
+    );
+    _receiver = SyncSequenceReceiver(
+      syncDatabase: syncDatabase,
+      vectorClockService: vectorClockService,
+      cache: _cache,
+      gapMaterializer: _gapMaterializer,
+      backfillResponder: _backfillResponder,
+      missingNotifier: _missingNotifier,
+      tracer: _tracer,
+    );
+    _backfillQueries = SyncSequenceBackfillQueries(
+      syncDatabase: syncDatabase,
+      cache: _cache,
+      receiver: _receiver,
+      tracer: _tracer,
     );
   }
 
+  late final SyncSequenceCache _cache;
+  late final SyncSequenceTracer _tracer;
+  late final SyncSequenceMissingNotifier _missingNotifier;
+  late final SyncSequenceGapMaterializer _gapMaterializer;
+  late final SyncSequenceSender _sender;
+  late final SyncSequenceReceiver _receiver;
+  late final SyncSequenceBackfillResponder _backfillResponder;
+  late final SyncSequenceBackfillQueries _backfillQueries;
+
+  // ── Missing-entries notification ────────────────────────────────────────
+
+  /// Invoked when new missing entries are detected (and not currently
+  /// deferred). The owner wires the automatic backfill nudge here.
+  set onMissingEntriesDetected(void Function()? callback) =>
+      _missingNotifier.onMissingEntriesDetected = callback;
+
+  void Function()? get onMissingEntriesDetected =>
+      _missingNotifier.onMissingEntriesDetected;
+
+  /// Run [action] with the automatic backfill nudge deferred until the
+  /// outermost ordered-replay batch settles.
   Future<T> runWithDeferredMissingEntries<T>(
     Future<T> Function() action,
-  ) async {
-    _deferredMissingEntriesDepth++;
-    try {
-      return await action();
-    } finally {
-      _deferredMissingEntriesDepth--;
-      if (_deferredMissingEntriesDepth == 0 && _pendingMissingEntriesDetected) {
-        _pendingMissingEntriesDetected = false;
-        _emitMissingEntriesDetected();
-      }
-    }
-  }
+  ) => _missingNotifier.runWithDeferredMissingEntries(action);
 
-  void _emitMissingEntriesDetected() {
-    final callback = onMissingEntriesDetected;
-    if (callback == null) return;
-    try {
-      callback();
-    } catch (e, st) {
-      _loggingService.error(
-        LogDomain.sync,
-        e,
-        stackTrace: st,
-        subDomain: 'missingEntriesDetected',
-      );
-    }
-  }
-
-  // ============ Host Activity Cache ============
-  // Reduces O(hosts_in_VC) DB queries per incoming entry by caching
-  // getHostLastSeen() and getLastCounterForHost() results with a short TTL.
-
-  final _hostActivityCache = <String, DateTime?>{};
-  final _lastCounterCache = <String, int?>{};
-  // Highest counter per host for which we have already materialized the
-  // `(gapBaseline + 1 .. counter - 1)` missing range into the sequence log.
-  // Each incoming entry whose observed counter is not strictly greater than
-  // this bound describes a gap that is already recorded, so the full
-  // `getCountersForHostInRange` + batch-insert pass would scan thousands of
-  // rows just to produce `inserted=0`. Skipping it removes the dominant
-  // redundant DB cost on hosts that carry a pre-history gap.
-  final _materializedUpperBound = <String, int>{};
-
-  // Last-sent counter per (myHost, entryId). The outbox calls
-  // `getLastSentVectorClockForEntry` on every enqueue to build covered
-  // vector clocks; without this cache each call hit the UI isolate with a
-  // `SELECT ... FROM sync_sequence_log` that, on a 329k-row table with hot
-  // entry_ids, routinely took 40–600 ms and dominated the image-paste
-  // freeze. LRU-bounded; entries are added on lookup and refreshed on
-  // `recordSentEntry` so the cached value cannot lag a concurrent write.
-  final LinkedHashMap<String, int?> _lastSentCounterByEntry =
-      LinkedHashMap<String, int?>();
-  static const int _lastSentCounterCacheCapacity = 2048;
-
-  // Per-host TTL for `_hostActivityCache`, `_lastCounterCache`, and
-  // `_materializedUpperBound` (all keyed by hostId). The earlier shape
-  // tracked a single global `_cacheExpiry` and dropped every host's
-  // entry when the wall-clock timer ticked over — which produced the
-  // 200–500 ms `getLastCounterForHost` waves visible in the
-  // 2026-05-10 super-slow log: a quiet host's cached watermark got
-  // wiped just because some unrelated host had been active 5 minutes
-  // earlier. With per-host expiry, an inactive host stays cached
-  // until it's actually queried again.
-  final Map<String, DateTime> _hostCacheExpiry = <String, DateTime>{};
-
-  // Separate global TTL for the entry-keyed `_lastSentCounterByEntry`
-  // LRU. It is keyed by `host::entryId` and is also size-bounded by
-  // [_lastSentCounterCacheCapacity], so eviction is dominated by LRU
-  // pressure under normal load. The TTL stays as a belt-and-braces
-  // guard against rare cross-process drift and matches the semantics
-  // a test in this file pins (`expireCacheForTesting()` re-queries on
-  // the next call).
-  DateTime? _lastSentCacheExpiry;
-  static const _cacheTtl = Duration(minutes: 5);
-
-  bool _isHostCacheExpired(String hostId, DateTime now) {
-    final expiry = _hostCacheExpiry[hostId];
-    return expiry != null && now.isAfter(expiry);
-  }
-
-  void _evictHost(String hostId) {
-    _hostActivityCache.remove(hostId);
-    _lastCounterCache.remove(hostId);
-    _materializedUpperBound.remove(hostId);
-    _hostCacheExpiry.remove(hostId);
-  }
-
-  void _refreshHostCacheWindow(String hostId) {
-    _hostCacheExpiry[hostId] = clock.now().add(_cacheTtl);
-  }
-
-  void _invalidateLastSentCacheIfExpired() {
-    final now = clock.now();
-    if (_lastSentCacheExpiry != null && now.isAfter(_lastSentCacheExpiry!)) {
-      _lastSentCounterByEntry.clear();
-      _lastSentCacheExpiry = null;
-    }
-  }
-
-  void _ensureLastSentCacheWindow() {
-    _lastSentCacheExpiry ??= clock.now().add(_cacheTtl);
-  }
-
-  String _lastSentCacheKey(String hostId, String entryId) =>
-      '$hostId::$entryId';
-
-  void _touchLastSentCache(String key, int? value) {
-    _lastSentCounterByEntry
-      ..remove(key)
-      ..[key] = value;
-    while (_lastSentCounterByEntry.length > _lastSentCounterCacheCapacity) {
-      _lastSentCounterByEntry.remove(_lastSentCounterByEntry.keys.first);
-    }
-  }
-
-  Future<DateTime?> _getCachedHostLastSeen(String hostId) async {
-    if (_isHostCacheExpired(hostId, clock.now())) {
-      _evictHost(hostId);
-    }
-    if (_hostActivityCache.containsKey(hostId)) {
-      return _hostActivityCache[hostId];
-    }
-    final result = await _syncDatabase.getHostLastSeen(hostId);
-    _hostActivityCache[hostId] = result;
-    _refreshHostCacheWindow(hostId);
-    return result;
-  }
-
-  Future<int?> _getCachedLastCounterForHost(String hostId) async {
-    // Per-host expiry is enforced by `_getCachedHostLastSeen`, which
-    // every caller of this helper invokes first for the same hostId
-    // (see `recordReceivedEntry`). `_evictHost` clears every per-host
-    // map together, so by the time we get here the cache is either
-    // fresh or absent — no need to re-check the window.
-    if (_lastCounterCache.containsKey(hostId)) {
-      return _lastCounterCache[hostId];
-    }
-    final result = await _syncDatabase.getLastCounterForHost(hostId);
-    _lastCounterCache[hostId] = result;
-    _refreshHostCacheWindow(hostId);
-    return result;
-  }
-
-  /// Invalidate cache entries for a specific host after recording new data.
-  void _invalidateCacheForHost(String hostId) {
-    _lastCounterCache.remove(hostId);
-    // Don't remove host activity — it's updated via updateHostActivity
-    // which we track separately.
-  }
-
-  /// Conservatively advance [_lastCounterCache] for [hostId] after a
-  /// successful insert/update of [counter] in a watermark-eligible status.
-  /// Replaces the per-record `_invalidateCacheForHost` previously fired on
-  /// every recorded counter — under heavy backfill that was the dominant
-  /// source of slow-query traffic on the watermark CTE
-  /// (`getLastCounterForHost`), because every child of an outbox bundle
-  /// invalidated the cache and the next child's `_getCachedLastCounterForHost`
-  /// re-ran the slow CTE end-to-end. With 50 children sharing one host,
-  /// 50 cache misses became 1 miss + 49 hits.
-  ///
-  /// Correctness: the cache stores the highest contiguous resolved counter
-  /// from 1 for [hostId]. We only advance when [counter] is exactly
-  /// `current + 1` (or `1` from a `null`/cold-cache state), which is the
-  /// only case where the contiguous prefix is provably extended without a
-  /// DB query. Counters that skip ahead (gap) or fall inside an existing
-  /// gap leave the cache alone — under-reporting is safe (it just causes
-  /// extra-cautious gap detection on the next read). Over-reporting would
-  /// be unsafe (we could miss real gaps); this helper never does that.
-  ///
-  /// Status transitions that could shorten the prefix (e.g. a record
-  /// flipping back to a non-watermark status) still flow through
-  /// [_invalidateCacheForHost] from their own call sites, so we do not
-  /// need to worry about that case here.
-  void _advanceLastCounterCache(String hostId, int counter) {
-    if (!_lastCounterCache.containsKey(hostId)) {
-      // Cache slot is cold — leave it that way so the next read computes
-      // the true watermark via SQL. Pre-populating from a single record
-      // would over-report when earlier counters are still missing.
-      return;
-    }
-    final current = _lastCounterCache[hostId];
-    if (current == null) {
-      if (counter == 1) {
-        _lastCounterCache[hostId] = 1;
-        // Active host — push the per-host TTL out so a long backfill
-        // does not expire the cache mid-run.
-        _refreshHostCacheWindow(hostId);
-      }
-      return;
-    }
-    if (counter <= current) {
-      // Already covered by the cached prefix — no change.
-      return;
-    }
-    if (counter == current + 1) {
-      _lastCounterCache[hostId] = counter;
-      _refreshHostCacheWindow(hostId);
-    }
-    // counter > current + 1: gap (truth might extend further if other
-    // counters were resolved out-of-order, but we cannot prove it without
-    // a query). Leave the cache at its safe lower-bound value.
-  }
-
-  /// Force-expire every cache. Used in tests to verify that expired
-  /// caches are cleared and the DB is re-queried.
-  ///
-  /// Wipes both the per-host caches (host activity, last counter,
-  /// materialized upper bound) and the entry-keyed last-sent counter
-  /// LRU so existing tests that assert re-query behaviour after
-  /// expiry see a fully cold cache regardless of which lookup
-  /// surface they exercise.
-  @visibleForTesting
-  void expireCacheForTesting() {
-    _hostActivityCache.clear();
-    _lastCounterCache.clear();
-    _materializedUpperBound.clear();
-    _hostCacheExpiry.clear();
-    _lastSentCounterByEntry.clear();
-    _lastSentCacheExpiry = null;
-  }
+  // ── Send path ───────────────────────────────────────────────────────────
 
   /// Record an entry being sent by this device.
-  /// This allows us to respond to backfill requests from other devices.
   Future<void> recordSentEntry({
     required String entryId,
     required VectorClock vectorClock,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
-  }) async {
-    final myHost = await _vectorClockService.getHost();
-
-    for (final entry in vectorClock.vclock.entries) {
-      final hostId = entry.key;
-      final counter = entry.value;
-
-      // Only record entries for our own host when sending
-      if (hostId != myHost) continue;
-
-      final now = DateTime.now();
-      await _syncDatabase.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: Value(hostId),
-          counter: Value(counter),
-          entryId: Value(entryId),
-          payloadType: Value(payloadType.index),
-          originatingHostId: Value(myHost),
-          status: Value(SyncSequenceStatus.received.index),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
-
-      // Keep the cache consistent with the write we just issued so a
-      // subsequent `getLastSentVectorClockForEntry` does not race back to
-      // the DB for a value we already know.
-      final cacheKey = _lastSentCacheKey(hostId, entryId);
-      final previous = _lastSentCounterByEntry[cacheKey];
-      if (previous == null || counter > previous) {
-        _touchLastSentCache(cacheKey, counter);
-      }
-
-      _trace(
-        'recordSentEntry type=$payloadType hostId=$hostId counter=$counter entryId=$entryId',
-        subDomain: 'sequence.recordSent',
-      );
-    }
-  }
+  }) => _sender.recordSentEntry(
+    entryId: entryId,
+    vectorClock: vectorClock,
+    payloadType: payloadType,
+  );
 
   Future<void> recordSentEntryLink({
     required String linkId,
     required VectorClock vectorClock,
-  }) async {
-    await recordSentEntry(
-      entryId: linkId,
-      vectorClock: vectorClock,
-      payloadType: SyncSequencePayloadType.entryLink,
-    );
-  }
+  }) => _sender.recordSentEntryLink(linkId: linkId, vectorClock: vectorClock);
+
+  // ── Receive path ──────────────────────────────────────────────────────────
 
   /// Returns the last sent vector clock for [entryId] from this host's
-  /// perspective.  Used by the outbox to build covered vector clocks when a
-  /// new version is enqueued but the previous version was already sent.
-  Future<VectorClock?> getLastSentVectorClockForEntry(String entryId) async {
-    final myHost = await _vectorClockService.getHost();
-    if (myHost == null) return null;
-    _invalidateLastSentCacheIfExpired();
-    _ensureLastSentCacheWindow();
-    final cacheKey = _lastSentCacheKey(myHost, entryId);
-    int? counter;
-    if (_lastSentCounterByEntry.containsKey(cacheKey)) {
-      counter = _lastSentCounterByEntry[cacheKey];
-      // Refresh LRU position on hit so active entries stay resident.
-      _touchLastSentCache(cacheKey, counter);
-    } else {
-      counter = await _syncDatabase.getLastSentCounterForEntry(
-        myHost,
-        entryId,
-      );
-      _touchLastSentCache(cacheKey, counter);
-    }
-    if (counter == null) return null;
-    return VectorClock({myHost: counter});
-  }
+  /// perspective. Used by the outbox to build covered vector clocks.
+  Future<VectorClock?> getLastSentVectorClockForEntry(String entryId) =>
+      _receiver.getLastSentVectorClockForEntry(entryId);
 
   /// Record a received entry and detect gaps in the sequence.
-  /// Returns a read-only list of detected gaps as `(hostId, counter)` records.
-  /// The list may be backed by logical ranges so very large gaps do not
-  /// allocate one in-memory record per missing counter.
-  ///
-  /// The [originatingHostId] identifies which host created/modified this entry.
-  /// This must be provided by the sender in the sync message.
-  ///
-  /// Gap detection is performed for ALL hosts in the vector clock (except our
-  /// own host). This allows us to detect missing entries even from hosts other
-  /// than the originator - the VC tells us what counters exist.
-  ///
-  /// Only the originating host's counter is recorded with the entryId.
-  /// Other hosts' counters are tracked for gap detection only.
-  ///
-  /// [coveredVectorClocks] contains vector clocks for this payload, including
-  /// superseded outbox entries and the current vector clock. The current vector
-  /// clock is ignored when pre-marking covered counters to avoid suppressing
-  /// genuine gap detection for the payload itself.
   Future<List<({String hostId, int counter})>> recordReceivedEntry({
     required String entryId,
     required VectorClock vectorClock,
@@ -382,553 +140,72 @@ class SyncSequenceLogService {
     List<VectorClock>? coveredVectorClocks,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
     String? jsonPath,
-  }) async {
-    final gaps = _GapAccumulator();
-    var newMissingDetected = false;
-    final myHost = await _vectorClockService.getHost();
-    final now = DateTime.now();
+  }) => _receiver.recordReceivedEntry(
+    entryId: entryId,
+    vectorClock: vectorClock,
+    originatingHostId: originatingHostId,
+    coveredVectorClocks: coveredVectorClocks,
+    payloadType: payloadType,
+    jsonPath: jsonPath,
+  );
 
-    // Update host activity for the originating host - they're online!
-    await _syncDatabase.updateHostActivity(originatingHostId, now);
-    // Update cache so subsequent checks in this batch see the new activity
-    _hostActivityCache[originatingHostId] = now;
+  Future<List<({String hostId, int counter})>> recordReceivedEntryLink({
+    required String linkId,
+    required VectorClock vectorClock,
+    required String originatingHostId,
+    List<VectorClock>? coveredVectorClocks,
+  }) => _backfillQueries.recordReceivedEntryLink(
+    linkId: linkId,
+    vectorClock: vectorClock,
+    originatingHostId: originatingHostId,
+    coveredVectorClocks: coveredVectorClocks,
+  );
 
-    // IMPORTANT: Process covered vector clocks BEFORE gap detection.
-    // This prevents false positives: covered counters are pre-emptively marked
-    // as received, so gap detection (which checks `existing == null`) will
-    // skip them instead of incorrectly marking them as missing.
-    final filteredCovered = _filterCoveredVectorClocks(
-      coveredVectorClocks,
-      vectorClock,
-    );
-    if (filteredCovered.isNotEmpty && myHost != null) {
-      _trace(
-        'recordReceivedEntry: coveredVCs count=${filteredCovered.length} '
-        'clocks=${filteredCovered.map((vc) => vc.vclock).toList()} '
-        'entryId=$entryId type=$payloadType',
-        subDomain: 'sequence.coveredClocks',
-      );
-      await _markCoveredCountersAsReceived(
-        coveredVectorClocks: filteredCovered,
-        entryId: entryId,
-        payloadType: payloadType,
-        myHost: myHost,
-      );
-    }
+  /// Cheap existence probe for any actionable (`missing`/`requested`) row.
+  Future<bool> hasActionableEntries() => _receiver.hasActionableEntries();
 
-    // Check gaps for ALL hosts in the VC (except ourselves)
-    for (final entry in vectorClock.vclock.entries) {
-      final hostId = entry.key;
-      final counter = entry.value;
-
-      // Skip our own host
-      if (hostId == myHost) continue;
-
-      // Only detect gaps for hosts that have been seen "online" (i.e., have
-      // sent us a message directly). This prevents false positive gaps for
-      // hosts we've never communicated with - we may see their counters in
-      // vector clocks from other hosts, but we can't know if entries are
-      // actually missing without having established communication with them.
-      // The originating host is always considered online (we just updated
-      // their activity above).
-      //
-      // Note: We still record the sequence entry for offline hosts (below),
-      // just skip gap detection. This allows us to respond to backfill
-      // requests later if the host comes online.
-      final hostLastOnline = await _getCachedHostLastSeen(hostId);
-      final shouldDetectGaps =
-          hostLastOnline != null || hostId == originatingHostId;
-
-      if (!shouldDetectGaps) {
-        _trace(
-          'skipGapDetection hostId=$hostId counter=$counter - host never seen online',
-          subDomain: 'sequence.skipGap',
-        );
-      }
-
-      final lastSeen = await _getCachedLastCounterForHost(hostId);
-      // For hosts that are currently considered online, an unknown contiguous
-      // prefix still means "we have not resolved counter 1 yet", not "there can
-      // be no gap". Treat that as watermark 0 so the first observed counter can
-      // materialize the missing prefix instead of silently skipping it.
-      final gapBaseline = shouldDetectGaps ? (lastSeen ?? 0) : null;
-      var smallGapRangeResolvedBeforeObserved = false;
-
-      if (gapBaseline != null && counter > gapBaseline + 1) {
-        // Gap detected! Mark missing counters for this host.
-        //
-        // The returned `gaps` list is only consumed by callers for logging
-        // (`apply.*.gapsDetected`). Adding the full `startCounter..counter-1`
-        // range every time causes that log line to re-fire on every event
-        // for a permanent pre-history gap (we saw `count=7344` per event in
-        // production). Push the actual range-add down into the branches
-        // below so an incremental extension contributes only the newly
-        // materialised sub-range.
-        final gapSize = counter - gapBaseline - 1;
-        final startCounter = gapBaseline + 1;
-
-        if (gapSize > SyncTuning.maxGapSize) {
-          // Skip re-materialization when the observed range is fully covered
-          // by a previously materialized one for this host. Without this
-          // guard, every incoming event on a host that carries a permanent
-          // pre-history gap re-runs a multi-chunk scan of the sequence log
-          // just to discover `inserted=0`, which dominates the mobile sync
-          // cost and the desktop log volume.
-          final previousBound = _materializedUpperBound[hostId];
-          final endCounter = counter - 1;
-          final alreadyMaterialized =
-              previousBound != null && previousBound >= endCounter;
-          if (!alreadyMaterialized) {
-            final effectiveStart = previousBound == null
-                ? startCounter
-                : math.max(startCounter, previousBound + 1);
-            final effectiveSize = endCounter - effectiveStart + 1;
-            // Only treat this as an "incremental extension" when the current
-            // gap actually overlaps the previously materialised range
-            // (`startCounter <= previousBound`). A disjoint new large gap on
-            // the same host — e.g. after the host recovered and regressed
-            // again — must re-emit the log and re-nudge backfill instead of
-            // being silently rolled into the prior range's bookkeeping.
-            final isIncrementalExtension =
-                previousBound != null && startCounter <= previousBound;
-            gaps.addRange(
-              hostId: hostId,
-              startCounter: effectiveStart,
-              endCounter: endCounter,
-            );
-            // On a permanent pre-history gap, every new event advances the
-            // bound by one counter. Logging the 7000+ "gap size" every time
-            // dominates desktop log volume and says nothing new. Only log the
-            // first materialisation of the range; subsequent incremental
-            // extensions stay silent.
-            if (!isIncrementalExtension) {
-              _trace(
-                'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
-                subDomain: 'sequence.largeGap',
-              );
-            }
-            final insertedCount = await _materializeLargeGap(
-              hostId: hostId,
-              startCounter: effectiveStart,
-              endCounter: endCounter,
-              gapSize: effectiveSize,
-              originatingHostId: originatingHostId,
-              now: now,
-            );
-            // `previousBound < endCounter` on this branch, so direct assignment
-            // is the max — no `math.max` needed.
-            _materializedUpperBound[hostId] = endCounter;
-            if (insertedCount > 0) {
-              // Any newly inserted missing rows must drive a backfill nudge,
-              // including the incremental-extension case where the observed
-              // counter jumps past `previousBound` by more than one. Only the
-              // noisy `sequence.gapDetected` trace is suppressed for the
-              // one-counter-at-a-time incremental case.
-              newMissingDetected = true;
-              if (!isIncrementalExtension) {
-                _trace(
-                  'gapDetectedRange hostId=$hostId start=$effectiveStart end=$endCounter '
-                  'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
-                  subDomain: 'sequence.gapDetected',
-                );
-              }
-            }
-          }
-          // Fall through to the originator/other-host record block below so
-          // the incoming `(hostId, counter)` row is still upserted; skipping
-          // it would itself block the watermark from ever advancing.
-        } else {
-          // Small gap (≤ SyncTuning.maxGapSize). The cached watermark is a
-          // conservative lower bound, so it can lag behind already-resolved
-          // out-of-order counters. Only return counters that are absent or
-          // still unresolved; otherwise callers log stale false gaps.
-          final existingCounters = await _syncDatabase
-              .getCountersForHostInRange(
-                hostId,
-                startCounter,
-                counter - 1,
-              );
-          final missingEntries = <SyncSequenceLogCompanion>[];
-          var unresolvedGapDetected = false;
-          for (var i = startCounter; i < counter; i++) {
-            // Keep the small-gap path explicit because the per-counter logging
-            // is still useful when debugging ordinary out-of-order delivery.
-            if (!existingCounters.contains(i)) {
-              unresolvedGapDetected = true;
-              gaps.addRange(hostId: hostId, startCounter: i, endCounter: i);
-              missingEntries.add(
-                SyncSequenceLogCompanion(
-                  hostId: Value(hostId),
-                  counter: Value(i),
-                  originatingHostId: Value(originatingHostId),
-                  status: Value(SyncSequenceStatus.missing.index),
-                  createdAt: Value(now),
-                  updatedAt: Value(now),
-                ),
-              );
-              newMissingDetected = true;
-
-              _trace(
-                'gapDetected hostId=$hostId counter=$i (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
-                subDomain: 'sequence.gapDetected',
-              );
-            } else {
-              final existing = await _syncDatabase.getEntryByHostAndCounter(
-                hostId,
-                i,
-              );
-              if (existing == null ||
-                  !_isResolvedSequenceStatusIndex(existing.status)) {
-                unresolvedGapDetected = true;
-                gaps.addRange(hostId: hostId, startCounter: i, endCounter: i);
-              }
-            }
-          }
-          smallGapRangeResolvedBeforeObserved = !unresolvedGapDetected;
-          if (missingEntries.isNotEmpty) {
-            await _syncDatabase.batchInsertSequenceEntries(missingEntries);
-          }
-        }
-      }
-
-      // For the originator, record the actual entry with entryId
-      if (hostId == originatingHostId) {
-        final existing = await _syncDatabase.getEntryByHostAndCounter(
-          hostId,
-          counter,
-        );
-
-        if (existing != null &&
-            existing.status == SyncSequenceStatus.burned.index) {
-          // burned is the authoritative terminal non-event: never reopen it,
-          // and never overwrite its empty payload mapping with the received
-          // entity's id. The originator re-sending its own burnt counter is a
-          // contradiction we ignore. Mirrors the handleBackfillResponse hint
-          // guard so burned has no outgoing edges on any receive path. The row
-          // is already resolved, so the forward-only watermark-cache advance we
-          // skip here is a no-op.
-          _trace(
-            'recordReceivedEntry: burned preserved (originator) '
-            'hostId=$hostId counter=$counter',
-            subDomain: 'sequence.burnPreserved',
-          );
-          continue;
-        }
-
-        // Determine the new status:
-        // - If already received/backfilled → keep existing status (don't downgrade)
-        // - If we explicitly requested this entry → backfilled (request fulfilled)
-        // - If it was missing but not yet requested → received (arrived via normal sync)
-        // - Otherwise → received
-        final SyncSequenceStatus status;
-        if (existing != null &&
-            (existing.status == SyncSequenceStatus.received.index ||
-                existing.status == SyncSequenceStatus.backfilled.index)) {
-          // Already received or backfilled - keep the existing status
-          status = SyncSequenceStatus.values[existing.status];
-        } else if (existing != null &&
-            existing.status == SyncSequenceStatus.requested.index) {
-          // Explicitly requested - mark as backfilled
-          status = SyncSequenceStatus.backfilled;
-        } else {
-          // New entry or was missing - mark as received
-          status = SyncSequenceStatus.received;
-        }
-
-        await _syncDatabase.recordSequenceEntry(
-          SyncSequenceLogCompanion(
-            hostId: Value(hostId),
-            counter: Value(counter),
-            entryId: Value(entryId),
-            payloadType: Value(payloadType.index),
-            originatingHostId: Value(originatingHostId),
-            status: Value(status.index),
-            jsonPath: jsonPath != null ? Value(jsonPath) : const Value.absent(),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
-        );
-
-        if (status == SyncSequenceStatus.backfilled &&
-            existing?.status == SyncSequenceStatus.requested.index) {
-          _trace(
-            'recordReceivedEntry: backfilled hostId=$hostId counter=$counter entryId=$entryId',
-            subDomain: 'sequence.backfillArrived',
-          );
-          _trace(
-            'recordReceivedEntry: requestedResolved hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
-            subDomain: 'sequence.requestedResolved',
-          );
-        }
-      } else {
-        // For other hosts in the VC, also record with entryId.
-        // This is crucial because:
-        // 1. It allows us to respond to backfill requests for any counter in the VC
-        // 2. It updates missing/requested entries when we receive a newer version
-        //    of an entry that includes this (host, counter) in its VC
-        final existing = await _syncDatabase.getEntryByHostAndCounter(
-          hostId,
-          counter,
-        );
-
-        if (existing != null &&
-            existing.status == SyncSequenceStatus.burned.index) {
-          // burned is the authoritative terminal non-event. A different host's
-          // entry that merely covers this counter in its vector clock must not
-          // reopen the burn or stamp its own entry id onto it (covering an
-          // own-host burn from a different entity is unsound). The row is
-          // already resolved, so skipping the forward-only watermark-cache
-          // advance below is a no-op.
-          _trace(
-            'recordReceivedEntry: burned preserved (covered) '
-            'hostId=$hostId counter=$counter',
-            subDomain: 'sequence.burnPreserved',
-          );
-          continue;
-        }
-
-        // Determine the new status (same logic as for originator)
-        final SyncSequenceStatus status;
-        if (existing != null &&
-            (existing.status == SyncSequenceStatus.received.index ||
-                existing.status == SyncSequenceStatus.backfilled.index)) {
-          // Already received or backfilled - keep the existing status
-          status = SyncSequenceStatus.values[existing.status];
-        } else if (existing != null &&
-            existing.status == SyncSequenceStatus.requested.index) {
-          // Explicitly requested - mark as backfilled
-          status = SyncSequenceStatus.backfilled;
-        } else {
-          // New entry or was missing - mark as received
-          status = SyncSequenceStatus.received;
-        }
-
-        // Always upsert (insert or update) with entryId
-        await _syncDatabase.recordSequenceEntry(
-          SyncSequenceLogCompanion(
-            hostId: Value(hostId),
-            counter: Value(counter),
-            entryId: Value(entryId),
-            payloadType: Value(payloadType.index),
-            originatingHostId: Value(originatingHostId),
-            status: Value(status.index),
-            jsonPath: jsonPath != null ? Value(jsonPath) : const Value.absent(),
-            createdAt: Value(now),
-            updatedAt: Value(now),
-          ),
-        );
-
-        if (status == SyncSequenceStatus.backfilled &&
-            existing?.status == SyncSequenceStatus.requested.index) {
-          _trace(
-            'recordReceivedEntry: backfilled (non-originator) hostId=$hostId counter=$counter entryId=$entryId',
-            subDomain: 'sequence.backfillArrived',
-          );
-          _trace(
-            'recordReceivedEntry: requestedResolved (non-originator) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
-            subDomain: 'sequence.requestedResolved',
-          );
-        }
-      }
-
-      // Conservatively advance the watermark cache instead of invalidating
-      // it. Under heavy backfill (50 children per outbox bundle), the old
-      // unconditional invalidate forced the next child to re-run the
-      // slow `getLastCounterForHost` CTE — that query dominated the
-      // mobile slow-query log under load. The advance is a strict
-      // forward-only update that never over-reports the prefix.
-      _advanceLastCounterCache(hostId, counter);
-      if (smallGapRangeResolvedBeforeObserved &&
-          _lastCounterCache.containsKey(hostId)) {
-        // The small-gap scan proved every counter between the cached
-        // watermark and the observed counter already resolves the sequence.
-        // After upserting [counter], the cache can safely catch up instead of
-        // re-scanning the same stale range on each subsequent event.
-        final cachedCounter = _lastCounterCache[hostId] ?? 0;
-        if (counter > cachedCounter) {
-          _lastCounterCache[hostId] = counter;
-        }
-      }
-    }
-
-    // Only log the gap summary when we actually recorded new missing rows.
-    // A permanent pre-history gap keeps `gaps` non-empty on every event, so
-    // an unconditional log line fires thousands of times for no new signal.
-    if (gaps.isNotEmpty && newMissingDetected) {
-      _trace(
-        'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.count} gaps',
-        subDomain: 'sequence.recordReceived',
-      );
-    }
-
-    // After processing the VC, check for any pending backfill hints.
-    // This handles the case where a BackfillResponse arrived before the
-    // actual entry. The hint contains the entryId, and now that we have
-    // the entry, we can verify and mark it as backfilled.
-    await resolvePendingHints(
-      payloadType: payloadType,
-      payloadId: entryId,
-      payloadVectorClock: vectorClock,
-    );
-
-    // Note: Covered vector clocks are processed at the START of this method,
-    // BEFORE gap detection, to prevent false positives.
-
-    if (newMissingDetected) {
-      // Preserve gaps immediately, but defer the automatic backfill nudge
-      // until the surrounding ordered replay batch settles. This prevents
-      // transient in-burst holes from triggering redundant repair chatter.
-      if (_deferredMissingEntriesDepth > 0) {
-        _pendingMissingEntriesDetected = true;
-      } else {
-        _emitMissingEntriesDetected();
-      }
-    }
-
-    return gaps.toGapList();
-  }
-
-  /// Cheap existence probe for any actionable (`missing` or `requested`)
-  /// sequence row. Used by the backfill request service to short-circuit
-  /// the periodic timer body when nothing is missing — see
-  /// [SyncDatabase.hasActionableEntries] for the rationale.
-  Future<bool> hasActionableEntries() {
-    return _syncDatabase.hasActionableEntries();
-  }
-
-  /// Get entries marked as missing or requested that haven't exceeded
-  /// the maximum request count, for sending backfill requests.
-  ///
-  /// [minAge] defers returning rows freshly flagged as missing for that long
-  /// — see [SyncDatabase.getMissingEntries] for the rationale.
+  /// Get entries marked as missing or requested for sending backfill requests.
   Future<List<SyncSequenceLogItem>> getMissingEntries({
     int limit = 50,
     int maxRequestCount = 10,
     int offset = 0,
     Duration minAge = Duration.zero,
-  }) {
-    return _syncDatabase.getMissingEntries(
-      limit: limit,
-      maxRequestCount: maxRequestCount,
-      offset: offset,
-      minAge: minAge,
-    );
-  }
+  }) => _receiver.getMissingEntries(
+    limit: limit,
+    maxRequestCount: maxRequestCount,
+    offset: offset,
+    minAge: minAge,
+  );
 
   /// Mark entries as requested and increment their request count.
-  /// Uses batch operations for efficiency.
   Future<void> markAsRequested(
     List<({String hostId, int counter})> entries,
-  ) async {
-    await _syncDatabase.batchIncrementRequestCounts(entries);
-  }
+  ) => _receiver.markAsRequested(entries);
 
-  /// Handle a backfill response from another device.
-  ///
-  /// For deleted responses: marks the entry as deleted (cannot be backfilled).
-  ///
-  /// For unresolvable responses: marks the entry as unresolvable - the
-  /// originating host confirmed it cannot resolve its own counter (e.g., it
-  /// was superseded before being recorded).
-  ///
-  /// For non-deleted responses: stores the entryId as a "hint" mapping
-  /// (hostId, counter) → entryId. The actual status update to "backfilled"
-  /// happens only when we verify the entry exists locally - either via
-  /// [verifyAndMarkBackfilled] or when the entry arrives via normal sync.
-  ///
-  /// This two-phase approach ensures we don't mark entries as backfilled
-  /// until we actually have the data locally.
   /// Mark one of OUR OWN host's counters as permanently unresolvable.
-  ///
-  /// Called by paths that know authoritatively that a counter was assigned by
-  /// our [VectorClockService] but will never carry a Matrix event — burns
-  /// from [VectorClockService.reserveNextVectorClock] that released without
-  /// a matching write, and own-host miss/stale cases in
-  /// `backfill_response_handler` that answer peers with `unresolvable`.
-  ///
-  /// Why an upsert (not just [SyncDatabase.updateSequenceStatus]): the burn
-  /// case usually has no row in our sequence log at all (we never
-  /// `recordSentEntry`-ed the counter), so an update-only call would silently
-  /// no-op. Insert-or-update pins the row to `status=unresolvable` with
-  /// `entry_id` explicitly null — asserting "no entity was ever bound to this
-  /// counter on this host." Subsequent paths that might have otherwise
-  /// inserted the row with the wrong entity_id (covered-VC hints referring
-  /// to our own host, if any skip is ever relaxed) will then see an existing
-  /// authoritative row and leave it alone.
-  ///
-  /// The authoritative-row guard is implemented inside
-  /// [SyncDatabase.recordOwnUnresolvableSequenceCounter] so the check and
-  /// mutation happen in one database transaction.
-  ///
-  /// Not wired through [handleBackfillResponse] because that is the handler
-  /// for INCOMING responses, and own-host broadcasts never flow through it
-  /// on the originator — self-echoes are suppressed in the Matrix pipeline.
-  /// Going through the receiver handler on the sender side would misrepresent
-  /// the call's intent and break the moment someone tightens the handler
-  /// contract (e.g. gates it on a pending request).
   Future<void> markOwnCounterUnresolvable({
     required String hostId,
     required int counter,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
-  }) async {
-    final recorded = await _syncDatabase.recordOwnUnresolvableSequenceCounter(
-      hostId: hostId,
-      counter: counter,
-      payloadType: payloadType,
-    );
-    _trace(
-      recorded
-          ? 'markOwnCounterUnresolvable hostId=$hostId counter=$counter'
-          : 'markOwnCounterUnresolvable skipped hostId=$hostId '
-                'counter=$counter',
-      subDomain: 'sequence.ownUnresolvable',
-    );
-  }
+  }) => _receiver.markOwnCounterUnresolvable(
+    hostId: hostId,
+    counter: counter,
+    payloadType: payloadType,
+  );
 
   /// Return own-host pre-bind crash markers left behind by
   /// `reserveNextVectorClock`.
-  ///
-  /// Rows returned from [reservedCountersForHost] are diagnostic only and must
-  /// not be automatically converted via [markOwnCounterUnresolvable]. A crash
-  /// can happen after the payload commits but before [recordSentEntry]
-  /// replaces the `reserved` row, so treating plain reservations as
-  /// unresolvable could burn a real payload mapping. Only rows in
-  /// [SyncSequenceStatus.burnPending] carry the "released without payload"
-  /// guarantee and are safe for startup reconciliation.
-  Future<List<int>> reservedCountersForHost({
-    required String hostId,
-  }) async {
-    final counters = await _syncDatabase.reservedSequenceCountersForHost(
-      hostId: hostId,
-    );
-    if (counters.isNotEmpty) {
-      _trace(
-        'reservedCountersForHost hostId=$hostId '
-        'count=${counters.length} counters=$counters',
-        subDomain: 'sequence.reservedCounters',
-      );
-    }
-    return counters;
-  }
+  Future<List<int>> reservedCountersForHost({required String hostId}) =>
+      _receiver.reservedCountersForHost(hostId: hostId);
 
-  /// Return own-host reservations that were explicitly released without a
-  /// payload, but whose outbound unresolvable marker still needs to be retried.
-  Future<List<int>> burnPendingCountersForHost({
-    required String hostId,
-  }) async {
-    final counters = await _syncDatabase.burnPendingSequenceCountersForHost(
-      hostId: hostId,
-    );
-    if (counters.isNotEmpty) {
-      _trace(
-        'burnPendingCountersForHost hostId=$hostId '
-        'count=${counters.length} counters=$counters',
-        subDomain: 'sequence.burnPendingCounters',
-      );
-    }
-    return counters;
-  }
+  /// Return own-host reservations released without a payload whose outbound
+  /// unresolvable marker still needs to be retried.
+  Future<List<int>> burnPendingCountersForHost({required String hostId}) =>
+      _receiver.burnPendingCountersForHost(hostId: hostId);
 
+  // ── Backfill responses ──────────────────────────────────────────────────
+
+  /// Handle a backfill response from another device.
   Future<void> handleBackfillResponse({
     required String hostId,
     required int counter,
@@ -936,412 +213,83 @@ class SyncSequenceLogService {
     bool unresolvable = false,
     String? entryId,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
-  }) async {
-    if (deleted) {
-      final existing = await _syncDatabase.getEntryByHostAndCounter(
-        hostId,
-        counter,
-      );
-      if (existing != null &&
-          (existing.status == SyncSequenceStatus.received.index ||
-              existing.status == SyncSequenceStatus.backfilled.index)) {
-        _trace(
-          'handleBackfillResponse: deleted ignored for '
-          'hostId=$hostId counter=$counter — existing status='
-          '${SyncSequenceStatus.values[existing.status]}',
-          subDomain: 'sequence.backfillResponse',
-        );
-        return;
-      }
-
-      // Mark as deleted - the entry was purged and cannot be backfilled
-      await _syncDatabase.updateSequenceStatus(
-        hostId,
-        counter,
-        SyncSequenceStatus.deleted,
-      );
-
-      _trace(
-        'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
-        subDomain: 'sequence.backfillResponse',
-      );
-      return;
-    }
-
-    if (unresolvable) {
-      // Classify the incoming `unresolvable=true` as [burned]: a backfill
-      // response carrying that flag is only ever sent by the originating host
-      // for its own counter (foreign-host requests get covering hints, never
-      // `unresolvable`), and the originator is authoritative for its own
-      // counters, so this is a clean non-event rather than a receiver give-up.
-      // Upsert (not update-only) because a proactive burn broadcast from the
-      // originator frequently arrives on a peer that has not yet materialized
-      // `(hostId, counter)` — gap detection hasn't run for this host yet, no
-      // covered-VC hint has referenced the counter, and so on. An
-      // `updateSequenceStatus` call would silently no-op in that common case
-      // and drop the authoritative marker, sending the peer back into reactive
-      // backfill later when the gap eventually surfaces.
-      //
-      // Do NOT downgrade rows that already have an authoritative success
-      // state (received / backfilled / deleted) — if the peer obtained
-      // the payload through another route, that's strictly better than
-      // the originator's burn hint and should win. An already-[burned] row
-      // is likewise left alone: it is terminal, and re-writing it would only
-      // churn `updated_at` and re-emit a trace for an unchanged status.
-      final existing = await _syncDatabase.getEntryByHostAndCounter(
-        hostId,
-        counter,
-      );
-      if (existing != null &&
-          (existing.status == SyncSequenceStatus.received.index ||
-              existing.status == SyncSequenceStatus.backfilled.index ||
-              existing.status == SyncSequenceStatus.deleted.index ||
-              existing.status == SyncSequenceStatus.burned.index)) {
-        _trace(
-          'handleBackfillResponse: unresolvable ignored for '
-          'hostId=$hostId counter=$counter — existing status='
-          '${SyncSequenceStatus.values[existing.status]}',
-          subDomain: 'sequence.backfillResponse',
-        );
-        return;
-      }
-
-      final now = DateTime.now();
-      await _syncDatabase.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: Value(hostId),
-          counter: Value(counter),
-          // Clear any stale payload mapping for the same reason as in
-          // [markOwnCounterUnresolvable]: the burn marker asserts no entity is
-          // bound to this counter, so a lingering entry_id must not survive.
-          entryId: const Value(null),
-          payloadType: Value(payloadType.index),
-          status: Value(SyncSequenceStatus.burned.index),
-          createdAt: Value(existing?.createdAt ?? now),
-          updatedAt: Value(now),
-        ),
-      );
-
-      _trace(
-        'handleBackfillResponse hostId=$hostId counter=$counter '
-        'unresolvable=true → burned',
-        subDomain: 'sequence.backfillResponse',
-      );
-      return;
-    }
-
-    // Non-deleted response: store the entryId hint without changing status.
-    // The actual backfill confirmation happens when we verify the entry exists.
-    final existing = await _syncDatabase.getEntryByHostAndCounter(
-      hostId,
-      counter,
-    );
-
-    if (existing == null) {
-      // Entry doesn't exist in our log - insert with entryId hint and mark
-      // as "requested" since we're receiving a response to a backfill request.
-      // The actual backfilled status is set when we verify the entry exists.
-      final now = DateTime.now();
-      await _syncDatabase.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: Value(hostId),
-          counter: Value(counter),
-          entryId: Value(entryId),
-          payloadType: Value(payloadType.index),
-          status: Value(SyncSequenceStatus.requested.index),
-          createdAt: Value(now),
-          updatedAt: Value(now),
-        ),
-      );
-
-      _trace(
-        'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (new entry)',
-        subDomain: 'sequence.backfillHint',
-      );
-      return;
-    }
-
-    // Don't overwrite already received/backfilled/deleted entries, and never
-    // reopen a [burned] row: burned is the authoritative terminal non-event,
-    // and a later hint covering a *different* entity on our own counter must
-    // not resurrect it (see backfill_response_handler's covering-hint guard).
-    if (existing.status == SyncSequenceStatus.received.index ||
-        existing.status == SyncSequenceStatus.backfilled.index ||
-        existing.status == SyncSequenceStatus.deleted.index ||
-        existing.status == SyncSequenceStatus.burned.index) {
-      _trace(
-        'handleBackfillResponse: entry already has status=${SyncSequenceStatus.values[existing.status]} hostId=$hostId counter=$counter',
-        subDomain: 'sequence.backfillResponse',
-      );
-      return;
-    }
-
-    // When an unresolvable entry receives a valid hint, reset to requested
-    // so it can be verified. This handles the case where the first response
-    // incorrectly marked it unresolvable but a later response has the answer.
-    final newStatus = existing.status == SyncSequenceStatus.unresolvable.index
-        ? SyncSequenceStatus.requested.index
-        : existing.status;
-
-    final now = DateTime.now();
-    await _syncDatabase.recordSequenceEntry(
-      SyncSequenceLogCompanion(
-        hostId: Value(hostId),
-        counter: Value(counter),
-        entryId: Value(entryId),
-        payloadType: Value(payloadType.index),
-        status: Value(newStatus),
-        createdAt: Value(existing.createdAt),
-        updatedAt: Value(now),
-      ),
-    );
-
-    if (existing.status == SyncSequenceStatus.unresolvable.index) {
-      _trace(
-        'handleBackfillResponse: reopened unresolvable entry hostId=$hostId counter=$counter entryId=$entryId',
-        subDomain: 'sequence.backfillReopened',
-      );
-    }
-
-    _trace(
-      'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[newStatus]})',
-      subDomain: 'sequence.backfillHint',
-    );
-  }
+  }) => _backfillResponder.handleBackfillResponse(
+    hostId: hostId,
+    counter: counter,
+    deleted: deleted,
+    unresolvable: unresolvable,
+    entryId: entryId,
+    payloadType: payloadType,
+  );
 
   /// Verify that we have an entry locally and its VC covers the requested
   /// (hostId, counter), then mark as backfilled.
-  ///
-  /// Returns true if verified and marked as backfilled.
   Future<bool> verifyAndMarkBackfilled({
     required String hostId,
     required int counter,
     required String entryId,
     required VectorClock entryVectorClock,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
-  }) async {
-    // Verify the entry's VC covers the requested (hostId, counter)
-    final vcCounter = entryVectorClock.vclock[hostId];
-    if (vcCounter == null || vcCounter < counter) {
-      _trace(
-        'verifyAndMarkBackfilled: entry $entryId VC does not cover $hostId:$counter (vc[$hostId]=$vcCounter)',
-        subDomain: 'sequence.backfillVerify',
-      );
-      return false;
-    }
-
-    // Look up the sequence log entry
-    final existing = await _syncDatabase.getEntryByHostAndCounter(
-      hostId,
-      counter,
-    );
-
-    if (existing == null ||
-        (existing.status != SyncSequenceStatus.missing.index &&
-            existing.status != SyncSequenceStatus.requested.index)) {
-      // Already processed or doesn't exist
-      return false;
-    }
-
-    // Mark as backfilled. Preserve `existing.createdAt` so post-mortems
-    // and the slow-query-friendly `(status, created_at)` partial index
-    // continue to reflect when gap detection first flagged this counter
-    // — overwriting it with `now` was hiding the real detection time
-    // behind the verify timestamp (see the 2026-04-25 catch-up audit).
-    final now = DateTime.now();
-    await _syncDatabase.recordSequenceEntry(
-      SyncSequenceLogCompanion(
-        hostId: Value(hostId),
-        counter: Value(counter),
-        entryId: Value(entryId),
-        payloadType: Value(payloadType.index),
-        status: Value(SyncSequenceStatus.backfilled.index),
-        createdAt: Value(existing.createdAt),
-        updatedAt: Value(now),
-      ),
-    );
-
-    _trace(
-      'verifyAndMarkBackfilled: confirmed hostId=$hostId counter=$counter entryId=$entryId',
-      subDomain: 'sequence.backfillVerified',
-    );
-    return true;
-  }
+  }) => _backfillResponder.verifyAndMarkBackfilled(
+    hostId: hostId,
+    counter: counter,
+    entryId: entryId,
+    entryVectorClock: entryVectorClock,
+    payloadType: payloadType,
+  );
 
   /// Resolve any pending backfill hints for the given entryId.
-  /// Called after receiving an entry via sync to check if it resolves
-  /// any pending (hostId, counter) requests.
   Future<int> resolvePendingHints({
     required SyncSequencePayloadType payloadType,
     required String payloadId,
     required VectorClock payloadVectorClock,
-  }) async {
-    final pendingEntries = await _syncDatabase.getPendingEntriesByPayloadId(
-      payloadType: payloadType,
-      payloadId: payloadId,
-    );
+  }) => _backfillResponder.resolvePendingHints(
+    payloadType: payloadType,
+    payloadId: payloadId,
+    payloadVectorClock: payloadVectorClock,
+  );
 
-    var resolved = 0;
-    for (final pending in pendingEntries) {
-      final verified = await verifyAndMarkBackfilled(
-        hostId: pending.hostId,
-        counter: pending.counter,
-        entryId: payloadId,
-        entryVectorClock: payloadVectorClock,
-        payloadType: payloadType,
-      );
-      if (verified) {
-        resolved++;
-      }
-    }
+  /// Reset unresolvable entries that now have a known payload back to missing.
+  Future<int> resetUnresolvableEntries() =>
+      _backfillResponder.resetUnresolvableEntries();
 
-    if (resolved > 0) {
-      _trace(
-        'resolvePendingHints: resolved $resolved pending entries for type=$payloadType id=$payloadId',
-        subDomain: 'sequence.backfillResolved',
-      );
-    }
+  /// Reset every `unresolvable` row back to `missing`.
+  Future<int> resetAllUnresolvableEntries() =>
+      _backfillResponder.resetAllUnresolvableEntries();
 
-    return resolved;
-  }
+  // ── Backfill queries & population ─────────────────────────────────────────
 
-  /// Reset entries marked as unresolvable that now have a known payload
-  /// (entryId) back to "missing" so they can be re-requested.
-  /// Returns the number of entries reset.
-  Future<int> resetUnresolvableEntries() async {
-    final count = await _syncDatabase.resetUnresolvableWithKnownPayload();
-
-    if (count > 0) {
-      _lastCounterCache.clear();
-      _materializedUpperBound.clear();
-      _trace(
-        'resetUnresolvableEntries: reset $count entries back to missing',
-        subDomain: 'sequence.resetUnresolvable',
-      );
-    }
-
-    return count;
-  }
-
-  /// Reset every `unresolvable` row back to `missing`, regardless of
-  /// whether an `entry_id` is already known locally. Used by the Backfill
-  /// Settings "Ask peers for unresolvable entries" action to re-open the
-  /// row for the normal backfill sweep — once a peer responds with a
-  /// payload hint, `handleBackfillResponse` fills in `entry_id` and
-  /// eventually flips the row to `received`/`backfilled`.
-  ///
-  /// Semantically stronger than [resetUnresolvableEntries]; prefer this
-  /// one when a user explicitly wants to re-query peers for rows whose
-  /// originating host is dead but which a currently-alive peer may
-  /// still have.
-  Future<int> resetAllUnresolvableEntries() async {
-    final count = await _syncDatabase.resetAllUnresolvableEntries();
-
-    if (count > 0) {
-      _lastCounterCache.clear();
-      _materializedUpperBound.clear();
-      _trace(
-        'resetAllUnresolvableEntries: reset $count entries back to missing',
-        subDomain: 'sequence.resetAllUnresolvable',
-      );
-    }
-
-    return count;
-  }
-
-  /// Flip missing/requested rows that have been asked for at least
-  /// [maxRequestCount] times to `unresolvable` so the contiguous-prefix
-  /// watermark can advance past them. Without this step, a permanent
-  /// pre-history gap keeps `getLastCounterForHost` stuck, which then
-  /// forces every incoming entry on that host to re-enter the gap
-  /// materialization pass (see `_materializeLargeGap`). Invalidates the
-  /// per-host watermark and materialized-bound caches so the next event
-  /// sees the updated state.
-  ///
-  /// The [grace] window gives a backfill request still queued in the
-  /// outbox or in flight to a peer time to land before the row is
-  /// promoted terminal; tests may pass a smaller value to bypass the
-  /// wait.
   Future<int> retireExhaustedRequestedEntries({
     int maxRequestCount = 10,
     Duration grace = const Duration(minutes: 5),
-  }) async {
-    final count = await _syncDatabase.retireExhaustedRequestedEntries(
-      maxRequestCount: maxRequestCount,
-      grace: grace,
-    );
+  }) => _backfillQueries.retireExhaustedRequestedEntries(
+    maxRequestCount: maxRequestCount,
+    grace: grace,
+  );
 
-    if (count > 0) {
-      _lastCounterCache.clear();
-      _materializedUpperBound.clear();
-      _trace(
-        'retireExhaustedRequestedEntries: retired $count entries to unresolvable',
-        subDomain: 'sequence.retireExhausted',
-      );
-    }
-
-    return count;
-  }
-
-  /// Age-based companion to [retireExhaustedRequestedEntries]. Retires
-  /// any `missing`/`requested` row older than [amnestyWindow] regardless
-  /// of `request_count` or `last_requested_at`.
-  ///
-  /// Closes the gap where a row can slip into `requested` via the
-  /// backfill-response-hint path (which does not set
-  /// `last_requested_at`) OR age out of the active backfill window
-  /// ([SyncTuning.defaultBackfillMaxAge]) before accumulating enough
-  /// requests to hit the exhaustion cap. Without this, such rows sit in
-  /// a non-terminal status forever, blocking the contiguous watermark
-  /// (see `getLastCounterForHost`) and causing every new event on the
-  /// same host to re-emit the same gap range through gap detection.
   Future<int> retireAgedOutRequestedEntries({
     Duration amnestyWindow = const Duration(days: 7),
-  }) async {
-    final count = await _syncDatabase.retireAgedOutRequestedEntries(
-      amnestyWindow: amnestyWindow,
-    );
-
-    if (count > 0) {
-      _lastCounterCache.clear();
-      _materializedUpperBound.clear();
-      _trace(
-        'retireAgedOutRequestedEntries: retired $count entries to unresolvable '
-        '(amnestyWindow=${amnestyWindow.inDays}d)',
-        subDomain: 'sequence.retireAgedOut',
-      );
-    }
-
-    return count;
-  }
+  }) => _backfillQueries.retireAgedOutRequestedEntries(
+    amnestyWindow: amnestyWindow,
+  );
 
   /// Get entry by host ID and counter (for responding to backfill requests).
   Future<SyncSequenceLogItem?> getEntryByHostAndCounter(
     String hostId,
     int counter,
-  ) {
-    return _syncDatabase.getEntryByHostAndCounter(hostId, counter);
-  }
+  ) => _backfillQueries.getEntryByHostAndCounter(hostId, counter);
 
   /// Find the nearest covering entry for a host with counter >= [counter].
-  /// Used when the exact counter is missing from the sequence log (superseded).
   Future<SyncSequenceLogItem?> getNearestCoveringEntry(
     String hostId,
     int counter,
-  ) {
-    return _syncDatabase.getNearestCoveringEntry(hostId, counter);
-  }
+  ) => _backfillQueries.getNearestCoveringEntry(hostId, counter);
 
   /// Get backfill statistics grouped by host.
-  Future<BackfillStats> getBackfillStats() {
-    return _syncDatabase.getBackfillStats();
-  }
+  Future<BackfillStats> getBackfillStats() =>
+      _backfillQueries.getBackfillStats();
 
   /// Get missing entries with age and per-host limits for automatic backfill.
-  /// This is used for bounded automatic backfill that only looks at recent gaps.
-  ///
-  /// [minAge] defers rows freshly flagged as missing — see
-  /// [SyncDatabase.getMissingEntriesWithLimits] for the rationale.
   Future<List<SyncSequenceLogItem>> getMissingEntriesWithLimits({
     int limit = 50,
     int maxRequestCount = 10,
@@ -1349,215 +297,78 @@ class SyncSequenceLogService {
     Duration minAge = Duration.zero,
     int? maxPerHost,
     int offset = 0,
-  }) {
-    return _syncDatabase.getMissingEntriesWithLimits(
-      limit: limit,
-      maxRequestCount: maxRequestCount,
-      maxAge: maxAge,
-      minAge: minAge,
-      maxPerHost: maxPerHost,
-      offset: offset,
-    );
-  }
+  }) => _backfillQueries.getMissingEntriesWithLimits(
+    limit: limit,
+    maxRequestCount: maxRequestCount,
+    maxAge: maxAge,
+    minAge: minAge,
+    maxPerHost: maxPerHost,
+    offset: offset,
+  );
 
   /// Get entries with status 'requested' for re-requesting.
-  /// These are entries that were requested but never received.
   Future<List<SyncSequenceLogItem>> getRequestedEntries({
     int limit = 50,
     int offset = 0,
-  }) {
-    return _syncDatabase.getRequestedEntries(limit: limit, offset: offset);
-  }
+  }) => _backfillQueries.getRequestedEntries(limit: limit, offset: offset);
 
   /// Reset request counts for specified entries to allow re-requesting.
   Future<void> resetRequestCounts(
     List<({String hostId, int counter})> entries,
-  ) async {
-    await _syncDatabase.resetRequestCounts(entries);
-
-    _trace(
-      'resetRequestCounts: reset ${entries.length} entries for re-request',
-      subDomain: 'sequence.reRequest',
-    );
-  }
+  ) => _backfillQueries.resetRequestCounts(entries);
 
   /// Populate the sequence log from existing journal entries.
-  /// Returns the number of sequence log entries populated.
   Future<int> populateFromJournal({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
     entryStream,
     required Future<int> Function() getTotalCount,
     void Function(double progress)? onProgress,
-  }) {
-    return _populateFromStream(
-      dataStream: entryStream,
-      getTotalCount: getTotalCount,
-      onProgress: onProgress,
-      payloadType: SyncSequencePayloadType.journalEntity,
-      label: 'populateFromJournal',
-    );
-  }
+  }) => _backfillQueries.populateFromJournal(
+    entryStream: entryStream,
+    getTotalCount: getTotalCount,
+    onProgress: onProgress,
+  );
 
   /// Populate the sequence log from existing entry links.
-  /// Returns the number of sequence log entries populated.
   Future<int> populateFromEntryLinks({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
     linkStream,
     required Future<int> Function() getTotalCount,
     void Function(double progress)? onProgress,
-  }) {
-    return _populateFromStream(
-      dataStream: linkStream,
-      getTotalCount: getTotalCount,
-      onProgress: onProgress,
-      payloadType: SyncSequencePayloadType.entryLink,
-      label: 'populateFromEntryLinks',
-    );
-  }
+  }) => _backfillQueries.populateFromEntryLinks(
+    linkStream: linkStream,
+    getTotalCount: getTotalCount,
+    onProgress: onProgress,
+  );
 
   /// Populate the sequence log from existing agent entities.
-  /// Returns the number of sequence log entries populated.
   Future<int> populateFromAgentEntities({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
     entityStream,
     required Future<int> Function() getTotalCount,
     void Function(double progress)? onProgress,
-  }) {
-    return _populateFromStream(
-      dataStream: entityStream,
-      getTotalCount: getTotalCount,
-      onProgress: onProgress,
-      payloadType: SyncSequencePayloadType.agentEntity,
-      label: 'populateFromAgentEntities',
-    );
-  }
+  }) => _backfillQueries.populateFromAgentEntities(
+    entityStream: entityStream,
+    getTotalCount: getTotalCount,
+    onProgress: onProgress,
+  );
 
   /// Populate the sequence log from existing agent links.
-  /// Returns the number of sequence log entries populated.
   Future<int> populateFromAgentLinks({
     required Stream<List<({String id, Map<String, int>? vectorClock})>>
     linkStream,
     required Future<int> Function() getTotalCount,
     void Function(double progress)? onProgress,
-  }) {
-    return _populateFromStream(
-      dataStream: linkStream,
-      getTotalCount: getTotalCount,
-      onProgress: onProgress,
-      payloadType: SyncSequencePayloadType.agentLink,
-      label: 'populateFromAgentLinks',
-    );
-  }
+  }) => _backfillQueries.populateFromAgentLinks(
+    linkStream: linkStream,
+    getTotalCount: getTotalCount,
+    onProgress: onProgress,
+  );
 
-  /// Shared implementation for populating the sequence log from a paginated
-  /// stream of records with vector clocks. Used by all four populate methods.
-  Future<int> _populateFromStream({
-    required Stream<List<({String id, Map<String, int>? vectorClock})>>
-    dataStream,
-    required Future<int> Function() getTotalCount,
-    required SyncSequencePayloadType payloadType,
-    required String label,
-    void Function(double progress)? onProgress,
-  }) async {
-    final total = await getTotalCount();
-    var processed = 0;
-    var populated = 0;
-    final now = DateTime.now();
+  // ── Testing ───────────────────────────────────────────────────────────────
 
-    // Cache of existing (hostId, counter) pairs to avoid duplicates
-    final existingByHost = <String, Set<int>>{};
-
-    await for (final batch in dataStream) {
-      final toInsert = <SyncSequenceLogCompanion>[];
-
-      for (final record in batch) {
-        processed++;
-
-        final vc = record.vectorClock;
-        if (vc == null || vc.isEmpty) continue;
-
-        // Find the originating host (the one with the highest counter).
-        // Sort entries by host ID for deterministic tie-breaking.
-        String? originatingHost;
-        var maxCounter = -1;
-        final sortedEntries = vc.entries.toList()
-          ..sort((a, b) => a.key.compareTo(b.key));
-        for (final e in sortedEntries) {
-          if (e.value > maxCounter) {
-            maxCounter = e.value;
-            originatingHost = e.key;
-          }
-        }
-
-        // Record entry for each host in the vector clock
-        for (final vcEntry in vc.entries) {
-          final hostId = vcEntry.key;
-          final counter = vcEntry.value;
-
-          // Lazily load existing counters for this host
-          if (!existingByHost.containsKey(hostId)) {
-            existingByHost[hostId] = await _syncDatabase.getCountersForHost(
-              hostId,
-            );
-          }
-
-          final existing = existingByHost[hostId]!;
-
-          // Skip if already exists
-          if (existing.contains(counter)) continue;
-
-          // Mark as existing to avoid duplicates within this run
-          existing.add(counter);
-
-          toInsert.add(
-            SyncSequenceLogCompanion(
-              hostId: Value(hostId),
-              counter: Value(counter),
-              entryId: Value(record.id),
-              payloadType: Value(payloadType.index),
-              originatingHostId: Value(originatingHost ?? hostId),
-              status: Value(SyncSequenceStatus.received.index),
-              createdAt: Value(now),
-              updatedAt: Value(now),
-            ),
-          );
-        }
-      }
-
-      // Batch insert
-      if (toInsert.isNotEmpty) {
-        await _syncDatabase.batchInsertSequenceEntries(toInsert);
-        populated += toInsert.length;
-      }
-
-      // Report progress after each batch
-      if (onProgress != null && total > 0) {
-        onProgress(processed / total);
-      }
-    }
-
-    if (populated > 0) {
-      _trace(
-        '$label: added $populated sequence log entries',
-        subDomain: 'sequence.populate',
-      );
-    }
-
-    return populated;
-  }
-
-  Future<List<({String hostId, int counter})>> recordReceivedEntryLink({
-    required String linkId,
-    required VectorClock vectorClock,
-    required String originatingHostId,
-    List<VectorClock>? coveredVectorClocks,
-  }) {
-    return recordReceivedEntry(
-      entryId: linkId,
-      vectorClock: vectorClock,
-      originatingHostId: originatingHostId,
-      coveredVectorClocks: coveredVectorClocks,
-      payloadType: SyncSequencePayloadType.entryLink,
-    );
-  }
+  /// Force-expire every cache. Used in tests to verify that expired caches are
+  /// cleared and the DB is re-queried.
+  @visibleForTesting
+  void expireCacheForTesting() => _cache.expireCacheForTesting();
 }

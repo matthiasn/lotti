@@ -1,7 +1,18 @@
-part of 'ai_provider_detail_page.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/constants/provider_config.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_widgets.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _ConnectionSection extends StatelessWidget {
-  const _ConnectionSection({required this.provider, required this.onEdit});
+class ConnectionSection extends StatelessWidget {
+  const ConnectionSection({
+    required this.provider,
+    required this.onEdit,
+    super.key,
+  });
 
   final AiConfigInferenceProvider provider;
   final VoidCallback onEdit;
@@ -40,7 +51,7 @@ class _ConnectionSection extends StatelessWidget {
       ),
     ];
 
-    return _Section(
+    return Section(
       title: messages.aiProviderDetailConnectionTitle,
       trailing: DesignSystemButton(
         label: messages.aiProviderDetailEditButton,

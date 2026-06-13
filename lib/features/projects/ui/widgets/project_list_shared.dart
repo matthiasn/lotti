@@ -1,27 +1,20 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_interactions.dart';
-import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
-import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
+import 'package:lotti/features/projects/ui/widgets/project_list_row.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
-part 'project_list_row.dart';
-part 'project_list_progress_ring.dart';
+export 'package:lotti/features/projects/ui/widgets/project_list_row.dart';
 
 const _kProjectGroupCardRadius = 16.0;
 const _kProjectGroupCardPadding = 8.0;
-const _kProjectRowGap = 16.0;
-const _kProjectRowVerticalPadding = 6.0;
-const _kProjectRowHorizontalPadding = 16.0;
 const _kProjectRowOverlap = 1.0;
 
 /// Shared category header row showing the category tag and project count.
@@ -154,7 +147,7 @@ class _ProjectGroupSectionState extends State<ProjectGroupSection> {
                     if (interactions[index].showDividerBelow)
                       Padding(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: _kProjectRowHorizontalPadding,
+                          horizontal: kProjectRowHorizontalPadding,
                         ),
                         child: Divider(
                           key: ValueKey('project-group-divider-$index'),

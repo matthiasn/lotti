@@ -1,24 +1,17 @@
-part of '../ai_summary_card.dart';
-
-/// Width threshold below which the proposal row drops its explicit
-/// confirm/reject buttons. The whole row stays swipeable (right →
-/// confirm, left → dismiss); on narrow phones the chevron-style
-/// icon buttons just consume too much horizontal space and crowd the
-/// proposal text. Matches `AgentInternalsPanel.mobileBreakpoint` so
-/// the AI surface flips between compact and comfortable layouts at
-/// the same screen size.
-const double _proposalRowCompactWidth = 600;
-
-bool _isCompactWidth(BuildContext context) =>
-    MediaQuery.sizeOf(context).width < _proposalRowCompactWidth;
+import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Proposals section sandwiched between the TLDR body and the activity
 /// footer. Always shows the section title + pending count badge +
 /// optional "Confirm all" button. The body is either an empty-state
-/// placeholder or a vertical list of [_ProposalRow]s. Resolved entries
+/// placeholder or a vertical list of [ProposalRow]s. Resolved entries
 /// are rendered through [_HistoryToggle] + a hidden-by-default list.
-class _ProposalsSection extends StatelessWidget {
-  const _ProposalsSection({
+class ProposalsSection extends StatelessWidget {
+  const ProposalsSection({
     required this.open,
     required this.resolved,
     required this.historyOpen,
@@ -94,7 +87,7 @@ class _ProposalsSection extends StatelessWidget {
             for (var i = 0; i < open.length; i++)
               Padding(
                 padding: EdgeInsets.only(top: i == 0 ? 0 : 6),
-                child: _ProposalRow(
+                child: ProposalRow(
                   suggestion: open[i],
                   // Only the first pending row gets the swipe-affordance
                   // wiggle hint so the page doesn't pulse with every
@@ -114,7 +107,7 @@ class _ProposalsSection extends StatelessWidget {
               for (var i = 0; i < resolved.length; i++)
                 Padding(
                   padding: EdgeInsets.only(top: i == 0 ? 0 : 6),
-                  child: _ProposalRow.fromLedger(entry: resolved[i]),
+                  child: ProposalRow.fromLedger(entry: resolved[i]),
                 ),
             ],
           ],
@@ -270,15 +263,3 @@ class _HistoryToggle extends StatelessWidget {
     );
   }
 }
-
-/// One row in the open-proposals list (or, in resolved-history mode, a
-/// read-only entry from the ledger). Pending rows are swipeable: drag
-/// past `±_swipeTrigger` to confirm or reject. The `[✕]` / `[✓]`
-/// icon buttons fire the same callbacks immediately. Resolved rows
-/// render as a dimmed body with a Confirmed / Dismissed tag.
-///
-/// Pass `isFirst: true` to the topmost pending row to opt into a
-/// one-shot wiggle hint that runs on narrow viewports (where the
-/// confirm/reject buttons are hidden) so users learn the row is
-/// swipeable. The hint respects `MediaQuery.disableAnimationsOf` and
-/// is suppressed once the user starts interacting.

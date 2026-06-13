@@ -4,24 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
-import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
-import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/ui/backfill_settings_recovery.dart';
+import 'package:lotti/features/sync/ui/backfill_settings_stats.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-part 'backfill_settings_stats.dart';
-part 'backfill_settings_recovery.dart';
+export 'package:lotti/features/sync/ui/backfill_settings_recovery.dart';
 
 /// Mobile / Beamer wrapper. Adds the [SliverBoxAdapterPage] chrome
 /// + the [SyncFeatureGate] flag check and delegates content to
@@ -82,13 +78,13 @@ class BackfillSettingsBody extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _StatusRow(
+              StatusRow(
                 inbound: depth?.total ?? 0,
                 missing: stats.stats?.totalMissing ?? 0,
                 skipped: depth?.abandoned ?? 0,
               ),
               SizedBox(height: tokens.spacing.step4),
-              _SyncStatsCard(
+              SyncStatsCard(
                 stats: stats.stats,
                 isLoading: stats.isLoading,
                 onRefresh: () => ref
@@ -104,7 +100,7 @@ class BackfillSettingsBody extends ConsumerWidget {
                     .toggle(),
               ),
               SizedBox(height: tokens.spacing.step4),
-              _AdvancedRecoveryGroup(
+              AdvancedRecoveryGroup(
                 stats: stats,
                 skipped: depth?.abandoned ?? 0,
                 coordinator: coordinator,
@@ -220,7 +216,7 @@ class _AutomaticBackfillCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    return _SurfaceCard(
+    return SurfaceCard(
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step5,
         vertical: tokens.spacing.step4,
@@ -267,8 +263,8 @@ class _AutomaticBackfillCard extends StatelessWidget {
   }
 }
 
-class _SurfaceCard extends StatelessWidget {
-  const _SurfaceCard({required this.child, this.padding});
+class SurfaceCard extends StatelessWidget {
+  const SurfaceCard({required this.child, this.padding, super.key});
 
   final Widget child;
   final EdgeInsetsGeometry? padding;
@@ -291,12 +287,13 @@ class _SurfaceCard extends StatelessWidget {
 /// Compact icon-only button used in card headers (e.g. the stats
 /// refresh control). Mirrors the Material `IconButton` ergonomics
 /// while sourcing every visual from design tokens.
-class _IconActionButton extends StatelessWidget {
-  const _IconActionButton({
+class IconActionButton extends StatelessWidget {
+  const IconActionButton({
     required this.icon,
     required this.tooltip,
     required this.onPressed,
     this.isBusy = false,
+    super.key,
   });
 
   final IconData icon;
@@ -346,13 +343,13 @@ class _IconActionButton extends StatelessWidget {
 /// Locale-aware integer formatter used in both the status row and
 /// ledger so the page stays consistent across English (`715,544`),
 /// German (`715.544`), French (`715 544`), etc.
-String _formatCount(BuildContext context, int value) =>
+String formatCount(BuildContext context, int value) =>
     NumberFormat.decimalPattern(
       Localizations.localeOf(context).toString(),
     ).format(value);
 
-/// Test-only seam for [_formatCount] — locale plumbing is the part worth
+/// Test-only seam for [formatCount] — locale plumbing is the part worth
 /// testing; the number formatting itself is intl's.
 @visibleForTesting
 String debugFormatCount(BuildContext context, int value) =>
-    _formatCount(context, value);
+    formatCount(context, value);

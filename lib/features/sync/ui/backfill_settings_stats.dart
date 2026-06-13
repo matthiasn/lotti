@@ -1,14 +1,19 @@
-part of 'backfill_settings_page.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Three welded cells in a single rounded rectangle: inbound queue,
 /// missing count, skipped count. Each cell colours its value based
 /// on state: missing turns warning when > 0; skipped turns error
 /// when > 0.
-class _StatusRow extends StatelessWidget {
-  const _StatusRow({
+class StatusRow extends StatelessWidget {
+  const StatusRow({
     required this.inbound,
     required this.missing,
     required this.skipped,
+    super.key,
   });
 
   final int inbound;
@@ -123,7 +128,7 @@ class _StatusCell extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step2),
           Text(
-            _formatCount(context, value),
+            formatCount(context, value),
             style: tokens.typography.styles.subtitle.subtitle1.copyWith(
               color: valueColor,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -138,11 +143,12 @@ class _StatusCell extends StatelessWidget {
 
 /// Sync statistics ledger card. Header (chart icon · title · device
 /// count meta · refresh) above eight leader-dot rows.
-class _SyncStatsCard extends StatelessWidget {
-  const _SyncStatsCard({
+class SyncStatsCard extends StatelessWidget {
+  const SyncStatsCard({
     required this.stats,
     required this.isLoading,
     required this.onRefresh,
+    super.key,
   });
 
   final BackfillStats? stats;
@@ -155,7 +161,7 @@ class _SyncStatsCard extends StatelessWidget {
     final messages = context.messages;
     final hostCount = stats?.hostStats.length ?? 0;
 
-    return _SurfaceCard(
+    return SurfaceCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -186,7 +192,7 @@ class _SyncStatsCard extends StatelessWidget {
                     ),
                   ),
                 ),
-              _IconActionButton(
+              IconActionButton(
                 icon: Icons.refresh,
                 tooltip: messages.backfillStatsRefresh,
                 isBusy: isLoading,
@@ -323,7 +329,7 @@ class _LedgerRow extends StatelessWidget {
             ),
           ),
           Text(
-            _formatCount(context, value),
+            formatCount(context, value),
             style: tokens.typography.styles.body.bodyMedium.copyWith(
               color: color,
               fontFeatures: const [FontFeature.tabularFigures()],
@@ -358,6 +364,3 @@ class _DottedLeaderPainter extends CustomPainter {
   bool shouldRepaint(covariant _DottedLeaderPainter oldDelegate) =>
       oldDelegate.color != color;
 }
-
-/// Automatic backfill toggle card. Sync icon · title + description ·
-/// [DesignSystemToggle].

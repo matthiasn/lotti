@@ -10,11 +10,11 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required Set<String> triggerTokens,
     required List<AgentMessageEntity> observations,
     required Map<String, AgentMessagePayloadEntity> observationPayloads,
-    required _CaptureContext? captureContext,
-    required _DraftingContext? draftingContext,
-    required _RefineContext? refineContext,
+    required CaptureContext? captureContext,
+    required DraftingContext? draftingContext,
+    required RefineContext? refineContext,
     required AttentionPlanningInputs attentionPlanning,
-    required _KnowledgeContext knowledge,
+    required KnowledgeContext knowledge,
     WeekContext? weekContext,
     String? compactedLog,
   }) {
@@ -91,7 +91,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
                 for (final observation in observations)
                   {
                     'createdAt': observation.createdAt.toIso8601String(),
-                    'text': DayAgentWorkflow._extractPayloadText(
+                    'text': extractPayloadText(
                       observationPayloads[observation.contentEntryId],
                     ),
                   },
@@ -108,23 +108,46 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     return sections.build();
   }
 
+  /// Loads the week context for a day-token wake. The service is fail-soft
+  /// already (load errors log and return null); this guard additionally
+  /// absorbs unexpected service bugs so lookback context can never kill a
+  /// wake. The wake's own [now] is passed through so the section's day
+  /// classification agrees with `current_local_time` across a midnight
+  /// straddle.
+  Future<WeekContext?> _weekContext({
+    required String agentId,
+    required DateTime planDate,
+    required DateTime now,
+  }) async {
+    try {
+      return await weekContextService?.buildForDay(
+        agentId: agentId,
+        planDate: planDate,
+        now: now,
+      );
+    } catch (e, s) {
+      _logError('failed to load week context', error: e, stackTrace: s);
+      return null;
+    }
+  }
+
   /// Loads the planner's durable knowledge and renders the two-tier prompt
   /// blocks (ADR 0022 Decisions 9–10): the always-on hook index plus the
   /// scope-filtered full statements for the scopes this wake actually touches
   /// (`global` always; [touchedScopes] for `category:`/`project:`). Returns
   /// empty blocks (and the caller omits the field) when no knowledge or no
   /// service is configured.
-  Future<_KnowledgeContext> _knowledgeContext({
+  Future<KnowledgeContext> _knowledgeContext({
     required AgentIdentityEntity agentIdentity,
     required Set<String> touchedScopes,
     required DateTime now,
   }) async {
     final service = knowledgeService;
-    if (service == null) return const _KnowledgeContext.empty();
+    if (service == null) return const KnowledgeContext.empty();
     try {
       final active = await service.activeFor(agentIdentity.agentId);
-      if (active.isEmpty) return const _KnowledgeContext.empty();
-      return _KnowledgeContext(
+      if (active.isEmpty) return const KnowledgeContext.empty();
+      return KnowledgeContext(
         hookIndex: renderKnowledgeHookIndex(active),
         statements: renderKnowledgeStatements(active, touchedScopes, now: now),
       );
@@ -134,7 +157,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         error: e,
         stackTrace: s,
       );
-      return const _KnowledgeContext.empty();
+      return const KnowledgeContext.empty();
     }
   }
 
@@ -154,8 +177,8 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   /// category, so they contribute no project scope.
   Set<String> _touchedScopes({
     required AttentionPlanningInputs attentionPlanning,
-    required _DraftingContext? draftingContext,
-    required _RefineContext? refineContext,
+    required DraftingContext? draftingContext,
+    required RefineContext? refineContext,
   }) {
     const projectTargetKind = 'project';
     final scopes = <String>{};
@@ -286,7 +309,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     };
   }
 
-  Future<_CaptureContext?> _captureContext({
+  Future<CaptureContext?> _captureContext({
     required AgentIdentityEntity agentIdentity,
     required DateTime planDate,
     required DailyOsPlannerWakeContext wakeContext,
@@ -308,15 +331,15 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
         allowedCategoryIds: agentIdentity.allowedCategoryIds,
         day: planDate,
       );
-      return _CaptureContext(capture: capture, taskCorpus: corpus);
+      return CaptureContext(capture: capture, taskCorpus: corpus);
     }
     return null;
   }
 
-  Future<_DraftingContext?> _draftingContext({
+  Future<DraftingContext?> _draftingContext({
     required AgentIdentityEntity agentIdentity,
     required DailyOsPlannerWakeContext wakeContext,
-    required _CaptureContext? captureContext,
+    required CaptureContext? captureContext,
   }) async {
     final service = planService;
     if (service == null) return null;
@@ -338,7 +361,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       for (final item in parsedItems)
         if (explicitCaptureItemIds.contains(item.id)) item,
     ];
-    return _DraftingContext(
+    return DraftingContext(
       baselinePlan: baselinePlan,
       decidedTasks: decidedTasks,
       decidedCaptureItems: decidedCaptureItems,
@@ -346,7 +369,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   }
 
   Future<List<ParsedItemEntity>> _parsedItemsForCapture(
-    _CaptureContext? captureContext,
+    CaptureContext? captureContext,
   ) async {
     final capture = captureContext?.capture;
     final service = captureService;
@@ -355,7 +378,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     return entities.whereType<ParsedItemEntity>().toList();
   }
 
-  Future<_RefineContext?> _refineContext({
+  Future<RefineContext?> _refineContext({
     required AgentIdentityEntity agentIdentity,
     required DailyOsPlannerWakeContext wakeContext,
   }) async {
@@ -367,6 +390,6 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       agentId: agentIdentity.agentId,
       dayId: wakeContext.dayId,
     );
-    return _RefineContext(baselinePlan: baselinePlan);
+    return RefineContext(baselinePlan: baselinePlan);
   }
 }

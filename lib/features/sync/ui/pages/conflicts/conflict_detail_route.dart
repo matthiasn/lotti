@@ -1,55 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
-import 'package:lotti/features/sync/ui/widgets/conflicts/title_diff.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_chrome.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/nav_service.dart';
-
-part 'conflict_detail_cards.dart';
-part 'conflict_detail_chrome.dart';
-part 'conflict_detail_footer.dart';
-
-/// Stacked vs side-by-side breakpoint for the diff cards. Below this,
-/// the picker collapses to a single column and the header pill drops
-/// the "fields differ" half.
-const double _kStackedBreakpoint = 768;
-
-/// Width of the colored accent stripe pinned to the leading edge of
-/// each diff card.
-const double _kAccentStripeWidth = 3;
-
-/// Diameter of the small status dot rendered inside the count pill and
-/// each card header. No matching design-system token; consolidated here
-/// so the two call sites stay in sync.
-const double _kCountPillDotSize = 5;
-const double _kCardHeaderDotSize = 6;
-
-/// Icon sizes for the back chip and the summary banner glyph. The
-/// design system has no icon-size token; named here so they're not
-/// re-typed at the call sites.
-const double _kBackChipIconSize = 20;
-const double _kSummaryIconSize = 18;
-
-/// Picker pill height. Matches the agents-listing toolbar pill height
-/// — there's no tappable-row token in the design system yet.
-const double _kPickerPillHeight = 36;
-
-enum _Side { local, remote }
 
 /// Conflict picker page with inline word-level diffs between the local
 /// and remote versions of an entry. The user picks a side (or opens
@@ -64,7 +27,7 @@ class ConflictDetailRoute extends StatefulWidget {
 }
 
 class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
-  _Side? _selected;
+  ConflictSide? _selected;
   Future<JournalEntity?>? _localEntryFuture;
   String? _futureKey;
 
@@ -103,13 +66,13 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
         if (snapshot.hasError) {
           return EmptyScaffoldWithTitle(
             context.messages.conflictDetailLoadErrorTitle,
-            body: _ErrorBody(error: snapshot.error),
+            body: ErrorBody(error: snapshot.error),
           );
         }
         final data = snapshot.data ?? const <Conflict>[];
         if (data.isEmpty) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const _LoadingScaffold();
+            return const LoadingScaffold();
           }
           return EmptyScaffoldWithTitle(
             context.messages.conflictDetailNotFoundTitle,
@@ -123,11 +86,11 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
             if (entrySnapshot.hasError) {
               return EmptyScaffoldWithTitle(
                 context.messages.conflictDetailLoadErrorTitle,
-                body: _ErrorBody(error: entrySnapshot.error),
+                body: ErrorBody(error: entrySnapshot.error),
               );
             }
             if (entrySnapshot.connectionState == ConnectionState.waiting) {
-              return const _LoadingScaffold();
+              return const LoadingScaffold();
             }
             final local = entrySnapshot.data;
             if (local == null) {
@@ -150,7 +113,7 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
             final remoteResolved = remote.copyWith(
               meta: remote.meta.copyWith(vectorClock: mergedClock),
             );
-            return _ConflictPickerScaffold(
+            return ConflictPickerScaffold(
               conflict: conflict,
               local: localResolved,
               remote: remoteResolved,
@@ -167,8 +130,8 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
 
   Future<void> _apply(JournalEntity local, JournalEntity remote) async {
     final winner = switch (_selected) {
-      _Side.local => local,
-      _Side.remote => remote,
+      ConflictSide.local => local,
+      ConflictSide.remote => remote,
       null => null,
     };
     if (winner == null) return;

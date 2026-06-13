@@ -1,9 +1,23 @@
-part of 'agent_repository.dart';
+import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
+import 'package:lotti/features/agents/database/agent_repo_internals.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart'
+    show AgentRepository;
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/model/proposal_ledger_status.dart';
 
-/// Proposal-ledger assembly of [AgentRepository] — the heaviest single
-/// query in the repository. The class keeps a thin delegator so mocks
+/// Proposal-ledger assembly for [AgentRepository] — the heaviest single query
+/// in the repository. Collaborator extracted from the former
+/// `_AgentProposalLedger` mixin; the repository keeps a thin delegator so mocks
 /// keep intercepting the public method.
-extension AgentProposalLedger on AgentRepository {
+class AgentProposalLedger {
+  AgentProposalLedger(this._db);
+
+  final AgentDatabase _db;
+
   /// Build a [ProposalLedger] for [taskId] under [agentId] — every
   /// [ChangeItem] the agent has ever produced for this task, annotated with
   /// its current lifecycle status and (if resolved) who resolved it.
@@ -23,7 +37,7 @@ extension AgentProposalLedger on AgentRepository {
   /// are capped at [resolvedLimit] most-recent decisions to keep the LLM
   /// prompt bounded. Historical rows with a resolved parent but a stale
   /// embedded pending item and no decision are filtered out entirely.
-  Future<ProposalLedger> getProposalLedgerImpl(
+  Future<ProposalLedger> getProposalLedger(
     String agentId, {
     required String taskId,
     int changeSetFetchLimit = 200,
@@ -39,14 +53,14 @@ extension AgentProposalLedger on AgentRepository {
       _db
           .getPendingChangeSetsForAgent(
             agentId,
-            changeSetFetchLimit * AgentRepository._overFetchMultiplier,
+            changeSetFetchLimit * overFetchMultiplier,
           )
           .get(),
       _db.getChangeSetsForAgent(agentId, changeSetFetchLimit).get(),
       _db
           .getRecentDecisionsForAgent(
             agentId,
-            resolvedLimit * AgentRepository._overFetchMultiplier,
+            resolvedLimit * overFetchMultiplier,
           )
           .get(),
     ]);
@@ -95,14 +109,14 @@ extension AgentProposalLedger on AgentRepository {
     final sanitizedItemsBySetId = <String, List<ChangeItem>>{};
 
     for (final set in allSets) {
-      final setIsActive = _isPendingLike(set.status);
+      final setIsActive = isPendingLike(set.status);
       final sanitizedItems = pendingSetIds.contains(set.id)
           ? <ChangeItem>[]
           : null;
       for (var i = 0; i < set.items.length; i++) {
         final item = set.items[i];
         final decision = decisionByKey['${set.id}:$i'];
-        final effectiveStatus = _effectiveLedgerStatus(
+        final effectiveStatus = effectiveLedgerStatus(
           setIsActive: setIsActive,
           item: item,
           decision: decision,
@@ -172,57 +186,5 @@ extension AgentProposalLedger on AgentRepository {
       resolved: resolved.take(resolvedLimit).toList(),
       pendingSets: sanitizedPendingSets,
     );
-  }
-
-  /// Test-only seam for [_isPendingLike] — pure enum predicate.
-  @visibleForTesting
-  static bool debugIsPendingLike(ChangeSetStatus status) =>
-      _isPendingLike(status);
-
-  /// Test-only seam for [_effectiveLedgerStatus] — the pure status
-  /// state-machine that getProposalLedger applies per item.
-  @visibleForTesting
-  static ChangeItemStatus debugEffectiveLedgerStatus({
-    required bool setIsActive,
-    required ChangeItem item,
-    required ChangeDecisionEntity? decision,
-  }) => _effectiveLedgerStatus(
-    setIsActive: setIsActive,
-    item: item,
-    decision: decision,
-  );
-
-  static bool _isPendingLike(ChangeSetStatus status) {
-    return status == ChangeSetStatus.pending ||
-        status == ChangeSetStatus.partiallyResolved;
-  }
-
-  static ChangeItemStatus _effectiveLedgerStatus({
-    required bool setIsActive,
-    required ChangeItem item,
-    required ChangeDecisionEntity? decision,
-  }) {
-    if (item.status != ChangeItemStatus.pending) return item.status;
-
-    final verdict = decision?.verdict;
-    if (verdict == null) return item.status;
-
-    // Confirmation decisions are written before dispatch. If dispatch later
-    // fails, the item is deliberately reverted to pending so the user can
-    // retry. Rejection, deferral, and retraction have no dispatch retry path,
-    // so their decisions close stale embedded pending items.
-    if (setIsActive && verdict == ChangeDecisionVerdict.confirmed) {
-      return item.status;
-    }
-    return _statusForDecision(verdict);
-  }
-
-  static ChangeItemStatus _statusForDecision(ChangeDecisionVerdict verdict) {
-    return switch (verdict) {
-      ChangeDecisionVerdict.confirmed => ChangeItemStatus.confirmed,
-      ChangeDecisionVerdict.rejected => ChangeItemStatus.rejected,
-      ChangeDecisionVerdict.deferred => ChangeItemStatus.deferred,
-      ChangeDecisionVerdict.retracted => ChangeItemStatus.retracted,
-    };
   }
 }
