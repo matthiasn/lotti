@@ -4731,7 +4731,7 @@ void main() {
           () => generatedRepository.getEntitiesByAgentId(
             template.id,
             type: AgentEntityTypes.agentTemplateVersion,
-            limit: 1000000,
+            limit: -1,
           ),
         ).thenAnswer(
           (_) async => scenario.templates[index].versionEntities(index),
@@ -4754,7 +4754,7 @@ void main() {
             () => generatedRepository.getEntitiesByAgentId(
               template.id,
               type: AgentEntityTypes.agentTemplateVersion,
-              limit: 1000000,
+              limit: -1,
             ),
           );
         }
@@ -4767,7 +4767,7 @@ void main() {
           () => generatedRepository.getEntitiesByAgentId(
             template.id,
             type: AgentEntityTypes.agentTemplateVersion,
-            limit: 1000000,
+            limit: -1,
           ),
         ).called(1);
       }
