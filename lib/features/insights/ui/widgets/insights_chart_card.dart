@@ -31,8 +31,8 @@ class InsightsChartCard extends StatefulWidget {
   final InsightsChartData chartData;
   final InsightsCategoryResolver resolver;
 
-  /// Previous-period totals aligned to [chartData]'s buckets
-  /// ([alignedPreviousTotals]). When non-null the chart switches to grouped
+  /// Previous-period totals aligned to [chartData]'s buckets (via
+  /// `alignedPreviousTotals`). When non-null the chart switches to grouped
   /// current-vs-previous bars and hides the daily/cumulative toggle — the
   /// comparison is a per-bucket total view, so the cumulative mode (and the
   /// category stacking it shares with the daily bars) would only muddy it.

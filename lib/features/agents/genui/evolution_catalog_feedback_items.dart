@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';

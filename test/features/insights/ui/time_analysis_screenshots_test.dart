@@ -347,4 +347,91 @@ void main() {
     expect(find.text('100%'), findsOneWidget);
     await _capture(tester, '10_single_category_dark');
   });
+
+  testWidgets('week cumulative — dark', (tester) async {
+    await _pumpDashboard(
+      tester,
+      rows: insightsScenarioRows(_now),
+      categories: insightsScenarioCategories,
+    );
+    await _tap(tester, find.text('Cumulative'));
+    expect(find.text('Running total over the range'), findsOneWidget);
+    await _capture(tester, '11_week_cumulative_dark');
+  });
+
+  testWidgets('year cumulative — dark', (tester) async {
+    await _pumpDashboard(
+      tester,
+      rows: insightsScenarioRows(_now, manyCategories: true),
+      categories: insightsScenarioCategories,
+    );
+    await _selectGranularity(tester, 'Week', 'Year');
+    await _tap(tester, find.text('Cumulative'));
+    expect(find.text('Running total over the range'), findsOneWidget);
+    await _capture(tester, '12_year_cumulative_dark');
+  });
+
+  testWidgets('month cumulative — light', (tester) async {
+    await _pumpDashboard(
+      tester,
+      rows: insightsScenarioRows(_now),
+      categories: insightsScenarioCategories,
+      brightness: Brightness.light,
+    );
+    await _selectGranularity(tester, 'Week', 'Month');
+    await _tap(tester, find.text('Cumulative'));
+    expect(find.text('Running total over the range'), findsOneWidget);
+    await _capture(tester, '13_month_cumulative_light');
+  });
+
+  testWidgets('week compare — dark', (tester) async {
+    await _pumpDashboard(
+      tester,
+      rows: insightsScenarioRows(_now),
+      categories: insightsScenarioCategories,
+    );
+    await _tap(tester, find.text('Compare'));
+    // Compare swaps the chart caption and adds a previous-period column.
+    expect(find.text('This period vs the previous'), findsOneWidget);
+    expect(find.text('PREVIOUS'), findsOneWidget);
+    await _capture(tester, '14_week_compare_dark');
+  });
+
+  testWidgets('month compare — dark', (tester) async {
+    await _pumpDashboard(
+      tester,
+      rows: insightsScenarioRows(_now),
+      categories: insightsScenarioCategories,
+    );
+    await _selectGranularity(tester, 'Week', 'Month');
+    await _tap(tester, find.text('Compare'));
+    expect(find.text('This period vs the previous'), findsOneWidget);
+    expect(find.text('PREVIOUS'), findsOneWidget);
+    await _capture(tester, '15_month_compare_dark');
+  });
+
+  testWidgets('month compare — light', (tester) async {
+    await _pumpDashboard(
+      tester,
+      rows: insightsScenarioRows(_now),
+      categories: insightsScenarioCategories,
+      brightness: Brightness.light,
+    );
+    await _selectGranularity(tester, 'Week', 'Month');
+    await _tap(tester, find.text('Compare'));
+    expect(find.text('This period vs the previous'), findsOneWidget);
+    await _capture(tester, '16_month_compare_light');
+  });
+
+  testWidgets('month-to-date — dark', (tester) async {
+    await _pumpDashboard(
+      tester,
+      rows: insightsScenarioRows(_now),
+      categories: insightsScenarioCategories,
+    );
+    await _tap(tester, find.text('MTD'));
+    // MTD jumps to the current month through today (Jun 1 – 7).
+    expect(find.text('Jun 1 – 7'), findsOneWidget);
+    await _capture(tester, '17_mtd_dark');
+  });
 }
