@@ -1,10 +1,36 @@
-part of 'task_tool_dispatcher.dart';
+import 'dart:convert';
+
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/attention_request_handler.dart';
+import 'package:lotti/features/agents/tools/checklist_migration_handler.dart';
+import 'package:lotti/features/agents/tools/follow_up_task_handler.dart';
+import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
+import 'package:lotti/features/agents/tools/task_label_handler.dart';
+import 'package:lotti/features/agents/tools/task_language_handler.dart';
+import 'package:lotti/features/agents/tools/task_status_handler.dart';
+import 'package:lotti/features/agents/tools/task_title_handler.dart';
+import 'package:lotti/features/agents/tools/time_entry_handler.dart';
+import 'package:lotti/features/agents/tools/time_entry_update_handler.dart';
+import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
+import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
+import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
+import 'package:lotti/features/ai/functions/task_due_date_handler.dart';
+import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
+import 'package:lotti/features/ai/functions/task_priority_handler.dart';
+import 'package:lotti/features/ai/services/auto_checklist_service.dart';
+import 'package:lotti/features/labels/services/label_assignment_processor.dart';
+import 'package:openai_dart/openai_dart.dart';
+import 'package:uuid/uuid.dart';
+
+const _uuid = Uuid();
 
 /// Per-tool handlers for [TaskToolDispatcher]: each `_handle*` method applies
 /// one Task-Agent tool call to the journal domain. Split from the main file
-/// for size; all members are library-private.
+/// into its own library; the dispatcher imports it.
 extension TaskToolHandlers on TaskToolDispatcher {
-  Future<ToolExecutionResult> _handleSetTaskTitle(
+  Future<ToolExecutionResult> handleSetTaskTitle(
     Task task,
     Map<String, dynamic> args,
     String taskId,
@@ -29,7 +55,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     // resolver re-read immediately before dispatch.
     final handler = TaskTitleHandler(
       task: task,
-      journalRepository: this.journalRepository,
+      journalRepository: journalRepository,
     );
     final result = await handler.handle(titleArg);
     return ToolExecutionResult.fromHandlerResult(
@@ -41,7 +67,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     );
   }
 
-  Future<ToolExecutionResult> _handleProcessToolCall(
+  Future<ToolExecutionResult> handleProcessToolCall(
     Task task,
     String toolName,
     Map<String, dynamic> args,
@@ -95,7 +121,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
       case TaskAgentToolNames.updateTaskEstimate:
         final handler = TaskEstimateHandler(
           task: task,
-          journalRepository: this.journalRepository,
+          journalRepository: journalRepository,
         );
         // Omit the optional manager parameter — the strategy layer adds the
         // tool response with the real call ID. Passing a manager here would
@@ -112,7 +138,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
       case TaskAgentToolNames.updateTaskDueDate:
         final handler = TaskDueDateHandler(
           task: task,
-          journalRepository: this.journalRepository,
+          journalRepository: journalRepository,
         );
         final result = await handler.processToolCall(toolCall);
         return ToolExecutionResult.fromHandlerResult(
@@ -126,7 +152,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
       case TaskAgentToolNames.updateTaskPriority:
         final handler = TaskPriorityHandler(
           task: task,
-          journalRepository: this.journalRepository,
+          journalRepository: journalRepository,
         );
         final result = await handler.processToolCall(toolCall);
         return ToolExecutionResult.fromHandlerResult(
@@ -139,12 +165,12 @@ extension TaskToolHandlers on TaskToolDispatcher {
 
       default:
         throw StateError(
-          'Unexpected tool $toolName routed to _handleProcessToolCall',
+          'Unexpected tool $toolName routed to handleProcessToolCall',
         );
     }
   }
 
-  Future<ToolExecutionResult> _handleAssignLabels(
+  Future<ToolExecutionResult> handleAssignLabels(
     Task task,
     Map<String, dynamic> args,
     String taskId,
@@ -178,7 +204,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     );
   }
 
-  Future<ToolExecutionResult> _handleSetLanguage(
+  Future<ToolExecutionResult> handleSetLanguage(
     Task task,
     Map<String, dynamic> args,
     String taskId,
@@ -196,7 +222,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
 
     final handler = TaskLanguageHandler(
       task: task,
-      journalRepository: this.journalRepository,
+      journalRepository: journalRepository,
     );
     final result = await handler.handle(languageCode);
     return ToolExecutionResult.fromHandlerResult(
@@ -208,7 +234,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     );
   }
 
-  Future<ToolExecutionResult> _handleSetStatus(
+  Future<ToolExecutionResult> handleSetStatus(
     Task task,
     Map<String, dynamic> args,
     String taskId,
@@ -227,7 +253,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     final reason = args['reason'];
     final handler = TaskStatusHandler(
       task: task,
-      journalRepository: this.journalRepository,
+      journalRepository: journalRepository,
     );
     final result = await handler.handle(
       status,
@@ -242,7 +268,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     );
   }
 
-  Future<ToolExecutionResult> _handleBatchChecklist(
+  Future<ToolExecutionResult> handleBatchChecklist(
     Task task,
     String toolName,
     Map<String, dynamic> args,
@@ -260,13 +286,13 @@ extension TaskToolHandlers on TaskToolDispatcher {
     }
 
     final autoChecklistService = AutoChecklistService(
-      checklistRepository: this.checklistRepository,
+      checklistRepository: checklistRepository,
     );
 
     final handler = LottiBatchChecklistHandler(
       task: task,
       autoChecklistService: autoChecklistService,
-      checklistRepository: this.checklistRepository,
+      checklistRepository: checklistRepository,
     );
 
     final toolCall = ChatCompletionMessageToolCall(
@@ -291,7 +317,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     return ToolExecutionResult(
       // Return success=true as long as parsing succeeded — a count of 0
       // just means no items were created (no-op). This mirrors
-      // _handleChecklistUpdate and prevents redundant LLM retries.
+      // handleChecklistUpdate and prevents redundant LLM retries.
       success: true,
       output: handler.createToolResponse(parseResult),
       mutatedEntityId: count > 0 ? taskId : null,
@@ -303,7 +329,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     );
   }
 
-  Future<ToolExecutionResult> _handleChecklistUpdate(
+  Future<ToolExecutionResult> handleChecklistUpdate(
     Task task,
     String toolName,
     Map<String, dynamic> args,
@@ -322,7 +348,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
 
     final handler = LottiChecklistUpdateHandler(
       task: task,
-      checklistRepository: this.checklistRepository,
+      checklistRepository: checklistRepository,
     );
 
     final toolCall = ChatCompletionMessageToolCall(
@@ -363,7 +389,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     );
   }
 
-  Future<ToolExecutionResult> _handleCreateFollowUpTask(
+  Future<ToolExecutionResult> handleCreateFollowUpTask(
     Map<String, dynamic> args,
     String sourceTaskId,
   ) async {
@@ -372,24 +398,24 @@ extension TaskToolHandlers on TaskToolDispatcher {
       journalDb: journalDb,
       domainLogger: domainLogger,
       taskAgentService: taskAgentService,
-      projectRepository: this.projectRepository,
+      projectRepository: projectRepository,
     );
     return handler.handle(sourceTaskId, args);
   }
 
-  Future<ToolExecutionResult> _handleMigrateChecklistItem(
+  Future<ToolExecutionResult> handleMigrateChecklistItem(
     Map<String, dynamic> args,
     String sourceTaskId,
   ) async {
     final handler = ChecklistMigrationHandler(
-      checklistRepository: this.checklistRepository,
+      checklistRepository: checklistRepository,
       journalDb: journalDb,
       domainLogger: domainLogger,
     );
     return handler.handle(sourceTaskId, args);
   }
 
-  Future<ToolExecutionResult> _handleCreateTimeEntry(
+  Future<ToolExecutionResult> handleCreateTimeEntry(
     Map<String, dynamic> args,
     String taskId,
   ) async {
@@ -402,7 +428,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     return handler.handle(taskId, args);
   }
 
-  Future<ToolExecutionResult> _handleUpdateRunningTimer(
+  Future<ToolExecutionResult> handleUpdateRunningTimer(
     Map<String, dynamic> args,
     String taskId,
   ) async {
@@ -414,7 +440,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     return handler.handle(taskId, args);
   }
 
-  Future<ToolExecutionResult> _handleUpdateTimeEntry(
+  Future<ToolExecutionResult> handleUpdateTimeEntry(
     Map<String, dynamic> args,
     String taskId,
   ) async {
@@ -427,7 +453,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     return handler.handle(taskId, args);
   }
 
-  Future<ToolExecutionResult> _handleRequestAttention(
+  Future<ToolExecutionResult> handleRequestAttention(
     Task task,
     Map<String, dynamic> args,
   ) async {
@@ -450,7 +476,7 @@ extension TaskToolHandlers on TaskToolDispatcher {
     return handler.handle(task, args);
   }
 
-  Future<ToolExecutionResult> _handleResolveAttentionRequest(
+  Future<ToolExecutionResult> handleResolveAttentionRequest(
     Task task,
     Map<String, dynamic> args,
   ) async {
