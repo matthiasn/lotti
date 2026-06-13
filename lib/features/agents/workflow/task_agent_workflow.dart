@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
@@ -10,13 +9,11 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
-import 'package:lotti/features/agents/service/attention_claim_maintenance_service.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
@@ -24,13 +21,12 @@ import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
-import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
-import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
+import 'package:lotti/features/agents/workflow/task_agent_context_builder.dart';
+import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
@@ -61,10 +57,7 @@ import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/agents/workflow/wake_result.dart';
 
-part 'task_agent_context_builder.dart';
 part 'task_agent_persistence_helpers.dart';
-part 'task_agent_prompt_builder.dart';
-part 'task_agent_user_message_builder.dart';
 part 'task_agent_execute.dart';
 
 /// Assembles context, runs a conversation, and persists results for a single
@@ -190,6 +183,17 @@ class TaskAgentWorkflow {
   static const resolvedDecisionWindow = 500;
 
   static const _uuid = Uuid();
+
+  /// Prompt/context assembly collaborator. Reads from the injected
+  /// repositories and builds the wake's context sections + user message; the
+  /// workflow delegates to it (see the `_build*` / `_maintain*` helpers below).
+  late final TaskAgentContextBuilder _contextBuilder = TaskAgentContextBuilder(
+    agentRepository: agentRepository,
+    syncService: syncService,
+    aiInputRepository: aiInputRepository,
+    journalDb: journalDb,
+    logError: _logError,
+  );
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(
@@ -353,91 +357,65 @@ class TaskAgentWorkflow {
     );
   }
 
-  /// Extracts the text content from an observation payload.
-  static String _extractPayloadText(AgentMessagePayloadEntity? payload) {
-    if (payload == null) return '(no content)';
-    final text = payload.content['text'];
-    if (text is String && text.isNotEmpty) return text;
-    return '(no content)';
-  }
+  // ── Prompt/context delegators ─────────────────────────────────────────────
+  // These forward to [_contextBuilder] (or the pure [TaskAgentPromptBuilder]);
+  // the execute part keeps calling the private helpers it always has.
 
-  /// Writes a dedicated section for prior critical observations so the
-  /// task agent can self-correct on grievances and reinforce excellence.
-  static void _writePriorCriticalObservations(
-    StringBuffer buffer,
-    List<AgentMessageEntity> observations,
-    Map<String, AgentMessagePayloadEntity> payloads,
-  ) {
-    final grievances = <(DateTime, String)>[];
-    final excellence = <(DateTime, String)>[];
+  Future<String> _buildLinkedTasksContextJson(String taskId) =>
+      _contextBuilder.buildLinkedTasksContextJson(taskId);
 
-    for (final obs in observations) {
-      final payload = obs.contentEntryId != null
-          ? payloads[obs.contentEntryId]
-          : null;
-      if (payload == null) continue;
+  Future<({List<AttentionRequestEntity> claims, Task? task})>
+  _maintainAndLoadAttentionClaims({
+    required String agentId,
+    required String taskId,
+    Task? task,
+  }) => _contextBuilder.maintainAndLoadAttentionClaims(
+    agentId: agentId,
+    taskId: taskId,
+    task: task,
+  );
 
-      final rawPriority = payload.content['priority'];
-      final priority = rawPriority is String
-          ? parseEnumByName(ObservationPriority.values, rawPriority)
-          : null;
-      if (priority != ObservationPriority.critical) continue;
+  String _buildSystemPrompt(_TemplateContext ctx) =>
+      TaskAgentPromptBuilder.buildSystemPrompt(
+        version: ctx.version,
+        soulVersion: ctx.soulVersion,
+      );
 
-      final text = payload.content['text'];
-      if (text is! String || text.trim().isEmpty) continue;
+  Future<({String text, int? logStart, int? logEnd})> _buildUserMessage({
+    required String agentId,
+    required bool hasReport,
+    required List<AgentMessageEntity> journalObservations,
+    required String taskDetails,
+    required String projectContextJson,
+    required String linkedTasksJson,
+    required Set<String> triggerTokens,
+    required String taskId,
+    ProposalLedger ledger = const ProposalLedger.empty(),
+    List<AttentionRequestEntity> attentionClaims = const [],
+    Task? task,
+    TimeService? timeService,
+    String? compactedTaskLog,
+  }) => _contextBuilder.buildUserMessage(
+    agentId: agentId,
+    hasReport: hasReport,
+    journalObservations: journalObservations,
+    taskDetails: taskDetails,
+    projectContextJson: projectContextJson,
+    linkedTasksJson: linkedTasksJson,
+    triggerTokens: triggerTokens,
+    taskId: taskId,
+    ledger: ledger,
+    attentionClaims: attentionClaims,
+    task: task,
+    timeService: timeService,
+    compactedTaskLog: compactedTaskLog,
+  );
 
-      final rawCategory = payload.content['category'];
-      final category = rawCategory is String
-          ? parseEnumByName(ObservationCategory.values, rawCategory)
-          : null;
-      if (category == ObservationCategory.excellence) {
-        excellence.add((obs.createdAt, text));
-      } else {
-        // grievance, template_improvement, or unrecognized critical
-        grievances.add((obs.createdAt, text));
-      }
-    }
+  List<ChatCompletionTool> _buildToolDefinitions() =>
+      _contextBuilder.buildToolDefinitions();
 
-    if (grievances.isEmpty && excellence.isEmpty) return;
-
-    buffer
-      ..writeln('## Prior Critical Observations (Self-Review)')
-      ..writeln(
-        'The following critical observations were recorded in your previous '
-        'wakes. Review them and adjust your behavior accordingly.',
-      )
-      ..writeln();
-
-    if (grievances.isNotEmpty) {
-      buffer.writeln('### Grievances');
-      for (final (timestamp, text) in grievances) {
-        buffer.writeln('- [${timestamp.toIso8601String()}] $text');
-      }
-      buffer.writeln();
-    }
-
-    if (excellence.isNotEmpty) {
-      buffer.writeln('### Excellence (keep doing this)');
-      for (final (timestamp, text) in excellence) {
-        buffer.writeln('- [${timestamp.toIso8601String()}] $text');
-      }
-      buffer.writeln();
-    }
-  }
-}
-
-class _LinkedTaskAgentReport {
-  const _LinkedTaskAgentReport({
-    required this.agentId,
-    required this.oneLiner,
-    required this.tldr,
-    required this.createdAt,
-  });
-
-  final String agentId;
-  final String? oneLiner;
-  final String? tldr;
-  final DateTime createdAt;
+  String? _extractFinalAssistantContent(ConversationManager? manager) =>
+      _contextBuilder.extractFinalAssistantContent(manager);
 }
 
 /// Resolved template and version pair for prompt composition.

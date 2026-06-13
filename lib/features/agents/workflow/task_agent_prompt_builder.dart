@@ -1,7 +1,12 @@
-part of 'task_agent_workflow.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 
-/// System-prompt and user-message assembly of [TaskAgentWorkflow].
-extension TaskAgentPromptBuilder on TaskAgentWorkflow {
+/// Pure system-prompt assembly for the Task Agent.
+///
+/// Extracted from `TaskAgentWorkflow`: [buildSystemPrompt] is a pure function
+/// of the resolved template version and optional soul version — it reads no
+/// injected dependencies and mutates no state. Exposed as static members so
+/// the workflow (and tests) can build the prompt without an instance.
+abstract final class TaskAgentPromptBuilder {
   /// Builds the full system prompt from the scaffold and template directives.
   ///
   /// When a soul document is assigned, personality is injected under
@@ -10,9 +15,10 @@ extension TaskAgentPromptBuilder on TaskAgentWorkflow {
   /// `generalDirective`. When no soul is assigned, the existing
   /// `## Your Personality & Directives` heading is preserved for backwards
   /// compatibility.
-  String _buildSystemPrompt(_TemplateContext ctx) {
-    final version = ctx.version;
-    final soulVersion = ctx.soulVersion;
+  static String buildSystemPrompt({
+    required AgentTemplateVersionEntity version,
+    required SoulDocumentVersionEntity? soulVersion,
+  }) {
     final trimmedGeneralDirective = version.generalDirective.trim();
     final trimmedReportDirective = version.reportDirective.trim();
     final trimmedLegacyDirective = version.directives.trim();

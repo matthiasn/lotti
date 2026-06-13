@@ -64,7 +64,8 @@ Startup does this:
   `GeminiThinkingMode` → numeric/`thinkingLevel` mapping lives in
   `GeminiThinkingConfig` in the `ai` feature.
 - Linked task context for agents is built directly in
-  `TaskAgentWorkflow._buildLinkedTasksContextJson` (forked from
+  `TaskAgentContextBuilder.buildLinkedTasksContextJson` (the wake's prompt/context
+  collaborator, which `TaskAgentWorkflow` holds and delegates to; forked from
   `AiInputRepository.buildLinkedTasksJson` for the wake path), and injects a
   compact summary (`latestTaskAgentReportOneLiner` / `latestTaskAgentReportTldr`)
   of each linked task's associated task-agent report (via `agent_task` links +
@@ -816,8 +817,8 @@ The task wake prompt is assembled from:
   id, no other-task identity, no entry text) so the agent can avoid
   proposing `create_time_entry` intervals on this task that overlap with
   what is already being tracked elsewhere. See `_buildActiveTimerSection`
-  in `task_agent_context_builder.dart` (called from
-  `task_agent_prompt_builder.dart`).
+  in `task_agent_context_builder.dart` (the `TaskAgentContextBuilder`
+  collaborator, called from its own `buildUserMessage`).
 - editable historical time entries linked from the current task. The
   `Editable Time Entries` prompt section lists non-running `JournalEntry`
   ids, `dateFrom`, `dateTo`, and current text so the agent can propose

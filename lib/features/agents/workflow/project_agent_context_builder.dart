@@ -1,9 +1,44 @@
-part of 'project_agent_workflow.dart';
+import 'dart:convert';
 
-/// Prompt/context assembly and payload-resolution helpers of
-/// [ProjectAgentWorkflow].
-extension ProjectAgentContextBuilder on ProjectAgentWorkflow {
-  String _buildSystemPrompt(_TemplateContext? ctx) {
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/journal/repository/journal_repository.dart';
+import 'package:openai_dart/openai_dart.dart';
+
+/// Callback used by the agent context builders to surface non-fatal errors
+/// through the owning workflow's structured logger.
+typedef LogErrorCallback =
+    void Function(String message, {Object? error, StackTrace? stackTrace});
+
+/// Prompt/context assembly and payload-resolution collaborator of the
+/// Project Agent wake cycle.
+///
+/// Extracted from `ProjectAgentWorkflow` as a standalone collaborator: every
+/// method here reads from the injected repositories (or transforms its inputs)
+/// and builds a prompt string / context object. None of them mutate workflow
+/// state. The workflow holds an instance and delegates to it.
+class ProjectAgentContextBuilder {
+  ProjectAgentContextBuilder({
+    required this.agentRepository,
+    required this.journalRepository,
+    required this.logError,
+  });
+
+  final AgentRepository agentRepository;
+  final JournalRepository journalRepository;
+  final LogErrorCallback logError;
+
+  String buildSystemPrompt({
+    required AgentTemplateVersionEntity? version,
+    required SoulDocumentVersionEntity? soulVersion,
+  }) {
     const scaffold = '''
 You are a Project Agent — a persistent assistant that maintains a high-level
 report for a project. Your job is to:
@@ -75,10 +110,8 @@ The `recommend_next_steps`, `update_project_status`, and `create_task` tools
 are deferred — they queue changes for user review rather than executing
 immediately.''';
 
-    if (ctx == null) return scaffold;
+    if (version == null) return scaffold;
 
-    final version = ctx.version;
-    final soulVersion = ctx.soulVersion;
     final generalDirective = version.generalDirective.trim();
     final reportDirective = version.reportDirective.trim();
     final hasNewDirectives =
@@ -169,7 +202,7 @@ immediately.''';
     }
   }
 
-  ({String text, int? logStart, int? logEnd}) _buildUserMessage({
+  ({String text, int? logStart, int? logEnd}) buildUserMessage({
     required JournalEntity projectEntity,
     required AgentReportEntity? lastReport,
     required List<AgentMessageEntity> observations,
@@ -234,7 +267,7 @@ immediately.''';
         final payload = obs.contentEntryId != null
             ? observationPayloads[obs.contentEntryId]
             : null;
-        final text = _extractPayloadText(payload);
+        final text = extractPayloadText(payload);
         buf.writeln('- [${obs.createdAt.toIso8601String()}] $text');
       }
     }
@@ -296,7 +329,7 @@ immediately.''';
     }
   }
 
-  List<ChatCompletionTool> _buildToolDefinitions() {
+  List<ChatCompletionTool> buildToolDefinitions() {
     return projectAgentTools.map((tool) {
       return ChatCompletionTool(
         type: ChatCompletionToolType.function,
@@ -309,7 +342,7 @@ immediately.''';
     }).toList();
   }
 
-  String? _extractFinalAssistantContent(ConversationManager? manager) {
+  String? extractFinalAssistantContent(ConversationManager? manager) {
     if (manager == null) return null;
     final messages = manager.messages;
     for (var i = messages.length - 1; i >= 0; i--) {
@@ -330,9 +363,9 @@ immediately.''';
   /// project's outgoing links. Uses batch queries (2 SQL statements total) for
   /// the agent-link and report lookups to avoid an N+1 pattern when many tasks
   /// are linked to the project.
-  Future<String> _buildLinkedTasksContext(String projectId) async {
+  Future<String> buildLinkedTasksContext(String projectId) async {
     try {
-      final linkedEntities = await this.journalRepository.getLinkedEntities(
+      final linkedEntities = await journalRepository.getLinkedEntities(
         linkedTo: projectId,
       );
 
@@ -350,7 +383,7 @@ immediately.''';
           type: AgentLinkTypes.agentTask,
         );
       } catch (e, s) {
-        _logError('batch link lookup failed', error: e, stackTrace: s);
+        logError('batch link lookup failed', error: e, stackTrace: s);
       }
 
       // 2. Batch-fetch the latest reports for all linked task agents (1 query).
@@ -366,7 +399,7 @@ immediately.''';
             AgentReportScopes.current,
           );
         } catch (e, s) {
-          _logError('batch report lookup failed', error: e, stackTrace: s);
+          logError('batch report lookup failed', error: e, stackTrace: s);
         }
       }
 
@@ -404,7 +437,7 @@ immediately.''';
         'linked_tasks': taskRows,
       });
     } catch (e, stackTrace) {
-      _logError(
+      logError(
         'failed to build linked tasks context',
         error: e,
         stackTrace: stackTrace,
@@ -416,7 +449,7 @@ immediately.''';
   // ── Observation payload resolution ────────────────────────────────────────
 
   /// Batch-resolves all observation payloads into a map keyed by payload ID.
-  Future<Map<String, AgentMessagePayloadEntity>> _resolveObservationPayloads(
+  Future<Map<String, AgentMessagePayloadEntity>> resolveObservationPayloads(
     List<AgentMessageEntity> observations,
   ) async {
     final payloadIds = observations
@@ -455,7 +488,7 @@ immediately.''';
   }
 
   /// Extracts the text content from an observation payload.
-  static String _extractPayloadText(AgentMessagePayloadEntity? payload) {
+  static String extractPayloadText(AgentMessagePayloadEntity? payload) {
     if (payload == null) return '(no content)';
     final text = payload.content['text'];
     if (text is String && text.isNotEmpty) return text;
@@ -473,6 +506,4 @@ immediately.''';
       TaskRejected() => 'rejected',
     };
   }
-
-  // ── Deferred item helpers ─────────────────────────────────────────────────
 }

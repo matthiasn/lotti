@@ -1,16 +1,12 @@
-import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
@@ -21,6 +17,7 @@ import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
+import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
@@ -37,7 +34,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
-part 'project_agent_context_builder.dart';
 part 'project_agent_execute.dart';
 
 /// Assembles context, runs a conversation, and persists results for a single
@@ -88,6 +84,16 @@ class ProjectAgentWorkflow {
   final int compactionTailRetainTokens;
 
   static const _uuid = Uuid();
+
+  /// Prompt/context assembly collaborator. Reads from the injected
+  /// repositories and builds prompt strings / context objects; the workflow
+  /// delegates to it (see the `_build*` / `_resolve*` helpers below).
+  late final ProjectAgentContextBuilder _contextBuilder =
+      ProjectAgentContextBuilder(
+        agentRepository: agentRepository,
+        journalRepository: journalRepository,
+        logError: _logError,
+      );
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(
@@ -222,6 +228,47 @@ class ProjectAgentWorkflow {
       soulVersion: soulVersion,
     );
   }
+
+  // ── Prompt/context delegators ─────────────────────────────────────────────
+  // These forward to [_contextBuilder]; the execute part keeps calling the
+  // private helpers it always has.
+
+  String _buildSystemPrompt(_TemplateContext? ctx) =>
+      _contextBuilder.buildSystemPrompt(
+        version: ctx?.version,
+        soulVersion: ctx?.soulVersion,
+      );
+
+  ({String text, int? logStart, int? logEnd}) _buildUserMessage({
+    required JournalEntity projectEntity,
+    required AgentReportEntity? lastReport,
+    required List<AgentMessageEntity> observations,
+    required Map<String, AgentMessagePayloadEntity> observationPayloads,
+    required String linkedTasksContext,
+    required Set<String> triggerTokens,
+    String? compactedLog,
+  }) => _contextBuilder.buildUserMessage(
+    projectEntity: projectEntity,
+    lastReport: lastReport,
+    observations: observations,
+    observationPayloads: observationPayloads,
+    linkedTasksContext: linkedTasksContext,
+    triggerTokens: triggerTokens,
+    compactedLog: compactedLog,
+  );
+
+  List<ChatCompletionTool> _buildToolDefinitions() =>
+      _contextBuilder.buildToolDefinitions();
+
+  String? _extractFinalAssistantContent(ConversationManager? manager) =>
+      _contextBuilder.extractFinalAssistantContent(manager);
+
+  Future<String> _buildLinkedTasksContext(String projectId) =>
+      _contextBuilder.buildLinkedTasksContext(projectId);
+
+  Future<Map<String, AgentMessagePayloadEntity>> _resolveObservationPayloads(
+    List<AgentMessageEntity> observations,
+  ) => _contextBuilder.resolveObservationPayloads(observations);
 
   /// Builds a user-readable summary for a deferred tool call.
   static String _buildHumanSummary(
