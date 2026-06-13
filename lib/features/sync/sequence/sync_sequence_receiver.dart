@@ -1,23 +1,63 @@
-part of 'sync_sequence_log_service.dart';
+import 'dart:math' as math;
 
-mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
+import 'package:drift/drift.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_backfill_responder.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_cache.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_gap_materializer.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_gap_model.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_missing_notifier.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_tracer.dart';
+import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/vector_clock_service.dart';
+
+/// Records received entries and detects gaps in the sync sequence log — the
+/// orchestration core of the receive path.
+///
+/// Collaborates with the shared [SyncSequenceCache] (watermark and last-sent
+/// caches), the [SyncSequenceGapMaterializer] (large-gap and covered-counter
+/// bookkeeping), the [SyncSequenceBackfillResponder] (pending-hint resolution
+/// after recording), and the [SyncSequenceMissingNotifier] (deferred
+/// missing-entries nudge).
+class SyncSequenceReceiver {
+  SyncSequenceReceiver({
+    required this._syncDatabase,
+    required this._vectorClockService,
+    required this._cache,
+    required this._gapMaterializer,
+    required this._backfillResponder,
+    required this._missingNotifier,
+    required this._tracer,
+  });
+
+  final SyncDatabase _syncDatabase;
+  final VectorClockService _vectorClockService;
+  final SyncSequenceCache _cache;
+  final SyncSequenceGapMaterializer _gapMaterializer;
+  final SyncSequenceBackfillResponder _backfillResponder;
+  final SyncSequenceMissingNotifier _missingNotifier;
+  final SyncSequenceTracer _tracer;
+
   Future<VectorClock?> getLastSentVectorClockForEntry(String entryId) async {
     final myHost = await _vectorClockService.getHost();
     if (myHost == null) return null;
-    _invalidateLastSentCacheIfExpired();
-    _ensureLastSentCacheWindow();
-    final cacheKey = _lastSentCacheKey(myHost, entryId);
+    _cache
+      ..invalidateLastSentCacheIfExpired()
+      ..ensureLastSentCacheWindow();
+    final cacheKey = _cache.lastSentCacheKey(myHost, entryId);
     int? counter;
-    if (_lastSentCounterByEntry.containsKey(cacheKey)) {
-      counter = _lastSentCounterByEntry[cacheKey];
+    if (_cache.containsLastSent(cacheKey)) {
+      counter = _cache.getLastSent(cacheKey);
       // Refresh LRU position on hit so active entries stay resident.
-      _touchLastSentCache(cacheKey, counter);
+      _cache.touchLastSentCache(cacheKey, counter);
     } else {
       counter = await _syncDatabase.getLastSentCounterForEntry(
         myHost,
         entryId,
       );
-      _touchLastSentCache(cacheKey, counter);
+      _cache.touchLastSentCache(cacheKey, counter);
     }
     if (counter == null) return null;
     return VectorClock({myHost: counter});
@@ -42,7 +82,6 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
   /// superseded outbox entries and the current vector clock. The current vector
   /// clock is ignored when pre-marking covered counters to avoid suppressing
   /// genuine gap detection for the payload itself.
-  @override
   Future<List<({String hostId, int counter})>> recordReceivedEntry({
     required String entryId,
     required VectorClock vectorClock,
@@ -59,24 +98,24 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
     // Update host activity for the originating host - they're online!
     await _syncDatabase.updateHostActivity(originatingHostId, now);
     // Update cache so subsequent checks in this batch see the new activity
-    _hostActivityCache[originatingHostId] = now;
+    _cache.setHostActivity(originatingHostId, now);
 
     // IMPORTANT: Process covered vector clocks BEFORE gap detection.
     // This prevents false positives: covered counters are pre-emptively marked
     // as received, so gap detection (which checks `existing == null`) will
     // skip them instead of incorrectly marking them as missing.
-    final filteredCovered = _filterCoveredVectorClocks(
+    final filteredCovered = _gapMaterializer.filterCoveredVectorClocks(
       coveredVectorClocks,
       vectorClock,
     );
     if (filteredCovered.isNotEmpty && myHost != null) {
-      _trace(
+      _tracer.trace(
         'recordReceivedEntry: coveredVCs count=${filteredCovered.length} '
         'clocks=${filteredCovered.map((vc) => vc.vclock).toList()} '
         'entryId=$entryId type=$payloadType',
         subDomain: 'sequence.coveredClocks',
       );
-      await _markCoveredCountersAsReceived(
+      await _gapMaterializer.markCoveredCountersAsReceived(
         coveredVectorClocks: filteredCovered,
         entryId: entryId,
         payloadType: payloadType,
@@ -103,18 +142,18 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
       // Note: We still record the sequence entry for offline hosts (below),
       // just skip gap detection. This allows us to respond to backfill
       // requests later if the host comes online.
-      final hostLastOnline = await _getCachedHostLastSeen(hostId);
+      final hostLastOnline = await _cache.getCachedHostLastSeen(hostId);
       final shouldDetectGaps =
           hostLastOnline != null || hostId == originatingHostId;
 
       if (!shouldDetectGaps) {
-        _trace(
+        _tracer.trace(
           'skipGapDetection hostId=$hostId counter=$counter - host never seen online',
           subDomain: 'sequence.skipGap',
         );
       }
 
-      final lastSeen = await _getCachedLastCounterForHost(hostId);
+      final lastSeen = await _cache.getCachedLastCounterForHost(hostId);
       // For hosts that are currently considered online, an unknown contiguous
       // prefix still means "we have not resolved counter 1 yet", not "there can
       // be no gap". Treat that as watermark 0 so the first observed counter can
@@ -142,7 +181,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
           // pre-history gap re-runs a multi-chunk scan of the sequence log
           // just to discover `inserted=0`, which dominates the mobile sync
           // cost and the desktop log volume.
-          final previousBound = _materializedUpperBound[hostId];
+          final previousBound = _cache.getMaterializedUpperBound(hostId);
           final endCounter = counter - 1;
           final alreadyMaterialized =
               previousBound != null && previousBound >= endCounter;
@@ -170,12 +209,12 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
             // first materialisation of the range; subsequent incremental
             // extensions stay silent.
             if (!isIncrementalExtension) {
-              _trace(
+              _tracer.trace(
                 'largeGapDetected hostId=$hostId gapSize=$gapSize (lastSeen=$gapBaseline, counter=$counter) - recording full gap',
                 subDomain: 'sequence.largeGap',
               );
             }
-            final insertedCount = await _materializeLargeGap(
+            final insertedCount = await _gapMaterializer.materializeLargeGap(
               hostId: hostId,
               startCounter: effectiveStart,
               endCounter: endCounter,
@@ -185,7 +224,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
             );
             // `previousBound < endCounter` on this branch, so direct assignment
             // is the max — no `math.max` needed.
-            _materializedUpperBound[hostId] = endCounter;
+            _cache.setMaterializedUpperBound(hostId, endCounter);
             if (insertedCount > 0) {
               // Any newly inserted missing rows must drive a backfill nudge,
               // including the incremental-extension case where the observed
@@ -194,7 +233,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
               // one-counter-at-a-time incremental case.
               newMissingDetected = true;
               if (!isIncrementalExtension) {
-                _trace(
+                _tracer.trace(
                   'gapDetectedRange hostId=$hostId start=$effectiveStart end=$endCounter '
                   'inserted=$insertedCount (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
                   subDomain: 'sequence.gapDetected',
@@ -236,7 +275,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
               );
               newMissingDetected = true;
 
-              _trace(
+              _tracer.trace(
                 'gapDetected hostId=$hostId counter=$i (last seen: $gapBaseline, observed: $counter) from=$originatingHostId',
                 subDomain: 'sequence.gapDetected',
               );
@@ -275,7 +314,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
           // guard so burned has no outgoing edges on any receive path. The row
           // is already resolved, so the forward-only watermark-cache advance we
           // skip here is a no-op.
-          _trace(
+          _tracer.trace(
             'recordReceivedEntry: burned preserved (originator) '
             'hostId=$hostId counter=$counter',
             subDomain: 'sequence.burnPreserved',
@@ -319,14 +358,15 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
 
         if (status == SyncSequenceStatus.backfilled &&
             existing?.status == SyncSequenceStatus.requested.index) {
-          _trace(
-            'recordReceivedEntry: backfilled hostId=$hostId counter=$counter entryId=$entryId',
-            subDomain: 'sequence.backfillArrived',
-          );
-          _trace(
-            'recordReceivedEntry: requestedResolved hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
-            subDomain: 'sequence.requestedResolved',
-          );
+          _tracer
+            ..trace(
+              'recordReceivedEntry: backfilled hostId=$hostId counter=$counter entryId=$entryId',
+              subDomain: 'sequence.backfillArrived',
+            )
+            ..trace(
+              'recordReceivedEntry: requestedResolved hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
+              subDomain: 'sequence.requestedResolved',
+            );
         }
       } else {
         // For other hosts in the VC, also record with entryId.
@@ -347,7 +387,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
           // own-host burn from a different entity is unsound). The row is
           // already resolved, so skipping the forward-only watermark-cache
           // advance below is a no-op.
-          _trace(
+          _tracer.trace(
             'recordReceivedEntry: burned preserved (covered) '
             'hostId=$hostId counter=$counter',
             subDomain: 'sequence.burnPreserved',
@@ -388,14 +428,15 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
 
         if (status == SyncSequenceStatus.backfilled &&
             existing?.status == SyncSequenceStatus.requested.index) {
-          _trace(
-            'recordReceivedEntry: backfilled (non-originator) hostId=$hostId counter=$counter entryId=$entryId',
-            subDomain: 'sequence.backfillArrived',
-          );
-          _trace(
-            'recordReceivedEntry: requestedResolved (non-originator) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
-            subDomain: 'sequence.requestedResolved',
-          );
+          _tracer
+            ..trace(
+              'recordReceivedEntry: backfilled (non-originator) hostId=$hostId counter=$counter entryId=$entryId',
+              subDomain: 'sequence.backfillArrived',
+            )
+            ..trace(
+              'recordReceivedEntry: requestedResolved (non-originator) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
+              subDomain: 'sequence.requestedResolved',
+            );
         }
       }
 
@@ -405,16 +446,16 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
       // slow `getLastCounterForHost` CTE — that query dominated the
       // mobile slow-query log under load. The advance is a strict
       // forward-only update that never over-reports the prefix.
-      _advanceLastCounterCache(hostId, counter);
+      _cache.advanceLastCounterCache(hostId, counter);
       if (smallGapRangeResolvedBeforeObserved &&
-          _lastCounterCache.containsKey(hostId)) {
+          _cache.containsLastCounter(hostId)) {
         // The small-gap scan proved every counter between the cached
         // watermark and the observed counter already resolves the sequence.
         // After upserting [counter], the cache can safely catch up instead of
         // re-scanning the same stale range on each subsequent event.
-        final cachedCounter = _lastCounterCache[hostId] ?? 0;
+        final cachedCounter = _cache.getLastCounter(hostId) ?? 0;
         if (counter > cachedCounter) {
-          _lastCounterCache[hostId] = counter;
+          _cache.setLastCounter(hostId, counter);
         }
       }
     }
@@ -423,7 +464,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
     // A permanent pre-history gap keeps `gaps` non-empty on every event, so
     // an unconditional log line fires thousands of times for no new signal.
     if (gaps.isNotEmpty && newMissingDetected) {
-      _trace(
+      _tracer.trace(
         'recordReceivedEntry type=$payloadType entryId=$entryId detected ${gaps.count} gaps',
         subDomain: 'sequence.recordReceived',
       );
@@ -433,7 +474,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
     // This handles the case where a BackfillResponse arrived before the
     // actual entry. The hint contains the entryId, and now that we have
     // the entry, we can verify and mark it as backfilled.
-    await resolvePendingHints(
+    await _backfillResponder.resolvePendingHints(
       payloadType: payloadType,
       payloadId: entryId,
       payloadVectorClock: vectorClock,
@@ -446,11 +487,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
       // Preserve gaps immediately, but defer the automatic backfill nudge
       // until the surrounding ordered replay batch settles. This prevents
       // transient in-burst holes from triggering redundant repair chatter.
-      if (_deferredMissingEntriesDepth > 0) {
-        _pendingMissingEntriesDetected = true;
-      } else {
-        _emitMissingEntriesDetected();
-      }
+      _missingNotifier.flagMissingEntriesDetected();
     }
 
     return gaps.toGapList();
@@ -491,21 +528,6 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
     await _syncDatabase.batchIncrementRequestCounts(entries);
   }
 
-  /// Handle a backfill response from another device.
-  ///
-  /// For deleted responses: marks the entry as deleted (cannot be backfilled).
-  ///
-  /// For unresolvable responses: marks the entry as unresolvable - the
-  /// originating host confirmed it cannot resolve its own counter (e.g., it
-  /// was superseded before being recorded).
-  ///
-  /// For non-deleted responses: stores the entryId as a "hint" mapping
-  /// (hostId, counter) → entryId. The actual status update to "backfilled"
-  /// happens only when we verify the entry exists locally - either via
-  /// `verifyAndMarkBackfilled` or when the entry arrives via normal sync.
-  ///
-  /// This two-phase approach ensures we don't mark entries as backfilled
-  /// until we actually have the data locally.
   /// Mark one of OUR OWN host's counters as permanently unresolvable.
   ///
   /// Called by paths that know authoritatively that a counter was assigned by
@@ -544,7 +566,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
       counter: counter,
       payloadType: payloadType,
     );
-    _trace(
+    _tracer.trace(
       recorded
           ? 'markOwnCounterUnresolvable hostId=$hostId counter=$counter'
           : 'markOwnCounterUnresolvable skipped hostId=$hostId '
@@ -570,7 +592,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
       hostId: hostId,
     );
     if (counters.isNotEmpty) {
-      _trace(
+      _tracer.trace(
         'reservedCountersForHost hostId=$hostId '
         'count=${counters.length} counters=$counters',
         subDomain: 'sequence.reservedCounters',
@@ -588,7 +610,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
       hostId: hostId,
     );
     if (counters.isNotEmpty) {
-      _trace(
+      _tracer.trace(
         'burnPendingCountersForHost hostId=$hostId '
         'count=${counters.length} counters=$counters',
         subDomain: 'sequence.burnPendingCounters',

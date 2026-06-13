@@ -1,6 +1,28 @@
-part of 'sync_sequence_log_service.dart';
+import 'package:drift/drift.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_cache.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_tracer.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 
-mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
+/// Handles INCOMING backfill responses and the resolution of pending hints for
+/// the sync sequence log.
+///
+/// Owns the status-transition rules for backfill responses (deleted /
+/// unresolvable / hint) and the verify-and-mark-backfilled flow. Reset paths
+/// that may shorten many hosts' watermarks clear the shared
+/// [SyncSequenceCache] watermark and materialized-bound maps.
+class SyncSequenceBackfillResponder {
+  SyncSequenceBackfillResponder({
+    required this._syncDatabase,
+    required this._cache,
+    required this._tracer,
+  });
+
+  final SyncDatabase _syncDatabase;
+  final SyncSequenceCache _cache;
+  final SyncSequenceTracer _tracer;
+
   Future<void> handleBackfillResponse({
     required String hostId,
     required int counter,
@@ -17,7 +39,7 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
       if (existing != null &&
           (existing.status == SyncSequenceStatus.received.index ||
               existing.status == SyncSequenceStatus.backfilled.index)) {
-        _trace(
+        _tracer.trace(
           'handleBackfillResponse: deleted ignored for '
           'hostId=$hostId counter=$counter — existing status='
           '${SyncSequenceStatus.values[existing.status]}',
@@ -33,7 +55,7 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
         SyncSequenceStatus.deleted,
       );
 
-      _trace(
+      _tracer.trace(
         'handleBackfillResponse hostId=$hostId counter=$counter deleted=true',
         subDomain: 'sequence.backfillResponse',
       );
@@ -69,7 +91,7 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
               existing.status == SyncSequenceStatus.backfilled.index ||
               existing.status == SyncSequenceStatus.deleted.index ||
               existing.status == SyncSequenceStatus.burned.index)) {
-        _trace(
+        _tracer.trace(
           'handleBackfillResponse: unresolvable ignored for '
           'hostId=$hostId counter=$counter — existing status='
           '${SyncSequenceStatus.values[existing.status]}',
@@ -94,7 +116,7 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
         ),
       );
 
-      _trace(
+      _tracer.trace(
         'handleBackfillResponse hostId=$hostId counter=$counter '
         'unresolvable=true → burned',
         subDomain: 'sequence.backfillResponse',
@@ -126,7 +148,7 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
         ),
       );
 
-      _trace(
+      _tracer.trace(
         'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (new entry)',
         subDomain: 'sequence.backfillHint',
       );
@@ -141,7 +163,7 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
         existing.status == SyncSequenceStatus.backfilled.index ||
         existing.status == SyncSequenceStatus.deleted.index ||
         existing.status == SyncSequenceStatus.burned.index) {
-      _trace(
+      _tracer.trace(
         'handleBackfillResponse: entry already has status=${SyncSequenceStatus.values[existing.status]} hostId=$hostId counter=$counter',
         subDomain: 'sequence.backfillResponse',
       );
@@ -169,13 +191,13 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
     );
 
     if (existing.status == SyncSequenceStatus.unresolvable.index) {
-      _trace(
+      _tracer.trace(
         'handleBackfillResponse: reopened unresolvable entry hostId=$hostId counter=$counter entryId=$entryId',
         subDomain: 'sequence.backfillReopened',
       );
     }
 
-    _trace(
+    _tracer.trace(
       'handleBackfillResponse: stored hint hostId=$hostId counter=$counter entryId=$entryId (status=${SyncSequenceStatus.values[newStatus]})',
       subDomain: 'sequence.backfillHint',
     );
@@ -195,7 +217,7 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
     // Verify the entry's VC covers the requested (hostId, counter)
     final vcCounter = entryVectorClock.vclock[hostId];
     if (vcCounter == null || vcCounter < counter) {
-      _trace(
+      _tracer.trace(
         'verifyAndMarkBackfilled: entry $entryId VC does not cover $hostId:$counter (vc[$hostId]=$vcCounter)',
         subDomain: 'sequence.backfillVerify',
       );
@@ -233,7 +255,7 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
       ),
     );
 
-    _trace(
+    _tracer.trace(
       'verifyAndMarkBackfilled: confirmed hostId=$hostId counter=$counter entryId=$entryId',
       subDomain: 'sequence.backfillVerified',
     );
@@ -243,7 +265,6 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
   /// Resolve any pending backfill hints for the given entryId.
   /// Called after receiving an entry via sync to check if it resolves
   /// any pending (hostId, counter) requests.
-  @override
   Future<int> resolvePendingHints({
     required SyncSequencePayloadType payloadType,
     required String payloadId,
@@ -269,7 +290,7 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
     }
 
     if (resolved > 0) {
-      _trace(
+      _tracer.trace(
         'resolvePendingHints: resolved $resolved pending entries for type=$payloadType id=$payloadId',
         subDomain: 'sequence.backfillResolved',
       );
@@ -285,9 +306,10 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
     final count = await _syncDatabase.resetUnresolvableWithKnownPayload();
 
     if (count > 0) {
-      _lastCounterCache.clear();
-      _materializedUpperBound.clear();
-      _trace(
+      _cache
+        ..clearLastCounterCache()
+        ..clearMaterializedUpperBound();
+      _tracer.trace(
         'resetUnresolvableEntries: reset $count entries back to missing',
         subDomain: 'sequence.resetUnresolvable',
       );
@@ -311,9 +333,10 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
     final count = await _syncDatabase.resetAllUnresolvableEntries();
 
     if (count > 0) {
-      _lastCounterCache.clear();
-      _materializedUpperBound.clear();
-      _trace(
+      _cache
+        ..clearLastCounterCache()
+        ..clearMaterializedUpperBound();
+      _tracer.trace(
         'resetAllUnresolvableEntries: reset $count entries back to missing',
         subDomain: 'sequence.resetAllUnresolvable',
       );
@@ -321,18 +344,4 @@ mixin _SyncSeq3 on _SyncSequenceLogServiceBase {
 
     return count;
   }
-
-  /// Flip missing/requested rows that have been asked for at least
-  /// [maxRequestCount] times to `unresolvable` so the contiguous-prefix
-  /// watermark can advance past them. Without this step, a permanent
-  /// pre-history gap keeps `getLastCounterForHost` stuck, which then
-  /// forces every incoming entry on that host to re-enter the gap
-  /// materialization pass (see `_materializeLargeGap`). Invalidates the
-  /// per-host watermark and materialized-bound caches so the next event
-  /// sees the updated state.
-  ///
-  /// The [grace] window gives a backfill request still queued in the
-  /// outbox or in flight to a peer time to land before the row is
-  /// promoted terminal; tests may pass a smaller value to bypass the
-  /// wait.
 }

@@ -1,6 +1,32 @@
-part of 'sync_sequence_log_service.dart';
+import 'package:drift/drift.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_cache.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_receiver.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_tracer.dart';
+import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 
-mixin _SyncSeq4 on _SyncSequenceLogServiceBase {
+/// Read-mostly backfill query surface plus the journal/link/agent population
+/// path for the sync sequence log.
+///
+/// Retire/reset paths that may shorten many hosts' watermarks clear the shared
+/// [SyncSequenceCache] watermark and materialized-bound maps. The link-receive
+/// shortcut delegates to the [SyncSequenceReceiver] so it shares the exact gap
+/// detection and dedup behaviour of the primary receive path.
+class SyncSequenceBackfillQueries {
+  SyncSequenceBackfillQueries({
+    required this._syncDatabase,
+    required this._cache,
+    required this._receiver,
+    required this._tracer,
+  });
+
+  final SyncDatabase _syncDatabase;
+  final SyncSequenceCache _cache;
+  final SyncSequenceReceiver _receiver;
+  final SyncSequenceTracer _tracer;
+
   Future<int> retireExhaustedRequestedEntries({
     int maxRequestCount = 10,
     Duration grace = const Duration(minutes: 5),
@@ -11,9 +37,10 @@ mixin _SyncSeq4 on _SyncSequenceLogServiceBase {
     );
 
     if (count > 0) {
-      _lastCounterCache.clear();
-      _materializedUpperBound.clear();
-      _trace(
+      _cache
+        ..clearLastCounterCache()
+        ..clearMaterializedUpperBound();
+      _tracer.trace(
         'retireExhaustedRequestedEntries: retired $count entries to unresolvable',
         subDomain: 'sequence.retireExhausted',
       );
@@ -42,9 +69,10 @@ mixin _SyncSeq4 on _SyncSequenceLogServiceBase {
     );
 
     if (count > 0) {
-      _lastCounterCache.clear();
-      _materializedUpperBound.clear();
-      _trace(
+      _cache
+        ..clearLastCounterCache()
+        ..clearMaterializedUpperBound();
+      _tracer.trace(
         'retireAgedOutRequestedEntries: retired $count entries to unresolvable '
         '(amnestyWindow=${amnestyWindow.inDays}d)',
         subDomain: 'sequence.retireAgedOut',
@@ -114,7 +142,7 @@ mixin _SyncSeq4 on _SyncSequenceLogServiceBase {
   ) async {
     await _syncDatabase.resetRequestCounts(entries);
 
-    _trace(
+    _tracer.trace(
       'resetRequestCounts: reset ${entries.length} entries for re-request',
       subDomain: 'sequence.reRequest',
     );
@@ -276,7 +304,7 @@ mixin _SyncSeq4 on _SyncSequenceLogServiceBase {
     }
 
     if (populated > 0) {
-      _trace(
+      _tracer.trace(
         '$label: added $populated sequence log entries',
         subDomain: 'sequence.populate',
       );
@@ -291,7 +319,7 @@ mixin _SyncSeq4 on _SyncSequenceLogServiceBase {
     required String originatingHostId,
     List<VectorClock>? coveredVectorClocks,
   }) {
-    return recordReceivedEntry(
+    return _receiver.recordReceivedEntry(
       entryId: linkId,
       vectorClock: vectorClock,
       originatingHostId: originatingHostId,
