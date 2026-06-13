@@ -31,8 +31,11 @@ class InsightsDeltaChip extends StatelessWidget {
     final messages = context.messages;
     if (current == 0 && previous == 0) return const SizedBox.shrink();
 
-    final up = tokens.colors.alert.success.defaultColor;
-    final down = tokens.colors.alert.error.defaultColor;
+    // The higher-contrast (hover) step of the semantic accents: the default
+    // green fails the 4.5:1 small-text bar on the light card, and the stronger
+    // step clears it in both themes (darker on light, lighter on dark).
+    final up = tokens.colors.alert.success.hover;
+    final down = tokens.colors.alert.error.hover;
     final flat = tokens.colors.text.mediumEmphasis;
     final pct = insightsDeltaPercent(current, previous);
 

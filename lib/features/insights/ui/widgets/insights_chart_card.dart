@@ -82,7 +82,7 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+        color: tokens.colors.background.level01,
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),

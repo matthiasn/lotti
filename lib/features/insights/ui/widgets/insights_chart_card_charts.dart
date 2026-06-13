@@ -65,27 +65,29 @@ class StackedBarChart extends StatelessWidget {
     // rather than hugging the baseline.
     final maxY = maxTotal < 1800 ? 1800.0 : maxTotal * 1.05;
     final interval = _axisInterval(maxY);
-    // Label every bar when there's room (≤7); thin out for longer ranges.
-    final labelEvery = bucketCount <= 7
-        ? 1
-        : (bucketCount / 6).ceil().clamp(1, bucketCount);
     final today = epochDay(clock.now());
-    // The not-yet-elapsed tail of an in-progress period. Shaded and
-    // dim-labelled so empty future buckets read as "upcoming", not as a
-    // productivity cliff or a broken chart.
+    // Render only the elapsed buckets of an in-progress period: an unfinished
+    // week/month/year shows what has happened so far instead of reserving the
+    // bulk of the plot for empty future days (the period label still carries
+    // the full scope). A completed period draws every bucket.
     final firstFutureIndex = _firstFutureBucket(data, today);
-    final hasFuture = firstFutureIndex < bucketCount;
+    final drawCount = firstFutureIndex == 0 ? bucketCount : firstFutureIndex;
+    // Label every bar when there's room (≤7); thin out for longer ranges,
+    // thinned to the drawn count rather than the full period.
+    final labelEvery = drawCount <= 7
+        ? 1
+        : (drawCount / 6).ceil().clamp(1, drawCount);
 
     return LayoutBuilder(
       builder: (context, constraints) {
         // Dense ranges get proportionally wider gaps so 30+ bars don't
         // shimmer into each other.
-        final widthFactor = bucketCount > 20 ? 0.52 : 0.62;
+        final widthFactor = drawCount > 20 ? 0.52 : 0.62;
         // Two bars share each group when comparing, so each is slimmer and
         // the floor drops to keep both readable in dense ranges.
         final barWidth =
             (constraints.maxWidth /
-                    bucketCount *
+                    drawCount *
                     widthFactor /
                     (comparing ? 2 : 1))
                 .clamp(comparing ? 3.0 : 6.0, 44.0);
@@ -95,17 +97,6 @@ class StackedBarChart extends StatelessWidget {
             maxY: maxY,
             alignment: BarChartAlignment.spaceAround,
             borderData: FlBorderData(show: false),
-            rangeAnnotations: hasFuture
-                ? RangeAnnotations(
-                    verticalRangeAnnotations: [
-                      VerticalRangeAnnotation(
-                        x1: firstFutureIndex - 0.5,
-                        x2: bucketCount - 0.5,
-                        color: tokens.colors.surface.hover,
-                      ),
-                    ],
-                  )
-                : const RangeAnnotations(),
             gridData: FlGridData(
               drawVerticalLine: false,
               horizontalInterval: interval,
@@ -143,7 +134,7 @@ class StackedBarChart extends StatelessWidget {
                   reservedSize: 28,
                   getTitlesWidget: (value, meta) {
                     final index = value.toInt();
-                    if (index < 0 || index >= bucketCount) {
+                    if (index < 0 || index >= drawCount) {
                       return const SizedBox.shrink();
                     }
                     final label = _bottomAxisLabel(
@@ -155,14 +146,7 @@ class StackedBarChart extends StatelessWidget {
                     if (label == null) return const SizedBox.shrink();
                     return SideTitleWidget(
                       meta: meta,
-                      child: Text(
-                        label,
-                        style: index >= firstFutureIndex
-                            ? axisStyle.copyWith(
-                                color: tokens.colors.text.lowEmphasis,
-                              )
-                            : axisStyle,
-                      ),
+                      child: Text(label, style: axisStyle),
                     );
                   },
                 ),
@@ -216,7 +200,7 @@ class StackedBarChart extends StatelessWidget {
               ),
             ),
             barGroups: [
-              for (var i = 0; i < bucketCount; i++)
+              for (var i = 0; i < drawCount; i++)
                 BarChartGroupData(
                   x: i,
                   barsSpace: comparing ? tokens.spacing.step1 : 0,
@@ -321,33 +305,23 @@ class StackedAreaChart extends StatelessWidget {
     // Slight top headroom so the stack never kisses the top gridline.
     final maxY = maxTop < 1800 ? 1800.0 : maxTop * 1.08;
     final interval = _axisInterval(maxY);
-    final labelEvery = bucketCount <= 7
-        ? 1
-        : (bucketCount / 6).ceil().clamp(1, bucketCount);
     final today = epochDay(clock.now());
     final firstFutureIndex = _firstFutureBucket(data, today);
-    final hasFuture = firstFutureIndex < bucketCount;
-    // Stop the running total at the last elapsed bucket — carrying a flat
-    // line across the not-yet-elapsed remainder of the period reads as a
-    // stall, and wastes most of the canvas on dead plateau.
-    final lastDrawnBucket = hasFuture ? firstFutureIndex : bucketCount;
+    // Plot only the elapsed buckets — carrying a flat running-total line across
+    // the not-yet-elapsed remainder reads as a stall and wastes the canvas.
+    final lastDrawnBucket = firstFutureIndex == 0 ? bucketCount : firstFutureIndex;
+    final labelEvery = lastDrawnBucket <= 7
+        ? 1
+        : (lastDrawnBucket / 6).ceil().clamp(1, lastDrawnBucket);
+    // A single elapsed bucket has no segment to draw, so mark the point so the
+    // cumulative toggle never renders a blank card.
+    final singlePoint = lastDrawnBucket < 2;
 
     return LineChart(
       LineChartData(
         minY: 0,
         maxY: maxY,
         borderData: FlBorderData(show: false),
-        rangeAnnotations: hasFuture
-            ? RangeAnnotations(
-                verticalRangeAnnotations: [
-                  VerticalRangeAnnotation(
-                    x1: firstFutureIndex - 0.5,
-                    x2: bucketCount - 0.5,
-                    color: tokens.colors.surface.hover,
-                  ),
-                ],
-              )
-            : const RangeAnnotations(),
         gridData: FlGridData(
           drawVerticalLine: false,
           horizontalInterval: interval,
@@ -380,21 +354,14 @@ class StackedAreaChart extends StatelessWidget {
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index < 0 || index >= bucketCount) {
+                if (index < 0 || index >= lastDrawnBucket) {
                   return const SizedBox.shrink();
                 }
                 final label = _bottomAxisLabel(context, data, index, labelEvery);
                 if (label == null) return const SizedBox.shrink();
                 return SideTitleWidget(
                   meta: meta,
-                  child: Text(
-                    label,
-                    style: index >= firstFutureIndex
-                        ? axisStyle.copyWith(
-                            color: tokens.colors.text.lowEmphasis,
-                          )
-                        : axisStyle,
-                  ),
+                  child: Text(label, style: axisStyle),
                 );
               },
             ),
@@ -451,7 +418,9 @@ class StackedAreaChart extends StatelessWidget {
                 ],
                 color: bandEdgeColor(fill, brightness),
                 barWidth: 1.5,
-                dotData: const FlDotData(show: false),
+                // A lone elapsed point has no line/area to show, so render its
+                // dot; multi-point series stay dot-free for a clean curve.
+                dotData: FlDotData(show: singlePoint),
                 belowBarData: BarAreaData(show: true, color: fill),
               );
             }(),
@@ -709,13 +678,12 @@ TextSpan _comparisonTooltipSpan(
   final tokens = context.designTokens;
   final messages = context.messages;
   final pct = insightsDeltaPercent(current, previous);
+  // Higher-contrast (hover) accent step — matches InsightsDeltaChip and clears
+  // the small-text contrast bar in both themes.
   final (String deltaText, Color deltaColor) = switch (pct) {
-    null => (
-      messages.insightsDeltaNew,
-      tokens.colors.alert.success.defaultColor,
-    ),
-    > 0 => ('↑$pct%', tokens.colors.alert.success.defaultColor),
-    < 0 => ('↓${-pct}%', tokens.colors.alert.error.defaultColor),
+    null => (messages.insightsDeltaNew, tokens.colors.alert.success.hover),
+    > 0 => ('↑$pct%', tokens.colors.alert.success.hover),
+    < 0 => ('↓${-pct}%', tokens.colors.alert.error.hover),
     _ => ('0%', tokens.colors.text.mediumEmphasis),
   };
   return TextSpan(

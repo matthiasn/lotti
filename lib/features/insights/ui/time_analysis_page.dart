@@ -65,6 +65,9 @@ class TimeAnalysisPage extends ConsumerWidget {
     );
 
     return Scaffold(
+      // One step up from the app's near-black page base so the dashboard
+      // canvas doesn't read as pure black; cards sit a further step up.
+      backgroundColor: tokens.colors.background.level02,
       body: SafeArea(
         child: bucketsAsync.when(
           // Background refreshes and window switches must never blank the
@@ -155,13 +158,16 @@ class _DashboardContent extends StatelessWidget {
     final daily = dailyTotals(buckets, range);
     final ranked = rankedCategoryTotals(daily);
     final chartData = buildChartData(buckets, range, precomputedDaily: daily);
+    // Elapsed days of the (possibly in-progress) period — drives both the
+    // avg/day denominator and whether avg/day is worth showing at all.
+    final elapsedDays = elapsedPortion(range, clock.now()).dayCount;
     final tableRows = buildTableRows(
       buckets,
       range,
       precomputedRanked: ranked,
       // Average over elapsed days for an in-progress period so the daily pace
       // matches the MTD view instead of being diluted by future calendar days.
-      avgDayCount: elapsedPortion(range, clock.now()).dayCount,
+      avgDayCount: elapsedDays,
     );
     final kpis = buildKpis(
       buckets,
@@ -188,10 +194,18 @@ class _DashboardContent extends StatelessWidget {
           row.categoryId: row.seconds,
       };
       // Previous-period per-bucket totals aligned to the current chart's
-      // x-axis, for the grouped comparison bars.
+      // x-axis, for the grouped comparison bars. Built over the *whole* prior
+      // period (one unit back) so it shares the current chart's granularity
+      // and aligns bucket-for-bucket (Sun↔Sun, Jun 1↔May 1). The elapsed-only
+      // comparison is then enforced by the chart clipping its render to the
+      // elapsed buckets — using the elapsed-clipped range here instead would
+      // re-bucket a one-day window hourly and misalign the ghost bars.
       comparisonTotals = alignedPreviousTotals(
         chartData,
-        buildChartData(prevBuckets, compareRange),
+        buildChartData(
+          prevBuckets,
+          shiftPeriod(range, selection.unit, -1),
+        ),
       );
     }
 
@@ -255,8 +269,8 @@ class _DashboardContent extends StatelessWidget {
           InsightsTable(
             rows: tableRows,
             resolver: resolver,
-            // avg/day equals the total on a single-day range — noise.
-            showAvgPerDay: range.dayCount > 1,
+            // avg/day equals the total when only one day has elapsed — noise.
+            showAvgPerDay: elapsedDays > 1,
             previousSecondsByCategory: previousByCategory,
           ),
         ],
@@ -289,7 +303,7 @@ class _EmptyState extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+        color: tokens.colors.background.level01,
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
