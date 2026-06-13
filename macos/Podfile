@@ -27,14 +27,27 @@ require File.expand_path(File.join('packages', 'flutter_tools', 'bin', 'podhelpe
 flutter_macos_podfile_setup
 
 target 'Runner' do
-  # flutter_onnxruntime pulls statically-linked onnxruntime-objc/-c, which
-  # CocoaPods rejects as a transitive dependency under a dynamic
-  # use_frameworks!. Static linkage is the documented fix.
-  use_frameworks! :linkage => :static
+  use_frameworks!
   use_modular_headers!
 
   flutter_install_all_macos_pods File.dirname(File.realpath(__FILE__))
   pod 'OpenSSL-Universal'
+end
+
+# flutter_onnxruntime depends on statically-linked onnxruntime-objc/-c, which
+# CocoaPods rejects as a static transitive dependency under the project's
+# dynamic use_frameworks!. Force ONLY the onnxruntime pods to link statically
+# and leave every other plugin dynamic. (A global `use_frameworks! :linkage =>
+# :static` instead breaks super_native_extensions' Rust FFI — the link fails
+# with an undefined `_super_native_extensions_init` symbol.)
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    if pod.name.start_with?('onnxruntime')
+      def pod.build_type
+        Pod::BuildType.static_library
+      end
+    end
+  end
 end
 
 post_install do |installer|
