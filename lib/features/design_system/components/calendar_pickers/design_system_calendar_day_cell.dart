@@ -1,4 +1,6 @@
-part of 'design_system_calendar_picker.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemCalendarDayCellType {
   activeMonth,
@@ -39,22 +41,23 @@ class DesignSystemCalendarDayCellData {
   final DesignSystemCalendarDayCellVisualState? forcedState;
 }
 
-class _CalendarDayCell extends StatefulWidget {
-  const _CalendarDayCell({
+class CalendarDayCell extends StatefulWidget {
+  const CalendarDayCell({
     required this.data,
+    super.key,
   });
 
   final DesignSystemCalendarDayCellData data;
 
   @override
-  State<_CalendarDayCell> createState() => _CalendarDayCellState();
+  State<CalendarDayCell> createState() => _CalendarDayCellState();
 }
 
-class _CalendarDayCellState extends State<_CalendarDayCell> {
+class _CalendarDayCellState extends State<CalendarDayCell> {
   bool _hovered = false;
 
   @override
-  void didUpdateWidget(covariant _CalendarDayCell oldWidget) {
+  void didUpdateWidget(covariant CalendarDayCell oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     final interactionModeChanged =

@@ -24,8 +24,8 @@ class _MonthCalendarCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final palette = _TimeCalendarPalette.fromMode(mode);
-    final geometry = _TimeCalendarGeometry.fromTokens(tokens);
+    final palette = TimeCalendarPalette.fromMode(mode);
+    final geometry = TimeCalendarGeometry.fromTokens(tokens);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
     final firstDayOfWeek = MaterialLocalizations.of(
       context,
@@ -33,14 +33,14 @@ class _MonthCalendarCard extends StatelessWidget {
     final visibleLabel = DateFormat.yMMMM(localeTag).format(visibleMonth);
     final weeks = _buildMonthGrid(visibleMonth, firstDayOfWeek);
 
-    return _CalendarMaterialCard(
+    return CalendarMaterialCard(
       palette: palette,
       geometry: geometry,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _MonthHeader(
+          MonthHeader(
             palette: palette,
             geometry: geometry,
             label: visibleLabel,
@@ -102,16 +102,17 @@ class _MonthCalendarCard extends StatelessWidget {
   }
 }
 
-class _CalendarMaterialCard extends StatelessWidget {
-  const _CalendarMaterialCard({
+class CalendarMaterialCard extends StatelessWidget {
+  const CalendarMaterialCard({
     required this.palette,
     required this.geometry,
     required this.child,
     this.padding,
+    super.key,
   });
 
-  final _TimeCalendarPalette palette;
-  final _TimeCalendarGeometry geometry;
+  final TimeCalendarPalette palette;
+  final TimeCalendarGeometry geometry;
   final EdgeInsets? padding;
   final Widget child;
 
@@ -153,8 +154,8 @@ class _CalendarMaterialCard extends StatelessWidget {
   }
 }
 
-class _MonthHeader extends StatelessWidget {
-  const _MonthHeader({
+class MonthHeader extends StatelessWidget {
+  const MonthHeader({
     required this.palette,
     required this.geometry,
     required this.label,
@@ -162,10 +163,11 @@ class _MonthHeader extends StatelessWidget {
     this.onLabelPressed,
     this.onPreviousPressed,
     this.onNextPressed,
+    super.key,
   });
 
-  final _TimeCalendarPalette palette;
-  final _TimeCalendarGeometry geometry;
+  final TimeCalendarPalette palette;
+  final TimeCalendarGeometry geometry;
   final String label;
   final bool showDisclosure;
   final VoidCallback? onLabelPressed;
@@ -262,7 +264,7 @@ class _HeaderIconButton extends StatelessWidget {
     this.onPressed,
   });
 
-  final _TimeCalendarGeometry geometry;
+  final TimeCalendarGeometry geometry;
   final IconData icon;
   final Color color;
   final String tooltip;
@@ -293,7 +295,7 @@ class _CalendarDayButton extends StatelessWidget {
     this.onPressed,
   });
 
-  final _TimeCalendarPalette palette;
+  final TimeCalendarPalette palette;
   final String label;
   final bool isCurrentDay;
   final bool isSelected;
@@ -302,7 +304,7 @@ class _CalendarDayButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final geometry = _TimeCalendarGeometry.fromTokens(tokens);
+    final geometry = TimeCalendarGeometry.fromTokens(tokens);
     final baseStyle = tokens.typography.styles.body.bodyMedium.copyWith(
       color: switch ((isSelected, isCurrentDay, palette.mode)) {
         (true, _, _) => palette.onAccent,
@@ -345,15 +347,16 @@ class _CalendarDayButton extends StatelessWidget {
   }
 }
 
-class _MonthButton extends StatelessWidget {
-  const _MonthButton({
+class MonthButton extends StatelessWidget {
+  const MonthButton({
     required this.palette,
     required this.label,
     required this.selected,
     required this.onPressed,
+    super.key,
   });
 
-  final _TimeCalendarPalette palette;
+  final TimeCalendarPalette palette;
   final String label;
   final bool selected;
   final VoidCallback onPressed;
@@ -361,7 +364,7 @@ class _MonthButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final geometry = _TimeCalendarGeometry.fromTokens(tokens);
+    final geometry = TimeCalendarGeometry.fromTokens(tokens);
     return SizedBox(
       width: geometry.monthButtonWidth,
       height: geometry.monthButtonHeight,
@@ -384,8 +387,8 @@ class _MonthButton extends StatelessWidget {
   }
 }
 
-class _TimeCalendarPalette {
-  const _TimeCalendarPalette({
+class TimeCalendarPalette {
+  const TimeCalendarPalette({
     required this.mode,
     required this.surfaceBase,
     required this.surfaceBlurSigma,
@@ -396,7 +399,7 @@ class _TimeCalendarPalette {
     required this.onAccent,
   });
 
-  factory _TimeCalendarPalette.fromMode(
+  factory TimeCalendarPalette.fromMode(
     DesignSystemTimeCalendarPickerMode mode,
   ) {
     final tokens = switch (mode) {
@@ -405,7 +408,7 @@ class _TimeCalendarPalette {
     };
 
     return switch (mode) {
-      DesignSystemTimeCalendarPickerMode.light => _TimeCalendarPalette(
+      DesignSystemTimeCalendarPickerMode.light => TimeCalendarPalette(
         mode: mode,
         surfaceBase: tokens.colors.background.level01.withValues(alpha: 0.92),
         surfaceBlurSigma: 24,
@@ -415,7 +418,7 @@ class _TimeCalendarPalette {
         accent: tokens.colors.interactive.enabled,
         onAccent: tokens.colors.text.onInteractiveAlert,
       ),
-      DesignSystemTimeCalendarPickerMode.dark => _TimeCalendarPalette(
+      DesignSystemTimeCalendarPickerMode.dark => TimeCalendarPalette(
         mode: mode,
         // The dark sidebar instance in Figma sits on `background.level02`
         // and uses a lifted material treatment, so the card should read
@@ -483,4 +486,4 @@ bool _isSameDay(DateTime a, DateTime b) {
   return a.year == b.year && a.month == b.month && a.day == b.day;
 }
 
-DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
+DateTime dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);

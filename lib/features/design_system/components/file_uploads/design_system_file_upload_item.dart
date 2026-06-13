@@ -1,4 +1,6 @@
-part of 'design_system_file_upload.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 // Uploaded-file row for [DesignSystemFileUploadDropZone] result lists.
 

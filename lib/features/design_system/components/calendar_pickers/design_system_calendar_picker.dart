@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_day_cell.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_month_rail.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
-part 'design_system_calendar_date_card.dart';
-part 'design_system_calendar_day_cell.dart';
-part 'design_system_calendar_month_rail.dart';
+export 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_date_card.dart';
+export 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_day_cell.dart';
+export 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_month_rail.dart';
 
 @immutable
-class _CalendarPickerGeometry {
-  const _CalendarPickerGeometry({
+class CalendarPickerGeometry {
+  const CalendarPickerGeometry({
     required this.railWidth,
     required this.controlHeight,
     required this.railButtonWidth,
@@ -16,8 +18,8 @@ class _CalendarPickerGeometry {
     required this.dateCardHeight,
   });
 
-  factory _CalendarPickerGeometry.fromTokens(DsTokens tokens) {
-    return _CalendarPickerGeometry(
+  factory CalendarPickerGeometry.fromTokens(DsTokens tokens) {
+    return CalendarPickerGeometry(
       // Fits a three-letter month label plus horizontal rail padding.
       railWidth: tokens.spacing.step12 + (tokens.spacing.step5 * 2),
       // Matches the design's compact rail/header control height.
@@ -57,7 +59,7 @@ class DesignSystemCalendarPicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
+    final geometry = CalendarPickerGeometry.fromTokens(tokens);
     final cellSize = tokens.spacing.step8;
     final gap = tokens.spacing.step1;
     final verticalPadding = 2 * tokens.spacing.step5;
@@ -88,7 +90,7 @@ class DesignSystemCalendarPicker extends StatelessWidget {
             children: [
               SizedBox(
                 width: geometry.railWidth,
-                child: _CalendarMonthRail(
+                child: CalendarMonthRail(
                   monthSections: monthSections,
                 ),
               ),
@@ -177,7 +179,7 @@ class _CalendarMonthHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
+    final geometry = CalendarPickerGeometry.fromTokens(tokens);
 
     final cellSize = tokens.spacing.step8;
 
@@ -226,7 +228,7 @@ class _CalendarTodayButtonState extends State<_CalendarTodayButton> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final geometry = _CalendarPickerGeometry.fromTokens(tokens);
+    final geometry = CalendarPickerGeometry.fromTokens(tokens);
     final enabled = widget.onPressed != null;
 
     final button = Semantics(
@@ -320,7 +322,7 @@ class _CalendarWeekRow extends StatelessWidget {
         for (final cell in row)
           cell == null
               ? SizedBox(width: cellSize, height: cellSize)
-              : _CalendarDayCell(data: cell),
+              : CalendarDayCell(data: cell),
       ],
     );
   }

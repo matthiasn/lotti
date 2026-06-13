@@ -3,11 +3,12 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_interactive_time_calendar_picker.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
-part 'design_system_time_calendar_picker_components.dart';
+export 'package:lotti/features/design_system/components/calendar_pickers/design_system_interactive_time_calendar_picker.dart';
 
-part 'design_system_interactive_time_calendar_picker.dart';
+part 'design_system_time_calendar_picker_components.dart';
 
 enum DesignSystemTimeCalendarPickerMode { light, dark }
 
@@ -18,8 +19,8 @@ enum DesignSystemTimeCalendarPickerPresentation {
 }
 
 @immutable
-class _TimeCalendarGeometry {
-  const _TimeCalendarGeometry({
+class TimeCalendarGeometry {
+  const TimeCalendarGeometry({
     required this.dialogInsetPadding,
     required this.compactWidth,
     required this.compactHeight,
@@ -47,14 +48,14 @@ class _TimeCalendarGeometry {
     required this.monthButtonRadius,
   });
 
-  factory _TimeCalendarGeometry.fromTokens(DsTokens tokens) {
+  factory TimeCalendarGeometry.fromTokens(DsTokens tokens) {
     final cardRadius = tokens.radii.m + (tokens.spacing.step1 / 2);
     final cardWidth =
         (7 * tokens.spacing.step9) +
         (tokens.spacing.step5 * 2) +
         tokens.spacing.step1;
 
-    return _TimeCalendarGeometry(
+    return TimeCalendarGeometry(
       dialogInsetPadding: EdgeInsets.all(tokens.spacing.step6),
       compactWidth: 288,
       compactHeight: 256,
@@ -148,7 +149,7 @@ class DesignSystemTimeCalendarPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final geometry = _TimeCalendarGeometry.fromTokens(context.designTokens);
+    final geometry = TimeCalendarGeometry.fromTokens(context.designTokens);
 
     switch (presentation) {
       case DesignSystemTimeCalendarPickerPresentation.regular:
@@ -182,7 +183,7 @@ class DesignSystemTimeCalendarPicker extends StatelessWidget {
           ),
         );
       case DesignSystemTimeCalendarPickerPresentation.monthDialog:
-        return _MonthSelectionDialogCard(
+        return MonthSelectionDialogCard(
           mode: mode,
           visibleMonth: visibleMonth,
           selectedMonth: selectedDate.month,
