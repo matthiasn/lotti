@@ -1,4 +1,7 @@
-part of 'inbound_event_queue.dart';
+import 'dart:convert';
+
+import 'package:lotti/database/sync_db.dart';
+import 'package:matrix/matrix.dart';
 
 /// Public result of a queue-side enqueue call. `accepted + dupes +
 /// filteredOutByType + deferredPendingDecryption` always equals the
@@ -16,7 +19,7 @@ class EnqueueResult {
   final int accepted;
   final int duplicatesDropped;
 
-  /// Rejected because [MatrixEventClassifier.isSyncPayloadEvent] was
+  /// Rejected because `MatrixEventClassifier.isSyncPayloadEvent` was
   /// false — state events, redactions, etc. (F4).
   final int filteredOutByType;
 
@@ -66,6 +69,25 @@ class InboundQueueEntry {
     required this.leaseUntil,
     required this.rawJson,
   });
+
+  /// Hydrates an entry from its database [row]. [leaseUntil] is passed
+  /// explicitly rather than read from the row because `peekBatchReady`
+  /// stamps a fresh lease in the same transaction *after* selecting
+  /// the rows — the row object still carries the stale value.
+  factory InboundQueueEntry.fromRow(
+    InboundEventQueueItem row, {
+    required int leaseUntil,
+  }) => InboundQueueEntry(
+    queueId: row.queueId,
+    eventId: row.eventId,
+    roomId: row.roomId,
+    originTs: row.originTs,
+    producer: producerFromName(row.producer),
+    enqueuedAt: row.enqueuedAt,
+    attempts: row.attempts,
+    leaseUntil: leaseUntil,
+    rawJson: row.rawJson,
+  );
 
   final int queueId;
   final String eventId;
@@ -140,46 +162,49 @@ class QueueStats {
   final int retrying;
 }
 
-const _logSubEnqueue = 'queue.enqueue';
-const _logSubCommit = 'queue.commit';
-const _logSubRetry = 'queue.retry';
-const _logSubSkip = 'queue.skip';
-const _logSubPrune = 'queue.prune';
-const _logSubResurrect = 'queue.resurrect';
+/// Resolves a stored `producer` column value back to the enum.
+/// Unknown names (from a future producer this build does not know
+/// about) fall back to [InboundEventProducer.live].
+InboundEventProducer producerFromName(String name) {
+  for (final p in InboundEventProducer.values) {
+    if (p.name == name) return p;
+  }
+  return InboundEventProducer.live;
+}
 
-// Status constants mirroring the `status` column values on
-// `inbound_event_queue`. Lifecycle diagram:
-//
-//     enqueued ─► leased ─┬─► applied  (commitApplied)
-//         ▲               ├─► retrying ─► leased ...
-//         │               └─► abandoned (markSkipped after max attempts)
-//         │
-//         └── resurrectByPath / resurrectAll (from abandoned)
-const _statusEnqueued = 'enqueued';
-const _statusLeased = 'leased';
-const _statusRetrying = 'retrying';
-const _statusApplied = 'applied';
-const _statusAbandoned = 'abandoned';
+/// Status values mirroring the `status` column on
+/// `inbound_event_queue`. Lifecycle diagram:
+///
+///     enqueued ─► leased ─┬─► applied  (commitApplied)
+///         ▲               ├─► retrying ─► leased ...
+///         │               └─► abandoned (markSkipped after max attempts)
+///         │
+///         └── resurrectByPath / resurrectAll (from abandoned)
+///
+/// The string literals must stay in sync with the partial-index DDL
+/// in `lib/database/sync_db.dart` (and the literal SQL fragments in
+/// `QueueMarkerAdvancer` / `InboundQueueResurrection`), which inline
+/// the same values so the SQLite planner can match the partial
+/// indices at plan time.
+abstract final class InboundQueueStatuses {
+  static const String enqueued = 'enqueued';
+  static const String leased = 'leased';
+  static const String retrying = 'retrying';
+  static const String applied = 'applied';
+  static const String abandoned = 'abandoned';
 
-// Statuses the worker can still drain. Peek + clamp queries filter
-// on this set so the applied ledger (bounded only by retention, not
-// by correctness) never touches the hot paths.
-const List<String> _activeStatuses = <String>[
-  _statusEnqueued,
-  _statusLeased,
-  _statusRetrying,
-];
+  /// Statuses the worker can still drain. Peek + clamp queries filter
+  /// on this set so the applied ledger (bounded only by retention, not
+  /// by correctness) never touches the hot paths.
+  static const List<String> active = <String>[enqueued, leased, retrying];
 
-// Peek eligibility. Includes `leased` so crash recovery works: a
-// worker that died mid-apply left its rows in `leased` state with a
-// non-zero `lease_until`. Once that timestamp elapses the row is
-// peekable again (the `lease_until <= now` predicate in
-// `peekBatchReady` still gates it). Under normal operation the
-// worker transitions `leased` → `applied`/`retrying`/`abandoned`
-// via its outcome switch, so this set is effectively `enqueued` +
-// `retrying` most of the time.
-const List<String> _peekStatuses = <String>[
-  _statusEnqueued,
-  _statusRetrying,
-  _statusLeased,
-];
+  /// Peek eligibility. Includes `leased` so crash recovery works: a
+  /// worker that died mid-apply left its rows in `leased` state with a
+  /// non-zero `lease_until`. Once that timestamp elapses the row is
+  /// peekable again (the `lease_until <= now` predicate in
+  /// `peekBatchReady` still gates it). Under normal operation the
+  /// worker transitions `leased` → `applied`/`retrying`/`abandoned`
+  /// via its outcome switch, so this set is effectively `enqueued` +
+  /// `retrying` most of the time.
+  static const List<String> peekable = <String>[enqueued, retrying, leased];
+}

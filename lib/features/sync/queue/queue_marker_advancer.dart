@@ -1,39 +1,18 @@
-part of 'inbound_event_queue.dart';
+import 'package:drift/drift.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 
-/// Internal row hydration, marker advancement, origin-ts scan and queue-depth
-/// emission helpers for [InboundQueue]. Split from the main file for size; all
-/// members are library-private.
-extension InboundQueueInternals on InboundQueue {
-  void _scheduleDepthEmit() {
-    if (_depthCtl.isClosed) return;
-    if (_inBatchMode > 0) {
-      _batchDirty = true;
-      return;
-    }
-    unawaited(_emitDepth());
-  }
+/// Advances `queue_markers` after a queue row leaves the active set.
+///
+/// Collaborator of `InboundQueue`: [advanceIfNewer] is invoked from
+/// inside the queue's `commitApplied` / `markSkipped` transactions so
+/// the marker flip commits atomically with the row's status flip
+/// (drift transactions are zone-based, so this class participates in
+/// the caller's ambient transaction through the shared [SyncDatabase]).
+class QueueMarkerAdvancer {
+  QueueMarkerAdvancer(this._db);
 
-  InboundQueueEntry _entryFromRow(
-    InboundEventQueueItem row,
-    int leaseUntil,
-  ) => InboundQueueEntry(
-    queueId: row.queueId,
-    eventId: row.eventId,
-    roomId: row.roomId,
-    originTs: row.originTs,
-    producer: _producerFromName(row.producer),
-    enqueuedAt: row.enqueuedAt,
-    attempts: row.attempts,
-    leaseUntil: leaseUntil,
-    rawJson: row.rawJson,
-  );
-
-  InboundEventProducer _producerFromName(String name) {
-    for (final p in InboundEventProducer.values) {
-      if (p.name == name) return p;
-    }
-    return InboundEventProducer.live;
-  }
+  final SyncDatabase _db;
 
   /// Advances `queue_markers` for [entry]'s room if the candidate
   /// timestamp — clamped against any still-active queue rows for the
@@ -53,7 +32,10 @@ extension InboundQueueInternals on InboundQueue {
   /// marker (it is out of the active set by design), but the same
   /// event is still visible in the ledger for diagnostics and can be
   /// resurrected by signal or user action.
-  Future<bool> _advanceMarkerIfNewer(InboundQueueEntry entry) async {
+  ///
+  /// Must be called inside the transaction that also flips [entry]'s
+  /// status out of the active set; the caller owns that status flip.
+  Future<bool> advanceIfNewer(InboundQueueEntry entry) async {
     final marker = await (_db.select(
       _db.queueMarkers,
     )..where((t) => t.roomId.equals(entry.roomId))).getSingleOrNull();
@@ -120,14 +102,13 @@ extension InboundQueueInternals on InboundQueue {
     // can prove this query's WHERE implies the partial index's WHERE
     // clause (`idx_inbound_event_queue_active_room_ts`, declared
     // `WHERE status IN ('enqueued','leased','retrying')`). Drift's
-    // `t.status.isIn(_clampStatuses)` binds the three status values as
+    // `t.status.isIn(...)` binds the three status values as
     // parameters; the planner can't see them at plan time, the
     // partial-index match fails, and the predicate falls back to a
     // rowid B-tree walk filtered by `room_id` + status equality. The
     // 2026-05-12 desktop super_slow log captured this as `SEARCH
     // inbound_event_queue` (no index name) at up to 862 ms per call.
-    // Literal values mirror `_statusEnqueued`, `_statusLeased`, and
-    // `_statusRetrying` declared at the top of this file — the
+    // Literal values mirror `InboundQueueStatuses.active` — the
     // partial-index DDL in `lib/database/sync_db.dart` uses the same
     // string literals.
     final row =
@@ -143,77 +124,4 @@ extension InboundQueueInternals on InboundQueue {
             .getSingle();
     return row.read(minTs);
   }
-
-  Future<int> _countTotal() async {
-    final table = _db.inboundEventQueue;
-    final count = table.queueId.count();
-    final row =
-        await (_db.selectOnly(table)
-              ..addColumns([count])
-              ..where(table.status.isIn(_activeStatuses)))
-            .getSingle();
-    return row.read(count) ?? 0;
-  }
-
-  Future<void> _emitDepth() async {
-    // Coalesce rapid successive calls so only one stats() scan is in
-    // flight at a time; callers that arrive during the scan simply flip
-    // the "rerun" flag so the final state is eventually emitted.
-    if (_depthCtl.isClosed) return;
-    if (_emitInFlight) {
-      _emitPendingRerun = true;
-      return;
-    }
-    _emitInFlight = true;
-    try {
-      do {
-        _emitPendingRerun = false;
-        QueueStats snapshot;
-        try {
-          snapshot = await stats();
-        } catch (_) {
-          // The stats call issues multiple aggregate queries; if
-          // dispose() closes the controller (and the test tears down
-          // the DB) during one of those async gaps, drift throws.
-          // Swallow here because the emission is strictly diagnostic.
-          if (_depthCtl.isClosed) return;
-          rethrow;
-        }
-        // Re-check after the async gap — dispose() may have closed the
-        // controller while we were computing stats (common in test
-        // teardown, where the assertion completes before the fire-and-
-        // forget `_emitDepth` that was kicked off from enqueue/commit).
-        if (_depthCtl.isClosed) return;
-        _depthCtl.add(
-          QueueDepthSignal(
-            total: snapshot.total,
-            byProducer: snapshot.byProducer,
-            oldestEnqueuedAt: snapshot.oldestEnqueuedAt,
-            abandoned: snapshot.abandoned,
-          ),
-        );
-      } while (_emitPendingRerun && !_depthCtl.isClosed);
-    } finally {
-      _emitInFlight = false;
-    }
-  }
-}
-
-/// Best-effort helper to extract `jsonPath` from the Lotti sync
-/// message content. Returns null when the event is not a sync
-/// payload or the content shape does not match (defensive against
-/// SDK event shape drift). A null result means the row cannot be
-/// resurrected by path — manual "Retry all" still works.
-String? _extractJsonPath(Event event) {
-  try {
-    final content = event.content;
-    final raw = content['jsonPath'] ?? content['json_path'];
-    if (raw is String && raw.isNotEmpty) {
-      return raw.startsWith('/') ? raw : '/$raw';
-    }
-  } catch (_) {
-    // Intentionally empty: diagnostic-only; adapter will still
-    // record the path on apply failure if we miss it here.
-  }
-  return null;
 }
