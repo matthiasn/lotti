@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_header_dimensions.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -134,7 +135,7 @@ class SettingsPageHeader extends StatelessWidget {
     return SliverAppBar(
       automaticallyImplyLeading: false,
       pinned: pinned,
-      backgroundColor: colorScheme.surface,
+      backgroundColor: context.designTokens.colors.background.level01,
       surfaceTintColor: Colors.transparent,
       elevation: 0,
       expandedHeight: effectiveExpandedHeight,
@@ -185,7 +186,7 @@ class SettingsPageHeader extends StatelessWidget {
 
           return Container(
             decoration: BoxDecoration(
-              color: colorScheme.surface,
+              color: context.designTokens.colors.background.level01,
               border: Border(
                 bottom: BorderSide(color: borderColor),
               ),

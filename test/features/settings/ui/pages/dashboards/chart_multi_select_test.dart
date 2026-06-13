@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
@@ -133,7 +134,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap Add button (should show "Add (1)")
-      final addButton = find.widgetWithText(FilledButton, 'Add (1)');
+      final addButton = find.widgetWithText(DesignSystemButton, 'Add (1)');
       expect(addButton, findsOneWidget);
       await tester.tap(addButton);
       await tester.pumpAndSettle();
@@ -200,7 +201,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap Cancel button
-      await tester.tap(find.widgetWithText(OutlinedButton, 'Cancel'));
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
       await tester.pumpAndSettle();
 
       // onConfirm should not have been called
@@ -262,7 +263,7 @@ void main() {
       expect(find.text('Second Item'), findsNothing);
 
       // Tap clear button
-      await tester.tap(find.byIcon(Icons.clear_rounded));
+      await tester.tap(find.byIcon(Icons.cancel_rounded));
       await tester.pumpAndSettle();
 
       // All items should be visible again

@@ -81,8 +81,9 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
         final label = snapshot.data;
         // Wait for first label to arrive
         if (label == null) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
+          return Scaffold(
+            backgroundColor: context.designTokens.colors.background.level01,
+            body: const Center(child: CircularProgressIndicator()),
           );
         }
         // Initialize args once per label id

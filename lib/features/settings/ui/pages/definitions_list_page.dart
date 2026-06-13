@@ -121,6 +121,9 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
     final desktop = isDesktopLayout(context);
 
     return Scaffold(
+      // Anchor on the token like settings_v2; the ambient
+      // scaffoldBackgroundColor resolves near-black in the app theme.
+      backgroundColor: context.designTokens.colors.background.level01,
       body: CustomScrollView(
         slivers: [
           SettingsPageHeader(
@@ -238,13 +241,17 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
         icon: widget.emptyIcon,
         title: widget.emptyTitle,
         body: widget.emptyHint,
-        // Close the loop right where the instruction sits, instead of
-        // pointing the reader at a create button in the opposite corner.
-        action: DesignSystemButton(
-          label: widget.createLabel,
-          leadingIcon: Icons.add,
-          onPressed: widget.onCreate,
-        ),
+        // Mobile: close the loop right where the instruction sits
+        // (the corner FAB is hidden on an empty list). Desktop already
+        // shows the create button in the header, so a second one here
+        // would be redundant.
+        action: isDesktopLayout(context)
+            ? null
+            : DesignSystemButton(
+                label: widget.createLabel,
+                leadingIcon: Icons.add,
+                onPressed: widget.onCreate,
+              ),
       ),
     );
   }

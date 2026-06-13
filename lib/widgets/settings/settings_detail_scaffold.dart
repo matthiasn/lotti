@@ -84,7 +84,10 @@ class SettingsDetailScaffold extends StatelessWidget {
     final tokens = context.designTokens;
 
     final scaffold = Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.surface,
+      // Anchor on the design token, not the ambient `colorScheme.surface`
+      // (which the app theme resolves to near-black) — matches the
+      // settings_v2 page and the rest of the app's level01 surfaces.
+      backgroundColor: tokens.colors.background.level01,
       // extendBody so the BackdropFilter inside the action bar's glass
       // strip has body content underneath to actually blur. The Scaffold
       // then reports the bar's height via the body MediaQuery's bottom

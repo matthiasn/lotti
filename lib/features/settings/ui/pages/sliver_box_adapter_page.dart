@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
@@ -58,6 +59,7 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
     );
 
     return Scaffold(
+      backgroundColor: context.designTokens.colors.background.level01,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: <Widget>[

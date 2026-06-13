@@ -671,7 +671,10 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Confirm the selection.
-        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
+        final addButtonFinder = find.widgetWithText(
+          DesignSystemButton,
+          'Add (1)',
+        );
         expect(addButtonFinder, findsOneWidget);
         await tester.tap(addButtonFinder);
         await tester.pumpAndSettle();
@@ -715,7 +718,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
+        final addButtonFinder = find.widgetWithText(
+          DesignSystemButton,
+          'Add (1)',
+        );
         expect(addButtonFinder, findsOneWidget);
         await tester.tap(addButtonFinder);
         await tester.pumpAndSettle();
@@ -753,7 +759,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
+        final addButtonFinder = find.widgetWithText(
+          DesignSystemButton,
+          'Add (1)',
+        );
         expect(addButtonFinder, findsOneWidget);
         await tester.tap(addButtonFinder);
         await tester.pumpAndSettle();
