@@ -1,10 +1,15 @@
-part of 'inference_model_edit_page.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _HeaderStrip extends StatelessWidget {
-  const _HeaderStrip({
+class HeaderStrip extends StatelessWidget {
+  const HeaderStrip({
     required this.modelName,
     required this.providerType,
     required this.providerName,
+    super.key,
   });
 
   final String modelName;
@@ -80,8 +85,8 @@ class _HeaderStrip extends StatelessWidget {
   }
 }
 
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child});
+class Section extends StatelessWidget {
+  const Section({required this.title, required this.child, super.key});
 
   final String title;
   final Widget child;
@@ -107,8 +112,8 @@ class _Section extends StatelessWidget {
   }
 }
 
-class _SectionCard extends StatelessWidget {
-  const _SectionCard({required this.children});
+class SectionCard extends StatelessWidget {
+  const SectionCard({required this.children, super.key});
 
   final List<Widget> children;
 
@@ -135,12 +140,13 @@ class _SectionCard extends StatelessWidget {
 /// rhythm of `AiTextField` without instantiating a `TextEditingController`
 /// — the previous `AbsorbPointer(AiTextField(controller: TextEditingController(...)))`
 /// pattern leaked a controller on every rebuild.
-class _SelectorField extends StatelessWidget {
-  const _SelectorField({
+class SelectorField extends StatelessWidget {
+  const SelectorField({
     required this.label,
     required this.value,
     required this.isEmpty,
     required this.onTap,
+    super.key,
   });
 
   final String label;

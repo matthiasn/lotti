@@ -7,11 +7,14 @@ import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/model/inference_provider_form_state.dart';
-import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/settings/inference_provider_form_controller.dart';
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form_create.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form_create_status.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit_setup.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ftue_trigger_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
@@ -24,23 +27,15 @@ import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_pre
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:uuid/uuid.dart';
 
-part 'inference_provider_form_create.dart';
-part 'inference_provider_form_create_status.dart';
-part 'inference_provider_form_edit.dart';
-part 'inference_provider_form_edit_setup.dart';
 part 'inference_provider_edit_form_builder.dart';
 
 /// Runs the FTUE setup for the given provider type.
@@ -509,7 +504,7 @@ class _InferenceProviderEditPageState
                   ),
                   if (isCreate && providerType != null)
                     SliverToBoxAdapter(
-                      child: _CreateModeChrome(
+                      child: CreateModeChrome(
                         providerType: providerType,
                         onChooseProvider: () {
                           // Same affordance as the back arrow — the
@@ -549,7 +544,7 @@ class _InferenceProviderEditPageState
             // footer (Back to providers / Save as draft / Save &
             // continue); edit mode keeps the legacy two-button bar.
             if (isCreate)
-              _AddProviderFooterBar(
+              AddProviderFooterBar(
                 onBack: () => popAiSettingsDetail(context),
                 onSaveDraft: handleSaveDraft,
                 onSaveAndContinue: handleSave,

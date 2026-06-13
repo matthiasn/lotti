@@ -1,4 +1,12 @@
-part of 'inference_provider_edit_page.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Live "Connection check" strip rendered below the Base URL field in
 /// create mode. Watches the per-provider
@@ -15,10 +23,11 @@ part of 'inference_provider_edit_page.dart';
 ///   subtitle, and a Re-test button.
 /// - [ConnectionCheckFailedHttp] / [ConnectionCheckFailedNetwork]: a
 ///   warning-tinted card with the failure reason and a Retry button.
-class _ConnectionStatusStrip extends ConsumerWidget {
-  const _ConnectionStatusStrip({
+class ConnectionStatusStrip extends ConsumerWidget {
+  const ConnectionStatusStrip({
     required this.providerType,
     required this.onRetest,
+    super.key,
   });
 
   final InferenceProviderType providerType;

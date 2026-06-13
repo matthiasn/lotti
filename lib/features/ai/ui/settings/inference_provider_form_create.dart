@@ -1,4 +1,10 @@
-part of 'inference_provider_edit_page.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 // Create-mode chrome: breadcrumbs, step indicator, header/footer,
 // flat fields and the connection status strip.
@@ -6,15 +12,16 @@ part of 'inference_provider_edit_page.dart';
 /// Container that stacks the create-mode chrome — breadcrumbs, step
 /// indicator, and the provider-tinted hero card — above the form.
 /// Encapsulates the responsive logic so the build path stays clean:
-/// the page just plugs in `_CreateModeChrome(providerType: …)` and the
+/// the page just plugs in `CreateModeChrome(providerType: …)` and the
 /// helper picks the right padding + spacing per viewport. Wide
 /// (>= 720) viewports keep the breadcrumbs row visible; narrower
 /// surfaces drop them because the AppBar leading-back arrow already
 /// expresses the same navigation intent.
-class _CreateModeChrome extends StatelessWidget {
-  const _CreateModeChrome({
+class CreateModeChrome extends StatelessWidget {
+  const CreateModeChrome({
     required this.providerType,
     required this.onChooseProvider,
+    super.key,
   });
 
   final InferenceProviderType providerType;
@@ -248,14 +255,15 @@ class _AddProviderHeaderCard extends StatelessWidget {
 /// Footer action row used in the create flow: Back to providers /
 /// Save as draft / Save & continue. The three buttons reflow onto
 /// multiple rows on narrow viewports via `Wrap`.
-class _AddProviderFooterBar extends StatelessWidget {
-  const _AddProviderFooterBar({
+class AddProviderFooterBar extends StatelessWidget {
+  const AddProviderFooterBar({
     required this.onBack,
     required this.onSaveDraft,
     required this.onSaveAndContinue,
     required this.canSaveDraft,
     required this.canSaveAndContinue,
     required this.isSaving,
+    super.key,
   });
 
   final VoidCallback onBack;
@@ -331,34 +339,35 @@ class _AddProviderFooterBar extends StatelessWidget {
   }
 }
 
-/// Tone for the right-hand hint text in a [_FlatField]. `helper`
+/// Tone for the right-hand hint text in a [FlatField]. `helper`
 /// renders as a low-emphasis caption; `link` renders as an accent-
 /// coloured, underlined string. When a `hintRightUrl` is supplied
 /// alongside the `link` tone, the hint becomes a real tap target
 /// that opens the URL in an external browser.
-enum _FlatFieldHintTone { helper, link }
+enum FlatFieldHintTone { helper, link }
 
 /// Flat row used in the create-mode form: a CAPITAL caption on the
 /// left, an optional right-hand hint, and the field widget below.
 /// Replaces the legacy `AiFormSection` wrapper for the redesigned
 /// connect form so the layout matches the reference screenshot
 /// (caption + right-hand hint + field, with no surrounding card).
-class _FlatField extends StatelessWidget {
-  const _FlatField({
+class FlatField extends StatelessWidget {
+  const FlatField({
     required this.label,
     required this.child,
     this.hintRight,
-    this.hintRightTone = _FlatFieldHintTone.helper,
+    this.hintRightTone = FlatFieldHintTone.helper,
     this.hintRightUrl,
+    super.key,
   });
 
   final String label;
   final Widget child;
   final String? hintRight;
-  final _FlatFieldHintTone hintRightTone;
+  final FlatFieldHintTone hintRightTone;
 
   /// Optional URL launched when the user taps the right-hand hint.
-  /// Only honored when [hintRightTone] is `_FlatFieldHintTone.link`.
+  /// Only honored when [hintRightTone] is `FlatFieldHintTone.link`.
   final String? hintRightUrl;
 
   @override
@@ -369,7 +378,7 @@ class _FlatField extends StatelessWidget {
       letterSpacing: 1.2,
       fontWeight: tokens.typography.weight.semiBold,
     );
-    final isLink = hintRightTone == _FlatFieldHintTone.link;
+    final isLink = hintRightTone == FlatFieldHintTone.link;
     final hintStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: isLink
           ? tokens.colors.interactive.enabled
@@ -404,7 +413,7 @@ class _FlatField extends StatelessWidget {
       overflow: TextOverflow.ellipsis,
     );
     final url = hintRightUrl;
-    if (hintRightTone != _FlatFieldHintTone.link || url == null) {
+    if (hintRightTone != FlatFieldHintTone.link || url == null) {
       return text;
     }
     return Semantics(

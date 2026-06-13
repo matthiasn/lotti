@@ -1,4 +1,17 @@
-part of 'inference_provider_edit_page.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/modality_extensions.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_form_edit_setup.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:uuid/uuid.dart';
 
 // Edit-mode form widgets: provider type, available models, AI setup.
 
@@ -7,12 +20,13 @@ part of 'inference_provider_edit_page.dart';
 /// type modal. Implemented as a styled box (no `TextEditingController`)
 /// so we don't allocate a new controller per build the way an
 /// `AbsorbPointer(AiTextField(...))` pattern would.
-class _ProviderTypeField extends StatelessWidget {
-  const _ProviderTypeField({
+class ProviderTypeField extends StatelessWidget {
+  const ProviderTypeField({
     required this.label,
     required this.value,
     required this.icon,
     required this.onTap,
+    super.key,
   });
 
   final String label;
@@ -99,8 +113,8 @@ class _ProviderTypeField extends StatelessWidget {
   }
 }
 
-class _EmbeddedProviderHint extends StatelessWidget {
-  const _EmbeddedProviderHint({required this.providerType});
+class EmbeddedProviderHint extends StatelessWidget {
+  const EmbeddedProviderHint({required this.providerType, super.key});
 
   final InferenceProviderType providerType;
 
@@ -138,10 +152,11 @@ class _EmbeddedProviderHint extends StatelessWidget {
 }
 
 /// Section showing available known models that can be added to this provider.
-class _AvailableModelsSection extends ConsumerWidget {
-  const _AvailableModelsSection({
+class AvailableModelsSection extends ConsumerWidget {
+  const AvailableModelsSection({
     required this.providerId,
     required this.providerType,
+    super.key,
   });
 
   final String providerId;
@@ -396,20 +411,20 @@ class _KnownModelTileState extends ConsumerState<_KnownModelTile> {
                     spacing: tokens.spacing.step2,
                     runSpacing: tokens.spacing.step2,
                     children: [
-                      _ModalityChip(
+                      ModalityChip(
                         label: messages.apiKeyKnownModelInputLabel(
                           inputModalities,
                         ),
                         icon: Icons.input_rounded,
                       ),
-                      _ModalityChip(
+                      ModalityChip(
                         label: messages.apiKeyKnownModelOutputLabel(
                           outputModalities,
                         ),
                         icon: Icons.output_rounded,
                       ),
                       if (widget.knownModel.isReasoningModel)
-                        _ModalityChip(
+                        ModalityChip(
                           label: messages.aiSettingsReasoningLabel,
                           icon: Icons.psychology_alt_rounded,
                         ),

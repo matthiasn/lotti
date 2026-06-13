@@ -6,7 +6,7 @@ import 'package:lotti/features/ai/model/inference_model_form_state.dart';
 import 'package:lotti/features/ai/model/modality_extensions.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/settings/inference_model_form_controller.dart';
-import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/inference_model_edit_widgets.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_error_extension.dart';
@@ -17,8 +17,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
-
-part 'inference_model_edit_widgets.dart';
 
 /// Create / edit page for an inference model row. Rewritten in v3 to
 /// match the visual language shipped by the AI Settings v1 → v3 page
@@ -192,17 +190,17 @@ class _InferenceModelEditPageState
         tokens.spacing.step6 + bottomInset,
       ),
       children: [
-        _HeaderStrip(
+        HeaderStrip(
           modelName: formState.name.value,
           providerType: ownerProvider?.inferenceProviderType,
           providerName: providerName,
         ),
         SizedBox(height: tokens.spacing.step5),
-        _Section(
+        Section(
           title: messages.modelEditSectionIdentity,
-          child: _SectionCard(
+          child: SectionCard(
             children: [
-              _SelectorField(
+              SelectorField(
                 label: messages.modelEditProviderLabel,
                 value: providerName,
                 isEmpty: formState.inferenceProviderId.isEmpty,
@@ -256,7 +254,7 @@ class _InferenceModelEditPageState
               if (ownerProvider?.inferenceProviderType ==
                   InferenceProviderType.gemini) ...[
                 SizedBox(height: tokens.spacing.step4),
-                _SelectorField(
+                SelectorField(
                   label: messages.modelEditGeminiThinkingModeLabel,
                   value: _formatGeminiThinkingMode(
                     context,
@@ -274,11 +272,11 @@ class _InferenceModelEditPageState
           ),
         ),
         SizedBox(height: tokens.spacing.step6),
-        _Section(
+        Section(
           title: messages.modelEditSectionCapabilities,
-          child: _SectionCard(
+          child: SectionCard(
             children: [
-              _SelectorField(
+              SelectorField(
                 label: messages.modelEditInputModalitiesLabel,
                 value: _formatModalities(formState.inputModalities),
                 isEmpty: formState.inputModalities.isEmpty,
@@ -290,7 +288,7 @@ class _InferenceModelEditPageState
                 ),
               ),
               SizedBox(height: tokens.spacing.step4),
-              _SelectorField(
+              SelectorField(
                 label: messages.modelEditOutputModalitiesLabel,
                 value: _formatModalities(formState.outputModalities),
                 isEmpty: formState.outputModalities.isEmpty,

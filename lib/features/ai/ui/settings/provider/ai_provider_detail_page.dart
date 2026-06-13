@@ -1,30 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_widgets.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_config_delete_service.dart';
 import 'package:lotti/features/ai/ui/settings/util/active_profile.dart';
-import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
-import 'package:lotti/features/ai/util/mlx_audio_model_progress_store.dart';
-import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
-
-part 'ai_provider_detail_widgets.dart';
-
-part 'ai_provider_connection_section.dart';
-part 'ai_provider_models_section.dart';
 
 /// Detail page for a single inference provider.
 ///
@@ -222,7 +209,7 @@ class _AiProviderDetailPageState extends ConsumerState<AiProviderDetailPage> {
             });
           }
 
-          return _DetailBody(
+          return DetailBody(
             provider: config,
             models: models,
             allModels: allModels,

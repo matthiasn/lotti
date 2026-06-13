@@ -1,20 +1,37 @@
-part of 'inference_provider_edit_page.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
+import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/form_components/form_components.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/themes/theme.dart';
 
 /// Section for manually triggering AI setup (models, prompts, category).
-class _AiSetupSection extends ConsumerStatefulWidget {
-  const _AiSetupSection({
+class AiSetupSection extends ConsumerStatefulWidget {
+  const AiSetupSection({
     required this.providerId,
     required this.providerType,
+    super.key,
   });
 
   final String providerId;
   final InferenceProviderType providerType;
 
   @override
-  ConsumerState<_AiSetupSection> createState() => _AiSetupSectionState();
+  ConsumerState<AiSetupSection> createState() => _AiSetupSectionState();
 }
 
-class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
+class _AiSetupSectionState extends ConsumerState<AiSetupSection> {
   bool _isRunning = false;
 
   /// Resolves the user-facing provider name through `aiProviderDisplayName`
@@ -236,10 +253,11 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
 }
 
 /// Small chip showing modality info.
-class _ModalityChip extends StatelessWidget {
-  const _ModalityChip({
+class ModalityChip extends StatelessWidget {
+  const ModalityChip({
     required this.label,
     required this.icon,
+    super.key,
   });
 
   final String label;

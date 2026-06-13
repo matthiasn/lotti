@@ -46,7 +46,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
       // v5 flat-field layout matching the screenshot at
       // /Desktop/Screenshot 2026-05-13 at 17.09.21: caption-above-field
       // rows with right-side hints, the API-key helper link, the
-      // privacy hint, and the live `_ConnectionStatusStrip` below
+      // privacy hint, and the live `ConnectionStatusStrip` below
       // Base URL. No `AiFormSection` wrappers — sections collapse to
       // simple stacked fields per the design.
       return Padding(
@@ -54,7 +54,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _FlatField(
+            FlatField(
               label: messages.apiKeyDisplayNameLabel,
               hintRight: messages.aiProviderConnectFieldDisplayNameHint,
               child: AiTextField(
@@ -72,12 +72,12 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
                   final consoleUrl = aiProviderKeyConsoleUrl(
                     formState.inferenceProviderType,
                   );
-                  return _FlatField(
+                  return FlatField(
                     label: messages.apiKeyInputLabel,
                     hintRight: consoleUrl != null
                         ? messages.aiProviderConnectKeyHelperLink(consoleUrl)
                         : null,
-                    hintRightTone: _FlatFieldHintTone.link,
+                    hintRightTone: FlatFieldHintTone.link,
                     hintRightUrl: consoleUrl,
                     child: AiTextField(
                       label: '',
@@ -102,7 +102,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
             ],
             if (usesBaseUrl) ...[
               SizedBox(height: tokens.spacing.step6),
-              _FlatField(
+              FlatField(
                 label: messages.aiProviderConnectFieldBaseUrlLabelOptional,
                 hintRight: messages.aiProviderConnectFieldBaseUrlHint,
                 child: AiTextField(
@@ -133,7 +133,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
                   )
                   is! ConnectionCheckIdle)
                 SizedBox(height: tokens.spacing.step5),
-              _ConnectionStatusStrip(
+              ConnectionStatusStrip(
                 providerType: formState.inferenceProviderType,
                 onRetest: () => _retryConnectionVerify(
                   providerType: formState.inferenceProviderType,
@@ -143,7 +143,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
               ),
             ] else ...[
               SizedBox(height: tokens.spacing.step6),
-              _EmbeddedProviderHint(
+              EmbeddedProviderHint(
                 providerType: formState.inferenceProviderType,
               ),
             ],
@@ -163,7 +163,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
             icon: Icons.settings_rounded,
             description: messages.apiKeyProviderConfigDescription,
             children: [
-              _ProviderTypeField(
+              ProviderTypeField(
                 label: messages.apiKeyProviderTypeLabel,
                 value: formState.inferenceProviderType.displayName(context),
                 icon: formState.inferenceProviderType.icon,
@@ -191,7 +191,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
                 ),
               ] else ...[
                 SizedBox(height: tokens.spacing.step6),
-                _EmbeddedProviderHint(
+                EmbeddedProviderHint(
                   providerType: formState.inferenceProviderType,
                 ),
               ],
@@ -223,7 +223,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
 
           // Available Models Section - Only show when editing existing provider
           if (widget.configId != null)
-            _AvailableModelsSection(
+            AvailableModelsSection(
               providerId: widget.configId!,
               providerType: formState.inferenceProviderType,
             ),
@@ -233,7 +233,7 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
               ftueSupportedProviderTypes.contains(
                 formState.inferenceProviderType,
               ))
-            _AiSetupSection(
+            AiSetupSection(
               providerId: widget.configId!,
               providerType: formState.inferenceProviderType,
             ),

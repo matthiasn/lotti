@@ -1,11 +1,21 @@
-part of 'ai_provider_detail_page.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_widgets.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/ai/util/mlx_audio_model_progress_store.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _ModelsSection extends StatelessWidget {
-  const _ModelsSection({
+class ModelsSection extends StatelessWidget {
+  const ModelsSection({
     required this.provider,
     required this.models,
     required this.onAddModel,
     required this.onModelTap,
+    super.key,
   });
 
   final AiConfigInferenceProvider provider;
@@ -17,7 +27,7 @@ class _ModelsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    return _Section(
+    return Section(
       title: messages.aiProviderDetailModelsTitle(models.length),
       trailing: DesignSystemButton(
         label: messages.aiProviderDetailAddModelButton,
@@ -26,7 +36,7 @@ class _ModelsSection extends StatelessWidget {
         onPressed: onAddModel,
       ),
       child: models.isEmpty
-          ? _EmptySectionCard(
+          ? EmptySectionCard(
               message: messages.aiProviderDetailNoModelsMessage,
             )
           : Column(
@@ -68,12 +78,13 @@ class _ModelsSection extends StatelessWidget {
   }
 }
 
-class _ActiveProfileSection extends StatelessWidget {
-  const _ActiveProfileSection({
+class ActiveProfileSection extends StatelessWidget {
+  const ActiveProfileSection({
     required this.profile,
     required this.providerType,
     required this.models,
     required this.onProfileTap,
+    super.key,
   });
 
   final AiConfigInferenceProfile profile;
@@ -87,7 +98,7 @@ class _ActiveProfileSection extends StatelessWidget {
     final modelNamesById = <String, String>{
       for (final m in models) m.providerModelId: m.name,
     };
-    return _Section(
+    return Section(
       title: messages.aiProviderDetailActiveProfileTitle,
       child: AiProfileCard(
         profile: profile,

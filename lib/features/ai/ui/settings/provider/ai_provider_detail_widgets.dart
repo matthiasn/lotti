@@ -1,7 +1,17 @@
-part of 'ai_provider_detail_page.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_connection_section.dart';
+import 'package:lotti/features/ai/ui/settings/provider/ai_provider_models_section.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
+import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
-class _DetailBody extends StatelessWidget {
-  const _DetailBody({
+class DetailBody extends StatelessWidget {
+  const DetailBody({
     required this.provider,
     required this.models,
     required this.allModels,
@@ -11,6 +21,7 @@ class _DetailBody extends StatelessWidget {
     required this.onModelTap,
     required this.onProfileTap,
     required this.onRemove,
+    super.key,
   });
 
   final AiConfigInferenceProvider provider;
@@ -43,9 +54,9 @@ class _DetailBody extends StatelessWidget {
       children: [
         _HeaderStrip(provider: provider, modelCount: models.length),
         SizedBox(height: tokens.spacing.step5),
-        _ConnectionSection(provider: provider, onEdit: onEdit),
+        ConnectionSection(provider: provider, onEdit: onEdit),
         SizedBox(height: tokens.spacing.step6),
-        _ModelsSection(
+        ModelsSection(
           provider: provider,
           models: models,
           onAddModel: onAddModel,
@@ -53,7 +64,7 @@ class _DetailBody extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step6),
         if (activeProfile != null)
-          _ActiveProfileSection(
+          ActiveProfileSection(
             profile: activeProfile!,
             providerType: provider.inferenceProviderType,
             models: allModels,
@@ -223,7 +234,7 @@ class _DangerZoneSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    return _Section(
+    return Section(
       title: messages.aiProviderDetailDangerZoneTitle,
       child: Container(
         padding: EdgeInsets.all(tokens.spacing.step4),
@@ -274,8 +285,13 @@ class _DangerZoneSection extends StatelessWidget {
   }
 }
 
-class _Section extends StatelessWidget {
-  const _Section({required this.title, required this.child, this.trailing});
+class Section extends StatelessWidget {
+  const Section({
+    required this.title,
+    required this.child,
+    this.trailing,
+    super.key,
+  });
 
   final String title;
   final Widget child;
@@ -309,8 +325,8 @@ class _Section extends StatelessWidget {
   }
 }
 
-class _EmptySectionCard extends StatelessWidget {
-  const _EmptySectionCard({required this.message});
+class EmptySectionCard extends StatelessWidget {
+  const EmptySectionCard({required this.message, super.key});
 
   final String message;
 

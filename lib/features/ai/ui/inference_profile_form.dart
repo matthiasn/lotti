@@ -6,22 +6,18 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
-import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/ai/ui/inference_profile_slot_field.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
-import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
-import 'package:lotti/widgets/selection/selection_modal_base.dart';
 import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/ai/ui/inference_profile_detail_page.dart';
-
-part 'inference_profile_slot_field.dart';
 
 /// Create or edit an inference profile.
 class InferenceProfileForm extends ConsumerStatefulWidget {
@@ -161,7 +157,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
             const SizedBox(height: 24),
 
             // Thinking model (required)
-            _ModelSlotField(
+            ModelSlotField(
               label: context.messages.inferenceProfileThinking,
               modelId: _thinkingModelId,
               required: true,
@@ -171,7 +167,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
             const SizedBox(height: 16),
 
             // High-end thinking model (optional)
-            _ModelSlotField(
+            ModelSlotField(
               label: context.messages.inferenceProfileThinkingHighEnd,
               modelId: _thinkingHighEndModelId,
               filter: (m) => m.inputModalities.contains(Modality.text),
@@ -181,7 +177,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
             const SizedBox(height: 16),
 
             // Image recognition model (optional)
-            _ModelSlotField(
+            ModelSlotField(
               label: context.messages.inferenceProfileImageRecognition,
               modelId: _imageRecognitionModelId,
               filter: (m) => m.inputModalities.contains(Modality.image),
@@ -191,7 +187,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
             const SizedBox(height: 16),
 
             // Transcription model (optional)
-            _ModelSlotField(
+            ModelSlotField(
               label: context.messages.inferenceProfileTranscription,
               modelId: _transcriptionModelId,
               filter: (m) => m.inputModalities.contains(Modality.audio),
@@ -201,7 +197,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
             const SizedBox(height: 16),
 
             // Image generation model (optional)
-            _ModelSlotField(
+            ModelSlotField(
               label: context.messages.inferenceProfileImageGeneration,
               modelId: _imageGenerationModelId,
               filter: (m) => m.outputModalities.contains(Modality.image),
@@ -466,7 +462,7 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
 /// [AiConfigModel.id] match first, then a unique legacy `providerModelId`
 /// fallback. Ambiguous (2+ rows sharing the legacy id) or unknown values
 /// return `null` so the UI never shows an arbitrary row as selected.
-AiConfigModel? _resolveModelSlot(
+AiConfigModel? resolveModelSlot(
   String? slotValue,
   List<AiConfigModel> models,
 ) {
@@ -481,7 +477,7 @@ AiConfigModel? _resolveModelSlot(
 }
 
 /// Maps a slot value to the canonical [AiConfigModel.id] for persistence,
-/// using the same resolution rule as [_resolveModelSlot]:
+/// using the same resolution rule as [resolveModelSlot]:
 ///
 /// - exact model-row id match → kept as-is
 /// - unique legacy `providerModelId` match → normalized to that row's id
@@ -490,7 +486,7 @@ AiConfigModel? _resolveModelSlot(
 /// - no match → kept as-is (the model row may not have synced yet)
 String? _normalizeModelSlotId(String? slotValue, List<AiConfigModel> models) {
   if (slotValue == null) return null;
-  final resolved = _resolveModelSlot(slotValue, models);
+  final resolved = resolveModelSlot(slotValue, models);
   if (resolved != null) return resolved.id;
 
   final isAmbiguous =
