@@ -1,20 +1,21 @@
 # Text-to-speech (Supertonic)
 
-On-device text-to-speech that reads a task's AI **TL;DR** aloud, intended to run
-the [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) ONNX model
-(~99M params, 44.1kHz 16-bit WAV) locally and play the result through the app's
-existing `media_kit` stack. No cloud, no API.
+On-device text-to-speech that reads a task's AI **TL;DR** aloud: it runs the
+[Supertonic 3](https://huggingface.co/Supertone/supertonic-3) ONNX model
+(~99M params, 44.1kHz 16-bit WAV) locally via `flutter_onnxruntime` and plays
+the result through the app's existing `media_kit` stack. No cloud, no API.
 
-The full Dart architecture — voice/model catalogs, the playback state machine,
-controllers, the HF model-download repository, the redesigned AI-card playback
-control, and the text/tokenizer/WAV engine core — is built and tested behind a
-`TtsEngine` interface. The **concrete ONNX engine** (via `flutter_onnxruntime`)
-is **not yet wired**: adding that dependency broke the macOS CocoaPods build (it
-pulls statically-linked onnxruntime under `use_frameworks!`), so it was reverted
-and left as a deliberate native-integration step (see Remaining work). Until
-then `ttsEngine` returns an unavailable fallback, so the playback control is
-hidden. This feature **replaces** the previous MLX/Qwen3-TTS "speak summary"
-path and is gated behind the `enable_ai_summary_tts` config flag.
+The engine is wired (`ttsEngine` → `SupertonicOnnxEngine` on macOS, behind a
+`TtsEngine` interface). macOS CocoaPods needs `use_frameworks! :linkage =>
+:static` (applied in `macos/Podfile`) because onnxruntime is statically linked;
+iOS additionally needs `platform :ios, '16.0'` + the same `:static` line. The
+ten voice-style JSONs are bundled under `assets/tts/voice_styles/`; the ~400MB
+`onnx/` model files are **downloaded from Hugging Face on first use** (see the
+download repository — filenames verified against the repo). This feature
+**replaces** the previous MLX/Qwen3-TTS "speak summary" path and is gated behind
+the `enable_ai_summary_tts` config flag (default off), so the playback control
+appears once the flag is on, the engine is supported (macOS), and a TL;DR
+exists.
 
 ## Architecture
 
@@ -50,21 +51,26 @@ TL;DR + a supported engine), and the agent "Thinking…" pill is visually
 distinct from the audio control. This **replaced** the old fire-and-forget MLX
 `_speakSummary` path.
 
+## Done
+
+- **Settings → Speech page** — voice / model / playback-speed selectors in the
+  entity-definition design language, wired into the mobile `SettingsPage` list
+  and the desktop Settings-v2 tree/panel (flag-gated).
+- **Engine + native:** concrete `SupertonicOnnxEngine` wired; `macos/Podfile`
+  uses static linkage; voice JSONs bundled; model filenames verified against
+  the HF repo.
+
 ## Remaining work (handoff)
 
-- **Settings → Speech page** (voice / model / playback-speed selectors, in the
-  entity-definition design language) — `tts_settings_controller` and the voice/
-  model catalogs are ready; the page/body widgets + mobile nav + desktop v2
-  panel are not yet built.
+- **End-to-end run:** the first playback downloads ~400MB of `onnx/` model
+  files from Hugging Face — exercise it on macOS (network + storage) and confirm
+  audio before enabling `enable_ai_summary_tts` by default.
+- **iOS:** add `platform :ios, '16.0'` + `use_frameworks! :linkage => :static`
+  to `ios/Podfile` (macOS is done; the engine is currently gated to macOS).
 - **Dead-code cleanup:** `MlxAudioChannel.speakText`/`stopSpeaking` and the
-  Qwen3-TTS catalog entry are now unreachable but still co-tested with ASR
+  Qwen3-TTS catalog entry are unreachable but still co-tested with ASR
   behaviour; remove them in a focused pass that preserves the ASR tests.
-- **Native:** ship the voice-style JSONs as bundled assets (declare
-  `assets/tts/voice_styles/` in pubspec) and add the iOS deployment-target 16.0
-  / static-linkage Podfile config `flutter_onnxruntime` needs.
-- **Verify** the exact `Supertone/supertonic-3/onnx/` filenames and run the
-  real model end-to-end on macOS before enabling the flag by default; add the
-  CHANGELOG entry when the feature becomes user-visible.
+- **CHANGELOG** entry once the feature is user-visible (flag on by default).
 
 The engine is split so the correctness-sensitive, deterministic logic
 (normalization, tokenization, WAV encoding) is unit-tested without the native
