@@ -1,16 +1,69 @@
-part of 'matrix_service.dart';
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
+import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
+import 'package:lotti/features/sync/matrix/sync_engine.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:matrix/encryption/utils/key_verification.dart';
+import 'package:matrix/matrix.dart';
 
 /// Room, device-verification and diagnostics operations of [MatrixService].
-/// Extracted into a part-file mixin to keep the service file under the size
-/// limit; shared state is reached through the [_MatrixServiceBase] accessors.
-mixin _MatrixServiceOps on _MatrixServiceBase {
+///
+/// Extracted into a standalone collaborator so the service file stays under the
+/// size limit. The owning [MatrixService] keeps thin public delegators that
+/// forward to this class; shared, mutable service state (the pipeline instance
+/// and the key-verification subscription) is reached through the injected
+/// accessors so the collaborator never has to mutate the service directly.
+class MatrixServiceOps {
+  MatrixServiceOps({
+    required this.gateway,
+    required this.loggingService,
+    required this.collectSyncMetrics,
+    required this.queueCoordinator,
+    required this.roomManager,
+    required this.sessionManager,
+    required this.syncEngine,
+    required this.incomingKeyVerificationController,
+    required MatrixStreamConsumer? Function() pipeline,
+    required this.keyVerificationRequestSubscription,
+    required this.setKeyVerificationRequestSubscription,
+    required this.service,
+  }) : _pipelineAccessor = pipeline;
+
+  final MatrixSyncGateway gateway;
+  final DomainLogger loggingService;
+  final bool collectSyncMetrics;
+  final QueuePipelineCoordinator queueCoordinator;
+  final SyncRoomManager roomManager;
+  final MatrixSessionManager sessionManager;
+  final SyncEngine syncEngine;
+  final StreamController<KeyVerification> incomingKeyVerificationController;
+  final MatrixStreamConsumer? Function() _pipelineAccessor;
+  final StreamSubscription<KeyVerification>? Function()
+  keyVerificationRequestSubscription;
+  final void Function(StreamSubscription<KeyVerification>?)
+  setKeyVerificationRequestSubscription;
+  final MatrixService Function() service;
+
+  MatrixStreamConsumer? get _pipeline => _pipelineAccessor();
+  Client get _client => sessionManager.client;
+  MatrixConfig? get _matrixConfig => sessionManager.matrixConfig;
+
   Future<String?> joinRoom(String roomId) async {
-    final room = await _roomManager.joinRoom(roomId);
+    final room = await roomManager.joinRoom(roomId);
     return room?.id ?? roomId;
   }
 
   Future<void> saveRoom(String roomId) async {
-    await _roomManager.saveRoomId(roomId);
+    await roomManager.saveRoomId(roomId);
 
     // When provisioning saves the room after login, restart the
     // retained consumer's bindings (un-partials the room, attaches
@@ -33,10 +86,10 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
         // current room. Run the room-change hook before kicking the
         // bridge so catch-up walks history into a properly seeded
         // queue.
-        await _queueCoordinator.onRoomChanged(roomId);
-        await _queueCoordinator.triggerBridge();
+        await queueCoordinator.onRoomChanged(roomId);
+        await queueCoordinator.triggerBridge();
       } catch (error, stackTrace) {
-        _loggingService.error(
+        loggingService.error(
           LogDomain.sync,
           error,
           stackTrace: stackTrace,
@@ -51,49 +104,49 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
   /// This does not leave the room on the homeserver. It is intended for flows
   /// that switch credentials and must avoid auto-joining a stale room ID
   /// during reconnect.
-  Future<void> clearPersistedRoom() => _roomManager.clearPersistedRoom();
+  Future<void> clearPersistedRoom() => roomManager.clearPersistedRoom();
 
-  bool isLoggedIn() => _sessionManager.isLoggedIn();
+  bool isLoggedIn() => sessionManager.isLoggedIn();
 
   Future<String> createRoom({List<String>? invite}) =>
-      _roomManager.createRoom(inviteUserIds: invite);
+      roomManager.createRoom(inviteUserIds: invite);
 
-  Future<String?> getRoom() => _roomManager.loadPersistedRoomId();
+  Future<String?> getRoom() => roomManager.loadPersistedRoomId();
 
   Future<void> leaveRoom() async {
-    _loggingService.log(
+    loggingService.log(
       LogDomain.sync,
       'leaveRoom requested',
       subDomain: 'room.leave',
     );
-    await _roomManager.leaveCurrentRoom();
+    await roomManager.leaveCurrentRoom();
   }
 
   Future<void> inviteToSyncRoom({required String userId}) async {
-    _loggingService.log(
+    loggingService.log(
       LogDomain.sync,
-      'inviteToSyncRoom requested user=$userId room=${_roomManager.currentRoomId}',
+      'inviteToSyncRoom requested user=$userId room=${roomManager.currentRoomId}',
       subDomain: 'room.invite',
     );
-    await _roomManager.inviteUser(userId);
+    await roomManager.inviteUser(userId);
   }
 
   Future<void> acceptInvite(SyncRoomInvite invite) async {
-    _loggingService.log(
+    loggingService.log(
       LogDomain.sync,
       'acceptInvite requested room=${invite.roomId} from=${invite.senderId}',
       subDomain: 'room.acceptInvite',
     );
-    await _roomManager.acceptInvite(invite);
+    await roomManager.acceptInvite(invite);
   }
 
   List<DeviceKeys> getUnverifiedDevices() {
-    return _gateway.unverifiedDevices();
+    return gateway.unverifiedDevices();
   }
 
   Future<void> verifyDevice(DeviceKeys deviceKeys) => verifyMatrixDevice(
     deviceKeys: deviceKeys,
-    service: this as MatrixService,
+    service: service(),
   );
 
   /// Runs post-verification recovery so sync resumes without app restart.
@@ -101,7 +154,7 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
   /// This refreshes cached device keys/trust and nudges the pipeline with a
   /// catch-up rescan to pick up pending encrypted events immediately.
   Future<void> onVerificationCompleted({required String source}) async {
-    _loggingService.log(
+    loggingService.log(
       LogDomain.sync,
       'verification.completed source=$source',
       subDomain: 'verification',
@@ -110,14 +163,14 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
     if (!isLoggedIn()) return;
 
     try {
-      final userId = client.userID;
+      final userId = _client.userID;
       if (userId != null) {
-        await client.updateUserDeviceKeys(additionalUsers: {userId});
+        await _client.updateUserDeviceKeys(additionalUsers: {userId});
       } else {
-        await client.updateUserDeviceKeys();
+        await _client.updateUserDeviceKeys();
       }
     } catch (error, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
@@ -126,10 +179,10 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
     }
 
     try {
-      await _syncEngine.lifecycleCoordinator.reconcileLifecycleState();
+      await syncEngine.lifecycleCoordinator.reconcileLifecycleState();
       await forceRescan();
     } catch (error, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
@@ -148,7 +201,7 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
       );
     }
 
-    final config = matrixConfig;
+    final config = _matrixConfig;
     if (config == null) {
       throw StateError(
         'Cannot delete device $deviceId: No Matrix configuration available. '
@@ -156,15 +209,15 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
       );
     }
 
-    if (deviceKeys.userId != client.userID) {
+    if (deviceKeys.userId != _client.userID) {
       throw StateError(
         'Cannot delete device $deviceId: Device belongs to user '
-        '${deviceKeys.userId} but current user is ${client.userID}',
+        '${deviceKeys.userId} but current user is ${_client.userID}',
       );
     }
 
     if (config.password.isNotEmpty) {
-      await client.deleteDevice(
+      await _client.deleteDevice(
         deviceId,
         auth: AuthenticationPassword(
           password: config.password,
@@ -184,19 +237,20 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
       incomingKeyVerificationController.stream;
 
   Future<void> startKeyVerificationListener() async {
-    if (_keyVerificationRequestSubscription != null) {
+    if (keyVerificationRequestSubscription() != null) {
       return;
     }
-    _keyVerificationRequestSubscription =
-        await listenForKeyVerificationRequestsWithSubscription(
-          service: this as MatrixService,
-          loggingService: _loggingService,
-        );
+    setKeyVerificationRequestSubscription(
+      await listenForKeyVerificationRequestsWithSubscription(
+        service: service(),
+        loggingService: loggingService,
+      ),
+    );
   }
 
   Future<Map<String, dynamic>> getDiagnosticInfo() async {
-    final diagnostics = await _syncEngine.diagnostics(log: false);
-    _loggingService.log(
+    final diagnostics = await syncEngine.diagnostics(log: false);
+    loggingService.log(
       LogDomain.sync,
       'Sync diagnostics: ${json.encode(diagnostics)}',
       subDomain: 'diagnostics',
@@ -205,23 +259,24 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
   }
 
   Future<SyncMetrics?> getSyncMetrics() async {
-    if (_pipeline == null) return null;
+    final pipeline = _pipeline;
+    if (pipeline == null) return null;
     try {
       // If metrics collection is disabled, do not attempt to read metrics.
-      if (!_collectSyncMetrics) return null;
-      final map = Map<String, dynamic>.from(_pipeline!.metricsSnapshot());
+      if (!collectSyncMetrics) return null;
+      final map = Map<String, dynamic>.from(pipeline.metricsSnapshot());
       // Overlay queue ledger counts — queueActive/applied/abandoned/
       // retrying surface in Matrix Stats alongside the consumer's own
       // counters.
-      if (_queueCoordinator.isRunning) {
+      if (queueCoordinator.isRunning) {
         try {
-          final stats = await _queueCoordinator.queue.stats();
+          final stats = await queueCoordinator.queue.stats();
           map['queueActive'] = stats.total;
           map['queueApplied'] = stats.applied;
           map['queueAbandoned'] = stats.abandoned;
           map['queueRetrying'] = stats.retrying;
         } catch (error, stackTrace) {
-          _loggingService.error(
+          loggingService.error(
             LogDomain.sync,
             error,
             stackTrace: stackTrace,
@@ -231,7 +286,7 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
       }
       return SyncMetrics.fromMap(map);
     } catch (e, st) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.sync,
         e,
         stackTrace: st,
@@ -241,14 +296,12 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
     }
   }
 
-  // Raw map accessor removed in favor of the expanded typed SyncMetrics model.
-
   Future<void> forceRescan({bool includeCatchUp = true}) async {
     // The queue coordinator owns catch-up; route `includeCatchUp`
     // rescans to its bridge. Live-only rescans are a no-op since the
     // consumer's own live ingestion is suppressed.
     if (!includeCatchUp) {
-      _loggingService.log(
+      loggingService.log(
         LogDomain.sync,
         'forceRescan.suppressed includeCatchUp=false',
         subDomain: 'forceRescan',
@@ -267,14 +320,14 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
   /// nudges the bridge in case a remote gap is what's holding the worker.
   Future<void> retryNow() async {
     try {
-      final resurrected = await _queueCoordinator.queue.resurrectAll();
-      _loggingService.log(
+      final resurrected = await queueCoordinator.queue.resurrectAll();
+      loggingService.log(
         LogDomain.sync,
         'retryNow.resurrectAll resurrected=$resurrected',
         subDomain: 'retryNow',
       );
     } catch (error, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
@@ -292,14 +345,14 @@ mixin _MatrixServiceOps on _MatrixServiceBase {
     required String successMessage,
   }) async {
     try {
-      await _queueCoordinator.triggerBridge();
-      _loggingService.log(
+      await queueCoordinator.triggerBridge();
+      loggingService.log(
         LogDomain.sync,
         successMessage,
         subDomain: subDomain,
       );
     } catch (error, stackTrace) {
-      _loggingService.error(
+      loggingService.error(
         LogDomain.sync,
         error,
         stackTrace: stackTrace,

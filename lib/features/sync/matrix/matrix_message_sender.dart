@@ -3,28 +3,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
+import 'package:lotti/features/sync/matrix/matrix_payload_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
-import 'package:lotti/features/sync/matrix/utils/attachment_decoding.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
-import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
-import 'package:lotti/utils/audio_utils.dart';
-import 'package:lotti/utils/consts.dart';
-import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:meta/meta.dart';
-import 'package:path/path.dart' as p;
-
-part 'matrix_bundle_sender.dart';
-part 'matrix_payload_senders.dart';
 
 typedef MatrixMessageSentCallback =
     void Function(
@@ -36,24 +24,34 @@ typedef MatrixMessageSentCallback =
 class MatrixMessageSender {
   MatrixMessageSender({
     required this._loggingService,
-    required this._journalDb,
-    required this._documentsDirectory,
+    required JournalDb journalDb,
+    required Directory documentsDirectory,
     required this._sentEventRegistry,
-    this._vectorClockService,
-    this._domainLogger,
+    VectorClockService? vectorClockService,
+    DomainLogger? domainLogger,
     Future<Uint8List> Function(Object? jsonValue)? gzipEncode,
-  }) : _gzipEncode = gzipEncode ?? gzipEncodeJson;
+  }) : _vectorClockService = vectorClockService,
+       _domainLogger = domainLogger,
+       _payloadSender = MatrixPayloadSender(
+         loggingService: _loggingService,
+         journalDb: journalDb,
+         documentsDirectory: documentsDirectory,
+         sentEventRegistry: _sentEventRegistry,
+         vectorClockService: vectorClockService,
+         domainLogger: domainLogger,
+         gzipEncode: gzipEncode,
+       );
 
   final DomainLogger _loggingService;
-  final JournalDb _journalDb;
-  final Directory _documentsDirectory;
   final SentEventRegistry _sentEventRegistry;
   final VectorClockService? _vectorClockService;
   final DomainLogger? _domainLogger;
 
-  /// Gzip+JSON encoder for outbox bundle manifests. Injectable so tests can
-  /// exercise the encode-failure path; defaults to [gzipEncodeJson].
-  final Future<Uint8List> Function(Object? jsonValue) _gzipEncode;
+  /// File/attachment and outbox-bundle payload uploads. The sender owns the
+  /// wire envelope; this collaborator owns the per-payload upload work that
+  /// used to live in the `matrix_payload_senders`/`matrix_bundle_sender`
+  /// part-file extensions.
+  final MatrixPayloadSender _payloadSender;
 
   SentEventRegistry get sentEventRegistry => _sentEventRegistry;
 
@@ -199,7 +197,7 @@ class MatrixMessageSender {
       // descriptors are available before the text event is processed.
       var outboundMessage = await _ensureOriginatingHostId(message);
       if (outboundMessage is SyncJournalEntity) {
-        final normalized = await _sendJournalEntityPayload(
+        final normalized = await _payloadSender.sendJournalEntityPayload(
           room: room,
           message: outboundMessage,
         );
@@ -214,7 +212,7 @@ class MatrixMessageSender {
         outboundMessage = normalized;
       }
       if (outboundMessage is SyncNotification) {
-        final normalized = await _sendNotificationPayload(
+        final normalized = await _payloadSender.sendNotificationPayload(
           room: room,
           message: outboundMessage,
         );
@@ -239,7 +237,7 @@ class MatrixMessageSender {
           coveredVectorClocks: covered,
         );
       }
-      final agentResult = await _enrichAndUploadAgentPayload(
+      final agentResult = await _payloadSender.enrichAndUploadAgentPayload(
         room: room,
         message: outboundMessage,
       );
@@ -265,7 +263,7 @@ class MatrixMessageSender {
         final normalizedBundle = outboundMessage.copyWith(
           children: normalizedChildren,
         );
-        final stripped = await _sendOutboxBundlePayload(
+        final stripped = await _payloadSender.sendOutboxBundlePayload(
           room: room,
           message: normalizedBundle,
         );
@@ -347,19 +345,20 @@ class MatrixMessageSender {
   Future<SyncJournalEntity?> sendJournalEntityPayloadForTesting({
     required Room room,
     required SyncJournalEntity message,
-  }) => _sendJournalEntityPayload(room: room, message: message);
+  }) => _payloadSender.sendJournalEntityPayload(room: room, message: message);
 
   @visibleForTesting
   Future<SyncMessage?> enrichAndUploadAgentPayloadForTesting({
     required Room room,
     required SyncMessage message,
-  }) => _enrichAndUploadAgentPayload(room: room, message: message);
+  }) =>
+      _payloadSender.enrichAndUploadAgentPayload(room: room, message: message);
 
   @visibleForTesting
   Future<SyncOutboxBundle?> sendOutboxBundlePayloadForTesting({
     required Room room,
     required SyncOutboxBundle message,
-  }) => _sendOutboxBundlePayload(room: room, message: message);
+  }) => _payloadSender.sendOutboxBundlePayload(room: room, message: message);
 
   @visibleForTesting
   Future<SyncMessage> ensureOriginatingHostIdForTesting(
@@ -370,7 +369,7 @@ class MatrixMessageSender {
   Future<SyncNotification?> sendNotificationPayloadForTesting({
     required Room room,
     required SyncNotification message,
-  }) => _sendNotificationPayload(room: room, message: message);
+  }) => _payloadSender.sendNotificationPayload(room: room, message: message);
 }
 
 class MatrixMessageContext {

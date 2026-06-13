@@ -20,6 +20,7 @@ import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
+import 'package:lotti/features/sync/queue/queue_bootstrap_sinks.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
@@ -31,7 +32,6 @@ import 'package:meta/meta.dart';
 
 part 'queue_gap_recovery.dart';
 part 'queue_lifecycle.dart';
-part 'queue_bootstrap_sinks.dart';
 
 const _logSub = 'queue.coordinator';
 

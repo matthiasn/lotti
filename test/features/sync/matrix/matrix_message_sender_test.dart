@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
+import 'package:lotti/features/sync/matrix/matrix_payload_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -4455,7 +4456,7 @@ void main() {
 
     for (final path in accepted) {
       test('accepts "$path"', () {
-        expect(MatrixBundleSender.debugIsSafeOutboxBundlePath(path), isTrue);
+        expect(MatrixPayloadSender.debugIsSafeOutboxBundlePath(path), isTrue);
         // Invariants: accepted paths start with the bundle segment and
         // contain no traversal segments.
         expect(path, startsWith(outboxBundlesSegment));
@@ -4467,7 +4468,7 @@ void main() {
     }
     for (final path in rejected) {
       test('rejects "$path"', () {
-        expect(MatrixBundleSender.debugIsSafeOutboxBundlePath(path), isFalse);
+        expect(MatrixPayloadSender.debugIsSafeOutboxBundlePath(path), isFalse);
       });
     }
   });

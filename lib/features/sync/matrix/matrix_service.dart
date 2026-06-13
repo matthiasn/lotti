@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:lotti/classes/config.dart';
@@ -8,6 +7,7 @@ import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
+import 'package:lotti/features/sync/matrix/matrix_service_ops.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
@@ -44,29 +44,7 @@ import 'package:meta/meta.dart';
 ///   recover from offline-created bursts.
 /// - Exposes `getSyncMetrics()`, `forceRescan()`, `retryNow()`, and
 ///   `getSyncDiagnosticsText()` for UI (Matrix Stats) and tooling.
-part 'matrix_service_ops.dart';
-
-/// Field-access contract for [MatrixService] operations, implemented by
-/// the concrete fields/getters and consumed by [_MatrixServiceOps].
-abstract class _MatrixServiceBase {
-  MatrixSyncGateway get _gateway;
-  DomainLogger get _loggingService;
-  bool get _collectSyncMetrics;
-  QueuePipelineCoordinator get _queueCoordinator;
-  SyncRoomManager get _roomManager;
-  MatrixSessionManager get _sessionManager;
-  SyncEngine get _syncEngine;
-  MatrixStreamConsumer? get _pipeline;
-  StreamController<KeyVerification> get incomingKeyVerificationController;
-  StreamSubscription<KeyVerification>? get _keyVerificationRequestSubscription;
-  set _keyVerificationRequestSubscription(
-    StreamSubscription<KeyVerification>? value,
-  );
-  Client get client;
-  MatrixConfig? get matrixConfig;
-}
-
-class MatrixService extends _MatrixServiceBase with _MatrixServiceOps {
+class MatrixService {
   MatrixService({
     required this._gateway,
     required this._loggingService,
@@ -199,15 +177,34 @@ class MatrixService extends _MatrixServiceBase with _MatrixServiceOps {
             _pipeline?.recordConnectivitySignal();
           }
         });
+
+    _ops = MatrixServiceOps(
+      gateway: _gateway,
+      loggingService: _loggingService,
+      collectSyncMetrics: _collectSyncMetrics,
+      queueCoordinator: _queueCoordinator,
+      roomManager: _roomManager,
+      sessionManager: _sessionManager,
+      syncEngine: _syncEngine,
+      incomingKeyVerificationController: incomingKeyVerificationController,
+      pipeline: () => _pipeline,
+      keyVerificationRequestSubscription: () =>
+          _keyVerificationRequestSubscription,
+      setKeyVerificationRequestSubscription: (value) =>
+          _keyVerificationRequestSubscription = value,
+      service: () => this,
+    );
   }
+
+  /// Room, device-verification and diagnostics operations, delegated to from
+  /// the thin public methods below to keep this file under the size limit.
+  late final MatrixServiceOps _ops;
 
   static const Duration _statsDebounceDuration = Duration(
     milliseconds: 500,
   ); // Balance UI responsiveness vs emission rate.
 
-  @override
   final MatrixSyncGateway _gateway;
-  @override
   final DomainLogger _loggingService;
   final UserActivityGate _activityGate;
   final MatrixMessageSender _messageSender;
@@ -215,33 +212,24 @@ class MatrixService extends _MatrixServiceBase with _MatrixServiceOps {
   final SyncEventProcessor _eventProcessor;
   final SecureStorage _secureStorage;
   final bool _ownsActivityGate;
-  @override
   final bool _collectSyncMetrics;
-  @override
   final QueuePipelineCoordinator _queueCoordinator;
 
   /// Exposes the queue coordinator to tests and the Sync Settings UI.
   QueuePipelineCoordinator get queueCoordinator => _queueCoordinator;
 
-  @override
   late final SyncRoomManager _roomManager;
-  @override
   late final MatrixSessionManager _sessionManager;
-  @override
   late final SyncEngine _syncEngine;
-  @override
   MatrixStreamConsumer? _pipeline;
 
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
-  @override
   StreamSubscription<KeyVerification>? _keyVerificationRequestSubscription;
   // Optional seam for tests to inject a connectivity stream.
   final Stream<List<ConnectivityResult>>? connectivityStream;
 
-  @override
   Client get client => _sessionManager.client;
 
-  @override
   MatrixConfig? get matrixConfig => _sessionManager.matrixConfig;
 
   String? get syncRoomId => _roomManager.currentRoomId;
@@ -311,7 +299,6 @@ class MatrixService extends _MatrixServiceBase with _MatrixServiceOps {
   late final Stream<KeyVerificationRunner> keyVerificationStream;
   late final Stream<KeyVerificationRunner> incomingKeyVerificationRunnerStream;
 
-  @override
   final StreamController<KeyVerification> incomingKeyVerificationController;
 
   void publishIncomingRunnerState() {
@@ -536,4 +523,72 @@ class MatrixService extends _MatrixServiceBase with _MatrixServiceOps {
     session: _sessionManager,
     storage: _secureStorage,
   );
+
+  // Room, device-verification and diagnostics operations. These thin
+  // delegators forward to [MatrixServiceOps] (see matrix_service_ops.dart) and
+  // form part of MatrixService's mocked public API — keep the signatures here.
+
+  Future<String?> joinRoom(String roomId) => _ops.joinRoom(roomId);
+
+  Future<void> saveRoom(String roomId) => _ops.saveRoom(roomId);
+
+  /// Clears only the locally persisted sync-room pointer.
+  ///
+  /// This does not leave the room on the homeserver. It is intended for flows
+  /// that switch credentials and must avoid auto-joining a stale room ID
+  /// during reconnect.
+  Future<void> clearPersistedRoom() => _ops.clearPersistedRoom();
+
+  bool isLoggedIn() => _ops.isLoggedIn();
+
+  Future<String> createRoom({List<String>? invite}) =>
+      _ops.createRoom(invite: invite);
+
+  Future<String?> getRoom() => _ops.getRoom();
+
+  Future<void> leaveRoom() => _ops.leaveRoom();
+
+  Future<void> inviteToSyncRoom({required String userId}) =>
+      _ops.inviteToSyncRoom(userId: userId);
+
+  Future<void> acceptInvite(SyncRoomInvite invite) => _ops.acceptInvite(invite);
+
+  List<DeviceKeys> getUnverifiedDevices() => _ops.getUnverifiedDevices();
+
+  Future<void> verifyDevice(DeviceKeys deviceKeys) =>
+      _ops.verifyDevice(deviceKeys);
+
+  /// Runs post-verification recovery so sync resumes without app restart.
+  ///
+  /// This refreshes cached device keys/trust and nudges the pipeline with a
+  /// catch-up rescan to pick up pending encrypted events immediately.
+  Future<void> onVerificationCompleted({required String source}) =>
+      _ops.onVerificationCompleted(source: source);
+
+  Future<void> deleteDevice(DeviceKeys deviceKeys) =>
+      _ops.deleteDevice(deviceKeys);
+
+  Stream<KeyVerification> getIncomingKeyVerificationStream() =>
+      _ops.getIncomingKeyVerificationStream();
+
+  Future<void> startKeyVerificationListener() =>
+      _ops.startKeyVerificationListener();
+
+  Future<Map<String, dynamic>> getDiagnosticInfo() => _ops.getDiagnosticInfo();
+
+  Future<SyncMetrics?> getSyncMetrics() => _ops.getSyncMetrics();
+
+  Future<void> forceRescan({bool includeCatchUp = true}) =>
+      _ops.forceRescan(includeCatchUp: includeCatchUp);
+
+  /// User-facing "Retry pending failures now" hook. Resurrects every
+  /// abandoned ledger row that is still below the per-row resurrection
+  /// hard cap (so backed-off / leased items wake up immediately) and
+  /// nudges the bridge in case a remote gap is what's holding the worker.
+  Future<void> retryNow() => _ops.retryNow();
+
+  Future<String> getSyncDiagnosticsText() => _ops.getSyncDiagnosticsText();
+
+  /// Exposes the pipeline instance for integration tests.
+  MatrixStreamConsumer? get debugPipeline => _ops.debugPipeline;
 }
