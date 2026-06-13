@@ -1,4 +1,7 @@
-part of 'desktop_task_header.dart';
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 /// Wrap-style horizontal layout where the **last child** is pinned to the
 /// right edge of whichever row it lands on. If the trailing child doesn't

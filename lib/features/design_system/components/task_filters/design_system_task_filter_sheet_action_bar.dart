@@ -1,4 +1,12 @@
-part of 'design_system_task_filter_sheet.dart';
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet_state.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Footer-bar button slot widths from the Figma "Apply filter" footer
 /// frame. Treated as minimums so long localized labels can grow past
