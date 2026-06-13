@@ -22,7 +22,7 @@ const _expectedTiles = <SwitchFieldType, (String, String?, IconData)>{
   ),
   SwitchFieldType.active: (
     'Active',
-    'Shown in selection lists when on',
+    'Can be chosen for new entries when on',
     Icons.visibility_outlined,
   ),
   SwitchFieldType.availableForDayPlan: (

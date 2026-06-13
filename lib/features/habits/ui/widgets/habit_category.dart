@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
 import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -18,6 +17,9 @@ class SelectCategoryWidget extends ConsumerWidget {
     required this.habitId,
     super.key,
   });
+
+  /// Chip size inside a picker field (the field is `spacing.step9` tall).
+  static const double _fieldChipSize = 28;
 
   final String habitId;
 
@@ -50,14 +52,13 @@ class SelectCategoryWidget extends ConsumerWidget {
     }
 
     return SettingsPickerField(
-      label: context.messages.habitCategoryLabel,
+      label: context.messages.optionalCategoryLabel,
       valueText: category?.name,
       hintText: context.messages.habitCategoryHint,
+      // Same rounded-square chip language as the list rows — one
+      // category identity mark everywhere.
       leading: category != null
-          ? CategoryIconCompact(
-              categoryId,
-              size: CategoryIconConstants.iconSizeMedium,
-            )
+          ? CategoryIconChip(category: category, size: _fieldChipSize)
           : null,
       onClear: category != null ? () => notifier.setCategory(null) : null,
       onTap: onTap,

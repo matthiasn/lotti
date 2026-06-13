@@ -69,8 +69,10 @@ class _DesignSystemToggleState extends State<DesignSystemToggle> {
     final tokens = context.designTokens;
     final enabled = widget.enabled;
     final visualState = _resolveVisualState(enabled);
+    final brightness = Theme.of(context).brightness;
     final sizeSpec = _ToggleSizeSpec.fromTokens(tokens, widget.size);
     final variantSpec = _ToggleVariantSpec.fromTokens(
+      brightness: brightness,
       tokens: tokens,
       value: widget.value,
       visualState: visualState,
@@ -301,6 +303,7 @@ class _ToggleVariantSpec {
   });
 
   factory _ToggleVariantSpec.fromTokens({
+    required Brightness brightness,
     required DsTokens tokens,
     required bool value,
     required DesignSystemToggleVisualState visualState,
@@ -333,11 +336,14 @@ class _ToggleVariantSpec {
     return _ToggleVariantSpec(
       trackColor: trackColor,
       trackBorderColor: trackBorderColor,
-      // Constant thumb across states: in dark mode an on-state thumb
-      // derived from on-accent text turns darker than the off thumb,
-      // making OFF rows the brightest thing on the card. The track
-      // alone communicates the state.
-      thumbColor: tokens.colors.text.highEmphasis,
+      // Constant LIGHT thumb across states and themes (the platform
+      // convention): in dark theme highEmphasis text is the white,
+      // in light theme on-accent text is. A state- or theme-varying
+      // thumb makes OFF rows out-shine ON rows or strands a dark knob
+      // on a dark accent track.
+      thumbColor: brightness == Brightness.dark
+          ? tokens.colors.text.highEmphasis
+          : tokens.colors.text.onInteractiveAlert,
       thumbBorderColor: tokens.colors.decorative.level02,
       labelColor: tokens.colors.text.highEmphasis,
       iconColor: tokens.colors.text.mediumEmphasis,

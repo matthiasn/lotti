@@ -2037,7 +2037,7 @@
   "imagePromptGenerationFullPromptLabel": "Celý prompt obrázku:",
   "images": "Obrázky",
   "inactiveLabel": "Neaktivní",
-  "inactiveSwitchDescription": "Při zapnutí se zobrazuje ve výběrových seznamech",
+  "inactiveSwitchDescription": "Lze vybrat pro nové záznamy, když je zapnuto",
   "inferenceProfileDetailLoadError": "Profil se nepodařilo načíst: {error}",
   "@inferenceProfileDetailLoadError": {
     "placeholders": {
@@ -2348,6 +2348,7 @@
       }
     }
   },
+  "optionalCategoryLabel": "Kategorie (volitelné)",
   "outboxMonitorAttachmentLabel": "Příloha",
   "outboxMonitorDelete": "smazat",
   "outboxMonitorDeleteConfirmLabel": "Smazat",

@@ -215,7 +215,7 @@ void main() {
         expect(rows[1].icon, Icons.visibility_outlined);
         expect(
           rows[1].subtitle,
-          'Shown in selection lists when on',
+          'Can be chosen for new entries when on',
         );
 
         // The toggles moved out of Basic settings entirely.

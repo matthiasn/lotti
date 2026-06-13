@@ -4920,7 +4920,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get inactiveSwitchDescription =>
-      'Se muestra en las listas de selección cuando está activo';
+      'Se puede elegir para nuevas entradas cuando está activo';
 
   @override
   String get inferenceProfileCreateTitle => 'Crear perfil';
@@ -5783,6 +5783,9 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get optionalCategoryLabel => 'Categoría (opcional)';
 
   @override
   String get outboxMonitorAttachmentLabel => 'Adjunto';

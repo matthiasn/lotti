@@ -94,19 +94,27 @@ class _CategoryListItem extends ConsumerWidget {
           if (category.private)
             Padding(
               padding: const EdgeInsets.only(right: 4),
-              child: Icon(
-                Icons.lock_outline,
-                size: 18,
-                color: tokens.colors.text.mediumEmphasis,
+              child: Tooltip(
+                message: context.messages.privateLabel,
+                child: Icon(
+                  Icons.lock_outline,
+                  size: 18,
+                  color: tokens.colors.text.mediumEmphasis,
+                  semanticLabel: context.messages.privateLabel,
+                ),
               ),
             ),
           if (!category.active)
             Padding(
               padding: const EdgeInsets.only(right: 4),
-              child: Icon(
-                Icons.visibility_off_outlined,
-                size: 18,
-                color: tokens.colors.text.mediumEmphasis,
+              child: Tooltip(
+                message: context.messages.inactiveLabel,
+                child: Icon(
+                  Icons.visibility_off_outlined,
+                  size: 18,
+                  color: tokens.colors.text.mediumEmphasis,
+                  semanticLabel: context.messages.inactiveLabel,
+                ),
               ),
             ),
           if (isFavorite)

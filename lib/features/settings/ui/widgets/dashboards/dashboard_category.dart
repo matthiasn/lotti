@@ -2,8 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -56,10 +55,7 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
                         Navigator.pop(context);
                       },
                       title: category.name,
-                      leading: CategoryIconCompact(
-                        category.id,
-                        size: CategoryIconConstants.iconSizeMedium,
-                      ),
+                      leading: CategoryIconChip(category: category, size: 28),
                     ),
                   ),
                 ],
@@ -70,14 +66,12 @@ class SelectDashboardCategoryWidget extends StatelessWidget {
 
         return SettingsPickerField(
           key: const Key('select_dashboard_category'),
-          label: context.messages.dashboardCategoryLabel,
+          label: context.messages.optionalCategoryLabel,
           valueText: category?.name,
           hintText: context.messages.habitCategoryHint,
+          // Same rounded-square chip language as the list rows.
           leading: category != null
-              ? CategoryIconCompact(
-                  category.id,
-                  size: CategoryIconConstants.iconSizeMedium,
-                )
+              ? CategoryIconChip(category: category, size: 28)
               : null,
           onClear: category != null ? () => setCategory(null) : null,
           onTap: onTap,

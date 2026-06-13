@@ -2228,7 +2228,7 @@
   "imagePromptGenerationFullPromptLabel": "Prompt Imagine Complet:",
   "images": "Imagini",
   "inactiveLabel": "Inactiv",
-  "inactiveSwitchDescription": "Afișat în listele de selecție când este activ",
+  "inactiveSwitchDescription": "Poate fi ales pentru intrări noi când este activ",
   "inferenceProfileCreateTitle": "Creați un profil",
   "inferenceProfileDescriptionLabel": "Descriere",
   "inferenceProfileDesktopOnly": "Doar desktop",
@@ -2556,6 +2556,7 @@
       }
     }
   },
+  "optionalCategoryLabel": "Categorie (opțional)",
   "outboxMonitorAttachmentLabel": "Atașament",
   "outboxMonitorDelete": "șterge",
   "outboxMonitorDeleteConfirmLabel": "Șterge",

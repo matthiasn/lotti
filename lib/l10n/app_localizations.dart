@@ -8457,7 +8457,7 @@ abstract class AppLocalizations {
   /// No description provided for @inactiveSwitchDescription.
   ///
   /// In en, this message translates to:
-  /// **'Shown in selection lists when on'**
+  /// **'Can be chosen for new entries when on'**
   String get inactiveSwitchDescription;
 
   /// No description provided for @inferenceProfileCreateTitle.
@@ -9921,6 +9921,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 suggestion needs your attention} other{{count} suggestions need your attention}}'**
   String notificationSuggestionAttentionTitle(int count);
+
+  /// No description provided for @optionalCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Category (optional)'**
+  String get optionalCategoryLabel;
 
   /// No description provided for @outboxMonitorAttachmentLabel.
   ///

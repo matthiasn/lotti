@@ -4932,7 +4932,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get inactiveSwitchDescription =>
-      'Afișat în listele de selecție când este activ';
+      'Poate fi ales pentru intrări noi când este activ';
 
   @override
   String get inferenceProfileCreateTitle => 'Creați un profil';
@@ -5785,6 +5785,9 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get optionalCategoryLabel => 'Categorie (opțional)';
 
   @override
   String get outboxMonitorAttachmentLabel => 'Atașament';

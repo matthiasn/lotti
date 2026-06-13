@@ -4895,7 +4895,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get inactiveSwitchDescription =>
-      'Wird in Auswahllisten angezeigt, wenn aktiv';
+      'Kann für neue Einträge gewählt werden, wenn aktiv';
 
   @override
   String get inferenceProfileCreateTitle => 'Profil erstellen';
@@ -5732,6 +5732,9 @@ class AppLocalizationsDe extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get optionalCategoryLabel => 'Kategorie (optional)';
 
   @override
   String get outboxMonitorAttachmentLabel => 'Anhang';

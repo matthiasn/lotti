@@ -216,9 +216,13 @@ class SettingsPageHeader extends StatelessWidget {
                           child: _HeaderText(
                             title: title,
                             subtitle: subtitle,
+                            // Neutral title: the accent is reserved for
+                            // things you can act on (FAB, Save, toggles),
+                            // so the largest static element doesn't
+                            // compete with the actual call to action.
                             titleStyle: settingsHeaderTitleTextStyle.copyWith(
                               fontSize: titleSize,
-                              color: colorScheme.primary,
+                              color: colorScheme.onSurface,
                             ),
                             subtitleStyle: settingsHeaderSubtitleTextStyle
                                 .copyWith(

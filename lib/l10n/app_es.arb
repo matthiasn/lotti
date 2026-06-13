@@ -2228,7 +2228,7 @@
   "imagePromptGenerationFullPromptLabel": "Prompt de Imagen Completo:",
   "images": "Imágenes",
   "inactiveLabel": "Inactivo",
-  "inactiveSwitchDescription": "Se muestra en las listas de selección cuando está activo",
+  "inactiveSwitchDescription": "Se puede elegir para nuevas entradas cuando está activo",
   "inferenceProfileCreateTitle": "Crear perfil",
   "inferenceProfileDescriptionLabel": "Descripción",
   "inferenceProfileDesktopOnly": "Solo escritorio",
@@ -2556,6 +2556,7 @@
       }
     }
   },
+  "optionalCategoryLabel": "Categoría (opcional)",
   "outboxMonitorAttachmentLabel": "Adjunto",
   "outboxMonitorDelete": "eliminar",
   "outboxMonitorDeleteConfirmLabel": "Eliminar",

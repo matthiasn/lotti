@@ -2494,7 +2494,7 @@
   "imagePromptGenerationFullPromptLabel": "Full Image Prompt:",
   "images": "Images",
   "inactiveLabel": "Inactive",
-  "inactiveSwitchDescription": "Shown in selection lists when on",
+  "inactiveSwitchDescription": "Can be chosen for new entries when on",
   "inferenceProfileCreateTitle": "Create Profile",
   "inferenceProfileDescriptionLabel": "Description",
   "inferenceProfileDesktopOnly": "Desktop Only",
@@ -2837,6 +2837,7 @@
       }
     }
   },
+  "optionalCategoryLabel": "Category (optional)",
   "outboxMonitorAttachmentLabel": "Attachment",
   "outboxMonitorDelete": "delete",
   "outboxMonitorDeleteConfirmLabel": "Delete",

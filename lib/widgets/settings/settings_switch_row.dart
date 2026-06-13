@@ -39,12 +39,23 @@ class SettingsSwitchRow extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: spacing.step2),
         child: Row(
+          // Anchor leading icons and the toggle to the title line rather
+          // than the row center, so two-line rows don't float their glyph
+          // beside the subtitle.
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (icon != null) ...[
-              Icon(
-                icon,
-                size: spacing.step5,
-                color: tokens.colors.text.mediumEmphasis,
+              Padding(
+                padding: EdgeInsets.only(
+                  top:
+                      (tokens.typography.lineHeight.subtitle2 - spacing.step5) /
+                      2,
+                ),
+                child: Icon(
+                  icon,
+                  size: spacing.step5,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
               ),
               SizedBox(width: spacing.step3),
             ],

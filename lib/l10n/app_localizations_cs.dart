@@ -4893,7 +4893,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get inactiveSwitchDescription =>
-      'Při zapnutí se zobrazuje ve výběrových seznamech';
+      'Lze vybrat pro nové záznamy, když je zapnuto';
 
   @override
   String get inferenceProfileCreateTitle => 'Create Profile';
@@ -5750,6 +5750,9 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get optionalCategoryLabel => 'Kategorie (volitelné)';
 
   @override
   String get outboxMonitorAttachmentLabel => 'Příloha';

@@ -4833,7 +4833,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inactiveLabel => 'Inactive';
 
   @override
-  String get inactiveSwitchDescription => 'Shown in selection lists when on';
+  String get inactiveSwitchDescription =>
+      'Can be chosen for new entries when on';
 
   @override
   String get inferenceProfileCreateTitle => 'Create Profile';
@@ -5657,6 +5658,9 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get optionalCategoryLabel => 'Category (optional)';
 
   @override
   String get outboxMonitorAttachmentLabel => 'Attachment';
