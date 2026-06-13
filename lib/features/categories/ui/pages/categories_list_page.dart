@@ -120,10 +120,14 @@ class _CategoryListItem extends ConsumerWidget {
           if (isFavorite)
             Padding(
               padding: const EdgeInsets.only(right: 4),
-              child: Icon(
-                Icons.star_rounded,
-                size: 18,
-                color: tokens.colors.text.mediumEmphasis,
+              child: Tooltip(
+                message: context.messages.favoriteLabel,
+                child: Icon(
+                  Icons.star_rounded,
+                  size: 18,
+                  color: tokens.colors.text.mediumEmphasis,
+                  semanticLabel: context.messages.favoriteLabel,
+                ),
               ),
             ),
           Icon(
