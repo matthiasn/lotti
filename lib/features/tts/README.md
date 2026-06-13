@@ -1,13 +1,20 @@
 # Text-to-speech (Supertonic)
 
-On-device text-to-speech that reads a task's AI **TL;DR** aloud. Runs the
-[Supertonic 3](https://huggingface.co/Supertone/supertonic-3) ONNX model
-(~99M params, 44.1kHz 16-bit WAV) locally via `flutter_onnxruntime`, and plays
-the result through the app's existing `media_kit` stack. No cloud, no API.
+On-device text-to-speech that reads a task's AI **TL;DR** aloud, intended to run
+the [Supertonic 3](https://huggingface.co/Supertone/supertonic-3) ONNX model
+(~99M params, 44.1kHz 16-bit WAV) locally and play the result through the app's
+existing `media_kit` stack. No cloud, no API.
 
-This feature **replaces** the previous MLX/Qwen3-TTS "speak summary" path (a
-hidden, default-off, fire-and-forget call with no player). It is gated behind
-the `enable_supertonic_tts` config flag during rollout.
+The full Dart architecture — voice/model catalogs, the playback state machine,
+controllers, the HF model-download repository, the redesigned AI-card playback
+control, and the text/tokenizer/WAV engine core — is built and tested behind a
+`TtsEngine` interface. The **concrete ONNX engine** (via `flutter_onnxruntime`)
+is **not yet wired**: adding that dependency broke the macOS CocoaPods build (it
+pulls statically-linked onnxruntime under `use_frameworks!`), so it was reverted
+and left as a deliberate native-integration step (see Remaining work). Until
+then `ttsEngine` returns an unavailable fallback, so the playback control is
+hidden. This feature **replaces** the previous MLX/Qwen3-TTS "speak summary"
+path and is gated behind the `enable_ai_summary_tts` config flag.
 
 ## Architecture
 
