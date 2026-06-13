@@ -2335,6 +2335,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Inactive categories won\'t appear in selection lists';
 
   @override
+  String get categoryActiveSwitchDescription => 'Selectable for new entries';
+
+  @override
   String get categoryAiDefaultsDescription =>
       'Set default AI profile and agent template for new tasks in this category';
 
@@ -3965,6 +3968,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardActiveLabel => 'Active';
 
   @override
+  String get dashboardActiveSwitchDescription => 'Shown in the dashboards list';
+
+  @override
   String get dashboardAddChartsTitle => 'Charts';
 
   @override
@@ -4730,6 +4736,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get habitActiveFromLabel => 'Start date';
+
+  @override
+  String get habitActiveSwitchDescription => 'Shown on the Habits page';
 
   @override
   String get habitArchivedLabel => 'Archived';

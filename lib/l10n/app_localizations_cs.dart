@@ -2374,6 +2374,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Neaktivní kategorie se nebudou zobrazovat ve výběrových seznamech';
 
   @override
+  String get categoryActiveSwitchDescription => 'Volitelné pro nové záznamy';
+
+  @override
   String get categoryAiDefaultsDescription =>
       'Nastavte výchozí AI profil a šablonu agenta pro nové úkoly v této kategorii';
 
@@ -4018,6 +4021,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardActiveLabel => 'Aktivní';
 
   @override
+  String get dashboardActiveSwitchDescription =>
+      'Zobrazuje se v seznamu panelů';
+
+  @override
   String get dashboardAddChartsTitle => 'Grafy';
 
   @override
@@ -4789,6 +4796,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitActiveFromLabel => 'Datum začátku';
+
+  @override
+  String get habitActiveSwitchDescription => 'Zobrazuje se na stránce Návyky';
 
   @override
   String get habitArchivedLabel => 'Archivováno';

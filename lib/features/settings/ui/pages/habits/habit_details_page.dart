@@ -159,7 +159,7 @@ class HabitDetailsPage extends ConsumerWidget {
                     key: const Key('habit_active'),
                     initialValue: item.active,
                     title: messages.activeLabel,
-                    subtitle: messages.inactiveSwitchDescription,
+                    subtitle: messages.habitActiveSwitchDescription,
                     icon: Icons.visibility_outlined,
                   ),
                 ],

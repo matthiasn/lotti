@@ -215,7 +215,7 @@ void main() {
         expect(rows[1].icon, Icons.visibility_outlined);
         expect(
           rows[1].subtitle,
-          'Can be chosen for new entries when on',
+          'Shown in the dashboards list',
         );
 
         // The toggles moved out of Basic settings entirely.

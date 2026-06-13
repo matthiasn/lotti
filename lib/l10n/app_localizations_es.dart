@@ -2368,6 +2368,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'Las categorías inactivas no aparecerán en las listas de selección';
 
   @override
+  String get categoryActiveSwitchDescription =>
+      'Seleccionable para nuevas entradas';
+
+  @override
   String get categoryAiDefaultsDescription =>
       'Establecer el perfil de IA y la plantilla de agente predeterminados para nuevas tareas en esta categoría';
 
@@ -4040,6 +4044,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardActiveLabel => 'Activo';
 
   @override
+  String get dashboardActiveSwitchDescription =>
+      'Se muestra en la lista de paneles';
+
+  @override
   String get dashboardAddChartsTitle => 'Gráficos';
 
   @override
@@ -4815,6 +4823,10 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get habitActiveFromLabel => 'Fecha de inicio';
+
+  @override
+  String get habitActiveSwitchDescription =>
+      'Se muestra en la página de Hábitos';
 
   @override
   String get habitArchivedLabel => 'Archivado';

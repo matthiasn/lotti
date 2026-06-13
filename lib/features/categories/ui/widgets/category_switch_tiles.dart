@@ -61,7 +61,7 @@ class CategorySwitchTiles extends StatelessWidget {
       (
         SwitchFieldType.active,
         messages.activeLabel,
-        messages.inactiveSwitchDescription,
+        messages.categoryActiveSwitchDescription,
         Icons.visibility_outlined,
         settings.isActive,
       ),

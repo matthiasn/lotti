@@ -12,6 +12,11 @@ import 'package:lotti/widgets/settings/settings_page_layout.dart';
 /// labeled pills no longer fit side by side on a phone.
 const double _stackPillsTextScale = 1.5;
 
+/// Alpha applied to the disabled primary pill's label (on top of the
+/// pill's own fill dimming) so the disabled state changes on both axes —
+/// background AND text — in both themes.
+const double _disabledLabelAlpha = 0.45;
+
 /// Sticky glass action bar shared by every settings definition detail page
 /// (categories, labels, habits, measurables, dashboards).
 ///
@@ -153,13 +158,16 @@ class SettingsFormActionBar extends StatelessWidget {
     // foreground). Recognizably the commit action either way — never a
     // bare label that the ghost Cancel could outrank.
     // No glyph in either state: the pill's footprint stays stable when
-    // the form arms, and the accent fill alone carries the state.
+    // the form arms, and the accent fill alone carries the state. The
+    // disabled label dims on the same on-accent color so the state pair
+    // differs on both fill and text in light AND dark themes.
+    final onAccent = tokens.colors.text.onInteractiveAlert;
     final pill = DsGlassPill(
       label: primaryLabel,
       fillColor: tokens.colors.interactive.enabled,
       foregroundColor: primaryEnabled
-          ? tokens.colors.text.onInteractiveAlert
-          : null,
+          ? onAccent
+          : onAccent.withValues(alpha: onAccent.a * _disabledLabelAlpha),
       enabled: primaryEnabled,
       onTap: onPrimary,
     );

@@ -49,7 +49,10 @@ class SettingsFormSection extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.others.caption.copyWith(
+                  // A real step above the caption helper (size + weight)
+                  // while color keeps it quieter than the high-emphasis
+                  // field labels inside the card.
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
                     color: tokens.colors.text.mediumEmphasis,
                   ),
                 ),

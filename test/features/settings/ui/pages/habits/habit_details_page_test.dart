@@ -177,7 +177,7 @@ void main() {
         expect(rows[2].icon, Icons.visibility_outlined);
         expect(
           rows[2].subtitle,
-          'Can be chosen for new entries when on',
+          'Shown on the Habits page',
         );
       },
     );

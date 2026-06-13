@@ -2366,6 +2366,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Inaktive Kategorien erscheinen nicht in Auswahllisten';
 
   @override
+  String get categoryActiveSwitchDescription => 'Für neue Einträge wählbar';
+
+  @override
   String get categoryAiDefaultsDescription =>
       'Standard-KI-Profil und Agenten-Vorlage für neue Aufgaben in dieser Kategorie festlegen';
 
@@ -4021,6 +4024,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dashboardActiveLabel => 'Aktiv';
 
   @override
+  String get dashboardActiveSwitchDescription =>
+      'Wird in der Dashboard-Liste angezeigt';
+
+  @override
   String get dashboardAddChartsTitle => 'Diagramme';
 
   @override
@@ -4789,6 +4796,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitActiveFromLabel => 'Startdatum';
+
+  @override
+  String get habitActiveSwitchDescription =>
+      'Wird auf der Gewohnheiten-Seite angezeigt';
 
   @override
   String get habitArchivedLabel => 'Archiviert';

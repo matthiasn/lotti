@@ -4027,6 +4027,12 @@ abstract class AppLocalizations {
   /// **'Inactive categories won\'t appear in selection lists'**
   String get categoryActiveDescription;
 
+  /// No description provided for @categoryActiveSwitchDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Selectable for new entries'**
+  String get categoryActiveSwitchDescription;
+
   /// No description provided for @categoryAiDefaultsDescription.
   ///
   /// In en, this message translates to:
@@ -6792,6 +6798,12 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get dashboardActiveLabel;
 
+  /// No description provided for @dashboardActiveSwitchDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown in the dashboards list'**
+  String get dashboardActiveSwitchDescription;
+
   /// No description provided for @dashboardAddChartsTitle.
   ///
   /// In en, this message translates to:
@@ -8273,6 +8285,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Start date'**
   String get habitActiveFromLabel;
+
+  /// No description provided for @habitActiveSwitchDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Shown on the Habits page'**
+  String get habitActiveSwitchDescription;
 
   /// No description provided for @habitArchivedLabel.
   ///

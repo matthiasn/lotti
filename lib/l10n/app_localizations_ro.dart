@@ -2384,6 +2384,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Categoriile inactive nu vor apărea în listele de selecție';
 
   @override
+  String get categoryActiveSwitchDescription => 'Selectabil pentru intrări noi';
+
+  @override
   String get categoryAiDefaultsDescription =>
       'Setați profilul AI și șablonul de agent implicit pentru sarcinile noi din această categorie';
 
@@ -4056,6 +4059,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardActiveLabel => 'Activ';
 
   @override
+  String get dashboardActiveSwitchDescription =>
+      'Afișat în lista panourilor de bord';
+
+  @override
   String get dashboardAddChartsTitle => 'Grafice';
 
   @override
@@ -4827,6 +4834,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get habitActiveFromLabel => 'Data de început';
+
+  @override
+  String get habitActiveSwitchDescription => 'Afișat pe pagina Obiceiuri';
 
   @override
   String get habitArchivedLabel => 'Arhivat';

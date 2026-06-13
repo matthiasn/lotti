@@ -265,7 +265,7 @@ void main() {
         );
         expect(
           switchRows[2].subtitle,
-          'Can be chosen for new entries when on',
+          'Selectable for new entries',
         );
 
         // All switch rows live inside the Options card, not Basic settings.

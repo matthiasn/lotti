@@ -416,8 +416,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     name: 'active',
                                     initialValue: widget.dashboard.active,
                                     title: messages.activeLabel,
-                                    subtitle:
-                                        messages.inactiveSwitchDescription,
+                                    subtitle: messages
+                                        .dashboardActiveSwitchDescription,
                                     icon: Icons.visibility_outlined,
                                   ),
                                 ],
