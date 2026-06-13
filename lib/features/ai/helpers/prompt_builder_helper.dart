@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/helpers/prompt_placeholder_formatting.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
@@ -13,8 +14,6 @@ import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-
-part 'prompt_builder_placeholder_resolvers.dart';
 
 /// Helper class for building AI prompts with support for template tracking
 class PromptBuilderHelper {
@@ -136,7 +135,7 @@ class PromptBuilderHelper {
     if (prompt.contains('{{audioTranscript}}')) {
       String transcriptText;
       try {
-        transcriptText = _resolveAudioTranscript(entity);
+        transcriptText = resolveAudioTranscript(entity);
       } catch (error, stackTrace) {
         _logPlaceholderFailure(
           entity: entity,
@@ -365,5 +364,176 @@ class PromptBuilderHelper {
     );
 
     return dictionary;
+  }
+
+  // ===========================================================================
+  // Placeholder resolution (instance-coupled; pure formatting lives in
+  // prompt_placeholder_formatting.dart).
+  // ===========================================================================
+
+  /// Get task JSON for a given entity.
+  /// For images and audio, looks for linked tasks.
+  /// For tasks, directly gets the task JSON.
+  Future<String?> _getTaskJsonForEntity(JournalEntity entity) async {
+    if (entity is Task) {
+      // Direct task entity
+      return aiInputRepository.buildTaskDetailsJson(id: entity.id);
+    } else if (entity is JournalImage || entity is JournalAudio) {
+      // For images and audio, check if they are linked to a task
+      final linkedTask = await _findLinkedTask(entity);
+      if (linkedTask != null) {
+        final json = await aiInputRepository.buildTaskDetailsJson(
+          id: linkedTask.id,
+        );
+        return json;
+      }
+    }
+    return null;
+  }
+
+  /// Find a task that this entity is linked to.
+  ///
+  /// Links can exist in either direction depending on how the entry was
+  /// created:
+  /// 1. `entry → task` (entry links TO task) - when entry explicitly
+  ///    references a task
+  /// 2. `task → entry` (task links TO entry) - when entry is added as a child
+  ///    of task
+  ///
+  /// We check both directions, preferring direction 1 when available to avoid
+  /// picking the wrong task when multiple tasks link to the same entry.
+  Future<Task?> _findLinkedTask(JournalEntity entity) async {
+    // First, try to find tasks that this entry links TO (entry → task).
+    // This is the preferred direction as it's an explicit reference.
+    final linkedEntities = await journalRepository.getLinkedEntities(
+      linkedTo: entity.id,
+    );
+    final task =
+        linkedEntities.firstWhereOrNull(
+              (linked) => linked is Task,
+            )
+            as Task?;
+
+    if (task != null) return task;
+
+    // Fallback: find tasks that link TO this entry (task → entry).
+    // This handles the case where entry was added as a child of a task.
+    final fallbackEntities = await journalRepository.getLinkedToEntities(
+      linkedTo: entity.id,
+    );
+    return fallbackEntities.firstWhereOrNull(
+          (linked) => linked is Task,
+        )
+        as Task?;
+  }
+
+  /// Get language code for a given entity.
+  /// For tasks, returns the task's language code directly.
+  /// For images and audio, looks for a linked task and returns its language
+  /// code.
+  Future<String?> _getLanguageCodeForEntity(JournalEntity entity) async {
+    final task = entity is Task ? entity : await _findLinkedTask(entity);
+    return task?.data.languageCode;
+  }
+
+  /// Build speech dictionary prompt text for a given entity.
+  /// Returns formatted text with dictionary terms from the entity's category
+  /// (or linked task's category), or empty string if no dictionary is
+  /// available.
+  Future<String> _buildSpeechDictionaryPromptText(JournalEntity entity) async {
+    final dictionary = await getSpeechDictionaryTerms(entity);
+    return formatSpeechDictionaryPrompt(dictionary);
+  }
+
+  /// Build correction examples prompt text for a given entity.
+  /// Returns formatted text with examples from the task's category,
+  /// or empty string if no examples are available.
+  ///
+  /// INTENTIONAL: Uses cache-only lookup (no repository fallback) matching the
+  /// speech dictionary pattern. If cache is not populated (cold start, tests),
+  /// injection returns empty. Tests must stub EntitiesCacheService
+  /// registration.
+  Future<String> _buildCorrectionExamplesPromptText(
+    JournalEntity entity,
+  ) async {
+    // Get the task (directly or via linked entity)
+    final task = entity is Task ? entity : await _findLinkedTask(entity);
+    if (task == null) {
+      developer.log(
+        'Correction examples: no task found for entity ${entity.id}',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    // Get the category ID from the task
+    final categoryId = task.meta.categoryId;
+    if (categoryId == null) {
+      developer.log(
+        'Correction examples: task ${task.id} has no category',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    // Get the category from cache service (INTENTIONAL: no repo fallback)
+    CategoryDefinition? category;
+    try {
+      if (getIt.isRegistered<EntitiesCacheService>()) {
+        final cache = getIt<EntitiesCacheService>();
+        category = cache.getCategoryById(categoryId);
+      }
+    } catch (e) {
+      developer.log(
+        'Correction examples: error getting category $categoryId: $e',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    if (category == null) {
+      developer.log(
+        'Correction examples: category $categoryId not found in cache',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    // Get the correction examples
+    final examples = category.correctionExamples;
+    if (examples == null || examples.isEmpty) {
+      developer.log(
+        'Correction examples: category "${category.name}" has no examples',
+        name: 'PromptBuilderHelper',
+      );
+      return '';
+    }
+
+    developer.log(
+      'Correction examples: injecting '
+      '${examples.length > kMaxCorrectionExamples ? kMaxCorrectionExamples : examples.length} '
+      'examples (of ${examples.length} total) from category '
+      '"${category.name}"',
+      name: 'PromptBuilderHelper',
+    );
+
+    return formatCorrectionExamplesPrompt(examples);
+  }
+
+  void _logPlaceholderFailure({
+    required JournalEntity entity,
+    required String placeholder,
+    required Object error,
+    required StackTrace stackTrace,
+    String? context,
+  }) {
+    final suffix = (context == null || context.isEmpty) ? '' : ' $context';
+    _loggingService?.error(
+      LogDomain.ai,
+      'Failed to inject {{$placeholder}} for entity=${entity.id}$suffix: '
+      '$error',
+      stackTrace: stackTrace,
+      subDomain: 'placeholder_injection',
+    );
   }
 }

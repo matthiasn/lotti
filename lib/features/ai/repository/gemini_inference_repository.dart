@@ -6,9 +6,12 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_chunk_factories.dart';
+import 'package:lotti/features/ai/repository/gemini_image_generation.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
+import 'package:lotti/features/ai/repository/gemini_multiturn_inference.dart';
 import 'package:lotti/features/ai/repository/gemini_payload_processing.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_parser.dart';
+import 'package:lotti/features/ai/repository/gemini_stream_sender.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
@@ -16,9 +19,6 @@ import 'package:openai_dart/openai_dart.dart';
 
 export 'package:lotti/features/ai/repository/gemini_inference_payloads.dart'
     show GeneratedImage;
-
-part 'gemini_multiturn_inference.dart';
-part 'gemini_image_generation.dart';
 
 /// Gemini inference over raw HTTP with OpenAI-compatible streaming output.
 ///
@@ -50,9 +50,14 @@ part 'gemini_image_generation.dart';
 /// framing cleanup.
 class GeminiInferenceRepository {
   GeminiInferenceRepository({http.Client? httpClient})
-    : _httpClient = httpClient ?? http.Client();
+    : this._(httpClient ?? http.Client());
+
+  GeminiInferenceRepository._(http.Client httpClient)
+    : _httpClient = httpClient,
+      _streamSender = GeminiStreamSender(httpClient: httpClient);
 
   final http.Client _httpClient;
+  final GeminiStreamSender _streamSender;
 
   // -------------------------------------------------------------------------
   // Configuration constants
@@ -69,21 +74,9 @@ class GeminiInferenceRepository {
   /// limit—most responses are far smaller.
   static const int kMaxStreamingChars = 1000000;
 
-  /// Timeout for establishing the initial streaming connection.
-  /// This covers the HTTP handshake, not the full response duration.
-  static const Duration kInitialRequestTimeout = Duration(seconds: 30);
-
   /// Timeout for non-streaming (fallback) requests.
   /// Longer than streaming since we wait for the complete response.
   static const Duration kNonStreamingTimeout = Duration(seconds: 60);
-
-  /// Maximum retry attempts for rate-limited (429) or temporarily
-  /// unavailable (503) responses.
-  static const int kMaxRetries = 3;
-
-  /// Base delay for exponential backoff on retries.
-  /// Actual delay doubles with each attempt: 500ms, 1s, 2s.
-  static const Duration kRetryBaseDelay = Duration(milliseconds: 500);
 
   /// Generates text via Gemini's streaming API with thinking and function-calling support.
   ///
@@ -151,7 +144,7 @@ class GeminiInferenceRepository {
         ..body = jsonEncode(body);
     }
 
-    final streamed = await _sendStreamWithRateLimitBackoff(
+    final streamed = await _streamSender.send(
       buildRequest: buildStreamRequest,
       context:
           'Gemini streamGenerateContent (model=$model, baseUrl=${provider.baseUrl})',
@@ -426,62 +419,9 @@ class GeminiInferenceRepository {
     }
   }
 
-  /// Send a HTTP streamed request with exponential backoff for rate limiting
-  /// (429/503) and an initial handshake timeout. Builds a fresh request per attempt.
-  Future<http.StreamedResponse> _sendStreamWithRateLimitBackoff({
-    required http.Request Function() buildRequest,
-    required String context,
-    int maxRetries = kMaxRetries,
-    Duration baseDelay = kRetryBaseDelay,
-  }) async {
-    var attempt = 0;
-    while (true) {
-      attempt++;
-      try {
-        final req = buildRequest();
-        final resp = await _httpClient
-            .send(req)
-            .timeout(kInitialRequestTimeout);
-        if (resp.statusCode == 429 || resp.statusCode == 503) {
-          if (attempt > maxRetries) return resp; // let caller inspect body
-          // Honor Retry-After header if present (seconds)
-          final retryAfter = resp.headers['retry-after'];
-          Duration delay;
-          if (retryAfter != null) {
-            final secs = int.tryParse(retryAfter.trim());
-            delay = secs != null
-                ? Duration(seconds: secs)
-                : baseDelay * (1 << (attempt - 1));
-          } else {
-            delay = baseDelay * (1 << (attempt - 1));
-          }
-          developer.log(
-            'Rate limited (${resp.statusCode}) during $context; retrying in ${delay.inMilliseconds}ms (attempt $attempt/$maxRetries)...',
-            name: 'GeminiInferenceRepository',
-          );
-          await Future<void>.delayed(delay);
-          continue;
-        }
-        return resp;
-      } on TimeoutException {
-        if (attempt > maxRetries) rethrow;
-        final delay = baseDelay * (1 << (attempt - 1));
-        developer.log(
-          'Timeout during $context; retrying in ${delay.inMilliseconds}ms (attempt $attempt/$maxRetries)...',
-          name: 'GeminiInferenceRepository',
-        );
-        await Future<void>.delayed(delay);
-      }
-    }
-  }
-
-  /// Processes a decoded Gemini response (non-streaming) into compact outputs.
-  ///
-  /// This is used by the fallback path when streaming produces no events.
-
   /// Multi-turn streaming over an explicit message history. Thin delegator
-  /// to [GeminiMultiTurnInference.generateTextWithMessagesImpl] so the
-  /// method remains a mockable class member.
+  /// to [generateGeminiTextWithMessages] so the method remains a mockable
+  /// class member.
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -495,7 +435,8 @@ class GeminiInferenceRepository {
     ChatCompletionToolChoiceOption? toolChoice,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
-  }) => generateTextWithMessagesImpl(
+  }) => generateGeminiTextWithMessages(
+    sender: _streamSender,
     messages: messages,
     model: model,
     temperature: temperature,
@@ -510,16 +451,16 @@ class GeminiInferenceRepository {
     turnIndex: turnIndex,
   );
 
-  /// Image generation. Thin delegator to
-  /// [GeminiImageGeneration.generateImageImpl] so the method remains a
-  /// mockable class member.
+  /// Image generation. Thin delegator to [generateGeminiImage] so the method
+  /// remains a mockable class member.
   Future<GeneratedImage> generateImage({
     required String prompt,
     required String model,
     required AiConfigInferenceProvider provider,
     String? systemMessage,
     List<ProcessedReferenceImage>? referenceImages,
-  }) => generateImageImpl(
+  }) => generateGeminiImage(
+    httpClient: _httpClient,
     prompt: prompt,
     model: model,
     provider: provider,

@@ -47,8 +47,8 @@ String? extractThoughtSignature(Map<String, dynamic> part) {
 /// Represents a generated image from the Gemini image generation API.
 ///
 /// Contains the raw image bytes and MIME type (typically 'image/png').
-/// This is used as the return type for `generateImage` (see
-/// `GeminiImageGeneration`).
+/// This is used as the return type for `generateGeminiImage` (see
+/// `gemini_image_generation.dart`).
 class GeneratedImage {
   const GeneratedImage({
     required this.bytes,

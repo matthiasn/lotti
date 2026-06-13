@@ -95,7 +95,7 @@ Today the automatic path is narrower than the direct one:
 - automatic: `tryTranscribe()` and `tryAnalyzeImage()`
 - direct: transcription, image analysis, prompt generation, image-prompt generation, and image generation
 
-`promptGeneration` and `imagePromptGeneration` share the same dispatch arm in `triggerSkillProvider`: both route to `runner.runPromptGeneration()`, whose `runPromptGenerationImpl` derives the persisted response type from `skill.skillType.toResponseType` so the same runner serves both skill types.
+`promptGeneration` and `imagePromptGeneration` share the same dispatch arm in `triggerSkillProvider`: both route to `runner.runPromptGeneration()`, which derives the persisted response type from `skill.skillType.toResponseType` so the same runner serves both skill types.
 
 ```mermaid
 flowchart TD
