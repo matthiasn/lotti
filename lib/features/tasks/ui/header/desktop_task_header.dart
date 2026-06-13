@@ -1,19 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/tasks/ui/header/desktop_task_header_render.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header_meta.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header_title.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/color.dart';
 
 export 'package:lotti/features/tasks/ui/header/desktop_task_header_render.dart';
-
-part 'desktop_task_header_meta.dart';
-part 'desktop_task_header_title.dart';
 
 /// Project reference shown in the breadcrumb. When the task has no project,
 /// the connector passes `null` and the crumb renders the literal "No project"
@@ -222,7 +216,7 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
           SizedBox(height: rowGap),
           _buildTitleLine(context),
           SizedBox(height: rowGap),
-          _MetaRow(
+          MetaRow(
             priority: widget.data.priority,
             status: widget.data.status,
             dueDate: widget.data.dueDate,
@@ -245,7 +239,7 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
       color: TaskShowcasePalette.highText(context),
     );
     if (_isEditing) {
-      return _TitleEditor(
+      return TitleEditor(
         controller: _titleController,
         focusNode: _titleFocusNode,
         style: style,
@@ -253,7 +247,7 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
         onCancel: _cancelEdit,
       );
     }
-    return _TitleReadOnly(
+    return TitleReadOnly(
       title: widget.data.title,
       style: style,
       onTap: _beginEdit,

@@ -1,8 +1,12 @@
-// The action bar's Track time pill widgets — part of the
-// task_action_bar library. Glass-chip fill/outline styling comes from the
-// shared `glass_action_bar.dart` helpers (`dsGlassChipFill` /
-// `dsGlassChipBorder`); the round affordances use `DsGlassRoundButton`.
-part of 'task_action_bar.dart';
+// The action bar's Track time pill widgets. Glass-chip fill/outline
+// styling comes from the shared `glass_action_bar.dart` helpers
+// (`dsGlassChipFill` / `dsGlassChipBorder`); the round affordances use
+// `DsGlassRoundButton`.
+import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 /// Primary "Track time" pill.
 ///
@@ -14,8 +18,8 @@ part of 'task_action_bar.dart';
 /// independent tap zones — tapping the body navigates to the running
 /// timer entry (matching the sidebar timer card), tapping the stop
 /// circle stops the timer.
-class _TrackTimePill extends StatelessWidget {
-  const _TrackTimePill({
+class TrackTimePill extends StatelessWidget {
+  const TrackTimePill({
     required this.isTracking,
     required this.label,
     required this.idleSemanticLabel,

@@ -1,6 +1,24 @@
-part of 'checklist_item_row.dart';
+import 'dart:async';
 
-class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
+import 'package:collection/collection.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
+import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/state/checklist_controller.dart';
+import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
+import 'package:lotti/features/tasks/ui/checklists/drag_utils.dart';
+import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+
+class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     with SingleTickerProviderStateMixin {
   bool _isEditing = false;
   bool _showRow = true;
@@ -27,11 +45,11 @@ class _ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   }
 
   @override
-  void didUpdateWidget(ChecklistItemRow old) {
-    super.didUpdateWidget(old);
+  void didUpdateWidget(ChecklistItemRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
     // React to parent-driven filter changes — no animation for tab switches.
-    if (old.hideIfChecked != widget.hideIfChecked ||
-        old.hideIfUnchecked != widget.hideIfUnchecked) {
+    if (oldWidget.hideIfChecked != widget.hideIfChecked ||
+        oldWidget.hideIfUnchecked != widget.hideIfUnchecked) {
       _handleHideStateChange(
         newIsChecked: _lastIsChecked,
         newIsArchived: _lastIsArchived,

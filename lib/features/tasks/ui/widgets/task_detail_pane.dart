@@ -5,12 +5,11 @@ import 'package:lotti/features/design_system/components/navigation/design_system
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_detail_cards.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
-
-part 'task_detail_cards.dart';
 
 class TaskDetailPane extends StatelessWidget {
   const TaskDetailPane({
@@ -363,15 +362,15 @@ class _TaskDetailCardsColumn extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _AiSummaryCard(summary: record.aiSummary),
+        AiSummaryCard(summary: record.aiSummary),
         SizedBox(height: tokens.spacing.step4),
-        _DescriptionCard(description: record.description),
+        DescriptionCard(description: record.description),
         SizedBox(height: tokens.spacing.step4),
-        _TimeTrackerCard(record: record),
+        TimeTrackerCard(record: record),
         SizedBox(height: tokens.spacing.step4),
-        _ChecklistCard(record: record),
+        ChecklistCard(record: record),
         SizedBox(height: tokens.spacing.step4),
-        _AudioCard(entries: record.audioEntries),
+        AudioCard(entries: record.audioEntries),
       ],
     );
   }

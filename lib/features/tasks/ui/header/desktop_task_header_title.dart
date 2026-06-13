@@ -1,10 +1,15 @@
-part of 'desktop_task_header.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _TitleReadOnly extends StatelessWidget {
-  const _TitleReadOnly({
+class TitleReadOnly extends StatelessWidget {
+  const TitleReadOnly({
     required this.title,
     required this.style,
     required this.onTap,
+    super.key,
   });
 
   final String title;
@@ -66,13 +71,14 @@ class _TitleReadOnly extends StatelessWidget {
   }
 }
 
-class _TitleEditor extends StatelessWidget {
-  const _TitleEditor({
+class TitleEditor extends StatelessWidget {
+  const TitleEditor({
     required this.controller,
     required this.focusNode,
     required this.style,
     required this.onCommit,
     required this.onCancel,
+    super.key,
   });
 
   final TextEditingController controller;

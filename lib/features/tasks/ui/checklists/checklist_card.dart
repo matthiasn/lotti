@@ -1,18 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_card_body.dart';
+import 'package:lotti/features/tasks/ui/checklists/checklist_card_components.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
-import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/app_prefs_service.dart';
-import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
-
-part 'checklist_card_components.dart';
-part 'checklist_card_body.dart';
 
 /// A single checklist card with the new visual design.
 ///
@@ -205,7 +198,7 @@ class _ChecklistCardState extends State<ChecklistCard> {
         children: [
           // ── Header ────────────────────────────────────────────────────────
           if (widget.isSortingMode)
-            _SortingHeader(
+            SortingHeader(
               title: widget.title,
               completedCount: completed,
               totalCount: total,
@@ -213,7 +206,7 @@ class _ChecklistCardState extends State<ChecklistCard> {
               reorderIndex: widget.reorderIndex,
             )
           else
-            _Header(
+            Header(
               title: widget.title,
               isExpanded: _isExpanded,
               isEditingTitle: _isEditingTitle,
@@ -243,7 +236,7 @@ class _ChecklistCardState extends State<ChecklistCard> {
             crossFadeState: showBody
                 ? CrossFadeState.showFirst
                 : CrossFadeState.showSecond,
-            firstChild: _Body(
+            firstChild: Body(
               itemIds: _itemIds,
               checklistId: widget.id,
               taskId: widget.taskId,

@@ -1,27 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
-import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
-import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
-import 'package:lotti/features/tasks/state/task_progress_controller.dart';
-import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
-import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
-import 'package:lotti/features/tasks/ui/model/task_browse_row_interactions.dart';
-import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
-import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/utils/color.dart';
-
-part 'task_browse_list_item_rows.dart';
 
 class TaskBrowseListItem extends StatelessWidget {
   const TaskBrowseListItem({
@@ -110,7 +93,7 @@ class TaskBrowseListItem extends StatelessWidget {
               child: Row(
                 children: [
                   Expanded(
-                    child: _SectionHeaderTitle(
+                    child: SectionHeaderTitle(
                       sectionKey: entry.sectionKey,
                       titleOverride: sectionHeaderTitleOverride,
                     ),
@@ -128,7 +111,7 @@ class TaskBrowseListItem extends StatelessWidget {
           if (hoveredTaskIdNotifier case final notifier?)
             ValueListenableBuilder<String?>(
               valueListenable: notifier,
-              child: _TaskRowContent(
+              child: TaskRowContent(
                 task: entry.task,
                 sortOption: sortOption,
                 showCreationDate: showCreationDate,
@@ -142,7 +125,7 @@ class TaskBrowseListItem extends StatelessWidget {
                 trackedDurationLabelOverride: trackedDurationLabelOverride,
               ),
               builder: (context, hoveredTaskId, child) {
-                return _TaskBrowseRowShell(
+                return TaskBrowseRowShell(
                   entry: entry,
                   rowPadding: rowPadding,
                   borderRadius: borderRadius,
@@ -158,7 +141,7 @@ class TaskBrowseListItem extends StatelessWidget {
               },
             )
           else
-            _TaskBrowseRowShell(
+            TaskBrowseRowShell(
               entry: entry,
               rowPadding: rowPadding,
               borderRadius: borderRadius,
@@ -169,7 +152,7 @@ class TaskBrowseListItem extends StatelessWidget {
               hoveredTaskId: null,
               hoveredTaskIdNotifier: null,
               onTap: onTap,
-              child: _TaskRowContent(
+              child: TaskRowContent(
                 task: entry.task,
                 sortOption: sortOption,
                 showCreationDate: showCreationDate,

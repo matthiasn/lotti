@@ -1,7 +1,28 @@
-part of 'task_browse_list_item.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/design_system/components/lists/grouped_card_row_surface.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
+import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
+import 'package:lotti/features/tasks/state/task_progress_controller.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
+import 'package:lotti/features/tasks/ui/due_date_text.dart';
+import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
+import 'package:lotti/features/tasks/ui/model/task_browse_row_interactions.dart';
+import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/color.dart';
 
-class _TaskBrowseRowShell extends StatelessWidget {
-  const _TaskBrowseRowShell({
+class TaskBrowseRowShell extends StatelessWidget {
+  const TaskBrowseRowShell({
     required this.entry,
     required this.rowPadding,
     required this.borderRadius,
@@ -13,6 +34,7 @@ class _TaskBrowseRowShell extends StatelessWidget {
     required this.hoveredTaskIdNotifier,
     required this.onTap,
     required this.child,
+    super.key,
   });
 
   final TaskBrowseEntry entry;
@@ -91,8 +113,8 @@ class _TaskBrowseRowShell extends StatelessWidget {
   }
 }
 
-class _TaskRowContent extends ConsumerWidget {
-  const _TaskRowContent({
+class TaskRowContent extends ConsumerWidget {
+  const TaskRowContent({
     required this.task,
     required this.sortOption,
     required this.showCreationDate,
@@ -104,6 +126,7 @@ class _TaskRowContent extends ConsumerWidget {
     this.categoryIconOverride,
     this.categoryColorHexOverride,
     this.trackedDurationLabelOverride,
+    super.key,
   });
 
   final Task task;
@@ -384,10 +407,11 @@ class _TrackedDurationMetaContent extends StatelessWidget {
   }
 }
 
-class _SectionHeaderTitle extends StatelessWidget {
-  const _SectionHeaderTitle({
+class SectionHeaderTitle extends StatelessWidget {
+  const SectionHeaderTitle({
     required this.sectionKey,
     this.titleOverride,
+    super.key,
   });
 
   final TaskBrowseSectionKey sectionKey;
