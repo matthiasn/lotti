@@ -1,8 +1,8 @@
-part of 'evolution_catalog.dart';
+import 'package:json_schema_builder/json_schema_builder.dart';
 
 // ── Schemas ─────────────────────────────────────────────────────────────────
 
-final _proposalSchema = S.object(
+final proposalSchema = S.object(
   properties: {
     'generalDirective': S.string(
       description: 'The proposed general directive text',
@@ -21,7 +21,7 @@ final _proposalSchema = S.object(
   required: ['generalDirective', 'reportDirective', 'rationale'],
 );
 
-final _soulProposalSchema = S.object(
+final soulProposalSchema = S.object(
   properties: {
     'voiceDirective': S.string(description: 'Proposed voice directive'),
     'toneBounds': S.string(description: 'Proposed tone bounds'),
@@ -49,7 +49,7 @@ final _soulProposalSchema = S.object(
   required: ['rationale'],
 );
 
-final _noteConfirmationSchema = S.object(
+final noteConfirmationSchema = S.object(
   properties: {
     'kind': S.string(
       description: 'The note kind',
@@ -60,7 +60,7 @@ final _noteConfirmationSchema = S.object(
   required: ['kind', 'content'],
 );
 
-final _metricsSummarySchema = S.object(
+final metricsSummarySchema = S.object(
   properties: {
     'totalWakes': S.integer(description: 'Total number of wakes'),
     'successRate': S.number(description: 'Success rate 0.0–1.0'),
@@ -75,7 +75,7 @@ final _metricsSummarySchema = S.object(
   required: ['totalWakes', 'successRate', 'failureCount'],
 );
 
-final _versionComparisonSchema = S.object(
+final versionComparisonSchema = S.object(
   properties: {
     'beforeVersion': S.integer(description: 'Previous version number'),
     'afterVersion': S.integer(description: 'New version number'),
@@ -91,7 +91,7 @@ final _versionComparisonSchema = S.object(
   ],
 );
 
-final _feedbackClassificationSchema = S.object(
+final feedbackClassificationSchema = S.object(
   properties: {
     'items': S.list(
       items: S.object(
@@ -125,7 +125,7 @@ final _feedbackClassificationSchema = S.object(
   required: ['items', 'positiveCount', 'negativeCount', 'neutralCount'],
 );
 
-final _feedbackCategoryBreakdownSchema = S.object(
+final feedbackCategoryBreakdownSchema = S.object(
   properties: {
     'categories': S.list(
       items: S.object(
@@ -147,7 +147,7 @@ final _feedbackCategoryBreakdownSchema = S.object(
   required: ['categories'],
 );
 
-final _sessionProgressSchema = S.object(
+final sessionProgressSchema = S.object(
   properties: {
     'sessionNumber': S.integer(description: 'Current session number'),
     'totalSessions': S.integer(description: 'Total sessions so far'),
@@ -162,7 +162,7 @@ final _sessionProgressSchema = S.object(
   required: ['sessionNumber', 'totalSessions', 'feedbackCount', 'status'],
 );
 
-final _categoryRatingsSchema = S.object(
+final categoryRatingsSchema = S.object(
   properties: {
     'categories': S.list(
       items: S.object(
@@ -178,7 +178,7 @@ final _categoryRatingsSchema = S.object(
   required: ['categories'],
 );
 
-final _highPriorityFeedbackSchema = S.object(
+final highPriorityFeedbackSchema = S.object(
   properties: {
     'grievances': S.list(
       items: S.object(
@@ -204,7 +204,7 @@ final _highPriorityFeedbackSchema = S.object(
   required: ['grievances', 'excellenceNotes'],
 );
 
-final _binaryChoicePromptSchema = S.object(
+final binaryChoicePromptSchema = S.object(
   properties: {
     'question': S.string(description: 'The yes/no question to ask'),
     'detail': S.string(
@@ -226,7 +226,7 @@ final _binaryChoicePromptSchema = S.object(
   required: ['question'],
 );
 
-final _abComparisonSchema = S.object(
+final abComparisonSchema = S.object(
   properties: {
     'question': S.string(
       description: 'The question shown at the top of the comparison card',
@@ -246,202 +246,3 @@ final _abComparisonSchema = S.object(
   },
   required: ['question', 'optionA', 'optionB'],
 );
-
-// ── Private helpers ─────────────────────────────────────────────────────────
-
-Widget _sentimentChip(String label, int count, Color color) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: BoxDecoration(
-      color: color.withValues(alpha: 0.15),
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: color.withValues(alpha: 0.3)),
-    ),
-    child: Text(
-      '$count $label',
-      style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600),
-    ),
-  );
-}
-
-Widget _feedbackLine({required String detail, required String sentiment}) {
-  final color = switch (sentiment) {
-    'negative' => AgentPalette.red,
-    'positive' => AgentPalette.green,
-    _ => AgentPalette.orange,
-  };
-
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 2),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 4,
-          height: 16,
-          margin: const EdgeInsets.only(top: 2),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            detail,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.8),
-              fontSize: 12,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _highPrioritySectionHeader(String label, int count, Color color) {
-  return Row(
-    children: [
-      Container(
-        width: 4,
-        height: 14,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(2),
-        ),
-      ),
-      const SizedBox(width: 8),
-      Text(
-        '$label ($count)',
-        style: TextStyle(
-          color: color,
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    ],
-  );
-}
-
-Widget _highPriorityItemTile({
-  required String agentId,
-  required String detail,
-  required Color accentColor,
-}) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 3),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Container(
-          width: 4,
-          height: 16,
-          margin: const EdgeInsets.only(top: 2),
-          decoration: BoxDecoration(
-            color: accentColor,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 8),
-        if (agentId.isNotEmpty) ...[
-          ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 120),
-            child: Text(
-              '[$agentId]',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          const SizedBox(width: 6),
-        ],
-        Expanded(
-          child: Text(
-            detail,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.9),
-              fontSize: 12,
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
-Widget _categoryBar({
-  required String name,
-  required int count,
-  required int positiveCount,
-  required int negativeCount,
-  required int totalCount,
-}) {
-  final fraction = totalCount > 0 ? count / totalCount : 0.0;
-  final neutralCount = max(0, count - positiveCount - negativeCount);
-
-  return Padding(
-    padding: const EdgeInsets.symmetric(vertical: 3),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                name,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.7),
-                  fontSize: 11,
-                ),
-              ),
-            ),
-            Text(
-              '$count',
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 11,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 3),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: SizedBox(
-            height: 6,
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: fraction,
-              child: Row(
-                children: [
-                  if (negativeCount > 0)
-                    Expanded(
-                      flex: negativeCount,
-                      child: Container(color: AgentPalette.red),
-                    ),
-                  if (positiveCount > 0)
-                    Expanded(
-                      flex: positiveCount,
-                      child: Container(color: AgentPalette.green),
-                    ),
-                  if (neutralCount > 0)
-                    Expanded(
-                      flex: neutralCount,
-                      child: Container(color: AgentPalette.orange),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}

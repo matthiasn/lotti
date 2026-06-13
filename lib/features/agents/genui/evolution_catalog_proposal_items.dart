@@ -1,9 +1,17 @@
-part of 'evolution_catalog.dart';
+import 'package:flutter/material.dart';
+import 'package:genui/genui.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_schemas.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/cards/modern_base_card.dart';
+import 'package:lotti/widgets/cards/modern_icon_container.dart';
 
 /// Proposal card with approve/reject actions.
 final evolutionProposalItem = CatalogItem(
   name: 'EvolutionProposal',
-  dataSchema: _proposalSchema,
+  dataSchema: proposalSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
@@ -177,7 +185,7 @@ final evolutionProposalItem = CatalogItem(
 /// Soul personality proposal card with approve/reject actions.
 final soulProposalItem = CatalogItem(
   name: 'SoulProposal',
-  dataSchema: _soulProposalSchema,
+  dataSchema: soulProposalSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();

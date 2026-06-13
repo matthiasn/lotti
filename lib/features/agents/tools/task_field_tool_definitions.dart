@@ -1,8 +1,8 @@
-part of 'agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// Tools that edit core task fields and metadata: title, estimate, due date,
 /// priority, status, language, and labels.
-const _taskFieldTools = <AgentToolDefinition>[
+const taskFieldTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: TaskAgentToolNames.setTaskTitle,
     description:

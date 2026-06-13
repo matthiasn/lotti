@@ -1,8 +1,8 @@
-part of 'agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// Tools that record and revise time tracking: creating time entries,
 /// updating a running timer, and editing existing time entries.
-const _taskTimeTools = <AgentToolDefinition>[
+const taskTimeTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: TaskAgentToolNames.createTimeEntry,
     description:

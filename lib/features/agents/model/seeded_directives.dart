@@ -7,9 +7,9 @@ library;
 
 import 'package:lotti/features/agents/model/agent_enums.dart';
 
-// ── Seed Directive Changelog ─────────────────────────────────────────────────
+export 'package:lotti/features/agents/model/seeded_directive_content.dart';
 
-part 'seeded_directive_content.dart';
+// ── Seed Directive Changelog ─────────────────────────────────────────────────
 
 /// A dated record of a change to the seed directives.
 ///
@@ -195,5 +195,3 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         'contradiction the deterministic facts line wins over your note.',
   ),
 ];
-
-// ── Task Agent: General Directive ──────────────────────────────────────────

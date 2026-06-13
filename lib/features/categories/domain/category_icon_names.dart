@@ -1,4 +1,4 @@
-part of 'category_icon.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 
 /// Human-readable display name for every [CategoryIcon].
 const Map<CategoryIcon, String> categoryIconDisplayNames = {

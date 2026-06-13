@@ -1,9 +1,20 @@
-part of 'evolution_catalog.dart';
+import 'dart:convert';
+
+import 'package:flutter/material.dart';
+import 'package:genui/genui.dart';
+import 'package:lotti/features/agents/genui/ab_comparison_card.dart';
+import 'package:lotti/features/agents/genui/binary_choice_prompt_card.dart';
+import 'package:lotti/features/agents/genui/category_ratings_card.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_schemas.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/cards/modern_base_card.dart';
 
 /// Interactive category ratings widget for Phase 1 of the two-phase dialog.
 final categoryRatingsItem = CatalogItem(
   name: 'CategoryRatings',
-  dataSchema: _categoryRatingsSchema,
+  dataSchema: categoryRatingsSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
@@ -29,7 +40,7 @@ final categoryRatingsItem = CatalogItem(
 /// Lightweight yes/no prompt for quick conversational branching.
 final binaryChoicePromptItem = CatalogItem(
   name: 'BinaryChoicePrompt',
-  dataSchema: _binaryChoicePromptSchema,
+  dataSchema: binaryChoicePromptSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
@@ -83,7 +94,7 @@ final binaryChoicePromptItem = CatalogItem(
 /// preference exploration.
 final abComparisonCardItem = CatalogItem(
   name: 'ABComparison',
-  dataSchema: _abComparisonSchema,
+  dataSchema: abComparisonSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
@@ -119,7 +130,7 @@ final abComparisonCardItem = CatalogItem(
 /// (green) with full untruncated text.
 final highPriorityFeedbackItem = CatalogItem(
   name: 'HighPriorityFeedback',
-  dataSchema: _highPriorityFeedbackSchema,
+  dataSchema: highPriorityFeedbackSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
@@ -165,14 +176,14 @@ final highPriorityFeedbackItem = CatalogItem(
             ),
             if (grievances.isNotEmpty) ...[
               const SizedBox(height: 10),
-              _highPrioritySectionHeader(
+              highPrioritySectionHeader(
                 messages.agentFeedbackGrievancesTitle,
                 grievances.length,
                 AgentPalette.red,
               ),
               const SizedBox(height: 4),
               ...grievances.map(
-                (item) => _highPriorityItemTile(
+                (item) => highPriorityItemTile(
                   agentId: readString(item, 'agentId'),
                   detail: readString(item, 'detail'),
                   accentColor: AgentPalette.red,
@@ -181,14 +192,14 @@ final highPriorityFeedbackItem = CatalogItem(
             ],
             if (excellenceNotes.isNotEmpty) ...[
               const SizedBox(height: 10),
-              _highPrioritySectionHeader(
+              highPrioritySectionHeader(
                 messages.agentFeedbackExcellenceTitle,
                 excellenceNotes.length,
                 AgentPalette.green,
               ),
               const SizedBox(height: 4),
               ...excellenceNotes.map(
-                (item) => _highPriorityItemTile(
+                (item) => highPriorityItemTile(
                   agentId: readString(item, 'agentId'),
                   detail: readString(item, 'detail'),
                   accentColor: AgentPalette.green,

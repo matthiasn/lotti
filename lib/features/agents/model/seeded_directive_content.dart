@@ -1,7 +1,6 @@
-// The literal directive string corpus lives in this part file so the
+// The literal directive string corpus lives in this file so the
 // changelog + SeedDirectiveChange logic in `seeded_directives.dart` stays
 // diff-friendly. Data only — no logic.
-part of 'seeded_directives.dart';
 
 /// Default general directive for task agent templates.
 ///

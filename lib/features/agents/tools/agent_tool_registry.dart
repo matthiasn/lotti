@@ -1,11 +1,14 @@
 // Registry of tool names and definitions available to agents.
 
-part 'evolution_tool_definitions.dart';
-part 'task_agent_tool_definitions.dart';
-part 'task_field_tool_definitions.dart';
-part 'task_checklist_tool_definitions.dart';
-part 'task_time_tool_definitions.dart';
-part 'task_planning_tool_definitions.dart';
+import 'package:lotti/features/agents/tools/evolution_tool_definitions.dart';
+import 'package:lotti/features/agents/tools/task_agent_tool_definitions.dart';
+
+export 'package:lotti/features/agents/tools/evolution_tool_definitions.dart';
+export 'package:lotti/features/agents/tools/task_agent_tool_definitions.dart';
+export 'package:lotti/features/agents/tools/task_checklist_tool_definitions.dart';
+export 'package:lotti/features/agents/tools/task_field_tool_definitions.dart';
+export 'package:lotti/features/agents/tools/task_planning_tool_definitions.dart';
+export 'package:lotti/features/agents/tools/task_time_tool_definitions.dart';
 
 /// Metadata describing a single tool that an agent can call.
 ///
@@ -118,8 +121,7 @@ class AgentToolRegistry {
   };
 
   /// All tools available to the Task Agent.
-  /// All tools available to the Task Agent.
-  static const List<AgentToolDefinition> taskAgentTools = _taskAgentTools;
+  static const List<AgentToolDefinition> taskAgentTools = taskAgentToolList;
 
   /// Tools available to the soul evolution agent during standalone soul
   /// 1-on-1 sessions. Excludes `propose_directives` since soul sessions
@@ -131,5 +133,5 @@ class AgentToolRegistry {
 
   /// Tools available to the evolution agent during 1-on-1 sessions.
   static const List<AgentToolDefinition> evolutionAgentTools =
-      _evolutionAgentTools;
+      evolutionAgentToolList;
 }

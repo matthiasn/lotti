@@ -1,9 +1,16 @@
-part of 'evolution_catalog.dart';
+
+import 'package:flutter/material.dart';
+import 'package:genui/genui.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_schemas.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/cards/modern_base_card.dart';
 
 /// Inline grouped feedback classification card.
 final feedbackClassificationItem = CatalogItem(
   name: 'FeedbackClassification',
-  dataSchema: _feedbackClassificationSchema,
+  dataSchema: feedbackClassificationSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
@@ -45,19 +52,19 @@ final feedbackClassificationItem = CatalogItem(
               runSpacing: 6,
               children: [
                 if (negativeCount > 0)
-                  _sentimentChip(
+                  sentimentChip(
                     context.messages.agentRitualReviewNegativeSignals,
                     negativeCount,
                     AgentPalette.red,
                   ),
                 if (positiveCount > 0)
-                  _sentimentChip(
+                  sentimentChip(
                     context.messages.agentRitualReviewPositiveSignals,
                     positiveCount,
                     AgentPalette.green,
                   ),
                 if (neutralCount > 0)
-                  _sentimentChip(
+                  sentimentChip(
                     context.messages.agentRitualReviewNeutralSignals,
                     neutralCount,
                     AgentPalette.orange,
@@ -69,7 +76,7 @@ final feedbackClassificationItem = CatalogItem(
               ...items
                   .take(5)
                   .map(
-                    (item) => _feedbackLine(
+                    (item) => feedbackLine(
                       detail: readString(item, 'detail'),
                       sentiment: readString(item, 'sentiment', 'neutral'),
                     ),
@@ -97,7 +104,7 @@ final feedbackClassificationItem = CatalogItem(
 /// Category distribution visualization card.
 final feedbackCategoryBreakdownItem = CatalogItem(
   name: 'FeedbackCategoryBreakdown',
-  dataSchema: _feedbackCategoryBreakdownSchema,
+  dataSchema: feedbackCategoryBreakdownSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
@@ -137,7 +144,7 @@ final feedbackCategoryBreakdownItem = CatalogItem(
             ),
             const SizedBox(height: 10),
             ...categories.map(
-              (c) => _categoryBar(
+              (c) => categoryBar(
                 name: readString(c, 'name'),
                 count: readInt(c, 'count'),
                 positiveCount: readInt(c, 'positiveCount'),
@@ -155,7 +162,7 @@ final feedbackCategoryBreakdownItem = CatalogItem(
 /// Compact session progress status card.
 final sessionProgressItem = CatalogItem(
   name: 'SessionProgress',
-  dataSchema: _sessionProgressSchema,
+  dataSchema: sessionProgressSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();

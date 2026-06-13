@@ -11,13 +11,11 @@
 /// - OpenAI: Advanced language and multimodal models
 library;
 
-import 'dart:ui';
-
-import 'package:collection/collection.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/util/known_models_data.dart';
 
-part 'known_models_data.dart';
-part 'known_models_ftue.dart';
+export 'package:lotti/features/ai/util/known_models_data.dart';
+export 'package:lotti/features/ai/util/known_models_ftue.dart';
 
 /// Represents a known model configuration that can be automatically
 /// populated when creating a new inference provider.

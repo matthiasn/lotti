@@ -1,9 +1,9 @@
-part of 'agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// Tools for planning, attention negotiation, reporting, and observations:
 /// related-task lookups, attention requests, report publishing, suggestion
 /// retraction, and recording private observations.
-const _taskPlanningTools = <AgentToolDefinition>[
+const taskPlanningTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: TaskAgentToolNames.getRelatedTaskDetails,
     description:

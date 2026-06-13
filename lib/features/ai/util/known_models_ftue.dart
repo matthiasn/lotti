@@ -1,4 +1,7 @@
-part of 'known_models.dart';
+import 'dart:ui';
+
+import 'package:collection/collection.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 
 // =============================================================================
 // FTUE (First Time User Experience) Model Constants

@@ -1,9 +1,9 @@
-part of 'agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// Tools that manage checklist items and split work into follow-up tasks:
 /// adding/updating checklist items, creating follow-up tasks, and migrating
 /// items between tasks.
-const _taskChecklistTools = <AgentToolDefinition>[
+const taskChecklistTools = <AgentToolDefinition>[
   AgentToolDefinition(
     name: TaskAgentToolNames.addMultipleChecklistItems,
     description: 'Add multiple checklist items to the task.',

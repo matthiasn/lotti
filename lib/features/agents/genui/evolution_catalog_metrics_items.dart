@@ -1,9 +1,16 @@
-part of 'evolution_catalog.dart';
+import 'package:flutter/material.dart';
+import 'package:genui/genui.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
+import 'package:lotti/features/agents/genui/evolution_catalog_schemas.dart';
+import 'package:lotti/features/agents/genui/evolution_note_confirmation_card.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/cards/modern_base_card.dart';
 
 /// Confirmation card for a recorded evolution note.
 final evolutionNoteConfirmationItem = CatalogItem(
   name: 'EvolutionNoteConfirmation',
-  dataSchema: _noteConfirmationSchema,
+  dataSchema: noteConfirmationSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
@@ -20,7 +27,7 @@ final evolutionNoteConfirmationItem = CatalogItem(
 /// Inline metrics summary widget.
 final metricsSummaryItem = CatalogItem(
   name: 'MetricsSummary',
-  dataSchema: _metricsSummarySchema,
+  dataSchema: metricsSummarySchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
@@ -71,7 +78,7 @@ final metricsSummaryItem = CatalogItem(
 /// Before/after version comparison widget.
 final versionComparisonItem = CatalogItem(
   name: 'VersionComparison',
-  dataSchema: _versionComparisonSchema,
+  dataSchema: versionComparisonSchema,
   widgetBuilder: (itemContext) {
     final json = itemContext.data;
     if (json is! Map<String, Object?>) return const SizedBox.shrink();
