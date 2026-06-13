@@ -1,16 +1,15 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
-import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
-import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_generate.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_generate_more.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
-import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
@@ -18,152 +17,203 @@ import 'package:lotti/features/ai/repository/openai_transcription_repository.dar
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:uuid/uuid.dart';
 
 part 'cloud_inference_repository.g.dart';
-part 'cloud_inference_generate.dart';
-part 'cloud_inference_generate_more.dart';
 
-abstract class _CloudInferenceRepositoryBase {
-  _CloudInferenceRepositoryBase(this.ref, {http.Client? httpClient})
-    : _ollamaRepository = ref.read(ollamaInferenceRepositoryProvider),
-      _geminiRepository = ref.read(geminiInferenceRepositoryProvider),
-      _dashScopeRepository = ref.read(dashScopeInferenceRepositoryProvider),
-      _mistralRepository = MistralInferenceRepository(httpClient: httpClient),
-      _mistralTranscriptionRepository = MistralTranscriptionRepository(
-        httpClient: httpClient,
-      ),
-      _whisperRepository = WhisperInferenceRepository(httpClient: httpClient),
-      _voxtralRepository = VoxtralInferenceRepository(httpClient: httpClient),
-      _openAiTranscriptionRepository = OpenAiTranscriptionRepository(
-        httpClient: httpClient,
-      );
+/// Facade over the cloud-inference generate collaborators.
+///
+/// Owns a [Ref] plus the provider-/HTTP-backed sub-repositories and wires them
+/// into two stateless collaborators — [CloudInferenceGenerate] (text/image
+/// prompts) and [CloudInferenceGenerateMore] (audio, multi-turn, image
+/// generation, model install, cleanup) — sharing a single
+/// [CloudInferenceRequestHelpers]. Every public method delegates to the owning
+/// collaborator so the mockable surface and all call sites stay unchanged.
+class CloudInferenceRepository {
+  CloudInferenceRepository(this.ref, {http.Client? httpClient}) {
+    final ollamaRepository = ref.read(ollamaInferenceRepositoryProvider);
+    final geminiRepository = ref.read(geminiInferenceRepositoryProvider);
+    final dashScopeRepository = ref.read(dashScopeInferenceRepositoryProvider);
+    final mistralRepository = MistralInferenceRepository(
+      httpClient: httpClient,
+    );
+    final mistralTranscriptionRepository = MistralTranscriptionRepository(
+      httpClient: httpClient,
+    );
+    final whisperRepository = WhisperInferenceRepository(
+      httpClient: httpClient,
+    );
+    final voxtralRepository = VoxtralInferenceRepository(
+      httpClient: httpClient,
+    );
+    final openAiTranscriptionRepository = OpenAiTranscriptionRepository(
+      httpClient: httpClient,
+    );
+
+    const helpers = CloudInferenceRequestHelpers();
+
+    _generate = CloudInferenceGenerate(
+      ollamaRepository: ollamaRepository,
+      geminiRepository: geminiRepository,
+      mistralRepository: mistralRepository,
+      helpers: helpers,
+    );
+
+    _generateMore = CloudInferenceGenerateMore(
+      ref: ref,
+      ollamaRepository: ollamaRepository,
+      geminiRepository: geminiRepository,
+      dashScopeRepository: dashScopeRepository,
+      mistralRepository: mistralRepository,
+      mistralTranscriptionRepository: mistralTranscriptionRepository,
+      whisperRepository: whisperRepository,
+      voxtralRepository: voxtralRepository,
+      openAiTranscriptionRepository: openAiTranscriptionRepository,
+      helpers: helpers,
+    );
+  }
 
   final Ref ref;
-  final OllamaInferenceRepository _ollamaRepository;
-  final GeminiInferenceRepository _geminiRepository;
-  final DashScopeInferenceRepository _dashScopeRepository;
-  final MistralInferenceRepository _mistralRepository;
-  final MistralTranscriptionRepository _mistralTranscriptionRepository;
-  final WhisperInferenceRepository _whisperRepository;
-  final VoxtralInferenceRepository _voxtralRepository;
-  final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
+  late final CloudInferenceGenerate _generate;
+  late final CloudInferenceGenerateMore _generateMore;
 
-  /// Helper method to create common request parameters
-  CreateChatCompletionRequest _createBaseRequest({
-    required List<ChatCompletionMessage> messages,
+  Stream<CreateChatCompletionStreamResponse> generate(
+    String prompt, {
     required String model,
-    double? temperature,
+    required double? temperature,
+    required String baseUrl,
+    required String apiKey,
+    String? systemMessage,
     int? maxCompletionTokens,
-    int? maxTokens,
+    OpenAIClient? overrideClient,
+    AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
+    GeminiThinkingMode? geminiThinkingMode,
+  }) => _generate.generate(
+    prompt,
+    model: model,
+    temperature: temperature,
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+    systemMessage: systemMessage,
+    maxCompletionTokens: maxCompletionTokens,
+    overrideClient: overrideClient,
+    provider: provider,
+    tools: tools,
+    toolChoice: toolChoice,
+    geminiThinkingMode: geminiThinkingMode,
+  );
+
+  Stream<CreateChatCompletionStreamResponse> generateWithImages(
+    String prompt, {
+    required String baseUrl,
+    required String apiKey,
+    required String model,
+    required double? temperature,
+    required List<String> images,
+    int? maxCompletionTokens,
+    OpenAIClient? overrideClient,
+    AiConfigInferenceProvider? provider,
+    List<ChatCompletionTool>? tools,
+    String? systemMessage,
+    GeminiThinkingMode? geminiThinkingMode,
+  }) => _generate.generateWithImages(
+    prompt,
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+    model: model,
+    temperature: temperature,
+    images: images,
+    maxCompletionTokens: maxCompletionTokens,
+    overrideClient: overrideClient,
+    provider: provider,
+    tools: tools,
+    systemMessage: systemMessage,
+    geminiThinkingMode: geminiThinkingMode,
+  );
+
+  Stream<CreateChatCompletionStreamResponse> generateWithAudio(
+    String prompt, {
+    required String model,
+    required String audioBase64,
+    required String baseUrl,
+    required String apiKey,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    OpenAIClient? overrideClient,
+    List<ChatCompletionTool>? tools,
     bool stream = true,
-  }) {
-    final ChatCompletionToolChoiceOption? effectiveToolChoice;
-    if (toolChoice != null) {
-      effectiveToolChoice = toolChoice;
-    } else if (tools != null && tools.isNotEmpty) {
-      effectiveToolChoice = const ChatCompletionToolChoiceOption.mode(
-        ChatCompletionToolChoiceMode.auto,
-      );
-    } else {
-      effectiveToolChoice = null;
-    }
+    ChatCompletionMessageInputAudioFormat audioFormat =
+        ChatCompletionMessageInputAudioFormat.mp3,
+    List<String>? speechDictionaryTerms,
+    String? systemMessage,
+    GeminiThinkingMode? geminiThinkingMode,
+  }) => _generateMore.generateWithAudio(
+    prompt,
+    model: model,
+    audioBase64: audioBase64,
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+    provider: provider,
+    maxCompletionTokens: maxCompletionTokens,
+    overrideClient: overrideClient,
+    tools: tools,
+    stream: stream,
+    audioFormat: audioFormat,
+    speechDictionaryTerms: speechDictionaryTerms,
+    systemMessage: systemMessage,
+    geminiThinkingMode: geminiThinkingMode,
+  );
 
-    return CreateChatCompletionRequest(
-      messages: messages,
-      model: ChatCompletionModel.modelId(model),
-      temperature: temperature,
-      maxCompletionTokens: maxCompletionTokens,
-      maxTokens: maxTokens,
-      reasoningEffort: reasoningEffort,
-      stream: stream,
-      tools: tools,
-      toolChoice: effectiveToolChoice,
-    );
-  }
+  Stream<CreateChatCompletionStreamResponse> generateWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double? temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
+    GeminiThinkingMode? geminiThinkingMode,
+  }) => _generateMore.generateWithMessages(
+    messages: messages,
+    model: model,
+    temperature: temperature,
+    provider: provider,
+    maxCompletionTokens: maxCompletionTokens,
+    tools: tools,
+    toolChoice: toolChoice,
+    thoughtSignatures: thoughtSignatures,
+    signatureCollector: signatureCollector,
+    turnIndex: turnIndex,
+    geminiThinkingMode: geminiThinkingMode,
+  );
 
-  /// Filters out Anthropic ping messages from the stream
-  Stream<CreateChatCompletionStreamResponse> _filterAnthropicPings(
-    Stream<CreateChatCompletionStreamResponse> stream,
-  ) {
-    // Use where to filter out errors instead of handleError
-    final controller = StreamController<CreateChatCompletionStreamResponse>();
+  /// Install a model in Ollama with progress tracking
+  Stream<OllamaPullProgress> installModel(String modelName, String baseUrl) =>
+      _generateMore.installModel(modelName, baseUrl);
 
-    stream.listen(
-      controller.add,
-      onError: (Object error, StackTrace stackTrace) {
-        // Check if this is specifically an Anthropic ping message error
-        final errorString = error.toString();
+  /// Generates an image using a provider-specific image generation API.
+  Future<GeneratedImage> generateImage({
+    required String prompt,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) => _generateMore.generateImage(
+    prompt: prompt,
+    model: model,
+    provider: provider,
+    systemMessage: systemMessage,
+    referenceImages: referenceImages,
+  );
 
-        // Anthropic ping messages cause a specific null subtype error when parsing choices
-        final isAnthropicPingError =
-            errorString.contains(
-              "type 'Null' is not a subtype of type 'List<dynamic>'",
-            ) &&
-            errorString.contains('choices');
-
-        if (isAnthropicPingError) {
-          // Log but don't propagate the error
-          developer.log(
-            'Skipping Anthropic ping message',
-            name: 'CloudInferenceRepository',
-            error: error,
-            stackTrace: stackTrace,
-          );
-          return;
-        }
-        // Propagate other errors
-        controller.addError(error, stackTrace);
-      },
-      onDone: controller.close,
-    );
-
-    return controller.stream;
-  }
-
-  GeminiThinkingConfig _resolveGeminiThinkingConfig({
-    GeminiThinkingMode? mode,
-  }) {
-    final base = GeminiThinkingConfig.fromMode(
-      mode ?? GeminiThinkingMode.low,
-    );
-
-    // Always capture thoughts for thinking-capable models (budget != 0) so
-    // they're available in the AI response modal's Thoughts tab. The chat UI
-    // still decides whether inline thinking is displayed.
-    return GeminiThinkingConfig(
-      thinkingBudget: base.thinkingBudget,
-      thinkingMode: base.thinkingMode,
-      includeThoughts: base.thinkingBudget != 0,
-    );
-  }
-
-  /// Maps a [GeminiThinkingMode] to the OpenAI-compatible `reasoning_effort`
-  /// value for [model], collapsing modes that the model does not support
-  /// (non-Flash Gemini 3 only accepts low/high) via
-  /// [GeminiThinkingConfig.effectiveMode].
-  ReasoningEffort _geminiReasoningEffort(
-    String model,
-    GeminiThinkingMode mode,
-  ) {
-    return switch (GeminiThinkingConfig.effectiveMode(model, mode)) {
-      GeminiThinkingMode.minimal => ReasoningEffort.minimal,
-      GeminiThinkingMode.low => ReasoningEffort.low,
-      GeminiThinkingMode.medium => ReasoningEffort.medium,
-      GeminiThinkingMode.high => ReasoningEffort.high,
-    };
-  }
-}
-
-class CloudInferenceRepository extends _CloudInferenceRepositoryBase
-    with _CloudInferenceGenerate, _CloudInferenceGenerateMore {
-  CloudInferenceRepository(super.ref, {super.httpClient});
+  /// Closes HTTP clients held by sub-repositories that this instance owns.
+  void close() => _generateMore.close();
 }
 
 @riverpod

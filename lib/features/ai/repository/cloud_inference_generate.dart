@@ -1,6 +1,35 @@
-part of 'cloud_inference_repository.dart';
+import 'dart:async';
+import 'dart:developer' as developer;
 
-mixin _CloudInferenceGenerate on _CloudInferenceRepositoryBase {
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart'
+    show CloudInferenceRepository;
+import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:openai_dart/openai_dart.dart';
+
+/// Text and image generation paths for [CloudInferenceRepository].
+///
+/// Routes the single-prompt `generate` and `generateWithImages` flows to the
+/// provider-specific repositories (Ollama, Gemini, Mistral) or, for
+/// OpenAI-compatible providers, builds the request via the shared
+/// [CloudInferenceRequestHelpers] and streams from an [OpenAIClient].
+class CloudInferenceGenerate {
+  CloudInferenceGenerate({
+    required this._ollamaRepository,
+    required this._geminiRepository,
+    required this._mistralRepository,
+    required this._helpers,
+  });
+
+  final OllamaInferenceRepository _ollamaRepository;
+  final GeminiInferenceRepository _geminiRepository;
+  final MistralInferenceRepository _mistralRepository;
+  final CloudInferenceRequestHelpers _helpers;
+
   Stream<CreateChatCompletionStreamResponse> generate(
     String prompt, {
     required String model,
@@ -41,7 +70,7 @@ mixin _CloudInferenceGenerate on _CloudInferenceRepositoryBase {
     // For Gemini, use the native Gemini repository to enable thinking config
     if (provider != null &&
         provider.inferenceProviderType == InferenceProviderType.gemini) {
-      final finalThinking = _resolveGeminiThinkingConfig(
+      final finalThinking = _helpers.resolveGeminiThinkingConfig(
         mode: geminiThinkingMode,
       );
       return _geminiRepository.generateText(
@@ -88,7 +117,7 @@ mixin _CloudInferenceGenerate on _CloudInferenceRepositoryBase {
     }
 
     final res = client.createChatCompletionStream(
-      request: _createBaseRequest(
+      request: _helpers.createBaseRequest(
         messages: [
           if (systemMessage != null)
             ChatCompletionMessage.system(content: systemMessage),
@@ -104,7 +133,7 @@ mixin _CloudInferenceGenerate on _CloudInferenceRepositoryBase {
       ),
     );
 
-    return _filterAnthropicPings(res).asBroadcastStream();
+    return _helpers.filterAnthropicPings(res).asBroadcastStream();
   }
 
   Stream<CreateChatCompletionStreamResponse> generateWithImages(
@@ -145,7 +174,7 @@ mixin _CloudInferenceGenerate on _CloudInferenceRepositoryBase {
     final reasoningEffort =
         provider?.inferenceProviderType == InferenceProviderType.gemini &&
             GeminiThinkingConfig.isGemini3(model)
-        ? _geminiReasoningEffort(
+        ? _helpers.geminiReasoningEffort(
             model,
             geminiThinkingMode ?? GeminiThinkingMode.low,
           )
@@ -159,7 +188,7 @@ mixin _CloudInferenceGenerate on _CloudInferenceRepositoryBase {
     }
 
     final res = client.createChatCompletionStream(
-      request: _createBaseRequest(
+      request: _helpers.createBaseRequest(
         messages: [
           if (systemMessage != null)
             ChatCompletionMessage.system(content: systemMessage),
@@ -190,26 +219,4 @@ mixin _CloudInferenceGenerate on _CloudInferenceRepositoryBase {
 
     return res.asBroadcastStream();
   }
-
-  /// Generates AI responses with audio input using different providers
-  ///
-  /// This method handles different inference providers:
-  /// - FastWhisper: Uses local FastWhisper server for transcription
-  /// - Whisper: Uses OpenAI's Whisper API via our Python proxy server
-  /// - Other providers: Uses standard OpenAI-compatible format
-  ///
-  /// Args:
-  ///   prompt: The text prompt to send with the audio
-  ///   model: The model identifier to use
-  ///   audioBase64: Base64 encoded audio data
-  ///   baseUrl: The base URL for the API
-  ///   apiKey: The API key for authentication
-  ///   provider: The inference provider configuration
-  ///   maxCompletionTokens: Maximum tokens for completion
-  ///   overrideClient: Optional client override for testing
-  ///   audioFormat: The actual format of the audio data (wav or mp3).
-  ///     Required for Mistral/OpenAI chat completions. Defaults to mp3.
-  ///
-  /// Returns:
-  ///   Stream of chat completion responses
 }

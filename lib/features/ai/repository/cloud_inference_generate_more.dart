@@ -1,6 +1,61 @@
-part of 'cloud_inference_repository.dart';
+import 'dart:async';
+import 'dart:developer' as developer;
 
-mixin _CloudInferenceGenerateMore on _CloudInferenceRepositoryBase {
+import 'package:collection/collection.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart'
+    show CloudInferenceRepository;
+import 'package:lotti/features/ai/repository/cloud_inference_request_helpers.dart';
+import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
+import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
+import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
+import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
+import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
+import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
+import 'package:openai_dart/openai_dart.dart';
+import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:uuid/uuid.dart';
+
+/// Audio transcription, multi-turn, image generation, model install, and
+/// resource cleanup paths for [CloudInferenceRepository].
+///
+/// Routes `generateWithAudio` to the dedicated transcription repositories
+/// (Whisper, Voxtral, OpenAI, Mistral) or the in-process MLX Audio channel,
+/// `generateWithMessages` to the provider-specific multi-turn implementations,
+/// and `generateImage` to the Gemini/DashScope image APIs. Owns the HTTP-backed
+/// sub-repositories so [close] can dispose them.
+class CloudInferenceGenerateMore {
+  CloudInferenceGenerateMore({
+    required this._ref,
+    required this._ollamaRepository,
+    required this._geminiRepository,
+    required this._dashScopeRepository,
+    required this._mistralRepository,
+    required this._mistralTranscriptionRepository,
+    required this._whisperRepository,
+    required this._voxtralRepository,
+    required this._openAiTranscriptionRepository,
+    required this._helpers,
+  });
+
+  final Ref _ref;
+  final OllamaInferenceRepository _ollamaRepository;
+  final GeminiInferenceRepository _geminiRepository;
+  final DashScopeInferenceRepository _dashScopeRepository;
+  final MistralInferenceRepository _mistralRepository;
+  final MistralTranscriptionRepository _mistralTranscriptionRepository;
+  final WhisperInferenceRepository _whisperRepository;
+  final VoxtralInferenceRepository _voxtralRepository;
+  final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
+  final CloudInferenceRequestHelpers _helpers;
+
   Stream<CreateChatCompletionStreamResponse> generateWithAudio(
     String prompt, {
     required String model,
@@ -34,7 +89,7 @@ mixin _CloudInferenceGenerateMore on _CloudInferenceRepositoryBase {
     // where the Swift SDK is not linked.
     if (provider.inferenceProviderType == InferenceProviderType.mlxAudio) {
       return Stream.fromFuture(
-        ref
+        _ref
             .read(mlxAudioChannelProvider)
             .transcribeBase64Audio(
               modelId: model,
@@ -130,7 +185,7 @@ mixin _CloudInferenceGenerateMore on _CloudInferenceRepositoryBase {
     final reasoningEffort =
         provider.inferenceProviderType == InferenceProviderType.gemini &&
             GeminiThinkingConfig.isGemini3(model)
-        ? _geminiReasoningEffort(
+        ? _helpers.geminiReasoningEffort(
             model,
             geminiThinkingMode ?? GeminiThinkingMode.low,
           )
@@ -138,7 +193,7 @@ mixin _CloudInferenceGenerateMore on _CloudInferenceRepositoryBase {
 
     return client
         .createChatCompletionStream(
-          request: _createBaseRequest(
+          request: _helpers.createBaseRequest(
             messages: [
               if (systemMessage != null)
                 ChatCompletionMessage.system(content: systemMessage),
@@ -211,7 +266,7 @@ mixin _CloudInferenceGenerateMore on _CloudInferenceRepositoryBase {
 
     // For Gemini, use the native multi-turn API with signature support
     if (provider.inferenceProviderType == InferenceProviderType.gemini) {
-      final finalThinking = _resolveGeminiThinkingConfig(
+      final finalThinking = _helpers.resolveGeminiThinkingConfig(
         mode: geminiThinkingMode,
       );
 
@@ -276,7 +331,7 @@ mixin _CloudInferenceGenerateMore on _CloudInferenceRepositoryBase {
     }
 
     final res = client.createChatCompletionStream(
-      request: _createBaseRequest(
+      request: _helpers.createBaseRequest(
         messages: messages,
         model: model,
         temperature: temperature,
@@ -286,7 +341,7 @@ mixin _CloudInferenceGenerateMore on _CloudInferenceRepositoryBase {
       ),
     );
 
-    return _filterAnthropicPings(res).asBroadcastStream();
+    return _helpers.filterAnthropicPings(res).asBroadcastStream();
   }
 
   // Delegate Ollama-specific methods to OllamaInferenceRepository
