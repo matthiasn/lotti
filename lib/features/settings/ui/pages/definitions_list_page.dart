@@ -106,6 +106,17 @@ class DefinitionsListPage<T> extends StatefulWidget {
 class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
   late String _queryRaw = widget.initialSearchTerm ?? '';
 
+  @override
+  void didUpdateWidget(DefinitionsListPage<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A deep link / route change can hand the same page a new seed term
+    // (e.g. /settings/habits/search/<term>); resync the filter query so
+    // it doesn't keep filtering on the stale term.
+    if (widget.initialSearchTerm != oldWidget.initialSearchTerm) {
+      _queryRaw = widget.initialSearchTerm ?? '';
+    }
+  }
+
   String get _queryLower => _queryRaw.trim().toLowerCase();
 
   void _onQueryChanged(String value) {
@@ -140,6 +151,10 @@ class _DefinitionsListPageState<T> extends State<DefinitionsListPage<T>> {
                 : null,
           ),
           ...widget.itemsAsync.when(
+            // Keep an already-populated list visible during background
+            // reloads (sync, db notifications) instead of flashing the
+            // full-screen spinner.
+            skipLoadingOnReload: true,
             data: (items) => _buildContentSlivers(context, items),
             loading: () => const [
               SliverFillRemaining(

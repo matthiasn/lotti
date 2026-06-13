@@ -92,7 +92,9 @@ class MeasurableItemCard extends StatelessWidget {
             final matches = measurableTypes.where(
               (m) => measurement.id == m.id,
             );
-            var title = '';
+            // Fall back to the id when the referenced measurable type is
+            // missing (e.g. deleted) so the row isn't visually blank.
+            var title = measurement.id;
             if (matches.isNotEmpty) {
               final aggregationType = measurement.aggregationType;
               final aggregationSuffix = aggregationType != null

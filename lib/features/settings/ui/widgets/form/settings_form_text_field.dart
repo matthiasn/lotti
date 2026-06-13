@@ -48,6 +48,18 @@ class _SettingsFormTextFieldState extends State<SettingsFormTextField> {
   );
 
   @override
+  void didUpdateWidget(SettingsFormTextField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Parent swapped in a different entity: resync the visible text.
+    // FormBuilderField reseeds its value from the new initialValue, but
+    // the controller would otherwise keep showing the previous text.
+    if (widget.initialValue != oldWidget.initialValue &&
+        _controller.text != widget.initialValue) {
+      _controller.text = widget.initialValue;
+    }
+  }
+
+  @override
   void dispose() {
     _controller.dispose();
     super.dispose();

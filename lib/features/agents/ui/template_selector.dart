@@ -46,12 +46,9 @@ class TemplateSelector extends ConsumerWidget {
       label: context.messages.categoryDefaultTemplateLabel,
       valueText: selected?.displayName,
       hintText: context.messages.categoryDefaultTemplateHint,
+      enabled: templates.isNotEmpty,
       onClear: selected != null ? () => onTemplateSelected(null) : null,
-      onTap: () {
-        if (templates.isNotEmpty) {
-          _showTemplatePicker(context, templates);
-        }
-      },
+      onTap: () => _showTemplatePicker(context, templates),
     );
   }
 

@@ -120,7 +120,7 @@ class HabitDetailsPage extends ConsumerWidget {
                     initialValue: item.name,
                     labelText: messages.settingsHabitsNameLabel,
                     name: 'name',
-                    semanticsLabel: 'Habit name field',
+                    semanticsLabel: messages.settingsHabitsNameLabel,
                     autofocus: isCreateMode,
                   ),
                   SettingsFormTextField(
@@ -130,7 +130,7 @@ class HabitDetailsPage extends ConsumerWidget {
                     fieldRequired: false,
                     multiline: true,
                     name: 'description',
-                    semanticsLabel: 'Habit description field',
+                    semanticsLabel: messages.settingsHabitsDescriptionLabel,
                   ),
                   SelectCategoryWidget(habitId: habitId),
                   SelectDashboardWidget(habitId: habitId),
@@ -142,7 +142,7 @@ class HabitDetailsPage extends ConsumerWidget {
                   FormSwitch(
                     name: 'priority',
                     key: const Key('habit_priority'),
-                    semanticsLabel: 'Habit priority',
+                    semanticsLabel: messages.favoriteLabel,
                     initialValue: item.priority,
                     title: messages.favoriteLabel,
                     icon: Icons.star_outline_rounded,

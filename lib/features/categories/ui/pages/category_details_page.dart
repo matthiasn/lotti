@@ -59,6 +59,7 @@ class CategoryDetailsPage extends ConsumerStatefulWidget {
 
 class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   late TextEditingController _nameController;
+  VoidCallback? _nameListener;
   // Track input via controller; avoid re-seeding on rebuilds to prevent selection jumps.
   Color? _selectedColor; // Only used in create mode
   CategoryIcon? _selectedIcon; // Only used in create mode
@@ -66,14 +67,22 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
   @override
   void initState() {
     super.initState();
-    // Rebuild on edits so create mode can gate its primary action on a
-    // non-empty name instead of scolding after the tap.
-    _nameController = TextEditingController()
-      ..addListener(() => setState(() {}));
+    _nameController = TextEditingController();
+    // Only create mode gates its Create pill on the live name. Attaching
+    // the rebuild listener in edit mode would fire setState during build,
+    // because edit-mode build() seeds the controller via
+    // _syncFormWithCategory.
+    if (widget.isCreateMode) {
+      _nameListener = () => setState(() {});
+      _nameController.addListener(_nameListener!);
+    }
   }
 
   @override
   void dispose() {
+    if (_nameListener != null) {
+      _nameController.removeListener(_nameListener!);
+    }
     _nameController.dispose();
     super.dispose();
   }

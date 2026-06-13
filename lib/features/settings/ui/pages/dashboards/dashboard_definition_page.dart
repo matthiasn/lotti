@@ -381,7 +381,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                     initialValue: widget.dashboard.name,
                                     labelText: messages.dashboardNameLabel,
                                     name: 'name',
-                                    semanticsLabel: 'Dashboard - name field',
+                                    semanticsLabel: messages.dashboardNameLabel,
                                   ),
                                   SettingsFormTextField(
                                     key: const Key(
@@ -476,7 +476,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 onConfirm: onConfirmAddHabit,
                                 title: messages.dashboardAddHabitTitle,
                                 buttonText: messages.dashboardAddHabitButton,
-                                semanticsLabel: 'Add Habit Chart',
+                                semanticsLabel:
+                                    messages.dashboardAddHabitButton,
                                 iconData: Icons.insights,
                               ),
                             if (measurableSelectItems.isNotEmpty)
@@ -486,7 +487,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                                 title: messages.dashboardAddMeasurementTitle,
                                 buttonText:
                                     messages.dashboardAddMeasurementButton,
-                                semanticsLabel: 'Add Measurable Data Chart',
+                                semanticsLabel:
+                                    messages.dashboardAddMeasurementButton,
                                 iconData: Icons.insights,
                               ),
                             ChartMultiSelect<HealthTypeConfig>(
@@ -494,7 +496,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               onConfirm: onConfirmAddHealthType,
                               title: messages.dashboardAddHealthTitle,
                               buttonText: messages.dashboardAddHealthButton,
-                              semanticsLabel: 'Add Health Chart',
+                              semanticsLabel: messages.dashboardAddHealthButton,
                               iconData: MdiIcons.stethoscope,
                             ),
                             ChartMultiSelect<DashboardSurveyItem>(
@@ -502,7 +504,7 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               onConfirm: onConfirmAddSurveyType,
                               title: messages.dashboardAddSurveyTitle,
                               buttonText: messages.dashboardAddSurveyButton,
-                              semanticsLabel: 'Add Survey Chart',
+                              semanticsLabel: messages.dashboardAddSurveyButton,
                               iconData: MdiIcons.clipboardOutline,
                             ),
                             ChartMultiSelect<DashboardWorkoutItem>(
@@ -510,7 +512,8 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
                               onConfirm: onConfirmAddWorkoutType,
                               title: messages.dashboardAddWorkoutTitle,
                               buttonText: messages.dashboardAddWorkoutButton,
-                              semanticsLabel: 'Add Workout Chart',
+                              semanticsLabel:
+                                  messages.dashboardAddWorkoutButton,
                               iconData: Icons.sports_gymnastics,
                             ),
                           ],

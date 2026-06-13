@@ -174,8 +174,8 @@ void main() {
 
         await tester.pump();
 
-        // Should render with empty title
-        expect(find.text(''), findsOneWidget);
+        // Missing data type falls back to the item id (not a blank row).
+        expect(find.text('non-existent-id'), findsOneWidget);
       });
     });
 

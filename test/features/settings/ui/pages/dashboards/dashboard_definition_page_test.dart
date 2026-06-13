@@ -89,15 +89,12 @@ bool _pillEnabled(WidgetTester tester, String label) =>
 /// Opens a [ChartMultiSelect] modal deterministically by invoking the
 /// button InkWell's onTap directly: coordinate taps on content laid out
 /// near the glass action bar proved flaky in the batched suite.
-Future<void> _openChartSelect<T>(
-  WidgetTester tester,
-  String semanticsLabel,
-) async {
+Future<void> _openChartSelect<T>(WidgetTester tester) async {
+  // One ChartMultiSelect per chart kind, so the generic type identifies
+  // it without depending on the (now localized) semantics label.
   final inkWell = tester.widget<InkWell>(
     find.descendant(
-      of: find.byWidgetPredicate(
-        (w) => w is ChartMultiSelect<T> && w.semanticsLabel == semanticsLabel,
-      ),
+      of: find.byWidgetPredicate((w) => w is ChartMultiSelect<T>),
       matching: find.byType(InkWell),
     ),
   );
@@ -658,7 +655,7 @@ void main() {
 
         expect(_pillEnabled(tester, 'Save'), isFalse);
 
-        await _openChartSelect<HabitDefinition>(tester, 'Add Habit Chart');
+        await _openChartSelect<HabitDefinition>(tester);
 
         // Select habitFlossing in the modal list.
         final habitItemFinder = find.widgetWithText(
@@ -703,10 +700,7 @@ void main() {
 
         expect(_pillEnabled(tester, 'Save'), isFalse);
 
-        await _openChartSelect<MeasurableDataType>(
-          tester,
-          'Add Measurable Data Chart',
-        );
+        await _openChartSelect<MeasurableDataType>(tester);
 
         // Select the first measurable (Water).
         final measItemFinder = find.widgetWithText(
@@ -748,10 +742,7 @@ void main() {
 
         expect(_pillEnabled(tester, 'Save'), isFalse);
 
-        await _openChartSelect<DashboardSurveyItem>(
-          tester,
-          'Add Survey Chart',
-        );
+        await _openChartSelect<DashboardSurveyItem>(tester);
 
         // Pick the first survey item in the modal.
         final firstSurveyItem = find.byType(CheckboxListTile).first;
@@ -916,8 +907,7 @@ void main() {
         final healthSelect = tester.widget<ChartMultiSelect<HealthTypeConfig>>(
           find.byWidgetPredicate(
             (w) =>
-                w is ChartMultiSelect<HealthTypeConfig> &&
-                w.semanticsLabel == 'Add Health Chart',
+                w is ChartMultiSelect<HealthTypeConfig>,
           ),
         );
         healthSelect.onConfirm([healthTypes['HealthDataType.WEIGHT']]);
@@ -968,8 +958,7 @@ void main() {
             .widget<ChartMultiSelect<DashboardWorkoutItem>>(
               find.byWidgetPredicate(
                 (w) =>
-                    w is ChartMultiSelect<DashboardWorkoutItem> &&
-                    w.semanticsLabel == 'Add Workout Chart',
+                    w is ChartMultiSelect<DashboardWorkoutItem>,
               ),
             );
         workoutSelect.onConfirm([workoutType]);

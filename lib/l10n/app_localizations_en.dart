@@ -8187,7 +8187,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get searchHint => 'Search…';
 
   @override
-  String get selectColor => 'Select a color';
+  String get selectColor => 'Select a colour';
 
   @override
   String get sessionRatingEnergyQuestion => 'How energised did you feel?';
@@ -8228,7 +8228,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
       'Create a category to organise your entries';
 
   @override
-  String get settingsLabelsColorHeading => 'Color';
+  String get settingsLabelsColorHeading => 'Colour';
 
   @override
   String get settingsLabelsSubtitle => 'Organise tasks with coloured labels';

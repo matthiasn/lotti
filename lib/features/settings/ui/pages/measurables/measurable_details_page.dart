@@ -190,7 +190,7 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                     initialValue: item.displayName,
                     labelText: messages.settingsMeasurableNameLabel,
                     name: 'displayName',
-                    semanticsLabel: 'Measurable - name field',
+                    semanticsLabel: messages.settingsMeasurableNameLabel,
                     autofocus: widget.isCreateMode,
                   ),
                   SettingsFormTextField(
@@ -200,14 +200,14 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                     fieldRequired: false,
                     multiline: true,
                     name: 'description',
-                    semanticsLabel: 'Measurable - description field',
+                    semanticsLabel: messages.settingsMeasurableDescriptionLabel,
                   ),
                   SettingsFormTextField(
                     initialValue: item.unitName,
                     labelText: messages.settingsMeasurableUnitLabel,
                     fieldRequired: false,
                     name: 'unitName',
-                    semanticsLabel: 'Measurable - unit name field',
+                    semanticsLabel: messages.settingsMeasurableUnitLabel,
                   ),
                   FormBuilderField<AggregationType>(
                     name: 'aggregationType',
@@ -223,7 +223,8 @@ class _MeasurableDetailsPageState extends State<MeasurableDetailsPage> {
                         hintText: messages.aggregationNone,
                         helperText:
                             messages.settingsMeasurableAggregationHelper,
-                        semanticsLabel: 'Measurable - aggregation type field',
+                        semanticsLabel:
+                            messages.settingsMeasurableAggregationLabel,
                         onTap: () => _pickAggregationType(field),
                       );
                     },

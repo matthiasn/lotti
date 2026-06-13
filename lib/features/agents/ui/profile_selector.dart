@@ -15,11 +15,11 @@ import 'package:lotti/widgets/settings/settings_picker_field.dart';
 List<AiConfigInferenceProfile> _platformProfiles(
   AsyncValue<List<AiConfig>> profilesAsync,
 ) {
-  final profiles = switch (profilesAsync) {
-    AsyncData(:final value) =>
-      value.whereType<AiConfigInferenceProfile>().toList(),
-    _ => <AiConfigInferenceProfile>[],
-  };
+  // Keep the last loaded profiles during background reloads (valueOrNull
+  // retains data across loading/error) so the pickers don't flash empty.
+  final profiles = (profilesAsync.value ?? const <AiConfig>[])
+      .whereType<AiConfigInferenceProfile>()
+      .toList();
   return isDesktop ? profiles : profiles.where((p) => !p.desktopOnly).toList();
 }
 

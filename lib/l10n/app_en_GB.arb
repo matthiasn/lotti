@@ -134,7 +134,7 @@
   "outboxMonitorRetry": "retry",
   "saveLabel": "Save",
   "searchHint": "Search…",
-  "selectColor": "Select a color",
+  "selectColor": "Select a colour",
   "sessionRatingEnergyQuestion": "How energised did you feel?",
   "settingsAboutAppInformation": "App Information",
   "settingsAboutAppTagline": "Your Personal Journal",
@@ -147,7 +147,7 @@
   "settingsAdvancedMaintenanceSubtitle": "Perform maintenance tasks to optimise application performance",
   "settingsAdvancedTitle": "Advanced Settings",
   "settingsCategoriesEmptyStateHint": "Create a category to organise your entries",
-  "settingsLabelsColorHeading": "Color",
+  "settingsLabelsColorHeading": "Colour",
   "settingsLabelsSubtitle": "Organise tasks with coloured labels",
   "settingsSyncConflictsSubtitle": "Resolve synchronisation conflicts to ensure data consistency"
 }

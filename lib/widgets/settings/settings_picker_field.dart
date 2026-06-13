@@ -22,6 +22,7 @@ class SettingsPickerField extends StatelessWidget {
     this.onClear,
     this.helperText,
     this.semanticsLabel,
+    this.enabled = true,
     super.key,
   });
 
@@ -31,6 +32,10 @@ class SettingsPickerField extends StatelessWidget {
 
   /// Opens the picker (modal sheet / dialog).
   final VoidCallback onTap;
+
+  /// When false the field is inert: it does not announce as a tappable
+  /// button and ignores taps (e.g. a template picker with no templates).
+  final bool enabled;
 
   /// Currently selected value; when null the field shows [hintText].
   final String? valueText;
@@ -61,7 +66,8 @@ class SettingsPickerField extends StatelessWidget {
     final radius = BorderRadius.circular(spacing.step5);
 
     return Semantics(
-      button: true,
+      button: enabled,
+      enabled: enabled,
       label: semanticsLabel ?? label ?? hintText,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -81,7 +87,7 @@ class SettingsPickerField extends StatelessWidget {
           Material(
             color: Colors.transparent,
             child: InkWell(
-              onTap: onTap,
+              onTap: enabled ? onTap : null,
               borderRadius: radius,
               child: Container(
                 height: spacing.step9,
