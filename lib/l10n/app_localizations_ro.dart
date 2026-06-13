@@ -2055,7 +2055,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiSetupWizardTitle => 'Asistent de configurare AI';
 
   @override
+  String get aiSummaryPlayTooltip => 'Citiți rezumatul';
+
+  @override
+  String get aiSummaryPreparingTooltip => 'Se pregătește audio';
+
+  @override
   String get aiSummarySpeakTooltip => 'Citiți rezumatul local cu voce tare';
+
+  @override
+  String get aiSummaryStopTooltip => 'Opriți';
+
+  @override
+  String get aiSummaryThinkingLabel => 'Se gândește…';
+
+  @override
+  String get aiSummaryTtsUnavailable => 'Sinteza vocală nu este disponibilă';
 
   @override
   String get aiTaskSummaryTitle => 'Rezumatul sarcinii AI';
@@ -7245,6 +7260,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsResetHintsTitle => 'Resetează indiciile din aplicație';
 
   @override
+  String get settingsSpeechSubtitle => 'Voce și citire cu voce tare';
+
+  @override
+  String get settingsSpeechTitle => 'Vorbire';
+
+  @override
   String get settingsSyncConflictsSubtitle =>
       'Rezolvați conflictele de sincronizare pentru a asigura consistența datelor';
 
@@ -7405,6 +7426,41 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Recunoaștere vocală';
+
+  @override
+  String get speechSettingsModelDescription => 'Model de voce pe dispozitiv';
+
+  @override
+  String get speechSettingsModelDownloadsOnce => 'Se descarcă o singură dată';
+
+  @override
+  String get speechSettingsModelLabel => 'Model';
+
+  @override
+  String get speechSettingsRecommendedBadge => 'Recomandat';
+
+  @override
+  String get speechSettingsSpeedDescription =>
+      'Cât de repede sunt citite rezumatele';
+
+  @override
+  String get speechSettingsSpeedLabel => 'Viteza de citire';
+
+  @override
+  String get speechSettingsVoiceDescription =>
+      'Alegeți vocea care citește rezumatele cu voce tare';
+
+  @override
+  String get speechSettingsVoiceLabel => 'Voce';
+
+  @override
+  String get speechVoiceGenderFemale => 'Feminină';
+
+  @override
+  String get speechVoiceGenderMale => 'Masculină';
+
+  @override
+  String get speechVoicePreviewTooltip => 'Ascultați vocea';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {

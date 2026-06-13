@@ -2046,7 +2046,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiSetupWizardTitle => 'Průvodce nastavením AI';
 
   @override
+  String get aiSummaryPlayTooltip => 'Přečíst shrnutí';
+
+  @override
+  String get aiSummaryPreparingTooltip => 'Příprava zvuku';
+
+  @override
   String get aiSummarySpeakTooltip => 'Přečíst souhrn nahlas lokálně';
+
+  @override
+  String get aiSummaryStopTooltip => 'Zastavit';
+
+  @override
+  String get aiSummaryThinkingLabel => 'Přemýšlí…';
+
+  @override
+  String get aiSummaryTtsUnavailable => 'Předčítání není k dispozici';
 
   @override
   String get aiTaskSummaryTitle => 'Shrnutí úkolu AI';
@@ -7198,6 +7213,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsResetHintsTitle => 'Resetovat nápovědy v aplikaci';
 
   @override
+  String get settingsSpeechSubtitle => 'Hlas a předčítání';
+
+  @override
+  String get settingsSpeechTitle => 'Řeč';
+
+  @override
   String get settingsSyncConflictsSubtitle =>
       'Řešte konflikty synchronizace pro zajištění konzistence dat';
 
@@ -7355,6 +7376,41 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Rozpoznávání řeči';
+
+  @override
+  String get speechSettingsModelDescription => 'Hlasový model v zařízení';
+
+  @override
+  String get speechSettingsModelDownloadsOnce => 'Stáhne se jednou';
+
+  @override
+  String get speechSettingsModelLabel => 'Model';
+
+  @override
+  String get speechSettingsRecommendedBadge => 'Doporučeno';
+
+  @override
+  String get speechSettingsSpeedDescription =>
+      'Jak rychle se shrnutí předčítají';
+
+  @override
+  String get speechSettingsSpeedLabel => 'Rychlost čtení';
+
+  @override
+  String get speechSettingsVoiceDescription =>
+      'Vyber hlas, který předčítá shrnutí';
+
+  @override
+  String get speechSettingsVoiceLabel => 'Hlas';
+
+  @override
+  String get speechVoiceGenderFemale => 'Ženský';
+
+  @override
+  String get speechVoiceGenderMale => 'Mužský';
+
+  @override
+  String get speechVoicePreviewTooltip => 'Přehrát ukázku hlasu';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
