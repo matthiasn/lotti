@@ -1,7 +1,34 @@
-part of 'mock_day_agent.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/logic/mock_day_agent_fixtures.dart';
 
-mixin _MockDayAgentPlanning on _MockDayAgentBase {
-  @override
+/// Scripted planning/refine/shutdown half of `MockDayAgent`.
+///
+/// Owns the plan-diff sequence counter and the pure corpus-filter
+/// predicate so the facade can stay a thin delegator.
+class MockDayAgentPlanning {
+  /// Creates the planning collaborator.
+  MockDayAgentPlanning({
+    required this.draftLatency,
+    required this.triageLatency,
+    required this.summarizeLatency,
+    required this.pendingLatency,
+  });
+
+  /// Latency applied to plan-drafting/refine calls.
+  final Duration draftLatency;
+
+  /// Latency applied to triage-shaped (accept/revert/commit/rename) calls.
+  final Duration triageLatency;
+
+  /// Latency applied to summarize/shutdown calls.
+  final Duration summarizeLatency;
+
+  /// Latency applied to corpus-browse calls.
+  final Duration pendingLatency;
+
+  int _diffSeq = 0;
+
+  /// Tool: `propose_plan_diff`.
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
     required String voiceTranscript,
@@ -59,7 +86,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
       end: onboarding.start.add(const Duration(hours: 2)),
       type: TimeBlockType.buffer,
       state: TimeBlockState.drafted,
-      category: _buffer,
+      category: mockBufferCategory,
     );
 
     final updatedBlocks =
@@ -83,7 +110,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
     final updatedPlan = currentPlan.copyWith(
       blocks: updatedBlocks,
       scheduledMinutes: scheduled,
-      agendaItems: _agendaFor(updatedBlocks),
+      agendaItems: agendaFor(updatedBlocks),
     );
 
     return PlanDiff(
@@ -116,7 +143,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
           id: 'c_added_buffer',
           kind: PlanDiffChangeKind.added,
           title: 'Afternoon buffer',
-          category: _buffer,
+          category: mockBufferCategory,
           reason: 'Protects recovery time after lunch.',
           affectedBlockId: addedBuffer.id,
           toStart: addedBuffer.start,
@@ -134,7 +161,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
   // need to assert partial-accept semantics override these methods on a
   // local subclass (see `_RecordingRefineAgent` in
   // refine_controller_test.dart).
-  @override
+  /// User verdict: apply the proposed [diff].
   Future<DraftPlan> acceptDiff(
     PlanDiff diff, {
     List<int>? itemIndices,
@@ -143,7 +170,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
     return diff.updatedPlan;
   }
 
-  @override
+  /// User verdict: discard the proposed [diff].
   Future<DraftPlan> revertDiff({
     required PlanDiff diff,
     required DraftPlan originalPlan,
@@ -153,7 +180,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
     return originalPlan;
   }
 
-  @override
+  /// Tool: `summarize_recent_patterns`.
   Future<List<LearningCard>> summarizeRecentPatterns({
     required DateTime asOf,
     int lookbackDays = 7,
@@ -210,7 +237,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
     ];
   }
 
-  @override
+  /// User verdict: commit [plan].
   Future<DraftPlan> commitDay(DraftPlan plan) async {
     await Future<void>.delayed(triageLatency);
     return plan.copyWith(
@@ -240,7 +267,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
     );
   }
 
-  @override
+  /// Renames a standalone block in place.
   Future<DraftPlan> renameBlock({
     required DraftPlan plan,
     required String blockId,
@@ -275,7 +302,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
     );
   }
 
-  @override
+  /// Tool: `surface_shutdown_data`.
   Future<
     ({
       List<CompletedItem> completed,
@@ -290,14 +317,14 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
         CompletedItem(
           taskId: 't_deck_review',
           title: 'Deck review — Q2 leadership update',
-          category: _work,
+          category: mockWorkCategory,
           durationMinutes: 95,
           note: 'Two focus sessions, draft sent to Sarah.',
         ),
         CompletedItem(
           taskId: 't_morning_run',
           title: 'Morning run · 5km',
-          category: _health,
+          category: mockHealthCategory,
           durationMinutes: 28,
         ),
       ],
@@ -305,14 +332,14 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
         CarryoverItem(
           taskId: 't_onboarding_doc',
           title: 'Finish the Onboarding doc',
-          category: _work,
+          category: mockWorkCategory,
           reason: 'Ran out of time — started, 40m in.',
           suggestedTarget: '→ tomorrow morning',
         ),
         CarryoverItem(
           taskId: 't_invoices',
           title: 'Review outstanding invoices',
-          category: _work,
+          category: mockWorkCategory,
           reason: 'Skipped — afternoon ran long.',
           suggestedTarget: '→ tomorrow afternoon',
         ),
@@ -328,7 +355,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
     );
   }
 
-  @override
+  /// Tool: `record_reflection`.
   Future<void> recordReflection({
     required DateTime forDate,
     required String text,
@@ -337,7 +364,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
     await Future<void>.delayed(triageLatency);
   }
 
-  @override
+  /// Tool: `record_carryover_decision`.
   Future<void> recordCarryoverDecision({
     required String taskId,
     required CarryoverAction action,
@@ -346,7 +373,7 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
     await Future<void>.delayed(triageLatency);
   }
 
-  @override
+  /// Tool: `generate_tomorrow_note`.
   Future<TomorrowNote> generateTomorrowNote({
     required DateTime forDate,
   }) async {
@@ -360,26 +387,34 @@ mixin _MockDayAgentPlanning on _MockDayAgentBase {
     );
   }
 
-  @override
+  /// Tool: `surface_task_corpus`.
   Future<List<TaskCorpusItem>> surfaceTaskCorpus({
     TaskCorpusState stateFilter = TaskCorpusState.all,
     String? categoryId,
     String? query,
   }) async {
     await Future<void>.delayed(pendingLatency);
-    const all = _scriptedTaskCorpus;
+    const all = scriptedTaskCorpus;
     return [
       for (final item in all)
-        if (_matchesFilter(item, stateFilter, categoryId, query)) item,
+        if (matchesFilter(item, stateFilter, categoryId, query)) item,
     ];
   }
 
-  /// Test seam for [_matchesFilter] — pure corpus-filter predicate.
-  @visibleForTesting
-  bool debugMatchesFilter(
+  /// Pure corpus-filter predicate. Exposed for the facade's
+  /// `debugMatchesFilter` test seam.
+  bool matchesFilter(
     TaskCorpusItem item,
     TaskCorpusState state,
     String? categoryId,
     String? query,
-  ) => _matchesFilter(item, state, categoryId, query);
+  ) {
+    if (state != TaskCorpusState.all && item.state != state) return false;
+    if (categoryId != null && item.category.id != categoryId) return false;
+    if (query != null && query.trim().isNotEmpty) {
+      final q = query.trim().toLowerCase();
+      if (!item.title.toLowerCase().contains(q)) return false;
+    }
+    return true;
+  }
 }

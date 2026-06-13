@@ -1,84 +1,56 @@
-import 'package:clock/clock.dart';
-import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_diff.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
-import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_editor.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_reads.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_tool_dispatcher.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_writer.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:uuid/uuid.dart';
-
-part 'day_agent_plan_tool_dispatcher.dart';
-
-part 'day_agent_plan_planning.dart';
-part 'day_agent_plan_resolve.dart';
-
-const _uuid = Uuid();
-
-DayAgentLearningCard _gentleNudgeCard({
-  required bool plansIsEmpty,
-  required int averageScheduled,
-  required int averageCapacity,
-}) {
-  if (plansIsEmpty) {
-    return DayAgentLearningCard(
-      id: 'gentle_nudge',
-      overline: 'Gentle nudge',
-      summary:
-          'No recent drafts to compare against; start small and adjust as '
-          'patterns emerge.',
-      kind: 'nudge',
-      bullets: const [
-        DayAgentLearningBullet(
-          text: 'Treat today as the first data point.',
-          tone: DayAgentLearningBulletTone.info,
-        ),
-      ],
-    );
-  }
-  final overCapacity = averageScheduled > averageCapacity;
-  return DayAgentLearningCard(
-    id: 'gentle_nudge',
-    overline: 'Gentle nudge',
-    summary: overCapacity
-        ? 'Your recent drafts run over capacity; protect a buffer before '
-              'adding more work.'
-        : 'Your recent drafts fit capacity; place demanding work in the '
-              'highest-energy window.',
-    kind: 'nudge',
-    bullets: [
-      DayAgentLearningBullet(
-        text: overCapacity
-            ? 'Leave at least one transition block unassigned.'
-            : 'Keep the plan specific enough to act on.',
-        tone: overCapacity
-            ? DayAgentLearningBulletTone.warning
-            : DayAgentLearningBulletTone.positive,
-      ),
-    ],
-  );
-}
 
 /// Backend implementation for Daily OS day-plan drafting tools.
-abstract class _DayAgentPlanServiceBase {
-  _DayAgentPlanServiceBase({
+///
+/// A thin facade over four collaborators that own the actual work:
+///   * [DayAgentPlanReads] — shared soft-delete-aware plan/identity reads.
+///   * [DayAgentPlanWriter] — persisting drafts, resolving diffs, summaries.
+///   * [DayAgentPlanEditor] — in-place edits (propose/accept/commit/rename).
+///   * [DayAgentPlanToolDispatcher] — the foundation tool-call switch.
+///
+/// The facade keeps every public method as a one-line delegator so the
+/// mocked surface (`MockDayAgentPlanService`) stays stable.
+class DayAgentPlanService {
+  /// Creates a day-plan service and wires its collaborators.
+  DayAgentPlanService({
     required this.agentRepository,
     required this.syncService,
     required this.journalDb,
     required this.domainLogger,
     this.onPersistedStateChanged,
-  });
+  }) : _reads = DayAgentPlanReads(agentRepository: agentRepository) {
+    _writer = DayAgentPlanWriter(
+      agentRepository: agentRepository,
+      syncService: syncService,
+      journalDb: journalDb,
+      reads: _reads,
+      onPersistedStateChanged: onPersistedStateChanged,
+    );
+    _editor = DayAgentPlanEditor(
+      agentRepository: agentRepository,
+      syncService: syncService,
+      journalDb: journalDb,
+      reads: _reads,
+      writer: _writer,
+      onPersistedStateChanged: onPersistedStateChanged,
+    );
+    _dispatcher = DayAgentPlanToolDispatcher(
+      writer: _writer,
+      editor: _editor,
+      domainLogger: domainLogger,
+    );
+  }
 
   /// Agent entity/link repository.
   final AgentRepository agentRepository;
@@ -95,30 +67,122 @@ abstract class _DayAgentPlanServiceBase {
   /// Callback fired when persisted state changes.
   final void Function(String id)? onPersistedStateChanged;
 
-  // Cross-mixin contracts implemented by the method-group mixins.
+  final DayAgentPlanReads _reads;
+  late final DayAgentPlanWriter _writer;
+  late final DayAgentPlanEditor _editor;
+  late final DayAgentPlanToolDispatcher _dispatcher;
+
+  /// Executes a foundation day-plan tool.
+  Future<DayAgentDirectToolResult> executeTool({
+    required String agentId,
+    required String threadId,
+    required String runKey,
+    required String toolName,
+    required Map<String, dynamic> args,
+  }) => _dispatcher.executeTool(
+    agentId: agentId,
+    threadId: threadId,
+    runKey: runKey,
+    toolName: toolName,
+    args: args,
+  );
+
+  /// Fetch the persisted draft plan for one day.
+  Future<DayPlanEntity?> draftPlanForDay({
+    required String agentId,
+    required String dayId,
+  }) => _reads.draftPlanForDay(agentId: agentId, dayId: dayId);
+
+  /// Pending plan-diff change sets for [agentId]'s plan on [dayId].
+  Future<List<ChangeSetEntity>> pendingPlanDiffsForDay({
+    required String agentId,
+    required String dayId,
+  }) => _editor.pendingPlanDiffsForDay(agentId: agentId, dayId: dayId);
+
+  /// Soft-deletes the persisted plan for [dayId] and its capture links.
+  Future<bool> deletePlanForDay({
+    required String agentId,
+    required String dayId,
+  }) => _editor.deletePlanForDay(agentId: agentId, dayId: dayId);
+
+  /// Hydrate the set of tasks the model should know about when drafting.
+  Future<List<DecidedTaskRef>> hydrateDecidedTasks({
+    required Set<String> allowedCategoryIds,
+    List<String> explicitTaskIds = const [],
+    List<ParsedItemEntity> parsedItems = const [],
+  }) => _editor.hydrateDecidedTasks(
+    allowedCategoryIds: allowedCategoryIds,
+    explicitTaskIds: explicitTaskIds,
+    parsedItems: parsedItems,
+  );
+
+  /// Persist a structured plan diff against the current plan for [dayId].
+  Future<ChangeSetEntity> proposePlanDiff({
+    required String agentId,
+    required String threadId,
+    required String runKey,
+    required String dayId,
+    required List<Object?> rawChanges,
+    String? baselinePlanId,
+    String? captureId,
+  }) => _editor.proposePlanDiff(
+    agentId: agentId,
+    threadId: threadId,
+    runKey: runKey,
+    dayId: dayId,
+    rawChanges: rawChanges,
+    baselinePlanId: baselinePlanId,
+    captureId: captureId,
+  );
+
+  /// Apply some or all changes of [changeSetId] to the live plan.
   Future<ChangeSetEntity> acceptPlanDiff({
     required String agentId,
     required String changeSetId,
     List<int>? itemIndices,
-  });
+  }) => _editor.acceptPlanDiff(
+    agentId: agentId,
+    changeSetId: changeSetId,
+    itemIndices: itemIndices,
+  );
 
-  Future<CaptureEntity?> _captureOrNull(String captureId);
+  /// Retract some or all changes of [changeSetId] without mutating the plan.
+  Future<ChangeSetEntity> revertPlanDiff({
+    required String agentId,
+    required String changeSetId,
+    List<int>? itemIndices,
+  }) => _editor.revertPlanDiff(
+    agentId: agentId,
+    changeSetId: changeSetId,
+    itemIndices: itemIndices,
+  );
 
+  /// Commit the day's draft plan.
   Future<DayPlanEntity> commitDay({
     required String agentId,
     required String dayId,
-  });
+  }) => _editor.commitDay(agentId: agentId, dayId: dayId);
 
-  Future<Map<String, Object?>> _draftDayPlanTool(
-    String agentId,
-    Map<String, dynamic> args,
-  );
-
-  Future<DayPlanEntity?> draftPlanForDay({
+  /// Rename a standalone planned block in place.
+  Future<DayPlanEntity> renameBlock({
     required String agentId,
     required String dayId,
-  });
+    required String blockId,
+    required String title,
+  }) => _editor.renameBlock(
+    agentId: agentId,
+    dayId: dayId,
+    blockId: blockId,
+    title: title,
+  );
 
+  /// Revert a committed day plan back to draft.
+  Future<DayPlanEntity> uncommitDay({
+    required String agentId,
+    required String dayId,
+  }) => _editor.uncommitDay(agentId: agentId, dayId: dayId);
+
+  /// Persist a model-emitted draft plan.
   Future<DayPlanEntity> persistDraftPlan({
     required String agentId,
     required String dayId,
@@ -129,67 +193,26 @@ abstract class _DayAgentPlanServiceBase {
     List<String> decidedTaskIds = const [],
     int capacityMinutes = 480,
     String? dayLabel,
-  });
+  }) => _writer.persistDraftPlan(
+    agentId: agentId,
+    dayId: dayId,
+    planDate: planDate,
+    rawBlocks: rawBlocks,
+    captureId: captureId,
+    rawEnergyBands: rawEnergyBands,
+    decidedTaskIds: decidedTaskIds,
+    capacityMinutes: capacityMinutes,
+    dayLabel: dayLabel,
+  );
 
-  Future<ChangeSetEntity> proposePlanDiff({
-    required String agentId,
-    required String threadId,
-    required String runKey,
-    required String dayId,
-    required List<Object?> rawChanges,
-    String? baselinePlanId,
-    String? captureId,
-  });
-
-  Future<Map<String, Object?>> _proposePlanDiffTool({
-    required String agentId,
-    required String threadId,
-    required String runKey,
-    required Map<String, dynamic> args,
-  });
-
-  Future<AgentIdentityEntity> _requireIdentity(String agentId);
-
-  Future<ChangeSetEntity> _resolvePlanDiff({
-    required String agentId,
-    required String changeSetId,
-    required List<int>? itemIndices,
-    required bool apply,
-  });
-
-  Future<ChangeSetEntity> revertPlanDiff({
-    required String agentId,
-    required String changeSetId,
-    List<int>? itemIndices,
-  });
-
+  /// Build transient learning cards from recently drafted day plans.
   Future<List<DayAgentLearningCard>> summarizeRecentPatterns({
     required String agentId,
     required DateTime asOf,
     int lookbackDays = 7,
-  });
-
-  Future<Map<String, Object?>> _summarizeRecentPatternsTool(
-    String agentId,
-    Map<String, dynamic> args,
+  }) => _writer.summarizeRecentPatterns(
+    agentId: agentId,
+    asOf: asOf,
+    lookbackDays: lookbackDays,
   );
-
-  Future<DayPlanEntity> uncommitDay({
-    required String agentId,
-    required String dayId,
-  });
-}
-
-class DayAgentPlanService extends _DayAgentPlanServiceBase
-    with
-        _DayAgentPlanToolDispatcher,
-        _DayAgentPlanPlanning,
-        _DayAgentPlanResolve {
-  DayAgentPlanService({
-    required super.agentRepository,
-    required super.syncService,
-    required super.journalDb,
-    required super.domainLogger,
-    super.onPersistedStateChanged,
-  });
 }

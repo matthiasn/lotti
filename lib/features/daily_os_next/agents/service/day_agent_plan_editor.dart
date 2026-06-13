@@ -1,61 +1,55 @@
-part of 'day_agent_plan_service.dart';
+import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_diff.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_reads.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_writer.dart';
+import 'package:uuid/uuid.dart';
 
-mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
-  Future<DayAgentDirectToolResult> executeTool({
-    required String agentId,
-    required String threadId,
-    required String runKey,
-    required String toolName,
-    required Map<String, dynamic> args,
-  }) async {
-    try {
-      final data = switch (toolName) {
-        DayAgentToolNames.draftDayPlan => await _draftDayPlanTool(
-          agentId,
-          args,
-        ),
-        DayAgentToolNames.summarizeRecentPatterns =>
-          await _summarizeRecentPatternsTool(agentId, args),
-        DayAgentToolNames.proposePlanDiff => await _proposePlanDiffTool(
-          agentId: agentId,
-          threadId: threadId,
-          runKey: runKey,
-          args: args,
-        ),
-        _ => throw DayAgentCaptureException('unknown tool "$toolName"'),
-      };
-      return DayAgentDirectToolResult.success(data);
-    } on DayAgentCaptureException catch (e) {
-      return DayAgentDirectToolResult.failure(e.message);
-    } catch (e, s) {
-      domainLogger.error(
-        LogDomain.agentWorkflow,
-        e,
-        message: 'day-agent plan tool failed',
-        stackTrace: s,
-      );
-      return DayAgentDirectToolResult.failure(e.toString());
-    }
-  }
+const _uuid = Uuid();
 
-  /// Fetch the persisted plan for one day. Soft-deleted entities are
-  /// hidden so callers that come in after `deletePlanForDay` (commit,
-  /// uncommit, refine, the UI's `currentPlanForDate` projection) all
-  /// see the same "no plan" state instead of operating on the deleted
-  /// row.
-  @override
-  Future<DayPlanEntity?> draftPlanForDay({
-    required String agentId,
-    required String dayId,
-  }) async {
-    final entity = await agentRepository.getEntity(dayAgentPlanEntityId(dayId));
-    if (entity is DayPlanEntity &&
-        entity.agentId == agentId &&
-        entity.deletedAt == null) {
-      return entity;
-    }
-    return null;
-  }
+/// In-place day-plan editing: plan-diff proposals, accept/revert/commit,
+/// block renames, and decided-task hydration.
+class DayAgentPlanEditor {
+  /// Creates the plan editor collaborator.
+  DayAgentPlanEditor({
+    required this.agentRepository,
+    required this.syncService,
+    required this.journalDb,
+    required this.reads,
+    required this.writer,
+    this.onPersistedStateChanged,
+  });
+
+  /// Agent entity/link repository.
+  final AgentRepository agentRepository;
+
+  /// Sync-aware agent writer.
+  final AgentSyncService syncService;
+
+  /// Journal DB used for task/category reads while editing.
+  final JournalDb journalDb;
+
+  /// Shared plan-entity reads.
+  final DayAgentPlanReads reads;
+
+  /// Persistence-side collaborator for plan-diff resolution.
+  final DayAgentPlanWriter writer;
+
+  /// Callback fired when persisted state changes.
+  final void Function(String id)? onPersistedStateChanged;
 
   /// Pending plan-diff change sets for [agentId]'s plan on [dayId],
   /// newest-first. Used by the UI to surface the most recent refine
@@ -221,7 +215,6 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
   ///   * [rawChanges] is empty, or
   ///   * any change is malformed (missing fields for the action,
   ///     out-of-day timestamps, unknown `blockId`, blank `reason`, etc.).
-  @override
   Future<ChangeSetEntity> proposePlanDiff({
     required String agentId,
     required String threadId,
@@ -231,8 +224,8 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
     String? baselinePlanId,
     String? captureId,
   }) async {
-    await _requireIdentity(agentId);
-    final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
+    await reads.requireIdentity(agentId);
+    final plan = await reads.draftPlanForDay(agentId: agentId, dayId: dayId);
     if (plan == null) {
       throw DayAgentCaptureException(
         'no plan for $dayId; call draft_day_plan first',
@@ -245,7 +238,7 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
       );
     }
     if (captureId != null) {
-      final capture = await _captureOrNull(captureId);
+      final capture = await reads.captureOrNull(captureId);
       if (capture == null || capture.agentId != agentId) {
         throw DayAgentCaptureException('capture $captureId not found');
       }
@@ -312,13 +305,12 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
   /// longer present), nothing is written. Items already resolved are
   /// skipped silently — re-issuing accept against a partially-resolved set
   /// is safe.
-  @override
   Future<ChangeSetEntity> acceptPlanDiff({
     required String agentId,
     required String changeSetId,
     List<int>? itemIndices,
   }) async {
-    return _resolvePlanDiff(
+    return writer.resolvePlanDiff(
       agentId: agentId,
       changeSetId: changeSetId,
       itemIndices: itemIndices,
@@ -331,13 +323,12 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
   /// Mirrors [acceptPlanDiff] but flips selected items' status to
   /// `rejected` (with `actor = user`, `verdict = rejected`) and leaves the
   /// plan entity untouched.
-  @override
   Future<ChangeSetEntity> revertPlanDiff({
     required String agentId,
     required String changeSetId,
     List<int>? itemIndices,
   }) async {
-    return _resolvePlanDiff(
+    return writer.resolvePlanDiff(
       agentId: agentId,
       changeSetId: changeSetId,
       itemIndices: itemIndices,
@@ -355,13 +346,12 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
   /// [DayAgentCaptureException] when no plan exists, the agent does not
   /// own it, or the plan is in some other non-draft / non-committed state
   /// (e.g. legacy `agreed` / `needsReview`).
-  @override
   Future<DayPlanEntity> commitDay({
     required String agentId,
     required String dayId,
   }) async {
-    await _requireIdentity(agentId);
-    final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
+    await reads.requireIdentity(agentId);
+    final plan = await reads.draftPlanForDay(agentId: agentId, dayId: dayId);
     if (plan == null) {
       throw DayAgentCaptureException(
         'no draft plan for $dayId; call draft_day_plan first',
@@ -421,8 +411,8 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
         'block title must not be blank',
       );
     }
-    await _requireIdentity(agentId);
-    final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
+    await reads.requireIdentity(agentId);
+    final plan = await reads.draftPlanForDay(agentId: agentId, dayId: dayId);
     if (plan == null) {
       throw DayAgentCaptureException(
         'no plan for $dayId; call draft_day_plan first',
@@ -476,13 +466,12 @@ mixin _DayAgentPlanPlanning on _DayAgentPlanServiceBase {
   /// [DayAgentCaptureException] when no plan exists, the agent does not
   /// own it, or the plan is in some other non-draft / non-committed state
   /// (e.g. legacy `agreed` / `needsReview`).
-  @override
   Future<DayPlanEntity> uncommitDay({
     required String agentId,
     required String dayId,
   }) async {
-    await _requireIdentity(agentId);
-    final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
+    await reads.requireIdentity(agentId);
+    final plan = await reads.draftPlanForDay(agentId: agentId, dayId: dayId);
     if (plan == null) {
       throw DayAgentCaptureException(
         'no plan for $dayId to uncommit',

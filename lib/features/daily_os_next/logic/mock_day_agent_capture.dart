@@ -1,7 +1,43 @@
-part of 'mock_day_agent.dart';
+import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/logic/mock_day_agent_fixtures.dart';
 
-mixin _MockDayAgentCapture on _MockDayAgentBase {
-  @override
+/// Scripted capture/reconcile/draft half of `MockDayAgent`.
+///
+/// Owns the capture-side mutable state (the monotonic capture sequence and
+/// the in-session "broken link" tracker) so the facade can stay a thin
+/// delegator.
+class MockDayAgentCapture {
+  /// Creates the capture collaborator.
+  MockDayAgentCapture({
+    required this.parseLatency,
+    required this.pendingLatency,
+    required this.triageLatency,
+    required this.draftLatency,
+    required this._clock,
+  });
+
+  /// Latency applied to parse-shaped calls.
+  final Duration parseLatency;
+
+  /// Latency applied to pending-decision calls.
+  final Duration pendingLatency;
+
+  /// Latency applied to triage-shaped calls.
+  final Duration triageLatency;
+
+  /// Latency applied to plan-drafting calls.
+  final Duration draftLatency;
+
+  final DateTime Function() _clock;
+
+  int _captureSeq = 0;
+
+  /// Items that have had their link broken in this session — keyed
+  /// by parsed-item id. Subsequent `parseCaptureToItems` calls
+  /// rebuild the same list with those entries downgraded to NEW.
+  final Set<String> _brokenLinks = <String>{};
+
+  /// Tool: `submit_capture`.
   Future<CaptureId> submitCapture({
     required String transcript,
     required DateTime capturedAt,
@@ -12,13 +48,13 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
     return CaptureId('mock_capture_$_captureSeq');
   }
 
-  @override
+  /// Returns the persisted plan for [date] — always `null` in the mock.
   Future<DraftPlan?> currentPlanForDate(DateTime date) async => null;
 
-  @override
+  /// Soft-deletes the persisted plan for [date] — always `true` in the mock.
   Future<bool> deletePlanForDate(DateTime date) async => true;
 
-  @override
+  /// Tool: `parse_capture_to_items`.
   Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async {
     await Future<void>.delayed(parseLatency);
     const items = <ParsedItem>[
@@ -26,7 +62,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         id: 'p_deck_review',
         kind: ParsedItemKind.matched,
         title: 'Send the leadership deck to Sarah',
-        category: _work,
+        category: mockWorkCategory,
         confidence: ParsedItemConfidence.high,
         spokenPhrase: 'send the deck to Sarah',
         matchedTaskId: 't_deck_review',
@@ -38,7 +74,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         id: 'p_invoices',
         kind: ParsedItemKind.newTask,
         title: 'Review outstanding invoices',
-        category: _work,
+        category: mockWorkCategory,
         confidence: ParsedItemConfidence.high,
         estimateMinutes: 45,
         timeAnchor: 'before 11am',
@@ -47,7 +83,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         id: 'p_call_mom',
         kind: ParsedItemKind.newTask,
         title: 'Call mom re: Sunday',
-        category: _meals,
+        category: mockMealsCategory,
         // Medium = parser is uncertain enough to surface the
         // warning tag on the foot row. Low would mean "confidently
         // a new task" and would suppress the warning.
@@ -58,7 +94,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         id: 'p_run_done',
         kind: ParsedItemKind.update,
         title: 'Morning run',
-        category: _health,
+        category: mockHealthCategory,
         confidence: ParsedItemConfidence.high,
         spokenPhrase: 'did my run already',
         matchedTaskId: 't_morning_run',
@@ -86,7 +122,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
     ];
   }
 
-  @override
+  /// Tool: `surface_pending_decisions`.
   Future<List<PendingItem>> surfacePendingDecisions({
     DateTime? forDate,
   }) async {
@@ -95,7 +131,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
       PendingItem(
         taskId: 't_onboarding_doc',
         title: 'Finish the Onboarding doc',
-        category: _work,
+        category: mockWorkCategory,
         reason: PendingItemReason.inProgress,
         note: 'Started Wednesday, 40m in',
         sessionCount: 1,
@@ -103,7 +139,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
       PendingItem(
         taskId: 't_dentist',
         title: 'Reschedule dentist',
-        category: _health,
+        category: mockHealthCategory,
         reason: PendingItemReason.overdue,
         note: 'Was due Monday',
         overdueByDays: 3,
@@ -111,14 +147,14 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
       PendingItem(
         taskId: 't_dnd_book',
         title: 'Read 30 pages',
-        category: _study,
+        category: mockStudyCategory,
         reason: PendingItemReason.missedRecurring,
         note: 'Last skipped Thursday',
       ),
     ];
   }
 
-  @override
+  /// Tool: `break_capture_link`.
   Future<ParsedItem> breakCaptureLink(String parsedItemId) async {
     await Future<void>.delayed(triageLatency);
     _brokenLinks.add(parsedItemId);
@@ -132,7 +168,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
     );
   }
 
-  @override
+  /// Tool: `apply_triage`.
   Future<TriageResult> applyTriage({
     required String taskId,
     required TriageAction action,
@@ -148,7 +184,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
     );
   }
 
-  @override
+  /// Tool: `draft_day_plan`.
   Future<DraftPlan> draftDayPlan({
     required CaptureId captureId,
     required List<String> decidedTaskIds,
@@ -171,7 +207,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         end: at(10, 30),
         type: TimeBlockType.ai,
         state: TimeBlockState.drafted,
-        category: _work,
+        category: mockWorkCategory,
         taskId: 't_deck_review',
         reason:
             'Your deepest focus runs 8:30–10:30. Pulling this in before '
@@ -186,7 +222,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         end: at(11, 30),
         type: TimeBlockType.ai,
         state: TimeBlockState.drafted,
-        category: _work,
+        category: mockWorkCategory,
         reason:
             'You said "before eleven" — sliding right after the deck '
             'with a 15-min buffer.',
@@ -198,7 +234,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         end: at(12, 30),
         type: TimeBlockType.buffer,
         state: TimeBlockState.drafted,
-        category: _buffer,
+        category: mockBufferCategory,
       ),
       TimeBlock(
         id: 'b_team_sync',
@@ -207,7 +243,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         end: at(13, 30),
         type: TimeBlockType.cal,
         state: TimeBlockState.committed,
-        category: _work,
+        category: mockWorkCategory,
       ),
       TimeBlock(
         id: 'b_run_review',
@@ -216,7 +252,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         end: at(16, 30),
         type: TimeBlockType.ai,
         state: TimeBlockState.drafted,
-        category: _work,
+        category: mockWorkCategory,
         taskId: 't_onboarding_doc',
         reason:
             'You started this on Wednesday and stopped 40m in. Placing it '
@@ -260,7 +296,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         end: at(10, 10),
         type: TimeBlockType.manual,
         state: TimeBlockState.completed,
-        category: _work,
+        category: mockWorkCategory,
         taskId: 't_deck_review',
       ),
       TimeBlock(
@@ -270,7 +306,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         end: at(12, 33),
         type: TimeBlockType.manual,
         state: TimeBlockState.completed,
-        category: _health,
+        category: mockHealthCategory,
         taskId: 't_morning_run',
       ),
       TimeBlock(
@@ -280,7 +316,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
         end: at(16, 15),
         type: TimeBlockType.manual,
         state: TimeBlockState.inProgress,
-        category: _work,
+        category: mockWorkCategory,
         taskId: 't_onboarding_doc',
       ),
     ];
@@ -292,7 +328,7 @@ mixin _MockDayAgentCapture on _MockDayAgentBase {
       bands: bands,
       capacityMinutes: 480,
       scheduledMinutes: scheduled,
-      agendaItems: _agendaFor(allBlocks),
+      agendaItems: agendaFor(allBlocks),
     );
   }
 }

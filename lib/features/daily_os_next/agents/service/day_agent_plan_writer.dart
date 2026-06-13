@@ -1,14 +1,100 @@
-part of 'day_agent_plan_service.dart';
+import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_diff.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_parser.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_reads.dart';
 
-mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
-  @override
-  Future<ChangeSetEntity> _resolvePlanDiff({
+DayAgentLearningCard _gentleNudgeCard({
+  required bool plansIsEmpty,
+  required int averageScheduled,
+  required int averageCapacity,
+}) {
+  if (plansIsEmpty) {
+    return DayAgentLearningCard(
+      id: 'gentle_nudge',
+      overline: 'Gentle nudge',
+      summary:
+          'No recent drafts to compare against; start small and adjust as '
+          'patterns emerge.',
+      kind: 'nudge',
+      bullets: const [
+        DayAgentLearningBullet(
+          text: 'Treat today as the first data point.',
+          tone: DayAgentLearningBulletTone.info,
+        ),
+      ],
+    );
+  }
+  final overCapacity = averageScheduled > averageCapacity;
+  return DayAgentLearningCard(
+    id: 'gentle_nudge',
+    overline: 'Gentle nudge',
+    summary: overCapacity
+        ? 'Your recent drafts run over capacity; protect a buffer before '
+              'adding more work.'
+        : 'Your recent drafts fit capacity; place demanding work in the '
+              'highest-energy window.',
+    kind: 'nudge',
+    bullets: [
+      DayAgentLearningBullet(
+        text: overCapacity
+            ? 'Leave at least one transition block unassigned.'
+            : 'Keep the plan specific enough to act on.',
+        tone: overCapacity
+            ? DayAgentLearningBulletTone.warning
+            : DayAgentLearningBulletTone.positive,
+      ),
+    ],
+  );
+}
+
+/// Persistence-side day-plan operations: drafting plans, resolving plan
+/// diffs, and summarizing recent drafting patterns.
+class DayAgentPlanWriter {
+  /// Creates the plan writer collaborator.
+  DayAgentPlanWriter({
+    required this.agentRepository,
+    required this.syncService,
+    required this.journalDb,
+    required this.reads,
+    this.onPersistedStateChanged,
+  });
+
+  /// Agent entity/link repository.
+  final AgentRepository agentRepository;
+
+  /// Sync-aware agent writer.
+  final AgentSyncService syncService;
+
+  /// Journal DB used for task/category reads while drafting.
+  final JournalDb journalDb;
+
+  /// Shared plan-entity reads.
+  final DayAgentPlanReads reads;
+
+  /// Callback fired when persisted state changes.
+  final void Function(String id)? onPersistedStateChanged;
+
+  /// Apply or reject some/all changes of [changeSetId] against the live plan.
+  Future<ChangeSetEntity> resolvePlanDiff({
     required String agentId,
     required String changeSetId,
     required List<int>? itemIndices,
     required bool apply,
   }) async {
-    final identity = await _requireIdentity(agentId);
+    final identity = await reads.requireIdentity(agentId);
     final loaded = await agentRepository.getEntity(changeSetId);
     if (loaded is! ChangeSetEntity ||
         loaded.deletedAt != null ||
@@ -16,7 +102,7 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
       throw DayAgentCaptureException('change set $changeSetId not found');
     }
     final changeSet = loaded;
-    final plan = await draftPlanForDay(
+    final plan = await reads.draftPlanForDay(
       agentId: agentId,
       dayId: dayIdFromPlanEntityId(changeSet.taskId),
     );
@@ -145,7 +231,6 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
   }
 
   /// Persist a model-emitted draft plan.
-  @override
   Future<DayPlanEntity> persistDraftPlan({
     required String agentId,
     required String dayId,
@@ -157,7 +242,7 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
     int capacityMinutes = 480,
     String? dayLabel,
   }) async {
-    final identity = await _requireIdentity(agentId);
+    final identity = await reads.requireIdentity(agentId);
     if (identity.allowedCategoryIds.isNotEmpty) {
       for (final categoryId in identity.allowedCategoryIds) {
         if (categoryId.trim().isEmpty) {
@@ -173,7 +258,7 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
       );
     }
     if (captureId != null) {
-      final capture = await _captureOrNull(captureId);
+      final capture = await reads.captureOrNull(captureId);
       if (capture == null || capture.agentId != agentId) {
         throw DayAgentCaptureException('capture $captureId not found');
       }
@@ -222,7 +307,10 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
     ];
     final scheduledMinutes = scheduledMinutesFor(blocks);
     final pinnedTasks = pinnedTasksFor(blocks);
-    final existing = await draftPlanForDay(agentId: agentId, dayId: dayId);
+    final existing = await reads.draftPlanForDay(
+      agentId: agentId,
+      dayId: dayId,
+    );
     final plan =
         AgentDomainEntity.dayPlan(
               id: dayAgentPlanEntityId(dayId),
@@ -270,7 +358,6 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
   }
 
   /// Build transient learning cards from recently drafted day plans.
-  @override
   Future<List<DayAgentLearningCard>> summarizeRecentPatterns({
     required String agentId,
     required DateTime asOf,
@@ -348,21 +435,6 @@ mixin _DayAgentPlanResolve on _DayAgentPlanServiceBase {
         averageCapacity: averageCapacity,
       ),
     ];
-  }
-
-  @override
-  Future<AgentIdentityEntity> _requireIdentity(String agentId) async {
-    final entity = await agentRepository.getEntity(agentId);
-    if (entity is AgentIdentityEntity && entity.deletedAt == null) {
-      return entity;
-    }
-    throw DayAgentCaptureException('agent $agentId not found');
-  }
-
-  @override
-  Future<CaptureEntity?> _captureOrNull(String captureId) async {
-    final entity = await agentRepository.getEntity(captureId);
-    return entity is CaptureEntity ? entity : null;
   }
 
   Future<Set<String>> _allowedExistingTaskIds(

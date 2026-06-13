@@ -1,14 +1,44 @@
-part of 'day_agent_capture_service.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_helpers.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_reads.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 
-/// FTS corpus matching + corpus-snapshot logic of
-/// [DayAgentCaptureService]. The class keeps thin delegators so mocks
-/// of the service still intercept the public methods.
-extension DayAgentCorpusService on DayAgentCaptureService {
+/// FTS corpus matching + corpus-snapshot logic for the day-agent capture
+/// flow. The capture service keeps thin delegators so mocks of the service
+/// still intercept the public methods.
+class DayAgentCorpusService {
+  /// Creates the corpus collaborator.
+  DayAgentCorpusService({
+    required this.journalDb,
+    required this.fts5Db,
+    required this.reads,
+  });
+
+  /// Maximum number of tasks embedded in a corpus snapshot.
+  static const maxCorpusTasks = 200;
+
+  /// Maximum number of match candidates returned by [matchToCorpus].
+  static const maxMatchCandidates = 8;
+
+  /// Journal DB used for task reads.
+  final JournalDb journalDb;
+
+  /// FTS index used by `match_to_corpus`.
+  final Fts5Db fts5Db;
+
+  /// Shared agent-identity resolution.
+  final DayAgentCaptureReads reads;
+
   /// Build the bounded task corpus embedded in capture-triggered wakes.
-  Future<List<Map<String, Object?>>> buildTaskCorpusSnapshotImpl({
+  Future<List<Map<String, Object?>>> buildTaskCorpusSnapshot({
     required Set<String> allowedCategoryIds,
     required DateTime day,
-    int limit = _maxCorpusTasks,
+    int limit = maxCorpusTasks,
   }) async {
     final dayStart = localDay(day);
     final openTasks = await journalDb.getOpenTasksForDayAgentCorpus(
@@ -19,8 +49,8 @@ extension DayAgentCorpusService on DayAgentCaptureService {
 
     final byId = <String, Task>{};
     for (final task in [...overdueAndToday, ...openTasks]) {
-      if (_isClosedTask(task)) continue;
-      if (!_categoryAllowed(
+      if (isClosedTask(task)) continue;
+      if (!categoryAllowed(
         task.meta.categoryId,
         allowedCategoryIds,
       )) {
@@ -45,12 +75,12 @@ extension DayAgentCorpusService on DayAgentCaptureService {
   }
 
   /// Finds existing tasks that may match a capture phrase.
-  Future<List<DayAgentCorpusMatch>> matchToCorpusImpl({
+  Future<List<DayAgentCorpusMatch>> matchToCorpus({
     required String agentId,
     required String phrase,
     String? categoryHint,
   }) async {
-    final identity = await _requireIdentity(agentId);
+    final identity = await reads.requireIdentity(agentId);
     final trimmed = phrase.trim();
     if (trimmed.isEmpty) {
       throw const DayAgentCaptureException('phrase must not be empty');
@@ -58,7 +88,7 @@ extension DayAgentCorpusService on DayAgentCaptureService {
 
     final categoryFilter = _categoryFilterForHint(
       allowedCategoryIds: identity.allowedCategoryIds,
-      categoryHint: _blankToNull(categoryHint),
+      categoryHint: blankToNull(categoryHint),
     );
     if (categoryFilter != null && categoryFilter.isEmpty) {
       return const <DayAgentCorpusMatch>[];
@@ -72,22 +102,36 @@ extension DayAgentCorpusService on DayAgentCaptureService {
     );
     final taskById = {
       for (final entity in entities)
-        if (entity is Task && !_isClosedTask(entity)) entity.id: entity,
+        if (entity is Task && !isClosedTask(entity)) entity.id: entity,
     };
 
     final matches = <DayAgentCorpusMatch>[];
     for (var i = 0; i < ids.length; i++) {
       final task = taskById[ids[i]];
       if (task == null) continue;
-      if (!_categoryAllowed(
+      if (!categoryAllowed(
         task.meta.categoryId,
         categoryFilter,
       )) {
         continue;
       }
       matches.add(corpusMatchFromTask(task, 1 / (i + 1)));
-      if (matches.length >= _maxMatchCandidates) break;
+      if (matches.length >= maxMatchCandidates) break;
     }
     return matches;
+  }
+
+  Set<String>? _categoryFilterForHint({
+    required Set<String> allowedCategoryIds,
+    required String? categoryHint,
+  }) {
+    if (categoryHint == null) {
+      return allowedCategoryIds.isEmpty ? null : allowedCategoryIds;
+    }
+    if (allowedCategoryIds.isNotEmpty &&
+        !allowedCategoryIds.contains(categoryHint)) {
+      return const <String>{};
+    }
+    return {categoryHint};
   }
 }
