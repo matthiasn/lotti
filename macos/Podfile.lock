@@ -16,6 +16,9 @@ PODS:
     - FlutterMacOS
   - flutter_local_notifications (0.0.1):
     - FlutterMacOS
+  - flutter_onnxruntime (0.0.1):
+    - FlutterMacOS
+    - onnxruntime-objc (= 1.24.2)
   - flutter_secure_storage_darwin (10.0.0):
     - Flutter
     - FlutterMacOS
@@ -45,6 +48,11 @@ PODS:
   - objectbox_flutter_libs (0.0.1):
     - FlutterMacOS
     - ObjectBox (= 5.3.0)
+  - onnxruntime-c (1.24.2)
+  - onnxruntime-objc (1.24.2):
+    - onnxruntime-objc/Core (= 1.24.2)
+  - onnxruntime-objc/Core (1.24.2):
+    - onnxruntime-c (= 1.24.2)
   - OpenSSL-Universal (3.6.0000)
   - package_info_plus (0.0.1):
     - FlutterMacOS
@@ -112,6 +120,7 @@ DEPENDENCIES:
   - file_selector_macos (from `Flutter/ephemeral/.symlinks/plugins/file_selector_macos/macos`)
   - flutter_image_compress_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_image_compress_macos/macos`)
   - flutter_local_notifications (from `Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos`)
+  - flutter_onnxruntime (from `Flutter/ephemeral/.symlinks/plugins/flutter_onnxruntime/macos`)
   - flutter_secure_storage_darwin (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - flutter_vodozemac (from `Flutter/ephemeral/.symlinks/plugins/flutter_vodozemac/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
@@ -143,6 +152,8 @@ SPEC REPOS:
   trunk:
     - HotKey
     - ObjectBox
+    - onnxruntime-c
+    - onnxruntime-objc
     - OpenSSL-Universal
     - sqlite3
 
@@ -163,6 +174,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_image_compress_macos/macos
   flutter_local_notifications:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_local_notifications/macos
+  flutter_onnxruntime:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_onnxruntime/macos
   flutter_secure_storage_darwin:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_darwin/darwin
   flutter_vodozemac:
@@ -223,6 +236,7 @@ SPEC CHECKSUMS:
   file_selector_macos: 9e9e068e90ebee155097d00e89ae91edb2374db7
   flutter_image_compress_macos: e68daf54bb4bf2144c580fd4d151c949cbf492f0
   flutter_local_notifications: 1fc7ffb10a83d6a2eeeeddb152d43f1944b0aad0
+  flutter_onnxruntime: fb7bede79ac00a8e129c95d7e6b99c0f4e960d98
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   flutter_vodozemac: fd2ea9cb3e2a37beaac883a369811fbfe042fc53
   FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
@@ -236,6 +250,8 @@ SPEC CHECKSUMS:
   mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
   ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
   objectbox_flutter_libs: c6ec3df598aa194da1cdf929fc9640bbc8f58be1
+  onnxruntime-c: b58bafbc58707d165404665e46a7467a16e8e0e4
+  onnxruntime-objc: 99e0fe4b6d606970c6c1350c194c7629ef6e6fc9
   OpenSSL-Universal: 9110d21982bb7e8b22a962b6db56a8aa805afde7
   package_info_plus: f0052d280d17aa382b932f399edf32507174e870
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
@@ -253,6 +269,6 @@ SPEC CHECKSUMS:
   video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
   window_manager: b729e31d38fb04905235df9ea896128991cad99e
 
-PODFILE CHECKSUM: 768e7f074466c89cfae92f106111862cc706d8bc
+PODFILE CHECKSUM: 6e0a4bb2912a01e2f762a144e041696c03c972b0
 
 COCOAPODS: 1.16.2
