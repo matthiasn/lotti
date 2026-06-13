@@ -1,8 +1,12 @@
-part of 'time_budget_card.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/theme.dart';
 
 /// Mini inline progress bar for the header row.
-class _MiniProgressBar extends StatelessWidget {
-  const _MiniProgressBar({required this.progress});
+class MiniProgressBar extends StatelessWidget {
+  const MiniProgressBar({required this.progress, super.key});
 
   final TimeBudgetProgress progress;
 
@@ -41,8 +45,8 @@ class _MiniProgressBar extends StatelessWidget {
 /// Compact badge indicator for "No time budgeted" state.
 ///
 /// Used inline to show that no budget is set, with bordered badge styling.
-class _NoBudgetBadge extends StatelessWidget {
-  const _NoBudgetBadge({required this.message});
+class NoBudgetBadge extends StatelessWidget {
+  const NoBudgetBadge({required this.message, super.key});
 
   final String message;
 
@@ -78,8 +82,8 @@ class _NoBudgetBadge extends StatelessWidget {
 }
 
 /// Status text showing remaining or over time.
-class _StatusText extends StatelessWidget {
-  const _StatusText({required this.progress});
+class StatusText extends StatelessWidget {
+  const StatusText({required this.progress, super.key});
 
   final TimeBudgetProgress progress;
 

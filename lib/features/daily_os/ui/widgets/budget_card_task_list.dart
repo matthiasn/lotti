@@ -1,8 +1,19 @@
-part of 'time_budget_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/daily_os/state/task_view_preference_controller.dart';
+import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/features/daily_os/ui/widgets/time_budget_card.dart';
+import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
+import 'package:lotti/features/tasks/util/due_date_utils.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/colors.dart';
+import 'package:lotti/themes/theme.dart';
 
 /// Circular indicator showing task completion percentage.
-class _TaskCompletionIndicator extends StatelessWidget {
-  const _TaskCompletionIndicator({required this.tasks});
+class TaskCompletionIndicator extends StatelessWidget {
+  const TaskCompletionIndicator({required this.tasks, super.key});
 
   final List<TaskDayProgress> tasks;
 
@@ -44,10 +55,11 @@ class _TaskCompletionIndicator extends StatelessWidget {
 }
 
 /// Task list content (shown when expanded).
-class _TaskListContent extends ConsumerWidget {
-  const _TaskListContent({
+class TaskListContent extends ConsumerWidget {
+  const TaskListContent({
     required this.tasks,
     required this.categoryId,
+    super.key,
   });
 
   final List<TaskDayProgress> tasks;
@@ -165,7 +177,7 @@ class _TaskProgressRow extends StatelessWidget {
         task.data.status is TaskDone || task.data.status is TaskRejected;
     final isCompletedElsewhere = !isCompletedOnDay && isTaskDoneOrRejected;
     final isLight = Theme.of(context).brightness == Brightness.light;
-    final statusColor = _getTaskStatusColor(context, task.data.status);
+    final statusColor = getTaskStatusColor(context, task.data.status);
     final checkColor = isLight ? taskStatusDarkGreen : taskStatusGreen;
 
     // Text color - slightly muted for completed tasks
@@ -348,7 +360,7 @@ class _TaskGridTile extends StatelessWidget {
     final isCompleted = item.wasCompletedOnDay;
     final isLight = Theme.of(context).brightness == Brightness.light;
     final coverArtId = task.data.coverArtId;
-    final statusColor = _getTaskStatusColor(context, task.data.status);
+    final statusColor = getTaskStatusColor(context, task.data.status);
 
     return GestureDetector(
       onTap: () => beamToNamed('/tasks/${task.meta.id}'),

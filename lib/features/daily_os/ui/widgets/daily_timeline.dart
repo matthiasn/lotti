@@ -1,29 +1,17 @@
-import 'dart:math' as math;
-
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/compressed_timeline_region.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_os_empty_states.dart';
-import 'package:lotti/features/daily_os/ui/widgets/draggable_planned_block.dart';
-import 'package:lotti/features/daily_os/ui/widgets/timeline_lane_layout.dart';
+import 'package:lotti/features/daily_os/ui/widgets/daily_timeline_blocks.dart';
 import 'package:lotti/features/daily_os/util/drag_position_utils.dart';
 import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
-import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
-import 'package:lotti/utils/consts.dart';
-
-part 'daily_timeline_blocks.dart';
-
-part 'daily_timeline_layout.dart';
 
 /// Timeline showing plan vs actual time blocks.
 class DailyTimeline extends ConsumerWidget {
@@ -35,10 +23,6 @@ class DailyTimeline extends ConsumerWidget {
   /// Callback when a drag operation starts or ends.
   /// Used by parent to lock scroll during drag.
   final DragActiveChangedCallback? onDragActiveChanged;
-
-  static const double _hourHeight = 40;
-  static const double _timeAxisWidth = 50;
-  static const double _laneWidth = 120;
 
   /// Bottom padding to prevent content from being clipped at the edge.
   static const double _bottomPadding = 20;
@@ -62,8 +46,8 @@ class DailyTimeline extends ConsumerWidget {
           onDragActiveChanged: onDragActiveChanged,
         );
       },
-      loading: () => const _LoadingState(),
-      error: (error, stack) => _ErrorState(error: error),
+      loading: () => const LoadingState(),
+      error: (error, stack) => ErrorState(error: error),
     );
   }
 }
@@ -249,7 +233,7 @@ class _FoldedTimelineGrid extends ConsumerWidget {
 
               // Current time indicator (single instance, positioned using folding)
               if (isToday)
-                _CurrentTimeIndicator(
+                CurrentTimeIndicator(
                   foldingState: foldingState,
                   expandedRegions: expandedRegions,
                 ),
@@ -328,7 +312,7 @@ class _FoldedTimelineGrid extends ConsumerWidget {
     return switch (section) {
       // Visible clusters cannot collapse - they are always visible
       _VisibleSection(:final startHour, :final endHour) =>
-        _VisibleTimelineSection(
+        VisibleTimelineSection(
           data: data,
           startHour: startHour,
           endHour: endHour,
@@ -341,9 +325,9 @@ class _FoldedTimelineGrid extends ConsumerWidget {
           key: ValueKey('animated-region-${region.startHour}'),
           region: region,
           isExpanded: isExpanded,
-          normalHourHeight: DailyTimeline._hourHeight,
+          normalHourHeight: kTimelineHourHeight,
           child: isExpanded
-              ? _VisibleTimelineSection(
+              ? VisibleTimelineSection(
                   data: data,
                   startHour: region.startHour,
                   endHour: region.endHour,
@@ -359,7 +343,7 @@ class _FoldedTimelineGrid extends ConsumerWidget {
                 )
               : CompressedTimelineRegion(
                   region: region,
-                  timeAxisWidth: DailyTimeline._timeAxisWidth,
+                  timeAxisWidth: kTimelineTimeAxisWidth,
                   onTap: () {
                     ref
                         .read(dailyOsControllerProvider.notifier)

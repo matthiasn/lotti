@@ -1,8 +1,38 @@
-part of 'daily_timeline.dart';
+import 'dart:math' as math;
+
+import 'package:clock/clock.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
+import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
+import 'package:lotti/features/daily_os/ui/widgets/draggable_planned_block.dart';
+import 'package:lotti/features/daily_os/ui/widgets/timeline_lane_layout.dart';
+import 'package:lotti/features/daily_os/util/drag_position_utils.dart';
+import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
+import 'package:lotti/features/tasks/state/task_focus_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/color.dart';
+import 'package:lotti/utils/consts.dart';
+
+/// Height in pixels of a single hour row in the timeline grid.
+const double kTimelineHourHeight = 40;
+
+/// Width in pixels of the time-axis (hour labels) column.
+const double kTimelineTimeAxisWidth = 50;
+
+/// Width in pixels of the planned-blocks lane.
+const double kTimelineLaneWidth = 120;
+
+/// Visual inset in pixels for each nesting level of nested child blocks.
+const double _nestedInset = 4;
 
 /// A visible (unfolded) section of the timeline.
-class _VisibleTimelineSection extends ConsumerWidget {
-  const _VisibleTimelineSection({
+class VisibleTimelineSection extends ConsumerWidget {
+  const VisibleTimelineSection({
     required this.data,
     required this.startHour,
     required this.endHour,
@@ -11,6 +41,7 @@ class _VisibleTimelineSection extends ConsumerWidget {
     this.onDragActiveChanged,
     this.canCollapse = false,
     this.onCollapse,
+    super.key,
   });
 
   final DailyTimelineData data;
@@ -30,7 +61,7 @@ class _VisibleTimelineSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final totalHours = endHour - startHour;
-    final sectionHeight = totalHours * DailyTimeline._hourHeight;
+    final sectionHeight = totalHours * kTimelineHourHeight;
 
     // Filter slots to only those that overlap with this section.
     // A slot overlaps if it starts before the section ends AND ends after the
@@ -52,7 +83,7 @@ class _VisibleTimelineSection extends ConsumerWidget {
           ...List.generate(totalHours + 1, (i) {
             final hour = startHour + i;
             return Positioned(
-              top: i * DailyTimeline._hourHeight,
+              top: i * kTimelineHourHeight,
               left: 0,
               right: 0,
               child: _HourGridLine(hour: hour, isFirst: i == 0),
@@ -64,12 +95,12 @@ class _VisibleTimelineSection extends ConsumerWidget {
             top: 0,
             bottom: 0,
             left: 0,
-            width: DailyTimeline._timeAxisWidth,
+            width: kTimelineTimeAxisWidth,
             child: Column(
               children: List.generate(totalHours, (i) {
                 final hour = startHour + i;
                 return SizedBox(
-                  height: DailyTimeline._hourHeight,
+                  height: kTimelineHourHeight,
                   child: Align(
                     alignment: Alignment.topCenter,
                     child: Padding(
@@ -135,8 +166,8 @@ class _VisibleTimelineSection extends ConsumerWidget {
           Positioned(
             top: 0,
             bottom: 0,
-            left: DailyTimeline._timeAxisWidth,
-            width: DailyTimeline._laneWidth,
+            left: kTimelineTimeAxisWidth,
+            width: kTimelineLaneWidth,
             child: Stack(
               clipBehavior: Clip.none,
               children: sectionPlannedSlots.map((slot) {
@@ -158,7 +189,7 @@ class _VisibleTimelineSection extends ConsumerWidget {
           Positioned(
             top: 0,
             bottom: 0,
-            left: DailyTimeline._timeAxisWidth + DailyTimeline._laneWidth + 8,
+            left: kTimelineTimeAxisWidth + kTimelineLaneWidth + 8,
             right: 8,
             child: LayoutBuilder(
               builder: (context, constraints) {
@@ -252,8 +283,8 @@ class _ActualBlockWidget extends ConsumerWidget {
       0,
       kMaxMinutesInDay,
     );
-    final top = startMinutes * DailyTimeline._hourHeight / 60;
-    final height = durationMinutes * DailyTimeline._hourHeight / 60;
+    final top = startMinutes * kTimelineHourHeight / 60;
+    final height = durationMinutes * kTimelineHourHeight / 60;
 
     final category = slot.category;
     final categoryId = category?.id;
@@ -427,7 +458,7 @@ class _NestedChildBlock extends ConsumerWidget {
 
     // Offset from parent's top edge
     final relativeTopMinutes = childStartMinutes - parentStartMinutes;
-    final relativeTop = relativeTopMinutes * DailyTimeline._hourHeight / 60;
+    final relativeTop = relativeTopMinutes * kTimelineHourHeight / 60;
 
     final childStart = minutesFromDate(date, child.startTime);
     final childEnd = minutesFromDate(date, child.endTime);
@@ -435,7 +466,7 @@ class _NestedChildBlock extends ConsumerWidget {
       0,
       kMaxMinutesInDay,
     );
-    final childHeight = childDurationMinutes * DailyTimeline._hourHeight / 60;
+    final childHeight = childDurationMinutes * kTimelineHourHeight / 60;
 
     // Inset from edges based on nesting depth
     final inset = _nestedInset * nestingDepth;
@@ -477,10 +508,11 @@ class _NestedChildBlock extends ConsumerWidget {
 ///
 /// Uses [timeToFoldedPosition] to correctly position the indicator
 /// accounting for compressed/expanded regions in the folded timeline.
-class _CurrentTimeIndicator extends StatelessWidget {
-  const _CurrentTimeIndicator({
+class CurrentTimeIndicator extends StatelessWidget {
+  const CurrentTimeIndicator({
     required this.foldingState,
     required this.expandedRegions,
+    super.key,
   });
 
   final TimelineFoldingState foldingState;
@@ -511,7 +543,7 @@ class _CurrentTimeIndicator extends StatelessWidget {
 
     return Positioned(
       top: top,
-      left: DailyTimeline._timeAxisWidth - 4,
+      left: kTimelineTimeAxisWidth - 4,
       right: 0,
       child: Row(
         children: [
@@ -536,8 +568,8 @@ class _CurrentTimeIndicator extends StatelessWidget {
 }
 
 /// Loading state.
-class _LoadingState extends StatelessWidget {
-  const _LoadingState();
+class LoadingState extends StatelessWidget {
+  const LoadingState({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -551,8 +583,8 @@ class _LoadingState extends StatelessWidget {
 }
 
 /// Error state.
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.error});
+class ErrorState extends StatelessWidget {
+  const ErrorState({required this.error, super.key});
 
   final Object error;
 
@@ -584,4 +616,38 @@ class _ErrorState extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Assigns lanes to nested children and builds their widgets.
+///
+/// This handles the case where nested children overlap with each other
+/// (e.g., two calls within a morning block that overlap in time).
+List<Widget> _buildNestedChildWidgets({
+  required List<ActualTimeSlot> nestedChildren,
+  required ActualTimeSlot parent,
+  required double parentWidth,
+  required int nestingDepth,
+  required int startHour,
+  required DateTime date,
+}) {
+  if (nestedChildren.isEmpty) return [];
+
+  // Apply lane assignment to handle overlapping siblings
+  final assignments = assignLanesToSlots(nestedChildren);
+  final laneCount = assignments.isEmpty
+      ? 1
+      : assignments.map((a) => a.laneIndex).reduce(math.max) + 1;
+
+  return assignments.map((assignment) {
+    return _NestedChildBlock(
+      child: assignment.slot,
+      parent: parent,
+      parentWidth: parentWidth,
+      nestingDepth: nestingDepth,
+      startHour: startHour,
+      date: date,
+      laneIndex: assignment.laneIndex,
+      laneCount: laneCount,
+    );
+  }).toList();
 }
