@@ -25,6 +25,8 @@ class InsightsChartCard extends StatefulWidget {
     required this.chartData,
     required this.resolver,
     this.comparisonTotals,
+    this.comparisonInProgress = false,
+    this.previousLabel,
     super.key,
   });
 
@@ -38,6 +40,14 @@ class InsightsChartCard extends StatefulWidget {
   /// category stacking it shares with the daily bars) would only muddy it.
   final List<int>? comparisonTotals;
 
+  /// Whether the current period is still unfolding. In compare mode this
+  /// switches the caption to the "so far" wording so the partial-vs-elapsed
+  /// comparison reads honestly.
+  final bool comparisonInProgress;
+
+  /// Names the comparison baseline for the legend (e.g. "Previous week").
+  final String? previousLabel;
+
   @override
   State<InsightsChartCard> createState() => _InsightsChartCardState();
 }
@@ -47,11 +57,19 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
 
   String _captionText(AppLocalizations messages) {
     if (widget.comparisonTotals != null) {
-      return messages.insightsChartCompareCaption;
+      return widget.comparisonInProgress
+          ? messages.insightsChartCompareCaptionPartial
+          : messages.insightsChartCompareCaption;
     }
-    final base = _mode == InsightsChartMode.daily
-        ? messages.insightsChartDailyCaption
-        : messages.insightsChartCumulativeCaption;
+    // The daily caption must name the bucket the bars actually represent —
+    // "Time per day" over weekly or hourly bars misreads their magnitude.
+    final base = _mode == InsightsChartMode.cumulative
+        ? messages.insightsChartCumulativeCaption
+        : switch (widget.chartData.granularity) {
+            InsightsGranularity.hour => messages.insightsChartHourlyCaption,
+            InsightsGranularity.day => messages.insightsChartDailyCaption,
+            InsightsGranularity.week => messages.insightsChartWeeklyCaption,
+          };
     final keys = widget.chartData.seriesKeys;
     if (keys.length != 1) return base;
     return '$base · ${widget.resolver.labelFor(keys.single)}';
@@ -94,8 +112,12 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
                       // category so the mono-color bars read as intended.
                       Text(
                         _captionText(messages),
+                        // mediumEmphasis, not lowEmphasis: this caption names
+                        // what the bars represent (per hour/day/week) — it is
+                        // load-bearing and must stay legible at small size in
+                        // both themes.
                         style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
+                          color: tokens.colors.text.mediumEmphasis,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -156,6 +178,7 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
                 rolledUpCount: widget.chartData.rolledUpCount,
                 resolver: widget.resolver,
                 showPrevious: widget.comparisonTotals != null,
+                previousLabel: widget.previousLabel,
               ),
             ],
           ],

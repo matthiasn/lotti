@@ -5076,6 +5076,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Această perioadă vs. cea anterioară';
 
   @override
+  String get insightsChartCompareCaptionPartial =>
+      'Această perioadă până acum vs. cea anterioară';
+
+  @override
   String get insightsChartCumulative => 'Cumulativ';
 
   @override
@@ -5088,7 +5092,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get insightsChartDailyCaption => 'Timp pe zi';
 
   @override
+  String get insightsChartHourlyCaption => 'Timp pe oră';
+
+  @override
   String get insightsChartTitle => 'Timp pe categorie';
+
+  @override
+  String get insightsChartWeeklyCaption => 'Timp pe săptămână';
 
   @override
   String get insightsChooseFocusCategories =>
@@ -5096,6 +5106,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get insightsCompare => 'Compară';
+
+  @override
+  String get insightsCompareTooltip => 'Compară cu perioada anterioară';
 
   @override
   String get insightsComparePrevious => 'Anterior';
@@ -5118,6 +5131,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get insightsEmptyShowYear => 'Afișați anul acesta';
+
+  @override
+  String get insightsEmptyPreviousPeriod => 'Afișează perioada anterioară';
 
   @override
   String get insightsEmptyTitle =>
@@ -5164,6 +5180,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get insightsPeriodQuarter => 'Trimestru';
+
+  @override
+  String get insightsPeriodToDateSuffix => 'până acum';
 
   @override
   String get insightsPeriodWeek => 'Săptămână';

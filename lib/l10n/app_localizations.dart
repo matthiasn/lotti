@@ -8706,6 +8706,12 @@ abstract class AppLocalizations {
   /// **'This period vs the previous'**
   String get insightsChartCompareCaption;
 
+  /// No description provided for @insightsChartCompareCaptionPartial.
+  ///
+  /// In en, this message translates to:
+  /// **'This period so far vs the previous'**
+  String get insightsChartCompareCaptionPartial;
+
   /// No description provided for @insightsChartCumulative.
   ///
   /// In en, this message translates to:
@@ -8730,11 +8736,23 @@ abstract class AppLocalizations {
   /// **'Time per day'**
   String get insightsChartDailyCaption;
 
+  /// No description provided for @insightsChartHourlyCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Time per hour'**
+  String get insightsChartHourlyCaption;
+
   /// No description provided for @insightsChartTitle.
   ///
   /// In en, this message translates to:
   /// **'Time by category'**
   String get insightsChartTitle;
+
+  /// No description provided for @insightsChartWeeklyCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Time per week'**
+  String get insightsChartWeeklyCaption;
 
   /// No description provided for @insightsChooseFocusCategories.
   ///
@@ -8747,6 +8765,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Compare'**
   String get insightsCompare;
+
+  /// No description provided for @insightsCompareTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare with the previous period'**
+  String get insightsCompareTooltip;
 
   /// No description provided for @insightsComparePrevious.
   ///
@@ -8789,6 +8813,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'View this year'**
   String get insightsEmptyShowYear;
+
+  /// No description provided for @insightsEmptyPreviousPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the previous period'**
+  String get insightsEmptyPreviousPeriod;
 
   /// No description provided for @insightsEmptyTitle.
   ///
@@ -8879,6 +8909,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Quarter'**
   String get insightsPeriodQuarter;
+
+  /// No description provided for @insightsPeriodToDateSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'to date'**
+  String get insightsPeriodToDateSuffix;
 
   /// No description provided for @insightsPeriodWeek.
   ///

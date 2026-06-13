@@ -1,9 +1,11 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/range_presets.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -157,6 +159,9 @@ class _DashboardContent extends StatelessWidget {
       buckets,
       range,
       precomputedRanked: ranked,
+      // Average over elapsed days for an in-progress period so the daily pace
+      // matches the MTD view instead of being diluted by future calendar days.
+      avgDayCount: elapsedPortion(range, clock.now()).dayCount,
     );
     final kpis = buildKpis(
       buckets,
@@ -226,6 +231,10 @@ class _DashboardContent extends StatelessWidget {
                 ? messages.insightsEmptyShowYear
                 : null,
             onAction: () => onSelectUnit(InsightsPeriodUnit.year),
+            // The likeliest intent on a dead current period is "show me the
+            // last one" — offer it directly instead of only widening to year.
+            secondaryActionLabel: messages.insightsEmptyPreviousPeriod,
+            onSecondaryAction: () => onStep(-1),
           )
         else ...[
           InsightsKpiRow(
@@ -240,6 +249,7 @@ class _DashboardContent extends StatelessWidget {
             chartData: chartData,
             resolver: resolver,
             comparisonTotals: comparisonTotals,
+            comparisonInProgress: isInProgress(range, clock.now()),
           ),
           SizedBox(height: tokens.spacing.sectionGap),
           InsightsTable(
@@ -262,12 +272,16 @@ class _EmptyState extends StatelessWidget {
     required this.body,
     required this.onAction,
     this.actionLabel,
+    this.secondaryActionLabel,
+    this.onSecondaryAction,
   });
 
   final String title;
   final String body;
   final String? actionLabel;
   final VoidCallback onAction;
+  final String? secondaryActionLabel;
+  final VoidCallback? onSecondaryAction;
 
   @override
   Widget build(BuildContext context) {
@@ -280,14 +294,11 @@ class _EmptyState extends StatelessWidget {
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
       child: Padding(
-        // Generous vertical presence so the page doesn't read as a
-        // truncated letterbox; slightly more below than above anchors the
-        // content block just above center, which reads as intentional.
-        padding: EdgeInsets.fromLTRB(
-          tokens.spacing.step6,
-          tokens.spacing.step12,
-          tokens.spacing.step6,
-          tokens.spacing.step13,
+        // Calm, content-sized presence — balanced top/bottom so the message
+        // reads as centered rather than clustered atop a tall letterbox.
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step6,
+          vertical: tokens.spacing.step9,
         ),
         child: Column(
           children: [
@@ -312,11 +323,24 @@ class _EmptyState extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            if (actionLabel != null) ...[
+            if (actionLabel != null || onSecondaryAction != null) ...[
               SizedBox(height: tokens.spacing.step5),
-              TextButton(
-                onPressed: onAction,
-                child: Text(actionLabel!),
+              Wrap(
+                spacing: tokens.spacing.step3,
+                alignment: WrapAlignment.center,
+                children: [
+                  if (onSecondaryAction != null &&
+                      secondaryActionLabel != null)
+                    TextButton(
+                      onPressed: onSecondaryAction,
+                      child: Text(secondaryActionLabel!),
+                    ),
+                  if (actionLabel != null)
+                    TextButton(
+                      onPressed: onAction,
+                      child: Text(actionLabel!),
+                    ),
+                ],
               ),
             ],
           ],

@@ -392,7 +392,7 @@ void main() {
     );
     await _tap(tester, find.text('Compare'));
     // Compare swaps the chart caption and adds a previous-period column.
-    expect(find.text('This period vs the previous'), findsOneWidget);
+    expect(find.text('This period so far vs the previous'), findsOneWidget);
     expect(find.text('PREVIOUS'), findsOneWidget);
     await _capture(tester, '14_week_compare_dark');
   });
@@ -405,7 +405,7 @@ void main() {
     );
     await _selectGranularity(tester, 'Week', 'Month');
     await _tap(tester, find.text('Compare'));
-    expect(find.text('This period vs the previous'), findsOneWidget);
+    expect(find.text('This period so far vs the previous'), findsOneWidget);
     expect(find.text('PREVIOUS'), findsOneWidget);
     await _capture(tester, '15_month_compare_dark');
   });
@@ -419,7 +419,7 @@ void main() {
     );
     await _selectGranularity(tester, 'Week', 'Month');
     await _tap(tester, find.text('Compare'));
-    expect(find.text('This period vs the previous'), findsOneWidget);
+    expect(find.text('This period so far vs the previous'), findsOneWidget);
     await _capture(tester, '16_month_compare_light');
   });
 
@@ -430,8 +430,8 @@ void main() {
       categories: insightsScenarioCategories,
     );
     await _tap(tester, find.text('MTD'));
-    // MTD jumps to the current month through today (Jun 1 – 7).
-    expect(find.text('Jun 1 – 7'), findsOneWidget);
+    // MTD jumps to the current month through today, labelled to-date.
+    expect(find.text('June 2026 (to date)'), findsOneWidget);
     await _capture(tester, '17_mtd_dark');
   });
 }

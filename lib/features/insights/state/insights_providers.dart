@@ -176,8 +176,18 @@ class InsightsRangeController extends Notifier<InsightsPeriodSelection> {
   /// range even if the device-region first weekday resolves after the range
   /// was built. (The page used to re-derive this with a hardcoded Monday
   /// default, which misaligned the comparison for Sunday/Saturday regions.)
-  InsightsRange? get previousComparisonRange =>
-      state.compareEnabled ? previousPeriod(state.range, state.unit) : null;
+  /// Comparison baseline for the current selection — `null` unless compare is
+  /// on. The current range is first clipped to its elapsed slice
+  /// ([elapsedPortion]) so an in-progress period compares like-for-like: the
+  /// current week-to-date against the same elapsed days of last week, never a
+  /// single day against a complete prior week. [previousPeriod] then truncates
+  /// the previous period to that same elapsed day count.
+  InsightsRange? get previousComparisonRange => state.compareEnabled
+      ? previousPeriod(
+          elapsedPortion(state.range, clock.now()),
+          state.unit,
+        )
+      : null;
 
   /// Switches the browsed granularity, re-deriving the period that contains
   /// the current range's start day.

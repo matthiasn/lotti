@@ -5065,6 +5065,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get insightsChartCompareCaption => 'Este período vs. el anterior';
 
   @override
+  String get insightsChartCompareCaptionPartial =>
+      'Este período hasta ahora vs. el anterior';
+
+  @override
   String get insightsChartCumulative => 'Acumulado';
 
   @override
@@ -5077,13 +5081,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get insightsChartDailyCaption => 'Tiempo por día';
 
   @override
+  String get insightsChartHourlyCaption => 'Tiempo por hora';
+
+  @override
   String get insightsChartTitle => 'Tiempo por categoría';
+
+  @override
+  String get insightsChartWeeklyCaption => 'Tiempo por semana';
 
   @override
   String get insightsChooseFocusCategories => 'Elegir categorías de foco';
 
   @override
   String get insightsCompare => 'Comparar';
+
+  @override
+  String get insightsCompareTooltip => 'Comparar con el período anterior';
 
   @override
   String get insightsComparePrevious => 'Anterior';
@@ -5106,6 +5119,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get insightsEmptyShowYear => 'Ver este año';
+
+  @override
+  String get insightsEmptyPreviousPeriod => 'Ver el período anterior';
 
   @override
   String get insightsEmptyTitle => 'No hay tiempo registrado en este rango';
@@ -5151,6 +5167,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get insightsPeriodQuarter => 'Trimestre';
+
+  @override
+  String get insightsPeriodToDateSuffix => 'hasta ahora';
 
   @override
   String get insightsPeriodWeek => 'Semana';

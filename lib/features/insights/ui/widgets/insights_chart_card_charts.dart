@@ -49,9 +49,10 @@ class StackedBarChart extends StatelessWidget {
         ? rawComparison
         : null;
     final comparing = comparison != null;
-    // Muted neutral ghost: the previous bar reads as a reference, never
-    // competing with the colored current stack.
-    final ghostColor = tokens.colors.text.lowEmphasis;
+    // The previous bar is an OUTLINE, not a fill: it reads unmistakably as a
+    // reference frame and never collides with the solid greys already in play
+    // (Uncategorized neutral, Other slate).
+    final ghostColor = tokens.colors.text.mediumEmphasis;
 
     var maxTotal = 0;
     for (var i = 0; i < bucketCount; i++) {
@@ -59,14 +60,21 @@ class StackedBarChart extends StatelessWidget {
       if (total > maxTotal) maxTotal = total;
       if (comparing && comparison[i] > maxTotal) maxTotal = comparison[i];
     }
-    // Floor the scale at one hour so sparse data is not visually inflated.
-    final maxY = maxTotal < 3600 ? 3600.0 : maxTotal * 1.05;
+    // Floor the scale at 30 min so a near-empty range isn't wildly inflated,
+    // but low enough that genuinely small-but-real days still fill the plot
+    // rather than hugging the baseline.
+    final maxY = maxTotal < 1800 ? 1800.0 : maxTotal * 1.05;
     final interval = _axisInterval(maxY);
     // Label every bar when there's room (≤7); thin out for longer ranges.
     final labelEvery = bucketCount <= 7
         ? 1
         : (bucketCount / 6).ceil().clamp(1, bucketCount);
     final today = epochDay(clock.now());
+    // The not-yet-elapsed tail of an in-progress period. Shaded and
+    // dim-labelled so empty future buckets read as "upcoming", not as a
+    // productivity cliff or a broken chart.
+    final firstFutureIndex = _firstFutureBucket(data, today);
+    final hasFuture = firstFutureIndex < bucketCount;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -87,6 +95,17 @@ class StackedBarChart extends StatelessWidget {
             maxY: maxY,
             alignment: BarChartAlignment.spaceAround,
             borderData: FlBorderData(show: false),
+            rangeAnnotations: hasFuture
+                ? RangeAnnotations(
+                    verticalRangeAnnotations: [
+                      VerticalRangeAnnotation(
+                        x1: firstFutureIndex - 0.5,
+                        x2: bucketCount - 0.5,
+                        color: tokens.colors.surface.hover,
+                      ),
+                    ],
+                  )
+                : const RangeAnnotations(),
             gridData: FlGridData(
               drawVerticalLine: false,
               horizontalInterval: interval,
@@ -124,16 +143,25 @@ class StackedBarChart extends StatelessWidget {
                   reservedSize: 28,
                   getTitlesWidget: (value, meta) {
                     final index = value.toInt();
-                    if (index % labelEvery != 0 ||
-                        index < 0 ||
-                        index >= bucketCount) {
+                    if (index < 0 || index >= bucketCount) {
                       return const SizedBox.shrink();
                     }
+                    final label = _bottomAxisLabel(
+                      context,
+                      data,
+                      index,
+                      labelEvery,
+                    );
+                    if (label == null) return const SizedBox.shrink();
                     return SideTitleWidget(
                       meta: meta,
                       child: Text(
-                        _bucketLabel(context, data, index),
-                        style: axisStyle,
+                        label,
+                        style: index >= firstFutureIndex
+                            ? axisStyle.copyWith(
+                                color: tokens.colors.text.lowEmphasis,
+                              )
+                            : axisStyle,
                       ),
                     );
                   },
@@ -234,7 +262,8 @@ class StackedBarChart extends StatelessWidget {
                       BarChartRodData(
                         toY: comparison[i].toDouble(),
                         width: barWidth,
-                        color: ghostColor,
+                        color: Colors.transparent,
+                        borderSide: BorderSide(color: ghostColor, width: 1.5),
                         borderRadius: BorderRadius.vertical(
                           top: Radius.circular(tokens.radii.xs / 2),
                         ),
@@ -289,17 +318,36 @@ class StackedAreaChart extends StatelessWidget {
     final maxTop = stackedTops.isEmpty || bucketCount == 0
         ? 0
         : stackedTops.last.last;
-    final maxY = maxTop < 3600 ? 3600.0 : maxTop * 1.05;
+    // Slight top headroom so the stack never kisses the top gridline.
+    final maxY = maxTop < 1800 ? 1800.0 : maxTop * 1.08;
     final interval = _axisInterval(maxY);
     final labelEvery = bucketCount <= 7
         ? 1
         : (bucketCount / 6).ceil().clamp(1, bucketCount);
+    final today = epochDay(clock.now());
+    final firstFutureIndex = _firstFutureBucket(data, today);
+    final hasFuture = firstFutureIndex < bucketCount;
+    // Stop the running total at the last elapsed bucket — carrying a flat
+    // line across the not-yet-elapsed remainder of the period reads as a
+    // stall, and wastes most of the canvas on dead plateau.
+    final lastDrawnBucket = hasFuture ? firstFutureIndex : bucketCount;
 
     return LineChart(
       LineChartData(
         minY: 0,
         maxY: maxY,
         borderData: FlBorderData(show: false),
+        rangeAnnotations: hasFuture
+            ? RangeAnnotations(
+                verticalRangeAnnotations: [
+                  VerticalRangeAnnotation(
+                    x1: firstFutureIndex - 0.5,
+                    x2: bucketCount - 0.5,
+                    color: tokens.colors.surface.hover,
+                  ),
+                ],
+              )
+            : const RangeAnnotations(),
         gridData: FlGridData(
           drawVerticalLine: false,
           horizontalInterval: interval,
@@ -332,16 +380,20 @@ class StackedAreaChart extends StatelessWidget {
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index % labelEvery != 0 ||
-                    index < 0 ||
-                    index >= bucketCount) {
+                if (index < 0 || index >= bucketCount) {
                   return const SizedBox.shrink();
                 }
+                final label = _bottomAxisLabel(context, data, index, labelEvery);
+                if (label == null) return const SizedBox.shrink();
                 return SideTitleWidget(
                   meta: meta,
                   child: Text(
-                    _bucketLabel(context, data, index),
-                    style: axisStyle,
+                    label,
+                    style: index >= firstFutureIndex
+                        ? axisStyle.copyWith(
+                            color: tokens.colors.text.lowEmphasis,
+                          )
+                        : axisStyle,
                   ),
                 );
               },
@@ -394,7 +446,7 @@ class StackedAreaChart extends StatelessWidget {
               );
               return LineChartBarData(
                 spots: [
-                  for (var i = 0; i < bucketCount; i++)
+                  for (var i = 0; i < lastDrawnBucket; i++)
                     FlSpot(i.toDouble(), stackedTops[s][i].toDouble()),
                 ],
                 color: bandEdgeColor(fill, brightness),
@@ -415,6 +467,7 @@ class ChartLegend extends StatelessWidget {
     required this.rolledUpCount,
     required this.resolver,
     this.showPrevious = false,
+    this.previousLabel,
     super.key,
   });
 
@@ -422,8 +475,12 @@ class ChartLegend extends StatelessWidget {
   final int rolledUpCount;
   final InsightsCategoryResolver resolver;
 
-  /// Append a muted ghost swatch for the previous-period bar (compare mode).
+  /// Append an outlined ring for the previous-period reference (compare mode).
   final bool showPrevious;
+
+  /// Names the comparison baseline in the legend, e.g. "Previous week". Falls
+  /// back to a bare "Previous" when null.
+  final String? previousLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -440,13 +497,20 @@ class ChartLegend extends StatelessWidget {
       return label;
     }
 
-    Widget item(Color color, String label) => Row(
+    Widget item(Color color, String label, {bool outlined = false}) => Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           width: tokens.spacing.step3,
           height: tokens.spacing.step3,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            // The previous-period reference reads as a ring, matching its
+            // outlined bars — never a solid swatch that could pass for a
+            // category.
+            color: outlined ? null : color,
+            border: outlined ? Border.all(color: color, width: 1.5) : null,
+          ),
         ),
         // step3 matches the table's swatch gap — one reading rhythm.
         SizedBox(width: tokens.spacing.step3),
@@ -474,8 +538,9 @@ class ChartLegend extends StatelessWidget {
           ),
         if (showPrevious)
           item(
-            tokens.colors.text.lowEmphasis,
-            context.messages.insightsComparePrevious,
+            tokens.colors.text.mediumEmphasis,
+            previousLabel ?? context.messages.insightsComparePrevious,
+            outlined: true,
           ),
       ],
     );
@@ -532,6 +597,36 @@ String _axisLabel(double seconds) {
   if (minutes < 60) return '${minutes}m';
   final h = minutes / 60;
   return h == h.roundToDouble() ? '${h.round()}h' : '${h.toStringAsFixed(1)}h';
+}
+
+/// Index of the first bucket that starts after [today] (the not-yet-elapsed
+/// tail), or the bucket count when the whole period has elapsed.
+int _firstFutureBucket(InsightsChartData data, int today) {
+  for (var i = 0; i < data.bucketStarts.length; i++) {
+    if (epochDay(data.bucketStarts[i]) > today) return i;
+  }
+  return data.bucketStarts.length;
+}
+
+/// Bottom-axis tick text for bucket [index], or null to skip it. Weekly
+/// (year-view) buckets label only the first week of each month with the
+/// month name, so ticks land on clean month boundaries instead of arbitrary
+/// week-start dates; shorter ranges thin evenly via [labelEvery].
+String? _bottomAxisLabel(
+  BuildContext context,
+  InsightsChartData data,
+  int index,
+  int labelEvery,
+) {
+  if (data.granularity == InsightsGranularity.week) {
+    final month = data.bucketStarts[index].month;
+    final prevMonth = index == 0 ? -1 : data.bucketStarts[index - 1].month;
+    if (month == prevMonth) return null;
+    final locale = Localizations.localeOf(context).toString();
+    return DateFormat.MMM(locale).format(data.bucketStarts[index]);
+  }
+  if (index % labelEvery != 0) return null;
+  return _bucketLabel(context, data, index);
 }
 
 String _bucketLabel(BuildContext context, InsightsChartData data, int index) {
@@ -619,8 +714,8 @@ TextSpan _comparisonTooltipSpan(
       messages.insightsDeltaNew,
       tokens.colors.alert.success.defaultColor,
     ),
-    > 0 => ('+$pct%', tokens.colors.alert.success.defaultColor),
-    < 0 => ('$pct%', tokens.colors.alert.warning.defaultColor),
+    > 0 => ('↑$pct%', tokens.colors.alert.success.defaultColor),
+    < 0 => ('↓${-pct}%', tokens.colors.alert.error.defaultColor),
     _ => ('0%', tokens.colors.text.mediumEmphasis),
   };
   return TextSpan(

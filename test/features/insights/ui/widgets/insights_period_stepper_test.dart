@@ -147,7 +147,7 @@ void main() {
   });
 
   testWidgets(
-    'a month-to-date selection lights MTD and labels the day span',
+    'a month-to-date selection lights MTD and labels it to date',
     (tester) async {
       final mtd = InsightsPeriodSelection(
         unit: InsightsPeriodUnit.month,
@@ -162,14 +162,15 @@ void main() {
           .active;
       expect(pillActive('MTD'), isTrue);
       expect(pillActive('YTD'), isFalse);
-      // The partial period is labeled by its actual span, not "June 2026".
-      expect(find.text('Jun 1 – 7'), findsOneWidget);
+      // The partial period keeps the month name with a "(to date)" qualifier,
+      // so it agrees with the granularity dropdown — never a bare "June 2026".
+      expect(find.text('June 2026 (to date)'), findsOneWidget);
       expect(find.text('June 2026'), findsNothing);
     },
   );
 
   testWidgets(
-    'a year-to-date selection lights YTD and spans from January 1st',
+    'a year-to-date selection lights YTD and labels it to date',
     (tester) async {
       final ytd = InsightsPeriodSelection(
         unit: InsightsPeriodUnit.year,
@@ -184,7 +185,7 @@ void main() {
             .active,
         isTrue,
       );
-      expect(find.text('Jan 1 – Jun 7'), findsOneWidget);
+      expect(find.text('2026 (to date)'), findsOneWidget);
     },
   );
 

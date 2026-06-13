@@ -146,13 +146,13 @@ List<InsightsTimeRow> insightsScenarioRows(
   return rows;
 }
 
-/// Three lonely entries within the current month — each small enough that
-/// the month average (total ÷ days in the month) rounds below a minute, so
-/// the table renders the `<0:01` guard. Includes an uncategorized stretch.
+/// Three lonely entries within the current month — each small enough that the
+/// average over the elapsed days of the month rounds below a minute, so the
+/// table renders the `<0:01` guard. Includes an uncategorized stretch.
 List<InsightsTimeRow> insightsSparseRows(DateTime now) => [
-  _row(DateTime(now.year, now.month, now.day - 2, 9), 22, 'cat-client'),
-  _row(DateTime(now.year, now.month, now.day - 4, 14), 14, 'cat-admin'),
-  _row(DateTime(now.year, now.month, now.day - 1, 11), 9, null),
+  _row(DateTime(now.year, now.month, now.day - 2, 9), 6, 'cat-client'),
+  _row(DateTime(now.year, now.month, now.day - 4, 14), 4, 'cat-admin'),
+  _row(DateTime(now.year, now.month, now.day - 1, 11), 3, null),
 ];
 
 /// One category only, trailing week.

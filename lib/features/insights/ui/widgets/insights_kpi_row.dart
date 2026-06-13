@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_delta_chip.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Headline numbers: plain figures in quiet tiles — no gauges, no donuts.
@@ -55,6 +56,32 @@ class InsightsKpiRow extends StatelessWidget {
         if (focusCategoryIds.contains(category.id)) category.name,
     ].join(' · ');
 
+    // Before focus is configured the Total metric leads and the picker is a
+    // compact, content-sized pill beside it — an empty CTA must never claim
+    // tile-equal weight (let alone the wider 2-up footprint) next to the one
+    // real number on screen.
+    if (!configured) {
+      return Row(
+        children: [
+          Expanded(
+            child: _KpiTile(
+              label: messages.insightsKpiTotal,
+              seconds: kpis.totalSeconds,
+              previousSeconds: previousKpis?.totalSeconds,
+            ),
+          ),
+          SizedBox(width: tokens.spacing.cardItemSpacing),
+          InsightsPillButton(
+            label: messages.insightsChooseFocusCategories,
+            icon: Icons.center_focus_strong_outlined,
+            active: false,
+            outlined: true,
+            onTap: () => _editFocusCategories(context),
+          ),
+        ],
+      );
+    }
+
     // IntrinsicHeight equalizes tile heights inside the unbounded-height
     // ListView (a bare stretch Row would receive infinite constraints).
     return IntrinsicHeight(
@@ -68,36 +95,24 @@ class InsightsKpiRow extends StatelessWidget {
               previousSeconds: previousKpis?.totalSeconds,
             ),
           ),
-          if (configured) ...[
-            SizedBox(width: tokens.spacing.cardItemSpacing),
-            Expanded(
-              child: _KpiTile(
-                label: messages.insightsKpiFocus,
-                seconds: kpis.focusSeconds!,
-                previousSeconds: previousKpis?.focusSeconds,
-                caption: focusNames,
-                onEdit: () => _editFocusCategories(context),
-              ),
+          SizedBox(width: tokens.spacing.cardItemSpacing),
+          Expanded(
+            child: _KpiTile(
+              label: messages.insightsKpiFocus,
+              seconds: kpis.focusSeconds!,
+              previousSeconds: previousKpis?.focusSeconds,
+              caption: focusNames,
+              onEdit: () => _editFocusCategories(context),
             ),
-            SizedBox(width: tokens.spacing.cardItemSpacing),
-            Expanded(
-              child: _KpiTile(
-                label: messages.insightsKpiOther,
-                seconds: kpis.otherSeconds!,
-                previousSeconds: previousKpis?.otherSeconds,
-              ),
+          ),
+          SizedBox(width: tokens.spacing.cardItemSpacing),
+          Expanded(
+            child: _KpiTile(
+              label: messages.insightsKpiOther,
+              seconds: kpis.otherSeconds!,
+              previousSeconds: previousKpis?.otherSeconds,
             ),
-          ] else ...[
-            SizedBox(width: tokens.spacing.cardItemSpacing),
-            // The affordance occupies the focus+other footprint so the row
-            // reads as a deliberate 2-up, not a truncated 3-up.
-            Expanded(
-              flex: 2,
-              child: _ChooseFocusTile(
-                onTap: () => _editFocusCategories(context),
-              ),
-            ),
-          ],
+          ),
         ],
       ),
     );
@@ -168,7 +183,9 @@ class _KpiTile extends StatelessWidget {
             ),
             SizedBox(height: tokens.spacing.step3),
             Text(
-              formatDurationCompact(seconds),
+              // Rolls into days at quarter/year scale so a ~1000h headline
+              // stays legible; below 100h this is the familiar "3h 40m".
+              formatDurationWithDays(seconds),
               style: calmDisplayStyle(tokens),
             ),
             if (previousSeconds != null) ...[
@@ -183,9 +200,9 @@ class _KpiTile extends StatelessWidget {
                   Flexible(
                     child: Text(
                       '${context.messages.insightsCompareVs} '
-                      '${formatDurationCompact(previousSeconds)}',
+                      '${formatDurationWithDays(previousSeconds)}',
                       style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
+                        color: tokens.colors.text.mediumEmphasis,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -206,55 +223,6 @@ class _KpiTile extends StatelessWidget {
               ),
             ],
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChooseFocusTile extends StatelessWidget {
-  const _ChooseFocusTile({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(tokens.radii.m),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        hoverColor: tokens.colors.surface.hover,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-            border: Border.all(color: tokens.colors.decorative.level01),
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.cardPadding),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.center_focus_strong_outlined,
-                  size: tokens.spacing.step6,
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-                SizedBox(width: tokens.spacing.step4),
-                Flexible(
-                  child: Text(
-                    context.messages.insightsChooseFocusCategories,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ),
       ),
     );

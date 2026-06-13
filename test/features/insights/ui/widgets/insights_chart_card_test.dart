@@ -345,7 +345,7 @@ void main() {
       final tooltipData = chart.data.barTouchData.touchTooltipData;
       final group = chart.data.barGroups[0];
 
-      // Current rod (index 0): category rows plus a "Previous … +100%" footer
+      // Current rod (index 0): category rows plus a "Previous … ↑100%" footer
       // (5400 vs 2700).
       final current = tooltipData.getTooltipItem(
         group,
@@ -357,7 +357,7 @@ void main() {
           current.text + current.children!.map((s) => s.toPlainText()).join();
       expect(currentText, contains('Client Work  1h'));
       expect(currentText, contains('Previous  45m'));
-      expect(currentText, contains('+100%'));
+      expect(currentText, contains('↑100%'));
 
       // Ghost rod (index 1): just the previous total, no breakdown.
       final ghost = tooltipData.getTooltipItem(group, 0, group.barRods[1], 1)!;

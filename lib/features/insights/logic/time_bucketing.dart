@@ -388,18 +388,24 @@ List<InsightsTableRow> buildTableRows(
   InsightsDayBuckets buckets,
   InsightsRange range, {
   List<MapEntry<String?, int>>? precomputedRanked,
+  int? avgDayCount,
 }) {
   final ranked =
       precomputedRanked ?? rankedCategoryTotals(dailyTotals(buckets, range));
   final total = ranked.fold<int>(0, (sum, e) => sum + e.value);
   if (total == 0) return const [];
+  // Average over [avgDayCount] when given (the elapsed days of an in-progress
+  // period), else the whole range. Dividing a current month's time by all 30
+  // calendar days — most of them not yet reached — understates the daily pace
+  // and disagrees with the MTD view, which already divides by elapsed days.
+  final days = (avgDayCount ?? range.dayCount).clamp(1, range.dayCount);
   return [
     for (final entry in ranked)
       InsightsTableRow(
         categoryId: entry.key,
         seconds: entry.value,
         share: entry.value / total,
-        avgSecondsPerDay: entry.value ~/ range.dayCount,
+        avgSecondsPerDay: entry.value ~/ days,
       ),
   ];
 }

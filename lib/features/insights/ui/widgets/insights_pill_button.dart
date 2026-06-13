@@ -13,6 +13,7 @@ class InsightsPillButton extends StatelessWidget {
     this.icon,
     this.outlined = false,
     this.semanticsLabel,
+    this.tooltip,
     super.key,
   });
 
@@ -26,6 +27,10 @@ class InsightsPillButton extends StatelessWidget {
   final bool outlined;
   final String? semanticsLabel;
 
+  /// Plain-language hover/long-press hint (e.g. "This month so far"), so
+  /// terse pill labels like MTD/YTD/Compare don't depend on prior knowledge.
+  final String? tooltip;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -34,8 +39,17 @@ class InsightsPillButton extends StatelessWidget {
     final foreground = active
         ? tokens.colors.text.highEmphasis
         : tokens.colors.text.mediumEmphasis;
+    // Active carries a redundant, stronger border (not only a faint fill) so
+    // the on/off state survives at a glance and for low-vision users; an
+    // inactive outlined pill keeps a quiet resting border so it still reads
+    // as a button.
+    final borderColor = active
+        ? tokens.colors.text.mediumEmphasis
+        : outlined
+        ? tokens.colors.decorative.level02
+        : Colors.transparent;
 
-    return Semantics(
+    final pill = Semantics(
       label: semanticsLabel,
       button: true,
       selected: active,
@@ -49,9 +63,7 @@ class InsightsPillButton extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(tokens.radii.s),
-              border: outlined || active
-                  ? Border.all(color: tokens.colors.decorative.level02)
-                  : Border.all(color: Colors.transparent),
+              border: Border.all(color: borderColor),
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(
@@ -86,5 +98,8 @@ class InsightsPillButton extends StatelessWidget {
         ),
       ),
     );
+
+    if (tooltip == null) return pill;
+    return Tooltip(message: tooltip, child: pill);
   }
 }

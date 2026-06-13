@@ -10,11 +10,11 @@ int? insightsDeltaPercent(int current, int previous) {
   return ((current - previous) / previous * 100).round();
 }
 
-/// Calm current-vs-previous change indicator: the percent change in a quiet
-/// accent — teal-ish up, clay-ish down (semantic success/warning tokens),
-/// never loud red/green. The leading sign conveys direction without an
-/// arrow, so it stays compact in a table cell. Renders nothing when both
-/// values are zero.
+/// Current-vs-previous change indicator: the percent change with a leading
+/// arrow so direction is never carried by color alone (color-blind- and
+/// low-vision-safe) — muted green up, muted clay down (semantic
+/// success/error tokens, the latter chosen so it never reads as the gold/amber
+/// category hue). Renders nothing when both values are zero.
 class InsightsDeltaChip extends StatelessWidget {
   const InsightsDeltaChip({
     required this.current,
@@ -32,7 +32,7 @@ class InsightsDeltaChip extends StatelessWidget {
     if (current == 0 && previous == 0) return const SizedBox.shrink();
 
     final up = tokens.colors.alert.success.defaultColor;
-    final down = tokens.colors.alert.warning.defaultColor;
+    final down = tokens.colors.alert.error.defaultColor;
     final flat = tokens.colors.text.mediumEmphasis;
     final pct = insightsDeltaPercent(current, previous);
 
@@ -43,10 +43,10 @@ class InsightsDeltaChip extends StatelessWidget {
       text = messages.insightsDeltaNew;
       color = up;
     } else if (pct > 0) {
-      text = '+$pct%';
+      text = '↑$pct%';
       color = up;
     } else if (pct < 0) {
-      text = '$pct%'; // already carries the minus sign
+      text = '↓${pct.abs()}%';
       color = down;
     } else {
       text = '0%';

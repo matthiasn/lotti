@@ -5034,6 +5034,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsChartCompareCaption => 'Toto období vs. předchozí';
 
   @override
+  String get insightsChartCompareCaptionPartial =>
+      'Toto období zatím vs. předchozí';
+
+  @override
   String get insightsChartCumulative => 'Kumulativně';
 
   @override
@@ -5046,13 +5050,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsChartDailyCaption => 'Čas za den';
 
   @override
+  String get insightsChartHourlyCaption => 'Čas za hodinu';
+
+  @override
   String get insightsChartTitle => 'Čas podle kategorie';
+
+  @override
+  String get insightsChartWeeklyCaption => 'Čas za týden';
 
   @override
   String get insightsChooseFocusCategories => 'Vybrat fokusové kategorie';
 
   @override
   String get insightsCompare => 'Porovnat';
+
+  @override
+  String get insightsCompareTooltip => 'Porovnat s předchozím obdobím';
 
   @override
   String get insightsComparePrevious => 'Předchozí';
@@ -5075,6 +5088,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get insightsEmptyShowYear => 'Zobrazit tento rok';
+
+  @override
+  String get insightsEmptyPreviousPeriod => 'Zobrazit předchozí období';
 
   @override
   String get insightsEmptyTitle => 'V tomto období není zaznamenaný žádný čas';
@@ -5120,6 +5136,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get insightsPeriodQuarter => 'Čtvrtletí';
+
+  @override
+  String get insightsPeriodToDateSuffix => 'zatím';
 
   @override
   String get insightsPeriodWeek => 'Týden';
