@@ -4,24 +4,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show HapticFeedback;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
-import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
+import 'package:lotti/features/sync/ui/backfill_settings_recovery.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+export 'package:lotti/features/sync/ui/backfill_settings_recovery.dart';
+
 part 'backfill_settings_stats.dart';
-part 'backfill_settings_recovery.dart';
 
 /// Mobile / Beamer wrapper. Adds the [SliverBoxAdapterPage] chrome
 /// + the [SyncFeatureGate] flag check and delegates content to
@@ -104,7 +102,7 @@ class BackfillSettingsBody extends ConsumerWidget {
                     .toggle(),
               ),
               SizedBox(height: tokens.spacing.step4),
-              _AdvancedRecoveryGroup(
+              AdvancedRecoveryGroup(
                 stats: stats,
                 skipped: depth?.abandoned ?? 0,
                 coordinator: coordinator,

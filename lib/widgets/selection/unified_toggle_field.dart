@@ -1,4 +1,6 @@
-part of 'unified_toggle.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/selection/unified_toggle.dart';
 
 /// Unified toggle with integrated label for form-like contexts
 /// Matches the exact styling of existing FormSwitch implementations

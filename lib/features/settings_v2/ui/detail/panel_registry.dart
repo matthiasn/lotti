@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -6,11 +5,8 @@ import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
-import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
-import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
-import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
 import 'package:lotti/features/categories/ui/pages/category_details_page.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
@@ -29,6 +25,8 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_p
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/settings_v2/ui/detail/ai_panel_dispatch.dart';
+import 'package:lotti/features/settings_v2/ui/detail/detail_id_dispatch.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
@@ -37,12 +35,10 @@ import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 
-part 'detail_id_dispatch.dart';
-part 'ai_panel_dispatch.dart';
+export 'package:lotti/features/settings_v2/ui/detail/ai_panel_dispatch.dart';
+export 'package:lotti/features/settings_v2/ui/detail/detail_id_dispatch.dart';
 
 /// Signature for a registered detail-pane panel body. The builder
 /// receives a fresh [BuildContext] under the Settings V2 detail
@@ -239,3 +235,165 @@ Widget _syncNodeProfilePanel(BuildContext context) =>
     const SyncNodeProfilePage();
 Widget _syncMatrixMaintenancePanel(BuildContext context) =>
     const MatrixSyncMaintenanceBody();
+
+// --- Step 8 builders --------------------------------------------------------
+//
+// Categories / Labels / Dashboards each carry a list ↔ detail/create swap
+// driven by URL `pathParameters`. The legacy desktop column-stack used to
+// route those URLs to a fresh detail column; under V2 the panel slot itself
+// owns the dispatch via [DetailIdDispatch] so the same content area swaps
+// in place when a row is tapped (`/settings/<branch>/<id>`) or the create
+// CTA is hit (`/settings/<branch>/create`).
+Widget _categoriesPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'categoryId',
+  list: (_) => const CategoriesListBody(),
+  create: (_, _) => const CategoryDetailsPage(),
+  detail: (_, id) => CategoryDetailsPage(
+    key: ValueKey('settings-v2-category-$id'),
+    categoryId: id,
+  ),
+);
+Widget _labelsPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'labelId',
+  list: (_) => const LabelsListBody(),
+  create: (_, route) => LabelDetailsPage(
+    initialName: route?.queryParameters['name'],
+  ),
+  detail: (_, id) => LabelDetailsPage(
+    key: ValueKey('settings-v2-label-$id'),
+    labelId: id,
+  ),
+);
+Widget _habitsPanel(BuildContext context) => const HabitsBody();
+Widget _dashboardsPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'dashboardId',
+  list: (_) => const DashboardsBody(),
+  create: (_, _) => CreateDashboardPage(),
+  detail: (_, id) => EditDashboardPage(
+    key: ValueKey('settings-v2-dashboard-$id'),
+    dashboardId: id,
+  ),
+);
+Widget _measurablesPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'measurableId',
+  list: (_) => const MeasurablesBody(),
+  create: (_, _) => CreateMeasurablePage(),
+  detail: (_, id) => EditMeasurablePage(
+    key: ValueKey('settings-v2-measurable-$id'),
+    measurableId: id,
+  ),
+);
+// Conflicts follow the list ↔ detail dispatch pattern shared with the
+// other dynamic-list panels. Without this, a row tap on desktop would
+// only update the URL — the detail pane would keep rendering the list
+// because the V2 surface picks its child from the registered panel,
+// not from the main Beamer location stack. There's no create flow, so
+// the `create` slot just falls through to the list.
+Widget _syncConflictsPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'conflictId',
+  list: (_) => const ConflictsBody(),
+  create: (_, _) => const ConflictsBody(),
+  detail: (_, id) => ConflictDetailRoute(
+    key: ValueKey('settings-v2-conflict-$id'),
+    conflictId: id,
+  ),
+);
+
+// --- Step 9 builders --------------------------------------------------------
+// AI Settings: list ↔ provider/model/profile detail dispatch.
+//
+// Unlike categories / labels / dashboards (each of which has ONE detail
+// kind keyed off a single path parameter), the AI panel has three
+// orthogonal detail surfaces — provider, model, inference profile —
+// reachable from three different tab bodies in the list. The generic
+// `DetailIdDispatch` only handles one id key, so the AI panel uses a
+// custom `AiPanelDispatch` widget that reads all three keys off the
+// route and picks whichever is present.
+//
+// URL space:
+//   /settings/ai                        → list (AiSettingsBody)
+//   /settings/ai/provider/<providerId>  → AiProviderDetailPage
+//   /settings/ai/model/<modelId>        → InferenceModelEditPage
+//   /settings/ai/profile/<profileId>    → InferenceProfileDetailPage
+//                                          (resolves id → AiConfig via
+//                                          Riverpod and hands the loaded
+//                                          profile to InferenceProfileForm)
+//
+// The legacy `/settings/ai/profiles` leaf renders InferenceProfilePage
+// directly and is unrelated — it's the seeded-profile list, not the
+// per-profile edit form.
+Widget _aiPanel(BuildContext context) => const AiPanelDispatch();
+
+// Per-leaf desktop bodies for the AI sidebar children. Each renders
+// `AiSettingsBody` pinned to one tab with the in-pane TabBar AND the
+// page header hidden so the sidebar leaf / breadcrumb naming isn't
+// duplicated above the list. The `ai-profiles` panel now points at
+// the v3 profiles tab body — the legacy `InferenceProfilesBody` is
+// still kept around for any direct `/settings/ai/profiles` deep-links
+// in older bookmarks, but the v2 panel registry no longer uses it.
+Widget _aiProvidersPanel(BuildContext context) => const AiSettingsBody(
+  initialTab: AiSettingsTab.providers,
+  hideTabBar: true,
+  hideHeader: true,
+);
+Widget _aiModelsPanel(BuildContext context) => const AiSettingsBody(
+  initialTab: AiSettingsTab.models,
+  hideTabBar: true,
+  hideHeader: true,
+);
+Widget _aiProfilesPanel(BuildContext context) => const AiSettingsBody(
+  initialTab: AiSettingsTab.profiles,
+  hideTabBar: true,
+  hideHeader: true,
+);
+Widget _agentsPanel(BuildContext context) => const AgentSettingsBody();
+
+// Stats and pending-wakes are read-only views with no detail/create
+// flow, so they reuse `AgentSettingsBody` directly. The body resolves
+// its tab from the URL on desktop, so the explicit `initialTab`
+// argument here is just a fallback for mobile / test contexts where
+// `NavService` isn't desktop-driven.
+Widget _agentsStatsPanel(BuildContext context) =>
+    const AgentSettingsBody(initialTab: AgentSettingsTab.stats);
+Widget _agentsPendingWakesPanel(BuildContext context) =>
+    const AgentSettingsBody(initialTab: AgentSettingsTab.pendingWakes);
+
+// Agent panels follow the same list ↔ detail/create pattern as the
+// other dynamic-list panels (categories, labels, dashboards, …) — the
+// floating "+" beams to `/settings/agents/<tab>/create`, list rows
+// beam to `/settings/agents/<tab>/<id>`. Each tab has its own id key
+// (`templateId` / `soulId` / `agentId`).
+Widget _agentsTemplatesPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'templateId',
+  list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.templates),
+  create: (_, _) => const AgentTemplateDetailPage(),
+  detail: (_, id) => AgentTemplateDetailPage(
+    key: ValueKey('settings-v2-agent-template-$id'),
+    templateId: id,
+  ),
+);
+
+Widget _agentsSoulsPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'soulId',
+  list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.souls),
+  create: (_, _) => const AgentSoulDetailPage(),
+  detail: (_, id) => AgentSoulDetailPage(
+    key: ValueKey('settings-v2-agent-soul-$id'),
+    soulId: id,
+  ),
+);
+
+Widget _agentsInstancesPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'agentId',
+  list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.instances),
+  // Instances are created indirectly (from a template) — there is no
+  // `/settings/agents/instances/create` route in beamer, so the
+  // create branch is structurally unreachable. Fall back to the list
+  // defensively rather than crashing if a stray URL ever arrives.
+  create: (_, _) =>
+      const AgentSettingsBody(initialTab: AgentSettingsTab.instances),
+  detail: (_, id) => AgentDetailPage(
+    key: ValueKey('settings-v2-agent-instance-$id'),
+    agentId: id,
+  ),
+);

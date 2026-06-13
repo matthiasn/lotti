@@ -1,67 +1,8 @@
-part of 'panel_registry.dart';
-
-// --- Step 8 builders --------------------------------------------------------
-//
-// Categories / Labels / Dashboards each carry a list ↔ detail/create swap
-// driven by URL `pathParameters`. The legacy desktop column-stack used to
-// route those URLs to a fresh detail column; under V2 the panel slot itself
-// owns the dispatch via [DetailIdDispatch] so the same content area swaps
-// in place when a row is tapped (`/settings/<branch>/<id>`) or the create
-// CTA is hit (`/settings/<branch>/create`).
-Widget _categoriesPanel(BuildContext context) => DetailIdDispatch(
-  idParamKey: 'categoryId',
-  list: (_) => const CategoriesListBody(),
-  create: (_, _) => const CategoryDetailsPage(),
-  detail: (_, id) => CategoryDetailsPage(
-    key: ValueKey('settings-v2-category-$id'),
-    categoryId: id,
-  ),
-);
-Widget _labelsPanel(BuildContext context) => DetailIdDispatch(
-  idParamKey: 'labelId',
-  list: (_) => const LabelsListBody(),
-  create: (_, route) => LabelDetailsPage(
-    initialName: route?.queryParameters['name'],
-  ),
-  detail: (_, id) => LabelDetailsPage(
-    key: ValueKey('settings-v2-label-$id'),
-    labelId: id,
-  ),
-);
-Widget _habitsPanel(BuildContext context) => const HabitsBody();
-Widget _dashboardsPanel(BuildContext context) => DetailIdDispatch(
-  idParamKey: 'dashboardId',
-  list: (_) => const DashboardsBody(),
-  create: (_, _) => CreateDashboardPage(),
-  detail: (_, id) => EditDashboardPage(
-    key: ValueKey('settings-v2-dashboard-$id'),
-    dashboardId: id,
-  ),
-);
-Widget _measurablesPanel(BuildContext context) => DetailIdDispatch(
-  idParamKey: 'measurableId',
-  list: (_) => const MeasurablesBody(),
-  create: (_, _) => CreateMeasurablePage(),
-  detail: (_, id) => EditMeasurablePage(
-    key: ValueKey('settings-v2-measurable-$id'),
-    measurableId: id,
-  ),
-);
-// Conflicts follow the list ↔ detail dispatch pattern shared with the
-// other dynamic-list panels. Without this, a row tap on desktop would
-// only update the URL — the detail pane would keep rendering the list
-// because the V2 surface picks its child from the registered panel,
-// not from the main Beamer location stack. There's no create flow, so
-// the `create` slot just falls through to the list.
-Widget _syncConflictsPanel(BuildContext context) => DetailIdDispatch(
-  idParamKey: 'conflictId',
-  list: (_) => const ConflictsBody(),
-  create: (_, _) => const ConflictsBody(),
-  detail: (_, id) => ConflictDetailRoute(
-    key: ValueKey('settings-v2-conflict-$id'),
-    conflictId: id,
-  ),
-);
+import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
+import 'package:lotti/features/settings_v2/ui/detail/panel_registry.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/nav_service.dart';
 
 /// Generic list ↔ detail/create dispatcher for V2 panel bodies.
 ///

@@ -1,4 +1,13 @@
-part of 'backfill_settings_page.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Collapsible group containing every recovery action. Header is
 /// always visible; body is hidden until tapped open. Order matches
@@ -10,11 +19,12 @@ part of 'backfill_settings_page.dart';
 ///   5. Re-request pending (secondary, disabled when 0)
 ///   6. Ask peers for unresolvable (primary, disabled when 0)
 ///   7. Retire stuck entries (danger-tertiary, disabled when 0)
-class _AdvancedRecoveryGroup extends StatefulWidget {
-  const _AdvancedRecoveryGroup({
+class AdvancedRecoveryGroup extends StatefulWidget {
+  const AdvancedRecoveryGroup({
     required this.stats,
     required this.skipped,
     required this.coordinator,
+    super.key,
   });
 
   final BackfillStatsState stats;
@@ -22,10 +32,10 @@ class _AdvancedRecoveryGroup extends StatefulWidget {
   final QueuePipelineCoordinator? coordinator;
 
   @override
-  State<_AdvancedRecoveryGroup> createState() => _AdvancedRecoveryGroupState();
+  State<AdvancedRecoveryGroup> createState() => _AdvancedRecoveryGroupState();
 }
 
-class _AdvancedRecoveryGroupState extends State<_AdvancedRecoveryGroup>
+class _AdvancedRecoveryGroupState extends State<AdvancedRecoveryGroup>
     with SingleTickerProviderStateMixin {
   bool _open = false;
   late final AnimationController _chevController = AnimationController(
@@ -457,6 +467,3 @@ class _RecoveryAction extends StatelessWidget {
     );
   }
 }
-
-/// Shared rounded surface card. Background, radius, and outline come
-/// from design tokens; the only knob the caller turns is `padding`.
