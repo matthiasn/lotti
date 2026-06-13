@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:lotti/features/tts/engine/supertonic_onnx_engine.dart';
 import 'package:lotti/features/tts/engine/tts_engine.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'tts_engine_provider.g.dart';
@@ -30,10 +33,12 @@ class UnavailableTtsEngine implements TtsEngine {
   Future<void> dispose() async {}
 }
 
-/// Provides the on-device TTS engine. The concrete Supertonic ONNX engine
-/// (which needs `flutter_onnxruntime` + a static-linkage Podfile and bundled
-/// voice assets — see the feature README) is a deliberate native-integration
-/// step; until it is wired this returns the unavailable fallback, and tests
-/// override it with a fake.
+/// Provides the on-device TTS engine — the Supertonic ONNX engine on macOS,
+/// the unavailable fallback elsewhere. Tests override this with a fake.
 @Riverpod(keepAlive: true)
-TtsEngine ttsEngine(Ref ref) => const UnavailableTtsEngine();
+TtsEngine ttsEngine(Ref ref) {
+  if (!platform.isMacOS) return const UnavailableTtsEngine();
+  final engine = SupertonicOnnxEngine();
+  ref.onDispose(() => unawaited(engine.dispose()));
+  return engine;
+}
