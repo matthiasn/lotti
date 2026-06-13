@@ -215,7 +215,7 @@ class AgentTemplateMetrics {
 
     // Check all template versions in parallel.
     final allVersions = await Future.wait(
-      templates.map((t) => crud.getVersionHistory(t.id, limit: 1000000)),
+      templates.map((t) => crud.getVersionHistory(t.id, limit: -1)),
     );
     if (allVersions.any(
       (versions) => versions.any((v) => v.profileId == profileId),
