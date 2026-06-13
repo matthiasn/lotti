@@ -1,21 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:gpt_markdown/gpt_markdown.dart';
-import 'package:lotti/classes/project_data.dart';
-import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/agents/ui/report_content_parser.dart';
-import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/projects/state/project_health_metrics.dart';
-import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
-import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
-import 'package:lotti/utils/markdown_link_utils.dart';
 
-part 'shared_tag_widgets.dart';
-part 'expandable_report_section.dart';
+export 'package:lotti/features/projects/ui/widgets/expandable_report_section.dart';
+export 'package:lotti/features/projects/ui/widgets/shared_tag_widgets.dart';
 
 class ShowcasePanel extends StatelessWidget {
   const ShowcasePanel({

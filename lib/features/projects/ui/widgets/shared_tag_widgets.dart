@@ -1,4 +1,13 @@
-part of 'shared_widgets.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/projects/state/project_health_metrics.dart';
+import 'package:lotti/features/projects/ui/widgets/project_health_indicator.dart';
+import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
+import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 /// A small coloured tag displaying a category icon and label.
 class CategoryTag extends StatelessWidget {
@@ -476,6 +485,3 @@ class CountDotBadge extends StatelessWidget {
     );
   }
 }
-
-/// A bordered panel with a header row, divider, and a list of children
-/// separated by dividers.

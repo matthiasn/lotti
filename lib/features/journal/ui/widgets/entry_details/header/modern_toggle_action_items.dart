@@ -1,4 +1,12 @@
-part of 'modern_action_items.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/colors.dart';
+import 'package:lotti/widgets/modal/modal_action_sheet.dart';
+import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
 /// Modern styled toggle starred action item
 class ModernToggleStarredItem extends ConsumerWidget {
@@ -187,5 +195,3 @@ class ModernDeleteItem extends ConsumerWidget {
     );
   }
 }
-
-/// Modern styled speech recognition action item

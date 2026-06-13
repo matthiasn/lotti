@@ -4,38 +4,21 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/supported_language.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
-import 'package:lotti/features/ai/skills/built_in_skills.dart';
-import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
 import 'package:lotti/features/labels/ui/widgets/label_selection_modal_utils.dart';
-import 'package:lotti/features/ratings/state/rating_controller.dart';
-import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/features/tasks/ui/widgets/language_selection_modal_content.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/link_service.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/audio_utils.dart';
-import 'package:lotti/utils/consts.dart';
-import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/utils/media_file_actions.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
-import 'package:share_plus/share_plus.dart';
 
-part 'modern_toggle_action_items.dart';
-part 'modern_media_action_items.dart';
-part 'modern_advanced_action_items.dart';
-
-typedef MediaFileRevealCallback = Future<void> Function(String filePath);
+export 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_advanced_action_items.dart';
+export 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_media_action_items.dart';
+export 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_toggle_action_items.dart';
 
 class ModernUnlinkItem extends ConsumerWidget {
   const ModernUnlinkItem({

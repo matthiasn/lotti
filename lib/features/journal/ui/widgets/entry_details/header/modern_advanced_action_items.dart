@@ -1,4 +1,19 @@
-part of 'modern_action_items.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/header/action_menu_list_item.dart';
+import 'package:lotti/features/ratings/state/rating_controller.dart';
+import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/link_service.dart';
+import 'package:lotti/themes/colors.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Modern styled generate cover art action item.
 /// Shows only for audio entries that are linked to a task.
