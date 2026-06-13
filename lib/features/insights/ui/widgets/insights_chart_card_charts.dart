@@ -1,7 +1,22 @@
-part of 'insights_chart_card.dart';
+import 'package:clock/clock.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/insights/logic/chart_colors.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _StackedBarChart extends StatelessWidget {
-  const _StackedBarChart({required this.chartData, required this.resolver});
+class StackedBarChart extends StatelessWidget {
+  const StackedBarChart({
+    required this.chartData,
+    required this.resolver,
+    super.key,
+  });
 
   final InsightsChartData chartData;
   final InsightsCategoryResolver resolver;
@@ -175,8 +190,12 @@ class _StackedBarChart extends StatelessWidget {
   }
 }
 
-class _StackedAreaChart extends StatelessWidget {
-  const _StackedAreaChart({required this.chartData, required this.resolver});
+class StackedAreaChart extends StatelessWidget {
+  const StackedAreaChart({
+    required this.chartData,
+    required this.resolver,
+    super.key,
+  });
 
   final InsightsChartData chartData;
   final InsightsCategoryResolver resolver;
@@ -331,11 +350,12 @@ class _StackedAreaChart extends StatelessWidget {
   }
 }
 
-class _ChartLegend extends StatelessWidget {
-  const _ChartLegend({
+class ChartLegend extends StatelessWidget {
+  const ChartLegend({
     required this.seriesKeys,
     required this.rolledUpCount,
     required this.resolver,
+    super.key,
   });
 
   final List<String?> seriesKeys;
@@ -392,8 +412,8 @@ class _ChartLegend extends StatelessWidget {
   }
 }
 
-class _EmptyChart extends StatelessWidget {
-  const _EmptyChart({required this.message});
+class EmptyChart extends StatelessWidget {
+  const EmptyChart({required this.message, super.key});
 
   final String message;
 
@@ -409,4 +429,114 @@ class _EmptyChart extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Picks a readable hour-based axis interval so the chart shows roughly
+/// 3-5 horizontal gridlines regardless of data magnitude.
+double _axisInterval(double maxY) {
+  const hours = <double>[
+    0.25,
+    0.5,
+    1,
+    2,
+    4,
+    8,
+    12,
+    24,
+    48,
+    96,
+    168,
+    336,
+    672,
+    1344,
+  ];
+  for (final h in hours) {
+    final step = h * 3600;
+    if (maxY / step <= 4.5) return step;
+  }
+  return hours.last * 3600;
+}
+
+String _axisLabel(double seconds) {
+  final minutes = seconds ~/ 60;
+  if (minutes < 60) return '${minutes}m';
+  final h = minutes / 60;
+  return h == h.roundToDouble() ? '${h.round()}h' : '${h.toStringAsFixed(1)}h';
+}
+
+String _bucketLabel(BuildContext context, InsightsChartData data, int index) {
+  final locale = Localizations.localeOf(context).toString();
+  final start = data.bucketStarts[index];
+  return switch (data.granularity) {
+    InsightsGranularity.hour => DateFormat.H(locale).format(start),
+    // Short ranges answer "where did my week go" — users think in
+    // weekdays there, not dates.
+    InsightsGranularity.day when data.bucketStarts.length <= 7 => DateFormat(
+      'EEE d',
+      locale,
+    ).format(start),
+    InsightsGranularity.day ||
+    InsightsGranularity.week => DateFormat.MMMd(locale).format(start),
+  };
+}
+
+/// Tooltip header: bucket label + total, with a "partial week" flag on
+/// truncated edge buckets so they aren't misread as dips.
+String _tooltipHeader(BuildContext context, InsightsChartData data, int index) {
+  final base =
+      '${_bucketLabel(context, data, index)}  '
+      '${formatDurationCompact(_bucketTotal(data, index))}';
+  final isPartial =
+      data.granularity == InsightsGranularity.week &&
+      ((index == 0 && data.partialFirstBucket) ||
+          (index == data.bucketStarts.length - 1 && data.partialLastBucket));
+  if (!isPartial) return base;
+  return '$base · ${context.messages.insightsPartialWeek}';
+}
+
+/// Total seconds in the bucket at [index] across all series.
+int _bucketTotal(InsightsChartData data, int index) {
+  var total = 0;
+  for (final row in data.values) {
+    total += row[index];
+  }
+  return total;
+}
+
+/// Multi-row tooltip text: every series for the hovered bucket, largest
+/// first, zero rows skipped.
+List<TextSpan> _tooltipRows(
+  InsightsChartData data,
+  InsightsCategoryResolver resolver,
+  List<List<int>> values,
+  int index,
+  TextStyle style,
+  Brightness brightness,
+) {
+  final rows = <(String?, int)>[
+    for (var s = 0; s < data.seriesKeys.length; s++)
+      if (values[s][index] > 0) (data.seriesKeys[s], values[s][index]),
+  ]..sort((a, b) => b.$2.compareTo(a.$2));
+
+  return [
+    for (final (key, seconds) in rows)
+      TextSpan(
+        text: '\n● ',
+        style: style.copyWith(
+          color: chartColorFor(
+            resolver.colorHexFor(key),
+            brightness,
+            seriesKey: key,
+          ),
+        ),
+        children: [
+          TextSpan(
+            text:
+                '${resolver.labelFor(key)}  '
+                '${formatDurationCompact(seconds)}',
+            style: style,
+          ),
+        ],
+      ),
+  ];
 }

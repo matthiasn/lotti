@@ -1,10 +1,29 @@
-part of 'conflict_detail_route.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
+import 'package:lotti/features/sync/ui/widgets/conflicts/title_diff.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-class _CardsLayout extends StatelessWidget {
-  const _CardsLayout({
+/// Width of the colored accent stripe pinned to the leading edge of
+/// each diff card.
+const double _kAccentStripeWidth = 3;
+
+/// Diameter of the small status dot rendered inside each card header.
+const double _kCardHeaderDotSize = 6;
+
+/// Picker pill height. Matches the agents-listing toolbar pill height
+/// — there's no tappable-row token in the design system yet.
+const double _kPickerPillHeight = 36;
+
+class CardsLayout extends StatelessWidget {
+  const CardsLayout({
     required this.isStacked,
     required this.localCard,
     required this.remoteCard,
+    super.key,
   });
 
   final bool isStacked;
@@ -35,17 +54,18 @@ class _CardsLayout extends StatelessWidget {
   }
 }
 
-class _DiffCard extends StatelessWidget {
-  const _DiffCard({
+class DiffCard extends StatelessWidget {
+  const DiffCard({
     required this.side,
     required this.entity,
     required this.titleSegments,
     required this.isSelected,
     required this.isStacked,
     required this.onTap,
+    super.key,
   });
 
-  final _Side side;
+  final ConflictSide side;
   final JournalEntity entity;
   final List<TitleDiffSegment> titleSegments;
   final bool isSelected;
@@ -57,21 +77,21 @@ class _DiffCard extends StatelessWidget {
     final tokens = context.designTokens;
     final colors = tokens.colors;
     final messages = context.messages;
-    final accent = side == _Side.local
+    final accent = side == ConflictSide.local
         ? colors.conflict.local.color
         : colors.conflict.remote.color;
-    final selectedTint = side == _Side.local
+    final selectedTint = side == ConflictSide.local
         ? colors.conflict.local.surface
         : colors.conflict.remote.surface;
     final radius = BorderRadius.circular(tokens.radii.l);
-    final eyebrow = side == _Side.local
+    final eyebrow = side == ConflictSide.local
         ? messages.conflictSideThisDevice
         : messages.conflictSideFromSync;
-    final timestamp = _formatHmsa(
+    final timestamp = formatHmsa(
       entity.meta.dateFrom,
       Localizations.localeOf(context).toString(),
     );
-    final vec = _maxCounter(entity.meta.vectorClock);
+    final vec = maxCounter(entity.meta.vectorClock);
     // Desktop: header timestamp carries `vec N` inline. Mobile: header
     // shows the bare timestamp and the meta row picks up the `vec N`
     // chip — the per-side `local edit / via sync` provenance is desktop
@@ -315,7 +335,7 @@ class _CardMeta extends StatelessWidget {
   });
 
   final JournalEntity entity;
-  final _Side side;
+  final ConflictSide side;
   final bool isStacked;
   final int vec;
 
@@ -333,13 +353,13 @@ class _CardMeta extends StatelessWidget {
     if (categoryId != null && categoryId.isNotEmpty) {
       children.add(CategoryIconCompact(categoryId, size: 18));
     }
-    final words = _wordCount(entity);
+    final words = wordCount(entity);
     if (words > 0) {
       children.add(Text(messages.conflictWordCount(words), style: caption));
     }
-    final duration = _audioDuration(entity);
+    final duration = audioDuration(entity);
     if (duration != null) {
-      children.add(Text(_formatDuration(duration), style: caption));
+      children.add(Text(formatDuration(duration), style: caption));
     }
     if (isStacked && vec > 0) {
       children.add(
@@ -349,7 +369,7 @@ class _CardMeta extends StatelessWidget {
     if (!isStacked) {
       children.add(
         Text(
-          side == _Side.local
+          side == ConflictSide.local
               ? messages.conflictMetaLocalEdit
               : messages.conflictMetaViaSync,
           style: caption,
@@ -374,17 +394,18 @@ class _CardMeta extends StatelessWidget {
   }
 }
 
-class _PickerRow extends StatelessWidget {
-  const _PickerRow({
+class PickerRow extends StatelessWidget {
+  const PickerRow({
     required this.selected,
     required this.isStacked,
     required this.onSelect,
     required this.onEditMerge,
+    super.key,
   });
 
-  final _Side? selected;
+  final ConflictSide? selected;
   final bool isStacked;
-  final ValueChanged<_Side> onSelect;
+  final ValueChanged<ConflictSide> onSelect;
   final VoidCallback onEditMerge;
 
   @override
@@ -397,8 +418,8 @@ class _PickerRow extends StatelessWidget {
           label: messages.conflictPickerUseThisDevice,
           accent: tokens.colors.conflict.local.color,
           tint: tokens.colors.conflict.local.surface,
-          isSelected: selected == _Side.local,
-          onTap: () => onSelect(_Side.local),
+          isSelected: selected == ConflictSide.local,
+          onTap: () => onSelect(ConflictSide.local),
         ),
       ),
       SizedBox(width: tokens.spacing.step3),
@@ -407,8 +428,8 @@ class _PickerRow extends StatelessWidget {
           label: messages.conflictPickerUseFromSync,
           accent: tokens.colors.conflict.remote.color,
           tint: tokens.colors.conflict.remote.surface,
-          isSelected: selected == _Side.remote,
-          onTap: () => onSelect(_Side.remote),
+          isSelected: selected == ConflictSide.remote,
+          onTap: () => onSelect(ConflictSide.remote),
         ),
       ),
       if (!isStacked) ...[

@@ -18,6 +18,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/health_summary.d
 import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details_borders.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
@@ -33,8 +34,6 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/events/event_form.dart';
-
-part 'entry_details_borders.dart';
 
 class EntryDetailsWidget extends ConsumerWidget {
   const EntryDetailsWidget({
@@ -136,7 +135,7 @@ class EntryDetailsWidget extends ConsumerWidget {
             child: IgnorePointer(
               child: Padding(
                 padding: cardMargin,
-                child: _TimerBorder(
+                child: TimerBorder(
                   color: color,
                   radius: AppTheme.cardBorderRadius,
                   strokeWidth: 1,
@@ -166,7 +165,7 @@ class EntryDetailsWidget extends ConsumerWidget {
             child: IgnorePointer(
               child: Padding(
                 padding: cardMargin,
-                child: _PulsingBorder(
+                child: PulsingBorder(
                   color: categoryColor,
                   radius: AppTheme.cardBorderRadius,
                   strokeWidth: 1,

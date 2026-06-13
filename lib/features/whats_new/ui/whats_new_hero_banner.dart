@@ -1,11 +1,15 @@
-part of 'whats_new_modal.dart';
+import 'dart:ui';
+
+import 'package:flutter/material.dart';
+import 'package:lotti/themes/theme.dart';
 
 /// 21:9 hero banner with gradient overlay and version badge.
-class _HeroBanner extends StatelessWidget {
-  const _HeroBanner({
+class HeroBanner extends StatelessWidget {
+  const HeroBanner({
     required this.imageUrl,
     required this.version,
     required this.isLatest,
+    super.key,
   });
 
   final String? imageUrl;
@@ -173,5 +177,3 @@ class _VersionBadge extends StatelessWidget {
     );
   }
 }
-
-/// Glassmorphism navigation footer with animated indicator dots.

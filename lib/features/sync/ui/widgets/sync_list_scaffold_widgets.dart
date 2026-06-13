@@ -1,4 +1,9 @@
-part of 'sync_list_scaffold.dart';
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/app_bar/settings_header_dimensions.dart';
+import 'package:lotti/widgets/cards/index.dart';
 
 class _FilterCard<F extends Enum> extends StatelessWidget {
   const _FilterCard({
@@ -58,9 +63,9 @@ class _FilterCard<F extends Enum> extends StatelessWidget {
   }
 }
 
-class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
+class SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
     implements PreferredSizeWidget {
-  const _SyncHeaderBottom({
+  const SyncHeaderBottom({
     required this.filters,
     required this.counts,
     required this.selected,
@@ -69,6 +74,7 @@ class _SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
     required this.summaryText,
     required this.padding,
     required this.preferredHeight,
+    super.key,
   });
 
   final Map<F, SyncFilterOption<T>> filters;

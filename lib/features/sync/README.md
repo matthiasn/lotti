@@ -860,7 +860,7 @@ stored marker.
 
 - `_QueueDepthScope` (inside `BackfillSettingsBody`) — subscribes to
   `InboundQueue.depthChanges` (with a one-shot `queue.stats()` seed) and
-  rebuilds `_StatusRow` with the latest total / per-producer breakdown /
+  rebuilds `StatusRow` with the latest total / per-producer breakdown /
   abandoned count.
 - `_AdvancedRecoveryGroup` (`backfill_settings_recovery.dart`) — manual
   recovery actions that drive `QueuePipelineCoordinator.triggerBridge()`

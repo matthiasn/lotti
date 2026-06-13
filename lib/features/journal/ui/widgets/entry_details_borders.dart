@@ -1,4 +1,6 @@
-part of 'entry_details_widget.dart';
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 
 class _GlowBorderPainter extends CustomPainter {
   _GlowBorderPainter({
@@ -55,14 +57,15 @@ class _GlowBorderPainter extends CustomPainter {
   }
 }
 
-class _PulsingBorder extends StatefulWidget {
-  const _PulsingBorder({
+class PulsingBorder extends StatefulWidget {
+  const PulsingBorder({
     required this.color,
     required this.radius,
     required this.strokeWidth,
     required this.duration,
     required this.loopCount,
     required this.startDelay,
+    super.key,
   });
 
   final Color color;
@@ -73,10 +76,10 @@ class _PulsingBorder extends StatefulWidget {
   final Duration startDelay;
 
   @override
-  State<_PulsingBorder> createState() => _PulsingBorderState();
+  State<PulsingBorder> createState() => _PulsingBorderState();
 }
 
-class _PulsingBorderState extends State<_PulsingBorder>
+class _PulsingBorderState extends State<PulsingBorder>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller = AnimationController(
     vsync: this,
@@ -158,11 +161,12 @@ class _PulsingBorderState extends State<_PulsingBorder>
   }
 }
 
-class _TimerBorder extends StatelessWidget {
-  const _TimerBorder({
+class TimerBorder extends StatelessWidget {
+  const TimerBorder({
     required this.color,
     required this.radius,
     required this.strokeWidth,
+    super.key,
   });
 
   final Color color;

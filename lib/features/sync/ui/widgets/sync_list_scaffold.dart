@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold_widgets.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/settings_header_dimensions.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
-import 'package:lotti/widgets/cards/index.dart';
 import 'package:lotti/widgets/ui/empty_state_widget.dart';
-
-part 'sync_list_scaffold_widgets.dart';
 
 typedef SyncFilterPredicate<T> = bool Function(T item);
 
@@ -317,7 +315,7 @@ class _SyncListScaffoldState<T, F extends Enum>
               summaryText: summaryText,
             );
 
-        final headerBottom = _SyncHeaderBottom<T, F>(
+        final headerBottom = SyncHeaderBottom<T, F>(
           filters: widget.filters,
           counts: counts,
           selected: _selectedFilter,
