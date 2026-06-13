@@ -3,14 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/ui/agent_date_format.dart';
-import 'package:lotti/features/agents/ui/report_content_parser.dart';
-import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/agents/ui/agent_activity_log_cards.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-
-part 'agent_activity_log_cards.dart';
 
 /// Displays a chronological list of recent agent messages.
 ///
@@ -101,7 +96,7 @@ class AgentActivityLog extends ConsumerWidget {
       itemBuilder: (context, index) {
         final entity = messages[index];
         return entity.mapOrNull(
-              agentMessage: (msg) => _MessageCard(
+              agentMessage: (msg) => MessageCard(
                 key: ValueKey(msg.id),
                 message: msg,
                 initiallyExpanded: expandToolCalls && _isToolCall(msg.kind),
@@ -179,7 +174,7 @@ class AgentObservationLog extends ConsumerWidget {
       itemBuilder: (context, index) {
         final entity = observations[index];
         return entity.mapOrNull(
-              agentMessage: (msg) => _MessageCard(
+              agentMessage: (msg) => MessageCard(
                 key: ValueKey(msg.id),
                 message: msg,
                 initiallyExpanded: true,
@@ -249,7 +244,7 @@ class AgentReportHistoryLog extends ConsumerWidget {
         final report = entity.mapOrNull(agentReport: (r) => r);
         if (report == null) return const SizedBox.shrink();
 
-        return _ReportSnapshotCard(
+        return ReportSnapshotCard(
           key: ValueKey(report.id),
           report: report,
           initiallyExpanded: index == 0,

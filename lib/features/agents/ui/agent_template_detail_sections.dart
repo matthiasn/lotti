@@ -1,4 +1,19 @@
-part of 'agent_template_detail_page.dart';
+import 'dart:developer' as developer;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/agent_report_section.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_history_dashboard.dart';
+import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Expandable section showing version history for a template.
 ///
@@ -163,9 +178,10 @@ class _VersionTile extends ConsumerWidget {
 }
 
 /// Settings tab content — form fields.
-class _SettingsTabContent extends StatelessWidget {
-  const _SettingsTabContent({
+class SettingsTabContent extends StatelessWidget {
+  const SettingsTabContent({
     required this.formFields,
+    super.key,
   });
 
   final Widget formFields;
@@ -184,10 +200,11 @@ class _SettingsTabContent extends StatelessWidget {
 
 /// Stats tab content — evolution history dashboard, token usage, version
 /// history, and delete action.
-class _StatsTabContent extends StatelessWidget {
-  const _StatsTabContent({
+class StatsTabContent extends StatelessWidget {
+  const StatsTabContent({
     required this.templateId,
     required this.onDelete,
+    super.key,
   });
 
   final String templateId;
@@ -224,8 +241,8 @@ class _StatsTabContent extends StatelessWidget {
 }
 
 /// Reports tab content — recent reports from all instances.
-class _ReportsTabContent extends ConsumerWidget {
-  const _ReportsTabContent({required this.templateId});
+class ReportsTabContent extends ConsumerWidget {
+  const ReportsTabContent({required this.templateId, super.key});
 
   final String templateId;
 

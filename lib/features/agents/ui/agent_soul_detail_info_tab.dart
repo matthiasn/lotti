@@ -1,10 +1,25 @@
-part of 'agent_soul_detail_page.dart';
+import 'dart:developer' as developer;
+
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/soul_query_providers.dart';
+import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_history_card.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Info tab: version history + assigned templates + delete action.
-class _InfoTabContent extends ConsumerWidget {
-  const _InfoTabContent({
+class InfoTabContent extends ConsumerWidget {
+  const InfoTabContent({
     required this.soulId,
     required this.onDelete,
+    super.key,
   });
 
   final String soulId;

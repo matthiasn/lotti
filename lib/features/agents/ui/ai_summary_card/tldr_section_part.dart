@@ -1,10 +1,15 @@
-part of '../ai_summary_card.dart';
+import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/ui/wake_countdown_state.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Header row of the AI card: sparkle badge, "AI summary" + agent-name
 /// link, the running spinner / refresh affordance / countdown pill /
 /// cancel-timer cluster, and the Read more / Show less pill.
-class _TldrHeader extends StatelessWidget {
-  const _TldrHeader({
+class TldrHeader extends StatelessWidget {
+  const TldrHeader({
     required this.agentName,
     required this.hasMore,
     required this.expanded,
@@ -17,6 +22,7 @@ class _TldrHeader extends StatelessWidget {
     required this.onRunNow,
     required this.onCancelTimer,
     required this.onCountdownExpired,
+    super.key,
   });
 
   final String? agentName;
@@ -377,12 +383,13 @@ class _CountdownPillState extends State<_CountdownPill>
 /// Body of the AI card under the header. Always renders the TLDR
 /// markdown; when [expanded] is true it additionally renders the full
 /// report markdown and a pill that opens the agent internals panel.
-class _TldrBody extends StatelessWidget {
-  const _TldrBody({
+class TldrBody extends StatelessWidget {
+  const TldrBody({
     required this.tldr,
     required this.expanded,
     required this.additionalReport,
     required this.onOpenInternals,
+    super.key,
   });
 
   final String tldr;

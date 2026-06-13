@@ -7,13 +7,10 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
-import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
-import 'package:lotti/features/agents/ui/agent_report_section.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_history_dashboard.dart';
+import 'package:lotti/features/agents/ui/agent_template_detail_sections.dart';
 import 'package:lotti/features/agents/ui/profile_selector.dart';
 import 'package:lotti/features/agents/ui/soul_selector.dart';
-import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -24,8 +21,6 @@ import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
-
-part 'agent_template_detail_sections.dart';
 
 /// Detail page for creating or editing an agent template.
 ///
@@ -324,16 +319,16 @@ class _AgentTemplateDetailPageState
         controller: _tabController,
         children: [
           // Settings tab
-          _SettingsTabContent(
+          SettingsTabContent(
             formFields: _buildFormFields(context),
           ),
           // Stats tab
-          _StatsTabContent(
+          StatsTabContent(
             templateId: templateId,
             onDelete: () => _handleDelete(context),
           ),
           // Reports tab
-          _ReportsTabContent(templateId: templateId),
+          ReportsTabContent(templateId: templateId),
         ],
       ),
     );

@@ -1,12 +1,22 @@
-part of 'agent_activity_log.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/ui/agent_date_format.dart';
+import 'package:lotti/features/agents/ui/report_content_parser.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/themes/theme.dart';
 
 /// Displays an agent report as a collapsible card.
 ///
 /// When collapsed, shows only the TLDR section extracted from the report.
 /// When expanded, renders the full [AgentReportEntity.content] via
 /// [AgentMarkdownView].
-class _ReportSnapshotCard extends StatefulWidget {
-  const _ReportSnapshotCard({
+class ReportSnapshotCard extends StatefulWidget {
+  const ReportSnapshotCard({
     required this.report,
     this.initiallyExpanded = false,
     super.key,
@@ -16,10 +26,10 @@ class _ReportSnapshotCard extends StatefulWidget {
   final bool initiallyExpanded;
 
   @override
-  State<_ReportSnapshotCard> createState() => _ReportSnapshotCardState();
+  State<ReportSnapshotCard> createState() => _ReportSnapshotCardState();
 }
 
-class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
+class _ReportSnapshotCardState extends State<ReportSnapshotCard> {
   late bool _expanded = widget.initiallyExpanded;
 
   @override
@@ -108,8 +118,8 @@ class _ReportSnapshotCardState extends State<_ReportSnapshotCard> {
   }
 }
 
-class _MessageCard extends ConsumerStatefulWidget {
-  const _MessageCard({
+class MessageCard extends ConsumerStatefulWidget {
+  const MessageCard({
     required this.message,
     this.initiallyExpanded = false,
     super.key,
@@ -119,10 +129,10 @@ class _MessageCard extends ConsumerStatefulWidget {
   final bool initiallyExpanded;
 
   @override
-  ConsumerState<_MessageCard> createState() => _MessageCardState();
+  ConsumerState<MessageCard> createState() => _MessageCardState();
 }
 
-class _MessageCardState extends ConsumerState<_MessageCard> {
+class _MessageCardState extends ConsumerState<MessageCard> {
   late bool _expanded = widget.initiallyExpanded;
 
   @override
