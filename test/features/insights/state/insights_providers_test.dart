@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/range_presets.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -11,6 +13,7 @@ import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -37,7 +40,10 @@ void main() {
     await notificationController.close();
   });
 
-  ProviderContainer makeContainer({UpdateNotifications? withNotifications}) {
+  ProviderContainer makeContainer({
+    UpdateNotifications? withNotifications,
+    Override? firstDayOfWeek,
+  }) {
     final container = ProviderContainer(
       overrides: [
         insightsRepositoryProvider.overrideWithValue(repository),
@@ -47,6 +53,15 @@ void main() {
         // Immediate refetches in tests; the 5s production throttle has its
         // own fakeAsync coverage in notification_stream_test.dart.
         insightsRefetchThrottleProvider.overrideWithValue(null),
+        // Default: deterministic Monday-start weeks regardless of host
+        // region. Synchronous so AsyncData lands at build time; an async
+        // override resolves on a microtask and leaves Riverpod's refresh
+        // timer pending past teardown. Tests that exercise other regions or
+        // the async resolve path pass their own [firstDayOfWeek] override.
+        firstDayOfWeek ??
+            firstDayOfWeekIndexProvider.overrideWith(
+              (ref) => DateTime.monday % 7,
+            ),
       ],
     );
     addTearDown(container.dispose);
@@ -257,40 +272,230 @@ void main() {
   });
 
   group('InsightsRangeController', () {
-    test('defaults to the trailing 7 days', () {
+    test('defaults to the current Monday-start week', () {
       final container = makeContainer();
-      final range = withClock(
+      final selection = withClock(
         Clock.fixed(fixedNow),
         () => container.read(insightsRangeControllerProvider),
       );
-      expect(range.preset, InsightsRangePreset.d7);
-      expect(range.dayCount, 7);
-      expect(dayStart(range.endDayExclusive), DateTime(2026, 6, 8));
+      expect(selection.unit, InsightsPeriodUnit.week);
+      expect(selection.range.dayCount, 7);
+      // fixedNow is Sun 2026-06-07; its week is Mon Jun 1 – Sun Jun 7.
+      expect(dayStart(selection.range.startDay), DateTime(2026, 6));
+      expect(dayStart(selection.range.endDayExclusive), DateTime(2026, 6, 8));
     });
 
-    test('selectPreset re-resolves against the current clock', () {
+    test('selectUnit re-derives the period for the new granularity', () {
       final container = makeContainer();
       withClock(Clock.fixed(fixedNow), () {
         container
             .read(insightsRangeControllerProvider.notifier)
-            .selectPreset(InsightsRangePreset.ytd);
+            .selectUnit(InsightsPeriodUnit.month);
       });
-      final range = container.read(insightsRangeControllerProvider);
-      expect(range.preset, InsightsRangePreset.ytd);
-      expect(dayStart(range.startDay), DateTime(2026));
+      final selection = container.read(insightsRangeControllerProvider);
+      expect(selection.unit, InsightsPeriodUnit.month);
+      expect(dayStart(selection.range.startDay), DateTime(2026, 6));
+      expect(dayStart(selection.range.endDayExclusive), DateTime(2026, 7));
     });
 
-    test('selectCustom applies an inclusive day range', () {
+    test('step browses to the previous and forward periods', () {
+      final container = makeContainer();
+      final notifier = withClock(
+        Clock.fixed(fixedNow),
+        () => container.read(insightsRangeControllerProvider.notifier),
+      );
+
+      // ignore: cascade_invocations
+      notifier.step(-1);
+      expect(
+        dayStart(
+          container.read(insightsRangeControllerProvider).range.startDay,
+        ),
+        DateTime(2026, 5, 25), // previous week's Monday
+      );
+
+      notifier.step(2);
+      expect(
+        dayStart(
+          container.read(insightsRangeControllerProvider).range.startDay,
+        ),
+        DateTime(2026, 6, 8), // two weeks forward
+      );
+    });
+
+    test('selectToDate jumps to the current month-to-date', () {
       final container = makeContainer();
       withClock(Clock.fixed(fixedNow), () {
         container
             .read(insightsRangeControllerProvider.notifier)
-            .selectCustom(DateTime(2026, 5, 10), DateTime(2026, 5, 3));
+            .selectToDate(InsightsPeriodUnit.month);
       });
-      final range = container.read(insightsRangeControllerProvider);
-      expect(range.preset, isNull);
-      expect(dayStart(range.startDay), DateTime(2026, 5, 3));
-      expect(dayStart(range.endDayExclusive), DateTime(2026, 5, 11));
+      final selection = container.read(insightsRangeControllerProvider);
+      expect(selection.unit, InsightsPeriodUnit.month);
+      expect(dayStart(selection.range.startDay), DateTime(2026, 6));
+      // fixedNow is Jun 7 → the range ends after today, not after the month.
+      expect(dayStart(selection.range.endDayExclusive), DateTime(2026, 6, 8));
+    });
+
+    test(
+      'year-to-date comparison covers the same elapsed days last year',
+      () {
+        final container = makeContainer();
+        final notifier = withClock(
+          Clock.fixed(fixedNow),
+          () => container.read(insightsRangeControllerProvider.notifier),
+        );
+        withClock(Clock.fixed(fixedNow), () {
+          notifier
+            ..selectToDate(InsightsPeriodUnit.year)
+            ..toggleCompare();
+        });
+        final selection = container.read(insightsRangeControllerProvider);
+        expect(dayStart(selection.range.startDay), DateTime(2026));
+        expect(dayStart(selection.range.endDayExclusive), DateTime(2026, 6, 8));
+
+        final previous = notifier.previousComparisonRange!;
+        expect(dayStart(previous.startDay), DateTime(2025));
+        // Truncated to the same elapsed days — never YTD vs a full year.
+        expect(previous.dayCount, selection.range.dayCount);
+      },
+    );
+
+    test('jumpTo snaps to the current granularity period of a far date', () {
+      final container = makeContainer();
+      withClock(Clock.fixed(fixedNow), () {
+        container
+            .read(insightsRangeControllerProvider.notifier)
+            .jumpTo(DateTime(2025, 11, 19)); // a Wednesday
+      });
+      final selection = container.read(insightsRangeControllerProvider);
+      // Still a week (granularity unchanged); snapped to that day's Monday.
+      expect(selection.unit, InsightsPeriodUnit.week);
+      expect(dayStart(selection.range.startDay), DateTime(2025, 11, 17));
+    });
+
+    test('toggleCompare flips and survives navigation', () {
+      final container = makeContainer();
+      final notifier = withClock(
+        Clock.fixed(fixedNow),
+        () => container.read(insightsRangeControllerProvider.notifier),
+      );
+      bool compareOn() =>
+          container.read(insightsRangeControllerProvider).compareEnabled;
+
+      expect(compareOn(), isFalse);
+      notifier.toggleCompare();
+      expect(compareOn(), isTrue);
+
+      // Stepping and switching granularity keep comparison enabled.
+      notifier
+        ..step(-1)
+        ..selectUnit(InsightsPeriodUnit.month)
+        ..jumpTo(DateTime(2025));
+      expect(compareOn(), isTrue);
+
+      notifier.toggleCompare();
+      expect(compareOn(), isFalse);
+    });
+
+    test('previousComparisonRange is null until compare is enabled', () {
+      final container = makeContainer();
+      final notifier = withClock(
+        Clock.fixed(fixedNow),
+        () => container.read(insightsRangeControllerProvider.notifier),
+      );
+      expect(notifier.previousComparisonRange, isNull);
+      notifier.toggleCompare();
+      expect(notifier.previousComparisonRange, isNotNull);
+    });
+
+    test(
+      'previousComparisonRange aligns to the region first weekday (Sunday)',
+      () {
+        // Regression: with a Sunday-first region the comparison week must be
+        // the immediately preceding Sunday→Saturday week, not a Monday-default
+        // week shifted ~13 days back.
+        final container = makeContainer(
+          firstDayOfWeek: firstDayOfWeekIndexProvider.overrideWith((ref) => 0),
+        );
+        final notifier = withClock(
+          Clock.fixed(fixedNow),
+          () => container.read(insightsRangeControllerProvider.notifier),
+        );
+        // fixedNow is Sun 2026-06-07 → current week Sun Jun 7 – Sat Jun 13.
+        final current = container.read(insightsRangeControllerProvider).range;
+        expect(dayStart(current.startDay), DateTime(2026, 6, 7));
+        expect(dayStart(current.endDayExclusive), DateTime(2026, 6, 14));
+
+        notifier.toggleCompare();
+        final previous = notifier.previousComparisonRange!;
+        expect(dayStart(previous.startDay), DateTime(2026, 5, 31));
+        expect(dayStart(previous.endDayExclusive), DateTime(2026, 6, 7));
+      },
+    );
+
+    test(
+      're-anchors the untouched default week when the region resolves',
+      () async {
+        final completer = Completer<int>();
+        final container = makeContainer(
+          firstDayOfWeek: firstDayOfWeekIndexProvider.overrideWith(
+            (ref) => completer.future,
+          ),
+        );
+
+        DateTime startDay() => dayStart(
+          container.read(insightsRangeControllerProvider).range.startDay,
+        );
+
+        await withClock(Clock.fixed(fixedNow), () async {
+          // First frame: region unresolved → Monday-start default.
+          expect(startDay(), DateTime(2026, 6)); // Mon Jun 1
+
+          // Region resolves to Sunday-first.
+          completer.complete(0);
+          await pumpEventQueue();
+
+          // The untouched default re-anchors to the Sunday-aligned current week.
+          expect(startDay(), DateTime(2026, 6, 7)); // Sun Jun 7
+        });
+      },
+    );
+
+    test('region resolving never clobbers prior navigation', () async {
+      final completer = Completer<int>();
+      final container = makeContainer(
+        firstDayOfWeek: firstDayOfWeekIndexProvider.overrideWith(
+          (ref) => completer.future,
+        ),
+      );
+
+      InsightsPeriodSelection selection() =>
+          container.read(insightsRangeControllerProvider);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        // Navigate to the previous (Monday-aligned) week and turn compare on.
+        container.read(insightsRangeControllerProvider.notifier)
+          ..step(-1)
+          ..toggleCompare();
+        expect(dayStart(selection().range.startDay), DateTime(2026, 5, 25));
+
+        completer.complete(0); // Sunday-first resolves late
+        await pumpEventQueue();
+
+        // The stepped period and the compare toggle both survive.
+        expect(dayStart(selection().range.startDay), DateTime(2026, 5, 25));
+        expect(selection().compareEnabled, isTrue);
+
+        // And the comparison window stays one week back from the (unchanged)
+        // current range — no drift even though the first weekday resolved to
+        // Sunday after navigation.
+        final previous = container
+            .read(insightsRangeControllerProvider.notifier)
+            .previousComparisonRange!;
+        expect(dayStart(previous.startDay), DateTime(2026, 5, 18));
+        expect(dayStart(previous.endDayExclusive), DateTime(2026, 5, 25));
+      });
     });
   });
 
@@ -308,14 +513,18 @@ void main() {
   });
 
   group('windowStartDayFor integration', () {
-    test('preset ranges in one year share one bucket window key', () {
-      withClock(Clock.fixed(fixedNow), () {
-        final d7 = resolvePreset(InsightsRangePreset.d7, clock.now());
-        final ytd = resolvePreset(InsightsRangePreset.ytd, clock.now());
-        final mtd = resolvePreset(InsightsRangePreset.mtd, clock.now());
-        expect(windowStartDayFor(d7), windowStartDayFor(ytd));
-        expect(windowStartDayFor(mtd), windowStartDayFor(ytd));
-      });
+    test('periods within one year share one bucket window key', () {
+      final week = periodContaining(
+        InsightsPeriodUnit.week,
+        DateTime(2026, 3, 10),
+      );
+      final month = periodContaining(
+        InsightsPeriodUnit.month,
+        DateTime(2026, 9, 5),
+      );
+      final year = periodContaining(InsightsPeriodUnit.year, DateTime(2026, 6));
+      expect(windowStartDayFor(week), windowStartDayFor(month));
+      expect(windowStartDayFor(month), windowStartDayFor(year));
     });
   });
 }

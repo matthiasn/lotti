@@ -5072,6 +5072,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inputDataTypeTasksListName => 'Listă de sarcini';
 
   @override
+  String get insightsChartCompareCaption =>
+      'Această perioadă vs. cea anterioară';
+
+  @override
   String get insightsChartCumulative => 'Cumulativ';
 
   @override
@@ -5091,7 +5095,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Alegeți categoriile de focalizare';
 
   @override
+  String get insightsCompare => 'Compară';
+
+  @override
+  String get insightsComparePrevious => 'Anterior';
+
+  @override
+  String get insightsCompareVs => 'vs';
+
+  @override
   String get insightsDeletedCategory => 'Categorie ștearsă';
+
+  @override
+  String get insightsDeltaNew => 'nou';
 
   @override
   String get insightsEmptyBody =>
@@ -5101,7 +5117,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get insightsEmptyChart => 'Nu există date în acest interval';
 
   @override
-  String get insightsEmptyShowYtd => 'Afișați anul curent';
+  String get insightsEmptyShowYear => 'Afișați anul acesta';
 
   @override
   String get insightsEmptyTitle =>
@@ -5132,22 +5148,37 @@ class AppLocalizationsRo extends AppLocalizations {
   String get insightsPartialWeek => 'săptămână parțială';
 
   @override
-  String get insightsRange1d => '1z';
+  String get insightsPeriodDay => 'Zi';
 
   @override
-  String get insightsRange30d => '30z';
+  String get insightsPeriodJump => 'Salt la o dată';
 
   @override
-  String get insightsRange7d => '7z';
+  String get insightsPeriodMonth => 'Lună';
 
   @override
-  String get insightsRangeCustom => 'Interval personalizat';
+  String get insightsPeriodNext => 'Perioada următoare';
 
   @override
-  String get insightsRangeLastMonth => 'Luna trecută';
+  String get insightsPeriodPrevious => 'Perioada anterioară';
+
+  @override
+  String get insightsPeriodQuarter => 'Trimestru';
+
+  @override
+  String get insightsPeriodWeek => 'Săptămână';
+
+  @override
+  String get insightsPeriodYear => 'An';
+
+  @override
+  String get insightsRangeMonthToDate => 'De la începutul lunii';
 
   @override
   String get insightsRangeMtd => 'MTD';
+
+  @override
+  String get insightsRangeYearToDate => 'De la începutul anului';
 
   @override
   String get insightsRangeYtd => 'YTD';
@@ -5157,6 +5188,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get insightsTableCategory => 'CATEGORIE';
+
+  @override
+  String get insightsTableDelta => 'Δ%';
+
+  @override
+  String get insightsTablePrevious => 'ANTERIOR';
 
   @override
   String get insightsTableShare => 'PONDERE';

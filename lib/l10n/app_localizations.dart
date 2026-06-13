@@ -8700,6 +8700,12 @@ abstract class AppLocalizations {
   /// **'Tasks List'**
   String get inputDataTypeTasksListName;
 
+  /// No description provided for @insightsChartCompareCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'This period vs the previous'**
+  String get insightsChartCompareCaption;
+
   /// No description provided for @insightsChartCumulative.
   ///
   /// In en, this message translates to:
@@ -8736,11 +8742,35 @@ abstract class AppLocalizations {
   /// **'Choose focus categories'**
   String get insightsChooseFocusCategories;
 
+  /// No description provided for @insightsCompare.
+  ///
+  /// In en, this message translates to:
+  /// **'Compare'**
+  String get insightsCompare;
+
+  /// No description provided for @insightsComparePrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get insightsComparePrevious;
+
+  /// No description provided for @insightsCompareVs.
+  ///
+  /// In en, this message translates to:
+  /// **'vs'**
+  String get insightsCompareVs;
+
   /// No description provided for @insightsDeletedCategory.
   ///
   /// In en, this message translates to:
   /// **'Deleted category'**
   String get insightsDeletedCategory;
+
+  /// No description provided for @insightsDeltaNew.
+  ///
+  /// In en, this message translates to:
+  /// **'new'**
+  String get insightsDeltaNew;
 
   /// No description provided for @insightsEmptyBody.
   ///
@@ -8754,11 +8784,11 @@ abstract class AppLocalizations {
   /// **'No data in this range'**
   String get insightsEmptyChart;
 
-  /// No description provided for @insightsEmptyShowYtd.
+  /// No description provided for @insightsEmptyShowYear.
   ///
   /// In en, this message translates to:
-  /// **'View year to date'**
-  String get insightsEmptyShowYtd;
+  /// **'View this year'**
+  String get insightsEmptyShowYear;
 
   /// No description provided for @insightsEmptyTitle.
   ///
@@ -8814,41 +8844,71 @@ abstract class AppLocalizations {
   /// **'partial week'**
   String get insightsPartialWeek;
 
-  /// No description provided for @insightsRange1d.
+  /// No description provided for @insightsPeriodDay.
   ///
   /// In en, this message translates to:
-  /// **'1d'**
-  String get insightsRange1d;
+  /// **'Day'**
+  String get insightsPeriodDay;
 
-  /// No description provided for @insightsRange30d.
+  /// No description provided for @insightsPeriodJump.
   ///
   /// In en, this message translates to:
-  /// **'30d'**
-  String get insightsRange30d;
+  /// **'Jump to a date'**
+  String get insightsPeriodJump;
 
-  /// No description provided for @insightsRange7d.
+  /// No description provided for @insightsPeriodMonth.
   ///
   /// In en, this message translates to:
-  /// **'7d'**
-  String get insightsRange7d;
+  /// **'Month'**
+  String get insightsPeriodMonth;
 
-  /// No description provided for @insightsRangeCustom.
+  /// No description provided for @insightsPeriodNext.
   ///
   /// In en, this message translates to:
-  /// **'Custom range'**
-  String get insightsRangeCustom;
+  /// **'Next period'**
+  String get insightsPeriodNext;
 
-  /// No description provided for @insightsRangeLastMonth.
+  /// No description provided for @insightsPeriodPrevious.
   ///
   /// In en, this message translates to:
-  /// **'Last month'**
-  String get insightsRangeLastMonth;
+  /// **'Previous period'**
+  String get insightsPeriodPrevious;
+
+  /// No description provided for @insightsPeriodQuarter.
+  ///
+  /// In en, this message translates to:
+  /// **'Quarter'**
+  String get insightsPeriodQuarter;
+
+  /// No description provided for @insightsPeriodWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Week'**
+  String get insightsPeriodWeek;
+
+  /// No description provided for @insightsPeriodYear.
+  ///
+  /// In en, this message translates to:
+  /// **'Year'**
+  String get insightsPeriodYear;
+
+  /// No description provided for @insightsRangeMonthToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Month to date'**
+  String get insightsRangeMonthToDate;
 
   /// No description provided for @insightsRangeMtd.
   ///
   /// In en, this message translates to:
   /// **'MTD'**
   String get insightsRangeMtd;
+
+  /// No description provided for @insightsRangeYearToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Year to date'**
+  String get insightsRangeYearToDate;
 
   /// No description provided for @insightsRangeYtd.
   ///
@@ -8867,6 +8927,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'CATEGORY'**
   String get insightsTableCategory;
+
+  /// No description provided for @insightsTableDelta.
+  ///
+  /// In en, this message translates to:
+  /// **'Δ%'**
+  String get insightsTableDelta;
+
+  /// No description provided for @insightsTablePrevious.
+  ///
+  /// In en, this message translates to:
+  /// **'PREVIOUS'**
+  String get insightsTablePrevious;
 
   /// No description provided for @insightsTableShare.
   ///

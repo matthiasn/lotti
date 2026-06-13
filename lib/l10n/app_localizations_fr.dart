@@ -5072,6 +5072,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inputDataTypeTasksListName => 'Liste de tâches';
 
   @override
+  String get insightsChartCompareCaption => 'Cette période vs la précédente';
+
+  @override
   String get insightsChartCumulative => 'Cumulé';
 
   @override
@@ -5090,7 +5093,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get insightsChooseFocusCategories => 'Choisir les catégories focus';
 
   @override
+  String get insightsCompare => 'Comparer';
+
+  @override
+  String get insightsComparePrevious => 'Précédent';
+
+  @override
+  String get insightsCompareVs => 'vs';
+
+  @override
   String get insightsDeletedCategory => 'Catégorie supprimée';
+
+  @override
+  String get insightsDeltaNew => 'nouveau';
 
   @override
   String get insightsEmptyBody =>
@@ -5100,7 +5115,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get insightsEmptyChart => 'Aucune donnée sur cette période';
 
   @override
-  String get insightsEmptyShowYtd => 'Voir l\'année en cours';
+  String get insightsEmptyShowYear => 'Voir cette année';
 
   @override
   String get insightsEmptyTitle => 'Aucun temps suivi sur cette période';
@@ -5131,22 +5146,37 @@ class AppLocalizationsFr extends AppLocalizations {
   String get insightsPartialWeek => 'semaine partielle';
 
   @override
-  String get insightsRange1d => '1j';
+  String get insightsPeriodDay => 'Jour';
 
   @override
-  String get insightsRange30d => '30j';
+  String get insightsPeriodJump => 'Aller à une date';
 
   @override
-  String get insightsRange7d => '7j';
+  String get insightsPeriodMonth => 'Mois';
 
   @override
-  String get insightsRangeCustom => 'Période personnalisée';
+  String get insightsPeriodNext => 'Période suivante';
 
   @override
-  String get insightsRangeLastMonth => 'Dernier mois';
+  String get insightsPeriodPrevious => 'Période précédente';
+
+  @override
+  String get insightsPeriodQuarter => 'Trimestre';
+
+  @override
+  String get insightsPeriodWeek => 'Semaine';
+
+  @override
+  String get insightsPeriodYear => 'Année';
+
+  @override
+  String get insightsRangeMonthToDate => 'Depuis le début du mois';
 
   @override
   String get insightsRangeMtd => 'MTD';
+
+  @override
+  String get insightsRangeYearToDate => 'Depuis le début de l\'année';
 
   @override
   String get insightsRangeYtd => 'YTD';
@@ -5156,6 +5186,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get insightsTableCategory => 'CATÉGORIE';
+
+  @override
+  String get insightsTableDelta => 'Δ%';
+
+  @override
+  String get insightsTablePrevious => 'PRÉCÉDENT';
 
   @override
   String get insightsTableShare => 'PART';

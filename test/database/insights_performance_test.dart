@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/range_presets.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -37,7 +38,7 @@ void main() {
   });
 
   test(
-    '10k-entry year: cold fetch+bucketize is fast, every preset switch is '
+    '10k-entry year: cold fetch+bucketize is fast, every period switch is '
     'in-memory and far under the 200ms budget',
     () async {
       // ~18 months of entries ending "today" (fixed date for determinism):
@@ -102,8 +103,8 @@ void main() {
       });
 
       final repository = InsightsRepository(db);
-      final ytdRange = resolvePreset(InsightsRangePreset.ytd, now);
-      final windowStartDay = windowStartDayFor(ytdRange);
+      final yearRange = periodContaining(InsightsPeriodUnit.year, now);
+      final windowStartDay = windowStartDayFor(yearRange);
 
       // Warm-up: one untimed query so JIT compilation and SQLite
       // page-cache population don't count against the budget — on
@@ -136,17 +137,20 @@ void main() {
       // headroom for anemic, contended CI runners.
       expect(coldWatch.elapsedMilliseconds, lessThan(2000));
 
-      // --- Hot path: every preset switch must slice in-memory. ---
+      // --- Hot path: every period switch must slice in-memory. ---
       // This is the "instantaneous range switching" requirement: zero DB,
       // chart+table+KPIs recomputed from buckets. Best-of-three: the
       // minimum is robust to CI scheduler spikes while still catching
       // real complexity regressions.
+      final periods = [
+        for (final unit in InsightsPeriodUnit.values)
+          periodContaining(unit, now),
+      ];
       var bestHotMs = 1 << 30;
       final attempts = <int>[];
       for (var attempt = 0; attempt < 3; attempt++) {
         final hotWatch = Stopwatch()..start();
-        for (final preset in InsightsRangePreset.values) {
-          final range = resolvePreset(preset, now);
+        for (final range in periods) {
           final chart = buildChartData(buckets, range);
           final table = buildTableRows(buckets, range);
           final kpis = buildKpis(
@@ -165,10 +169,10 @@ void main() {
       }
       // ignore: avoid_print
       print(
-        'all ${InsightsRangePreset.values.length} preset switches: '
+        'all ${periods.length} period switches: '
         '$attempts ms (best $bestHotMs ms)',
       );
-      // All six presets together must beat the single-switch budget.
+      // All periods together must beat the single-switch budget.
       expect(bestHotMs, lessThan(200));
     },
     timeout: const Timeout(Duration(minutes: 4)),

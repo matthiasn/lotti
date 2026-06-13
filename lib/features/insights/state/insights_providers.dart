@@ -5,6 +5,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/range_presets.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/utils/cache_extension.dart';
+import 'package:lotti/utils/device_region.dart';
 
 /// Repository over the app-wide [journalDbProvider] (overridden in `main`).
 final insightsRepositoryProvider = Provider<InsightsRepository>(
@@ -95,27 +97,145 @@ final insightsBucketsProvider = StreamProvider.autoDispose
       name: 'insightsBucketsProvider',
     );
 
-/// Selected analysis range. Defaults to the trailing 7 days — the range
-/// that answers "where did my time go this week?".
-class InsightsRangeController extends Notifier<InsightsRange> {
-  @override
-  InsightsRange build() => resolvePreset(InsightsRangePreset.d7, clock.now());
+/// Selected analysis period. Defaults to the current week — the period that
+/// answers "where did my time go this week?".
+///
+/// Weeks start on the device region's first weekday (Monday across most of
+/// Europe, Sunday in the US), read from [firstDayOfWeekIndexProvider] so the
+/// dashboard matches the rest of the app. The stepper drives this:
+/// [selectUnit] re-derives the period for a new granularity (keeping the
+/// current anchor), [step] browses prev/next by one whole period, and
+/// [selectToDate] jumps to the current month-to-date / year-to-date.
+class InsightsRangeController extends Notifier<InsightsPeriodSelection> {
+  // 0 = Sunday … 6 = Saturday; Monday until the region resolves. Held in a
+  // field rather than re-read in build() so the async region lookup
+  // resolving does not re-run build() and clobber the user's navigation or
+  // compare toggle (see [build]).
+  int _firstDayOfWeekIndex = defaultFirstDayOfWeekIndex;
 
-  void selectPreset(InsightsRangePreset preset) {
-    state = resolvePreset(preset, clock.now());
+  @override
+  InsightsPeriodSelection build() {
+    // Read (don't watch): the region lookup is a FutureProvider whose first
+    // frame is null → Monday, then resolves. Watching would re-run build()
+    // on resolution and discard any step()/jumpTo()/toggleCompare() in
+    // between. Instead we re-anchor through a listener, and only while the
+    // selection is still the untouched default — never overwriting
+    // navigation or comparison.
+    _firstDayOfWeekIndex =
+        ref.read(firstDayOfWeekIndexProvider).value ??
+        defaultFirstDayOfWeekIndex;
+
+    ref.listen(firstDayOfWeekIndexProvider, (previous, next) {
+      final resolved = next.value;
+      if (resolved == null || resolved == _firstDayOfWeekIndex) return;
+      final previousIndex = _firstDayOfWeekIndex;
+      _firstDayOfWeekIndex = resolved;
+      // Re-anchor only while the user is still viewing the current period
+      // (hasn't stepped or jumped away). Re-derive that period under the new
+      // first weekday, preserving the chosen unit and compare toggle. For
+      // non-week units periodContaining ignores the index, so this is a
+      // no-op there.
+      final onCurrentPeriod =
+          state.range ==
+          periodContaining(
+            state.unit,
+            clock.now(),
+            firstDayOfWeekIndex: previousIndex,
+          );
+      if (onCurrentPeriod) {
+        state = state.copyWith(
+          range: periodContaining(
+            state.unit,
+            clock.now(),
+            firstDayOfWeekIndex: resolved,
+          ),
+        );
+      }
+    });
+
+    return _defaultSelection(_firstDayOfWeekIndex);
   }
 
-  /// Applies a custom day range picked in the calendar (inclusive bounds,
-  /// any order).
-  void selectCustom(DateTime a, DateTime b) {
-    state = customRange(a, b);
+  /// The current-week default for a given first-weekday index.
+  InsightsPeriodSelection _defaultSelection(int firstDayOfWeekIndex) {
+    const unit = InsightsPeriodUnit.week;
+    return InsightsPeriodSelection(
+      unit: unit,
+      range: periodContaining(
+        unit,
+        clock.now(),
+        firstDayOfWeekIndex: firstDayOfWeekIndex,
+      ),
+    );
+  }
+
+  /// The period immediately before the current selection (one whole unit
+  /// earlier) — `null` unless comparison is on. Derived purely from the
+  /// already-aligned `state.range` via [shiftPeriod] (week shifts the bounds
+  /// directly), so it never re-snaps and stays in step with the current
+  /// range even if the device-region first weekday resolves after the range
+  /// was built. (The page used to re-derive this with a hardcoded Monday
+  /// default, which misaligned the comparison for Sunday/Saturday regions.)
+  InsightsRange? get previousComparisonRange =>
+      state.compareEnabled ? previousPeriod(state.range, state.unit) : null;
+
+  /// Switches the browsed granularity, re-deriving the period that contains
+  /// the current range's start day.
+  void selectUnit(InsightsPeriodUnit unit) {
+    state = state.copyWith(
+      unit: unit,
+      range: periodContaining(
+        unit,
+        dayStart(state.range.startDay),
+        firstDayOfWeekIndex: _firstDayOfWeekIndex,
+      ),
+    );
+  }
+
+  /// Jumps to the to-date portion of the current period of [unit] — month
+  /// start through today for MTD, January 1st through today for YTD. The
+  /// MTD/YTD shortcut pills call this.
+  void selectToDate(InsightsPeriodUnit unit) {
+    state = state.copyWith(
+      unit: unit,
+      range: periodToDate(
+        unit,
+        clock.now(),
+        firstDayOfWeekIndex: _firstDayOfWeekIndex,
+      ),
+    );
+  }
+
+  /// Steps to the previous (`delta < 0`) or next (`delta > 0`) period of the
+  /// current granularity.
+  void step(int delta) {
+    state = state.copyWith(
+      range: shiftPeriod(state.range, state.unit, delta),
+    );
+  }
+
+  /// Jumps to the period of the current granularity that contains [date].
+  /// Used by the calendar picker to reach a far-off period directly.
+  void jumpTo(DateTime date) {
+    state = state.copyWith(
+      range: periodContaining(
+        state.unit,
+        date,
+        firstDayOfWeekIndex: _firstDayOfWeekIndex,
+      ),
+    );
+  }
+
+  /// Turns the previous-period comparison on or off.
+  void toggleCompare() {
+    state = state.copyWith(compareEnabled: !state.compareEnabled);
   }
 }
 
 /// Deliberately not autoDispose: the selection is tiny and should survive
 /// tab switches, mirroring how pane selections behave elsewhere in the app.
 final insightsRangeControllerProvider =
-    NotifierProvider<InsightsRangeController, InsightsRange>(
+    NotifierProvider<InsightsRangeController, InsightsPeriodSelection>(
       InsightsRangeController.new,
       name: 'insightsRangeControllerProvider',
     );

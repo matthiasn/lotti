@@ -20,6 +20,63 @@ void main() {
     });
   });
 
+  group('bucketTotal / alignedPreviousTotals', () {
+    InsightsChartData chart(List<List<int>> values, int buckets) =>
+        InsightsChartData(
+          granularity: InsightsGranularity.day,
+          bucketStarts: [
+            for (var i = 0; i < buckets; i++) DateTime(2024, 3, i + 1),
+          ],
+          seriesKeys: [for (var s = 0; s < values.length; s++) 'cat-$s'],
+          values: values,
+        );
+
+    test('bucketTotal sums every series in a bucket', () {
+      final data = chart([
+        [3600, 0, 1800],
+        [900, 1800, 0],
+      ], 3);
+      expect(bucketTotal(data, 0), 4500);
+      expect(bucketTotal(data, 1), 1800);
+      expect(bucketTotal(data, 2), 1800);
+    });
+
+    test('aligns previous totals bucket-for-bucket on equal lengths', () {
+      final current = chart([
+        [3600, 1800, 900],
+      ], 3);
+      final previous = chart([
+        [1800, 3600, 0],
+      ], 3);
+      expect(alignedPreviousTotals(current, previous), [1800, 3600, 0]);
+    });
+
+    test('zero-fills current buckets the previous period lacks', () {
+      // A 31-day current month against a 30-day previous month: the extra
+      // current bucket has no counterpart.
+      final current = chart([
+        [for (var i = 0; i < 31; i++) 600],
+      ], 31);
+      final previous = chart([
+        [for (var i = 0; i < 30; i++) 300],
+      ], 30);
+      final aligned = alignedPreviousTotals(current, previous);
+      expect(aligned, hasLength(31));
+      expect(aligned.last, 0);
+      expect(aligned[29], 300);
+    });
+
+    test('drops previous buckets beyond the current axis', () {
+      final current = chart([
+        [600, 600],
+      ], 2);
+      final previous = chart([
+        [300, 300, 300],
+      ], 3);
+      expect(alignedPreviousTotals(current, previous), [300, 300]);
+    });
+  });
+
   group('buildTableRows', () {
     test('computes share and avg over days in range', () {
       final day = DateTime(2024, 3);

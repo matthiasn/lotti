@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_delta_chip.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -16,10 +17,14 @@ class InsightsKpiRow extends StatelessWidget {
     required this.categories,
     required this.focusCategoryIds,
     required this.onToggleFocusCategory,
+    this.previousKpis,
     super.key,
   });
 
   final InsightsKpis kpis;
+
+  /// Previous-period figures when comparison is on; drives the delta chips.
+  final InsightsKpis? previousKpis;
 
   /// Active categories, used by the focus-picker dialog.
   final List<CategoryDefinition> categories;
@@ -60,6 +65,7 @@ class InsightsKpiRow extends StatelessWidget {
             child: _KpiTile(
               label: messages.insightsKpiTotal,
               seconds: kpis.totalSeconds,
+              previousSeconds: previousKpis?.totalSeconds,
             ),
           ),
           if (configured) ...[
@@ -68,6 +74,7 @@ class InsightsKpiRow extends StatelessWidget {
               child: _KpiTile(
                 label: messages.insightsKpiFocus,
                 seconds: kpis.focusSeconds!,
+                previousSeconds: previousKpis?.focusSeconds,
                 caption: focusNames,
                 onEdit: () => _editFocusCategories(context),
               ),
@@ -77,6 +84,7 @@ class InsightsKpiRow extends StatelessWidget {
               child: _KpiTile(
                 label: messages.insightsKpiOther,
                 seconds: kpis.otherSeconds!,
+                previousSeconds: previousKpis?.otherSeconds,
               ),
             ),
           ] else ...[
@@ -100,12 +108,16 @@ class _KpiTile extends StatelessWidget {
   const _KpiTile({
     required this.label,
     required this.seconds,
+    this.previousSeconds,
     this.caption,
     this.onEdit,
   });
 
   final String label;
   final int seconds;
+
+  /// Previous-period seconds for the delta chip; null hides comparison.
+  final int? previousSeconds;
 
   /// Quiet single-line annotation under the number (e.g. the focus
   /// category names).
@@ -115,6 +127,10 @@ class _KpiTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // Local copy so flow analysis promotes it inside the null check — a
+    // public field can't be promoted directly, which is why the delta block
+    // below would otherwise need `!`.
+    final previousSeconds = this.previousSeconds;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -155,6 +171,29 @@ class _KpiTile extends StatelessWidget {
               formatDurationCompact(seconds),
               style: calmDisplayStyle(tokens),
             ),
+            if (previousSeconds != null) ...[
+              SizedBox(height: tokens.spacing.step2),
+              Row(
+                children: [
+                  InsightsDeltaChip(
+                    current: seconds,
+                    previous: previousSeconds,
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  Flexible(
+                    child: Text(
+                      '${context.messages.insightsCompareVs} '
+                      '${formatDurationCompact(previousSeconds)}',
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
             if (caption != null && caption!.isNotEmpty) ...[
               SizedBox(height: tokens.spacing.step2),
               Text(

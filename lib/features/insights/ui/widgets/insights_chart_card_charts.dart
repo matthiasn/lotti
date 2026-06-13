@@ -8,6 +8,7 @@ import 'package:lotti/features/insights/logic/chart_colors.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_delta_chip.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -15,11 +16,16 @@ class StackedBarChart extends StatelessWidget {
   const StackedBarChart({
     required this.chartData,
     required this.resolver,
+    this.comparisonTotals,
     super.key,
   });
 
   final InsightsChartData chartData;
   final InsightsCategoryResolver resolver;
+
+  /// Previous-period totals per bucket; when set, each group gets a second
+  /// muted ghost rod next to the current stacked bar.
+  final List<int>? comparisonTotals;
 
   @override
   Widget build(BuildContext context) {
@@ -33,10 +39,25 @@ class StackedBarChart extends StatelessWidget {
       color: tokens.colors.text.mediumEmphasis,
     );
 
+    // Only compare when the totals line up one-per-bucket; a mismatched
+    // length would throw RangeError on the indexed reads below.
+    // `alignedPreviousTotals` already guarantees this, but the guard keeps a
+    // future miswiring from crashing the chart.
+    final rawComparison = comparisonTotals;
+    final comparison =
+        rawComparison != null && rawComparison.length == bucketCount
+        ? rawComparison
+        : null;
+    final comparing = comparison != null;
+    // Muted neutral ghost: the previous bar reads as a reference, never
+    // competing with the colored current stack.
+    final ghostColor = tokens.colors.text.lowEmphasis;
+
     var maxTotal = 0;
     for (var i = 0; i < bucketCount; i++) {
-      final total = _bucketTotal(data, i);
+      final total = bucketTotal(data, i);
       if (total > maxTotal) maxTotal = total;
+      if (comparing && comparison[i] > maxTotal) maxTotal = comparison[i];
     }
     // Floor the scale at one hour so sparse data is not visually inflated.
     final maxY = maxTotal < 3600 ? 3600.0 : maxTotal * 1.05;
@@ -52,8 +73,14 @@ class StackedBarChart extends StatelessWidget {
         // Dense ranges get proportionally wider gaps so 30+ bars don't
         // shimmer into each other.
         final widthFactor = bucketCount > 20 ? 0.52 : 0.62;
-        final barWidth = (constraints.maxWidth / bucketCount * widthFactor)
-            .clamp(6.0, 44.0);
+        // Two bars share each group when comparing, so each is slimmer and
+        // the floor drops to keep both readable in dense ranges.
+        final barWidth =
+            (constraints.maxWidth /
+                    bucketCount *
+                    widthFactor /
+                    (comparing ? 2 : 1))
+                .clamp(comparing ? 3.0 : 6.0, 44.0);
 
         return BarChart(
           BarChartData(
@@ -120,20 +147,42 @@ class StackedBarChart extends StatelessWidget {
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final style = tokens.typography.styles.others.caption
                       .copyWith(color: tokens.colors.text.highEmphasis);
+                  final headerStyle = style.copyWith(
+                    fontWeight: tokens.typography.weight.semiBold,
+                  );
+                  // The ghost rod (index 1) reads out the previous period's
+                  // total on its own; no category breakdown to show.
+                  if (comparing && rodIndex == 1) {
+                    return BarTooltipItem(
+                      '${context.messages.insightsComparePrevious}  '
+                      '${formatDurationCompact(comparison[group.x])}',
+                      headerStyle.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                      textAlign: TextAlign.left,
+                    );
+                  }
                   return BarTooltipItem(
                     _tooltipHeader(context, data, group.x),
-                    style.copyWith(
-                      fontWeight: tokens.typography.weight.semiBold,
-                    ),
+                    headerStyle,
                     textAlign: TextAlign.left,
-                    children: _tooltipRows(
-                      data,
-                      resolver,
-                      data.values,
-                      group.x,
-                      style,
-                      brightness,
-                    ),
+                    children: [
+                      ..._tooltipRows(
+                        data,
+                        resolver,
+                        data.values,
+                        group.x,
+                        style,
+                        brightness,
+                      ),
+                      if (comparing)
+                        _comparisonTooltipSpan(
+                          context,
+                          bucketTotal(data, group.x),
+                          comparison[group.x],
+                          style,
+                        ),
+                    ],
                   );
                 },
               ),
@@ -142,6 +191,7 @@ class StackedBarChart extends StatelessWidget {
               for (var i = 0; i < bucketCount; i++)
                 BarChartGroupData(
                   x: i,
+                  barsSpace: comparing ? tokens.spacing.step1 : 0,
                   barRods: [
                     () {
                       var from = 0.0;
@@ -180,6 +230,15 @@ class StackedBarChart extends StatelessWidget {
                         rodStackItems: stack,
                       );
                     }(),
+                    if (comparing)
+                      BarChartRodData(
+                        toY: comparison[i].toDouble(),
+                        width: barWidth,
+                        color: ghostColor,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(tokens.radii.xs / 2),
+                        ),
+                      ),
                   ],
                 ),
             ],
@@ -355,12 +414,16 @@ class ChartLegend extends StatelessWidget {
     required this.seriesKeys,
     required this.rolledUpCount,
     required this.resolver,
+    this.showPrevious = false,
     super.key,
   });
 
   final List<String?> seriesKeys;
   final int rolledUpCount;
   final InsightsCategoryResolver resolver;
+
+  /// Append a muted ghost swatch for the previous-period bar (compare mode).
+  final bool showPrevious;
 
   @override
   Widget build(BuildContext context) {
@@ -377,35 +440,42 @@ class ChartLegend extends StatelessWidget {
       return label;
     }
 
+    Widget item(Color color, String label) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: tokens.spacing.step3,
+          height: tokens.spacing.step3,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
+        ),
+        // step3 matches the table's swatch gap — one reading rhythm.
+        SizedBox(width: tokens.spacing.step3),
+        Text(
+          label,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      ],
+    );
+
     return Wrap(
       spacing: tokens.spacing.step5,
       runSpacing: tokens.spacing.step2,
       children: [
         for (final key in seriesKeys)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: tokens.spacing.step3,
-                height: tokens.spacing.step3,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: swatchColorFor(
-                    resolver.colorHexFor(key),
-                    brightness,
-                    seriesKey: key,
-                  ),
-                ),
-              ),
-              // step3 matches the table's swatch gap — one reading rhythm.
-              SizedBox(width: tokens.spacing.step3),
-              Text(
-                legendLabel(key),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              ),
-            ],
+          item(
+            swatchColorFor(
+              resolver.colorHexFor(key),
+              brightness,
+              seriesKey: key,
+            ),
+            legendLabel(key),
+          ),
+        if (showPrevious)
+          item(
+            tokens.colors.text.lowEmphasis,
+            context.messages.insightsComparePrevious,
           ),
       ],
     );
@@ -485,22 +555,13 @@ String _bucketLabel(BuildContext context, InsightsChartData data, int index) {
 String _tooltipHeader(BuildContext context, InsightsChartData data, int index) {
   final base =
       '${_bucketLabel(context, data, index)}  '
-      '${formatDurationCompact(_bucketTotal(data, index))}';
+      '${formatDurationCompact(bucketTotal(data, index))}';
   final isPartial =
       data.granularity == InsightsGranularity.week &&
       ((index == 0 && data.partialFirstBucket) ||
           (index == data.bucketStarts.length - 1 && data.partialLastBucket));
   if (!isPartial) return base;
   return '$base · ${context.messages.insightsPartialWeek}';
-}
-
-/// Total seconds in the bucket at [index] across all series.
-int _bucketTotal(InsightsChartData data, int index) {
-  var total = 0;
-  for (final row in data.values) {
-    total += row[index];
-  }
-  return total;
 }
 
 /// Multi-row tooltip text: every series for the hovered bucket, largest
@@ -539,4 +600,39 @@ List<TextSpan> _tooltipRows(
         ],
       ),
   ];
+}
+
+/// Comparison footer for a current-bar tooltip: the previous period's total
+/// for the same bucket, with the percent change in the same teal-up /
+/// clay-down accents as [InsightsDeltaChip].
+TextSpan _comparisonTooltipSpan(
+  BuildContext context,
+  int current,
+  int previous,
+  TextStyle style,
+) {
+  final tokens = context.designTokens;
+  final messages = context.messages;
+  final pct = insightsDeltaPercent(current, previous);
+  final (String deltaText, Color deltaColor) = switch (pct) {
+    null => (
+      messages.insightsDeltaNew,
+      tokens.colors.alert.success.defaultColor,
+    ),
+    > 0 => ('+$pct%', tokens.colors.alert.success.defaultColor),
+    < 0 => ('$pct%', tokens.colors.alert.warning.defaultColor),
+    _ => ('0%', tokens.colors.text.mediumEmphasis),
+  };
+  return TextSpan(
+    text:
+        '\n${messages.insightsComparePrevious}  '
+        '${formatDurationCompact(previous)}  ',
+    style: style.copyWith(color: tokens.colors.text.mediumEmphasis),
+    children: [
+      TextSpan(
+        text: deltaText,
+        style: style.copyWith(color: deltaColor),
+      ),
+    ],
+  );
 }
