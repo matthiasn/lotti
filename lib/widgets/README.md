@@ -152,9 +152,6 @@ Located in `/lib/widgets/form/`
 ### LottiFormSection
 Section header with optional icon and description for grouping related form fields.
 
-### LottiSwitchField
-Switch field with consistent styling, supporting title, subtitle, and icon.
-
 ### LottiTextField
 Single-line text input following the Lotti design system (labels, hints, prefixes, validation).
 
