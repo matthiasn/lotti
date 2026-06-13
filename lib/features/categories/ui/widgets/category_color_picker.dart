@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 
-/// A color picker widget for selecting category colors.
-///
-/// This widget displays the current color and allows users to select a new color
-/// through a dialog. It's designed to be independent of Riverpod for better testability.
+/// Color picker for the category editor — a thin wrapper around the
+/// shared [SettingsColorPickerField], so categories and labels edit
+/// color through one interaction model: swatch + palette name in the
+/// field, the full preset/wheel picker in the shared modal. It's
+/// designed to be independent of Riverpod for better testability.
 class CategoryColorPicker extends StatelessWidget {
   const CategoryColorPicker({
     required this.selectedColor,
@@ -20,88 +19,12 @@ class CategoryColorPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          context.messages.colorLabel,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        InkWell(
-          onTap: () => _showColorPicker(context),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: Theme.of(context).dividerColor,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color:
-                        selectedColor ?? Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  selectedColor != null
-                      ? colorToCssHex(selectedColor!)
-                      : context.messages.selectColor,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                const Spacer(),
-                const Icon(Icons.palette_outlined),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  void _showColorPicker(BuildContext context) {
-    var pickedColor = selectedColor ?? Colors.red;
-
-    showDialog<Color>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text(context.messages.selectColor),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: pickedColor,
-            onColorChanged: (color) {
-              pickedColor = color;
-            },
-            enableAlpha: false,
-            labelTypes: const [],
-            pickerAreaBorderRadius: BorderRadius.circular(10),
-          ),
-        ),
-        actions: [
-          LottiTertiaryButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            label: context.messages.cancelButton,
-          ),
-          LottiTertiaryButton(
-            onPressed: () {
-              onColorChanged(pickedColor);
-              Navigator.of(dialogContext).pop();
-            },
-            label: context.messages.selectButton,
-          ),
-        ],
-      ),
+    return SettingsColorPickerField(
+      // The hosting section lists several fields, so the field carries
+      // its own label (unlike the labels editor's single-field section).
+      label: context.messages.colorLabel,
+      color: selectedColor,
+      onColorChanged: onColorChanged,
     );
   }
 }

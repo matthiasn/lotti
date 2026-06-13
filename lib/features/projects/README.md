@@ -348,7 +348,6 @@ re-enter the page.
 
 Projects surface in:
 
-- category details via `CategoryProjectsSection`
 - task metadata via the `DesktopTaskHeaderConnector` project row, which renders
   the linked project as a `DesktopTaskHeaderProject` crumb (project title with a
   folder icon) and opens `ProjectSelectionModalContent` through

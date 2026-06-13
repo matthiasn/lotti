@@ -103,7 +103,7 @@ void main() {
 
   group('DefinitionsPage', () {
     testWidgets(
-      'with both flags ON, shows habits / categories / labels / '
+      'with both flags ON, shows categories / labels / habits / '
       'dashboards / measurables in that order',
       (tester) async {
         await _pumpPage(tester, enableHabits: true, enableDashboards: true);
@@ -145,17 +145,17 @@ void main() {
           expect(find.text(entry.$2), findsOneWidget);
         }
 
-        // Visual order locks with rows.indexOf — habits sits above
-        // categories which sits above labels … etc.
+        // Visual order: categories, labels, habits, dashboards,
+        // measurables.
         final rows = tester
             .widgetList<DesignSystemListItem>(
               find.byType(DesignSystemListItem),
             )
             .toList();
         expect(rows.map((r) => r.title), [
-          context.messages.settingsHabitsTitle,
           context.messages.settingsCategoriesTitle,
           context.messages.settingsLabelsTitle,
+          context.messages.settingsHabitsTitle,
           context.messages.settingsDashboardsTitle,
           context.messages.settingsMeasurablesTitle,
         ]);

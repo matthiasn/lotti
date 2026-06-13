@@ -19,6 +19,10 @@ const int kMaxCorrectionExamplesForPrompt = 500;
 /// - Swipe-to-delete for individual examples
 /// - Empty state message when no examples exist
 ///
+/// The section title and description are rendered by the page's
+/// `SettingsFormSection` wrapper, so this widget renders no header of
+/// its own.
+///
 /// Note: Deletions update the pending state but are NOT auto-persisted.
 /// The user must tap the Save button to persist changes. This matches
 /// the speech dictionary and other category settings behavior.
@@ -46,22 +50,6 @@ class CategoryCorrectionExamples extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section header
-        Text(
-          context.messages.correctionExamplesSectionTitle,
-          style: context.textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          context.messages.correctionExamplesSectionDescription,
-          style: context.textTheme.bodySmall?.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 12),
-
         // Warning banner if threshold exceeded
         if (showWarning) ...[
           Container(

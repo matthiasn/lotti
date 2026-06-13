@@ -7,8 +7,8 @@
   "addActionAddScreenshot": "Screenshot",
   "addActionAddTask": "Task",
   "addActionAddText": "Text Entry",
-  "addActionAddTimer": "Timer",
   "addActionAddTimeRecording": "Timer Entry",
+  "addActionAddTimer": "Timer",
   "addActionImportImage": "Import Image",
   "addHabitCommentLabel": "Comment",
   "addHabitDateLabel": "Completed at",
@@ -358,8 +358,8 @@
   "agentSoulAssignedTemplatesTitle": "Assigned Templates",
   "agentSoulAssignmentLabel": "Soul",
   "agentSoulCoachingStyleLabel": "Coaching Style",
-  "agentSoulCreatedSuccess": "Soul created",
   "agentSoulCreateTitle": "Create Soul",
+  "agentSoulCreatedSuccess": "Soul created",
   "agentSoulDeleteConfirmBody": "This will remove the soul and all its versions.",
   "agentSoulDeleteConfirmTitle": "Delete Soul",
   "agentSoulDetailTitle": "Soul Detail",
@@ -397,10 +397,7 @@
     }
   },
   "agentSoulSelectTitle": "Select Soul",
-  "agentSoulsEmptyFiltered": "No souls match your filters.",
   "agentSoulSettingsTab": "Settings",
-  "agentSoulsSearchPlaceholder": "Search souls…",
-  "agentSoulsTitle": "Souls",
   "agentSoulToneBoundsLabel": "Tone Bounds",
   "agentSoulVersionHistoryTitle": "Version History",
   "agentSoulVersionLabel": "Version {version}",
@@ -413,6 +410,9 @@
   },
   "agentSoulVersionSaved": "New soul version saved",
   "agentSoulVoiceDirectiveLabel": "Voice Directive",
+  "agentSoulsEmptyFiltered": "No souls match your filters.",
+  "agentSoulsSearchPlaceholder": "Search souls…",
+  "agentSoulsTitle": "Souls",
   "agentStateConsecutiveFailures": "Consecutive failures",
   "agentStateErrorLoading": "Failed to load state: {error}",
   "@agentStateErrorLoading": {
@@ -511,13 +511,13 @@
   "@agentTemplateAssignedLabel": {
     "description": "Label shown next to the template assigned to an agent."
   },
-  "agentTemplateCreatedSuccess": "Template created",
-  "@agentTemplateCreatedSuccess": {
-    "description": "Snackbar message after successfully creating a new template."
-  },
   "agentTemplateCreateTitle": "Create Template",
   "@agentTemplateCreateTitle": {
     "description": "Page title for the create-template form."
+  },
+  "agentTemplateCreatedSuccess": "Template created",
+  "@agentTemplateCreatedSuccess": {
+    "description": "Snackbar message after successfully creating a new template."
   },
   "agentTemplateDeleteConfirm": "Delete this template? This cannot be undone.",
   "@agentTemplateDeleteConfirm": {
@@ -575,21 +575,21 @@
   "@agentTemplateMetricsTotalWakes": {
     "description": "Metric label for the total number of agent wakes."
   },
-  "agentTemplateNoneAssigned": "No template assigned",
-  "@agentTemplateNoneAssigned": {
-    "description": "Text shown when an agent has no template assigned."
-  },
   "agentTemplateNoTemplates": "No templates available. Create one in Settings first.",
   "@agentTemplateNoTemplates": {
     "description": "Message shown when no templates exist for agent creation."
   },
-  "agentTemplateNotFound": "Template not found",
-  "@agentTemplateNotFound": {
-    "description": "Error message when a referenced template cannot be found."
-  },
   "agentTemplateNoVersions": "No versions",
   "@agentTemplateNoVersions": {
     "description": "Placeholder shown when a template has no version history."
+  },
+  "agentTemplateNoneAssigned": "No template assigned",
+  "@agentTemplateNoneAssigned": {
+    "description": "Text shown when an agent has no template assigned."
+  },
+  "agentTemplateNotFound": "Template not found",
+  "@agentTemplateNotFound": {
+    "description": "Error message when a referenced template cannot be found."
   },
   "agentTemplateReportDirectiveHint": "Define the report structure, required sections, and formatting rules...",
   "@agentTemplateReportDirectiveHint": {
@@ -624,15 +624,10 @@
   "@agentTemplateSelectTitle": {
     "description": "Title for the template selection dialog when creating an agent."
   },
-  "agentTemplatesEmptyFiltered": "No templates match your filters.",
   "agentTemplateSettingsTab": "Settings",
   "@agentTemplateSettingsTab": {
     "description": "Tab label for the settings tab in agent template detail."
   },
-  "agentTemplatesFilterSectionKind": "Kind",
-  "agentTemplatesGroupByKind": "Kind",
-  "agentTemplatesGroupNone": "All",
-  "agentTemplatesSearchPlaceholder": "Search templates…",
   "agentTemplateStatsTab": "Stats",
   "@agentTemplateStatsTab": {
     "description": "Tab label for the stats tab in agent template detail."
@@ -644,10 +639,6 @@
   "agentTemplateStatusArchived": "Archived",
   "@agentTemplateStatusArchived": {
     "description": "Label for the archived template status."
-  },
-  "agentTemplatesTitle": "Agent Templates",
-  "@agentTemplatesTitle": {
-    "description": "Page title for the agent templates list."
   },
   "agentTemplateSwitchHint": "To use a different template, destroy this agent and create a new one.",
   "@agentTemplateSwitchHint": {
@@ -669,6 +660,15 @@
   "@agentTemplateVersionSaved": {
     "description": "Snackbar message after successfully saving a new template version."
   },
+  "agentTemplatesEmptyFiltered": "No templates match your filters.",
+  "agentTemplatesFilterSectionKind": "Kind",
+  "agentTemplatesGroupByKind": "Kind",
+  "agentTemplatesGroupNone": "All",
+  "agentTemplatesSearchPlaceholder": "Search templates…",
+  "agentTemplatesTitle": "Agent Templates",
+  "@agentTemplatesTitle": {
+    "description": "Page title for the agent templates list."
+  },
   "agentThreadReportLabel": "Report produced during this wake",
   "agentTokenUsageCachedTokens": "Cached",
   "agentTokenUsageEmpty": "No token usage recorded yet.",
@@ -687,6 +687,11 @@
   "agentTokenUsageThoughtsTokens": "Thoughts",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Wakes",
+  "aggregationDailyAvg": "Daily average",
+  "aggregationDailyMax": "Daily maximum",
+  "aggregationDailySum": "Daily sum",
+  "aggregationHourlySum": "Hourly sum",
+  "aggregationNone": "None",
   "aiAssistantTitle": "Generate…",
   "aiBatchToggleTooltip": "Switch to standard recording",
   "aiCapabilityChipImageGeneration": "Image generation",
@@ -875,6 +880,30 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "Base URL (optional)",
   "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Shown in your provider list",
+  "aiProviderConnectKeyHelperLink": "Get a key at {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Hidden",
+  "aiProviderConnectKeyPrivacyHint": "Your API key never leaves your device.",
+  "aiProviderConnectPageTitle": "Connect {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Save & continue",
+  "aiProviderConnectSaveAsDraft": "Save as draft",
+  "aiProviderConnectSavedAsDraftToast": "Saved as draft",
+  "aiProviderConnectStepChoose": "Choose provider",
+  "aiProviderConnectStepConnect": "Connect",
+  "aiProviderConnectStepReview": "Review",
   "aiProviderConnectionCheckingLabel": "Checking key, listing available models…",
   "aiProviderConnectionFailedBadResponseDetail": "Unexpected response shape: {type}",
   "@aiProviderConnectionFailedBadResponseDetail": {
@@ -927,30 +956,6 @@
     }
   },
   "aiProviderConnectionVerifiedTitle": "Connection verified",
-  "aiProviderConnectKeyHelperLink": "Get a key at {url}",
-  "@aiProviderConnectKeyHelperLink": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectKeyHiddenLabel": "Hidden",
-  "aiProviderConnectKeyPrivacyHint": "Your API key never leaves your device.",
-  "aiProviderConnectPageTitle": "Connect {providerName}",
-  "@aiProviderConnectPageTitle": {
-    "placeholders": {
-      "providerName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectSaveAndContinue": "Save & continue",
-  "aiProviderConnectSaveAsDraft": "Save as draft",
-  "aiProviderConnectSavedAsDraftToast": "Saved as draft",
-  "aiProviderConnectStepChoose": "Choose provider",
-  "aiProviderConnectStepConnect": "Connect",
-  "aiProviderConnectStepReview": "Review",
   "aiProviderDetailActiveProfileTitle": "Active profile",
   "aiProviderDetailAddModelButton": "Add model",
   "aiProviderDetailApiKeyLabel": "API key",
@@ -1022,11 +1027,11 @@
   "aiResponseTypePromptGeneration": "Generated Prompt",
   "aiResponseTypeTaskSummary": "Task Summary",
   "aiRunningActivityOpenProgress": "Show AI progress",
-  "aiSettingsAddedLabel": "Added",
   "aiSettingsAddModelButton": "Add model",
   "aiSettingsAddModelTooltip": "Add this model to your provider",
   "aiSettingsAddProfileButton": "Add Profile",
   "aiSettingsAddProviderButton": "Add provider",
+  "aiSettingsAddedLabel": "Added",
   "aiSettingsClearAllFiltersTooltip": "Clear all filters",
   "aiSettingsClearFiltersButton": "Clear",
   "aiSettingsCounterModels": "Models",
@@ -1233,9 +1238,9 @@
   "audioRecordingCancel": "CANCEL",
   "audioRecordingListening": "Listening...",
   "audioRecordingRealtime": "Live Transcription",
-  "audioRecordings": "Audio Recordings",
   "audioRecordingStandard": "Standard",
   "audioRecordingStop": "STOP",
+  "audioRecordings": "Audio Recordings",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 action} other{{count} actions}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1326,25 +1331,31 @@
   "backfillStatusSkipped": "Skipped",
   "backfillToggleDescription": "Requests missing entries from the last 24 hours.",
   "backfillToggleTitle": "Automatic backfill",
-  "basicSettings": "Basic Settings",
+  "basicSettings": "Basic settings",
   "cancelButton": "Cancel",
   "categoryActiveDescription": "Inactive categories won't appear in selection lists",
+  "categoryActiveSwitchDescription": "Selectable for new entries",
   "categoryAiDefaultsDescription": "Set default AI profile and agent template for new tasks in this category",
-  "categoryAiDefaultsTitle": "AI Defaults",
+  "categoryAiDefaultsTitle": "AI defaults",
   "categoryCreationError": "Failed to create category. Please try again.",
   "categoryDayPlanDescription": "Make this category available for selection in the day plan",
   "categoryDayPlanLabel": "Day planning",
   "categoryDefaultLanguageDescription": "Set a default language for tasks in this category",
-  "categoryDefaultProfileHint": "Select a profile…",
-  "categoryDefaultTemplateHint": "Select a template…",
+  "categoryDefaultProfileHint": "Select a profile",
+  "categoryDefaultTemplateHint": "Select a template",
   "categoryDefaultTemplateLabel": "Default agent template",
   "categoryDeleteConfirm": "YES, DELETE THIS CATEGORY",
   "categoryDeleteConfirmation": "This action cannot be undone. All entries in this category will remain but will no longer be categorized.",
   "categoryDeleteTitle": "Delete Category?",
   "categoryFavoriteDescription": "Mark this category as a favorite",
+  "categoryIconChooseHint": "Select an icon",
+  "categoryIconCreateHint": "Select an icon",
+  "categoryIconEditHint": "Select a different icon",
+  "categoryIconLabel": "Icon",
+  "categoryIconPickerTitle": "Choose icon",
   "categoryNameRequired": "Category name is required",
   "categoryNotFound": "Category not found",
-  "categoryPrivateDescription": "Hide this category when private mode is enabled",
+  "categoryPrivateDescription": "Only visible when private entries are shown",
   "categorySearchPlaceholder": "Search categories...",
   "changeSetCardTitle": "Proposed changes",
   "changeSetConfirmAll": "Confirm all",
@@ -1421,12 +1432,12 @@
   "checklistExpandTooltip": "Expand",
   "checklistExportAsMarkdown": "Export checklist as Markdown",
   "checklistExportFailed": "Export failed",
-  "checklistItemArchived": "Item archived",
   "checklistItemArchiveUndo": "Undo",
+  "checklistItemArchived": "Item archived",
   "checklistItemDeleteCancel": "Cancel",
   "checklistItemDeleteConfirm": "Confirm",
-  "checklistItemDeleted": "Item deleted",
   "checklistItemDeleteWarning": "This action cannot be undone.",
+  "checklistItemDeleted": "Item deleted",
   "checklistMarkdownCopied": "Checklist copied as Markdown",
   "checklistMoreTooltip": "More",
   "checklistNoneDone": "No completed items yet.",
@@ -1436,7 +1447,8 @@
   "checklistShareHint": "Long press to share",
   "checklistsReorder": "Reorder",
   "clearButton": "Clear",
-  "colorLabel": "Color:",
+  "colorCustomLabel": "Custom",
+  "colorLabel": "Color",
   "commonError": "Error",
   "commonLoading": "Loading...",
   "commonUnknown": "Unknown",
@@ -1612,12 +1624,8 @@
   "conflictPickerEditMerge": "Edit & merge…",
   "conflictPickerUseFromSync": "Use from sync",
   "conflictPickerUseThisDevice": "Use this device",
-  "conflictsEmptyDescription": "Everything is in sync right now. Resolved items stay available in the other filter.",
-  "conflictsEmptyTitle": "No conflicts detected",
   "conflictSideFromSync": "FROM SYNC",
   "conflictSideThisDevice": "THIS DEVICE",
-  "conflictsResolved": "resolved",
-  "conflictsUnresolved": "unresolved",
   "conflictWordCount": "{count, plural, one{{count} word} other{{count} words}}",
   "@conflictWordCount": {
     "description": "Word count shown on the conflict detail meta row.",
@@ -1628,6 +1636,10 @@
       }
     }
   },
+  "conflictsEmptyDescription": "Everything is in sync right now. Resolved items stay available in the other filter.",
+  "conflictsEmptyTitle": "No conflicts detected",
+  "conflictsResolved": "resolved",
+  "conflictsUnresolved": "unresolved",
   "copyAsMarkdown": "Copy as Markdown",
   "copyAsText": "Copy as text",
   "correctionExampleCancel": "CANCEL",
@@ -1641,7 +1653,7 @@
   },
   "correctionExamplesEmpty": "No corrections captured yet. Edit a checklist item to add your first example.",
   "correctionExamplesSectionDescription": "When you manually correct checklist items, those corrections are saved here and used to improve AI suggestions.",
-  "correctionExamplesSectionTitle": "Checklist Correction Examples",
+  "correctionExamplesSectionTitle": "Checklist correction examples",
   "correctionExamplesWarning": "You have {count} corrections. Only the most recent {max} will be used in AI prompts. Consider deleting old or redundant examples.",
   "@correctionExamplesWarning": {
     "placeholders": {
@@ -1658,7 +1670,7 @@
   "coverArtGenerationComplete": "Cover art ready!",
   "coverArtGenerationDismissHint": "You can close this — generation continues in the background",
   "createButton": "Create",
-  "createCategoryTitle": "Create Category:",
+  "createCategoryTitle": "Create category",
   "createEntryLabel": "Create new entry",
   "createEntryTitle": "Add",
   "createNewLinkedTask": "Create new linked task...",
@@ -1827,7 +1839,6 @@
     }
   },
   "dailyOsNextCaptureReconcileCta": "Review",
-  "dailyOsNextCapturesPanelTitle": "Captures",
   "dailyOsNextCaptureTranscribing": "Transcribing…",
   "dailyOsNextCaptureTranscriptHint": "Fix anything the transcript got wrong before planning.",
   "dailyOsNextCaptureTranscriptLabel": "Review transcript",
@@ -1835,6 +1846,7 @@
   "dailyOsNextCaptureVoiceButtonReset": "Start over",
   "dailyOsNextCaptureVoiceButtonStart": "Start listening",
   "dailyOsNextCaptureVoiceButtonStop": "Stop listening",
+  "dailyOsNextCapturesPanelTitle": "Captures",
   "dailyOsNextCategoryFilterAll": "All categories",
   "dailyOsNextCategoryFilterDescription": "Only categories enabled for day planning are surfaced for Daily OS automated processing.",
   "dailyOsNextCategoryFilterEmpty": "No categories enabled for day planning yet.",
@@ -2049,28 +2061,6 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Recurring · missed",
-  "dailyOsNextTimelineActual": "Actual",
-  "dailyOsNextTimelineBoth": "Plan and actual",
-  "dailyOsNextTimelineMeridiemAm": "AM",
-  "dailyOsNextTimelineMeridiemAmShort": "am",
-  "dailyOsNextTimelineMeridiemPm": "PM",
-  "dailyOsNextTimelineMeridiemPmShort": "pm",
-  "dailyOsNextTimelinePlanned": "Plan",
-  "dailyOsNextTimelineSessionOf": "Session {index} of {total}",
-  "@dailyOsNextTimelineSessionOf": {
-    "placeholders": {
-      "index": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsNextTimelineShowBoth": "Show plan and actual together",
-  "dailyOsNextTimelineShowPaged": "Show swipeable plan and actual",
-  "dailyOsNextTimelineSwipeHint": "Swipe for actual · pinch vertically to zoom",
-  "dailyOsNextTimelineTracked": "tracked",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 earlier session} other{{count} earlier sessions}}",
   "@dailyOsNextTimeSpentEarlierSessions": {
     "placeholders": {
@@ -2094,33 +2084,55 @@
   },
   "dailyOsNextTimeSpentTitle": "TODAY SO FAR",
   "dailyOsNextTimeSpentTitlePast": "TIME SPENT",
+  "dailyOsNextTimelineActual": "Actual",
+  "dailyOsNextTimelineBoth": "Plan and actual",
+  "dailyOsNextTimelineMeridiemAm": "AM",
+  "dailyOsNextTimelineMeridiemAmShort": "am",
+  "dailyOsNextTimelineMeridiemPm": "PM",
+  "dailyOsNextTimelineMeridiemPmShort": "pm",
+  "dailyOsNextTimelinePlanned": "Plan",
+  "dailyOsNextTimelineSessionOf": "Session {index} of {total}",
+  "@dailyOsNextTimelineSessionOf": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextTimelineShowBoth": "Show plan and actual together",
+  "dailyOsNextTimelineShowPaged": "Show swipeable plan and actual",
+  "dailyOsNextTimelineSwipeHint": "Swipe for actual · pinch vertically to zoom",
+  "dailyOsNextTimelineTracked": "tracked",
   "dailyOsNextTriageConfirmDefer": "Deferred",
-  "dailyOsNextTriageConfirmDone": "Marked done",
   "dailyOsNextTriageConfirmDoNow": "Done now",
+  "dailyOsNextTriageConfirmDone": "Marked done",
   "dailyOsNextTriageConfirmDrop": "Dropped",
   "dailyOsNextTriageConfirmToday": "Added to today",
   "dailyOsNextTriageDefer": "Defer",
-  "dailyOsNextTriageDone": "Done",
   "dailyOsNextTriageDoNow": "Do now",
+  "dailyOsNextTriageDone": "Done",
   "dailyOsNextTriageDrop": "Drop",
   "dailyOsNextTriageToday": "Today",
+  "dailyOsNoBudgetWarning": "No time budgeted",
   "dailyOsNoBudgets": "No time budgets",
   "dailyOsNoBudgetsHint": "Add budgets to track how you spend your time across categories.",
-  "dailyOsNoBudgetWarning": "No time budgeted",
-  "dailyOsNote": "Note",
   "dailyOsNoTimeline": "No timeline entries",
   "dailyOsNoTimelineHint": "Start a timer or add planned blocks to see your day.",
+  "dailyOsNote": "Note",
   "dailyOsOnTrack": "On track",
   "dailyOsOver": "Over",
-  "dailyOsOverallProgress": "Overall Progress",
   "dailyOsOverBudget": "Over budget",
+  "dailyOsOverallProgress": "Overall Progress",
   "dailyOsOverdue": "Overdue",
   "dailyOsOverdueShort": "Late",
   "dailyOsPlan": "Plan",
   "dailyOsPlanCreated": "Plan created successfully",
   "dailyOsPlanCreatedDescription": "Your time blocks have been saved. You can start tracking your tasks.",
-  "dailyOsPlanned": "Planned",
   "dailyOsPlanWithoutVoice": "Plan without voice",
+  "dailyOsPlanned": "Planned",
   "dailyOsQuickCreateTask": "Create task for this budget",
   "dailyOsReAgree": "Re-agree",
   "dailyOsRecorded": "Recorded",
@@ -2147,7 +2159,6 @@
       }
     }
   },
-  "dailyOsTimeline": "Timeline",
   "dailyOsTimeOver": "+{time} over",
   "@dailyOsTimeOver": {
     "placeholders": {
@@ -2157,11 +2168,13 @@
     }
   },
   "dailyOsTimeRange": "Time Range",
+  "dailyOsTimeline": "Timeline",
   "dailyOsTimesUp": "Time's up",
   "dailyOsTodayButton": "Today",
   "dailyOsUncategorized": "Uncategorized",
-  "dashboardActiveLabel": "Active:",
-  "dashboardAddChartsTitle": "Add Charts:",
+  "dashboardActiveLabel": "Active",
+  "dashboardActiveSwitchDescription": "Shown in the dashboards list",
+  "dashboardAddChartsTitle": "Charts",
   "dashboardAddHabitButton": "Habit Charts",
   "dashboardAddHabitTitle": "Habit Charts",
   "dashboardAddHealthButton": "Health Charts",
@@ -2173,15 +2186,16 @@
   "dashboardAddWorkoutButton": "Workout Charts",
   "dashboardAddWorkoutTitle": "Workout Charts",
   "dashboardAggregationLabel": "Aggregation Type:",
-  "dashboardCategoryLabel": "Category:",
+  "dashboardCategoryLabel": "Category",
   "dashboardCopyHint": "Save & Copy dashboard config",
+  "dashboardCopyLabel": "Save and copy configuration",
   "dashboardDeleteConfirm": "YES, DELETE THIS DASHBOARD",
   "dashboardDeleteHint": "Delete dashboard",
   "dashboardDeleteQuestion": "Do you want to delete this dashboard?",
-  "dashboardDescriptionLabel": "Description (optional):",
-  "dashboardNameLabel": "Dashboard name:",
+  "dashboardDescriptionLabel": "Description (optional)",
+  "dashboardNameLabel": "Dashboard name",
   "dashboardNotFound": "Dashboard not found",
-  "dashboardPrivateLabel": "Private:",
+  "dashboardPrivateLabel": "Private",
   "defaultLanguage": "Default Language",
   "deleteButton": "Delete",
   "deleteDeviceLabel": "Delete device",
@@ -2295,8 +2309,8 @@
   },
   "designSystemMyDailyHikeWithDanielaTitle": "Hiking with Daniela",
   "designSystemMyDailyLunchBreakTitle": "Lunch break",
-  "designSystemMyDailyMeetingsLabel": "Meetings",
   "designSystemMyDailyMeetingWithDannyTitle": "Meeting with Danny",
+  "designSystemMyDailyMeetingsLabel": "Meetings",
   "designSystemMyDailyProfileActionLabel": "Profile",
   "designSystemMyDailySkiWithMattTitle": "Go skiing with Matt",
   "designSystemMyDailyTapToExpandLabel": "Tap to expand",
@@ -2332,8 +2346,8 @@
   "designSystemSmallLabel": "Small",
   "designSystemSpinnerPlainLabel": "Plain",
   "designSystemSpinnerSkeletonPulseLabel": "Pulse",
-  "designSystemSpinnerSkeletonsTitle": "Skeletons",
   "designSystemSpinnerSkeletonWaveLabel": "Wave",
+  "designSystemSpinnerSkeletonsTitle": "Skeletons",
   "designSystemSpinnerSpinnersTitle": "Spinners",
   "designSystemSpinnerTrackLabel": "With track",
   "designSystemSplitButtonDropdownSemantics": "Open {label} options",
@@ -2383,18 +2397,18 @@
   "desktopEmptyStateSelectDashboard": "Select a dashboard to view details",
   "desktopEmptyStateSelectProject": "Select a project to view details",
   "desktopEmptyStateSelectTask": "Select a task to view details",
-  "deviceDeletedSuccess": "Device {deviceName} deleted successfully",
-  "@deviceDeletedSuccess": {
-    "placeholders": {
-      "deviceName": {
-        "type": "String"
-      }
-    }
-  },
   "deviceDeleteFailed": "Failed to delete device: {error}",
   "@deviceDeleteFailed": {
     "placeholders": {
       "error": {
+        "type": "String"
+      }
+    }
+  },
+  "deviceDeletedSuccess": "Device {deviceName} deleted successfully",
+  "@deviceDeletedSuccess": {
+    "placeholders": {
+      "deviceName": {
         "type": "String"
       }
     }
@@ -2444,22 +2458,25 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generate Cover Art",
   "generateCoverArtSubtitle": "Create image from voice description",
-  "habitActiveFromLabel": "Start Date",
-  "habitArchivedLabel": "Archived:",
-  "habitCategoryHint": "Select Category...",
-  "habitCategoryLabel": "Category:",
-  "habitDashboardHint": "Select Dashboard...",
-  "habitDashboardLabel": "Dashboard:",
+  "habitActiveFromLabel": "Start date",
+  "habitActiveSwitchDescription": "Shown on the Habits page",
+  "habitArchivedLabel": "Archived",
+  "habitCategoryHint": "Select a category",
+  "habitCategoryLabel": "Category",
+  "habitDashboardHint": "Select a dashboard",
+  "habitDashboardLabel": "Dashboard (optional)",
   "habitDeleteConfirm": "YES, DELETE THIS HABIT",
   "habitDeleteQuestion": "Do you want to delete this habit?",
-  "habitPriorityLabel": "Priority:",
+  "habitPriorityLabel": "Priority",
+  "habitSectionOptionsTitle": "Options",
+  "habitSectionScheduleTitle": "Schedule",
+  "habitShowAlertAtLabel": "Show alert at",
+  "habitShowFromLabel": "Show from",
   "habitsCompletedHeader": "Completed",
   "habitsFilterAll": "all",
   "habitsFilterCompleted": "done",
   "habitsFilterOpenNow": "due",
   "habitsFilterPendingLater": "later",
-  "habitShowAlertAtLabel": "Show alert at",
-  "habitShowFromLabel": "Show from",
   "habitsOpenHeader": "Due now",
   "habitsPendingLaterHeader": "Later today",
   "imageGenerationError": "Failed to generate image",
@@ -2480,6 +2497,7 @@
   "imagePromptGenerationFullPromptLabel": "Full Image Prompt:",
   "images": "Images",
   "inactiveLabel": "Inactive",
+  "inactiveSwitchDescription": "Can be chosen for new entries when on",
   "inferenceProfileCreateTitle": "Create Profile",
   "inferenceProfileDescriptionLabel": "Description",
   "inferenceProfileDesktopOnly": "Desktop Only",
@@ -2507,7 +2525,6 @@
   "inferenceProfileSaveButton": "Save",
   "inferenceProfileSelectModel": "Select a model…",
   "inferenceProfileSelectProfile": "Select a profile…",
-  "inferenceProfilesEmpty": "No inference profiles yet",
   "inferenceProfileSkillModelRequired": "Requires {slotName} model to be set",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -2516,7 +2533,6 @@
       }
     }
   },
-  "inferenceProfileSkillsSection": "Automated Skills",
   "inferenceProfileSkillUsesModel": "Uses {slotName} model",
   "@inferenceProfileSkillUsesModel": {
     "placeholders": {
@@ -2525,11 +2541,13 @@
       }
     }
   },
-  "inferenceProfilesTitle": "Inference Profiles",
+  "inferenceProfileSkillsSection": "Automated Skills",
   "inferenceProfileThinking": "Thinking",
   "inferenceProfileThinkingHighEnd": "Thinking (High-End)",
   "inferenceProfileThinkingRequired": "A thinking model is required",
   "inferenceProfileTranscription": "Transcription",
+  "inferenceProfilesEmpty": "No inference profiles yet",
+  "inferenceProfilesTitle": "Inference Profiles",
   "inputDataTypeAudioFilesDescription": "Use audio files as input",
   "inputDataTypeAudioFilesName": "Audio Files",
   "inputDataTypeImagesDescription": "Use images as input",
@@ -2584,6 +2602,8 @@
   "journalFlaggedTooltip": "flagged only",
   "journalHideLinkHint": "Hide link",
   "journalHideMapHint": "Hide map",
+  "journalLinkFromHint": "Link from",
+  "journalLinkToHint": "Link to",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
   "journalLinkedEntriesActivityFilterImages": "Images",
   "journalLinkedEntriesActivityFilterTimer": "Timer",
@@ -2594,8 +2614,6 @@
   "journalLinkedEntriesSortNewestFirst": "Newest first",
   "journalLinkedEntriesSortOldestFirst": "Oldest first",
   "journalLinkedFromLabel": "Linked from:",
-  "journalLinkFromHint": "Link from",
-  "journalLinkToHint": "Link to",
   "journalPrivateTooltip": "private only",
   "journalSearchHint": "Search journal...",
   "journalShareHint": "Share",
@@ -2607,12 +2625,12 @@
   "journalUnlinkConfirm": "YES, UNLINK ENTRY",
   "journalUnlinkHint": "Unlink",
   "journalUnlinkQuestion": "Are you sure you want to unlink this entry?",
+  "linkExistingTask": "Link existing task...",
   "linkedFromCaption": "from",
   "linkedTaskImageBadge": "From linked task",
   "linkedTasksMenuTooltip": "Linked tasks options",
   "linkedTasksTitle": "Linked Tasks",
   "linkedToCaption": "to",
-  "linkExistingTask": "Link existing task...",
   "loggingDomainAgentRuntime": "Agent runtime",
   "loggingDomainAgentWorkflow": "Agent workflow",
   "loggingDomainAi": "AI",
@@ -2693,16 +2711,16 @@
   "maintenancePurgeSentOutboxConfirm": "YES, PURGE",
   "maintenancePurgeSentOutboxDescription": "Delete sent outbox rows older than 7 days and reclaim disk",
   "maintenancePurgeSentOutboxQuestion": "Purge sent outbox items older than 7 days? This deletes already-sent rows in chunks and runs VACUUM to reclaim disk. Pending and error items are kept.",
-  "maintenanceRecreateFts5": "Recreate full-text index",
-  "maintenanceRecreateFts5Confirm": "YES, RECREATE INDEX",
-  "maintenanceRecreateFts5Description": "Recreate full-text search index",
-  "maintenanceRecreateFts5Message": "Are you sure you want to recreate the full-text index? This may take some time.",
   "maintenanceReSync": "Re-sync messages",
   "maintenanceReSyncAgentEntities": "Agent entities",
   "maintenanceReSyncDescription": "Re-sync messages from server",
   "maintenanceReSyncEntityTypes": "Entity types",
   "maintenanceReSyncJournalEntities": "Journal entities",
   "maintenanceReSyncSelectAtLeastOne": "Select at least one entity type",
+  "maintenanceRecreateFts5": "Recreate full-text index",
+  "maintenanceRecreateFts5Confirm": "YES, RECREATE INDEX",
+  "maintenanceRecreateFts5Description": "Recreate full-text search index",
+  "maintenanceRecreateFts5Message": "Are you sure you want to recreate the full-text index? This may take some time.",
   "maintenanceSyncDefinitions": "Sync measurables, dashboards, habits, categories, AI settings",
   "maintenanceSyncDefinitionsDescription": "Sync measurables, dashboards, habits, categories, and AI settings",
   "manageLinks": "Manage links...",
@@ -2822,6 +2840,7 @@
       }
     }
   },
+  "optionalCategoryLabel": "Category (optional)",
   "outboxMonitorAttachmentLabel": "Attachment",
   "outboxMonitorDelete": "delete",
   "outboxMonitorDeleteConfirmLabel": "Delete",
@@ -2847,6 +2866,7 @@
   "outboxMonitorSubjectLabel": "Subject",
   "outboxMonitorVolumeChartTitle": "Daily sync volume",
   "privateLabel": "Private",
+  "privateSwitchDescription": "Only visible when private entries are shown",
   "projectAgentNotProvisioned": "No project agent has been provisioned for this project yet.",
   "projectAgentSectionTitle": "Agent",
   "projectCountSummary": "{count, plural, one{{count} project} other{{count} projects}}",
@@ -2900,10 +2920,8 @@
   "projectPickerUnassigned": "No project",
   "projectRecommendationDismissTooltip": "Dismiss",
   "projectRecommendationResolveTooltip": "Mark resolved",
-  "projectRecommendationsTitle": "Recommended next steps",
   "projectRecommendationUpdateError": "Couldn't update the recommendation. Please try again.",
-  "projectsFilterStatusLabel": "Status:",
-  "projectsFilterTooltip": "Filter projects",
+  "projectRecommendationsTitle": "Recommended next steps",
   "projectShowcaseAiReportTitle": "AI Report",
   "projectShowcaseBlockedLegend": "{count} Blocked",
   "@projectShowcaseBlockedLegend": {
@@ -3004,6 +3022,8 @@
   "projectTargetDateLabel": "Target Date",
   "projectTitleLabel": "Project Title",
   "projectTitleRequired": "Project title cannot be empty",
+  "projectsFilterStatusLabel": "Status:",
+  "projectsFilterTooltip": "Filter projects",
   "promptDefaultModelBadge": "Default",
   "promptGenerationCardTitle": "AI Coding Prompt",
   "promptGenerationCopiedSnackbar": "Prompt copied to clipboard",
@@ -3145,13 +3165,14 @@
   "saveButton": "Save",
   "saveButtonLabel": "Save",
   "saveLabel": "Save",
+  "saveShortcutTooltip": "Save — Ctrl+S (⌘S on Mac)",
   "saveSuccessful": "Saved successfully",
   "searchHint": "Search...",
   "searchModeFullText": "Full Text",
   "searchModeVector": "Vector",
   "searchTasksHint": "Search tasks...",
   "selectButton": "Select",
-  "selectColor": "Select Color",
+  "selectColor": "Select a color",
   "selectLanguage": "Select Language",
   "sessionRatingCardLabel": "Session Rating",
   "sessionRatingChallengeJustRight": "Just right",
@@ -3169,6 +3190,8 @@
   "sessionRatingSkipButton": "Skip",
   "sessionRatingTitle": "Rate this session",
   "sessionRatingViewAction": "View Rating",
+  "settingThemingDark": "Dark Theme",
+  "settingThemingLight": "Light Theme",
   "settingsAboutAppInformation": "App Information",
   "settingsAboutAppTagline": "Your Personal Journal",
   "settingsAboutBuildType": "Build Type",
@@ -3202,11 +3225,11 @@
   "settingsBeamPageEditModelTitle": "Edit model",
   "settingsBeamPageEditProfileTitle": "Edit profile",
   "settingsCategoriesCreateTitle": "Create category",
-  "settingsCategoriesDetailsLabel": "Category Details",
-  "settingsCategoriesEmptyState": "No categories found",
+  "settingsCategoriesDetailsLabel": "Edit category",
+  "settingsCategoriesEmptyState": "No categories yet",
   "settingsCategoriesEmptyStateHint": "Create a category to organize your entries",
   "settingsCategoriesErrorLoading": "Error loading categories",
-  "settingsCategoriesNameLabel": "Category name:",
+  "settingsCategoriesNameLabel": "Category name",
   "settingsCategoriesNoMatchQuery": "No categories match \"{query}\"",
   "@settingsCategoriesNoMatchQuery": {
     "placeholders": {
@@ -3227,8 +3250,21 @@
   },
   "settingsCategoriesTitle": "Categories",
   "settingsConflictsTitle": "Sync Conflicts",
-  "settingsDashboardDetailsLabel": "Dashboard Details",
+  "settingsDashboardDetailsLabel": "Edit dashboard",
   "settingsDashboardSaveLabel": "Save",
+  "settingsDashboardsCreateTitle": "Create dashboard",
+  "settingsDashboardsEmptyState": "No dashboards yet",
+  "settingsDashboardsEmptyStateHint": "Tap the + button to create your first dashboard.",
+  "settingsDashboardsErrorLoading": "Error loading dashboards",
+  "settingsDashboardsNoMatchQuery": "No dashboards match \"{query}\"",
+  "@settingsDashboardsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsDashboardsSearchHint": "Search dashboards…",
   "settingsDashboardsSubtitle": "Customize your dashboard views",
   "settingsDashboardsTitle": "Dashboards",
   "settingsDefinitionsSubtitle": "Habits, categories, labels, dashboards, and measurables",
@@ -3237,12 +3273,25 @@
   "settingsFlagsSearchHint": "Search flags",
   "settingsFlagsSubtitle": "Configure feature flags and options",
   "settingsFlagsTitle": "Config Flags",
+  "settingsHabitsCreateTitle": "Create habit",
   "settingsHabitsDeleteTooltip": "Delete Habit",
-  "settingsHabitsDescriptionLabel": "Description (optional):",
-  "settingsHabitsDetailsLabel": "Habit Details",
-  "settingsHabitsNameLabel": "Habit name:",
+  "settingsHabitsDescriptionLabel": "Description (optional)",
+  "settingsHabitsDetailsLabel": "Edit habit",
+  "settingsHabitsEmptyState": "No habits yet",
+  "settingsHabitsEmptyStateHint": "Tap the + button to create your first habit.",
+  "settingsHabitsErrorLoading": "Error loading habits",
+  "settingsHabitsNameLabel": "Habit name",
+  "settingsHabitsNoMatchQuery": "No habits match \"{query}\"",
+  "@settingsHabitsNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
   "settingsHabitsPrivateLabel": "Private: ",
   "settingsHabitsSaveLabel": "Save",
+  "settingsHabitsSearchHint": "Search habits…",
   "settingsHabitsSubtitle": "Manage your habits and routines",
   "settingsHabitsTitle": "Habits",
   "settingsHealthImportFromDate": "Start",
@@ -3252,7 +3301,7 @@
   "settingsLabelsCategoriesHeading": "Applicable categories",
   "settingsLabelsCategoriesNone": "Applies to all categories",
   "settingsLabelsCategoriesRemoveTooltip": "Remove",
-  "settingsLabelsColorHeading": "Select a color",
+  "settingsLabelsColorHeading": "Color",
   "settingsLabelsColorSubheading": "Quick presets",
   "settingsLabelsCreateTitle": "Create label",
   "settingsLabelsDeleteConfirmAction": "Delete",
@@ -3283,12 +3332,12 @@
       }
     }
   },
-  "settingsLabelsPrivateDescription": "Private labels only appear when “Show private entries” is enabled.",
-  "settingsLabelsPrivateTitle": "Private label",
+  "settingsLabelsPrivateDescription": "Only visible when private entries are shown",
+  "settingsLabelsPrivateTitle": "Private",
   "settingsLabelsSearchHint": "Search labels…",
   "settingsLabelsSubtitle": "Organize tasks with colored labels",
   "settingsLabelsTitle": "Labels",
-  "settingsLabelsUsageCount": "Used on {count, plural, =1{1 task} other{{count} tasks}}",
+  "settingsLabelsUsageCount": "{count, plural, =1{1 task} other{{count} tasks}}",
   "@settingsLabelsUsageCount": {
     "placeholders": {
       "count": {
@@ -3353,16 +3402,30 @@
   "settingsMatrixVerifyConfirm": "Confirm on other device that the emojis below are displayed on both devices, in the same order:",
   "settingsMatrixVerifyIncomingConfirm": "Confirm that the emojis below are displayed on both devices, in the same order:",
   "settingsMatrixVerifyLabel": "Verify",
-  "settingsMeasurableAggregationLabel": "Default Aggregation Type (optional):",
+  "settingsMeasurableAggregationHelper": "How a day's entries combine on charts",
+  "settingsMeasurableAggregationLabel": "Default aggregation type",
   "settingsMeasurableDeleteTooltip": "Delete measurable type",
-  "settingsMeasurableDescriptionLabel": "Description (optional):",
-  "settingsMeasurableDetailsLabel": "Measurable Details",
-  "settingsMeasurableNameLabel": "Measurable name:",
+  "settingsMeasurableDescriptionLabel": "Description (optional)",
+  "settingsMeasurableDetailsLabel": "Edit measurable",
+  "settingsMeasurableNameLabel": "Measurable name",
   "settingsMeasurablePrivateLabel": "Private: ",
   "settingsMeasurableSaveLabel": "Save",
+  "settingsMeasurableUnitLabel": "Unit abbreviation (optional)",
+  "settingsMeasurablesCreateTitle": "Create measurable",
+  "settingsMeasurablesEmptyState": "No measurables yet",
+  "settingsMeasurablesEmptyStateHint": "Measurables are numbers you track over time — weight, water, steps.",
+  "settingsMeasurablesErrorLoading": "Error loading measurables",
+  "settingsMeasurablesNoMatchQuery": "No measurables match \"{query}\"",
+  "@settingsMeasurablesNoMatchQuery": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsMeasurablesSearchHint": "Search measurables…",
   "settingsMeasurablesSubtitle": "Configure measurable data types",
-  "settingsMeasurablesTitle": "Measurable Types",
-  "settingsMeasurableUnitLabel": "Unit abbreviation (optional):",
+  "settingsMeasurablesTitle": "Measurables",
   "settingsResetGeminiConfirm": "Reset",
   "settingsResetGeminiConfirmQuestion": "This will show the Gemini setup dialog again. Continue?",
   "settingsResetGeminiSubtitle": "Show the Gemini AI setup dialog again",
@@ -3408,8 +3471,6 @@
   "settingsV2UnimplementedTitle": "Panel not yet implemented",
   "settingsWhatsNewSubtitle": "See the latest updates and features",
   "settingsWhatsNewTitle": "What's New",
-  "settingThemingDark": "Dark Theme",
-  "settingThemingLight": "Light Theme",
   "sidebarRunningTimerLabel": "Running timer",
   "sidebarRunningTimerStopTooltip": "Stop timer",
   "sidebarToggleCollapseLabel": "Collapse sidebar",
@@ -3423,7 +3484,7 @@
   "speechDictionaryHint": "macOS; Kirkjubæjarklaustur; Claude Code",
   "speechDictionaryLabel": "Speech Dictionary",
   "speechDictionarySectionDescription": "Add terms that are often misspelled by speech recognition (names, places, technical terms)",
-  "speechDictionarySectionTitle": "Speech Recognition",
+  "speechDictionarySectionTitle": "Speech recognition",
   "speechDictionaryWarning": "Large dictionary ({count} terms) may increase API costs",
   "speechModalSelectLanguage": "Select Language",
   "speechModalTitle": "Speech Recognition",
@@ -3556,7 +3617,7 @@
   "taskLanguageItalian": "Italian",
   "taskLanguageJapanese": "Japanese",
   "taskLanguageKorean": "Korean",
-  "taskLanguageLabel": "Language:",
+  "taskLanguageLabel": "Language",
   "taskLanguageLatvian": "Latvian",
   "taskLanguageLithuanian": "Lithuanian",
   "taskLanguageNigerianPidgin": "Nigerian Pidgin",
@@ -3592,14 +3653,6 @@
       }
     }
   },
-  "tasksAddLabelButton": "Add Label",
-  "tasksAgentFilterAll": "All",
-  "tasksAgentFilterHasAgent": "Has Agent",
-  "tasksAgentFilterNoAgent": "No Agent",
-  "tasksAgentFilterTitle": "Agent",
-  "tasksFilterApplyTitle": "Apply filter",
-  "tasksFilterClearAll": "Clear all",
-  "tasksFilterTitle": "Tasks Filter",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} done",
   "@taskShowcaseCompletedCount": {
@@ -3644,6 +3697,25 @@
   "taskShowcaseTimeTracker": "Time Tracker",
   "taskShowcaseTodo": "Todo",
   "taskShowcaseTodos": "Todos",
+  "taskStatusAll": "All",
+  "taskStatusBlocked": "Blocked",
+  "taskStatusDone": "Done",
+  "taskStatusGroomed": "Groomed",
+  "taskStatusInProgress": "In Progress",
+  "taskStatusLabel": "Status:",
+  "taskStatusOnHold": "On Hold",
+  "taskStatusOpen": "Open",
+  "taskStatusRejected": "Rejected",
+  "taskTitleEmpty": "No title",
+  "taskUntitled": "(untitled)",
+  "tasksAddLabelButton": "Add Label",
+  "tasksAgentFilterAll": "All",
+  "tasksAgentFilterHasAgent": "Has Agent",
+  "tasksAgentFilterNoAgent": "No Agent",
+  "tasksAgentFilterTitle": "Agent",
+  "tasksFilterApplyTitle": "Apply filter",
+  "tasksFilterClearAll": "Clear all",
+  "tasksFilterTitle": "Tasks Filter",
   "tasksLabelFilterAll": "All",
   "tasksLabelFilterTitle": "Label",
   "tasksLabelFilterUnlabeled": "Unlabeled",
@@ -3669,19 +3741,6 @@
   "tasksSavedFilterDeleteTooltip": "Delete saved filter",
   "tasksSavedFilterDragHandleSemantics": "Drag to reorder",
   "tasksSavedFilterRenameSemantics": "Rename saved filter",
-  "tasksSavedFiltersSaveButtonLabel": "Save",
-  "tasksSavedFiltersSavePopupCancel": "Cancel",
-  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filter active. Saved to sidebar under Tasks.} other{{count} filters active. Saved to sidebar under Tasks.}}",
-  "@tasksSavedFiltersSavePopupHelper": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "tasksSavedFiltersSavePopupHint": "e.g. Blocked or on hold",
-  "tasksSavedFiltersSavePopupSave": "Save",
-  "tasksSavedFiltersSavePopupTitle": "Name this filter",
   "tasksSavedFilterToastDeleted": "Filter deleted",
   "tasksSavedFilterToastSaved": "Saved '{name}'",
   "@tasksSavedFilterToastSaved": {
@@ -3699,6 +3758,19 @@
       }
     }
   },
+  "tasksSavedFiltersSaveButtonLabel": "Save",
+  "tasksSavedFiltersSavePopupCancel": "Cancel",
+  "tasksSavedFiltersSavePopupHelper": "{count, plural, =1{1 filter active. Saved to sidebar under Tasks.} other{{count} filters active. Saved to sidebar under Tasks.}}",
+  "@tasksSavedFiltersSavePopupHelper": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "tasksSavedFiltersSavePopupHint": "e.g. Blocked or on hold",
+  "tasksSavedFiltersSavePopupSave": "Save",
+  "tasksSavedFiltersSavePopupTitle": "Name this filter",
   "tasksSearchModeLabel": "Search mode",
   "tasksShowCreationDate": "Show creation date on cards",
   "tasksShowDueDate": "Show due date on cards",
@@ -3706,17 +3778,6 @@
   "tasksSortByDueDate": "Due Date",
   "tasksSortByLabel": "Sort by",
   "tasksSortByPriority": "Priority",
-  "taskStatusAll": "All",
-  "taskStatusBlocked": "Blocked",
-  "taskStatusDone": "Done",
-  "taskStatusGroomed": "Groomed",
-  "taskStatusInProgress": "In Progress",
-  "taskStatusLabel": "Status:",
-  "taskStatusOnHold": "On Hold",
-  "taskStatusOpen": "Open",
-  "taskStatusRejected": "Rejected",
-  "taskTitleEmpty": "No title",
-  "taskUntitled": "(untitled)",
   "thinkingDisclosureCopied": "Reasoning copied",
   "thinkingDisclosureCopy": "Copy reasoning",
   "thinkingDisclosureHide": "Hide reasoning",

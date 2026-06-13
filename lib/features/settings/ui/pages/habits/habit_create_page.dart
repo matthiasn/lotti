@@ -9,6 +9,6 @@ class CreateHabitPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return HabitDetailsPage(habitId: habitId);
+    return HabitDetailsPage(habitId: habitId, isCreateMode: true);
   }
 }

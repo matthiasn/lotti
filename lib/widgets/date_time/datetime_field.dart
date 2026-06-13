@@ -55,38 +55,56 @@ class _DateTimeFieldState extends State<DateTimeField> {
       controller: TextEditingController(
         text: widget.dateTime != null ? df.format(widget.dateTime!) : '',
       ),
-      onTap: () async {
-        var selectedDateTime = widget.dateTime ?? DateTime.now();
-
-        await ModalUtils.showSinglePageModal<void>(
-          context: context,
-          builder: (modalContext) {
-            return DateTimeBottomSheet(
-              selectedDateTime,
-              mode: widget.mode,
-              onDateTimeSelected: (dateTime) {
-                if (dateTime != null) {
-                  selectedDateTime = dateTime;
-                }
-              },
-            );
-          },
-          title: widget.labelText,
-          stickyActionBar: DateTimeStickyActionBar(
-            onCancel: () => Navigator.of(context).pop(),
-            onNow: () {
-              widget.setDateTime(DateTime.now());
-              Navigator.of(context).pop();
-            },
-            onDone: () {
-              widget.setDateTime(selectedDateTime);
-              Navigator.of(context).pop();
-            },
-          ),
-          navBarHeight: 65,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-        );
-      },
+      onTap: () => showDateTimePickerModal(
+        context,
+        dateTime: widget.dateTime,
+        labelText: widget.labelText,
+        setDateTime: widget.setDateTime,
+        mode: widget.mode,
+      ),
     );
   }
+}
+
+/// Opens the shared date/time picker modal (Cupertino wheel plus the
+/// Cancel / Now / Done sticky bar). Shared by [DateTimeField] and the
+/// settings editors' `SettingsDateTimeField` so both field styles drive
+/// the exact same picking flow.
+Future<void> showDateTimePickerModal(
+  BuildContext context, {
+  required DateTime? dateTime,
+  required String labelText,
+  required void Function(DateTime) setDateTime,
+  CupertinoDatePickerMode mode = CupertinoDatePickerMode.dateAndTime,
+}) async {
+  var selectedDateTime = dateTime ?? DateTime.now();
+
+  await ModalUtils.showSinglePageModal<void>(
+    context: context,
+    builder: (modalContext) {
+      return DateTimeBottomSheet(
+        selectedDateTime,
+        mode: mode,
+        onDateTimeSelected: (dateTime) {
+          if (dateTime != null) {
+            selectedDateTime = dateTime;
+          }
+        },
+      );
+    },
+    title: labelText,
+    stickyActionBar: DateTimeStickyActionBar(
+      onCancel: () => Navigator.of(context).pop(),
+      onNow: () {
+        setDateTime(DateTime.now());
+        Navigator.of(context).pop();
+      },
+      onDone: () {
+        setDateTime(selectedDateTime);
+        Navigator.of(context).pop();
+      },
+    ),
+    navBarHeight: 65,
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+  );
 }

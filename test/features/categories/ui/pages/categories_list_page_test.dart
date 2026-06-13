@@ -6,11 +6,12 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_task_count_provider.dart';
 import 'package:lotti/features/categories/ui/pages/categories_list_page.dart';
-import 'package:lotti/features/categories/ui/widgets/category_create_modal.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -106,17 +107,38 @@ void main() {
         await pumpCategoriesListPage(tester);
 
         expect(find.byIcon(Icons.category_outlined), findsOneWidget);
-        expect(find.byType(Text), findsAtLeastNWidgets(2));
+        expect(find.text('No categories yet'), findsOneWidget);
+        expect(
+          find.text('Create a category to organize your entries'),
+          findsOneWidget,
+        );
       });
+
+      testWidgets(
+        'hides the corner FAB on an empty list — the empty state carries '
+        'its own inline create button instead',
+        (tester) async {
+          when(() => mockRepository.watchCategories()).thenAnswer(
+            (_) => Stream.value([]),
+          );
+
+          await pumpCategoriesListPage(tester);
+
+          expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
+          expect(find.text('Create category'), findsOneWidget);
+        },
+      );
     });
 
     group('Header', () {
       testWidgets(
         'shows a create-category FAB at the bottom-right (replaces the '
-        'old app-bar text button)',
+        'old app-bar text button) once categories exist',
         (tester) async {
           when(() => mockRepository.watchCategories()).thenAnswer(
-            (_) => Stream.value([]),
+            (_) => Stream.value([
+              CategoryTestUtils.createTestCategory(id: 'a', name: 'Alpha'),
+            ]),
           );
 
           await pumpCategoriesListPage(tester);
@@ -129,6 +151,10 @@ void main() {
           final fab = find.byType(DesignSystemFloatingActionButton);
           expect(fab, findsOneWidget);
           expect(
+            tester.widget<DesignSystemFloatingActionButton>(fab).semanticLabel,
+            'Create category',
+          );
+          expect(
             find.descendant(of: fab, matching: find.byIcon(Icons.add_rounded)),
             findsOneWidget,
           );
@@ -137,85 +163,23 @@ void main() {
       );
 
       testWidgets(
-        'tapping the create FAB opens the CategoryCreateModal as a '
-        'single-page modal so the create flow stays inside this tab '
-        'instead of beaming through SettingsLocation (where there is no '
-        'projects-style panel for the /create route)',
+        'tapping the create FAB beams to the create page — the same '
+        'list-to-full-page flow as every other definition type',
         (tester) async {
           when(() => mockRepository.watchCategories()).thenAnswer(
-            (_) => Stream.value([]),
+            (_) => Stream.value([
+              CategoryTestUtils.createTestCategory(id: 'a', name: 'Alpha'),
+            ]),
           );
-
-          await pumpCategoriesListPage(tester);
-
-          // Sanity: the modal is not open before the user taps the FAB.
-          expect(find.byType(CategoryCreateModal), findsNothing);
-
-          await tester.tap(find.byType(DesignSystemFloatingActionButton));
-          await tester.pumpAndSettle();
-
-          // The FAB calls `_showCreateCategoryModal`, which routes
-          // through `ModalUtils.showSinglePageModal` and renders
-          // `CategoryCreateModal` inside the resulting WoltModalSheet.
-          expect(find.byType(CategoryCreateModal), findsOneWidget);
-        },
-      );
-
-      testWidgets(
-        'create modal callback exits cleanly when a category is saved — '
-        'the underlying stream provider refreshes the list, so the page '
-        'does not need to navigate the user anywhere afterwards',
-        (tester) async {
-          final created = CategoryTestUtils.createTestCategory(
-            id: 'cat-new',
-            name: 'New',
-          );
-          when(() => mockRepository.watchCategories()).thenAnswer(
-            (_) => Stream.value([]),
-          );
-          when(
-            () => mockRepository.createCategory(
-              name: any(named: 'name'),
-              color: any(named: 'color'),
-              icon: any(named: 'icon'),
-            ),
-          ).thenAnswer((_) async => created);
+          String? beamedTo;
+          beamToNamedOverride = (path) => beamedTo = path;
 
           await pumpCategoriesListPage(tester);
 
           await tester.tap(find.byType(DesignSystemFloatingActionButton));
-          await tester.pumpAndSettle();
-
-          // Drive the modal's save path: type a name, tap Save.
-          await tester.enterText(find.byType(TextField).last, 'New');
           await tester.pump();
-          // The Wolt modal lays the action row out below the visible
-          // viewport on the default 800x600 mobile bench, so scroll
-          // the Save button into view before tapping. `warnIfMissed:
-          // false` because the WoltModalSheet hit-test wraps the
-          // button in custom semantics layers Flutter's tap finder
-          // doesn't recognise even after the button is on-screen.
-          final saveButton = find.text('Save');
-          await tester.ensureVisible(saveButton);
-          await tester.pumpAndSettle();
-          await tester.tap(saveButton, warnIfMissed: false);
-          // The modal pops itself once `createCategory` resolves; let
-          // the route exit animation settle so the modal widget is
-          // gone from the tree before we assert.
-          await tester.pumpAndSettle();
 
-          verify(
-            () => mockRepository.createCategory(
-              name: 'New',
-              color: any(named: 'color'),
-              icon: any(named: 'icon'),
-            ),
-          ).called(1);
-
-          // Modal closes; the user is left on the categories list which
-          // refreshes via `categoriesStreamProvider` independently.
-          expect(find.byType(CategoryCreateModal), findsNothing);
-          expect(find.byType(CategoriesListPage), findsOneWidget);
+          expect(beamedTo, '/settings/categories/create');
         },
       );
 
@@ -309,7 +273,7 @@ void main() {
     });
 
     group('Category Tile Design', () {
-      testWidgets('renders CategoryIconBadge with fallback letter', (
+      testWidgets('renders CategoryIconChip with fallback letter', (
         tester,
       ) async {
         final categories = [
@@ -327,7 +291,7 @@ void main() {
 
         expect(find.text('Red Category'), findsOneWidget);
         expect(find.text('R'), findsOneWidget);
-        expect(find.byType(CategoryIconBadge), findsOneWidget);
+        expect(find.byType(CategoryIconChip), findsOneWidget);
       });
 
       testWidgets('renders task count subtitle', (tester) async {
@@ -435,7 +399,7 @@ void main() {
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       });
 
-      testWidgets('shows favorite star for favorited categories', (
+      testWidgets('shows outlined amber star for favorited categories', (
         tester,
       ) async {
         final categories = [
@@ -451,7 +415,15 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.star), findsOneWidget);
+        // One icon weight across the trailing slot — the star is an
+        // outline like lock/eye-off; amber carries the favorite signal.
+        final star = find.byIcon(Icons.star_rounded);
+        expect(star, findsOneWidget);
+        final tokens = tester.element(star).designTokens;
+        expect(
+          tester.widget<Icon>(star).color,
+          tokens.colors.text.mediumEmphasis,
+        );
       });
 
       testWidgets('does not show star for non-favorite categories', (
@@ -467,7 +439,7 @@ void main() {
 
         await pumpCategoriesListPage(tester);
 
-        expect(find.byIcon(Icons.star), findsNothing);
+        expect(find.byIcon(Icons.star_rounded), findsNothing);
       });
 
       testWidgets('shows fallback letter when no icon set', (tester) async {
@@ -713,7 +685,7 @@ void main() {
 
         expect(find.byIcon(Icons.lock_outline), findsOneWidget);
         expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-        expect(find.byIcon(Icons.star), findsOneWidget);
+        expect(find.byIcon(Icons.star_rounded), findsOneWidget);
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
       });
 
@@ -732,7 +704,7 @@ void main() {
 
         expect(find.byIcon(Icons.lock_outline), findsNothing);
         expect(find.byIcon(Icons.visibility_off_outlined), findsNothing);
-        expect(find.byIcon(Icons.star), findsNothing);
+        expect(find.byIcon(Icons.star_rounded), findsNothing);
       });
     });
 

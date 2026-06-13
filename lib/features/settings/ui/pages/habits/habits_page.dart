@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/services/notification_stream.dart';
+
+/// All habit definitions (active and inactive) for the settings list.
+/// Co-located with its only consumer; the habits feature's own providers
+/// scope to active habits and completion state instead.
+final StreamProvider<List<HabitDefinition>> habitDefinitionsStreamProvider =
+    StreamProvider.autoDispose<List<HabitDefinition>>(
+      (ref) => ref.watch(habitsRepositoryProvider).watchHabitDefinitions(),
+    );
 
 /// Embeddable body alias for the Settings V2 detail pane (plan
 /// step 8). See `CategoriesListBody` for the polish note about the
@@ -21,30 +27,29 @@ class HabitsBody extends StatelessWidget {
   Widget build(BuildContext context) => const HabitsPage();
 }
 
-class HabitsPage extends StatelessWidget {
+class HabitsPage extends ConsumerWidget {
   const HabitsPage({this.initialSearchTerm, super.key});
 
   final String? initialSearchTerm;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messages = context.messages;
     return DefinitionsListPage<HabitDefinition>(
-      stream: notificationDrivenStream(
-        notifications: getIt<UpdateNotifications>(),
-        notificationKeys: {habitsNotification, privateToggleNotification},
-        fetcher: getIt<JournalDb>().getAllHabitDefinitions,
-      ),
-      floatingActionButton: FloatingAddIcon(
-        createFn: () => beamToNamed('/settings/habits/create'),
-        semanticLabel: 'Add Habit',
-      ),
-      title: context.messages.settingsHabitsTitle,
-      getName: (habitDefinition) => habitDefinition.name,
+      itemsAsync: ref.watch(habitDefinitionsStreamProvider),
+      title: messages.settingsHabitsTitle,
+      searchHint: messages.settingsHabitsSearchHint,
+      displayName: (habit) => habit.name,
       initialSearchTerm: initialSearchTerm,
-      definitionCard:
-          (int index, HabitDefinition item, {required bool isLast}) {
-            return _HabitListItem(habit: item, showDivider: !isLast);
-          },
+      emptyIcon: Icons.repeat_rounded,
+      emptyTitle: messages.settingsHabitsEmptyState,
+      emptyHint: messages.settingsHabitsEmptyStateHint,
+      noMatchMessage: messages.settingsHabitsNoMatchQuery,
+      errorTitle: messages.settingsHabitsErrorLoading,
+      createLabel: messages.settingsHabitsCreateTitle,
+      onCreate: () => beamToNamed('/settings/habits/create'),
+      itemBuilder: (context, habit, {required bool showDivider}) =>
+          _HabitListItem(habit: habit, showDivider: showDivider),
     );
   }
 }
@@ -55,8 +60,6 @@ class _HabitListItem extends StatelessWidget {
     required this.showDivider,
   });
 
-  static const double _leadingIconSize = 28;
-
   final HabitDefinition habit;
   final bool showDivider;
 
@@ -66,11 +69,16 @@ class _HabitListItem extends StatelessWidget {
     final isPrivate = habit.private;
     final isFavorite = habit.priority ?? false;
 
+    final description = habit.description.trim();
+
     return DesignSystemListItem(
       title: habit.name,
-      leading: CategoryIconCompact(
+      subtitle: description.isNotEmpty ? description : null,
+      // Item letter on the category color: the initial matches the row's
+      // name while the chip color carries the category.
+      leading: CategoryIconChip.fromId(
         habit.categoryId,
-        size: _leadingIconSize,
+        letterFrom: habit.name,
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -105,9 +113,9 @@ class _HabitListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.favoriteLabel,
                 child: Icon(
-                  Icons.star,
-                  color: tokens.colors.alert.warning.defaultColor,
-                  size: 20,
+                  Icons.star_rounded,
+                  size: 18,
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
             ),
@@ -120,7 +128,9 @@ class _HabitListItem extends StatelessWidget {
       ),
       showDivider: showDivider,
       dividerIndent:
-          tokens.spacing.step5 + _leadingIconSize + tokens.spacing.step3,
+          tokens.spacing.step5 +
+          DefinitionIconChip.defaultSize +
+          tokens.spacing.step3,
       onTap: () => beamToNamed('/settings/habits/by_id/${habit.id}'),
     );
   }

@@ -116,7 +116,7 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
       categoryDetailsControllerProvider(widget.categoryId!).notifier,
     );
 
-    return ProfileSelector(
+    return SettingsProfilePickerField(
       selectedProfileId: category.defaultProfileId,
       onProfileSelected: controller.setDefaultProfileId,
       hintText: context.messages.categoryDefaultProfileHint,

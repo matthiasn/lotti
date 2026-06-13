@@ -1,14 +1,15 @@
-import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/aggregation_label.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -91,13 +92,15 @@ class MeasurableItemCard extends StatelessWidget {
             final matches = measurableTypes.where(
               (m) => measurement.id == m.id,
             );
-            var title = '';
+            // Fall back to the id when the referenced measurable type is
+            // missing (e.g. deleted) so the row isn't visually blank.
+            var title = measurement.id;
             if (matches.isNotEmpty) {
               final aggregationType = measurement.aggregationType;
-              final aggregationTypeLabel = aggregationType != null
-                  ? ' [${EnumToString.convertToString(measurement.aggregationType)}]'
+              final aggregationSuffix = aggregationType != null
+                  ? ' — ${aggregationTypeLabel(context.messages, aggregationType)}'
                   : '';
-              title = '${matches.first.displayName}$aggregationTypeLabel';
+              title = '${matches.first.displayName}$aggregationSuffix';
             }
             return ItemCard(
               leadingIcon: Icons.insights,
@@ -155,6 +158,12 @@ class HabitItemCard extends StatelessWidget {
   }
 }
 
+/// Reorderable chart row in the dashboard editor's Charts section.
+///
+/// Rendered in the settings design language — `background.level03` fill,
+/// `radii.s` corners, medium-emphasis leading glyph, body text title — with
+/// an explicit low-emphasis drag handle so the reorderable affordance is
+/// visible instead of implied.
 class ItemCard extends StatelessWidget {
   const ItemCard({
     required this.title,
@@ -169,23 +178,49 @@ class ItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        tileColor: context.colorScheme.secondaryContainer,
-        onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(
-          vertical: 8,
-          horizontal: 16,
-        ),
-        leading: Icon(
-          leadingIcon,
-          size: 32,
-          color: context.colorScheme.onSecondaryContainer,
-        ),
-        title: Text(
-          title,
-          softWrap: true,
-          style: TextStyle(color: context.colorScheme.onSecondaryContainer),
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final radius = BorderRadius.circular(tokens.radii.s);
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: spacing.step2),
+      child: Material(
+        color: tokens.colors.background.level03,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: spacing.step4,
+              vertical: spacing.step3,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  leadingIcon,
+                  size: spacing.step6,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                SizedBox(width: spacing.step3),
+                Expanded(
+                  child: Text(
+                    title,
+                    softWrap: true,
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ),
+                SizedBox(width: spacing.step3),
+                Icon(
+                  Icons.drag_indicator,
+                  size: spacing.step5,
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

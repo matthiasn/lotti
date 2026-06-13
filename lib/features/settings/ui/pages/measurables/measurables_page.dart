@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/categories/ui/widgets/category_icon_chip.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/definitions_list_page.dart';
@@ -9,6 +11,18 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_stream.dart';
+
+/// All measurable data types for the settings list. Co-located with its
+/// only consumer.
+final StreamProvider<List<MeasurableDataType>>
+measurableDataTypesStreamProvider =
+    StreamProvider.autoDispose<List<MeasurableDataType>>(
+      (ref) => notificationDrivenStream(
+        notifications: getIt<UpdateNotifications>(),
+        notificationKeys: {measurablesNotification, privateToggleNotification},
+        fetcher: getIt<JournalDb>().getAllMeasurableDataTypes,
+      ),
+    );
 
 /// Embeddable body alias for the Settings V2 detail pane (plan
 /// step 8). See `CategoriesListBody` for the polish note about the
@@ -20,34 +34,26 @@ class MeasurablesBody extends StatelessWidget {
   Widget build(BuildContext context) => const MeasurablesPage();
 }
 
-class MeasurablesPage extends StatelessWidget {
+class MeasurablesPage extends ConsumerWidget {
   const MeasurablesPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messages = context.messages;
     return DefinitionsListPage<MeasurableDataType>(
-      stream: notificationDrivenStream(
-        notifications: getIt<UpdateNotifications>(),
-        notificationKeys: {measurablesNotification, privateToggleNotification},
-        fetcher: getIt<JournalDb>().getAllMeasurableDataTypes,
-      ),
-      floatingActionButton: FloatingAddIcon(
-        createFn: () => beamToNamed('/settings/measurables/create'),
-        semanticLabel: 'Add Measurable',
-      ),
-      title: context.messages.settingsMeasurablesTitle,
-      getName: (dataType) => dataType.displayName,
-      definitionCard:
-          (
-            int index,
-            MeasurableDataType item, {
-            required bool isLast,
-          }) {
-            return _MeasurableListItem(
-              item: item,
-              showDivider: !isLast,
-            );
-          },
+      itemsAsync: ref.watch(measurableDataTypesStreamProvider),
+      title: messages.settingsMeasurablesTitle,
+      searchHint: messages.settingsMeasurablesSearchHint,
+      displayName: (dataType) => dataType.displayName,
+      emptyIcon: Icons.trending_up_rounded,
+      emptyTitle: messages.settingsMeasurablesEmptyState,
+      emptyHint: messages.settingsMeasurablesEmptyStateHint,
+      noMatchMessage: messages.settingsMeasurablesNoMatchQuery,
+      errorTitle: messages.settingsMeasurablesErrorLoading,
+      createLabel: messages.settingsMeasurablesCreateTitle,
+      onCreate: () => beamToNamed('/settings/measurables/create'),
+      itemBuilder: (context, dataType, {required bool showDivider}) =>
+          _MeasurableListItem(item: dataType, showDivider: showDivider),
     );
   }
 }
@@ -58,8 +64,6 @@ class _MeasurableListItem extends StatelessWidget {
     required this.showDivider,
   });
 
-  static const double _leadingIconSize = 24;
-
   final MeasurableDataType item;
   final bool showDivider;
 
@@ -68,15 +72,20 @@ class _MeasurableListItem extends StatelessWidget {
     final tokens = context.designTokens;
     final isPrivate = item.private ?? false;
     final isFavorite = item.favorite ?? false;
-    final description = item.description;
+    final description = item.description.trim();
 
     return DesignSystemListItem(
       title: item.displayName,
-      subtitle: description.isNotEmpty ? description : item.unitName,
-      leading: Icon(
-        Icons.trending_up_rounded,
-        size: _leadingIconSize,
-        color: tokens.colors.text.mediumEmphasis,
+      // Description or nothing: a bare unit ("ml") is an orphan and a
+      // lowercase echo of the name reads like a bug. Units live in the
+      // editor.
+      subtitle: description.isNotEmpty ? description : null,
+      // Neutral first-letter chip: rows become distinguishable instead of
+      // decorated with one repeated glyph.
+      leading: DefinitionIconChip(
+        background: tokens.colors.background.level03,
+        foreground: tokens.colors.text.mediumEmphasis,
+        name: item.displayName,
       ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -99,9 +108,9 @@ class _MeasurableListItem extends StatelessWidget {
               child: Semantics(
                 label: context.messages.favoriteLabel,
                 child: Icon(
-                  Icons.star,
-                  color: tokens.colors.alert.warning.defaultColor,
-                  size: 20,
+                  Icons.star_rounded,
+                  size: 18,
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
             ),
@@ -114,7 +123,9 @@ class _MeasurableListItem extends StatelessWidget {
       ),
       showDivider: showDivider,
       dividerIndent:
-          tokens.spacing.step5 + _leadingIconSize + tokens.spacing.step3,
+          tokens.spacing.step5 +
+          DefinitionIconChip.defaultSize +
+          tokens.spacing.step3,
       onTap: () => beamToNamed('/settings/measurables/${item.id}'),
     );
   }

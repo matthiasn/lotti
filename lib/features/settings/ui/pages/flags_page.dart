@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
@@ -416,8 +417,9 @@ class _FlagsListState extends State<_FlagsList> {
                 // truncating with ellipsis.
                 subtitleMaxLines: null,
                 leading: SettingsIcon(icon: widget.iconFor(flag.name)),
-                trailing: Switch.adaptive(
+                trailing: DesignSystemToggle(
                   value: flag.status,
+                  semanticsLabel: widget.titleFor(flag),
                   onChanged: (bool status) {
                     getIt<PersistenceLogic>().setConfigFlag(
                       flag.copyWith(status: status),

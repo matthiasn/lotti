@@ -333,11 +333,11 @@ void main() {
         // "Category:" label and is marked as a placeholder.
         expect(find.byType(CategoryTag), findsNothing);
         final placeholder = tester.widget<OutlinedMetaTag>(
-          find.widgetWithText(OutlinedMetaTag, 'Category:'),
+          find.widgetWithText(OutlinedMetaTag, 'Category'),
         );
         expect(placeholder.isPlaceholder, isTrue);
 
-        await tester.tap(find.text('Category:'));
+        await tester.tap(find.text('Category'));
         await tester.pump();
         expect(categoryTapCount, 1);
       },
@@ -360,7 +360,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(CategoryTag), findsNothing);
-        expect(find.text('Category:'), findsNothing);
+        expect(find.text('Category'), findsNothing);
       },
     );
   });

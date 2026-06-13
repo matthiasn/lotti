@@ -213,9 +213,9 @@ void main() {
       final definitions = _tree().firstWhere((n) => n.id == 'definitions');
       expect(definitions.panel, isNull);
       expect(definitions.children!.map((n) => n.id).toList(), [
-        'definitions/habits',
         'definitions/categories',
         'definitions/labels',
+        'definitions/habits',
         'definitions/dashboards',
         'definitions/measurables',
       ]);

@@ -4,6 +4,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1020]
+### Changed
+- All settings definition pages (categories, labels, habits, measurables,
+  dashboards) now share one design language. Every list page has the same
+  header, search field, grouped rows, floating create button, and
+  localized empty/no-match/error states; every editor shares the same
+  detail layout — a sticky bottom action bar floating on blurred glass
+  with Save/Create (enabled once something actually changed), Cancel, and
+  Delete with confirmation, Cmd/Ctrl+S keyboard save, design-system text
+  fields and toggle rows grouped into titled section cards, and content
+  that stays aligned with the page title at every window size. Editor
+  titles read "Edit habit"/"Edit category"/… consistently, and stray
+  trailing colons on field labels ("Priority:", "Dashboard name:") are
+  gone.
+- Creating a category now opens the same full create page as every other
+  definition type instead of a popup. It asks only for name, color, and
+  icon, then lands in the new category's editor where everything else
+  (privacy, language, AI defaults) is configured — no more disabled
+  placeholder switches on the create form.
+- The Projects section was removed from category settings; projects have
+  their own top-level page now.
+- On desktop, habit editing now opens inline in the settings split pane
+  like the other definition types, instead of taking over the window.
+- Dashboard editor: save-and-copy moved to a header action next to the
+  title, and saving with an invalid form no longer navigates away while
+  silently discarding the changes.
+
 ## [0.9.1019]
 ### Changed
 - The Daily OS day-planning conversation was redesigned around a stable

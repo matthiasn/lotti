@@ -22,6 +22,8 @@ class DesignSystemTextInput extends StatefulWidget {
     this.onTrailingIconTap,
     this.enabled = true,
     this.obscureText = false,
+    this.autofocus = false,
+    this.textCapitalization = TextCapitalization.none,
     this.onChanged,
     this.onSubmitted,
     this.semanticsLabel,
@@ -39,6 +41,8 @@ class DesignSystemTextInput extends StatefulWidget {
   final VoidCallback? onTrailingIconTap;
   final bool enabled;
   final bool obscureText;
+  final bool autofocus;
+  final TextCapitalization textCapitalization;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
   final String? semanticsLabel;
@@ -132,6 +136,8 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
                     focusNode: _focusNode,
                     enabled: widget.enabled,
                     obscureText: widget.obscureText,
+                    autofocus: widget.autofocus,
+                    textCapitalization: widget.textCapitalization,
                     onChanged: widget.onChanged,
                     onSubmitted: widget.onSubmitted,
                     style: spec.textStyle,

@@ -3,14 +3,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
 
+import '../../../../test_helper.dart';
+
 void main() {
   group('CategoryIconPicker', () {
     testWidgets('should display all available icons', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(),
-          ),
+        const WidgetTestBench(
+          child: CategoryIconPicker(),
         ),
       );
 
@@ -41,12 +41,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              height: 600,
-              child: CategoryIconPicker(),
-            ),
+        const WidgetTestBench(
+          child: SizedBox(
+            height: 600,
+            child: CategoryIconPicker(),
           ),
         ),
       );
@@ -96,22 +94,18 @@ void main() {
 
     testWidgets('should display correct title', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(),
-          ),
+        const WidgetTestBench(
+          child: CategoryIconPicker(),
         ),
       );
 
-      expect(find.text(CategoryIconStrings.chooseIconTitle), findsOneWidget);
+      expect(find.text('Choose icon'), findsOneWidget);
     });
 
     testWidgets('should have close button', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(),
-          ),
+        const WidgetTestBench(
+          child: CategoryIconPicker(),
         ),
       );
 
@@ -122,18 +116,16 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: ElevatedButton(
-                onPressed: () {
-                  showDialog<void>(
-                    context: context,
-                    builder: (_) => const CategoryIconPicker(),
-                  );
-                },
-                child: const Text('Open Picker'),
-              ),
+        WidgetTestBench(
+          child: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () {
+                showDialog<void>(
+                  context: context,
+                  builder: (_) => const CategoryIconPicker(),
+                );
+              },
+              child: const Text('Open Picker'),
             ),
           ),
         ),
@@ -158,10 +150,8 @@ void main() {
       const selectedIcon = CategoryIcon.fitness;
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(selectedIcon: selectedIcon),
-          ),
+        const WidgetTestBench(
+          child: CategoryIconPicker(selectedIcon: selectedIcon),
         ),
       );
 
@@ -190,18 +180,16 @@ void main() {
       CategoryIcon? result;
 
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () async {
-                  result = await showDialog<CategoryIcon>(
-                    context: context,
-                    builder: (context) => const CategoryIconPicker(),
-                  );
-                },
-                child: const Text('Show Picker'),
-              ),
+        WidgetTestBench(
+          child: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                result = await showDialog<CategoryIcon>(
+                  context: context,
+                  builder: (context) => const CategoryIconPicker(),
+                );
+              },
+              child: const Text('Show Picker'),
             ),
           ),
         ),
@@ -220,10 +208,8 @@ void main() {
 
     testWidgets('should display icon names', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(),
-          ),
+        const WidgetTestBench(
+          child: CategoryIconPicker(),
         ),
       );
 
@@ -246,10 +232,8 @@ void main() {
 
     testWidgets('should use correct grid layout', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(),
-          ),
+        const WidgetTestBench(
+          child: CategoryIconPicker(),
         ),
       );
 
@@ -273,10 +257,8 @@ void main() {
 
     testWidgets('should have correct dialog constraints', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(),
-          ),
+        const WidgetTestBench(
+          child: CategoryIconPicker(),
         ),
       );
 
@@ -292,10 +274,8 @@ void main() {
 
     testWidgets('should handle null selectedIcon', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(),
-          ),
+        const WidgetTestBench(
+          child: CategoryIconPicker(),
         ),
       );
 
@@ -307,10 +287,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(selectedIcon: CategoryIcon.fitness),
-          ),
+        const WidgetTestBench(
+          child: CategoryIconPicker(selectedIcon: CategoryIcon.fitness),
         ),
       );
 
@@ -341,10 +319,8 @@ void main() {
 
     testWidgets('selected item should have a glow shadow', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: CategoryIconPicker(selectedIcon: CategoryIcon.fitness),
-          ),
+        const WidgetTestBench(
+          child: CategoryIconPicker(selectedIcon: CategoryIcon.fitness),
         ),
       );
 

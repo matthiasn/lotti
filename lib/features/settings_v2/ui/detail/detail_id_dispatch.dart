@@ -28,7 +28,15 @@ Widget _labelsPanel(BuildContext context) => DetailIdDispatch(
     labelId: id,
   ),
 );
-Widget _habitsPanel(BuildContext context) => const HabitsBody();
+Widget _habitsPanel(BuildContext context) => DetailIdDispatch(
+  idParamKey: 'habitId',
+  list: (_) => const HabitsBody(),
+  create: (_, _) => CreateHabitPage(),
+  detail: (_, id) => EditHabitPage(
+    key: ValueKey('settings-v2-habit-$id'),
+    habitId: id,
+  ),
+);
 Widget _dashboardsPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'dashboardId',
   list: (_) => const DashboardsBody(),

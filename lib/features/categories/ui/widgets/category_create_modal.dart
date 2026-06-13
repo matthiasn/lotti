@@ -5,12 +5,12 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_picker.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Returns the width to pass to `flutter_colorpicker.ColorPicker` given
 /// the [available] horizontal space inside the modal.
@@ -155,12 +155,13 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              LottiTertiaryButton(
-                onPressed: () => Navigator.pop(context),
+              DesignSystemButton(
                 label: context.messages.cancelButton,
+                variant: DesignSystemButtonVariant.secondary,
+                onPressed: () => Navigator.pop(context),
               ),
               const SizedBox(width: CategoryIconConstants.smallSectionSpacing),
-              LottiTertiaryButton(
+              DesignSystemButton(
                 onPressed: () async {
                   final navigator = Navigator.of(context);
                   final messages = context.messages;
@@ -210,13 +211,13 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
 
   Widget _buildIconPicker() {
     final iconDisplayName =
-        _selectedIcon?.displayName ?? CategoryIconStrings.chooseIconText;
+        _selectedIcon?.displayName ?? context.messages.categoryIconChooseHint;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          CategoryIconStrings.iconLabel,
+          context.messages.categoryIconLabel,
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: CategoryIconConstants.smallSectionSpacing),
@@ -264,10 +265,13 @@ class _CategoryCreateModalState extends ConsumerState<CategoryCreateModal> {
                         iconDisplayName,
                         style: Theme.of(context).textTheme.bodyLarge,
                       ),
-                      Text(
-                        CategoryIconStrings.createModeIconHint,
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+                      // With no icon yet the main line already reads
+                      // "Select an icon" — no second instruction.
+                      if (_selectedIcon != null)
+                        Text(
+                          context.messages.categoryIconEditHint,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
                     ],
                   ),
                 ),

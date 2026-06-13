@@ -880,12 +880,12 @@ void main() {
           await tester.pump(const Duration(milliseconds: 350));
 
           // The modal should contain the CategorySelectionModalContent
-          // widget and display the 'Category:' title.
+          // widget and display the 'Category' title.
           expect(
             find.byType(CategorySelectionModalContent),
             findsOneWidget,
           );
-          expect(find.text('Category:'), findsOneWidget);
+          expect(find.text('Category'), findsOneWidget);
         },
       );
     });
