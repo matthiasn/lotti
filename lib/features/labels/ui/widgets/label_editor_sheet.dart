@@ -2,7 +2,7 @@ import 'package:flex_color_picker/flex_color_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/labels/constants/label_color_presets.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -10,7 +10,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class LabelEditorSheet extends ConsumerStatefulWidget {
   const LabelEditorSheet({
@@ -243,28 +242,14 @@ class _LabelEditorSheetState extends ConsumerState<LabelEditorSheet> {
                       icon: const Icon(Icons.add),
                       label: Text(context.messages.settingsLabelsCategoriesAdd),
                       onPressed: () async {
-                        final result =
-                            await ModalUtils.showBottomSheet<
-                              List<CategoryDefinition>
-                            >(
-                              context: context,
-                              isScrollControlled: true,
-                              useRootNavigator: true,
-                              builder: (context) => CategorySelectionModalContent(
-                                // Keep single-select behaviour for other call sites,
-                                // but use multiSelect here to allow selecting several
-                                // categories in one go.
-                                onCategorySelected: (_) {},
-                                multiSelect: true,
-                                initiallySelectedCategoryIds:
-                                    state.selectedCategoryIds,
-                              ),
-                            );
-                        if (result != null && result.isNotEmpty) {
-                          for (final cat in result) {
-                            controller.addCategoryId(cat.id);
-                          }
-                        }
+                        final result = await showCategoryMultiPicker(
+                          context: context,
+                          title: context.messages.settingsLabelsCategoriesAdd,
+                          initialSelectedIds: state.selectedCategoryIds,
+                        );
+                        if (result == null) return;
+                        // Add-only: the chips own removal via onDeleted.
+                        result.ids.forEach(controller.addCategoryId);
                       },
                     ),
                   ],

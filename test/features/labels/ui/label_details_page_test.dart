@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
@@ -413,7 +413,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // The category selection modal is mounted.
-      expect(find.byType(CategorySelectionModalContent), findsOneWidget);
+      expect(find.byType(CategoryPickerSheet), findsOneWidget);
     });
 
     testWidgets('keyboard shortcut Cmd+S triggers save', (tester) async {
@@ -904,7 +904,7 @@ void main() {
         await tester.tap(find.text('Mindfulness').first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+        await tester.tap(find.byKey(const ValueKey('category-picker-apply')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

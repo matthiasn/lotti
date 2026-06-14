@@ -10,7 +10,7 @@ Categories are persisted `CategoryDefinition` entities. In the current codebase 
 
 - `CategoryRepository` for create, update, soft delete, stream reads, and task counts
 - Settings surfaces: `CategoriesListPage`, `CategoryDetailsPage`, and create mode
-- Reusable picker surfaces: `CategoryField`, `CategorySelectionModalContent`, and `CategoryCreateModal`
+- Reusable picker surfaces: `CategoryField`, `CategoryPickerSheet`, and `CategoryCreateModal`
 - Category presentation metadata: `name`, `color`, `icon`
 - Category flags: `private`, `active`, `favorite`, `isAvailableForDayPlan`
 - Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`
@@ -36,7 +36,7 @@ flowchart TD
   DB --> Notify
 
   RepoStreams --> List["CategoriesListPage / CategoryDetailsController"]
-  Cache --> Pickers["CategorySelectionModalContent / CategoryField"]
+  Cache --> Pickers["CategoryPickerSheet / CategoryField"]
   Cache --> Create["createTask() / autoAssignCategoryAgent()"]
   Cache --> ProjectTools["ProjectToolDispatcher / FollowUpTaskHandler"]
   Cache --> Prompts["PromptBuilderHelper"]
@@ -176,25 +176,55 @@ That protects delayed background writes from `CorrectionCaptureService`.
 
 ## Picker and Inline Creation Flow
 
-The categories feature also provides reusable picker UI that other features call into.
+The categories feature owns the single, app-wide category picker —
+`CategoryPickerSheet` — and every category selection routes through it. It is a
+Wolt sheet (`ModalUtils.showSinglePageModal`, responsive bottom sheet ↔ dialog
+at 560px) with two modes, opened by two helpers:
+
+- `showCategoryPicker(...)` — **single** select. Tapping a category applies it
+  and closes immediately; the currently assigned category is pinned at the top
+  and a "clear" row removes it. Returns a 3-state `CategorySingleResult`
+  (`CategoryPicked` / `CategoryCleared` / dismissed-`null`); `categoryOrNull`
+  collapses the latter two for callers that don't distinguish them.
+- `showCategoryMultiPicker(...)` — **multi** select. Selection is staged in a
+  `ValueNotifier` and only committed when the user taps the glass-footer Apply;
+  dismissing discards it. The returned `CategoryMultiResult` carries `ids`, an
+  `includesUnassigned` flag (from an optional namespaced sentinel row), and a
+  `changed` flag so expensive callers skip no-op re-queries. Dead ids are
+  intersected out against the live option list.
 
 ```mermaid
 flowchart LR
-  Field["CategoryField / selection button"] --> Modal["CategorySelectionModalContent"]
-  Modal --> Cache["EntitiesCacheService.sortedCategories"]
-  Modal --> Create["CategoryCreateModal"]
+  Single["showCategoryPicker (single)"] --> Sheet["CategoryPickerSheet"]
+  Multi["showCategoryMultiPicker (multi)"] --> Sheet
+  Sheet --> Cache["EntitiesCacheService.sortedCategories"]
+  Sheet --> Create["CategoryCreateModal"]
   Create --> Repo["CategoryRepository.createCategory()"]
 ```
 
 Important implementation details:
 
-- the selection modal reads from cache, not a repository stream
-- it groups favorites before non-favorites
-- it supports both single-select and multi-select
-- when search has no match, it can open `CategoryCreateModal` with the search text prefilled
-- because it uses `sortedCategories`, inactive categories are not offered in picker flows
+- reads categories from the cache; callers may pass an explicit `options` list
+  (e.g. day-plan-only for Daily OS processing, or inactive-inclusive for the
+  dashboard-settings picker) rather than the default `sortedCategories`
+- groups favorites before non-favorites with one divider; selected rows are
+  tinted and checked (multi via `DesignSystemCheckbox`, single via a trailing
+  check) and private/favorite state is exposed to screen readers
+- when search has no match it offers a "create" row that opens
+  `CategoryCreateModal` with the search text prefilled (single returns the new
+  category and closes; multi adds it to the staged set and stays open)
+- all spacing/typography/color come from design-system tokens
+- embedded callers (the AI embeddings backfill) construct `CategoryPickerSheet`
+  directly with an externally-owned staged notifier and
+  `reserveFooterInset: false`, supplying their own confirm action
 
-This picker is reused outside the settings area, including tasks, projects, labels, AI backfill, and Daily OS widgets.
+`CategoryPickerSheet` is reused everywhere a category is assigned (journal
+entries, tasks, projects, habits, the dashboard-settings picker, Daily OS time
+blocks) and everywhere categories are filtered (the habits and dashboards
+category filters, Daily OS processing, label applicable-categories, AI
+backfill). The one deliberate exception is the tasks/projects multi-field
+filter sheet, whose category section is a generic field-selection modal shared
+with status / label / project — it is not a standalone category picker.
 
 ## Downstream Consumers
 

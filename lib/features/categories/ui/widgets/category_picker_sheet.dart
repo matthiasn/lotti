@@ -194,6 +194,7 @@ class CategoryPickerSheet extends ConsumerStatefulWidget {
     this.stagedNotifier,
     this.showUnassignedRow = false,
     this.allowCreate = true,
+    this.reserveFooterInset = true,
     super.key,
   }) : assert(
          mode == CategoryPickerMode.single || stagedNotifier != null,
@@ -220,6 +221,12 @@ class CategoryPickerSheet extends ConsumerStatefulWidget {
 
   /// Whether a non-matching search query offers to create a new category.
   final bool allowCreate;
+
+  /// Multi mode: whether to reserve bottom space for the glass Apply footer.
+  /// The [showCategoryMultiPicker] helper renders that footer; embedded callers
+  /// that supply their own action bar (e.g. the embeddings backfill modal)
+  /// pass `false` so the list uses the full height.
+  final bool reserveFooterInset;
 
   @override
   ConsumerState<CategoryPickerSheet> createState() =>
@@ -435,7 +442,9 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
 
     return ListView(
       padding: EdgeInsets.only(
-        bottom: _multi ? DesignSystemGlassActionFooter.reservedHeight : 0,
+        bottom: (_multi && widget.reserveFooterInset)
+            ? DesignSystemGlassActionFooter.reservedHeight
+            : 0,
       ),
       children: [
         if (!_multi && currentCategory != null) categoryRow(currentCategory),

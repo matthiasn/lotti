@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -85,67 +85,15 @@ class _MultiCategoryPicker extends StatelessWidget {
         ),
         SizedBox(
           height: 260,
-          child: _SyncedCategoryList(selectedIdsNotifier: selectedIdsNotifier),
+          child: CategoryPickerSheet(
+            mode: CategoryPickerMode.multi,
+            options: getIt<EntitiesCacheService>().sortedCategories,
+            stagedNotifier: selectedIdsNotifier,
+            // The progress modal owns the confirm action — no Apply footer.
+            reserveFooterInset: false,
+          ),
         ),
       ],
-    );
-  }
-}
-
-/// Wraps [CategorySelectionModalContent] in multi-select mode and syncs
-/// its internal selection state back to the shared [ValueNotifier].
-class _SyncedCategoryList extends StatefulWidget {
-  const _SyncedCategoryList({required this.selectedIdsNotifier});
-
-  final ValueNotifier<Set<String>> selectedIdsNotifier;
-
-  @override
-  State<_SyncedCategoryList> createState() => _SyncedCategoryListState();
-}
-
-class _SyncedCategoryListState extends State<_SyncedCategoryList> {
-  final _childKey = GlobalKey<CategorySelectionModalContentState>();
-
-  void _onExternalChange() {
-    final childState = _childKey.currentState;
-    if (childState != null &&
-        childState.selectedIds != widget.selectedIdsNotifier.value) {
-      childState.setSelectedIds(widget.selectedIdsNotifier.value);
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    widget.selectedIdsNotifier.addListener(_onExternalChange);
-  }
-
-  @override
-  void didUpdateWidget(covariant _SyncedCategoryList oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedIdsNotifier != widget.selectedIdsNotifier) {
-      oldWidget.selectedIdsNotifier.removeListener(_onExternalChange);
-      widget.selectedIdsNotifier.addListener(_onExternalChange);
-    }
-  }
-
-  @override
-  void dispose() {
-    widget.selectedIdsNotifier.removeListener(_onExternalChange);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return CategorySelectionModalContent(
-      key: _childKey,
-      multiSelect: true,
-      showDoneButton: false,
-      initiallySelectedCategoryIds: widget.selectedIdsNotifier.value,
-      onCategorySelected: (_) {},
-      onMultiSelectionChanged: (selectedIds) {
-        widget.selectedIdsNotifier.value = selectedIds;
-      },
     );
   }
 }
