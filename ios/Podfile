@@ -48,7 +48,12 @@ pre_install do |installer|
   installer.pod_targets.each do |pod|
     if pod.name == 'flutter_onnxruntime' || pod.name.start_with?('onnxruntime')
       def pod.build_type
-        Pod::BuildType.static_library
+        # static_framework (not static_library): still statically linked (so the
+        # validator passes and super_native_extensions stays dynamic), but it
+        # ships a module map so the ObjC `@import flutter_onnxruntime;` in
+        # GeneratedPluginRegistrant.m resolves. A plain static library has no
+        # module and fails with "Module 'flutter_onnxruntime' not found".
+        Pod::BuildType.static_framework
       end
     end
   end
