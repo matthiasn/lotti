@@ -115,7 +115,10 @@ InsightsRange periodToDate(
 /// The elapsed slice of [range] as of [now]: clipped so it never extends past
 /// today (inclusive). A fully-past period returns unchanged; an in-progress
 /// period (contains today and runs into the future) ends at today; a
-/// fully-future period collapses to an empty range at its start.
+/// fully-future period (e.g. jumped to via the calendar) clamps to its first
+/// day — [InsightsRange] is non-empty by invariant, and the period holds no
+/// tracked time anyway, so a single-day slice keeps callers (avg/day denominator,
+/// previous-period derivation) safe without ever building an empty range.
 ///
 /// This is what makes comparison honest: the current week's *full* range is
 /// seven days even on its first day, so without clipping the compare baseline
@@ -123,7 +126,11 @@ InsightsRange periodToDate(
 InsightsRange elapsedPortion(InsightsRange range, DateTime now) {
   final todayExclusive = epochDay(now) + 1;
   if (range.endDayExclusive <= todayExclusive) return range;
-  final end = todayExclusive < range.startDay ? range.startDay : todayExclusive;
+  // At least one day: a fully-future range would otherwise clip to an empty
+  // [startDay, startDay) and violate the InsightsRange "spans ≥ 1 day" invariant.
+  final end = todayExclusive <= range.startDay
+      ? range.startDay + 1
+      : todayExclusive;
   return InsightsRange(startDay: range.startDay, endDayExclusive: end);
 }
 

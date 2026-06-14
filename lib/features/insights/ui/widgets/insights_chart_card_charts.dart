@@ -15,10 +15,13 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// How many leading buckets of [data] have elapsed (start on or before today).
 /// A cumulative running total needs at least two to draw a line, so the chart
 /// card falls back to bars below this.
-int elapsedBucketCount(InsightsChartData data) {
-  final n = _firstFutureBucket(data, epochDay(clock.now()));
-  return n == 0 ? data.bucketStarts.length : n;
-}
+///
+/// This is exactly the index of the first not-yet-elapsed bucket: the bucket
+/// count when the whole period is past, the elapsed count when in progress,
+/// and 0 when the whole period is still in the future (nothing has elapsed,
+/// so cumulative correctly falls back to bars).
+int elapsedBucketCount(InsightsChartData data) =>
+    _firstFutureBucket(data, epochDay(clock.now()));
 
 class StackedBarChart extends StatelessWidget {
   const StackedBarChart({

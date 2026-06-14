@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_chart_card.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_chart_card_charts.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
@@ -101,6 +102,49 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(BarChart), findsOneWidget);
+  });
+
+  group('elapsedBucketCount', () {
+    InsightsChartData days(List<DateTime> starts) => InsightsChartData(
+      granularity: InsightsGranularity.day,
+      bucketStarts: starts,
+      seriesKeys: const ['cat-a'],
+      values: [
+        [for (final _ in starts) 600],
+      ],
+    );
+
+    test('counts elapsed buckets; future-only collapses to zero', () {
+      final now = DateTime(2026, 6, 15);
+      withClock(Clock.fixed(now), () {
+        // Whole period in the past → every bucket has elapsed.
+        expect(
+          elapsedBucketCount(
+            days([DateTime(2026, 6, 10), DateTime(2026, 6, 11)]),
+          ),
+          2,
+        );
+        // In progress → only the buckets up to today.
+        expect(
+          elapsedBucketCount(
+            days([
+              DateTime(2026, 6, 14),
+              DateTime(2026, 6, 15),
+              DateTime(2026, 6, 16),
+            ]),
+          ),
+          2,
+        );
+        // Whole period still in the future → nothing has elapsed (was wrongly
+        // reported as fully elapsed, which drew a flat cumulative line).
+        expect(
+          elapsedBucketCount(
+            days([DateTime(2026, 6, 20), DateTime(2026, 6, 21)]),
+          ),
+          0,
+        );
+      });
+    });
   });
 
   testWidgets('the per-bucket toggle label names the actual bucket', (

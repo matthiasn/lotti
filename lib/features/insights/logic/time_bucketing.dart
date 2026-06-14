@@ -390,7 +390,12 @@ List<InsightsTableRow> buildTableRows(
   // period), else the whole range. Dividing a current month's time by all 30
   // calendar days — most of them not yet reached — understates the daily pace
   // and disagrees with the MTD view, which already divides by elapsed days.
-  final days = (avgDayCount ?? range.dayCount).clamp(1, range.dayCount);
+  // Guard the clamp upper bound: an empty range (dayCount 0) would make
+  // `clamp(1, 0)` throw. Reachable callers can't hit it (total == 0 returns
+  // above), but keep the helper safe for any caller.
+  final days = range.dayCount < 1
+      ? 1
+      : (avgDayCount ?? range.dayCount).clamp(1, range.dayCount);
   return [
     for (final entry in ranked)
       InsightsTableRow(

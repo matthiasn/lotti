@@ -90,7 +90,10 @@ class InsightsKpiRow extends StatelessWidget {
     if (!configured) {
       return Row(
         children: [
-          Flexible(
+          // Expanded (tight), not Flexible (loose), so the Total tile is
+          // exactly 1/3 of the row — the same width it keeps once FOCUS/OTHER
+          // join it — rather than shrinking toward its content.
+          Expanded(
             child: _KpiTile(
               label: messages.insightsKpiTotal,
               seconds: kpis.totalSeconds,
