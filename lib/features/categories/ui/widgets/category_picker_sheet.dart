@@ -273,6 +273,8 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
   }
 
   PickerItem _categoryItem(CategoryDefinition c) {
+    final isPrivate = fromNullableBool(c.private);
+    final isFavorite = c.favorite ?? false;
     return PickerItem(
       id: c.id,
       rowKey: ValueKey('category-picker-row-${c.id}'),
@@ -281,27 +283,28 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
         size: CategoryIconConstants.iconSizeMedium,
       ),
       title: c.name,
+      // private/favorite are visual-only badges, so fold their state into the
+      // row's accessible name.
+      semanticLabel: [
+        c.name,
+        if (isPrivate) context.messages.categoryPrivateBadgeLabel,
+        if (isFavorite) context.messages.categoryFavoriteBadgeLabel,
+      ].join(', '),
       badges: [
-        if (fromNullableBool(c.private))
-          Semantics(
-            label: context.messages.categoryPrivateBadgeLabel,
-            child: Icon(
-              MdiIcons.security,
-              color: context.colorScheme.error,
-              size: CategoryIconConstants.iconSizeExtraSmall,
-            ),
+        if (isPrivate)
+          Icon(
+            MdiIcons.security,
+            color: context.colorScheme.error,
+            size: CategoryIconConstants.iconSizeExtraSmall,
           ),
-        if (c.favorite ?? false)
-          Semantics(
-            label: context.messages.categoryFavoriteBadgeLabel,
-            // starredGold is the app-wide favorite indicator (shared across the
-            // definitions lists); kept here deliberately rather than minted as a
-            // one-off token. Pending an app-wide token-promotion pass.
-            child: const Icon(
-              MdiIcons.star,
-              color: starredGold,
-              size: CategoryIconConstants.iconSizeExtraSmall,
-            ),
+        if (isFavorite)
+          // starredGold is the app-wide favorite indicator (shared across the
+          // definitions lists); kept here deliberately rather than minted as a
+          // one-off token. Pending an app-wide token-promotion pass.
+          const Icon(
+            MdiIcons.star,
+            color: starredGold,
+            size: CategoryIconConstants.iconSizeExtraSmall,
           ),
       ],
     );

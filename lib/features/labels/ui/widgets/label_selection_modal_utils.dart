@@ -84,15 +84,9 @@ class _LabelPickerBody extends ConsumerWidget {
       final availableIds = result.availableIds;
       return [
         for (final label in result.items)
-          PickerItem(
-            id: label.id,
-            rowKey: ValueKey('label-picker-row-${label.id}'),
-            leading: _LabelColorDot(label.color),
-            title: label.name,
-            subtitle: buildLabelSubtitleText(
-              label,
-              outOfCategory: !availableIds.contains(label.id),
-            ),
+          _labelPickerItem(
+            label,
+            outOfCategory: !availableIds.contains(label.id),
           ),
       ];
     }
@@ -130,6 +124,23 @@ class _LabelPickerBody extends ConsumerWidget {
       createRowKey: const ValueKey('label-picker-create'),
     );
   }
+}
+
+PickerItem _labelPickerItem(
+  LabelDefinition label, {
+  required bool outOfCategory,
+}) {
+  final subtitle = buildLabelSubtitleText(label, outOfCategory: outOfCategory);
+  return PickerItem(
+    id: label.id,
+    rowKey: ValueKey('label-picker-row-${label.id}'),
+    leading: _LabelColorDot(label.color),
+    title: label.name,
+    subtitle: subtitle,
+    // The subtitle is visual-only (excluded from the row's child semantics),
+    // so fold it into the accessible name.
+    semanticLabel: subtitle == null ? label.name : '${label.name}, $subtitle',
+  );
 }
 
 class _LabelApplyFooter extends ConsumerWidget {

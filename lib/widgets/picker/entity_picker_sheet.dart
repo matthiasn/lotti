@@ -27,6 +27,7 @@ class PickerItem extends PickerEntry {
     required this.title,
     this.subtitle,
     this.badges = const [],
+    this.semanticLabel,
     this.enabled = true,
     this.rowKey,
   });
@@ -36,6 +37,13 @@ class PickerItem extends PickerEntry {
   final String title;
   final String? subtitle;
   final List<Widget> badges;
+
+  /// The full accessible name for the row (title plus any state conveyed only
+  /// by [badges]/[subtitle], e.g. "Work, Favorite"). Defaults to [title]. The
+  /// row sets this explicitly and excludes the visual children from semantics,
+  /// so the announcement is deterministic rather than merge-derived.
+  final String? semanticLabel;
+
   final bool enabled;
   final Key? rowKey;
 }
@@ -176,8 +184,9 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
               onSubmitted: (_) {
                 if (showCreate) {
                   _create();
-                } else if (!_multi && items.length == 1) {
-                  // Single mode: Enter applies the lone match, mirroring a tap.
+                } else if (!_multi && items.isNotEmpty) {
+                  // Single mode: Enter applies the first match, the standard
+                  // search-box behaviour.
                   widget.onPick?.call(items.first.id);
                 }
               },
@@ -188,7 +197,10 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
             Expanded(
               child: Center(
                 child: Padding(
-                  padding: EdgeInsets.all(tokens.spacing.step6),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: tokens.spacing.step6,
+                    vertical: tokens.spacing.step4,
+                  ),
                   child: Text(
                     widget.emptyMessage,
                     textAlign: TextAlign.center,
@@ -302,19 +314,15 @@ class _PickerItemRow extends StatelessWidget {
     final spacing = tokens.spacing;
 
     final trailing = multi
-        ? ExcludeSemantics(
-            child: DesignSystemCheckbox(
-              value: selected,
-              semanticsLabel: item.title,
-              onChanged: onTap == null ? null : (_) => onTap!(),
-            ),
+        ? DesignSystemCheckbox(
+            value: selected,
+            semanticsLabel: item.title,
+            onChanged: onTap == null ? null : (_) => onTap!(),
           )
         : selected
-        ? ExcludeSemantics(
-            child: Icon(
-              Icons.check_rounded,
-              color: tokens.colors.interactive.enabled,
-            ),
+        ? Icon(
+            Icons.check_rounded,
+            color: tokens.colors.interactive.enabled,
           )
         : null;
 
@@ -324,11 +332,17 @@ class _PickerItemRow extends StatelessWidget {
           : tokens.colors.text.lowEmphasis,
     );
 
-    return MergeSemantics(
-      child: Semantics(
-        selected: multi ? null : selected,
-        checked: multi ? selected : null,
-        enabled: item.enabled,
+    // Explicit, deterministic semantics: one node with the full label + state
+    // + tap action; the visual subtree is excluded so nothing is announced
+    // twice or relies on implicit label merging.
+    return Semantics(
+      label: item.semanticLabel ?? item.title,
+      selected: multi ? null : selected,
+      checked: multi ? selected : null,
+      enabled: item.enabled,
+      button: multi ? null : true,
+      onTap: onTap,
+      child: ExcludeSemantics(
         child: Material(
           color: Colors.transparent,
           child: InkWell(
