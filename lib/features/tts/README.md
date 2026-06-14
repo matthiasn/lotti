@@ -41,6 +41,10 @@ features/tts/
   ui/widgets/
     tts_play_button.dart       focal 44pt play/stop control (filled-accent
                                circle; play/stop by shape+label, progress arc)
+    tts_voice_selector.dart    Female|Male DsSegmentedToggle switching which
+                               gender's five numbered voices are listed
+    tts_model_selector.dart    model rows ("Recommended" badge only with >1)
+    tts_speed_selector.dart    0.5x-2x playback-speed picker
 ```
 
 The **AI-card header** integration lives in the agents feature
@@ -59,6 +63,11 @@ distinct from the audio control. This **replaced** the old fire-and-forget MLX
 - **Engine + native:** concrete `SupertonicOnnxEngine` wired; `macos/Podfile`
   uses static linkage; voice JSONs bundled; model filenames verified against
   the HF repo.
+- **`flutter_onnxruntime` fork** (`third_party/flutter_onnxruntime`, path
+  `dependency_override`): runs ONNX inference on a dedicated serial background
+  queue on macOS, which Flutter can't do via platform-channel task queues
+  (flutter/flutter#162613). Without it, synthesis blocks the main thread and the
+  preparing spinner stutters. See `third_party/flutter_onnxruntime/LOTTI_PATCHES.md`.
 
 ## Remaining work (handoff)
 

@@ -1,13 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/model/tts_voice.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Selectable list of the Supertonic voices, grouped Female (F1–F5) then
-/// Male (M1–M5). Each row is a ≥44pt target; the active voice carries a
-/// leading accent check (shape, not color alone) and a selected semantics
-/// flag. Rendered inside a `SettingsFormSection` card by the page body.
-class TtsVoiceSelector extends StatelessWidget {
+/// Selectable list of the Supertonic voices.
+///
+/// A Female | Male [DsSegmentedToggle] (the same pill control as the Daily OS
+/// plan switch and the Time Analysis chart-mode toggle) chooses which gender's
+/// five numbered voices (F1–F5 / M1–M5) are shown, so the list stays short
+/// instead of stacking all ten with subheaders. The toggle opens on the
+/// selected voice's gender and follows it if the selection moves across genders
+/// from outside; switching the toggle is a view filter and never changes the
+/// persisted selection on its own.
+///
+/// Each row is a ≥44pt target; the active voice carries a leading accent check
+/// (shape, not color alone) and a selected semantics flag. Rendered inside a
+/// `SettingsFormSection` card by the page body.
+class TtsVoiceSelector extends StatefulWidget {
   const TtsVoiceSelector({
     required this.voiceId,
     required this.onChanged,
@@ -27,49 +37,53 @@ class TtsVoiceSelector extends StatelessWidget {
   }
 
   @override
+  State<TtsVoiceSelector> createState() => _TtsVoiceSelectorState();
+}
+
+class _TtsVoiceSelectorState extends State<TtsVoiceSelector> {
+  late TtsVoiceGender _gender = ttsVoiceByIdOrDefault(widget.voiceId).gender;
+
+  @override
+  void didUpdateWidget(TtsVoiceSelector oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Follow the selection's gender only when the voice itself changes across
+    // genders from outside (e.g. a reset). A manual toggle tap leaves voiceId
+    // unchanged, so this never fights the user's chosen tab.
+    if (widget.voiceId != oldWidget.voiceId) {
+      _gender = ttsVoiceByIdOrDefault(widget.voiceId).gender;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final female = kSupertonicVoices.where(
-      (v) => v.gender == TtsVoiceGender.female,
-    );
-    final male = kSupertonicVoices.where(
-      (v) => v.gender == TtsVoiceGender.male,
-    );
+    final messages = context.messages;
+    final voices = kSupertonicVoices.where((v) => v.gender == _gender);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _GroupLabel(context.messages.speechVoiceGenderFemale),
-        for (final voice in female) _row(context, voice),
-        SizedBox(height: context.designTokens.spacing.step3),
-        _GroupLabel(context.messages.speechVoiceGenderMale),
-        for (final voice in male) _row(context, voice),
-      ],
-    );
-  }
-
-  Widget _row(BuildContext context, TtsVoice voice) => _VoiceRow(
-    label: voiceLabel(context, voice),
-    selected: voice.id == voiceId,
-    onTap: () => onChanged(voice.id),
-  );
-}
-
-class _GroupLabel extends StatelessWidget {
-  const _GroupLabel(this.text);
-
-  final String text;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
-      child: Text(
-        text,
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
+        Align(
+          alignment: Alignment.centerLeft,
+          child: DsSegmentedToggle<TtsVoiceGender>(
+            selected: _gender,
+            onChanged: (gender) => setState(() => _gender = gender),
+            segments: [
+              DsSegment(
+                TtsVoiceGender.female,
+                messages.speechVoiceGenderFemale,
+              ),
+              DsSegment(TtsVoiceGender.male, messages.speechVoiceGenderMale),
+            ],
+          ),
         ),
-      ),
+        SizedBox(height: context.designTokens.spacing.step3),
+        for (final voice in voices)
+          _VoiceRow(
+            label: TtsVoiceSelector.voiceLabel(context, voice),
+            selected: voice.id == widget.voiceId,
+            onTap: () => widget.onChanged(voice.id),
+          ),
+      ],
     );
   }
 }
