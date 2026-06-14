@@ -22,6 +22,9 @@ void main() {
         ),
       ),
     );
+    // Elapse the BackWidget's 1s flutter_animate fade-in so no timer is
+    // left pending when the back button is shown.
+    await tester.pump(const Duration(seconds: 1));
   }
 
   testWidgets('renders the title and body', (tester) async {
@@ -32,7 +35,7 @@ void main() {
 
   testWidgets('shows no back affordance by default', (tester) async {
     await pump(tester);
-    expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsNothing);
+    expect(find.byIcon(Icons.chevron_left), findsNothing);
   });
 
   testWidgets('shows a back button and invokes onBack when tapped', (
@@ -40,8 +43,8 @@ void main() {
   ) async {
     var backs = 0;
     await pump(tester, showBack: true, onBack: () => backs++);
-    expect(find.byIcon(Icons.arrow_back_ios_new_rounded), findsOneWidget);
-    await tester.tap(find.byIcon(Icons.arrow_back_ios_new_rounded));
+    expect(find.byIcon(Icons.chevron_left), findsOneWidget);
+    await tester.tap(find.byIcon(Icons.chevron_left));
     await tester.pump();
     expect(backs, 1);
   });

@@ -34,7 +34,9 @@ Future<void> _pump(
       overrides: overrides,
     ),
   );
-  await tester.pump();
+  // Branch hubs always show the back button; elapse its 1s fade-in so no
+  // animation timer is left pending.
+  await tester.pump(const Duration(seconds: 1));
 }
 
 void main() {

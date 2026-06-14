@@ -47,6 +47,9 @@ Future<void> pump(
       ),
     ),
   );
+  // Elapse the BackWidget's 1s fade-in (shown when showBack is true) so
+  // no animation timer is left pending.
+  await tester.pump(const Duration(seconds: 1));
 }
 
 void main() {
