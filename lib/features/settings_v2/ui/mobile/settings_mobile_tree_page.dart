@@ -48,7 +48,11 @@ class SettingsMobileTreePage extends StatelessWidget {
               onActivePath: false,
               isExpanded: false,
               showLeafChevron: true,
-              descMaxLines: 2,
+              // 3 lines so even the longest section summary stays fully
+              // legible at large OS text sizes (at 1x descriptions fit in
+              // 1–2 lines, so this is just a higher ceiling, not extra
+              // height). The row's min-height grows to fit.
+              descMaxLines: 3,
               onTap: () => onNodeTap(node),
             ),
         ],
