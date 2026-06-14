@@ -17,8 +17,9 @@ const int _denoisingSteps = 8;
 ///
 /// The loaded session and per-voice styles are cached so repeated playback
 /// reuses them. Synthesis writes a 44.1kHz WAV to a temp file the player
-/// opens. Gated to macOS — the same platform the MLX audio bridge supports and
-/// the only one Supertonic's Flutter example was validated on.
+/// opens. Gated to the Apple platforms (macOS + iOS), where `flutter_onnxruntime`
+/// is integrated and verified to link; other platforms fall back to the
+/// unavailable engine.
 class SupertonicOnnxEngine implements TtsEngine {
   SupertonicTtsSession? _session;
   String? _sessionDir;
@@ -26,7 +27,7 @@ class SupertonicOnnxEngine implements TtsEngine {
   int _counter = 0;
 
   @override
-  bool get isSupported => platform.isMacOS;
+  bool get isSupported => platform.isMacOS || platform.isIOS;
 
   @override
   Future<File> synthesizeToFile({

@@ -5,17 +5,22 @@ On-device text-to-speech that reads a task's AI **TL;DR** aloud: it runs the
 (~99M params, 44.1kHz 16-bit WAV) locally via `flutter_onnxruntime` and plays
 the result through the app's existing `media_kit` stack. No cloud, no API.
 
-The engine is wired (`ttsEngine` → `SupertonicOnnxEngine` on macOS, behind a
-`TtsEngine` interface). macOS CocoaPods needs `use_frameworks! :linkage =>
-:static` (applied in `macos/Podfile`) because onnxruntime is statically linked;
-iOS additionally needs `platform :ios, '16.0'` + the same `:static` line. The
-ten voice-style JSONs are bundled under `assets/tts/voice_styles/`; the ~400MB
-`onnx/` model files are **downloaded from Hugging Face on first use** (see the
-download repository — filenames verified against the repo). This feature
-**replaces** the previous MLX/Qwen3-TTS "speak summary" path and is gated behind
-the `enable_ai_summary_tts` config flag (default off), so the playback control
-appears once the flag is on, the engine is supported (macOS), and a TL;DR
-exists.
+The engine is wired (`ttsEngine` → `SupertonicOnnxEngine` on the Apple platforms
+— macOS + iOS — behind a `TtsEngine` interface). onnxruntime ships as a
+statically linked binary, which CocoaPods rejects under the project's dynamic
+`use_frameworks!`; rather than the global `use_frameworks! :linkage => :static`
+(which breaks `super_native_extensions`' Rust FFI), both `macos/Podfile` and
+`ios/Podfile` use a targeted `pre_install` hook that forces only the
+`flutter_onnxruntime` plugin and its `onnxruntime-*` deps to link statically
+(`static_library` on macOS; `static_framework` on iOS so the ObjC `@import` in
+`GeneratedPluginRegistrant.m` finds a module). The ten voice-style JSONs are
+bundled under `assets/tts/voice_styles/`; the ~400MB `onnx/` model files are
+**downloaded from Hugging Face on first use** (see the download repository —
+filenames verified against the repo). This feature **replaces** the previous
+MLX/Qwen3-TTS "speak summary" path and is gated behind the
+`enable_ai_summary_tts` config flag (default off), so the playback control
+appears once the flag is on, the engine is supported (macOS or iOS), and a
+TL;DR exists.
 
 ## Architecture
 
@@ -74,8 +79,10 @@ distinct from the audio control. This **replaced** the old fire-and-forget MLX
 - **End-to-end run:** the first playback downloads ~400MB of `onnx/` model
   files from Hugging Face — exercise it on macOS (network + storage) and confirm
   audio before enabling `enable_ai_summary_tts` by default.
-- **iOS:** add `platform :ios, '16.0'` + `use_frameworks! :linkage => :static`
-  to `ios/Podfile` (macOS is done; the engine is currently gated to macOS).
+- **iOS first-use download guard:** iOS is now un-gated (the engine reports
+  `isSupported` on macOS + iOS and `ios/Podfile` links the static framework),
+  but the ~400MB model download is heavy on a phone and inference is slower on
+  mobile CPUs — add a Wi-Fi/size confirmation before enabling it broadly on iOS.
 - **Dead-code cleanup:** `MlxAudioChannel.speakText`/`stopSpeaking` and the
   Qwen3-TTS catalog entry are unreachable but still co-tested with ASR
   behaviour; remove them in a focused pass that preserves the ASR tests.
@@ -125,7 +132,7 @@ The `onnx/` model files (`duration_predictor`, `text_encoder`,
 ~hundreds of MB and are **downloaded from Hugging Face on first use**, not
 bundled. The tiny voice-style JSONs (`voice_styles/<id>.json`) are bundled
 assets. `flutter_onnxruntime` fetches its native runtime at install time and
-needs iOS deployment target 16.0.
+needs iOS deployment target ≥ 16.0 (`ios/Podfile` is on 17.0) and macOS ≥ 14.0.
 
 ## Testing
 
