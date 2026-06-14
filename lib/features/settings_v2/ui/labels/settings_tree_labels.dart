@@ -120,6 +120,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
           title: m.settingsThemingTitle,
           desc: m.settingsThemingSubtitle,
         );
+      case 'speech':
+        return (
+          title: m.settingsSpeechTitle,
+          desc: m.settingsSpeechSubtitle,
+        );
       case 'advanced/flags':
         return (title: m.settingsFlagsTitle, desc: m.settingsFlagsSubtitle);
       case 'advanced':

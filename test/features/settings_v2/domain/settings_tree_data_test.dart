@@ -12,13 +12,27 @@ List<SettingsNode> _tree({
   bool enableDashboards = true,
   bool enableMatrix = true,
   bool enableWhatsNew = true,
+  bool enableSpeechTts = false,
 }) => buildSettingsTree(
   labels: _labels,
   enableHabits: enableHabits,
   enableDashboards: enableDashboards,
   enableMatrix: enableMatrix,
   enableWhatsNew: enableWhatsNew,
+  enableSpeechTts: enableSpeechTts,
 );
+
+SettingsNode? _find(List<SettingsNode> nodes, String id) {
+  for (final node in nodes) {
+    if (node.id == id) return node;
+    final children = node.children;
+    if (children != null) {
+      final found = _find(children, id);
+      if (found != null) return found;
+    }
+  }
+  return null;
+}
 
 Set<String> _ids(List<SettingsNode> nodes) {
   final out = <String>{};
@@ -35,6 +49,16 @@ Set<String> _ids(List<SettingsNode> nodes) {
 }
 
 void main() {
+  group('buildSettingsTree — enableSpeechTts', () {
+    test('adds the speech leaf (panel: speech) only when enabled', () {
+      expect(_ids(_tree()), isNot(contains('speech')));
+
+      final enabled = _tree(enableSpeechTts: true);
+      expect(_ids(enabled), contains('speech'));
+      expect(_find(enabled, 'speech')?.panel, 'speech');
+    });
+  });
+
   group('buildSettingsTree — labels', () {
     test('every node is populated via the passed label resolver', () {
       final tree = _tree();

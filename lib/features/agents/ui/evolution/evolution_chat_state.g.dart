@@ -11,7 +11,7 @@ part of 'evolution_chat_state.dart';
 /// Manages the lifecycle of an evolution chat session for a specific template.
 ///
 /// On [build], starts a new multi-turn session via
-/// [TemplateEvolutionWorkflow.startSession]. The user can then send messages,
+/// `TemplateEvolutionWorkflow.startSession`. The user can then send messages,
 /// approve/reject proposals, and end the session.
 
 @ProviderFor(EvolutionChatState)
@@ -20,14 +20,14 @@ final evolutionChatStateProvider = EvolutionChatStateFamily._();
 /// Manages the lifecycle of an evolution chat session for a specific template.
 ///
 /// On [build], starts a new multi-turn session via
-/// [TemplateEvolutionWorkflow.startSession]. The user can then send messages,
+/// `TemplateEvolutionWorkflow.startSession`. The user can then send messages,
 /// approve/reject proposals, and end the session.
 final class EvolutionChatStateProvider
     extends $AsyncNotifierProvider<EvolutionChatState, EvolutionChatData> {
   /// Manages the lifecycle of an evolution chat session for a specific template.
   ///
   /// On [build], starts a new multi-turn session via
-  /// [TemplateEvolutionWorkflow.startSession]. The user can then send messages,
+  /// `TemplateEvolutionWorkflow.startSession`. The user can then send messages,
   /// approve/reject proposals, and end the session.
   EvolutionChatStateProvider._({
     required EvolutionChatStateFamily super.from,
@@ -71,7 +71,7 @@ String _$evolutionChatStateHash() =>
 /// Manages the lifecycle of an evolution chat session for a specific template.
 ///
 /// On [build], starts a new multi-turn session via
-/// [TemplateEvolutionWorkflow.startSession]. The user can then send messages,
+/// `TemplateEvolutionWorkflow.startSession`. The user can then send messages,
 /// approve/reject proposals, and end the session.
 
 final class EvolutionChatStateFamily extends $Family
@@ -95,7 +95,7 @@ final class EvolutionChatStateFamily extends $Family
   /// Manages the lifecycle of an evolution chat session for a specific template.
   ///
   /// On [build], starts a new multi-turn session via
-  /// [TemplateEvolutionWorkflow.startSession]. The user can then send messages,
+  /// `TemplateEvolutionWorkflow.startSession`. The user can then send messages,
   /// approve/reject proposals, and end the session.
 
   EvolutionChatStateProvider call(String templateId) =>
@@ -108,7 +108,7 @@ final class EvolutionChatStateFamily extends $Family
 /// Manages the lifecycle of an evolution chat session for a specific template.
 ///
 /// On [build], starts a new multi-turn session via
-/// [TemplateEvolutionWorkflow.startSession]. The user can then send messages,
+/// `TemplateEvolutionWorkflow.startSession`. The user can then send messages,
 /// approve/reject proposals, and end the session.
 
 abstract class _$EvolutionChatState extends $AsyncNotifier<EvolutionChatData> {

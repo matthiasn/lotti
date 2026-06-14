@@ -2045,7 +2045,22 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiSetupWizardTitle => 'KI-Einrichtungsassistent';
 
   @override
+  String get aiSummaryPlayTooltip => 'Zusammenfassung vorlesen';
+
+  @override
+  String get aiSummaryPreparingTooltip => 'Audio wird vorbereitet';
+
+  @override
   String get aiSummarySpeakTooltip => 'Zusammenfassung lokal vorlesen';
+
+  @override
+  String get aiSummaryStopTooltip => 'Stopp';
+
+  @override
+  String get aiSummaryThinkingLabel => 'Denkt nach …';
+
+  @override
+  String get aiSummaryTtsUnavailable => 'Sprachausgabe ist nicht verfügbar';
 
   @override
   String get aiTaskSummaryTitle => 'KI-Aufgabenzusammenfassung';
@@ -7124,6 +7139,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsResetHintsTitle => 'In-App-Hinweise zurücksetzen';
 
   @override
+  String get settingsSpeechSubtitle => 'Stimme und Vorlesen';
+
+  @override
+  String get settingsSpeechTitle => 'Sprache';
+
+  @override
   String get settingsSyncConflictsSubtitle =>
       'Synchronisierungskonflikte lösen, um Datenkonsistenz zu gewährleisten';
 
@@ -7282,6 +7303,41 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Spracherkennung';
+
+  @override
+  String get speechSettingsModelDescription => 'Lokales Sprachmodell';
+
+  @override
+  String get speechSettingsModelDownloadsOnce => 'Wird einmal geladen';
+
+  @override
+  String get speechSettingsModelLabel => 'Modell';
+
+  @override
+  String get speechSettingsRecommendedBadge => 'Empfohlen';
+
+  @override
+  String get speechSettingsSpeedDescription =>
+      'Wie schnell Zusammenfassungen vorgelesen werden';
+
+  @override
+  String get speechSettingsSpeedLabel => 'Lesegeschwindigkeit';
+
+  @override
+  String get speechSettingsVoiceDescription =>
+      'Wähle die Stimme, die Zusammenfassungen vorliest';
+
+  @override
+  String get speechSettingsVoiceLabel => 'Stimme';
+
+  @override
+  String get speechVoiceGenderFemale => 'Weiblich';
+
+  @override
+  String get speechVoiceGenderMale => 'Männlich';
+
+  @override
+  String get speechVoicePreviewTooltip => 'Stimme anhören';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {

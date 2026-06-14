@@ -13,11 +13,14 @@ import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
-import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
+import 'package:lotti/features/tts/state/tts_audio_player.dart';
+import 'package:lotti/features/tts/state/tts_engine_provider.dart';
+import 'package:lotti/features/tts/state/tts_model_repository.dart';
 import 'package:lotti/utils/consts.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../tts/test_utils.dart';
 import '../../test_data/change_set_factories.dart';
 import '../../test_data/entity_factories.dart';
 
@@ -54,7 +57,7 @@ class AgentTestBench {
     this._confirmationService,
     this._updateNotifications,
     this._taskAgentService,
-    this._mlxAudioChannel,
+    this._ttsEngine,
     this._mediaQueryData = desktopMediaQueryData,
     this._provideAgentIdentity = false,
     this._isRunningOverride,
@@ -73,7 +76,11 @@ class AgentTestBench {
   final MockChangeSetConfirmationService? _confirmationService;
   final MockUpdateNotifications? _updateNotifications;
   final MockTaskAgentService? _taskAgentService;
-  final MlxAudioChannel? _mlxAudioChannel;
+
+  /// Optional recording TTS engine for the playback tests. Defaults to a
+  /// supported [FakeTtsEngine] so the playback control renders regardless of
+  /// the host platform.
+  final FakeTtsEngine? _ttsEngine;
   final MediaQueryData _mediaQueryData;
 
   /// When true, also overrides [agentIdentityProvider] (read by the
@@ -133,8 +140,9 @@ class AgentTestBench {
           taskAgentServiceProvider.overrideWith(
             (ref) => _taskAgentService,
           ),
-        if (_mlxAudioChannel != null)
-          mlxAudioChannelProvider.overrideWithValue(_mlxAudioChannel),
+        ttsEngineProvider.overrideWithValue(_ttsEngine ?? FakeTtsEngine()),
+        ttsAudioPlayerProvider.overrideWithValue(FakeTtsAudioPlayer()),
+        ttsModelRepositoryProvider.overrideWithValue(FakeTtsModelRepository()),
       ],
       child: const SingleChildScrollView(
         child: AiSummaryCard(taskId: taskId),

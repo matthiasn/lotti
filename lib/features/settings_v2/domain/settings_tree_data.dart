@@ -27,6 +27,7 @@ List<SettingsNode> buildSettingsTree({
   required bool enableDashboards,
   required bool enableMatrix,
   required bool enableWhatsNew,
+  bool enableSpeechTts = false,
 }) {
   SettingsNode leaf(
     String id,
@@ -214,6 +215,8 @@ List<SettingsNode> buildSettingsTree({
       ],
     ),
     leaf('theming', Icons.palette_outlined, panel: 'theming'),
+    if (enableSpeechTts)
+      leaf('speech', Icons.record_voice_over_outlined, panel: 'speech'),
     branch(
       'advanced',
       Icons.settings_suggest_outlined,
