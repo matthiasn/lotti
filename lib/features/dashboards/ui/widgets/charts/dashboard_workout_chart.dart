@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/workout_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -53,34 +54,38 @@ class DashboardWorkoutChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final observationsAsync = ref.watch(
-      workoutObservationsControllerProvider(
-        chartConfig: chartConfig,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ),
-    );
-    final observations = observationsAsync.value ?? const <Observation>[];
     final tokens = context.designTokens;
 
-    return DashboardChart(
-      chart: TimeSeriesBarChart(
-        data: observations,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-        unit: chartConfig.displayName,
-        colorByValue: (Observation observation) =>
-            tokens.colors.interactive.enabled,
+    return StaleAsyncValue<List<Observation>>(
+      async: ref.watch(
+        workoutObservationsControllerProvider(
+          chartConfig: chartConfig,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        ),
       ),
-      dateAxis: DashboardChartDateAxis(
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ),
-      chartHeader: WorkoutChartInfoWidget(chartConfig),
-      isLoading: observationsAsync.isLoading && !observationsAsync.hasValue,
-      isEmpty: observations.isEmpty,
-      emptyMessage: context.messages.dashboardChartNoData,
-      height: 120,
+      builder: (context, value, isInitialLoading) {
+        final observations = value ?? const <Observation>[];
+        return DashboardChart(
+          chart: TimeSeriesBarChart(
+            data: observations,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+            unit: chartConfig.displayName,
+            colorByValue: (Observation observation) =>
+                tokens.colors.interactive.enabled,
+          ),
+          dateAxis: DashboardChartDateAxis(
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+          chartHeader: WorkoutChartInfoWidget(chartConfig),
+          isLoading: isInitialLoading,
+          isEmpty: observations.isEmpty,
+          emptyMessage: context.messages.dashboardChartNoData,
+          height: 120,
+        );
+      },
     );
   }
 }

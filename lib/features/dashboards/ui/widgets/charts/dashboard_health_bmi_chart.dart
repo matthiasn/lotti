@@ -8,6 +8,7 @@ import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -61,35 +62,38 @@ class DashboardHealthBmiChart extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final weightAsync = ref.watch(
-      healthObservationsControllerProvider(
-        healthDataType: 'HealthDataType.WEIGHT',
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+    return StaleAsyncValue<List<Observation>>(
+      async: ref.watch(
+        healthObservationsControllerProvider(
+          healthDataType: 'HealthDataType.WEIGHT',
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        ),
       ),
-    );
-    final weightData = weightAsync.value ?? const <Observation>[];
-
-    final minInRange = findMin(weightData);
-    final maxInRange = findMax(weightData);
-    return DashboardChart(
-      chart: TimeSeriesLineChart(
-        data: weightData,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ),
-      dateAxis: DashboardChartDateAxis(
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ),
-      chartHeader: BmiChartInfoWidget(
-        minInRange: minInRange,
-        maxInRange: maxInRange,
-      ),
-      isLoading: weightAsync.isLoading && !weightAsync.hasValue,
-      isEmpty: weightData.isEmpty,
-      emptyMessage: context.messages.dashboardChartNoData,
-      height: 320,
+      builder: (context, value, isInitialLoading) {
+        final weightData = value ?? const <Observation>[];
+        final minInRange = findMin(weightData);
+        final maxInRange = findMax(weightData);
+        return DashboardChart(
+          chart: TimeSeriesLineChart(
+            data: weightData,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+          dateAxis: DashboardChartDateAxis(
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+          chartHeader: BmiChartInfoWidget(
+            minInRange: minInRange,
+            maxInRange: maxInRange,
+          ),
+          isLoading: isInitialLoading,
+          isEmpty: weightData.isEmpty,
+          emptyMessage: context.messages.dashboardChartNoData,
+          height: 320,
+        );
+      },
     );
   }
 }

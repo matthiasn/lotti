@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -12,7 +13,7 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-class DashboardHealthBpChart extends ConsumerWidget {
+class DashboardHealthBpChart extends ConsumerStatefulWidget {
   const DashboardHealthBpChart({
     required this.rangeStart,
     required this.rangeEnd,
@@ -23,7 +24,17 @@ class DashboardHealthBpChart extends ConsumerWidget {
   final DateTime rangeEnd;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardHealthBpChart> createState() =>
+      _DashboardHealthBpChartState();
+}
+
+class _DashboardHealthBpChartState
+    extends ConsumerState<DashboardHealthBpChart> {
+  final StaleValue<List<Observation>> _systolic = StaleValue();
+  final StaleValue<List<Observation>> _diastolic = StaleValue();
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final systolicColor = tokens.colors.alert.error.defaultColor;
     final diastolicColor = tokens.colors.alert.info.defaultColor;
@@ -31,22 +42,24 @@ class DashboardHealthBpChart extends ConsumerWidget {
     final systolicAsync = ref.watch(
       healthObservationsControllerProvider(
         healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+        rangeStart: widget.rangeStart,
+        rangeEnd: widget.rangeEnd,
       ),
     );
     final diastolicAsync = ref.watch(
       healthObservationsControllerProvider(
         healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+        rangeStart: widget.rangeStart,
+        rangeEnd: widget.rangeEnd,
       ),
     );
-    final systolicData = systolicAsync.value ?? const <Observation>[];
-    final diastolicData = diastolicAsync.value ?? const <Observation>[];
+    final systolicData =
+        _systolic.resolve(systolicAsync) ?? const <Observation>[];
+    final diastolicData =
+        _diastolic.resolve(diastolicAsync) ?? const <Observation>[];
     final isLoading =
-        (systolicAsync.isLoading && !systolicAsync.hasValue) ||
-        (diastolicAsync.isLoading && !diastolicAsync.hasValue);
+        _systolic.isInitialLoading(systolicAsync) ||
+        _diastolic.isInitialLoading(diastolicAsync);
 
     return DashboardChart(
       chart: Padding(
@@ -127,8 +140,8 @@ class DashboardHealthBpChart extends ConsumerWidget {
               show: true,
               border: Border.all(color: tokens.colors.decorative.level01),
             ),
-            minX: rangeStart.millisecondsSinceEpoch.toDouble(),
-            maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
+            minX: widget.rangeStart.millisecondsSinceEpoch.toDouble(),
+            maxX: widget.rangeEnd.millisecondsSinceEpoch.toDouble(),
             lineBarsData: [
               LineChartBarData(
                 spots: systolicData
@@ -168,8 +181,8 @@ class DashboardHealthBpChart extends ConsumerWidget {
         ),
       ),
       dateAxis: DashboardChartDateAxis(
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+        rangeStart: widget.rangeStart,
+        rangeEnd: widget.rangeEnd,
       ),
       chartHeader: const BpChartInfoWidget(),
       isLoading: isLoading,

@@ -8,6 +8,7 @@ import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bmi_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bp_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
@@ -68,42 +69,46 @@ class DashboardHealthChart extends ConsumerWidget {
       );
     }
 
-    final dataAsync = ref.watch(
-      healthObservationsControllerProvider(
-        healthDataType: chartConfig.healthType,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      ),
-    );
-    final data = dataAsync.value ?? const <Observation>[];
     final tokens = context.designTokens;
 
-    return DashboardChart(
-      chart: isBarChart
-          ? TimeSeriesBarChart(
-              data: data,
-              rangeStart: rangeStart,
-              rangeEnd: rangeEnd,
-              unit: healthType?.unit ?? '',
-              valueInHours: healthType?.unit == 'h',
-              colorByValue: (Observation observation) =>
-                  tokens.colors.interactive.enabled,
-            )
-          : TimeSeriesLineChart(
-              data: data,
-              rangeStart: rangeStart,
-              rangeEnd: rangeEnd,
-              unit: healthType?.unit ?? '',
-            ),
-      dateAxis: DashboardChartDateAxis(
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+    return StaleAsyncValue<List<Observation>>(
+      async: ref.watch(
+        healthObservationsControllerProvider(
+          healthDataType: chartConfig.healthType,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        ),
       ),
-      chartHeader: HealthChartInfoWidget(chartConfig),
-      isLoading: dataAsync.isLoading && !dataAsync.hasValue,
-      isEmpty: data.isEmpty,
-      emptyMessage: context.messages.dashboardChartNoData,
-      height: isBarChart ? 180 : 150,
+      builder: (context, value, isInitialLoading) {
+        final data = value ?? const <Observation>[];
+        return DashboardChart(
+          chart: isBarChart
+              ? TimeSeriesBarChart(
+                  data: data,
+                  rangeStart: rangeStart,
+                  rangeEnd: rangeEnd,
+                  unit: healthType?.unit ?? '',
+                  valueInHours: healthType?.unit == 'h',
+                  colorByValue: (Observation observation) =>
+                      tokens.colors.interactive.enabled,
+                )
+              : TimeSeriesLineChart(
+                  data: data,
+                  rangeStart: rangeStart,
+                  rangeEnd: rangeEnd,
+                  unit: healthType?.unit ?? '',
+                ),
+          dateAxis: DashboardChartDateAxis(
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+          chartHeader: HealthChartInfoWidget(chartConfig),
+          isLoading: isInitialLoading,
+          isEmpty: data.isEmpty,
+          emptyMessage: context.messages.dashboardChartNoData,
+          height: isBarChart ? 180 : 150,
+        );
+      },
     );
   }
 }

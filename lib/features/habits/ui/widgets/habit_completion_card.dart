@@ -38,6 +38,11 @@ class HabitCompletionCard extends ConsumerStatefulWidget {
 }
 
 class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
+  /// Last loaded results, retained so changing the time span keeps the card
+  /// visible (stale-while-revalidate) instead of blinking to nothing while the
+  /// new range-keyed provider loads.
+  List<HabitResult>? _lastResults;
+
   void onTapAdd({String? dateString}) {
     final height = MediaQuery.of(context).size.height;
     final maxHeight = height * 0.8;
@@ -76,15 +81,17 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
       return const SizedBox.shrink();
     }
 
-    final results = ref
-        .watch(
-          habitCompletionControllerProvider(
-            habitId: habitDefinition.id,
-            rangeStart: widget.rangeStart,
-            rangeEnd: widget.rangeEnd,
-          ),
-        )
-        .value;
+    final resultsAsync = ref.watch(
+      habitCompletionControllerProvider(
+        habitId: habitDefinition.id,
+        rangeStart: widget.rangeStart,
+        rangeEnd: widget.rangeEnd,
+      ),
+    );
+    if (resultsAsync.hasValue) {
+      _lastResults = resultsAsync.value;
+    }
+    final results = _lastResults;
 
     if (results == null) {
       return const SizedBox.shrink();
