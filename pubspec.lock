@@ -1045,10 +1045,9 @@ packages:
   flutter_onnxruntime:
     dependency: "direct main"
     description:
-      name: flutter_onnxruntime
-      sha256: "616f0e296840edb63278c647baf4475232d21cba45478ff26348e474f3f6a913"
-      url: "https://pub.dev"
-    source: hosted
+      path: "third_party/flutter_onnxruntime"
+      relative: true
+    source: path
     version: "1.8.0"
   flutter_openssl_crypto:
     dependency: "direct main"

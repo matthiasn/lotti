@@ -133,6 +133,11 @@ dependencies:
 
 dependency_overrides:
   analyzer_plugin: ^0.13.1
+  # Local fork: runs ONNX inference off the main thread on macOS, which Flutter
+  # can't do via platform-channel task queues (flutter/flutter#162613).
+  # See third_party/flutter_onnxruntime/LOTTI_PATCHES.md.
+  flutter_onnxruntime:
+    path: third_party/flutter_onnxruntime
   get_it: ^8.0.2
   intl: ^0.20.2
   # Downgrade to avoid objective_c.framework malformed bundle issue (ITMS-90291)
