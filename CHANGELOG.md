@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1023]
+### Added
+- Experimental on-device text-to-speech (macOS and iOS): a play button on the
+  AI summary card reads the task's TL;DR aloud — or the full report when it's
+  expanded — synthesized locally with the Supertonic model, no cloud. Pick the
+  voice, model, and reading speed under the new Settings → Speech page. Off by
+  default; opt in via the "Enable local AI summary playback" flag. The model
+  (~400 MB) downloads once on first use.
+
 ## [0.9.1022]
 ### Changed
 - Insights dashboards: the chart cards were rebuilt on the app design
