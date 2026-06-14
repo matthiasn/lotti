@@ -11,21 +11,31 @@ class TtsModelSelector extends StatelessWidget {
   const TtsModelSelector({
     required this.modelId,
     required this.onChanged,
+    this.models = kTtsModels,
     super.key,
   });
 
   final String modelId;
   final ValueChanged<String> onChanged;
 
+  /// The selectable models. Defaults to the shipped catalog; injectable so
+  /// the single-choice vs. multiple-choice badge behaviour is testable.
+  final List<TtsModelOption> models;
+
   @override
   Widget build(BuildContext context) {
+    // A "Recommended" badge only carries meaning when there's an actual
+    // choice to recommend against. With a single model it's pure noise, so
+    // we suppress it until a second model exists.
+    final hasChoice = models.length > 1;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        for (final model in kTtsModels)
+        for (final model in models)
           _ModelRow(
             model: model,
             selected: model.id == modelId,
+            showRecommended: hasChoice && model.recommended,
             onTap: () => onChanged(model.id),
           ),
       ],
@@ -37,11 +47,13 @@ class _ModelRow extends StatelessWidget {
   const _ModelRow({
     required this.model,
     required this.selected,
+    required this.showRecommended,
     required this.onTap,
   });
 
   final TtsModelOption model;
   final bool selected;
+  final bool showRecommended;
   final VoidCallback onTap;
 
   static const double _minTarget = 44;
@@ -97,7 +109,7 @@ class _ModelRow extends StatelessWidget {
                                       ),
                                 ),
                               ),
-                              if (model.recommended) ...[
+                              if (showRecommended) ...[
                                 SizedBox(width: tokens.spacing.step2),
                                 _RecommendedBadge(),
                               ],

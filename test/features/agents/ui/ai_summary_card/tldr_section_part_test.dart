@@ -143,6 +143,38 @@ void main() {
       expect(engine.calls.single.voiceId, 'F1');
     });
 
+    testWidgets(
+      'reads the full report (not just the TLDR) once the body is expanded',
+      (tester) async {
+        final engine = FakeTtsEngine();
+        final bench = AgentTestBench(
+          enableSummaryTts: true,
+          ttsEngine: engine,
+          report: makeTestReport(
+            tldr: 'Tldr line.',
+            content: '## Goal\nShip the card.\n',
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pumpAndSettle();
+
+        // Expand so the body now shows the TLDR followed by the full report,
+        // then play: playback must read exactly what's on screen.
+        await tester.tap(find.text('Read more'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byType(TtsPlayButton));
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 16));
+        }
+
+        expect(
+          engine.calls.single.text,
+          'Tldr line.\n\n## Goal\nShip the card.',
+        );
+      },
+    );
+
     testWidgets('shows an error toast when synthesis fails', (tester) async {
       final engine = FakeTtsEngine(throwOnSynthesize: true);
       final bench = AgentTestBench(
