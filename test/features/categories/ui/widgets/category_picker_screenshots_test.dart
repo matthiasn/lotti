@@ -106,14 +106,18 @@ void main() {
 
   tearDown(() => getIt.unregister<EntitiesCacheService>());
 
-  Widget app({required Widget home, List<Override> overrides = const []}) {
+  Widget app({
+    required Widget home,
+    List<Override> overrides = const [],
+    bool dark = false,
+  }) {
     return RepaintBoundary(
       key: screenshotBoundaryKey,
       child: ProviderScope(
         overrides: overrides,
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
-          theme: DesignSystemTheme.light(),
+          theme: dark ? DesignSystemTheme.dark() : DesignSystemTheme.light(),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,
@@ -193,5 +197,72 @@ void main() {
     );
     await settleFrames(tester);
     await captureScreenshot(tester, 'label_multi', subdir: 'category_picker');
+  });
+
+  testWidgets('category single (dark)', (tester) async {
+    applyScreenshotDevice(tester, proDevice);
+    await tester.pumpWidget(app(dark: true, home: opener()));
+    unawaited(
+      showCategoryPicker(
+        context: tester.element(find.text('open')),
+        title: 'Category',
+        currentCategoryId: 'cat3',
+        options: _categories,
+      ),
+    );
+    await settleFrames(tester);
+    await captureScreenshot(
+      tester,
+      'category_single_dark',
+      subdir: 'category_picker',
+    );
+  });
+
+  testWidgets('category multi (dark)', (tester) async {
+    applyScreenshotDevice(tester, proDevice);
+    await tester.pumpWidget(app(dark: true, home: opener()));
+    unawaited(
+      showCategoryMultiPicker(
+        context: tester.element(find.text('open')),
+        title: 'Filter by category',
+        initialSelectedIds: const {'cat1', 'cat4'},
+        options: _categories,
+      ),
+    );
+    await settleFrames(tester);
+    await captureScreenshot(
+      tester,
+      'category_multi_dark',
+      subdir: 'category_picker',
+    );
+  });
+
+  testWidgets('label multi (dark)', (tester) async {
+    applyScreenshotDevice(tester, proDevice);
+    await tester.pumpWidget(
+      app(
+        dark: true,
+        overrides: [
+          labelsStreamProvider.overrideWith(
+            (ref) => Stream<List<LabelDefinition>>.value(_labels),
+          ),
+          labelsRepositoryProvider.overrideWithValue(labelsRepo),
+        ],
+        home: opener(),
+      ),
+    );
+    unawaited(
+      LabelSelectionModalUtils.openLabelSelector(
+        context: tester.element(find.text('open')),
+        entryId: 'entry-1',
+        initialLabelIds: const ['l1', 'l4'],
+      ),
+    );
+    await settleFrames(tester);
+    await captureScreenshot(
+      tester,
+      'label_multi_dark',
+      subdir: 'category_picker',
+    );
   });
 }

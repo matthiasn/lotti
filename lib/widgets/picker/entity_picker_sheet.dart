@@ -181,6 +181,9 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
           Padding(
             padding: EdgeInsets.only(bottom: tokens.spacing.step5),
             child: DesignSystemSearch(
+              // Match the tasks/projects tab search (the small variant), whose
+              // radii.l corner also lines up with the selection pills below.
+              size: DesignSystemSearchSize.small,
               controller: _searchController,
               hintText: widget.searchHintText,
               semanticsLabel: widget.searchHintText,
@@ -353,61 +356,69 @@ class _PickerItemRow extends StatelessWidget {
       button: multi ? null : true,
       onTap: onTap,
       child: ExcludeSemantics(
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            key: item.rowKey,
-            borderRadius: BorderRadius.circular(tokens.radii.l),
-            onTap: onTap,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: selected
-                    ? tokens.colors.surface.selected
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(tokens.radii.l),
-              ),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: spacing.step1,
-                  vertical: spacing.step4,
+        child: Padding(
+          // Inset each row so the selected / hover pill floats with breathing
+          // room instead of running edge-to-edge of the modal.
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing.step3,
+            vertical: spacing.step1,
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              key: item.rowKey,
+              borderRadius: BorderRadius.circular(tokens.radii.l),
+              onTap: onTap,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: selected
+                      ? tokens.colors.surface.selected
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(tokens.radii.l),
                 ),
-                child: Row(
-                  children: [
-                    item.leading,
-                    SizedBox(width: spacing.step4),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            item.title,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: titleStyle,
-                          ),
-                          if (item.subtitle case final subtitle?)
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: spacing.step3,
+                    vertical: spacing.step4,
+                  ),
+                  child: Row(
+                    children: [
+                      item.leading,
+                      SizedBox(width: spacing.step4),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
                             Text(
-                              subtitle,
-                              maxLines: 1,
+                              item.title,
+                              maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: tokens.typography.styles.others.caption
-                                  .copyWith(
-                                    color: tokens.colors.text.mediumEmphasis,
-                                  ),
+                              style: titleStyle,
                             ),
-                        ],
+                            if (item.subtitle case final subtitle?)
+                              Text(
+                                subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: tokens.typography.styles.others.caption
+                                    .copyWith(
+                                      color: tokens.colors.text.mediumEmphasis,
+                                    ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                    for (final badge in item.badges) ...[
-                      SizedBox(width: spacing.step2),
-                      badge,
+                      for (final badge in item.badges) ...[
+                        SizedBox(width: spacing.step2),
+                        badge,
+                      ],
+                      if (trailing != null) ...[
+                        SizedBox(width: spacing.step3),
+                        trailing,
+                      ],
                     ],
-                    if (trailing != null) ...[
-                      SizedBox(width: spacing.step3),
-                      trailing,
-                    ],
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -442,35 +453,43 @@ class _PickerCreateRow extends StatelessWidget {
     return Semantics(
       button: true,
       label: query,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: rowKey,
-          borderRadius: BorderRadius.circular(tokens.radii.l),
-          onTap: onTap,
-          child: ExcludeSemantics(
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: spacing.step1,
-                vertical: spacing.step4,
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.add_circle_outline,
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                  SizedBox(width: spacing.step4),
-                  Expanded(
-                    child: Text(
-                      query,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.subtitle.subtitle1
-                          .copyWith(color: tokens.colors.text.mediumEmphasis),
+      // Match the item rows' inset so the create row's tap surface lines up
+      // with the floating selection pills above it.
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: spacing.step3,
+          vertical: spacing.step1,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: rowKey,
+            borderRadius: BorderRadius.circular(tokens.radii.l),
+            onTap: onTap,
+            child: ExcludeSemantics(
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: spacing.step3,
+                  vertical: spacing.step4,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.add_circle_outline,
+                      color: tokens.colors.text.mediumEmphasis,
                     ),
-                  ),
-                ],
+                    SizedBox(width: spacing.step4),
+                    Expanded(
+                      child: Text(
+                        query,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.subtitle.subtitle1
+                            .copyWith(color: tokens.colors.text.mediumEmphasis),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

@@ -122,7 +122,11 @@ class _DesignSystemSearchState extends State<DesignSystemSearch> {
     return DecoratedBox(
       key: const Key('design-system-search-shell'),
       decoration: BoxDecoration(
-        color: tokens.colors.background.level01,
+        // An elevation-aware translucent overlay rather than an absolute
+        // background level: this keeps the field a touch LIGHTER than whatever
+        // surface it sits on in dark mode (instead of a dark sunken hole on an
+        // elevated surface), and a subtle inset in light mode.
+        color: tokens.colors.surface.enabled,
         borderRadius: BorderRadius.circular(spec.borderRadius),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
