@@ -279,9 +279,9 @@ flowchart TD
 Two grounded details here matter:
 
 - backfilled completions are supported because the dialog lets the user choose the effective date
-- if the habit has a `dashboardId`, the dialog shows the related dashboard behind the bottom sheet
+- if the habit has a `dashboardId` **and** the card was not opened from within that same dashboard, the dialog shows the related dashboard behind the bottom sheet
 
-That second choice is not decorative. It makes the completion moment contextual: the user can see the related dashboard while deciding how to record the habit.
+That second choice is not decorative. It makes the completion moment contextual: from the habits tab the user can see the related dashboard while deciding how to record the habit. When the card is rendered inside that dashboard (via `DashboardHabitsChart`, which passes `showLinkedDashboard: false`), the embed is suppressed — re-opening the dashboard the user is already viewing would be redundant, so the dialog collapses to just the completion form. The flag is threaded `DashboardHabitsChart → HabitCompletionCard.showLinkedDashboard → HabitDialog.showLinkedDashboard`.
 
 ## Settings Flow
 

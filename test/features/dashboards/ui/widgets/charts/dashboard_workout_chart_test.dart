@@ -69,7 +69,10 @@ void main() {
         find.byType(TimeSeriesBarChart),
       );
       expect(chart.data, hasLength(2));
-      expect(chart.unit, 'Running calories');
+      // The bar chart's value-tooltip unit is the value-type symbol (energy ->
+      // "kcal"), not the card's display name.
+      expect(chart.unit, 'kcal');
+      // The display name is the card title, kept distinct from the unit.
       expect(find.text('Running calories'), findsOneWidget);
 
       // Bars are tinted with the interactive-enabled token, regardless of the
@@ -111,6 +114,8 @@ void main() {
       );
 
       expect(find.text('Running calories'), findsOneWidget);
+      // The subtitle carries the value-type unit symbol (energy -> "kcal").
+      expect(find.text('kcal'), findsOneWidget);
     });
   });
 }

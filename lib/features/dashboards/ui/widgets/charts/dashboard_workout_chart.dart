@@ -24,19 +24,22 @@ class WorkoutChartInfoWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return DashboardChartHeader(
       title: chartConfig.displayName,
-      subtitle: _unitLabel(chartConfig.valueType),
+      subtitle: workoutUnitLabel(chartConfig.valueType),
     );
   }
+}
 
-  static String _unitLabel(WorkoutValueType valueType) {
-    switch (valueType) {
-      case WorkoutValueType.duration:
-        return 'min';
-      case WorkoutValueType.distance:
-        return 'km';
-      case WorkoutValueType.energy:
-        return 'kcal';
-    }
+/// The unit symbol for a workout value type, shared by the card subtitle and
+/// the bar chart's value tooltip so they always agree (e.g. "12 km", not the
+/// workout's display name).
+String workoutUnitLabel(WorkoutValueType valueType) {
+  switch (valueType) {
+    case WorkoutValueType.duration:
+      return 'min';
+    case WorkoutValueType.distance:
+      return 'km';
+    case WorkoutValueType.energy:
+      return 'kcal';
   }
 }
 
@@ -71,7 +74,7 @@ class DashboardWorkoutChart extends ConsumerWidget {
             data: observations,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
-            unit: chartConfig.displayName,
+            unit: workoutUnitLabel(chartConfig.valueType),
             colorByValue: (Observation observation) =>
                 tokens.colors.interactive.enabled,
           ),

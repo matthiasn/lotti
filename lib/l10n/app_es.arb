@@ -1940,7 +1940,7 @@
   "dashboardNameLabel": "Nombre del panel",
   "dashboardNotFound": "Panel no encontrado",
   "dashboardPrivateLabel": "Privado",
-  "dashboardTakeSurveyTooltip": "Responder cuestionario",
+  "dashboardTakeSurveyTooltip": "Responder encuesta",
   "defaultLanguage": "Idioma predeterminado",
   "deleteButton": "Eliminar",
   "deleteDeviceLabel": "Eliminar dispositivo",

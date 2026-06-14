@@ -73,9 +73,13 @@ class TimeSeriesBarChart extends StatelessWidget {
           final count = observations.length;
           final plotWidth = constraints.maxWidth - kChartLeftAxisWidth;
           final groupsSpace = count > 1 && plotWidth / count > 4 ? 1 : 0;
-          final barsWidth = count == 0
+          final rawWidth = count == 0
               ? plotWidth
               : (plotWidth - groupsSpace * (count + 1)) / count;
+          // Never hand fl_chart a negative width: a tiny or transient
+          // constraint can make plotWidth smaller than the reserved axis,
+          // which would assert.
+          final barsWidth = max<double>(rawWidth, 0);
 
           final barGroups = observations.map((observation) {
             return BarChartGroupData(

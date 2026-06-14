@@ -1,9 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
+import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -15,6 +18,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -215,6 +219,144 @@ void main() {
           find.byType(TimeSpanSegmentedControl),
         );
         expect(updated.timeSpanDays, 30);
+      },
+    );
+
+    // A window wide enough (>= the 960px desktop breakpoint) that the page
+    // renders its desktop layout. The harness injects MediaQuery from this
+    // (tester.view does not drive MediaQuery here), so isDesktopLayout reads
+    // this width.
+    const desktopMediaQuery = MediaQueryData(size: Size(1280, 1400));
+
+    testWidgets(
+      'desktop layout puts the title and picker in one row, with no back button',
+      (tester) async {
+        when(
+          () => mockPersistenceLogic.createMeasurementEntry(
+            data: any(named: 'data'),
+            private: false,
+          ),
+        ).thenAnswer((_) async => null);
+
+        tester.view.physicalSize = const Size(1280, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DashboardPage(dashboardId: testDashboardConfig.id),
+            mediaQueryData: desktopMediaQuery,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text(testDashboardConfig.name), findsOneWidget);
+        expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+        // The edit-definition link.
+        expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+        // The desktop header has no back button (the dashboards list stays
+        // visible beside this pane) — this is what sets it apart from mobile.
+        expect(find.byType(BackWidget), findsNothing);
+        // Title and picker share a single horizontal band (their vertical
+        // centers line up), not stacked as on mobile.
+        expect(
+          tester.getCenter(find.text(testDashboardConfig.name)).dy,
+          moreOrLessEquals(
+            tester.getCenter(find.byType(TimeSpanSegmentedControl)).dy,
+            epsilon: 1,
+          ),
+        );
+      },
+    );
+
+    /// Stubs the dashboard-definition editor's reads so it can be pushed
+    /// (from the header's edit link) without throwing.
+    void stubDefinitionEditor() {
+      ensureThemingServicesRegistered();
+      when(
+        mockJournalDb.getAllCategories,
+      ).thenAnswer((_) async => [categoryMindfulness]);
+      when(
+        mockJournalDb.getAllHabitDefinitions,
+      ).thenAnswer((_) async => <HabitDefinition>[]);
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableWater);
+      nav_service.beamToNamedOverride = (_) {};
+      addTearDown(() => nav_service.beamToNamedOverride = null);
+    }
+
+    testWidgets(
+      'tapping edit on desktop opens a clamped side panel; back pops it',
+      (tester) async {
+        stubDefinitionEditor();
+
+        tester.view.physicalSize = const Size(1280, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DashboardPage(dashboardId: testDashboardConfig.id),
+            mediaQueryData: desktopMediaQuery,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.tune_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DashboardDefinitionPage), findsOneWidget);
+        // The side panel clamps the editor to half the window (max 640px), so
+        // it never fills the 1280px width — that's what distinguishes it from
+        // the mobile full-screen push.
+        expect(
+          tester.getSize(find.byType(DashboardDefinitionPage)).width,
+          lessThanOrEqualTo(640),
+        );
+
+        // The editor was pushed with popOnClose: true, so its header back
+        // button pops the route instead of beaming to the settings list. The
+        // desktop dashboard header has no back button, so this is the only one.
+        await tester.tap(find.byType(BackWidget));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DashboardDefinitionPage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping the edit link below the desktop breakpoint pushes full-screen',
+      (tester) async {
+        stubDefinitionEditor();
+
+        // Below the 960px desktop breakpoint (so the mobile push path runs),
+        // but wide enough that the embedded charts' date axis lays out without
+        // an unrelated horizontal overflow.
+        tester.view.physicalSize = const Size(900, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DashboardPage(dashboardId: testDashboardConfig.id),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.tune_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DashboardDefinitionPage), findsOneWidget);
+        // A full-screen MaterialPageRoute fills the window width — proving this
+        // is the push path, not the width-clamped desktop side panel.
+        expect(
+          tester.getSize(find.byType(DashboardDefinitionPage)).width,
+          greaterThan(640),
+        );
       },
     );
   });

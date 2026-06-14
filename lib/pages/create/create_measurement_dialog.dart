@@ -270,6 +270,16 @@ class _FieldShellState extends State<_FieldShell> {
   }
 
   @override
+  void didUpdateWidget(_FieldShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode) {
+      oldWidget.focusNode.removeListener(_onFocusChanged);
+      widget.focusNode.addListener(_onFocusChanged);
+      _focused = widget.focusNode.hasFocus;
+    }
+  }
+
+  @override
   void dispose() {
     widget.focusNode.removeListener(_onFocusChanged);
     super.dispose();

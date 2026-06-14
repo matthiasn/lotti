@@ -34,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   right below it; the observed-at time is a clearly-editable row; the comment
   is an optional note; and the Save button stays in place, enabling once the
   value is a valid number (Enter saves too).
+- Habit completion: tapping a habit's row while viewing its dashboard no longer
+  re-opens that same dashboard behind the completion sheet — the sheet now shows
+  just the completion form. Opening the habit from the Habits tab still shows
+  the linked dashboard for context.
 
 ## [0.9.1020]
 ### Added

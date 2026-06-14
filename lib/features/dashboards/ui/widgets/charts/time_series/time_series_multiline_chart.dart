@@ -86,8 +86,10 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
                 interval: axis.interval,
                 getTitlesWidget: leftTitleWidgets,
                 reservedSize: kChartLeftAxisWidth,
+                // Suppress the bottom tick (it overlaps the date axis) but keep
+                // the top tick so the value scale's ceiling shows — matching
+                // the bar and single-line variants' shared-axis behavior.
                 minIncluded: false,
-                maxIncluded: false,
               ),
             ),
           ),

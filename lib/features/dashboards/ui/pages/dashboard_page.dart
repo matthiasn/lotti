@@ -96,7 +96,13 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                 );
                 Navigator.of(context, rootNavigator: true).push(
                   isDesktop
-                      ? _DefinitionSidePanelRoute<void>(child: editor)
+                      ? _DefinitionSidePanelRoute<void>(
+                          child: editor,
+                          // Names the dismissible scrim for screen readers.
+                          barrierLabel: MaterialLocalizations.of(
+                            context,
+                          ).modalBarrierDismissLabel,
+                        )
                       : MaterialPageRoute<void>(builder: (_) => editor),
                 );
               },
@@ -242,40 +248,43 @@ class _DashboardHeader extends StatelessWidget {
 /// back/save) or tapping the scrim. The editor fills the panel's bounded box,
 /// so its own scaffold and action bar render normally.
 class _DefinitionSidePanelRoute<T> extends PageRouteBuilder<T> {
-  _DefinitionSidePanelRoute({required Widget child})
-    : super(
-        opaque: false,
-        barrierDismissible: true,
-        barrierColor: const Color(0x66000000),
-        transitionDuration: const Duration(milliseconds: 240),
-        reverseTransitionDuration: const Duration(milliseconds: 200),
-        pageBuilder: (context, animation, secondaryAnimation) {
-          final width = (MediaQuery.sizeOf(context).width * 0.5).clamp(
-            360.0,
-            640.0,
-          );
-          return Align(
-            alignment: Alignment.centerRight,
-            child: SizedBox(
-              width: width,
-              height: double.infinity,
-              child: child,
-            ),
-          );
-        },
-        transitionsBuilder: (context, animation, secondaryAnimation, child) =>
-            SlideTransition(
-              position:
-                  Tween<Offset>(
-                    begin: const Offset(1, 0),
-                    end: Offset.zero,
-                  ).animate(
-                    CurvedAnimation(
-                      parent: animation,
-                      curve: Curves.easeOutCubic,
-                    ),
-                  ),
-              child: child,
-            ),
-      );
+  _DefinitionSidePanelRoute({
+    required Widget child,
+    required String barrierLabel,
+  }) : super(
+         opaque: false,
+         barrierDismissible: true,
+         barrierLabel: barrierLabel,
+         barrierColor: const Color(0x66000000),
+         transitionDuration: const Duration(milliseconds: 240),
+         reverseTransitionDuration: const Duration(milliseconds: 200),
+         pageBuilder: (context, animation, secondaryAnimation) {
+           final width = (MediaQuery.sizeOf(context).width * 0.5).clamp(
+             360.0,
+             640.0,
+           );
+           return Align(
+             alignment: Alignment.centerRight,
+             child: SizedBox(
+               width: width,
+               height: double.infinity,
+               child: child,
+             ),
+           );
+         },
+         transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+             SlideTransition(
+               position:
+                   Tween<Offset>(
+                     begin: const Offset(1, 0),
+                     end: Offset.zero,
+                   ).animate(
+                     CurvedAnimation(
+                       parent: animation,
+                       curve: Curves.easeOutCubic,
+                     ),
+                   ),
+               child: child,
+             ),
+       );
 }

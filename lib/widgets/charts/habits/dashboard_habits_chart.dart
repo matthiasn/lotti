@@ -26,6 +26,9 @@ class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
       habitId: widget.habitId,
       rangeStart: widget.rangeStart,
       rangeEnd: widget.rangeEnd,
+      // This card is already rendered inside the habit's dashboard, so the
+      // completion dialog must not re-embed that same dashboard.
+      showLinkedDashboard: false,
     );
   }
 }

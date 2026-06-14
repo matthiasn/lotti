@@ -4141,7 +4141,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dashboardPrivateLabel => 'Privado';
 
   @override
-  String get dashboardTakeSurveyTooltip => 'Responder cuestionario';
+  String get dashboardTakeSurveyTooltip => 'Responder encuesta';
 
   @override
   String get defaultLanguage => 'Idioma predeterminado';
