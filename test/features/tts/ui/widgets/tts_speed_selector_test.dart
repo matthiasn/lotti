@@ -9,10 +9,10 @@ import '../../../../widget_test_utils.dart';
 void main() {
   group('TtsSpeedSelector.formatSpeed', () {
     test('drops trailing zero for whole speeds, keeps decimals otherwise', () {
-      expect(TtsSpeedSelector.formatSpeed(1), '1×');
-      expect(TtsSpeedSelector.formatSpeed(2), '2×');
-      expect(TtsSpeedSelector.formatSpeed(0.5), '0.5×');
-      expect(TtsSpeedSelector.formatSpeed(1.25), '1.25×');
+      expect(TtsSpeedSelector.formatSpeed(1), '1');
+      expect(TtsSpeedSelector.formatSpeed(2), '2');
+      expect(TtsSpeedSelector.formatSpeed(0.5), '0.5');
+      expect(TtsSpeedSelector.formatSpeed(1.25), '1.25');
     });
   });
 
@@ -51,7 +51,7 @@ void main() {
     double? picked;
     await pump(tester, value: 1, onChanged: (v) => picked = v);
 
-    await tester.tap(visible('1.5×'));
+    await tester.tap(visible('1.5'));
     expect(picked, 1.5);
   });
 
@@ -61,8 +61,8 @@ void main() {
     await pump(tester, value: 1.5, onChanged: (_) {});
 
     final tokens = tester.element(find.byType(TtsSpeedSelector)).designTokens;
-    final selected = tester.widget<Text>(visible('1.5×'));
-    final unselected = tester.widget<Text>(visible('1×'));
+    final selected = tester.widget<Text>(visible('1.5'));
+    final unselected = tester.widget<Text>(visible('1'));
 
     expect(selected.style?.color, tokens.colors.interactive.enabled);
     expect(selected.style?.fontWeight, FontWeight.w600);
@@ -74,11 +74,11 @@ void main() {
     await pump(tester, value: 1.5, onChanged: (_) {});
 
     expect(
-      tester.getSemantics(find.bySemanticsLabel('1.5×')),
+      tester.getSemantics(find.bySemanticsLabel('1.5')),
       isSemantics(isButton: true, isSelected: true),
     );
     expect(
-      tester.getSemantics(find.bySemanticsLabel('1×')),
+      tester.getSemantics(find.bySemanticsLabel('1')),
       isSemantics(isButton: true, isSelected: false),
     );
     handle.dispose();

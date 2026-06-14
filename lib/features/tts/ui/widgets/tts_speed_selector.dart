@@ -19,10 +19,9 @@ class TtsSpeedSelector extends StatelessWidget {
   final ValueChanged<double> onChanged;
 
   static String formatSpeed(double speed) {
-    final text = speed == speed.roundToDouble()
+    return speed == speed.roundToDouble()
         ? speed.toInt().toString()
         : speed.toString();
-    return '$text×';
   }
 
   @override
