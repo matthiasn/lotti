@@ -106,63 +106,101 @@ class SupertonicTtsSession {
 
     final textIdsShape = [bsz, textIds[0].length];
     final textMaskShape = [bsz, 1, textMask[0][0].length];
-    final textMaskTensor = await floatTensor(textMask, textMaskShape);
 
-    final dpResult = await durationPredictor.run({
-      'text_ids': await intTensor(textIds, textIdsShape),
-      'style_dp': style.dp,
-      'text_mask': textMaskTensor,
-    });
-    final rawDuration = safeCast<double>(await dpResult.values.first.asList());
-    final scaledDuration = rawDuration.map((d) => d / speed).toList();
+    // Every OrtValue holds native (C++ heap) memory that must be freed
+    // explicitly. Collect the longer-lived temporaries here and free them in
+    // the `finally` so a throw mid-inference can't leak them; per-step tensors
+    // are freed inside the loop so memory doesn't grow with `totalStep`. The
+    // cached voice-style tensors (style.ttl/style.dp) are deliberately NOT
+    // freed here — they're reused across chunks and disposed by the engine.
+    final temporaries = <OrtValue>[];
+    try {
+      final textMaskTensor = await floatTensor(textMask, textMaskShape);
+      // Reused by both the duration-predictor and text-encoder runs.
+      final textIdsTensor = await intTensor(textIds, textIdsShape);
+      temporaries
+        ..add(textMaskTensor)
+        ..add(textIdsTensor);
 
-    final textEncResult = await textEncoder.run({
-      'text_ids': await intTensor(textIds, textIdsShape),
-      'style_ttl': style.ttl,
-      'text_mask': textMaskTensor,
-    });
+      final dpResult = await durationPredictor.run({
+        'text_ids': textIdsTensor,
+        'style_dp': style.dp,
+        'text_mask': textMaskTensor,
+      });
+      temporaries.addAll(dpResult.values);
+      final rawDuration = safeCast<double>(
+        await dpResult.values.first.asList(),
+      );
+      final scaledDuration = rawDuration.map((d) => d / speed).toList();
 
-    final latent = _sampleNoisyLatent(scaledDuration);
-    final noisyLatent = latent.values;
-    final latentMask = latent.mask;
-    final latentShape = [
-      bsz,
-      noisyLatent[0].length,
-      noisyLatent[0][0].length,
-    ];
-    final latentMaskTensor = await floatTensor(latentMask, [
-      bsz,
-      1,
-      latentMask[0][0].length,
-    ]);
-    final totalStepTensor = await scalarTensor([totalStep.toDouble()], [bsz]);
-
-    for (var step = 0; step < totalStep; step++) {
-      final result = await vectorEstimator.run({
-        'noisy_latent': await floatTensor(noisyLatent, latentShape),
-        'text_emb': textEncResult.values.first,
+      final textEncResult = await textEncoder.run({
+        'text_ids': textIdsTensor,
         'style_ttl': style.ttl,
         'text_mask': textMaskTensor,
-        'latent_mask': latentMaskTensor,
-        'total_step': totalStepTensor,
-        'current_step': await scalarTensor([step.toDouble()], [bsz]),
       });
-      final denoised = safeCast<double>(await result.values.first.asList());
-      var idx = 0;
-      for (var b = 0; b < noisyLatent.length; b++) {
-        for (var d = 0; d < noisyLatent[b].length; d++) {
-          for (var t = 0; t < noisyLatent[b][d].length; t++) {
-            noisyLatent[b][d][t] = denoised[idx++];
+      // text_emb is read on every denoising step, so keep it alive until the
+      // end (freed via `temporaries`), not inside the loop.
+      temporaries.addAll(textEncResult.values);
+
+      final latent = _sampleNoisyLatent(scaledDuration);
+      final noisyLatent = latent.values;
+      final latentMask = latent.mask;
+      final latentShape = [
+        bsz,
+        noisyLatent[0].length,
+        noisyLatent[0][0].length,
+      ];
+      final latentMaskTensor = await floatTensor(latentMask, [
+        bsz,
+        1,
+        latentMask[0][0].length,
+      ]);
+      final totalStepTensor = await scalarTensor([totalStep.toDouble()], [bsz]);
+      temporaries
+        ..add(latentMaskTensor)
+        ..add(totalStepTensor);
+
+      for (var step = 0; step < totalStep; step++) {
+        final noisyLatentTensor = await floatTensor(noisyLatent, latentShape);
+        final currentStepTensor = await scalarTensor([step.toDouble()], [bsz]);
+        final result = await vectorEstimator.run({
+          'noisy_latent': noisyLatentTensor,
+          'text_emb': textEncResult.values.first,
+          'style_ttl': style.ttl,
+          'text_mask': textMaskTensor,
+          'latent_mask': latentMaskTensor,
+          'total_step': totalStepTensor,
+          'current_step': currentStepTensor,
+        });
+        final denoised = safeCast<double>(await result.values.first.asList());
+        var idx = 0;
+        for (var b = 0; b < noisyLatent.length; b++) {
+          for (var d = 0; d < noisyLatent[b].length; d++) {
+            for (var t = 0; t < noisyLatent[b][d].length; t++) {
+              noisyLatent[b][d][t] = denoised[idx++];
+            }
           }
         }
+        // Free this step's tensors immediately rather than retaining
+        // `totalStep`× of native buffers.
+        await noisyLatentTensor.dispose();
+        await currentStepTensor.dispose();
+        for (final value in result.values) {
+          await value.dispose();
+        }
+      }
+
+      final vocoderLatentTensor = await floatTensor(noisyLatent, latentShape);
+      temporaries.add(vocoderLatentTensor);
+      final vocoderResult = await vocoder.run({'latent': vocoderLatentTensor});
+      temporaries.addAll(vocoderResult.values);
+      final wav = safeCast<double>(await vocoderResult.values.first.asList());
+      return SynthesisResult(wav, scaledDuration.first);
+    } finally {
+      for (final tensor in temporaries) {
+        await tensor.dispose();
       }
     }
-
-    final vocoderResult = await vocoder.run({
-      'latent': await floatTensor(noisyLatent, latentShape),
-    });
-    final wav = safeCast<double>(await vocoderResult.values.first.asList());
-    return SynthesisResult(wav, scaledDuration.first);
   }
 
   ({List<List<List<double>>> values, List<List<List<double>>> mask})

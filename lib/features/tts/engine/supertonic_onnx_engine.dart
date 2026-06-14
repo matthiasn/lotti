@@ -73,6 +73,12 @@ class SupertonicOnnxEngine implements TtsEngine {
     await _session?.dispose();
     _session = null;
     _sessionDir = null;
+    // Each VoiceStyle holds native OrtValue tensors (style_ttl/style_dp);
+    // clearing the map alone would leak them on the native heap.
+    for (final style in _voiceCache.values) {
+      await style.ttl.dispose();
+      await style.dp.dispose();
+    }
     _voiceCache.clear();
   }
 }
