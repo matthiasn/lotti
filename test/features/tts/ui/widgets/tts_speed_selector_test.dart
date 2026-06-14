@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tts/model/tts_settings.dart';
 import 'package:lotti/features/tts/ui/widgets/tts_speed_selector.dart';
 
@@ -15,15 +16,25 @@ void main() {
     });
   });
 
+  // The toggle stacks an invisible bold ghost under each visible label, so a
+  // plain find.text matches two Texts — the visible one is the Stack's last.
+  Finder visible(String label) => find.text(label).last;
+
   Future<void> pump(
     WidgetTester tester, {
     required double value,
     required ValueChanged<double> onChanged,
+    double width = 400,
   }) {
     return tester.pumpWidget(
       makeTestableWidget(
-        Center(
-          child: TtsSpeedSelector(value: value, onChanged: onChanged),
+        // A bounded width is required by the fill-width (`expand`) toggle.
+        Align(
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: width,
+            child: TtsSpeedSelector(value: value, onChanged: onChanged),
+          ),
         ),
       ),
     );
@@ -32,7 +43,7 @@ void main() {
   testWidgets('renders every speed step', (tester) async {
     await pump(tester, value: 1, onChanged: (_) {});
     for (final speed in kTtsSpeedSequence) {
-      expect(find.text(TtsSpeedSelector.formatSpeed(speed)), findsOneWidget);
+      expect(visible(TtsSpeedSelector.formatSpeed(speed)), findsOneWidget);
     }
   });
 
@@ -40,24 +51,46 @@ void main() {
     double? picked;
     await pump(tester, value: 1, onChanged: (v) => picked = v);
 
-    await tester.tap(find.text('1.5×'));
+    await tester.tap(visible('1.5×'));
     expect(picked, 1.5);
   });
 
-  testWidgets('marks the active step as selected (not the others)', (
+  testWidgets('marks the active step teal + semibold, others quiet', (
     tester,
   ) async {
+    await pump(tester, value: 1.5, onChanged: (_) {});
+
+    final tokens = tester.element(find.byType(TtsSpeedSelector)).designTokens;
+    final selected = tester.widget<Text>(visible('1.5×'));
+    final unselected = tester.widget<Text>(visible('1×'));
+
+    expect(selected.style?.color, tokens.colors.interactive.enabled);
+    expect(selected.style?.fontWeight, FontWeight.w600);
+    expect(unselected.style?.color, tokens.colors.text.mediumEmphasis);
+  });
+
+  testWidgets('announces the active step as a selected button', (tester) async {
     final handle = tester.ensureSemantics();
     await pump(tester, value: 1.5, onChanged: (_) {});
 
     expect(
       tester.getSemantics(find.bySemanticsLabel('1.5×')),
-      isSemantics(isSelected: true),
+      isSemantics(isButton: true, isSelected: true),
     );
     expect(
       tester.getSemantics(find.bySemanticsLabel('1×')),
-      isSemantics(isSelected: false),
+      isSemantics(isButton: true, isSelected: false),
     );
     handle.dispose();
+  });
+
+  testWidgets('fits all seven steps at a phone width without overflowing', (
+    tester,
+  ) async {
+    await pump(tester, value: 1, onChanged: (_) {}, width: 360);
+
+    expect(tester.takeException(), isNull);
+    expect(visible('0.5×'), findsOneWidget);
+    expect(visible('2×'), findsOneWidget);
   });
 }

@@ -177,5 +177,32 @@ void main() {
         expect(secondWidth, firstWidth);
       },
     );
+
+    testWidgets('expand mode fills its bounded width without overflowing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _wrap(
+          // A bounded width is required: expand uses MainAxisSize.max.
+          SizedBox(
+            width: 360,
+            child: DsSegmentedToggle<_Mode>(
+              expand: true,
+              selected: _Mode.first,
+              onChanged: (_) {},
+              segments: const [
+                DsSegment(_Mode.first, 'Per day'),
+                DsSegment(_Mode.second, 'Running total'),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(tester.getSize(find.byType(DsSegmentedToggle<_Mode>)).width, 360);
+      expect(_visible('Per day'), findsOneWidget);
+      expect(_visible('Running total'), findsOneWidget);
+    });
   });
 }
