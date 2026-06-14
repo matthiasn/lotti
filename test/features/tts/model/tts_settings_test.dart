@@ -64,4 +64,21 @@ void main() {
       expect(ttsSpeedKey, 'TTS_SPEED');
     });
   });
+
+  group('value semantics', () {
+    test('equal settings are equal and share a hashCode', () {
+      const a = TtsSettings(voiceId: 'F2', modelId: 'm1', speed: 1.5);
+      const b = TtsSettings(voiceId: 'F2', modelId: 'm1', speed: 1.5);
+      expect(a, b);
+      expect(a.hashCode, b.hashCode);
+    });
+
+    test('toString includes the field values', () {
+      const settings = TtsSettings(voiceId: 'F2', modelId: 'm1', speed: 1.5);
+      expect(
+        settings.toString(),
+        allOf(contains('F2'), contains('m1'), contains('1.5')),
+      );
+    });
+  });
 }

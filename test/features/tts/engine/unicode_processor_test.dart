@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tts/engine/text_preprocessing.dart';
 import 'package:lotti/features/tts/engine/unicode_processor.dart';
@@ -48,6 +50,32 @@ void main() {
       expect(shortMask.where((m) => m == 1.0).length, lessThan(maxLen));
       // Padding ids are zero.
       expect(tokenized.textIds[0].last, 0);
+    });
+  });
+
+  group('UnicodeProcessor.load', () {
+    test('parses a list-form indexer, skipping negative entries', () async {
+      final dir = Directory.systemTemp.createTempSync('unicode_load_test');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final file = File('${dir.path}/unicode_indexer.json')
+        ..writeAsStringSync('[10, -1, 20]');
+
+      final processor = await UnicodeProcessor.load(file.path);
+
+      expect(processor.indexer[0], 10);
+      expect(processor.indexer.containsKey(1), isFalse); // -1 dropped
+      expect(processor.indexer[2], 20);
+    });
+
+    test('parses a map-form indexer keyed by code point', () async {
+      final dir = Directory.systemTemp.createTempSync('unicode_load_test');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      final file = File('${dir.path}/unicode_indexer.json')
+        ..writeAsStringSync('{"65": 100}');
+
+      final processor = await UnicodeProcessor.load(file.path);
+
+      expect(processor.indexer[65], 100);
     });
   });
 }

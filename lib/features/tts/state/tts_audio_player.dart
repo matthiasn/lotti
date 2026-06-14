@@ -59,9 +59,16 @@ class MediaKitTtsAudioPlayer implements TtsAudioPlayer {
 }
 
 /// App-wide [TtsAudioPlayer]. Overridden with a fake in tests.
+//
+// Constructs the real media_kit Player, so it is exercised at runtime rather
+// than in unit tests (MediaKitTtsAudioPlayer itself is tested with a mock
+// Player).
+// coverage:ignore-start
 @Riverpod(keepAlive: true)
 TtsAudioPlayer ttsAudioPlayer(Ref ref) {
   final player = MediaKitTtsAudioPlayer();
   ref.onDispose(() => unawaited(player.dispose()));
   return player;
 }
+
+// coverage:ignore-end

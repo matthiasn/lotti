@@ -1,3 +1,7 @@
+// Mocktail's when()/verify() take a closure; tear-offs would read worse next
+// to the arg-matching stubs.
+// ignore_for_file: unnecessary_lambdas
+
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tts/engine/supertonic_tts_session.dart';
@@ -154,5 +158,19 @@ void main() {
     expect(result.samples, isEmpty);
     expect(result.durationSeconds, 0);
     verifyNever(() => vocoder.run(any()));
+  });
+
+  test('dispose closes all four ONNX sessions', () async {
+    when(() => durationPredictor.close()).thenAnswer((_) async {});
+    when(() => textEncoder.close()).thenAnswer((_) async {});
+    when(() => vectorEstimator.close()).thenAnswer((_) async {});
+    when(() => vocoder.close()).thenAnswer((_) async {});
+
+    await buildSession().dispose();
+
+    verify(() => durationPredictor.close()).called(1);
+    verify(() => textEncoder.close()).called(1);
+    verify(() => vectorEstimator.close()).called(1);
+    verify(() => vocoder.close()).called(1);
   });
 }

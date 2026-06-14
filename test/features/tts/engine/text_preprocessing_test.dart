@@ -64,4 +64,18 @@ void main() {
       expect(isValidSupertonicLang('xx'), isFalse);
     });
   });
+
+  group('quote normalization', () {
+    test('collapses doubled straight quotes', () {
+      expect(preprocessText('say ""hi""', 'en'), isNot(contains('""')));
+    });
+
+    test('collapses doubled apostrophes', () {
+      expect(preprocessText("it''s", 'en'), isNot(contains("''")));
+    });
+
+    test('collapses doubled backticks', () {
+      expect(preprocessText('a``b', 'en'), isNot(contains('``')));
+    });
+  });
 }

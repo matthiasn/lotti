@@ -52,4 +52,14 @@ void main() {
       expect(() => safeCast<double>(42), throwsArgumentError);
     });
   });
+
+  group('non-double coercion paths', () {
+    test('flattenList keeps a non-double scalar leaf as-is', () {
+      expect(flattenList<int>(<dynamic>[5]), [5]);
+    });
+
+    test('safeCast casts a non-double list element-wise', () {
+      expect(safeCast<int>(<num>[1, 2, 3]), [1, 2, 3]);
+    });
+  });
 }

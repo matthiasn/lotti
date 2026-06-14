@@ -26,8 +26,21 @@ Future<String> _readJson(String path) => path.startsWith('assets/')
     ? rootBundle.loadString(path)
     : File(path).readAsString();
 
+/// Builds an ONNX tensor from flat float data + a shape (wraps the static,
+/// native OrtValue.fromList).
+typedef VoiceTensorBuilder =
+    Future<OrtValue> Function(dynamic data, List<int> shape);
+
 /// Loads one or more voice-style JSON files into a batched [VoiceStyle].
-Future<VoiceStyle> loadVoiceStyle(List<String> paths) async {
+///
+/// [tensorBuilder] wraps the native OrtValue.fromList; it's injected (defaulting
+/// to the real one) so the JSON parsing, flattening, and batching are unit
+/// testable with a fake — only the tensor allocation itself needs the runtime.
+Future<VoiceStyle> loadVoiceStyle(
+  List<String> paths, {
+  VoiceTensorBuilder? tensorBuilder,
+}) async {
+  final build = tensorBuilder ?? OrtValue.fromList;
   final bsz = paths.length;
 
   final firstJson =
@@ -59,8 +72,8 @@ Future<VoiceStyle> loadVoiceStyle(List<String> paths) async {
   final ttlShape = [bsz, ttlDims[1], ttlDims[2]];
   final dpShape = [bsz, dpDims[1], dpDims[2]];
   return VoiceStyle(
-    await OrtValue.fromList(ttlFlat, ttlShape),
-    await OrtValue.fromList(dpFlat, dpShape),
+    await build(ttlFlat, ttlShape),
+    await build(dpFlat, dpShape),
     ttlShape,
     dpShape,
   );

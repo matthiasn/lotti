@@ -286,6 +286,11 @@ class SupertonicTtsSession {
 
 /// Loads a [SupertonicTtsSession] from a local model directory containing the
 /// four `*.onnx` files plus `tts.json` and `unicode_indexer.json`.
+///
+/// Constructs the native OnnxRuntime + sessions from disk, so it runs only with
+/// the runtime (on-device), not in unit tests; the session it builds is tested
+/// directly by constructing one with mock OrtSessions.
+// coverage:ignore-start
 Future<SupertonicTtsSession> loadSupertonicSession(String modelDir) async {
   final cfgs =
       jsonDecode(await File('$modelDir/tts.json').readAsString())
@@ -311,3 +316,5 @@ Future<SupertonicTtsSession> loadSupertonicSession(String modelDir) async {
     vocoder: sessions[3],
   );
 }
+
+// coverage:ignore-end

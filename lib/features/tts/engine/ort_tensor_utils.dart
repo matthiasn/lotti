@@ -40,6 +40,11 @@ List<T> safeCast<T>(dynamic raw) {
   throw ArgumentError('Cannot convert $raw to List<$T>');
 }
 
+// The *Tensor builders are thin wrappers over the static OrtValue.fromList,
+// which performs a native (method-channel) allocation and so cannot run in a
+// unit test. The pure flatten/cast helpers above carry the testable logic;
+// callers inject these builders to mock them (see SupertonicTtsSession).
+// coverage:ignore-start
 /// Float32 tensor from an arbitrarily-nested double array.
 Future<OrtValue> floatTensor(dynamic array, List<int> dims) =>
     OrtValue.fromList(Float32List.fromList(flattenList<double>(array)), dims);
@@ -54,3 +59,4 @@ Future<OrtValue> intTensor(List<List<int>> array, List<int> dims) =>
       Int64List.fromList(array.expand((row) => row).toList()),
       dims,
     );
+// coverage:ignore-end
