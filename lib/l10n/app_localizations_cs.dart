@@ -5183,6 +5183,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsTableCurrent => 'AKTUÁLNÍ';
 
   @override
+  String get insightsTableCompareNote => 'Změna oproti předchozímu období';
+
+  @override
   String get insightsTableDelta => 'Změna';
 
   @override

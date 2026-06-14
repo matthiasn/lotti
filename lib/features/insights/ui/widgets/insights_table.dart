@@ -23,11 +23,16 @@ class InsightsTable extends StatelessWidget {
     required this.resolver,
     this.showAvgPerDay = true,
     this.previousSecondsByCategory,
+    this.comparisonInProgress = false,
     super.key,
   });
 
   final List<InsightsTableRow> rows;
   final InsightsCategoryResolver resolver;
+
+  /// Whether the compared current period is still unfolding — drives the
+  /// "same days" vs "full period" basis named in the compare caption.
+  final bool comparisonInProgress;
 
   /// Hidden for single-day ranges, where avg/day would just repeat the
   /// total.
@@ -113,7 +118,25 @@ class InsightsTable extends StatelessWidget {
           vertical: tokens.spacing.step3,
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Name the comparison basis at the table too, so the per-row Change
+            // values are self-describing without reconciling against the KPI.
+            if (compare) ...[
+              Padding(
+                padding: EdgeInsets.only(
+                  top: tokens.spacing.step2,
+                  bottom: tokens.spacing.step1,
+                ),
+                child: Text(
+                  '${messages.insightsTableCompareNote} · '
+                  '${comparisonInProgress ? messages.insightsCompareSameDays : messages.insightsCompareFullPeriod}',
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ),
+            ],
             _TableRowLayout(
               showTotal: showTotal,
               showShare: showShare,

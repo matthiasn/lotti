@@ -8994,6 +8994,12 @@ abstract class AppLocalizations {
   /// **'CURRENT'**
   String get insightsTableCurrent;
 
+  /// No description provided for @insightsTableCompareNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Change is vs the previous period'**
+  String get insightsTableCompareNote;
+
   /// No description provided for @insightsTableDelta.
   ///
   /// In en, this message translates to:

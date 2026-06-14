@@ -209,6 +209,7 @@ void main() {
     // The baseline is named with the comparison basis ("full period" for a
     // completed week, "same days" while in progress).
     expect(find.textContaining('vs 1h'), findsOneWidget);
-    expect(find.textContaining('full period'), findsOneWidget);
+    // The comparison basis is named at both the KPI and the table.
+    expect(find.textContaining('full period'), findsWidgets);
   });
 }

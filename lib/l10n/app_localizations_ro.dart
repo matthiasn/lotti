@@ -5227,6 +5227,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get insightsTableCurrent => 'CURENT';
 
   @override
+  String get insightsTableCompareNote =>
+      'Modificare față de perioada anterioară';
+
+  @override
   String get insightsTableDelta => 'Modificare';
 
   @override

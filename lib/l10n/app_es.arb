@@ -2339,6 +2339,7 @@
   "insightsTableAvgPerDay": "MEDIA/DÍA",
   "insightsTableCategory": "CATEGORÍA",
   "insightsTableCurrent": "ACTUAL",
+  "insightsTableCompareNote": "Cambio frente al período anterior",
   "insightsTableDelta": "Cambio",
   "insightsTablePrevious": "ANTERIOR",
   "insightsTableShare": "PORCENTAJE",

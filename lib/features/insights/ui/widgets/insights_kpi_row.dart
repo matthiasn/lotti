@@ -229,13 +229,22 @@ class _KpiTile extends StatelessWidget {
               formatDurationWithDays(seconds),
               style: calmDisplayStyle(tokens),
             ),
+            // In compare mode the trend leads: the signed delta is the second
+            // beat directly under the figure, then the "where it went" line,
+            // then the baseline+basis trailing smallest.
+            if (previousSeconds != null) ...[
+              SizedBox(height: tokens.spacing.step2),
+              InsightsDeltaChip(
+                current: seconds,
+                previous: previousSeconds,
+                prominent: true,
+              ),
+            ],
             if (headline != null && headline!.isNotEmpty) ...[
               SizedBox(height: tokens.spacing.step2),
               Text(
                 headline!,
-                // The answer to "where did my time go" — a full tier above the
-                // delta caption, in high-emphasis body so it reads as the
-                // tile's point.
+                // The answer to "where did my time go", in high-emphasis body.
                 style: tokens.typography.styles.body.bodyMedium.copyWith(
                   color: tokens.colors.text.highEmphasis,
                 ),
@@ -244,32 +253,19 @@ class _KpiTile extends StatelessWidget {
               ),
             ],
             if (previousSeconds != null) ...[
-              SizedBox(height: tokens.spacing.step2),
-              Row(
-                children: [
-                  InsightsDeltaChip(
-                    current: seconds,
-                    previous: previousSeconds,
-                    prominent: true,
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  Flexible(
-                    child: Text(
-                      '${context.messages.insightsCompareVs} '
-                      '${formatDurationWithDays(previousSeconds)}'
-                      // Name the baseline so the comparison basis is explicit:
-                      // the same elapsed days for an in-progress period, the
-                      // whole period for a completed one.
-                      ' · '
-                      '${inProgress ? context.messages.insightsCompareSameDays : context.messages.insightsCompareFullPeriod}',
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
+              SizedBox(height: tokens.spacing.step1),
+              Text(
+                // The baseline + comparison basis trails the delta: same
+                // elapsed days while in progress, the whole period once done.
+                '${context.messages.insightsCompareVs} '
+                '${formatDurationWithDays(previousSeconds)}'
+                ' · '
+                '${inProgress ? context.messages.insightsCompareSameDays : context.messages.insightsCompareFullPeriod}',
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ],
             if (caption != null && caption!.isNotEmpty) ...[

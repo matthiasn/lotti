@@ -2339,6 +2339,7 @@
   "insightsTableAvgPerDay": "Ø/TAG",
   "insightsTableCategory": "KATEGORIE",
   "insightsTableCurrent": "AKTUELL",
+  "insightsTableCompareNote": "Änderung ggü. dem vorigen Zeitraum",
   "insightsTableDelta": "Änderung",
   "insightsTablePrevious": "VORHER",
   "insightsTableShare": "ANTEIL",

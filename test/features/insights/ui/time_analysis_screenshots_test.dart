@@ -15,6 +15,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -421,5 +422,24 @@ void main() {
     await _tap(tester, find.text('Compare'));
     expect(find.text('PREVIOUS'), findsOneWidget);
     await _capture(tester, '16_month_compare_light');
+  });
+
+  testWidgets('month with bar tooltip — dark', (tester) async {
+    await _pumpDashboard(
+      tester,
+      rows: insightsScenarioRows(_now),
+      categories: insightsScenarioCategories,
+    );
+    await _selectGranularity(tester, 'Month', 'Month');
+    // Hold a touch on a bar so its per-category tooltip is on screen for the
+    // capture (the hover/tap value readout is otherwise invisible in a PNG).
+    await withClock(Clock.fixed(_now), () async {
+      final center = tester.getCenter(find.byType(BarChart));
+      final gesture = await tester.startGesture(center);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await _capture(tester, '17_month_tooltip_dark');
+      await gesture.up();
+    });
   });
 }

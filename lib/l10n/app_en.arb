@@ -2611,6 +2611,7 @@
   "insightsTableAvgPerDay": "AVG/DAY",
   "insightsTableCategory": "CATEGORY",
   "insightsTableCurrent": "CURRENT",
+  "insightsTableCompareNote": "Change is vs the previous period",
   "insightsTableDelta": "Change",
   "insightsTablePrevious": "PREVIOUS",
   "insightsTableShare": "SHARE",

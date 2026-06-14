@@ -5214,6 +5214,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get insightsTableCurrent => 'ACTUAL';
 
   @override
+  String get insightsTableCompareNote => 'Cambio frente al período anterior';
+
+  @override
   String get insightsTableDelta => 'Cambio';
 
   @override

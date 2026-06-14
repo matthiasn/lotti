@@ -2339,6 +2339,7 @@
   "insightsTableAvgPerDay": "MEDIE/ZI",
   "insightsTableCategory": "CATEGORIE",
   "insightsTableCurrent": "CURENT",
+  "insightsTableCompareNote": "Modificare față de perioada anterioară",
   "insightsTableDelta": "Modificare",
   "insightsTablePrevious": "ANTERIOR",
   "insightsTableShare": "PONDERE",

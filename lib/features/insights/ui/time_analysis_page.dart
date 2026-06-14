@@ -269,6 +269,7 @@ class _DashboardContent extends StatelessWidget {
             // avg/day equals the total when only one day has elapsed — noise.
             showAvgPerDay: elapsedDays > 1,
             previousSecondsByCategory: previousByCategory,
+            comparisonInProgress: isInProgress(range, clock.now()),
           ),
         ],
         SizedBox(height: tokens.spacing.step6),
