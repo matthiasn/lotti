@@ -128,6 +128,137 @@ void main() {
       );
     });
 
+    test('surfaces finishReason when parts are missing', () {
+      expect(
+        () => extractGeminiImageFromResponse(const {
+          'candidates': [
+            {
+              'finishReason': 'IMAGE_SAFETY',
+              'content': {'parts': <dynamic>[]},
+            },
+          ],
+        }),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            allOf(
+              contains('No parts'),
+              contains('finishReason: IMAGE_SAFETY'),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test(
+      'surfaces promptFeedback blockReason when there are no candidates',
+      () {
+        expect(
+          () => extractGeminiImageFromResponse(const {
+            'candidates': <dynamic>[],
+            'promptFeedback': {'blockReason': 'PROHIBITED_CONTENT'},
+          }),
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('blockReason: PROHIBITED_CONTENT'),
+            ),
+          ),
+        );
+      },
+    );
+
+    test('surfaces blocked safety categories when parts carry no image', () {
+      expect(
+        () => extractGeminiImageFromResponse(const {
+          'candidates': [
+            {
+              'finishReason': 'SAFETY',
+              'content': {
+                'parts': [
+                  {'text': 'cannot generate that'},
+                ],
+              },
+              'safetyRatings': [
+                {
+                  'category': 'HARM_CATEGORY_DANGEROUS_CONTENT',
+                  'probability': 'HIGH',
+                  'blocked': true,
+                },
+                {
+                  'category': 'HARM_CATEGORY_HARASSMENT',
+                  'probability': 'NEGLIGIBLE',
+                },
+              ],
+            },
+          ],
+        }),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            allOf(
+              contains('No image data'),
+              contains('finishReason: SAFETY'),
+              // Only the blocked/HIGH category is listed in blockedCategories;
+              // the NEGLIGIBLE harassment rating is excluded from that field
+              // (it may still appear in the raw payload backstop).
+              contains('blockedCategories: HARM_CATEGORY_DANGEROUS_CONTENT;'),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('surfaces usage token counts to flag thinking-budget exhaustion', () {
+      expect(
+        () => extractGeminiImageFromResponse(const {
+          'candidates': [
+            {
+              'finishReason': 'MAX_TOKENS',
+              'content': {'parts': <dynamic>[]},
+            },
+          ],
+          'usageMetadata': {
+            'promptTokenCount': 1200,
+            'thoughtsTokenCount': 8000,
+            'totalTokenCount': 9200,
+          },
+        }),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            allOf(
+              contains('finishReason: MAX_TOKENS'),
+              contains('thoughtsTokenCount=8000'),
+            ),
+          ),
+        ),
+      );
+    });
+
+    test('always attaches a raw payload backstop', () {
+      expect(
+        () => extractGeminiImageFromResponse(const {
+          'candidates': [
+            {
+              'content': {'parts': <dynamic>[]},
+            },
+          ],
+        }),
+        throwsA(
+          isA<Exception>().having(
+            (e) => e.toString(),
+            'message',
+            allOf(contains('No parts'), contains('raw:')),
+          ),
+        ),
+      );
+    });
+
     test('throws when content is not a map', () {
       expect(
         () => extractGeminiImageFromResponse(const {

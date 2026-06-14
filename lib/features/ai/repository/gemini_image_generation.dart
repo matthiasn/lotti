@@ -77,18 +77,28 @@ Future<GeneratedImage> generateGeminiImage({
 GeneratedImage extractGeminiImageFromResponse(Map<String, dynamic> response) {
   final candidates = response['candidates'];
   if (candidates is! List || candidates.isEmpty) {
-    throw Exception('No candidates in image generation response');
+    throw Exception(
+      'No candidates in image generation response'
+      '${_responseDiagnostics(response, null)}',
+    );
   }
 
   final first = candidates.first;
-  final content = first is Map<String, dynamic> ? first['content'] : null;
+  final candidate = first is Map<String, dynamic> ? first : null;
+  final content = candidate != null ? candidate['content'] : null;
   if (content is! Map<String, dynamic>) {
-    throw Exception('No content in image generation response');
+    throw Exception(
+      'No content in image generation response'
+      '${_responseDiagnostics(response, candidate)}',
+    );
   }
 
   final parts = content['parts'];
   if (parts is! List || parts.isEmpty) {
-    throw Exception('No parts in image generation response');
+    throw Exception(
+      'No parts in image generation response'
+      '${_responseDiagnostics(response, candidate)}',
+    );
   }
 
   // Look for inline_data containing the generated image
@@ -113,5 +123,102 @@ GeneratedImage extractGeminiImageFromResponse(Map<String, dynamic> response) {
     }
   }
 
-  throw Exception('No image data found in response');
+  throw Exception(
+    'No image data found in response'
+    '${_responseDiagnostics(response, candidate)}',
+  );
+}
+
+/// Builds a human-readable diagnostics suffix explaining *why* a Gemini image
+/// response carried no usable image part.
+///
+/// Gemini returns HTTP 200 with a candidate that has empty/missing `parts`
+/// whenever generation is terminated by the model rather than failing at the
+/// transport layer — typically a `finishReason` such as `IMAGE_SAFETY`,
+/// `PROHIBITED_CONTENT`, `RECITATION` or `MAX_TOKENS`, or a prompt blocked
+/// outright via `promptFeedback.blockReason`. The bare "No parts" message hides
+/// all of this, which makes failures (e.g. a prod profile whose thinking budget
+/// reliably eats the output, or content tripping a safety filter) impossible to
+/// diagnose from logs.
+///
+/// This suffix is appended to the thrown exception's message, which the skill
+/// runner persists via `LoggingService` (the repository's own `developer.log`
+/// calls are *not* captured in release/TestFlight builds), so it is the only
+/// reliable place to surface the cause for later log searches. It reports the
+/// terminal reason, any blocked safety categories, and token-usage counts
+/// (which distinguish a thinking-budget exhaustion from an outright refusal),
+/// and always attaches a truncated raw payload as a backstop.
+String _responseDiagnostics(
+  Map<String, dynamic> response,
+  Map<String, dynamic>? candidate,
+) {
+  final details = <String>[];
+
+  final finishReason = candidate?['finishReason'];
+  if (finishReason != null) {
+    details.add('finishReason: $finishReason');
+  }
+
+  final finishMessage = candidate?['finishMessage'];
+  if (finishMessage is String && finishMessage.isNotEmpty) {
+    details.add('finishMessage: $finishMessage');
+  }
+
+  final promptFeedback = response['promptFeedback'];
+  final blockReason = promptFeedback is Map<String, dynamic>
+      ? promptFeedback['blockReason']
+      : null;
+  if (blockReason != null) {
+    details.add('blockReason: $blockReason');
+  }
+
+  // Surface only safety categories that actually contributed to the block to
+  // keep the message focused.
+  final safetyRatings =
+      candidate?['safetyRatings'] ??
+      (promptFeedback is Map<String, dynamic>
+          ? promptFeedback['safetyRatings']
+          : null);
+  if (safetyRatings is List) {
+    final blocked = safetyRatings
+        .whereType<Map<String, dynamic>>()
+        .where((r) => r['blocked'] == true || r['probability'] == 'HIGH')
+        .map((r) => r['category'])
+        .whereType<String>()
+        .toList();
+    if (blocked.isNotEmpty) {
+      details.add('blockedCategories: ${blocked.join(', ')}');
+    }
+  }
+
+  // Token usage distinguishes a thinking-budget exhaustion (high
+  // thoughtsTokenCount with finishReason MAX_TOKENS and no image) from an
+  // immediate refusal (near-zero counts).
+  final usage = response['usageMetadata'];
+  if (usage is Map<String, dynamic>) {
+    final usageBits = <String>[];
+    for (final key in const [
+      'promptTokenCount',
+      'thoughtsTokenCount',
+      'candidatesTokenCount',
+      'totalTokenCount',
+    ]) {
+      final value = usage[key];
+      if (value != null) usageBits.add('$key=$value');
+    }
+    if (usageBits.isNotEmpty) {
+      details.add('usage: ${usageBits.join(', ')}');
+    }
+  }
+
+  // Always attach a truncated raw payload as a backstop so a single prod run
+  // yields everything we need, even when the structured fields above are
+  // absent or the response shape is unexpected. Failure responses carry no
+  // image bytes, so this stays small.
+  final raw = jsonEncode(response);
+  const maxLen = 800;
+  final truncated = raw.length > maxLen ? '${raw.substring(0, maxLen)}…' : raw;
+  details.add('raw: $truncated');
+
+  return ' (${details.join('; ')})';
 }
