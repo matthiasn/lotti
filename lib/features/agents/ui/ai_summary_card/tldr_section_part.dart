@@ -49,6 +49,14 @@ class TldrHeader extends StatelessWidget {
   /// crowded on a phone-sized card.
   static const double _compactCountdownWidth = 360;
 
+  /// Fixed height for the trailing control cluster so the header row never
+  /// jumps as its contents swap between states: the idle 44pt refresh icon,
+  /// the 26px "Thinking…" pill, the countdown cluster, and even the moment a
+  /// restarted agent's report reloads and the playback button briefly drops
+  /// out. Matches the 44pt control / tap-target convention the playback button
+  /// and icon affordances already use, so reserving it never clips them.
+  static const double _controlsRowHeight = 44;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -192,9 +200,12 @@ class TldrHeader extends StatelessWidget {
               runSpacing: 8,
               children: [
                 buildLeadingBlock(maxColumnWidth: maxColumnWidth),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: buildControls(compactCountdown: compact),
+                SizedBox(
+                  height: _controlsRowHeight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: buildControls(compactCountdown: compact),
+                  ),
                 ),
               ],
             ),

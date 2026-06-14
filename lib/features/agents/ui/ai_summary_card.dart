@@ -235,11 +235,13 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     }
   }
 
-  /// Builds the Supertonic playback control for [tldr], deriving its mode and
-  /// progress from the app-wide [TtsPlaybackController]. Only reflects an
-  /// active state when this card's task is the playing source so multiple
-  /// cards never animate for one utterance.
-  Widget _buildPlaybackControl(TtsPlaybackState playback, String tldr) {
+  /// Builds the Supertonic playback control that reads [text] aloud, deriving
+  /// its mode and progress from the app-wide [TtsPlaybackController]. [text] is
+  /// whatever the body currently shows (TL;DR alone when collapsed, TL;DR plus
+  /// the full report when expanded). Only reflects an active state when this
+  /// card's task is the playing source so multiple cards never animate for one
+  /// utterance.
+  Widget _buildPlaybackControl(TtsPlaybackState playback, String text) {
     final taskId = widget.taskId;
     final active = playback.isActiveFor(taskId);
     final mode = !active
@@ -258,7 +260,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     return TtsPlayButton(
       mode: mode,
       progress: progress,
-      onPlay: () => notifier.speak(sourceId: taskId, text: tldr),
+      onPlay: () => notifier.speak(sourceId: taskId, text: text),
       onStop: notifier.stop,
     );
   }
@@ -292,8 +294,13 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ?? false;
     final ttsEngineSupported = ref.watch(ttsEngineProvider).isSupported;
     final playback = ref.watch(ttsPlaybackControllerProvider);
+    // Read aloud exactly what the body shows: the TL;DR when collapsed, the
+    // TL;DR followed by the full report once expanded.
+    final spokenText = _expanded && additionalReport != null
+        ? '$tldr\n\n$additionalReport'
+        : tldr;
     final playbackControl = ttsEnabled && tldr.isNotEmpty && ttsEngineSupported
-        ? _buildPlaybackControl(playback, tldr)
+        ? _buildPlaybackControl(playback, spokenText)
         : null;
 
     // Surface a toast when playback fails for this card's summary.
