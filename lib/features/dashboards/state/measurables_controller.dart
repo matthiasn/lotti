@@ -242,6 +242,8 @@ class MeasurableSuggestionsController extends AsyncNotifier<List<num>?> {
       )).future,
     );
 
-    return rankedByPopularity(measurements: measurements);
+    // Surface up to five popular values so the quick-add chips cover more of a
+    // high-frequency logger's habitual amounts (the chip row wraps).
+    return rankedByPopularity(measurements: measurements, n: 5);
   }
 }

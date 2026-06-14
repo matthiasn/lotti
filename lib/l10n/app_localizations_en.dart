@@ -5558,6 +5558,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get measurableNotFound => 'Measurable not found';
 
   @override
+  String get measurementCommentHint => 'Add a note (optional)';
+
+  @override
+  String get measurementQuickAddLabel => 'Quick add';
+
+  @override
+  String get measurementValueHint => 'Value';
+
+  @override
   String get mediaShowInFileExplorerAction => 'Show in File Explorer';
 
   @override

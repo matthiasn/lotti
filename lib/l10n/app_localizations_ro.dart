@@ -5686,6 +5686,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get measurableNotFound => 'Masuratoarea nu a fost gasita';
 
   @override
+  String get measurementCommentHint => 'Adăugați o notă (opțional)';
+
+  @override
+  String get measurementQuickAddLabel => 'Adăugare rapidă';
+
+  @override
+  String get measurementValueHint => 'Valoare';
+
+  @override
   String get mediaShowInFileExplorerAction => 'Afișați în Explorer';
 
   @override

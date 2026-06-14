@@ -5647,6 +5647,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get measurableNotFound => 'Měřitelný typ nenalezen';
 
   @override
+  String get measurementCommentHint => 'Přidat poznámku (volitelné)';
+
+  @override
+  String get measurementQuickAddLabel => 'Rychlé přidání';
+
+  @override
+  String get measurementValueHint => 'Hodnota';
+
+  @override
   String get mediaShowInFileExplorerAction => 'Zobrazit v Průzkumníku souborů';
 
   @override

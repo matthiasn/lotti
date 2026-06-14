@@ -9802,6 +9802,24 @@ abstract class AppLocalizations {
   /// **'Measurable not found'**
   String get measurableNotFound;
 
+  /// No description provided for @measurementCommentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note (optional)'**
+  String get measurementCommentHint;
+
+  /// No description provided for @measurementQuickAddLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick add'**
+  String get measurementQuickAddLabel;
+
+  /// No description provided for @measurementValueHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
+  String get measurementValueHint;
+
   /// Context menu action that reveals a media file in Windows File Explorer.
   ///
   /// In en, this message translates to:

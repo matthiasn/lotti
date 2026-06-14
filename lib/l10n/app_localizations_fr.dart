@@ -5688,6 +5688,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get measurableNotFound => 'Élément mesurable introuvable';
 
   @override
+  String get measurementCommentHint => 'Ajoute une note (facultatif)';
+
+  @override
+  String get measurementQuickAddLabel => 'Ajout rapide';
+
+  @override
+  String get measurementValueHint => 'Valeur';
+
+  @override
   String get mediaShowInFileExplorerAction =>
       'Afficher dans l\'Explorateur de fichiers';
 

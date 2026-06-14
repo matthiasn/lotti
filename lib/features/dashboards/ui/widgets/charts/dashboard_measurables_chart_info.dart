@@ -3,6 +3,7 @@ import 'dart:core';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -20,24 +21,22 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
   final bool enableCreate;
 
   Widget _buildModalTitle(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final tokens = context.designTokens;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           measurableDataType.displayName,
-          style: theme.textTheme.titleMedium?.copyWith(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.2,
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: tokens.colors.text.highEmphasis,
           ),
         ),
         if (measurableDataType.description.isNotEmpty)
           Text(
             measurableDataType.description,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
       ],

@@ -5631,6 +5631,15 @@ class AppLocalizationsDe extends AppLocalizations {
   String get measurableNotFound => 'Messgröße nicht gefunden';
 
   @override
+  String get measurementCommentHint => 'Notiz hinzufügen (optional)';
+
+  @override
+  String get measurementQuickAddLabel => 'Schnell hinzufügen';
+
+  @override
+  String get measurementValueHint => 'Wert';
+
+  @override
   String get mediaShowInFileExplorerAction => 'Im Datei-Explorer anzeigen';
 
   @override
