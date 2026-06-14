@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
+import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -39,6 +40,8 @@ Future<void> _pumpRow(
   required SettingsNode node,
   bool onActivePath = false,
   bool isExpanded = false,
+  bool showLeafChevron = false,
+  int descMaxLines = 1,
   VoidCallback? onTap,
 }) async {
   await tester.pumpWidget(
@@ -51,6 +54,8 @@ Future<void> _pumpRow(
             depth: 0,
             onActivePath: onActivePath,
             isExpanded: isExpanded,
+            showLeafChevron: showLeafChevron,
+            descMaxLines: descMaxLines,
             onTap: onTap ?? () {},
           ),
         ),
@@ -131,6 +136,47 @@ void main() {
         ),
       );
       expect(rotation.turns, 0);
+    });
+  });
+
+  group('SettingsTreeRow — leaf chevron (mobile drill-down)', () {
+    testWidgets('leaf shows a static chevron when showLeafChevron is true', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf(), showLeafChevron: true);
+      expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+      final rotation = tester.widget<AnimatedRotation>(
+        find.ancestor(
+          of: find.byIcon(Icons.chevron_right_rounded),
+          matching: find.byType(AnimatedRotation),
+        ),
+      );
+      // A leaf is never "expanded", so its chevron points right (0 turns)
+      // rather than rotating like a branch.
+      expect(rotation.turns, 0);
+    });
+
+    testWidgets('leaf still omits the chevron when showLeafChevron is false', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf());
+      expect(find.byIcon(Icons.chevron_right_rounded), findsNothing);
+    });
+  });
+
+  group('SettingsTreeRow — description lines & height', () {
+    testWidgets('description honours descMaxLines', (tester) async {
+      await _pumpRow(tester, node: _leaf(), descMaxLines: 2);
+      final descText = tester.widget<Text>(find.text('Feature flags'));
+      expect(descText.maxLines, 2);
+    });
+
+    testWidgets('row is at least the minimum row height', (tester) async {
+      await _pumpRow(tester, node: _leaf());
+      final size = tester.getSize(find.byType(SettingsTreeRow));
+      // Minimum (not fixed) height: a single-line row sits at the floor;
+      // a wrapped 2-line row would be taller, never clipped.
+      expect(size.height, greaterThanOrEqualTo(SettingsV2Constants.rowHeight));
     });
   });
 

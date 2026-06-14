@@ -22,11 +22,9 @@ import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
-import 'package:lotti/features/settings/ui/pages/advanced_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
-import 'package:lotti/features/settings/ui/pages/definitions_page.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habit_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habit_details_page.dart';
@@ -35,9 +33,10 @@ import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
-import 'package:lotti/features/settings/ui/pages/settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
+import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_root_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
@@ -161,13 +160,31 @@ class SettingsLocation extends BeamLocation<BeamState> {
       ];
     }
 
-    // Mobile: keep the existing page-stack navigation.
+    // Mobile: page-stack drill-down. The landing and the pure-navigation
+    // hubs (Definitions / Advanced) are rendered from the shared settings
+    // tree; the leaf pages below are the feature pages, unchanged.
     return [
       const BeamPage(
         key: ValueKey('settings'),
         title: 'Settings',
-        child: SettingsPage(),
+        child: SettingsMobileRootPage(),
       ),
+
+      // Pure-navigation branch hubs stay in the stack beneath their
+      // leaves so a back tap returns to the hub, not all the way to the
+      // root — the drill-down the unified tree describes.
+      if (_inDefinitionsBranch(path))
+        const BeamPage(
+          key: ValueKey('settings-definitions'),
+          title: 'Definitions',
+          child: SettingsMobileBranchPage(branchId: 'definitions'),
+        ),
+      if (_inAdvancedBranch(path))
+        const BeamPage(
+          key: ValueKey('settings-advanced'),
+          title: 'Advanced Settings',
+          child: SettingsMobileBranchPage(branchId: 'advanced'),
+        ),
 
       // AI Settings — list view. Rendered under any `/settings/ai/*`
       // URL so the mobile page stack reads
@@ -531,19 +548,11 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: ThemingPage(),
         ),
 
-      // Speech (text-to-speech)
+      // Speech (text-to-speech) — top-level leaf, opens directly.
       if (pathContains('speech'))
         const BeamPage(
           key: ValueKey('settings-speech'),
           child: SpeechSettingsPage(),
-        ),
-
-      // Definitions hub (groups habits / categories / labels /
-      // dashboards / measurables under one entry on the v1 root list).
-      if (path == '/settings/definitions')
-        const BeamPage(
-          key: ValueKey('settings-definitions'),
-          child: DefinitionsPage(),
         ),
 
       // Health Import
@@ -551,13 +560,6 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-health_import'),
           child: HealthImportPage(),
-        ),
-
-      // Advanced Settings
-      if (pathContains('advanced'))
-        const BeamPage(
-          key: ValueKey('settings-advanced'),
-          child: AdvancedSettingsPage(),
         ),
 
       if (pathContains('advanced/logging_domains'))
@@ -607,3 +609,24 @@ class SettingsLocation extends BeamLocation<BeamState> {
     ];
   }
 }
+
+/// Public Beamer URLs of the definition leaves. Their tree ids live under
+/// the `definitions/` branch, but their URLs stay flat for deep-link
+/// compatibility (see `settingsNodeUrls`), so the Definitions hub is
+/// matched on the flat URL here.
+const List<String> _definitionsLeafPaths = [
+  '/settings/categories',
+  '/settings/labels',
+  '/settings/habits',
+  '/settings/dashboards',
+  '/settings/measurables',
+];
+
+bool _inDefinitionsBranch(String path) =>
+    path == '/settings/definitions' ||
+    _definitionsLeafPaths.any((p) => path == p || path.startsWith('$p/'));
+
+bool _inAdvancedBranch(String path) =>
+    path == '/settings/advanced' ||
+    path.startsWith('/settings/advanced/') ||
+    path == '/settings/flags';

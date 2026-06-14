@@ -23,11 +23,9 @@ import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
-import 'package:lotti/features/settings/ui/pages/advanced_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
-import 'package:lotti/features/settings/ui/pages/definitions_page.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habit_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/habits/habit_details_page.dart';
@@ -36,9 +34,10 @@ import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_create_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
-import 'package:lotti/features/settings/ui/pages/settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_branch_page.dart';
+import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_root_page.dart';
 import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
@@ -181,12 +180,12 @@ void main() {
         // Settings root + MaintenancePage. The old URL never pushed an
         // Advanced intermediate page, so the stack is 2 pages deep.
         expect(pages.length, 2);
-        expect(pages[0].child, isA<SettingsPage>());
+        expect(pages[0].child, isA<SettingsMobileRootPage>());
         expect(pages[1].child, isA<MaintenancePage>());
       },
     );
 
-    test('buildPages builds SettingsPage', () {
+    test('buildPages builds SettingsMobileRootPage', () {
       final routeInformation = RouteInformation(uri: Uri.parse('/settings'));
       final location = SettingsLocation(routeInformation);
       final beamState = BeamState.fromRouteInformation(routeInformation);
@@ -196,7 +195,7 @@ void main() {
       );
       expect(pages.length, 1);
       expect(pages[0].key, isA<ValueKey<String>>());
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
     });
 
     test('buildPages builds LabelsListPage', () {
@@ -209,9 +208,14 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<LabelsListPage>());
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<LabelsListPage>());
     });
 
     test('buildPages builds LabelDetailsPage for create', () {
@@ -224,10 +228,15 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<LabelsListPage>());
-      expect(pages[2].child, isA<LabelDetailsPage>());
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<LabelsListPage>());
+      expect(pages[3].child, isA<LabelDetailsPage>());
     });
 
     test('buildPages builds LabelDetailsPage with labelId', () {
@@ -243,11 +252,16 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<LabelsListPage>());
-      expect(pages[2].child, isA<LabelDetailsPage>());
-      final labelPage = pages[2].child as LabelDetailsPage;
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<LabelsListPage>());
+      expect(pages[3].child, isA<LabelDetailsPage>());
+      final labelPage = pages[3].child as LabelDetailsPage;
       expect(labelPage.labelId, 'test-id');
     });
 
@@ -260,7 +274,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AiSettingsPage>());
     });
 
@@ -275,7 +289,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<InferenceProfilePage>());
     });
 
@@ -326,7 +340,7 @@ void main() {
         );
 
         expect(pages.length, 3);
-        expect(pages[0].child, isA<SettingsPage>());
+        expect(pages[0].child, isA<SettingsMobileRootPage>());
         expect(pages[1].child, isA<AiSettingsPage>());
         expect(pages[2].child, isA<AiProviderDetailPage>());
         final detailPage = pages[2].child as AiProviderDetailPage;
@@ -377,7 +391,7 @@ void main() {
         );
 
         expect(pages.length, 3);
-        expect(pages[0].child, isA<SettingsPage>());
+        expect(pages[0].child, isA<SettingsMobileRootPage>());
         expect(pages[1].child, isA<AiSettingsPage>());
         expect(pages[2].child, isA<InferenceModelEditPage>());
         final modelPage = pages[2].child as InferenceModelEditPage;
@@ -404,7 +418,7 @@ void main() {
         );
 
         expect(pages.length, 3);
-        expect(pages[0].child, isA<SettingsPage>());
+        expect(pages[0].child, isA<SettingsMobileRootPage>());
         expect(pages[1].child, isA<AiSettingsPage>());
         expect(pages[2].child, isA<InferenceProfileDetailPage>());
         final profilePage = pages[2].child as InferenceProfileDetailPage;
@@ -423,7 +437,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<SyncSettingsPage>());
     });
 
@@ -438,7 +452,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<SyncSettingsPage>());
       expect(pages[2].child, isA<MatrixSyncMaintenancePage>());
     });
@@ -453,9 +467,14 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<CategoriesListPage>());
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<CategoriesListPage>());
     });
 
     test('buildPages builds CategoryDetailsPage for create', () {
@@ -468,10 +487,15 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<CategoriesListPage>());
-      expect(pages[2].child, isA<CategoryDetailsPage>());
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<CategoriesListPage>());
+      expect(pages[3].child, isA<CategoryDetailsPage>());
     });
 
     test('buildPages builds CategoryDetailsPage with categoryId', () {
@@ -487,11 +511,16 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<CategoriesListPage>());
-      expect(pages[2].child, isA<CategoryDetailsPage>());
-      final categoryPage = pages[2].child as CategoryDetailsPage;
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<CategoriesListPage>());
+      expect(pages[3].child, isA<CategoryDetailsPage>());
+      final categoryPage = pages[3].child as CategoryDetailsPage;
       expect(categoryPage.categoryId, 'test-id');
     });
 
@@ -509,7 +538,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<ProjectDetailPage>());
       final detailPage = pages[1].child as ProjectDetailPage;
       expect(detailPage.projectId, 'proj-123');
@@ -531,10 +560,10 @@ void main() {
 
         final pages = location.buildPages(mockBuildContext, beamState);
 
-        // Only the SettingsPage shell — no ProjectDetailPage in the
-        // stack, even though `pathContains('projects')` is true.
+        // Only the SettingsMobileRootPage shell — no ProjectDetailPage in
+        // the stack, even though `pathContains('projects')` is true.
         expect(pages.length, 1);
-        expect(pages[0].child, isA<SettingsPage>());
+        expect(pages[0].child, isA<SettingsMobileRootPage>());
         expect(
           pages.where((p) => p.child is ProjectDetailPage),
           isEmpty,
@@ -552,9 +581,14 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<DashboardSettingsPage>());
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<DashboardSettingsPage>());
     });
 
     test('buildPages builds EditDashboardPage', () {
@@ -570,10 +604,15 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<DashboardSettingsPage>());
-      expect(pages[2].child, isA<EditDashboardPage>());
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<DashboardSettingsPage>());
+      expect(pages[3].child, isA<EditDashboardPage>());
     });
 
     test('buildPages builds CreateDashboardPage', () {
@@ -586,10 +625,15 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<DashboardSettingsPage>());
-      expect(pages[2].child, isA<CreateDashboardPage>());
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<DashboardSettingsPage>());
+      expect(pages[3].child, isA<CreateDashboardPage>());
     });
 
     test('buildPages builds MeasurablesPage', () {
@@ -602,9 +646,14 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<MeasurablesPage>());
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<MeasurablesPage>());
     });
 
     test('buildPages builds EditMeasurablePage', () {
@@ -620,10 +669,15 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<MeasurablesPage>());
-      expect(pages[2].child, isA<EditMeasurablePage>());
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<MeasurablesPage>());
+      expect(pages[3].child, isA<EditMeasurablePage>());
     });
 
     test('buildPages builds CreateMeasurablePage', () {
@@ -636,10 +690,15 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<MeasurablesPage>());
-      expect(pages[2].child, isA<CreateMeasurablePage>());
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<MeasurablesPage>());
+      expect(pages[3].child, isA<CreateMeasurablePage>());
     });
 
     test('buildPages builds HabitsPage', () {
@@ -652,9 +711,14 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<HabitsPage>());
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<HabitsPage>());
     });
 
     test('buildPages builds HabitsPage with search term', () {
@@ -670,14 +734,19 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<HabitsPage>());
-      final habitsPage = pages[1].child as HabitsPage;
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<HabitsPage>());
+      final habitsPage = pages[2].child as HabitsPage;
       expect(habitsPage.initialSearchTerm, 'test');
       // Beamer's default pop walks one URI segment at a time, which would
       // strand the route on the dead `/settings/habits/search` URI.
-      expect(pages[1].popToNamed, '/settings/habits');
+      expect(pages[2].popToNamed, '/settings/habits');
     });
 
     test('buildPages builds EditHabitPage', () {
@@ -693,15 +762,20 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<HabitsPage>());
-      expect(pages[2].child, isA<EditHabitPage>());
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<HabitsPage>());
+      expect(pages[3].child, isA<EditHabitPage>());
       // Beamer's default pop walks one URI segment at a time, which would
       // strand the route on the dead `/settings/habits/by_id` URI — the
       // list page would render with the bottom nav still hidden, costing
       // an extra back tap. Popping the editor must land on the list URI.
-      expect(pages[2].popToNamed, '/settings/habits');
+      expect(pages[3].popToNamed, '/settings/habits');
     });
 
     test('buildPages builds CreateHabitPage', () {
@@ -714,10 +788,15 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<HabitsPage>());
-      expect(pages[2].child, isA<CreateHabitPage>());
+      expect(pages.length, 4);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(pages[2].child, isA<HabitsPage>());
+      expect(pages[3].child, isA<CreateHabitPage>());
     });
 
     test('buildPages builds AgentSettingsPage', () {
@@ -731,7 +810,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AgentSettingsPage>());
     });
 
@@ -746,7 +825,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AgentSettingsPage>());
       expect(pages[2].child, isA<AgentTemplateDetailPage>());
     });
@@ -765,7 +844,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AgentSettingsPage>());
       expect(pages[2].child, isA<AgentTemplateDetailPage>());
       final detailPage = pages[2].child as AgentTemplateDetailPage;
@@ -786,7 +865,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AgentSettingsPage>());
       expect(pages[2].child, isA<AgentDetailPage>());
       final detailPage = pages[2].child as AgentDetailPage;
@@ -804,7 +883,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AgentSettingsPage>());
       expect(pages[2].child, isA<AgentSoulDetailPage>());
     });
@@ -823,7 +902,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AgentSettingsPage>());
       expect(pages[2].child, isA<AgentSoulDetailPage>());
       final detailPage = pages[2].child as AgentSoulDetailPage;
@@ -840,9 +919,14 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<FlagsPage>());
+      expect(pages.length, 3);
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
+      expect(pages[2].child, isA<FlagsPage>());
     });
 
     test('buildPages builds ThemingPage', () {
@@ -856,7 +940,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<ThemingPage>());
     });
 
@@ -871,11 +955,11 @@ void main() {
         beamState,
       );
       expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<HealthImportPage>());
     });
 
-    test('buildPages builds AdvancedSettingsPage', () {
+    test('buildPages builds the advanced branch hub', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/advanced'),
       );
@@ -886,11 +970,15 @@ void main() {
         beamState,
       );
       expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AdvancedSettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
     });
 
-    test('buildPages builds DefinitionsPage', () {
+    test('buildPages builds the definitions branch hub', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/definitions'),
       );
@@ -901,8 +989,12 @@ void main() {
         beamState,
       );
       expect(pages.length, 2);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<DefinitionsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
     });
 
     test('buildPages builds OutboxMonitorPage under /settings/sync/outbox', () {
@@ -916,7 +1008,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<SyncSettingsPage>());
       expect(pages[2].child, isA<OutboxMonitorPage>());
     });
@@ -932,7 +1024,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<SyncSettingsPage>());
       expect(pages[2].child, isA<SyncStatsPage>());
     });
@@ -948,8 +1040,12 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AdvancedSettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
       expect(pages[2].child, isA<LoggingSettingsPage>());
     });
 
@@ -964,8 +1060,12 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AdvancedSettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
       expect(pages[2].child, isA<AboutPage>());
     });
 
@@ -980,8 +1080,12 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AdvancedSettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
       expect(pages[2].child, isA<ConflictsPage>());
     });
 
@@ -999,8 +1103,12 @@ void main() {
         beamState,
       );
       expect(pages.length, 4);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AdvancedSettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
       expect(pages[2].child, isA<ConflictsPage>());
       expect(pages[3].child, isA<ConflictDetailRoute>());
     });
@@ -1019,8 +1127,12 @@ void main() {
         beamState,
       );
       expect(pages.length, 5);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AdvancedSettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
       expect(pages[2].child, isA<ConflictsPage>());
       expect(pages[3].child, isA<ConflictDetailRoute>());
       expect(pages[4].child, isA<EntryDetailsPage>());
@@ -1037,8 +1149,12 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
-      expect(pages[1].child, isA<AdvancedSettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (pages[1].child as SettingsMobileBranchPage).branchId,
+        'advanced',
+      );
       expect(pages[2].child, isA<MaintenancePage>());
     });
 
@@ -1056,7 +1172,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AgentSettingsPage>());
       expect(pages[2].child, isA<SoulEvolutionReviewPage>());
       final reviewPage = pages[2].child as SoulEvolutionReviewPage;
@@ -1078,7 +1194,7 @@ void main() {
       );
       // Settings + Agents + Template detail + Review
       expect(pages.length, 4);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<AgentSettingsPage>());
       expect(pages[2].child, isA<AgentTemplateDetailPage>());
       expect(pages[3].child, isA<EvolutionReviewPage>());
@@ -1097,7 +1213,7 @@ void main() {
         beamState,
       );
       expect(pages.length, 3);
-      expect(pages[0].child, isA<SettingsPage>());
+      expect(pages[0].child, isA<SettingsMobileRootPage>());
       expect(pages[1].child, isA<SyncSettingsPage>());
       expect(pages[2].child, isA<BackfillSettingsPage>());
     });
@@ -1116,9 +1232,15 @@ void main() {
         categoriesState,
       );
 
-      // Should have list page in stack (3 pages: Settings -> List -> Details)
-      expect(categoriesPages.length, 3);
-      expect(categoriesPages[1].child, isA<CategoriesListPage>());
+      // Should have the list page in the stack
+      // (4 pages: Root -> Definitions hub -> List -> Details).
+      expect(categoriesPages.length, 4);
+      expect(categoriesPages[1].child, isA<SettingsMobileBranchPage>());
+      expect(
+        (categoriesPages[1].child as SettingsMobileBranchPage).branchId,
+        'definitions',
+      );
+      expect(categoriesPages[2].child, isA<CategoriesListPage>());
     });
 
     group('desktop mode', () {
