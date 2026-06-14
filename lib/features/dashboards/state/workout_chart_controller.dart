@@ -71,23 +71,32 @@ class WorkoutObservationsController extends _$WorkoutObservationsController {
   }) async {
     ref.cacheFor(dashboardCacheDuration);
 
-    final items =
-        ref
-            .watch(
-              workoutChartDataControllerProvider(
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-              ),
-            )
-            .value ??
-        [];
+    // Await the upstream future (don't read `.value ?? []`) so this provider
+    // stays in AsyncLoading until the DB fetch completes. Resolving early from
+    // an empty upstream would make the chart flash a run of prefilled zero bars
+    // (aggregateWorkoutDailySum fills every day) before the data arrives.
+    final items = await ref.watch(
+      workoutChartDataControllerProvider(
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ).future,
+    );
+
+    // type casting is necessary because an issue in riverpod otherwise
+    // generating InvalidType, also see
+    // https://github.com/rrousselGit/riverpod/issues/2920
+    final config = chartConfig as DashboardWorkoutItem;
+
+    // No workout of this type in range -> return empty so the chart shows its
+    // "No data" state rather than a flat row of prefilled zero buckets.
+    final hasMatchingWorkout = items.whereType<WorkoutEntry>().any(
+      (workout) => workout.data.workoutType == config.workoutType,
+    );
+    if (!hasMatchingWorkout) return const <Observation>[];
 
     return aggregateWorkoutDailySum(
       items,
-      // type casting is necessary because an issue in riverpod otherwise
-      // generating InvalidType, also see
-      // https://github.com/rrousselGit/riverpod/issues/2920
-      chartConfig: chartConfig as DashboardWorkoutItem,
+      chartConfig: config,
       rangeStart: rangeStart,
       rangeEnd: rangeEnd,
     );

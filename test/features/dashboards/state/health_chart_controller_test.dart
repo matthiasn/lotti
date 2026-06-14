@@ -199,5 +199,46 @@ void main() {
 
       container.dispose();
     });
+
+    test(
+      'stays loading until the data fetch completes (no premature empty)',
+      () async {
+        final completer = Completer<List<JournalEntity>>();
+        when(
+          () => mocks.journalDb.getQuantitativeByType(
+            type: any(named: 'type'),
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) => completer.future);
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final provider = healthObservationsControllerProvider(
+          healthDataType: dataType,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        final future = container.read(provider.future);
+        await pumpEventQueue();
+
+        // While the DB fetch is pending the observations provider must stay
+        // loading — not resolve to an empty list (which would flash "No data").
+        expect(container.read(provider).isLoading, isTrue);
+
+        completer.complete([
+          makeQuantitativeEntry(
+            dateFrom: DateTime(2024, 3, 12, 10),
+            value: 72.5,
+            dataType: dataType,
+          ),
+        ]);
+
+        final result = await future;
+        expect(result, hasLength(1));
+      },
+    );
   });
 }

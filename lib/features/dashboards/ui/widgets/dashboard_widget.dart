@@ -32,10 +32,20 @@ class DashboardWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
+    // Key each chart by its item identity (NOT the range): the charts retain
+    // their last data across range changes (stale-while-revalidate), so the
+    // State must follow the item, not its position. Without identity keys, an
+    // edit that replaces an item with another of the same widget type at the
+    // same index would reuse the old State — and briefly show the previous
+    // item's cached data under the new item's header.
     final items = dashboard.items.map((DashboardItem dashboardItem) {
       switch (dashboardItem) {
         case final DashboardMeasurementItem measurement:
           return MeasurablesBarChart(
+            key: ValueKey(
+              'measurement:${measurement.id}:'
+              '${measurement.aggregationType}',
+            ),
             measurableDataTypeId: measurement.id,
             aggregationType: measurement.aggregationType,
             rangeStart: rangeStart,
@@ -44,12 +54,16 @@ class DashboardWidget extends ConsumerWidget {
           );
         case final DashboardHealthItem health:
           return DashboardHealthChart(
+            key: ValueKey('health:${health.healthType}'),
             chartConfig: health,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
           );
         case final DashboardWorkoutItem workout:
           return DashboardWorkoutChart(
+            key: ValueKey(
+              'workout:${workout.workoutType}:${workout.valueType}',
+            ),
             chartConfig: workout,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
@@ -57,12 +71,14 @@ class DashboardWidget extends ConsumerWidget {
 
         case final DashboardSurveyItem survey:
           return DashboardSurveyChart(
+            key: ValueKey('survey:${survey.surveyType}'),
             chartConfig: survey,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
           );
         case final DashboardHabitItem habit:
           return DashboardHabitsChart(
+            key: ValueKey('habit:${habit.habitId}'),
             habitId: habit.habitId,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
