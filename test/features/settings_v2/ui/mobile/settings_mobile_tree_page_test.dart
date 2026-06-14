@@ -87,7 +87,7 @@ void main() {
       find.byType(SettingsTreeRow),
     );
     expect(rows, isNotEmpty);
-    expect(rows.every((r) => r.showActiveRail == false), isTrue);
+    expect(rows.every((r) => !r.showActiveRail), isTrue);
   });
 
   testWidgets('passes showBack through to the shell', (tester) async {
