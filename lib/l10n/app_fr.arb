@@ -1156,7 +1156,7 @@
   "categoryDeleteConfirm": "OUI, SUPPRIMER CETTE CATÉGORIE",
   "categoryDeleteConfirmation": "Cette action est irréversible. Toutes les entrées de cette catégorie seront conservées mais ne seront plus catégorisées.",
   "categoryDeleteTitle": "Supprimer la catégorie ?",
-  "categoryFavoriteBadgeLabel": "Favorite",
+  "categoryFavoriteBadgeLabel": "Favori",
   "categoryFavoriteDescription": "Marquer cette catégorie comme favorite",
   "categoryIconChooseHint": "Choisir une icône",
   "categoryIconCreateHint": "Choisir une icône",

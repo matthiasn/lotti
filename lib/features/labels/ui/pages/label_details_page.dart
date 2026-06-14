@@ -361,8 +361,10 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
                 initialSelectedIds: state.selectedCategoryIds,
               );
               if (result == null) return;
-              // Add-only: the chips own removal via onDeleted.
-              result.ids.forEach(controller.addCategoryId);
+              // The picker is seeded with the current set and returns the full
+              // edited set, so replace it wholesale — applying the user's
+              // additions and removals together.
+              controller.setCategoryIds(result.ids);
             },
           ),
         ),

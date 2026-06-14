@@ -381,7 +381,9 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
       return false;
     }
     final q = query.toLowerCase();
-    return !widget.options.any((c) => c.name.toLowerCase().contains(q));
+    // Exact-name match (not substring), matching the label picker: typing
+    // "Work" still offers to create even when "Homework" exists.
+    return !widget.options.any((c) => c.name.toLowerCase() == q);
   }
 
   @override

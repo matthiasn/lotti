@@ -176,6 +176,19 @@ class LabelEditorController extends Notifier<LabelEditorState> {
     );
   }
 
+  /// Replaces the whole applicable-category set. Used by the multi-picker,
+  /// which is seeded with the current set and returns the full edited set —
+  /// so additions AND removals are applied in one shot (a per-id add loop
+  /// would silently keep categories the user unchecked).
+  void setCategoryIds(Set<String> ids) {
+    final next = {...ids};
+    state = state.copyWith(
+      selectedCategoryIds: next,
+      hasChanges: _hasChanges(selectedCategoryIds: next),
+      errorMessage: null,
+    );
+  }
+
   bool _hasChanges({
     String? name,
     String? description,

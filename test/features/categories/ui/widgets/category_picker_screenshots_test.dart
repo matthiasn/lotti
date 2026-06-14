@@ -31,8 +31,6 @@ import '../../../../mocks/mocks.dart';
 import '../../../daily_os_next/screenshot_harness.dart';
 import '../../test_utils.dart';
 
-class _MockLabelsRepository extends Mock implements LabelsRepository {}
-
 CategoryDefinition _cat(
   String id,
   String name,
@@ -83,7 +81,7 @@ void main() {
   }
 
   late MockEntitiesCacheService cache;
-  late _MockLabelsRepository labelsRepo;
+  late MockLabelsRepository labelsRepo;
 
   setUpAll(loadScreenshotFonts);
 
@@ -97,7 +95,7 @@ void main() {
       when(() => cache.getLabelById(l.id)).thenReturn(l);
     }
     when(() => cache.filterLabelsForCategory(any(), any())).thenReturn(_labels);
-    labelsRepo = _MockLabelsRepository();
+    labelsRepo = MockLabelsRepository();
     if (getIt.isRegistered<EntitiesCacheService>()) {
       getIt.unregister<EntitiesCacheService>();
     }
@@ -149,6 +147,9 @@ void main() {
       ),
     );
     await settleFrames(tester);
+    // The modal actually opened: its title and the seeded current row render.
+    expect(find.text('Category'), findsWidgets);
+    expect(find.text('Health & fitness'), findsWidgets);
     await captureScreenshot(
       tester,
       'category_single',
@@ -168,6 +169,9 @@ void main() {
       ),
     );
     await settleFrames(tester);
+    // The modal actually opened: its title and a category row render.
+    expect(find.text('Filter by category'), findsWidgets);
+    expect(find.text('Work'), findsWidgets);
     await captureScreenshot(
       tester,
       'category_multi',
@@ -196,6 +200,9 @@ void main() {
       ),
     );
     await settleFrames(tester);
+    // The modal actually opened: its title and a label row render.
+    expect(find.text('Labels'), findsWidgets);
+    expect(find.text('Urgent'), findsWidgets);
     await captureScreenshot(tester, 'label_multi', subdir: 'category_picker');
   });
 
@@ -211,6 +218,9 @@ void main() {
       ),
     );
     await settleFrames(tester);
+    // The modal actually opened: its title and the seeded current row render.
+    expect(find.text('Category'), findsWidgets);
+    expect(find.text('Health & fitness'), findsWidgets);
     await captureScreenshot(
       tester,
       'category_single_dark',
@@ -230,6 +240,9 @@ void main() {
       ),
     );
     await settleFrames(tester);
+    // The modal actually opened: its title and a category row render.
+    expect(find.text('Filter by category'), findsWidgets);
+    expect(find.text('Work'), findsWidgets);
     await captureScreenshot(
       tester,
       'category_multi_dark',
@@ -259,6 +272,9 @@ void main() {
       ),
     );
     await settleFrames(tester);
+    // The modal actually opened: its title and a label row render.
+    expect(find.text('Labels'), findsWidgets);
+    expect(find.text('Urgent'), findsWidgets);
     await captureScreenshot(
       tester,
       'label_multi_dark',

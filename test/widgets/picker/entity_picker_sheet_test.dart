@@ -270,6 +270,49 @@ void main() {
       expect(picked, 'created-new');
     });
 
+    testWidgets('submitting the query while the create row shows fires create', (
+      tester,
+    ) async {
+      String? picked;
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        onPick: (id) => picked = id,
+        createFromQuery: (query) async => 'created-$query',
+        shouldShowCreate: (query) => query.isNotEmpty,
+        entriesBuilder: (_) => const [],
+      );
+
+      await tester.enterText(find.byType(TextField), 'new');
+      await tester.pump();
+      // Enter while the create row is shown creates rather than picking a match.
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+
+      expect(picked, 'created-new');
+    });
+
+    testWidgets('the search clear button resets the query', (tester) async {
+      var lastQuery = '<none>';
+      await pumpSheet(
+        tester,
+        mode: PickerMode.single,
+        entriesBuilder: (query) {
+          lastQuery = query;
+          return [item('alpha'), item('beta')];
+        },
+      );
+
+      await tester.enterText(find.byType(TextField), 'beta');
+      await tester.pump();
+      expect(lastQuery, 'beta');
+
+      // The clear affordance (cancel glyph) empties the query.
+      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.pump();
+      expect(lastQuery, '');
+    });
+
     testWidgets('multi create stages the new id and clears the query', (
       tester,
     ) async {

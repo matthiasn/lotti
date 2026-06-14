@@ -2439,7 +2439,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get categoryDeleteTitle => 'Supprimer la catégorie ?';
 
   @override
-  String get categoryFavoriteBadgeLabel => 'Favorite';
+  String get categoryFavoriteBadgeLabel => 'Favori';
 
   @override
   String get categoryFavoriteDescription =>
