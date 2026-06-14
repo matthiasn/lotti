@@ -127,12 +127,14 @@ InsightsRange elapsedPortion(InsightsRange range, DateTime now) {
   return InsightsRange(startDay: range.startDay, endDayExclusive: end);
 }
 
-/// Whether [range] runs past today — i.e. it is the current, still-unfolding
-/// period rather than a completed one. Drives the "so far" comparison
-/// qualifier and the dimmed not-yet-elapsed chart region.
+/// Whether [range] still reaches today — i.e. it is the current, still-
+/// unfolding period (today's data isn't final) rather than a completed one.
+/// Drives both the "(so far)" period-label suffix and the compare basis
+/// ("same days" vs "full period"); using one predicate keeps the label and the
+/// comparison from ever disagreeing (e.g. a current week reading "(so far)" yet
+/// comparing on the "full period").
 bool isInProgress(InsightsRange range, DateTime now) =>
-    range.endDayExclusive > epochDay(now) + 1 &&
-    range.startDay <= epochDay(now);
+    range.endDayExclusive > epochDay(now) && range.startDay <= epochDay(now);
 
 /// The period immediately before [range] (one whole [unit] earlier). Used by
 /// the comparison mode to derive the "previous period".

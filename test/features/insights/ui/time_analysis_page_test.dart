@@ -206,10 +206,9 @@ void main() {
     // no second chart series.
     expect(find.text('PREVIOUS'), findsOneWidget);
     expect(find.text('+150%'), findsWidgets);
-    // The baseline is named with the comparison basis ("full period" for a
-    // completed week, "same days" while in progress).
     expect(find.textContaining('vs 1h'), findsOneWidget);
-    // The comparison basis is named at both the KPI and the table.
-    expect(find.textContaining('full period'), findsWidgets);
+    // The current week is in progress, so the basis is the elapsed "same days"
+    // — named at both the KPI and the table (never the misleading full period).
+    expect(find.textContaining('same days'), findsWidgets);
   });
 }

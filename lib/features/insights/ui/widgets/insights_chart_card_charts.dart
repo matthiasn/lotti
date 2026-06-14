@@ -505,6 +505,13 @@ String _axisLabel(double seconds) {
   final minutes = seconds ~/ 60;
   if (minutes < 60) return '${minutes}m';
   final h = minutes / 60;
+  // Roll into days once the hour count would reach 3-4 digits, so a cumulative
+  // year tick reads "42d" instead of "1008h" (which overflows the gutter and
+  // clips to a wrong-order "008h"); also keeps one unit voice with the KPI.
+  if (h >= 24) {
+    final d = h / 24;
+    return d == d.roundToDouble() ? '${d.round()}d' : '${d.toStringAsFixed(1)}d';
+  }
   return h == h.roundToDouble() ? '${h.round()}h' : '${h.toStringAsFixed(1)}h';
 }
 

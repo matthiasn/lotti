@@ -129,7 +129,7 @@ String _periodLabel(BuildContext context, InsightsPeriodSelection selection) {
   final locale = Localizations.localeOf(context).toString();
   final start = dayStart(selection.range.startDay);
   final lastDay = dayStart(selection.range.endDayExclusive - 1);
-  final soFar = selection.range.endDayExclusive > epochDay(clock.now());
+  final soFar = isInProgress(selection.range, clock.now());
 
   String label(String base) =>
       soFar ? '$base (${context.messages.insightsPeriodToDateSuffix})' : base;
