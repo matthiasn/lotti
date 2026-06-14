@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1021]
+### Changed
+- Insights dashboards: the chart cards were rebuilt on the app design
+  system. Charts no longer sit in near-black boxes in dark mode; value axes
+  use rounded, evenly-spaced ticks with legible, never-clipped labels (and the
+  top value is now labelled); the date axis ticks at the same cadence across
+  every chart and its edge labels no longer clip; bars and lines reach the
+  same right edge and use one higher-contrast series colour; the
+  blood-pressure chart shows a systolic/diastolic legend with its lines
+  untinted and a calmer 80/100/120 value axis; every card carries a single
+  caption — its unit, the measurable's description, or its aggregation
+  ("Daily total", "bpm", "kcal", "mmHg", …) — instead of the old "[dailySum]";
+  the weight chart is titled "Weight" rather than "Weight vs. Body Mass
+  Index"; and each chart shows an explicit "No data in this range" state
+  instead of a flat zero line. The add-value (+) button on measurement and
+  survey charts now stays inside the card on desktop instead of being pushed
+  off-screen. The time-span selector now uses the shared design-system
+  segmented control (the same one as the Daily OS plan switch and Time
+  Analysis), the habit card matches the other chart cards (no more near-black
+  box), and the chart cards are inset to align with the dashboard title
+  instead of hugging the screen edges.
+- Measurement entry: logging a value (the + on a dashboard chart) was rebuilt
+  on the design system. The value is a large hero field with the unit inline
+  (e.g. "750 ml"); your most-used amounts appear as one-tap Quick-add chips
+  right below it; the observed-at time is a clearly-editable row; the comment
+  is an optional note; and the Save button stays in place, enabling once the
+  value is a valid number (Enter saves too).
+
 ## [0.9.1020]
 ### Added
 - Time Analysis (desktop): a Compare toggle puts the current period
@@ -55,25 +83,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Time Analysis (desktop): tap the period label to open a calendar and jump
   straight to any date's period; the dashboard updates live behind the
   sheet as you pick.
-- Insights dashboards: the chart cards were rebuilt on the app design
-  system. Charts no longer sit in near-black boxes in dark mode; value axes
-  use rounded, evenly-spaced ticks with legible, never-clipped labels (and the
-  top value is now labelled); the date axis ticks at the same cadence across
-  every chart and its edge labels no longer clip; bars and lines reach the
-  same right edge and use one higher-contrast series colour; the
-  blood-pressure chart shows a systolic/diastolic legend with its lines
-  untinted and a calmer 80/100/120 value axis; every card carries a single
-  caption — its unit, the measurable's description, or its aggregation
-  ("Daily total", "bpm", "kcal", "mmHg", …) — instead of the old "[dailySum]";
-  the weight chart is titled "Weight" rather than "Weight vs. Body Mass
-  Index"; and each chart shows an explicit "No data in this range" state
-  instead of a flat zero line. The add-value (+) button on measurement and
-  survey charts now stays inside the card on desktop instead of being pushed
-  off-screen. The time-span selector now uses the shared design-system
-  segmented control (the same one as the Daily OS plan switch and Time
-  Analysis), the habit card matches the other chart cards (no more near-black
-  box), and the chart cards are inset to align with the dashboard title
-  instead of hugging the screen edges.
 
 ## [0.9.1019]
 ### Changed
