@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1021]
+## [0.9.1022]
 ### Changed
 - Insights dashboards: the chart cards were rebuilt on the app design
   system. Charts no longer sit in near-black boxes in dark mode; value axes
@@ -24,7 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   segmented control (the same one as the Daily OS plan switch and Time
   Analysis), the habit card matches the other chart cards (no more near-black
   box), and the chart cards are inset to align with the dashboard title
-  instead of hugging the screen edges.
+  instead of hugging the screen edges. The dashboard header is now a stable
+  bar — the title and the time-span picker sit together and no longer shrink or
+  scroll away — with a link beside the picker to edit the dashboard's
+  definition (opening in a side panel on desktop, full-screen on mobile).
 - Measurement entry: logging a value (the + on a dashboard chart) was rebuilt
   on the design system. The value is a large hero field with the unit inline
   (e.g. "750 ml"); your most-used amounts appear as one-tap Quick-add chips
