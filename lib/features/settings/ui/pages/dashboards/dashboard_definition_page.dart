@@ -37,6 +37,7 @@ class DashboardDefinitionPage extends StatefulWidget {
     super.key,
     this.formKey,
     this.isCreateMode = false,
+    this.popOnClose = false,
   });
 
   final DashboardDefinition dashboard;
@@ -45,6 +46,11 @@ class DashboardDefinitionPage extends StatefulWidget {
   /// Renders the create-flavored chrome: create title, a "Create" primary
   /// action, and no destructive delete action.
   final bool isCreateMode;
+
+  /// When true the page was entered as a pushed route (e.g. from the dashboard
+  /// header's edit link), so back/save pop the route to return to where the
+  /// user came from instead of beaming to the settings dashboards list.
+  final bool popOnClose;
 
   @override
   State<DashboardDefinitionPage> createState() =>
@@ -152,11 +158,18 @@ class _DashboardDefinitionPageState extends State<DashboardDefinitionPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Beam back to the dashboards list rather than popping the
-    // navigator. The page is rendered inline inside V2's desktop
-    // detail surface (no Navigator route to pop); on mobile the URL
-    // change still pops the detail page off the Beamer stack.
-    void backToList() => beamToNamed('/settings/dashboards');
+    // When pushed as a route (from the dashboard header's edit link) pop back
+    // to where the user came from. Otherwise beam to the dashboards list: the
+    // page is rendered inline in V2's desktop detail surface (no Navigator
+    // route to pop), and on mobile the URL change pops the detail page off the
+    // Beamer stack.
+    void backToList() {
+      if (widget.popOnClose) {
+        Navigator.of(context).pop();
+      } else {
+        beamToNamed('/settings/dashboards');
+      }
+    }
 
     final formKey = widget.formKey ?? _formKey;
 

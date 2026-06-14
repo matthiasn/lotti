@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
-import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
@@ -46,9 +47,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final dashboard = getIt<EntitiesCacheService>().getDashboardById(
-      widget.dashboardId,
-    );
+    // Watch (don't read once) so the header title and chart set refresh after
+    // the definition is edited and saved.
+    final dashboard = ref.watch(dashboardByIdProvider(widget.dashboardId));
 
     if (dashboard == null) {
       beamToNamed('/dashboards');
@@ -84,8 +85,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               isDesktop: isDesktop,
               timeSpanDays: timeSpanDays,
               onValueChanged: (value) => setState(() => timeSpanDays = value),
-              onEditDefinition: () =>
-                  beamToNamed('/settings/dashboards/${widget.dashboardId}'),
+              // Open the definition editor without beaming into the settings
+              // tab (which looped). On desktop it slides in as a right side
+              // panel that keeps the dashboard in view; on mobile it pushes
+              // full-screen. Both pop back here on save/close (popOnClose).
+              onEditDefinition: () {
+                final editor = DashboardDefinitionPage(
+                  dashboard: dashboard,
+                  popOnClose: true,
+                );
+                Navigator.of(context, rootNavigator: true).push(
+                  isDesktop
+                      ? _DefinitionSidePanelRoute<void>(child: editor)
+                      : MaterialPageRoute<void>(builder: (_) => editor),
+                );
+              },
             ),
             Expanded(
               child: CustomScrollView(
@@ -172,21 +186,16 @@ class _DashboardHeader extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      title,
-                      style: titleStyle,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  editButton,
-                ],
+              child: Text(
+                title,
+                style: titleStyle,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             SizedBox(width: tokens.spacing.step4),
             picker,
+            SizedBox(width: tokens.spacing.step2),
+            editButton,
           ],
         ),
       );
@@ -225,4 +234,48 @@ class _DashboardHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Right-anchored, full-height side-panel route for the dashboard definition
+/// editor on desktop: the dashboard stays dimly visible behind a scrim while
+/// the editor slides in from the right. Dismissed by popping (the editor's
+/// back/save) or tapping the scrim. The editor fills the panel's bounded box,
+/// so its own scaffold and action bar render normally.
+class _DefinitionSidePanelRoute<T> extends PageRouteBuilder<T> {
+  _DefinitionSidePanelRoute({required Widget child})
+    : super(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: const Color(0x66000000),
+        transitionDuration: const Duration(milliseconds: 240),
+        reverseTransitionDuration: const Duration(milliseconds: 200),
+        pageBuilder: (context, animation, secondaryAnimation) {
+          final width = (MediaQuery.sizeOf(context).width * 0.5).clamp(
+            360.0,
+            640.0,
+          );
+          return Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              width: width,
+              height: double.infinity,
+              child: child,
+            ),
+          );
+        },
+        transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+            SlideTransition(
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(1, 0),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeOutCubic,
+                    ),
+                  ),
+              child: child,
+            ),
+      );
 }
