@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.1020]
 ### Added
 - Time Analysis (desktop): a Compare toggle puts the current period
-  side-by-side with the one immediately before it — headline tiles show the
-  change versus the previous period, the per-category table gains Previous
-  and Δ% columns, and the chart switches to grouped bars pairing each
-  bucket's current total with a muted previous-period bar (the tooltip reads
-  out the previous total and the percent change).
+  side-by-side with the one immediately before it. The headline tile shows
+  the change versus the previous period and the per-category table gains
+  Previous and Change (Δ%) columns. The comparison is honest about
+  in-progress periods — it weighs the same elapsed days against last
+  period's same days (labelled "same days"), not a half-finished week
+  against a whole one — and the change arrows stay neutral for sub-1%
+  noise. The chart itself stays a single, clean series and points to the
+  table ("Comparison shown in the table below") rather than crowding in a
+  ghost reference bar.
 ### Changed
 - All settings definition pages (categories, labels, habits, measurables,
   dashboards) now share one design language. Every list page has the same

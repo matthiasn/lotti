@@ -146,6 +146,27 @@ void main() {
     expect(find.byType(CheckboxListTile), findsNothing);
   });
 
+  testWidgets(
+    'focus/other tiles carry plain-language helper glosses for newcomers',
+    (tester) async {
+      await pumpRow(
+        tester,
+        kpis: const InsightsKpis(
+          totalSeconds: 10 * 3600,
+          focusSeconds: 7 * 3600,
+          otherSeconds: 3 * 3600,
+        ),
+        focusIds: const {'cat-a'},
+      );
+
+      // The terse FOCUS/OTHER eyebrows are glossed so a first-time user knows
+      // what each counts; the focus tile also still names the chosen category.
+      expect(find.text("Categories you're watching"), findsOneWidget);
+      expect(find.text('Everything else'), findsOneWidget);
+      expect(find.text('Client Work'), findsOneWidget);
+    },
+  );
+
   testWidgets('configured row exposes an edit affordance on the focus tile', (
     tester,
   ) async {

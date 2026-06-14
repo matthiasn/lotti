@@ -7,6 +7,7 @@ import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_delta_chip.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -23,11 +24,16 @@ class InsightsTable extends StatelessWidget {
     required this.resolver,
     this.showAvgPerDay = true,
     this.previousSecondsByCategory,
+    this.comparisonInProgress = false,
     super.key,
   });
 
   final List<InsightsTableRow> rows;
   final InsightsCategoryResolver resolver;
+
+  /// Whether the compared current period is still unfolding — drives the
+  /// "same days" vs "full period" basis named in the compare caption.
+  final bool comparisonInProgress;
 
   /// Hidden for single-day ranges, where avg/day would just repeat the
   /// total.
@@ -103,7 +109,7 @@ class InsightsTable extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+        color: insightsCardSurface(context),
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
@@ -113,7 +119,25 @@ class InsightsTable extends StatelessWidget {
           vertical: tokens.spacing.step3,
         ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Name the comparison basis at the table too, so the per-row Change
+            // values are self-describing without reconciling against the KPI.
+            if (compare) ...[
+              Padding(
+                padding: EdgeInsets.only(
+                  top: tokens.spacing.step2,
+                  bottom: tokens.spacing.step1,
+                ),
+                child: Text(
+                  '${messages.insightsTableCompareNote} · '
+                  '${comparisonInProgress ? messages.insightsCompareSameDays : messages.insightsCompareFullPeriod}',
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ),
+            ],
             _TableRowLayout(
               showTotal: showTotal,
               showShare: showShare,
@@ -126,7 +150,11 @@ class InsightsTable extends StatelessWidget {
                 style: headerStyle,
               ),
               total: Text(
-                messages.insightsTableTotal,
+                // In compare the column is the current period (CURRENT), not
+                // the all-of-range TOTAL — keep the label's meaning stable.
+                compare
+                    ? messages.insightsTableCurrent
+                    : messages.insightsTableTotal,
                 style: headerStyle,
                 textAlign: TextAlign.right,
               ),
@@ -280,6 +308,9 @@ class _TableRowLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final numberColumnWidth = tokens.spacing.step10;
+    // The Change column carries an arrow glyph + signed percent, so it needs
+    // more room than a bare number column.
+    final deltaColumnWidth = tokens.spacing.step12;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
@@ -287,13 +318,15 @@ class _TableRowLayout extends StatelessWidget {
         children: [
           Expanded(child: category),
           if (showTotal) SizedBox(width: numberColumnWidth, child: total),
-          if (showDelta) ...[
-            SizedBox(width: tokens.spacing.step4),
-            SizedBox(width: numberColumnWidth, child: delta),
-          ],
+          // Baseline before the verdict: Current → Previous → Change reads
+          // left-to-right like the KPI's "X vs Y".
           if (showPrevious) ...[
             SizedBox(width: tokens.spacing.step4),
             SizedBox(width: numberColumnWidth, child: previous),
+          ],
+          if (showDelta) ...[
+            SizedBox(width: tokens.spacing.step4),
+            SizedBox(width: deltaColumnWidth, child: delta),
           ],
           if (showShare) ...[
             SizedBox(width: tokens.spacing.step4),

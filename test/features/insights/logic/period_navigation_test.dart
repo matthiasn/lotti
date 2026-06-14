@@ -253,4 +253,38 @@ void main() {
       },
     );
   });
+
+  group('elapsedPortion', () {
+    final now = DateTime(2026, 6, 15);
+
+    test('a fully-past period is returned unchanged', () {
+      final may = periodContaining(InsightsPeriodUnit.month, DateTime(2026, 5));
+      expect(elapsedPortion(may, now), may);
+    });
+
+    test('an in-progress period is clipped to today inclusive', () {
+      final june = periodContaining(
+        InsightsPeriodUnit.month,
+        DateTime(2026, 6),
+      );
+      final elapsed = elapsedPortion(june, now);
+      expect(startOf(elapsed), DateTime(2026, 6));
+      // Exclusive end of Jun 16 → through Jun 15 (today), i.e. 15 elapsed days.
+      expect(endOf(elapsed), DateTime(2026, 6, 16));
+      expect(elapsed.dayCount, 15);
+    });
+
+    test('a fully-future period clamps to a single day, never empty', () {
+      // Reachable by jumping the calendar to a future month. The slice must
+      // stay non-empty (InsightsRange requires ≥ 1 day) rather than collapsing
+      // to [start, start) and tripping the invariant.
+      final july = periodContaining(
+        InsightsPeriodUnit.month,
+        DateTime(2026, 7),
+      );
+      final elapsed = elapsedPortion(july, now);
+      expect(elapsed.dayCount, 1);
+      expect(startOf(elapsed), DateTime(2026, 7));
+    });
+  });
 }

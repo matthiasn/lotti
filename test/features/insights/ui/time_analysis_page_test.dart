@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -7,6 +6,7 @@ import 'package:lotti/features/categories/state/categories_list_controller.dart'
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/features/insights/ui/time_analysis_page.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_period_picker.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -116,9 +116,12 @@ void main() {
     await pumpPage(tester);
 
     expect(find.text('No tracked time in this range'), findsOneWidget);
+    // The likeliest recovery — "show me the last one" — leads as a real
+    // (pill-chrome) button; widening to the year is the quieter text link.
+    expect(find.text('Show the previous period'), findsOneWidget);
     expect(find.text('View this year'), findsOneWidget);
 
-    // The action widens the period to the whole year.
+    // The secondary action widens the period to the whole year.
     await withClock(Clock.fixed(fixedNow), () async {
       await tester.tap(find.text('View this year'));
       await tester.pump();
@@ -126,6 +129,37 @@ void main() {
     });
     // The year is now selected; the year-specific action is gone.
     expect(find.text('View this year'), findsNothing);
+  });
+
+  testWidgets('empty-state primary action steps to the previous period', (
+    tester,
+  ) async {
+    stubRows(const []);
+    await pumpPage(tester);
+    expect(find.text('June 2026 (so far)'), findsOneWidget);
+
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.tap(find.text('Show the previous period'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+    // Stepped back from month-to-date June to the full previous month.
+    expect(find.text('May 2026'), findsOneWidget);
+    expect(find.text('June 2026 (so far)'), findsNothing);
+  });
+
+  testWidgets('tapping the period label opens the jump-to-date calendar', (
+    tester,
+  ) async {
+    stubRows([row(daysAgo: 1, hour: 9, minutes: 60, categoryId: 'cat-client')]);
+    await pumpPage(tester);
+
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.tap(find.text('June 2026 (so far)'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+    expect(find.byType(InsightsPeriodPickerBody), findsOneWidget);
   });
 
   testWidgets('repository errors surface the error message, not a crash', (
@@ -154,11 +188,11 @@ void main() {
     ]);
     await pumpPage(tester);
 
-    expect(find.text('1h 30m'), findsOneWidget); // current week total
+    expect(find.text('1h 30m'), findsOneWidget); // current month-to-date total
 
     // Widen to the quarter (Apr–Jun 2026), which also contains May 18.
     await withClock(Clock.fixed(fixedNow), () async {
-      await tester.tap(find.text('Week')); // open the granularity dropdown
+      await tester.tap(find.text('Month')); // open the granularity dropdown
       await tester.pumpAndSettle();
       await tester.tap(find.text('Quarter'));
       await tester.pump();
@@ -185,6 +219,15 @@ void main() {
       row(daysAgo: 8, hour: 9, minutes: 60, categoryId: 'cat-client'),
     ]);
     await pumpPage(tester);
+    // The default is month-to-date; switch to the current week for a
+    // week-over-week comparison against the data above.
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.tap(find.text('Month')); // open the granularity dropdown
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Week'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
     expect(find.text('2h 30m'), findsOneWidget); // current week total
 
     await withClock(Clock.fixed(fixedNow), () async {
@@ -193,21 +236,14 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
     });
 
-    // 2h30m this week vs 1h last week = +150%, shown on the KPI tile and the
-    // table's new PREVIOUS column.
+    // 2h30m this week vs 1h last week = +150%, surfaced in the KPI tile and the
+    // table's Δ% / PREVIOUS columns. The comparison is numeric only — there is
+    // no second chart series.
     expect(find.text('PREVIOUS'), findsOneWidget);
     expect(find.text('+150%'), findsWidgets);
-    expect(find.text('vs 1h'), findsOneWidget);
-
-    // The chart switches to grouped current-vs-previous bars: every day group
-    // now carries two rods, and the caption announces the comparison.
-    expect(find.text('This period vs the previous'), findsOneWidget);
-    final chart = tester.widget<BarChart>(find.byType(BarChart));
-    expect(
-      chart.data.barGroups,
-      everyElement(
-        isA<BarChartGroupData>().having((g) => g.barRods.length, 'rods', 2),
-      ),
-    );
+    expect(find.textContaining('vs 1h'), findsOneWidget);
+    // The current week is in progress, so the basis is the elapsed "same days"
+    // — named at both the KPI and the table (never the misleading full period).
+    expect(find.textContaining('same days'), findsWidgets);
   });
 }

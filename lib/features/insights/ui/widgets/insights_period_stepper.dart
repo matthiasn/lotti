@@ -6,15 +6,18 @@ import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Compact period navigator for the Time Analysis dashboard:
-/// `‹  [ Week ▾ ]  Jun 1 – 7  ›  MTD YTD`.
+/// `[ ‹ │ Week ▾ │ Jun 1 – 7 📅 │ › ]  MTD YTD  ⇄ Compare`.
 ///
-/// The granularity dropdown re-derives the period via the controller; the
-/// chevrons step one whole period at a time. Stepping forward past the
-/// current period is disabled — there is no data in the future. The MTD/YTD
-/// pills jump straight to the current month-to-date / year-to-date.
+/// The chevrons, granularity dropdown, and clickable period label live in one
+/// bordered segmented cluster so the whole stepper reads as interactive at
+/// rest (not as bare text). The granularity dropdown re-derives the period;
+/// the chevrons step one whole period; stepping past today is disabled. The
+/// outlined MTD/YTD pills jump to the current month/year-to-date; Compare
+/// toggles the previous-period overlay.
 class InsightsPeriodStepper extends StatelessWidget {
   const InsightsPeriodStepper({
     required this.selection,
@@ -55,62 +58,66 @@ class InsightsPeriodStepper extends StatelessWidget {
     bool toDateActive(InsightsPeriodUnit unit) =>
         selection.unit == unit && selection.range == periodToDate(unit, now);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _ChevronButton(
-          icon: Icons.chevron_left_rounded,
-          tooltip: messages.insightsPeriodPrevious,
-          onPressed: () => onStep(-1),
-        ),
-        SizedBox(width: tokens.spacing.step1),
-        _UnitDropdown(
-          unit: selection.unit,
-          onSelectUnit: onSelectUnit,
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        _PeriodLabel(
-          label: _periodLabel(context, selection),
-          onTap: onOpenCalendar,
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        _ChevronButton(
-          icon: Icons.chevron_right_rounded,
-          tooltip: messages.insightsPeriodNext,
-          onPressed: canStepForward ? () => onStep(1) : null,
-        ),
-        if (onSelectToDate != null) ...[
-          SizedBox(width: tokens.spacing.step4),
-          Tooltip(
-            message: messages.insightsRangeMonthToDate,
-            child: InsightsPillButton(
+    // IntrinsicHeight + stretch so every control (cluster, pills, dividers) is
+    // the same height and the group divider spans it fully.
+    return IntrinsicHeight(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _NavCluster(
+            unit: selection.unit,
+            label: _periodLabel(context, selection),
+            onSelectUnit: onSelectUnit,
+            onStepBack: () => onStep(-1),
+            onStepForward: canStepForward ? () => onStep(1) : null,
+            onOpenCalendar: onOpenCalendar,
+          ),
+          if (onSelectToDate != null) ...[
+            SizedBox(width: tokens.spacing.step3),
+            InsightsPillButton(
               label: messages.insightsRangeMtd,
+              outlined: true,
               active: toDateActive(InsightsPeriodUnit.month),
               onTap: () => onSelectToDate!(InsightsPeriodUnit.month),
               semanticsLabel: messages.insightsRangeMonthToDate,
+              tooltip: messages.insightsRangeMonthToDate,
             ),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-          Tooltip(
-            message: messages.insightsRangeYearToDate,
-            child: InsightsPillButton(
+            // A touch more room between the two to-date shortcuts.
+            SizedBox(width: tokens.spacing.step3),
+            InsightsPillButton(
               label: messages.insightsRangeYtd,
+              outlined: true,
               active: toDateActive(InsightsPeriodUnit.year),
               onTap: () => onSelectToDate!(InsightsPeriodUnit.year),
               semanticsLabel: messages.insightsRangeYearToDate,
+              tooltip: messages.insightsRangeYearToDate,
             ),
-          ),
+          ],
+          if (onToggleCompare != null) ...[
+            // A divider (not just a gap) groups the period controls — stepper
+            // plus the to-date shortcuts — apart from Compare, which is an
+            // independent mode toggle rather than a navigation control.
+            SizedBox(width: tokens.spacing.step4),
+            VerticalDivider(
+              width: 1,
+              thickness: 1,
+              indent: tokens.spacing.step2,
+              endIndent: tokens.spacing.step2,
+              color: tokens.colors.decorative.level02,
+            ),
+            SizedBox(width: tokens.spacing.step4),
+            InsightsPillButton(
+              label: messages.insightsCompare,
+              icon: Icons.compare_arrows_rounded,
+              outlined: true,
+              active: selection.compareEnabled,
+              onTap: onToggleCompare!,
+              tooltip: messages.insightsCompareTooltip,
+            ),
+          ],
         ],
-        if (onToggleCompare != null) ...[
-          SizedBox(width: tokens.spacing.step4),
-          InsightsPillButton(
-            label: messages.insightsCompare,
-            icon: Icons.compare_arrows_rounded,
-            active: selection.compareEnabled,
-            onTap: onToggleCompare!,
-          ),
-        ],
-      ],
+      ),
     );
   }
 }
@@ -129,32 +136,32 @@ String _unitLabel(BuildContext context, InsightsPeriodUnit unit) {
 /// Human label for the current period, formatted per granularity in the
 /// active locale (e.g. `Jun 1 – 7`, `June 2026`, `Q2 2026`, `2026`).
 ///
-/// A partial to-date range (MTD/YTD) is labeled by its actual day span
-/// (`Jun 1 – 10`, `Jan 1 – Jun 10`) — naming the whole month/year would
-/// overstate what the dashboard shows.
+/// Any period whose range still reaches today — the current week/month/year,
+/// or an MTD/YTD to-date range — gets a "(so far)" qualifier so the headline
+/// never overstates a still-partial period. The rule is one predicate (the
+/// range extends to or past today), applied to every granularity, so the same
+/// incomplete June reads identically whether viewed as Month or month-to-date.
 String _periodLabel(BuildContext context, InsightsPeriodSelection selection) {
   final locale = Localizations.localeOf(context).toString();
   final start = dayStart(selection.range.startDay);
   final lastDay = dayStart(selection.range.endDayExclusive - 1);
-  final isPartial =
-      selection.unit != InsightsPeriodUnit.day &&
-      selection.unit != InsightsPeriodUnit.week &&
-      selection.range != periodContaining(selection.unit, start);
+  final soFar = isInProgress(selection.range, clock.now());
+
+  String label(String base) =>
+      soFar ? '$base (${context.messages.insightsPeriodToDateSuffix})' : base;
+
   switch (selection.unit) {
     case InsightsPeriodUnit.day:
-      return DateFormat.yMMMMd(locale).format(start);
-    case InsightsPeriodUnit.month when isPartial:
-    case InsightsPeriodUnit.quarter when isPartial:
-    case InsightsPeriodUnit.year when isPartial:
+      return label(DateFormat.yMMMMd(locale).format(start));
     case InsightsPeriodUnit.week:
-      return _spanLabel(locale, start, lastDay);
+      return label(_spanLabel(locale, start, lastDay));
     case InsightsPeriodUnit.month:
-      return DateFormat.yMMMM(locale).format(start);
+      return label(DateFormat.yMMMM(locale).format(start));
     case InsightsPeriodUnit.quarter:
       // yQQQ localizes both the quarter marker and the quarter/year order.
-      return DateFormat.yQQQ(locale).format(start);
+      return label(DateFormat.yQQQ(locale).format(start));
     case InsightsPeriodUnit.year:
-      return '${start.year}';
+      return label('${start.year}');
   }
 }
 
@@ -167,6 +174,88 @@ String _spanLabel(String locale, DateTime start, DateTime lastDay) {
       ? DateFormat.d(locale).format(lastDay)
       : DateFormat.MMMd(locale).format(lastDay);
   return '$from – $to';
+}
+
+/// The bordered segmented cluster: prev chevron, granularity dropdown,
+/// clickable period label, next chevron — separated by hairline dividers, the
+/// whole group framed so it reads as one interactive control at rest.
+class _NavCluster extends StatelessWidget {
+  const _NavCluster({
+    required this.unit,
+    required this.label,
+    required this.onSelectUnit,
+    required this.onStepBack,
+    required this.onStepForward,
+    required this.onOpenCalendar,
+  });
+
+  final InsightsPeriodUnit unit;
+  final String label;
+  final ValueChanged<InsightsPeriodUnit> onSelectUnit;
+  final VoidCallback onStepBack;
+  final VoidCallback? onStepForward;
+  final VoidCallback? onOpenCalendar;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    // Pill-shaped (badgesPills) to match the segmented toggle and the
+    // to-date/Compare pills, so the whole header speaks one rounded idiom.
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: radius,
+        border: Border.all(color: tokens.colors.decorative.level02),
+      ),
+      // Clip so the end chevrons' tap ripples follow the rounded corners.
+      child: ClipRRect(
+        borderRadius: radius,
+        child: IntrinsicHeight(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            // stretch so each segment (and the dividers between them) fills the
+            // full cluster height — the chevron hover then covers the whole
+            // height instead of leaving a gap top and bottom.
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _ClusterButton(
+                icon: Icons.chevron_left_rounded,
+                tooltip: messages.insightsPeriodPrevious,
+                onPressed: onStepBack,
+              ),
+              _ClusterDivider(tokens: tokens),
+              _UnitDropdown(unit: unit, onSelectUnit: onSelectUnit),
+              _ClusterDivider(tokens: tokens),
+              _PeriodLabel(label: label, onTap: onOpenCalendar),
+              _ClusterDivider(tokens: tokens),
+              _ClusterButton(
+                icon: Icons.chevron_right_rounded,
+                tooltip: messages.insightsPeriodNext,
+                onPressed: onStepForward,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ClusterDivider extends StatelessWidget {
+  const _ClusterDivider({required this.tokens});
+
+  final DsTokens tokens;
+
+  @override
+  Widget build(BuildContext context) => VerticalDivider(
+    width: 1,
+    thickness: 1,
+    // No indent: the hairline spans the full cluster height so it lines up with
+    // the full-height segment hovers on either side.
+    color: tokens.colors.decorative.level02,
+  );
 }
 
 class _UnitDropdown extends StatelessWidget {
@@ -184,23 +273,36 @@ class _UnitDropdown extends StatelessWidget {
       tooltip: '',
       position: PopupMenuPosition.under,
       onSelected: onSelectUnit,
+      // Match the dashboard's card surface + rounded corners instead of the
+      // default Material popup look.
+      color: insightsCardSurface(context),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        side: BorderSide(color: tokens.colors.decorative.level01),
+      ),
       itemBuilder: (context) => [
         for (final value in InsightsPeriodUnit.values)
           PopupMenuItem<InsightsPeriodUnit>(
             value: value,
+            // The current unit reads as selected (teal, semibold).
             child: Text(
               _unitLabel(context, value),
               style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.highEmphasis,
+                color: value == unit
+                    ? tokens.colors.interactive.enabled
+                    : tokens.colors.text.highEmphasis,
+                fontWeight: value == unit
+                    ? tokens.typography.weight.semiBold
+                    : null,
               ),
             ),
           ),
       ],
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(tokens.radii.s),
-          border: Border.all(color: tokens.colors.decorative.level02),
-        ),
+      // Center (widthFactor 1) keeps the label mid-height when the cluster row
+      // is stretched, so it lines up with the chevrons.
+      child: Center(
+        widthFactor: 1,
         child: Padding(
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.step3,
@@ -239,38 +341,73 @@ class _PeriodLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final text = Text(
-      label,
-      style: tokens.typography.styles.body.bodySmall.copyWith(
-        color: tokens.colors.text.highEmphasis,
-        fontWeight: tokens.typography.weight.semiBold,
+    final content = ConstrainedBox(
+      // A stable minimum so stepping (which changes the label text, and with it
+      // its width) never shifts the chevrons that sit on either side of the
+      // cluster — the arrows must not jump under the pointer. Sized to hold the
+      // longest realistic label ("September 2026 (so far)") plus the glyph;
+      // shorter labels centre within it.
+      constraints: BoxConstraints(
+        minWidth: tokens.spacing.step13 + tokens.spacing.step7,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.highEmphasis,
+                fontWeight: tokens.typography.weight.semiBold,
+              ),
+            ),
+          ),
+          if (onTap != null) ...[
+            SizedBox(width: tokens.spacing.step2),
+            // A calendar glyph marks the label as the jump-to-date affordance;
+            // without it the most powerful navigation reads as static text.
+            Icon(
+              Icons.calendar_today_rounded,
+              size: tokens.spacing.step4,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ],
+        ],
       ),
     );
-    if (onTap == null) return text;
+    // Center (widthFactor 1) so the label sits mid-height and its hover fills
+    // the full stretched cluster height, lining up with the chevrons.
+    final padded = Center(
+      widthFactor: 1,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step3,
+          vertical: tokens.spacing.step2,
+        ),
+        child: content,
+      ),
+    );
+    if (onTap == null) return padded;
     return Tooltip(
       message: context.messages.insightsPeriodJump,
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(tokens.radii.s),
           hoverColor: tokens.colors.surface.hover,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step2,
-              vertical: tokens.spacing.step1,
-            ),
-            child: text,
-          ),
+          child: padded,
         ),
       ),
     );
   }
 }
 
-class _ChevronButton extends StatelessWidget {
-  const _ChevronButton({
+class _ClusterButton extends StatelessWidget {
+  const _ClusterButton({
     required this.icon,
     required this.tooltip,
     required this.onPressed,
@@ -289,13 +426,14 @@ class _ChevronButton extends StatelessWidget {
       message: tooltip,
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(tokens.radii.s),
           hoverColor: tokens.colors.surface.hover,
           child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step1),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step2,
+              vertical: tokens.spacing.step2,
+            ),
             child: Icon(
               icon,
               size: tokens.spacing.step6,

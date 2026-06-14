@@ -25,6 +25,18 @@ String formatDurationTable(int seconds) {
   return '$h:${m.toString().padLeft(2, '0')}';
 }
 
+/// Compact with a day rollup for long spans: `40d 7h`, otherwise `2h 15m` /
+/// `45m`. Headline totals at quarter/year scale reach four-digit hour counts
+/// ("966h 59m") that are hard to grasp; rolling into days makes the magnitude
+/// legible. Kicks in at 100h (~4 days), below which `2h`-style reads fine.
+String formatDurationWithDays(int seconds) {
+  final totalHours = seconds ~/ 3600;
+  if (totalHours < 100) return formatDurationCompact(seconds);
+  final d = totalHours ~/ 24;
+  final h = totalHours % 24;
+  return h == 0 ? '${d}d' : '${d}d ${h}h';
+}
+
 /// `42%`; values under 1% render as `<1%` so small categories never show
 /// a misleading `0%`.
 String formatShare(double share) {

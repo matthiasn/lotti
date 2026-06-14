@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_picker.dart';
 import 'package:lotti/utils/device_region.dart';
@@ -24,9 +25,12 @@ void main() {
     addTearDown(container.dispose);
 
     await withClock(Clock.fixed(DateTime(2026, 6, 7, 16)), () async {
-      // Default selection is the current week (Jun 1–7 2026), so the picker
-      // opens on June 2026.
-      container.read(insightsRangeControllerProvider);
+      // The default is month-to-date; switch to the current week (Jun 1–8,
+      // Monday-start) so the picker tests a week-granularity jump and opens on
+      // June 2026.
+      container
+          .read(insightsRangeControllerProvider.notifier)
+          .selectUnit(InsightsPeriodUnit.week);
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,

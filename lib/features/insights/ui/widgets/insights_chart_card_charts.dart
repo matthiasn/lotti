@@ -8,24 +8,30 @@ import 'package:lotti/features/insights/logic/chart_colors.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
-import 'package:lotti/features/insights/ui/widgets/insights_delta_chip.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// How many leading buckets of [data] have elapsed (start on or before today).
+/// A cumulative running total needs at least two to draw a line, so the chart
+/// card falls back to bars below this.
+///
+/// This is exactly the index of the first not-yet-elapsed bucket: the bucket
+/// count when the whole period is past, the elapsed count when in progress,
+/// and 0 when the whole period is still in the future (nothing has elapsed,
+/// so cumulative correctly falls back to bars).
+int elapsedBucketCount(InsightsChartData data) =>
+    _firstFutureBucket(data, epochDay(clock.now()));
 
 class StackedBarChart extends StatelessWidget {
   const StackedBarChart({
     required this.chartData,
     required this.resolver,
-    this.comparisonTotals,
     super.key,
   });
 
   final InsightsChartData chartData;
   final InsightsCategoryResolver resolver;
-
-  /// Previous-period totals per bucket; when set, each group gets a second
-  /// muted ghost rod next to the current stacked bar.
-  final List<int>? comparisonTotals;
 
   @override
   Widget build(BuildContext context) {
@@ -39,48 +45,43 @@ class StackedBarChart extends StatelessWidget {
       color: tokens.colors.text.mediumEmphasis,
     );
 
-    // Only compare when the totals line up one-per-bucket; a mismatched
-    // length would throw RangeError on the indexed reads below.
-    // `alignedPreviousTotals` already guarantees this, but the guard keeps a
-    // future miswiring from crashing the chart.
-    final rawComparison = comparisonTotals;
-    final comparison =
-        rawComparison != null && rawComparison.length == bucketCount
-        ? rawComparison
-        : null;
-    final comparing = comparison != null;
-    // Muted neutral ghost: the previous bar reads as a reference, never
-    // competing with the colored current stack.
-    final ghostColor = tokens.colors.text.lowEmphasis;
+    final today = epochDay(clock.now());
+    // Plot only the elapsed buckets of an in-progress period: an unfinished
+    // month/year shows the days/weeks so far rather than reserving the bulk of
+    // the plot for empty future slots (the period label carries the full
+    // scope). A completed period draws every bucket.
+    final firstFutureIndex = _firstFutureBucket(data, today);
+    final drawCount = firstFutureIndex == 0 ? bucketCount : firstFutureIndex;
 
     var maxTotal = 0;
-    for (var i = 0; i < bucketCount; i++) {
+    for (var i = 0; i < drawCount; i++) {
       final total = bucketTotal(data, i);
       if (total > maxTotal) maxTotal = total;
-      if (comparing && comparison[i] > maxTotal) maxTotal = comparison[i];
     }
-    // Floor the scale at one hour so sparse data is not visually inflated.
-    final maxY = maxTotal < 3600 ? 3600.0 : maxTotal * 1.05;
+    // Adaptive ceiling: a small floor keeps a near-empty range from being
+    // absurdly inflated, but low enough that genuinely small days fill the
+    // plot instead of being crushed against the baseline.
+    final maxY = maxTotal < 600 ? 600.0 : maxTotal * 1.15;
     final interval = _axisInterval(maxY);
     // Label every bar when there's room (≤7); thin out for longer ranges.
-    final labelEvery = bucketCount <= 7
+    final labelEvery = drawCount <= 7
         ? 1
-        : (bucketCount / 6).ceil().clamp(1, bucketCount);
-    final today = epochDay(clock.now());
+        : (drawCount / 6).ceil().clamp(1, drawCount);
+    // Hairline in the card colour cuts each stacked segment from the next, a
+    // non-colour boundary so adjacent muted fills never smear together.
+    final segmentEdge = BorderSide(
+      color: insightsCardSurface(context),
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
         // Dense ranges get proportionally wider gaps so 30+ bars don't
         // shimmer into each other.
-        final widthFactor = bucketCount > 20 ? 0.52 : 0.62;
-        // Two bars share each group when comparing, so each is slimmer and
-        // the floor drops to keep both readable in dense ranges.
-        final barWidth =
-            (constraints.maxWidth /
-                    bucketCount *
-                    widthFactor /
-                    (comparing ? 2 : 1))
-                .clamp(comparing ? 3.0 : 6.0, 44.0);
+        final widthFactor = drawCount > 20 ? 0.52 : 0.62;
+        final barWidth = (constraints.maxWidth / drawCount * widthFactor).clamp(
+          6.0,
+          44.0,
+        );
 
         return BarChart(
           BarChartData(
@@ -124,17 +125,19 @@ class StackedBarChart extends StatelessWidget {
                   reservedSize: 28,
                   getTitlesWidget: (value, meta) {
                     final index = value.toInt();
-                    if (index % labelEvery != 0 ||
-                        index < 0 ||
-                        index >= bucketCount) {
+                    if (index < 0 || index >= drawCount) {
                       return const SizedBox.shrink();
                     }
+                    final label = _bottomAxisLabel(
+                      context,
+                      data,
+                      index,
+                      labelEvery,
+                    );
+                    if (label == null) return const SizedBox.shrink();
                     return SideTitleWidget(
                       meta: meta,
-                      child: Text(
-                        _bucketLabel(context, data, index),
-                        style: axisStyle,
-                      ),
+                      child: Text(label, style: axisStyle),
                     );
                   },
                 ),
@@ -144,54 +147,37 @@ class StackedBarChart extends StatelessWidget {
               touchTooltipData: BarTouchTooltipData(
                 getTooltipColor: (_) => tokens.colors.background.level03,
                 tooltipBorderRadius: BorderRadius.circular(tokens.radii.s),
+                // Wide enough that "Category  1h 53m" never wraps mid-value,
+                // and kept inside the chart so it can't cover the KPI above.
+                maxContentWidth: tokens.spacing.step13 * 1.5,
+                fitInsideVertically: true,
+                fitInsideHorizontally: true,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  if (bucketTotal(data, group.x) == 0) return null;
                   final style = tokens.typography.styles.others.caption
                       .copyWith(color: tokens.colors.text.highEmphasis);
-                  final headerStyle = style.copyWith(
-                    fontWeight: tokens.typography.weight.semiBold,
-                  );
-                  // The ghost rod (index 1) reads out the previous period's
-                  // total on its own; no category breakdown to show.
-                  if (comparing && rodIndex == 1) {
-                    return BarTooltipItem(
-                      '${context.messages.insightsComparePrevious}  '
-                      '${formatDurationCompact(comparison[group.x])}',
-                      headerStyle.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                      textAlign: TextAlign.left,
-                    );
-                  }
                   return BarTooltipItem(
                     _tooltipHeader(context, data, group.x),
-                    headerStyle,
+                    style.copyWith(
+                      fontWeight: tokens.typography.weight.semiBold,
+                    ),
                     textAlign: TextAlign.left,
-                    children: [
-                      ..._tooltipRows(
-                        data,
-                        resolver,
-                        data.values,
-                        group.x,
-                        style,
-                        brightness,
-                      ),
-                      if (comparing)
-                        _comparisonTooltipSpan(
-                          context,
-                          bucketTotal(data, group.x),
-                          comparison[group.x],
-                          style,
-                        ),
-                    ],
+                    children: _tooltipRows(
+                      data,
+                      resolver,
+                      data.values,
+                      group.x,
+                      style,
+                      brightness,
+                    ),
                   );
                 },
               ),
             ),
             barGroups: [
-              for (var i = 0; i < bucketCount; i++)
+              for (var i = 0; i < drawCount; i++)
                 BarChartGroupData(
                   x: i,
-                  barsSpace: comparing ? tokens.spacing.step1 : 0,
                   barRods: [
                     () {
                       var from = 0.0;
@@ -208,6 +194,11 @@ class StackedBarChart extends StatelessWidget {
                               brightness,
                               seriesKey: data.seriesKeys[s],
                             ),
+                            // Hairline cut between bands (skip the first, which
+                            // sits on the baseline).
+                            borderSide: from == 0.0
+                                ? BorderSide.none
+                                : segmentEdge,
                           ),
                         );
                         from += value;
@@ -230,15 +221,6 @@ class StackedBarChart extends StatelessWidget {
                         rodStackItems: stack,
                       );
                     }(),
-                    if (comparing)
-                      BarChartRodData(
-                        toY: comparison[i].toDouble(),
-                        width: barWidth,
-                        color: ghostColor,
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(tokens.radii.xs / 2),
-                        ),
-                      ),
                   ],
                 ),
             ],
@@ -289,11 +271,20 @@ class StackedAreaChart extends StatelessWidget {
     final maxTop = stackedTops.isEmpty || bucketCount == 0
         ? 0
         : stackedTops.last.last;
-    final maxY = maxTop < 3600 ? 3600.0 : maxTop * 1.05;
+    final today = epochDay(clock.now());
+    final firstFutureIndex = _firstFutureBucket(data, today);
+    // Plot the running total only across elapsed buckets — carrying a flat line
+    // over the not-yet-elapsed remainder reads as a stall and wastes the
+    // canvas. The x-axis is trimmed to match, so today is the right edge.
+    final lastDrawnBucket = firstFutureIndex == 0
+        ? bucketCount
+        : firstFutureIndex;
+    // Slight top headroom so the stack never kisses the top gridline.
+    final maxY = maxTop < 600 ? 600.0 : maxTop * 1.08;
     final interval = _axisInterval(maxY);
-    final labelEvery = bucketCount <= 7
+    final labelEvery = lastDrawnBucket <= 7
         ? 1
-        : (bucketCount / 6).ceil().clamp(1, bucketCount);
+        : (lastDrawnBucket / 6).ceil().clamp(1, lastDrawnBucket);
 
     return LineChart(
       LineChartData(
@@ -332,17 +323,19 @@ class StackedAreaChart extends StatelessWidget {
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index % labelEvery != 0 ||
-                    index < 0 ||
-                    index >= bucketCount) {
+                if (index < 0 || index >= lastDrawnBucket) {
                   return const SizedBox.shrink();
                 }
+                final label = _bottomAxisLabel(
+                  context,
+                  data,
+                  index,
+                  labelEvery,
+                );
+                if (label == null) return const SizedBox.shrink();
                 return SideTitleWidget(
                   meta: meta,
-                  child: Text(
-                    _bucketLabel(context, data, index),
-                    style: axisStyle,
-                  ),
+                  child: Text(label, style: axisStyle),
                 );
               },
             ),
@@ -352,6 +345,9 @@ class StackedAreaChart extends StatelessWidget {
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => tokens.colors.background.level03,
             tooltipBorderRadius: BorderRadius.circular(tokens.radii.s),
+            maxContentWidth: tokens.spacing.step13 * 1.5,
+            fitInsideVertically: true,
+            fitInsideHorizontally: true,
             getTooltipItems: (spots) {
               final style = tokens.typography.styles.others.caption.copyWith(
                 color: tokens.colors.text.highEmphasis,
@@ -394,7 +390,7 @@ class StackedAreaChart extends StatelessWidget {
               );
               return LineChartBarData(
                 spots: [
-                  for (var i = 0; i < bucketCount; i++)
+                  for (var i = 0; i < lastDrawnBucket; i++)
                     FlSpot(i.toDouble(), stackedTops[s][i].toDouble()),
                 ],
                 color: bandEdgeColor(fill, brightness),
@@ -414,16 +410,12 @@ class ChartLegend extends StatelessWidget {
     required this.seriesKeys,
     required this.rolledUpCount,
     required this.resolver,
-    this.showPrevious = false,
     super.key,
   });
 
   final List<String?> seriesKeys;
   final int rolledUpCount;
   final InsightsCategoryResolver resolver;
-
-  /// Append a muted ghost swatch for the previous-period bar (compare mode).
-  final bool showPrevious;
 
   @override
   Widget build(BuildContext context) {
@@ -440,42 +432,35 @@ class ChartLegend extends StatelessWidget {
       return label;
     }
 
-    Widget item(Color color, String label) => Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: tokens.spacing.step3,
-          height: tokens.spacing.step3,
-          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
-        ),
-        // step3 matches the table's swatch gap — one reading rhythm.
-        SizedBox(width: tokens.spacing.step3),
-        Text(
-          label,
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ),
-      ],
-    );
-
     return Wrap(
       spacing: tokens.spacing.step5,
       runSpacing: tokens.spacing.step2,
       children: [
         for (final key in seriesKeys)
-          item(
-            swatchColorFor(
-              resolver.colorHexFor(key),
-              brightness,
-              seriesKey: key,
-            ),
-            legendLabel(key),
-          ),
-        if (showPrevious)
-          item(
-            tokens.colors.text.lowEmphasis,
-            context.messages.insightsComparePrevious,
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: tokens.spacing.step3,
+                height: tokens.spacing.step3,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: swatchColorFor(
+                    resolver.colorHexFor(key),
+                    brightness,
+                    seriesKey: key,
+                  ),
+                ),
+              ),
+              // step3 matches the table's swatch gap — one reading rhythm.
+              SizedBox(width: tokens.spacing.step3),
+              Text(
+                legendLabel(key),
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            ],
           ),
       ],
     );
@@ -531,7 +516,46 @@ String _axisLabel(double seconds) {
   final minutes = seconds ~/ 60;
   if (minutes < 60) return '${minutes}m';
   final h = minutes / 60;
+  // Roll into days once the hour count would reach 3-4 digits, so a cumulative
+  // year tick reads "42d" instead of "1008h" (which overflows the gutter and
+  // clips to a wrong-order "008h"); also keeps one unit voice with the KPI.
+  if (h >= 24) {
+    final d = h / 24;
+    return d == d.roundToDouble()
+        ? '${d.round()}d'
+        : '${d.toStringAsFixed(1)}d';
+  }
   return h == h.roundToDouble() ? '${h.round()}h' : '${h.toStringAsFixed(1)}h';
+}
+
+/// Index of the first bucket that starts after [today] (the not-yet-elapsed
+/// tail), or the bucket count when the whole period has elapsed.
+int _firstFutureBucket(InsightsChartData data, int today) {
+  for (var i = 0; i < data.bucketStarts.length; i++) {
+    if (epochDay(data.bucketStarts[i]) > today) return i;
+  }
+  return data.bucketStarts.length;
+}
+
+/// Bottom-axis tick text for bucket [index], or null to skip it. Weekly
+/// (year-view) buckets label only the first week of each month with the
+/// month name, so ticks land on clean month boundaries instead of arbitrary
+/// week-start dates; shorter ranges thin evenly via [labelEvery].
+String? _bottomAxisLabel(
+  BuildContext context,
+  InsightsChartData data,
+  int index,
+  int labelEvery,
+) {
+  if (data.granularity == InsightsGranularity.week) {
+    final month = data.bucketStarts[index].month;
+    final prevMonth = index == 0 ? -1 : data.bucketStarts[index - 1].month;
+    if (month == prevMonth) return null;
+    final locale = Localizations.localeOf(context).toString();
+    return DateFormat.MMM(locale).format(data.bucketStarts[index]);
+  }
+  if (index % labelEvery != 0) return null;
+  return _bucketLabel(context, data, index);
 }
 
 String _bucketLabel(BuildContext context, InsightsChartData data, int index) {
@@ -600,39 +624,4 @@ List<TextSpan> _tooltipRows(
         ],
       ),
   ];
-}
-
-/// Comparison footer for a current-bar tooltip: the previous period's total
-/// for the same bucket, with the percent change in the same teal-up /
-/// clay-down accents as [InsightsDeltaChip].
-TextSpan _comparisonTooltipSpan(
-  BuildContext context,
-  int current,
-  int previous,
-  TextStyle style,
-) {
-  final tokens = context.designTokens;
-  final messages = context.messages;
-  final pct = insightsDeltaPercent(current, previous);
-  final (String deltaText, Color deltaColor) = switch (pct) {
-    null => (
-      messages.insightsDeltaNew,
-      tokens.colors.alert.success.defaultColor,
-    ),
-    > 0 => ('+$pct%', tokens.colors.alert.success.defaultColor),
-    < 0 => ('$pct%', tokens.colors.alert.warning.defaultColor),
-    _ => ('0%', tokens.colors.text.mediumEmphasis),
-  };
-  return TextSpan(
-    text:
-        '\n${messages.insightsComparePrevious}  '
-        '${formatDurationCompact(previous)}  ',
-    style: style.copyWith(color: tokens.colors.text.mediumEmphasis),
-    children: [
-      TextSpan(
-        text: deltaText,
-        style: style.copyWith(color: deltaColor),
-      ),
-    ],
-  );
 }

@@ -15,6 +15,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:clock/clock.dart';
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -270,8 +271,8 @@ void main() {
       rows: insightsScenarioRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _selectGranularity(tester, 'Week', 'Month');
-    expect(find.text('June 2026'), findsOneWidget);
+    await _selectGranularity(tester, 'Month', 'Month');
+    expect(find.text('June 2026 (so far)'), findsOneWidget);
     await _capture(tester, '04_month_dark');
   });
 
@@ -283,7 +284,7 @@ void main() {
       rows: insightsScenarioRows(_now, manyCategories: true),
       categories: insightsScenarioCategories,
     );
-    await _selectGranularity(tester, 'Week', 'Year');
+    await _selectGranularity(tester, 'Month', 'Year');
     expect(find.textContaining('Other'), findsWidgets);
     await _capture(tester, '05_year_weekly_other_dark');
   });
@@ -294,8 +295,8 @@ void main() {
       rows: insightsScenarioRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _selectGranularity(tester, 'Week', 'Month');
-    await _tap(tester, find.text('Cumulative'));
+    await _selectGranularity(tester, 'Month', 'Month');
+    await _tap(tester, find.text('Running total').last);
     expect(find.text('Running total over the range'), findsOneWidget);
     expect(find.text('Time per day'), findsNothing);
     await _capture(tester, '06_month_cumulative_dark');
@@ -307,7 +308,7 @@ void main() {
       rows: insightsScenarioRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _selectGranularity(tester, 'Week', 'Day');
+    await _selectGranularity(tester, 'Month', 'Day');
     // Single-day period: avg/day would repeat the total, so it is hidden.
     expect(find.text('AVG/DAY'), findsNothing);
     await _capture(tester, '07_day_hourly_dark');
@@ -329,7 +330,7 @@ void main() {
       rows: insightsSparseRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _selectGranularity(tester, 'Week', 'Month');
+    await _selectGranularity(tester, 'Month', 'Month');
     // Sparse data: sub-minute averages render the <0:01 guard.
     expect(find.text('<0:01'), findsWidgets);
     expect(find.text('Uncategorized'), findsWidgets);
@@ -354,7 +355,8 @@ void main() {
       rows: insightsScenarioRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _tap(tester, find.text('Cumulative'));
+    await _selectGranularity(tester, 'Month', 'Week');
+    await _tap(tester, find.text('Running total').last);
     expect(find.text('Running total over the range'), findsOneWidget);
     await _capture(tester, '11_week_cumulative_dark');
   });
@@ -365,8 +367,8 @@ void main() {
       rows: insightsScenarioRows(_now, manyCategories: true),
       categories: insightsScenarioCategories,
     );
-    await _selectGranularity(tester, 'Week', 'Year');
-    await _tap(tester, find.text('Cumulative'));
+    await _selectGranularity(tester, 'Month', 'Year');
+    await _tap(tester, find.text('Running total').last);
     expect(find.text('Running total over the range'), findsOneWidget);
     await _capture(tester, '12_year_cumulative_dark');
   });
@@ -378,8 +380,8 @@ void main() {
       categories: insightsScenarioCategories,
       brightness: Brightness.light,
     );
-    await _selectGranularity(tester, 'Week', 'Month');
-    await _tap(tester, find.text('Cumulative'));
+    await _selectGranularity(tester, 'Month', 'Month');
+    await _tap(tester, find.text('Running total').last);
     expect(find.text('Running total over the range'), findsOneWidget);
     await _capture(tester, '13_month_cumulative_light');
   });
@@ -390,9 +392,9 @@ void main() {
       rows: insightsScenarioRows(_now),
       categories: insightsScenarioCategories,
     );
+    await _selectGranularity(tester, 'Month', 'Week');
     await _tap(tester, find.text('Compare'));
-    // Compare swaps the chart caption and adds a previous-period column.
-    expect(find.text('This period vs the previous'), findsOneWidget);
+    // Comparison is numeric only: the table gains a Δ% and a Previous column.
     expect(find.text('PREVIOUS'), findsOneWidget);
     await _capture(tester, '14_week_compare_dark');
   });
@@ -403,9 +405,8 @@ void main() {
       rows: insightsScenarioRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _selectGranularity(tester, 'Week', 'Month');
+    await _selectGranularity(tester, 'Month', 'Month');
     await _tap(tester, find.text('Compare'));
-    expect(find.text('This period vs the previous'), findsOneWidget);
     expect(find.text('PREVIOUS'), findsOneWidget);
     await _capture(tester, '15_month_compare_dark');
   });
@@ -417,21 +418,28 @@ void main() {
       categories: insightsScenarioCategories,
       brightness: Brightness.light,
     );
-    await _selectGranularity(tester, 'Week', 'Month');
+    await _selectGranularity(tester, 'Month', 'Month');
     await _tap(tester, find.text('Compare'));
-    expect(find.text('This period vs the previous'), findsOneWidget);
+    expect(find.text('PREVIOUS'), findsOneWidget);
     await _capture(tester, '16_month_compare_light');
   });
 
-  testWidgets('month-to-date — dark', (tester) async {
+  testWidgets('month with bar tooltip — dark', (tester) async {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _tap(tester, find.text('MTD'));
-    // MTD jumps to the current month through today (Jun 1 – 7).
-    expect(find.text('Jun 1 – 7'), findsOneWidget);
-    await _capture(tester, '17_mtd_dark');
+    await _selectGranularity(tester, 'Month', 'Month');
+    // Hold a touch on a bar so its per-category tooltip is on screen for the
+    // capture (the hover/tap value readout is otherwise invisible in a PNG).
+    await withClock(Clock.fixed(_now), () async {
+      final center = tester.getCenter(find.byType(BarChart));
+      final gesture = await tester.startGesture(center);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      await _capture(tester, '17_month_tooltip_dark');
+      await gesture.up();
+    });
   });
 }

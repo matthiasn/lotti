@@ -48,7 +48,26 @@ void main() {
   ) async {
     await pump(tester, selection: weekOf(now));
     expect(find.text('Week'), findsOneWidget);
-    expect(find.text('Jun 1 – 7'), findsOneWidget);
+    expect(find.text('Jun 1 – 7 (so far)'), findsOneWidget);
+  });
+
+  testWidgets('the day label renders the full localized date', (tester) async {
+    final day = InsightsPeriodSelection(
+      unit: InsightsPeriodUnit.day,
+      range: periodContaining(InsightsPeriodUnit.day, DateTime(2026, 6, 5)),
+    );
+    await pump(tester, selection: day);
+    // yMMMMd → "June 5, 2026" (a past day, so no "(so far)" suffix).
+    expect(find.text('June 5, 2026'), findsOneWidget);
+  });
+
+  testWidgets('a week spanning two months shows both month names', (
+    tester,
+  ) async {
+    // Mon Jun 29 – Sun Jul 5 2026 crosses the month boundary, so the span
+    // names the end month too rather than just the day.
+    await pump(tester, selection: weekOf(DateTime(2026, 6, 30)));
+    expect(find.text('Jun 29 – Jul 5'), findsOneWidget);
   });
 
   testWidgets('the quarter label is localized via DateFormat', (tester) async {
@@ -59,7 +78,7 @@ void main() {
     await pump(tester, selection: q2);
     // yQQQ renders the quarter marker and year in locale order (en: Q2 2026),
     // rather than a hardcoded 'Q2 2026' string.
-    expect(find.text('Q2 2026'), findsOneWidget);
+    expect(find.text('Q2 2026 (so far)'), findsOneWidget);
   });
 
   testWidgets('the back chevron steps one period back', (tester) async {
@@ -101,7 +120,7 @@ void main() {
       selection: weekOf(now),
       onOpenCalendar: () => opened = true,
     );
-    await tester.tap(find.text('Jun 1 – 7'));
+    await tester.tap(find.text('Jun 1 – 7 (so far)'));
     expect(opened, isTrue);
   });
 
@@ -120,8 +139,8 @@ void main() {
     tester,
   ) async {
     await pump(tester, selection: weekOf(now));
-    expect(find.text('MTD'), findsNothing);
-    expect(find.text('YTD'), findsNothing);
+    expect(find.text('This month'), findsNothing);
+    expect(find.text('This year'), findsNothing);
   });
 
   testWidgets('tapping MTD requests month-to-date', (tester) async {
@@ -131,7 +150,7 @@ void main() {
       selection: weekOf(now),
       onSelectToDate: (unit) => requested = unit,
     );
-    await tester.tap(find.text('MTD'));
+    await tester.tap(find.text('This month'));
     expect(requested, InsightsPeriodUnit.month);
   });
 
@@ -142,12 +161,12 @@ void main() {
       selection: weekOf(now),
       onSelectToDate: (unit) => requested = unit,
     );
-    await tester.tap(find.text('YTD'));
+    await tester.tap(find.text('This year'));
     expect(requested, InsightsPeriodUnit.year);
   });
 
   testWidgets(
-    'a month-to-date selection lights MTD and labels the day span',
+    'a month-to-date selection lights MTD and labels it to date',
     (tester) async {
       final mtd = InsightsPeriodSelection(
         unit: InsightsPeriodUnit.month,
@@ -160,16 +179,17 @@ void main() {
             find.widgetWithText(InsightsPillButton, label),
           )
           .active;
-      expect(pillActive('MTD'), isTrue);
-      expect(pillActive('YTD'), isFalse);
-      // The partial period is labeled by its actual span, not "June 2026".
-      expect(find.text('Jun 1 – 7'), findsOneWidget);
+      expect(pillActive('This month'), isTrue);
+      expect(pillActive('This year'), isFalse);
+      // The partial period keeps the month name with a "(so far)" qualifier,
+      // so it agrees with the granularity dropdown — never a bare "June 2026".
+      expect(find.text('June 2026 (so far)'), findsOneWidget);
       expect(find.text('June 2026'), findsNothing);
     },
   );
 
   testWidgets(
-    'a year-to-date selection lights YTD and spans from January 1st',
+    'a year-to-date selection lights YTD and labels it to date',
     (tester) async {
       final ytd = InsightsPeriodSelection(
         unit: InsightsPeriodUnit.year,
@@ -179,12 +199,12 @@ void main() {
       expect(
         tester
             .widget<InsightsPillButton>(
-              find.widgetWithText(InsightsPillButton, 'YTD'),
+              find.widgetWithText(InsightsPillButton, 'This year'),
             )
             .active,
         isTrue,
       );
-      expect(find.text('Jan 1 – Jun 7'), findsOneWidget);
+      expect(find.text('2026 (so far)'), findsOneWidget);
     },
   );
 
@@ -197,12 +217,14 @@ void main() {
     expect(
       tester
           .widget<InsightsPillButton>(
-            find.widgetWithText(InsightsPillButton, 'MTD'),
+            find.widgetWithText(InsightsPillButton, 'This month'),
           )
           .active,
       isFalse,
     );
-    expect(find.text('June 2026'), findsOneWidget);
+    // The current month is in progress, so it reads "(so far)" too; MTD is
+    // inactive because the range is the full month, not the to-date slice.
+    expect(find.text('June 2026 (so far)'), findsOneWidget);
   });
 
   testWidgets('selecting a granularity from the dropdown reports it', (

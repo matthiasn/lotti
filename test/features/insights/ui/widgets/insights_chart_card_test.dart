@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_chart_card.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_chart_card_charts.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
@@ -45,10 +46,15 @@ void main() {
     partialFirstBucket: partialFirstBucket,
   );
 
+  // The shared segmented toggle stacks an invisible bold "ghost" under each
+  // visible label to reserve width, so a plain find.text matches two Texts —
+  // the visible one is the Stack's last child.
+  Finder toggle(String label) => find.text(label).last;
+
   Future<void> pumpCard(
     WidgetTester tester, {
     InsightsChartData? data,
-    List<int>? comparisonTotals,
+    bool comparing = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -56,7 +62,7 @@ void main() {
         InsightsChartCard(
           chartData: data ?? chartData(),
           resolver: resolver,
-          comparisonTotals: comparisonTotals,
+          comparing: comparing,
         ),
       ),
     );
@@ -84,7 +90,7 @@ void main() {
   ) async {
     await pumpCard(tester);
 
-    await tester.tap(find.text('Cumulative'));
+    await tester.tap(toggle('Running total'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 
@@ -92,10 +98,91 @@ void main() {
     expect(find.byType(BarChart), findsNothing);
     expect(find.text('Running total over the range'), findsOneWidget);
 
-    await tester.tap(find.text('Daily'));
+    await tester.tap(toggle('Per day'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(BarChart), findsOneWidget);
+  });
+
+  group('elapsedBucketCount', () {
+    InsightsChartData days(List<DateTime> starts) => InsightsChartData(
+      granularity: InsightsGranularity.day,
+      bucketStarts: starts,
+      seriesKeys: const ['cat-a'],
+      values: [
+        [for (final _ in starts) 600],
+      ],
+    );
+
+    test('counts elapsed buckets; future-only collapses to zero', () {
+      final now = DateTime(2026, 6, 15);
+      withClock(Clock.fixed(now), () {
+        // Whole period in the past → every bucket has elapsed.
+        expect(
+          elapsedBucketCount(
+            days([DateTime(2026, 6, 10), DateTime(2026, 6, 11)]),
+          ),
+          2,
+        );
+        // In progress → only the buckets up to today.
+        expect(
+          elapsedBucketCount(
+            days([
+              DateTime(2026, 6, 14),
+              DateTime(2026, 6, 15),
+              DateTime(2026, 6, 16),
+            ]),
+          ),
+          2,
+        );
+        // Whole period still in the future → nothing has elapsed (was wrongly
+        // reported as fully elapsed, which drew a flat cumulative line).
+        expect(
+          elapsedBucketCount(
+            days([DateTime(2026, 6, 20), DateTime(2026, 6, 21)]),
+          ),
+          0,
+        );
+      });
+    });
+  });
+
+  testWidgets('the per-bucket toggle label names the actual bucket', (
+    tester,
+  ) async {
+    // Day granularity (default) → "Per day".
+    await pumpCard(tester);
+    expect(toggle('Per day'), findsOneWidget);
+    expect(toggle('Running total'), findsOneWidget);
+
+    // Weekly buckets → "Per week", never a wrong fixed "Daily".
+    await pumpCard(
+      tester,
+      data: InsightsChartData(
+        granularity: InsightsGranularity.week,
+        bucketStarts: [DateTime(2026), DateTime(2026, 1, 5)],
+        seriesKeys: const ['cat-a'],
+        values: const [
+          [3600, 7200],
+        ],
+      ),
+    );
+    expect(toggle('Per week'), findsOneWidget);
+    expect(find.text('Per day'), findsNothing);
+
+    // Hourly buckets → "Per hour".
+    await pumpCard(
+      tester,
+      data: InsightsChartData(
+        granularity: InsightsGranularity.hour,
+        bucketStarts: [for (var h = 0; h < 24; h++) DateTime(2026, 6, 7, h)],
+        seriesKeys: const ['cat-a'],
+        values: [
+          [for (var h = 0; h < 24; h++) 600],
+        ],
+      ),
+    );
+    expect(toggle('Per hour'), findsOneWidget);
   });
 
   testWidgets('legend discloses the Other rollup count', (tester) async {
@@ -272,7 +359,7 @@ void main() {
       'cumulative tooltip de-stacks to running per-series totals',
       (tester) async {
         await pumpCard(tester);
-        await tester.tap(find.text('Cumulative'));
+        await tester.tap(toggle('Running total'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
 
@@ -307,83 +394,21 @@ void main() {
     );
   });
 
-  group('comparison (grouped bars)', () {
-    // Current bucket totals are 5400, 900, 7200, 5400, 900, 1800, 4500.
-    const previousTotals = [2700, 1800, 7200, 0, 1800, 1800, 1800];
+  // Period comparison is no longer drawn in the chart (it reads as a
+  // loading/empty reference series). It is surfaced in the KPI deltas and the
+  // table's Δ% / Previous columns instead — covered by insights_kpi_row_test
+  // and insights_table_test. The chart only signposts where it lives:
+  testWidgets('compare mode points the eye to the table; off-mode stays quiet', (
+    tester,
+  ) async {
+    await pumpCard(tester);
+    expect(find.text('Comparison shown in the table below'), findsNothing);
 
-    testWidgets(
-      'renders a ghost previous rod per group and hides the mode toggle',
-      (tester) async {
-        await pumpCard(tester, comparisonTotals: previousTotals);
-
-        // The daily/cumulative toggle is meaningless when comparing.
-        expect(find.text('Daily'), findsNothing);
-        expect(find.text('Cumulative'), findsNothing);
-        // Caption announces the comparison; legend gains a Previous swatch.
-        expect(find.text('This period vs the previous'), findsOneWidget);
-        expect(find.text('Previous'), findsOneWidget);
-
-        final chart = tester.widget<BarChart>(find.byType(BarChart));
-        // Every group now has two rods: current stack + previous ghost.
-        for (final group in chart.data.barGroups) {
-          expect(group.barRods, hasLength(2));
-        }
-        // The ghost rod (index 1) carries the previous-period total, with no
-        // category stack of its own.
-        final ghost = chart.data.barGroups[0].barRods[1];
-        expect(ghost.toY, 2700.0);
-        expect(ghost.rodStackItems, isEmpty);
-      },
-    );
-
-    testWidgets('tooltip names the previous total and the percent delta', (
-      tester,
-    ) async {
-      await pumpCard(tester, comparisonTotals: previousTotals);
-
-      final chart = tester.widget<BarChart>(find.byType(BarChart));
-      final tooltipData = chart.data.barTouchData.touchTooltipData;
-      final group = chart.data.barGroups[0];
-
-      // Current rod (index 0): category rows plus a "Previous … +100%" footer
-      // (5400 vs 2700).
-      final current = tooltipData.getTooltipItem(
-        group,
-        0,
-        group.barRods[0],
-        0,
-      )!;
-      final currentText =
-          current.text + current.children!.map((s) => s.toPlainText()).join();
-      expect(currentText, contains('Client Work  1h'));
-      expect(currentText, contains('Previous  45m'));
-      expect(currentText, contains('+100%'));
-
-      // Ghost rod (index 1): just the previous total, no breakdown.
-      final ghost = tooltipData.getTooltipItem(group, 0, group.barRods[1], 1)!;
-      expect(ghost.text, contains('Previous'));
-      expect(ghost.text, contains('45m'));
-      expect(ghost.children ?? const [], isEmpty);
-    });
-
-    testWidgets('a new previous baseline of zero reads as "new"', (
-      tester,
-    ) async {
-      await pumpCard(tester, comparisonTotals: previousTotals);
-
-      final chart = tester.widget<BarChart>(find.byType(BarChart));
-      final tooltipData = chart.data.barTouchData.touchTooltipData;
-      // Bucket 3: current 5400 vs previous 0 → brand new, no percent.
-      final group = chart.data.barGroups[3];
-      final current = tooltipData.getTooltipItem(
-        group,
-        3,
-        group.barRods[0],
-        0,
-      )!;
-      final footer = current.children!.map((s) => s.toPlainText()).join();
-      expect(footer, contains('new'));
-    });
+    await pumpCard(tester, comparing: true);
+    // Still a single-series chart — the comparison itself is not drawn — but a
+    // muted subtitle routes the reader to the table where the deltas are.
+    expect(find.text('Comparison shown in the table below'), findsOneWidget);
+    expect(find.byType(BarChart), findsOneWidget);
   });
 
   group('axis edge cases', () {
@@ -419,7 +444,7 @@ void main() {
         ],
       );
       await pumpCard(tester, data: data);
-      await tester.tap(find.text('Cumulative'));
+      await tester.tap(toggle('Running total'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
 
