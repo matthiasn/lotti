@@ -34,6 +34,26 @@ target 'Runner' do
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
 end
 
+# The flutter_onnxruntime plugin vendors onnxruntime-objc/-c as statically
+# linked binaries. Under the project's dynamic use_frameworks!, CocoaPods'
+# target validator (verify_no_static_framework_transitive_dependencies) rejects
+# any *dynamic* pod that transitively depends on a *static* one, so the whole
+# onnxruntime chain — the flutter_onnxruntime plugin AND its onnxruntime-* deps
+# — must link statically together while every other plugin stays dynamic.
+# (TTS is macOS-only at runtime, but the plugin is still integrated on iOS, so
+# iOS needs the same treatment as macos/Podfile. Forcing only the onnxruntime-*
+# leaves flutter_onnxruntime dynamic and still depending on them, which is
+# exactly the edge the validator rejects.)
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    if pod.name == 'flutter_onnxruntime' || pod.name.start_with?('onnxruntime')
+      def pod.build_type
+        Pod::BuildType.static_library
+      end
+    end
+  end
+end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_ios_build_settings(target)
