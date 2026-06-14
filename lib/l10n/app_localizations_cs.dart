@@ -5219,6 +5219,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsRangeYtd => 'Tento rok';
 
   @override
+  String get insightsRefreshError =>
+      'Nepodařilo se obnovit — zobrazují se naposledy načtená data';
+
+  @override
   String get insightsTableAvgPerDay => 'Ø/DEN';
 
   @override

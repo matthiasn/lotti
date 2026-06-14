@@ -2627,6 +2627,7 @@
   "insightsRangeMtd": "This month",
   "insightsRangeYearToDate": "This year so far",
   "insightsRangeYtd": "This year",
+  "insightsRefreshError": "Couldn't refresh — showing the last loaded data",
   "insightsTableAvgPerDay": "AVG/DAY",
   "insightsTableCategory": "CATEGORY",
   "insightsTableCompareNote": "Change is vs the previous period",

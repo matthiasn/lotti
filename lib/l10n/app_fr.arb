@@ -2352,6 +2352,7 @@
   "insightsRangeMtd": "Ce mois-ci",
   "insightsRangeYearToDate": "Cette année jusqu'ici",
   "insightsRangeYtd": "Cette année",
+  "insightsRefreshError": "Échec de l'actualisation — affichage des dernières données chargées",
   "insightsTableAvgPerDay": "MOY./JOUR",
   "insightsTableCategory": "CATÉGORIE",
   "insightsTableCompareNote": "Évolution par rapport à la période précédente",

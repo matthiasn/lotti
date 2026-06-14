@@ -182,8 +182,8 @@ stateDiagram-v2
     [*] --> Loading: first watch of window W
     Loading --> Ready: buckets(W)
     Ready --> Ready: period switch within W\n(zero DB, in-memory slice)
-    Ready --> LoadingW2: range needs another year\n(new family instance W2)
-    LoadingW2 --> Ready: buckets(W2)\nW stays cached (cacheFor 5min)
+    Ready --> StaleW2: range needs another year\n(new instance W2 loads; page keeps last data — no spinner)
+    StaleW2 --> Ready: buckets(W2)\nW stays cached (cacheFor 5min)
     Ready --> Refetching: entry/task/link/private notification
     Refetching --> Ready: equal data → no re-emit (no flash)\nchanged data → rebuild
 ```
@@ -202,6 +202,17 @@ stateDiagram-v2
   a notification batch every ~100ms, each refetch costs a full window
   query); `cacheFor(dashboardCacheDuration)` keeps recently used windows
   alive across tab switches.
+- **keepPreviousData across years.** A new-year instance starts at
+  `AsyncLoading` with no value, which `skipLoadingOnReload` cannot bridge (it
+  only retains a value *within* one instance). So `TimeAnalysisPage` (a
+  `ConsumerStatefulWidget`) retains the last fully-loaded generation — buckets
+  paired with the exact selection they cover, since year-windowed buckets and
+  their range must travel together — and keeps rendering it until `buckets(W2)`
+  resolves. A year-crossing step therefore never flashes a spinner over the
+  established dashboard. The header/stepper always tracks the *live* selection,
+  so the control responds instantly while the body shows the previous period
+  for the ~35ms cold fetch (the Riverpod analogue of `keepPreviousData: true`).
+  Within a year the family key is stable, so this path never engages.
 
 ## Visualization (Stephen Few rules)
 
@@ -214,9 +225,12 @@ stateDiagram-v2
   axes, horizontal gridlines only.
 - In-progress periods plot only their **elapsed** buckets (today is the right
   edge) instead of reserving empty future slots; the period label carries the
-  full scope. Today's bar carries a quiet marker border. Y-axis labels roll
-  hours into days on long ranges (a cumulative year tick reads "42d", not
-  "1008h").
+  full scope. Today's bar carries a quiet marker border. Y-axis labels are
+  whole hours throughout — no day rollup, since days are ambiguous for tracked
+  time (a 24h day? an 8h workday?) — so a cumulative year tick reads "1008h"
+  and the left gutter (`reservedSize`) reserves extra width for those
+  four-digit ticks. This matches the KPI summary, which likewise rounds to
+  whole hours at long spans (100h+) and otherwise keeps compact `h m` detail.
 - Granularity tiers: hourly for 1-day ranges, daily up to 120 days, weekly
   beyond (a full year ≈ 52 x-points). Partial edge weeks are flagged in tooltips.
 - At most 6 series plus a slate **Other (+N)** rollup — tightened to 5 on the

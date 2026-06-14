@@ -9066,6 +9066,12 @@ abstract class AppLocalizations {
   /// **'This year'**
   String get insightsRangeYtd;
 
+  /// No description provided for @insightsRefreshError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t refresh — showing the last loaded data'**
+  String get insightsRefreshError;
+
   /// No description provided for @insightsTableAvgPerDay.
   ///
   /// In en, this message translates to:

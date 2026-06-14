@@ -2352,6 +2352,7 @@
   "insightsRangeMtd": "Luna aceasta",
   "insightsRangeYearToDate": "Anul acesta până acum",
   "insightsRangeYtd": "Anul acesta",
+  "insightsRefreshError": "Reîmprospătarea a eșuat — se afișează ultimele date încărcate",
   "insightsTableAvgPerDay": "MEDIE/ZI",
   "insightsTableCategory": "CATEGORIE",
   "insightsTableCompareNote": "Modificare față de perioada anterioară",

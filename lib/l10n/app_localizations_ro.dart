@@ -5264,6 +5264,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get insightsRangeYtd => 'Anul acesta';
 
   @override
+  String get insightsRefreshError =>
+      'Reîmprospătarea a eșuat — se afișează ultimele date încărcate';
+
+  @override
   String get insightsTableAvgPerDay => 'MEDIE/ZI';
 
   @override

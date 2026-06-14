@@ -102,7 +102,8 @@ class StackedBarChart extends StatelessWidget {
               leftTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
-                  reservedSize: 44,
+                  reservedSize:
+                      56, // fits four-digit hour ticks (see _axisLabel)
                   interval: interval,
                   getTitlesWidget: (value, meta) => SideTitleWidget(
                     meta: meta,
@@ -194,11 +195,14 @@ class StackedBarChart extends StatelessWidget {
                               brightness,
                               seriesKey: data.seriesKeys[s],
                             ),
-                            // Hairline cut between bands (skip the first, which
-                            // sits on the baseline).
-                            borderSide: from == 0.0
-                                ? BorderSide.none
-                                : segmentEdge,
+                            // Hairline cut between bands, in the card colour.
+                            // Applied to EVERY band, baseline included: fl_chart
+                            // strokes a stack item's whole rectangle (left/right
+                            // sides too, not just the divider edge), so bordering
+                            // only the upper bands left the baseline band a
+                            // hair wider than the rest. A uniform edge insets
+                            // every band equally, keeping the bar one width.
+                            borderSide: segmentEdge,
                           ),
                         );
                         from += value;
@@ -303,7 +307,7 @@ class StackedAreaChart extends StatelessWidget {
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
-              reservedSize: 44,
+              reservedSize: 56, // fits four-digit hour ticks (see _axisLabel)
               interval: interval,
               getTitlesWidget: (value, meta) => SideTitleWidget(
                 meta: meta,
@@ -516,15 +520,10 @@ String _axisLabel(double seconds) {
   final minutes = seconds ~/ 60;
   if (minutes < 60) return '${minutes}m';
   final h = minutes / 60;
-  // Roll into days once the hour count would reach 3-4 digits, so a cumulative
-  // year tick reads "42d" instead of "1008h" (which overflows the gutter and
-  // clips to a wrong-order "008h"); also keeps one unit voice with the KPI.
-  if (h >= 24) {
-    final d = h / 24;
-    return d == d.roundToDouble()
-        ? '${d.round()}d'
-        : '${d.toStringAsFixed(1)}d';
-  }
+  // Whole hours throughout — no day rollup. Days are ambiguous for tracked
+  // time (a 24h day? an 8h workday?), so the axis speaks the same hours voice
+  // as the KPI summary. Four-digit cumulative-year ticks ("1008h") are why the
+  // left gutter (reservedSize) reserves extra width.
   return h == h.roundToDouble() ? '${h.round()}h' : '${h.toStringAsFixed(1)}h';
 }
 

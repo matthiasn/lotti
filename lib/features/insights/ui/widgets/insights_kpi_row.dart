@@ -245,9 +245,9 @@ class _KpiTile extends StatelessWidget {
             ),
             SizedBox(height: tokens.spacing.step3),
             Text(
-              // Rolls into days at quarter/year scale so a ~1000h headline
-              // stays legible; below 100h this is the familiar "3h 40m".
-              formatDurationWithDays(seconds),
+              // Rounds to whole hours at quarter/year scale so a ~1000h
+              // summary stays legible; below 100h this is the familiar "3h 40m".
+              formatDurationSummary(seconds),
               style: calmDisplayStyle(tokens),
             ),
             // In compare mode the trend leads: the signed delta is the second
@@ -279,7 +279,7 @@ class _KpiTile extends StatelessWidget {
                 // The baseline + comparison basis trails the delta: same
                 // elapsed days while in progress, the whole period once done.
                 '${context.messages.insightsCompareVs} '
-                '${formatDurationWithDays(previousSeconds)}'
+                '${formatDurationSummary(previousSeconds)}'
                 ' · '
                 '${inProgress ? context.messages.insightsCompareSameDays : context.messages.insightsCompareFullPeriod}',
                 style: tokens.typography.styles.others.caption.copyWith(

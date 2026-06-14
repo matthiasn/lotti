@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -246,4 +248,111 @@ void main() {
     // — named at both the KPI and the table (never the misleading full period).
     expect(find.textContaining('same days'), findsWidgets);
   });
+
+  testWidgets(
+    'stepping across a year keeps the previous data on screen while the new '
+    'window loads, instead of flashing a spinner',
+    (tester) async {
+      // The bucket window is keyed by year, so crossing a year boundary spins
+      // up a fresh provider instance with no value yet. The current year
+      // (2026) loads at once; the previous year (2025) is held pending so the
+      // transition frame can be observed.
+      final pending2025 = Completer<List<InsightsTimeRow>>();
+      when(
+        () => repository.fetchTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer((invocation) {
+        final start = invocation.namedArguments[#start] as DateTime;
+        if (start.year <= 2025) return pending2025.future;
+        // 2026: a single 2h 15m entry — non-round so it can't collide with a
+        // round chart axis tick.
+        return Future.value([
+          row(daysAgo: 1, hour: 9, minutes: 135, categoryId: 'cat-client'),
+        ]);
+      });
+      await pumpPage(tester);
+      expect(find.text('2h 15m'), findsOneWidget); // June 2026 month-to-date
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        // Widen to the year — still 2026, same in-memory window, no fetch.
+        await tester.tap(find.text('Month'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Year'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        // Step back into 2025: a new window that stays pending.
+        await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+        await tester.pump();
+      });
+
+      // keepPreviousData: 2025 is still loading, but the dashboard keeps the
+      // 2026 figures on screen rather than flashing a loading shell.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text('2h 15m'), findsOneWidget);
+      // The header/stepper, however, already reflects the period just selected.
+      expect(find.text('2025'), findsOneWidget);
+
+      // Once 2025 resolves, the body swaps to its figures (4h 50m).
+      await withClock(Clock.fixed(fixedNow), () async {
+        pending2025.complete([
+          InsightsTimeRow(
+            dateFrom: DateTime(2025, 6, 1, 9),
+            dateTo: DateTime(2025, 6, 1, 13, 50),
+            categoryId: 'cat-client',
+          ),
+        ]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+      });
+      expect(find.text('4h 50m'), findsOneWidget);
+      expect(find.text('2h 15m'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'a failed year-crossing load keeps the last data and surfaces a '
+    'non-blocking refresh notice instead of a shell',
+    (tester) async {
+      // 2026 loads; the 2025 window fetch throws. After a successful first
+      // load the data is never blanked, so the failure must be surfaced inline.
+      when(
+        () => repository.fetchTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer((invocation) {
+        final start = invocation.namedArguments[#start] as DateTime;
+        if (start.year <= 2025) throw StateError('boom');
+        return Future.value([
+          row(daysAgo: 1, hour: 9, minutes: 135, categoryId: 'cat-client'),
+        ]);
+      });
+      await pumpPage(tester);
+      expect(find.text('2h 15m'), findsOneWidget);
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.tap(find.text('Month'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Year'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+        // Step back into 2025 — the window load throws.
+        await tester.tap(find.byIcon(Icons.chevron_left_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+      });
+
+      // The 2026 figures stay on screen — never the load-error shell or a
+      // spinner.
+      expect(find.text('2h 15m'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+      expect(find.text("Couldn't load time data"), findsNothing);
+      // The failure is surfaced as a slim, non-blocking notice instead.
+      expect(find.textContaining("Couldn't refresh"), findsOneWidget);
+      // The header still reflects the period the user stepped to.
+      expect(find.text('2025'), findsOneWidget);
+    },
+  );
 }
