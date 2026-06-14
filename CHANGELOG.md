@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   use rounded, evenly-spaced ticks with legible, never-clipped labels (and the
   top value is now labelled); the date axis ticks at the same cadence across
   every chart and its edge labels no longer clip; bars and lines reach the
-  same right edge and use one higher-contrast series colour; the
+  same right edge and use one higher-contrast series colour (the Steps chart
+  keeps its bars colour-coded by your daily step goal); the
   blood-pressure chart shows a systolic/diastolic legend with its lines
   untinted and a calmer 80/100/120 value axis; every card carries a single
   caption — its unit, the measurable's description, or its aggregation

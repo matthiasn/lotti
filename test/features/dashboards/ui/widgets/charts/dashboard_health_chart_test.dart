@@ -8,6 +8,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bp_
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -411,6 +412,91 @@ void main() {
       expect(barChart.data.map((o) => o.value), [8000.0, 12000.0, 6500.0]);
       expect(barChart.valueInHours, isFalse);
     });
+
+    testWidgets(
+      'colours Steps bars by goal via the DS alert palette',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            DashboardHealthChart(
+              chartConfig: stepsConfig,
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            ),
+            overrides: [
+              healthObservationsControllerProvider(
+                healthDataType: 'cumulative_step_count',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ).overrideWithBuild(
+                (ref, notifier) => makeObservations([12000, 7000, 3000]),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final barChart = tester.widget<TimeSeriesBarChart>(
+          find.byType(TimeSeriesBarChart),
+        );
+        final tokens = tester
+            .element(find.byType(TimeSeriesBarChart))
+            .designTokens;
+        Color colorAt(num value) =>
+            barChart.colorByValue(Observation(DateTime(2024, 3, 12), value));
+
+        // Steps thresholds are {0, 6000, 10000} -> error / warning / success.
+        expect(colorAt(12000), tokens.colors.alert.success.defaultColor);
+        expect(colorAt(10000), tokens.colors.alert.success.defaultColor);
+        expect(colorAt(7000), tokens.colors.alert.warning.defaultColor);
+        expect(colorAt(6000), tokens.colors.alert.warning.defaultColor);
+        expect(colorAt(3000), tokens.colors.alert.error.defaultColor);
+        expect(colorAt(0), tokens.colors.alert.error.defaultColor);
+      },
+    );
+
+    testWidgets(
+      'a bar health type without thresholds uses the single series colour',
+      (tester) async {
+        // Distance is a bar chart but defines no colorByValue thresholds.
+        const distanceConfig =
+            DashboardItem.healthChart(
+                  color: '#00FF00',
+                  healthType: 'cumulative_distance',
+                )
+                as DashboardHealthItem;
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            DashboardHealthChart(
+              chartConfig: distanceConfig,
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            ),
+            overrides: [
+              healthObservationsControllerProvider(
+                healthDataType: 'cumulative_distance',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ).overrideWithBuild((ref, notifier) => makeObservations([1500])),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final barChart = tester.widget<TimeSeriesBarChart>(
+          find.byType(TimeSeriesBarChart),
+        );
+        final tokens = tester
+            .element(find.byType(TimeSeriesBarChart))
+            .designTokens;
+
+        expect(
+          barChart.colorByValue(Observation(DateTime(2024, 3, 12), 1500)),
+          tokens.colors.interactive.enabled,
+        );
+      },
+    );
 
     testWidgets(
       'shows display name "Steps" in header for cumulative_step_count',

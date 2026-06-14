@@ -89,8 +89,8 @@ class DashboardHealthChart extends ConsumerWidget {
                   rangeEnd: rangeEnd,
                   unit: healthType?.unit ?? '',
                   valueInHours: healthType?.unit == 'h',
-                  colorByValue: (Observation observation) =>
-                      tokens.colors.interactive.enabled,
+                  colorByValue: (observation) =>
+                      _healthBarColor(observation, healthType, tokens),
                 )
               : TimeSeriesLineChart(
                   data: data,
@@ -111,4 +111,39 @@ class DashboardHealthChart extends ConsumerWidget {
       },
     );
   }
+}
+
+/// Colours a health bar by the health type's value thresholds (`colorByValue`),
+/// mapped onto the design-system alert palette: the top tier reads as
+/// [DsColorsAlert.success], the bottom as [DsColorsAlert.error], and any tier
+/// in between as [DsColorsAlert.warning]. Health types without thresholds
+/// (everything except Steps today) fall back to the single series colour.
+///
+/// Example — Steps (`{0, 6000, 10000}`): at-or-above-goal is green, the
+/// approaching tier is amber, and below is red.
+Color _healthBarColor(
+  Observation observation,
+  HealthTypeConfig? healthType,
+  DsTokens tokens,
+) {
+  final thresholds = healthType?.colorByValue?.keys.toList();
+  if (thresholds == null || thresholds.isEmpty) {
+    return tokens.colors.interactive.enabled;
+  }
+  thresholds.sort();
+
+  // The highest threshold the value reaches determines its tier.
+  final reached = thresholds.lastWhere(
+    (threshold) => observation.value >= threshold,
+    orElse: () => thresholds.first,
+  );
+  final tier = thresholds.indexOf(reached);
+
+  if (tier >= thresholds.length - 1) {
+    return tokens.colors.alert.success.defaultColor;
+  }
+  if (tier <= 0) {
+    return tokens.colors.alert.error.defaultColor;
+  }
+  return tokens.colors.alert.warning.defaultColor;
 }
