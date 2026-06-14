@@ -5124,6 +5124,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get insightsCompareSameDays => 'aceleași zile';
 
   @override
+  String get insightsCompareFullPeriod => 'perioadă întreagă';
+
+  @override
   String get insightsDeletedCategory => 'Categorie ștearsă';
 
   @override

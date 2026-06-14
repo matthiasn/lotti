@@ -206,6 +206,9 @@ void main() {
     // no second chart series.
     expect(find.text('PREVIOUS'), findsOneWidget);
     expect(find.text('+150%'), findsWidgets);
-    expect(find.text('vs 1h'), findsOneWidget);
+    // The baseline is named with the comparison basis ("full period" for a
+    // completed week, "same days" while in progress).
+    expect(find.textContaining('vs 1h'), findsOneWidget);
+    expect(find.textContaining('full period'), findsOneWidget);
   });
 }

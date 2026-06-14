@@ -5122,6 +5122,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get insightsCompareSameDays => 'mêmes jours';
 
   @override
+  String get insightsCompareFullPeriod => 'période entière';
+
+  @override
   String get insightsDeletedCategory => 'Catégorie supprimée';
 
   @override

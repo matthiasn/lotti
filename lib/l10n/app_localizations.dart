@@ -8796,6 +8796,12 @@ abstract class AppLocalizations {
   /// **'same days'**
   String get insightsCompareSameDays;
 
+  /// No description provided for @insightsCompareFullPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'full period'**
+  String get insightsCompareFullPeriod;
+
   /// No description provided for @insightsDeletedCategory.
   ///
   /// In en, this message translates to:

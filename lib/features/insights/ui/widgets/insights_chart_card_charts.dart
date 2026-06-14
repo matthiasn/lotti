@@ -41,32 +41,40 @@ class StackedBarChart extends StatelessWidget {
       color: tokens.colors.text.mediumEmphasis,
     );
 
+    final today = epochDay(clock.now());
+    // Plot only the elapsed buckets of an in-progress period: an unfinished
+    // month/year shows the days/weeks so far rather than reserving the bulk of
+    // the plot for empty future slots (the period label carries the full
+    // scope). A completed period draws every bucket.
+    final firstFutureIndex = _firstFutureBucket(data, today);
+    final drawCount = firstFutureIndex == 0 ? bucketCount : firstFutureIndex;
+
     var maxTotal = 0;
-    for (var i = 0; i < bucketCount; i++) {
+    for (var i = 0; i < drawCount; i++) {
       final total = bucketTotal(data, i);
       if (total > maxTotal) maxTotal = total;
     }
-    // Floor the scale at 30 min so a near-empty range isn't wildly inflated,
-    // but low enough that genuinely small-but-real days still fill the plot
-    // rather than hugging the baseline.
-    final maxY = maxTotal < 1800 ? 1800.0 : maxTotal * 1.05;
+    // Adaptive ceiling: a small floor keeps a near-empty range from being
+    // absurdly inflated, but low enough that genuinely small days fill the
+    // plot instead of being crushed against the baseline.
+    final maxY = maxTotal < 600 ? 600.0 : maxTotal * 1.15;
     final interval = _axisInterval(maxY);
     // Label every bar when there's room (≤7); thin out for longer ranges.
-    final labelEvery = bucketCount <= 7
+    final labelEvery = drawCount <= 7
         ? 1
-        : (bucketCount / 6).ceil().clamp(1, bucketCount);
-    final today = epochDay(clock.now());
-    // The full period is plotted so an in-progress range reads as "N of M"
-    // (e.g. one filled bar among the week's seven slots); the not-yet-elapsed
-    // buckets carry no bar and their axis labels are dimmed.
-    final firstFutureIndex = _firstFutureBucket(data, today);
+        : (drawCount / 6).ceil().clamp(1, drawCount);
+    // Hairline in the card colour cuts each stacked segment from the next, a
+    // non-colour boundary so adjacent muted fills never smear together.
+    final segmentEdge = BorderSide(
+      color: tokens.colors.background.level02,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
         // Dense ranges get proportionally wider gaps so 30+ bars don't
         // shimmer into each other.
-        final widthFactor = bucketCount > 20 ? 0.52 : 0.62;
-        final barWidth = (constraints.maxWidth / bucketCount * widthFactor)
+        final widthFactor = drawCount > 20 ? 0.52 : 0.62;
+        final barWidth = (constraints.maxWidth / drawCount * widthFactor)
             .clamp(6.0, 44.0);
 
         return BarChart(
@@ -111,7 +119,7 @@ class StackedBarChart extends StatelessWidget {
                   reservedSize: 28,
                   getTitlesWidget: (value, meta) {
                     final index = value.toInt();
-                    if (index < 0 || index >= bucketCount) {
+                    if (index < 0 || index >= drawCount) {
                       return const SizedBox.shrink();
                     }
                     final label = _bottomAxisLabel(
@@ -123,14 +131,7 @@ class StackedBarChart extends StatelessWidget {
                     if (label == null) return const SizedBox.shrink();
                     return SideTitleWidget(
                       meta: meta,
-                      child: Text(
-                        label,
-                        style: index >= firstFutureIndex
-                            ? axisStyle.copyWith(
-                                color: tokens.colors.text.lowEmphasis,
-                              )
-                            : axisStyle,
-                      ),
+                      child: Text(label, style: axisStyle),
                     );
                   },
                 ),
@@ -163,7 +164,7 @@ class StackedBarChart extends StatelessWidget {
               ),
             ),
             barGroups: [
-              for (var i = 0; i < bucketCount; i++)
+              for (var i = 0; i < drawCount; i++)
                 BarChartGroupData(
                   x: i,
                   barRods: [
@@ -182,6 +183,11 @@ class StackedBarChart extends StatelessWidget {
                               brightness,
                               seriesKey: data.seriesKeys[s],
                             ),
+                            // Hairline cut between bands (skip the first, which
+                            // sits on the baseline).
+                            borderSide: from == 0.0
+                                ? BorderSide.none
+                                : segmentEdge,
                           ),
                         );
                         from += value;
@@ -254,20 +260,20 @@ class StackedAreaChart extends StatelessWidget {
     final maxTop = stackedTops.isEmpty || bucketCount == 0
         ? 0
         : stackedTops.last.last;
-    // Slight top headroom so the stack never kisses the top gridline.
-    final maxY = maxTop < 1800 ? 1800.0 : maxTop * 1.08;
-    final interval = _axisInterval(maxY);
-    final labelEvery = bucketCount <= 7
-        ? 1
-        : (bucketCount / 6).ceil().clamp(1, bucketCount);
     final today = epochDay(clock.now());
     final firstFutureIndex = _firstFutureBucket(data, today);
     // Plot the running total only across elapsed buckets — carrying a flat line
-    // over the not-yet-elapsed remainder reads as a stall. The x-axis still
-    // labels the full period so the curve reads as "so far".
+    // over the not-yet-elapsed remainder reads as a stall and wastes the
+    // canvas. The x-axis is trimmed to match, so today is the right edge.
     final lastDrawnBucket = firstFutureIndex == 0
         ? bucketCount
         : firstFutureIndex;
+    // Slight top headroom so the stack never kisses the top gridline.
+    final maxY = maxTop < 600 ? 600.0 : maxTop * 1.08;
+    final interval = _axisInterval(maxY);
+    final labelEvery = lastDrawnBucket <= 7
+        ? 1
+        : (lastDrawnBucket / 6).ceil().clamp(1, lastDrawnBucket);
 
     return LineChart(
       LineChartData(
@@ -306,21 +312,14 @@ class StackedAreaChart extends StatelessWidget {
               interval: 1,
               getTitlesWidget: (value, meta) {
                 final index = value.toInt();
-                if (index < 0 || index >= bucketCount) {
+                if (index < 0 || index >= lastDrawnBucket) {
                   return const SizedBox.shrink();
                 }
                 final label = _bottomAxisLabel(context, data, index, labelEvery);
                 if (label == null) return const SizedBox.shrink();
                 return SideTitleWidget(
                   meta: meta,
-                  child: Text(
-                    label,
-                    style: index >= firstFutureIndex
-                        ? axisStyle.copyWith(
-                            color: tokens.colors.text.lowEmphasis,
-                          )
-                        : axisStyle,
-                  ),
+                  child: Text(label, style: axisStyle),
                 );
               },
             ),

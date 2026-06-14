@@ -23,16 +23,11 @@ class InsightsTable extends StatelessWidget {
     required this.resolver,
     this.showAvgPerDay = true,
     this.previousSecondsByCategory,
-    this.comparisonInProgress = false,
     super.key,
   });
 
   final List<InsightsTableRow> rows;
   final InsightsCategoryResolver resolver;
-
-  /// Mutes the Δ% chips while the current period is unfolding, so a partial
-  /// comparison doesn't read as a finished swing (mirrors the KPI tiles).
-  final bool comparisonInProgress;
 
   /// Hidden for single-day ranges, where avg/day would just repeat the
   /// total.
@@ -175,7 +170,6 @@ class InsightsTable extends StatelessWidget {
                   child: InsightsDeltaChip(
                     current: row.seconds,
                     previous: previousSecondsByCategory?[row.categoryId] ?? 0,
-                    muted: comparisonInProgress,
                   ),
                 ),
                 previous: Text(
@@ -290,6 +284,9 @@ class _TableRowLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final numberColumnWidth = tokens.spacing.step10;
+    // The Change column carries an arrow glyph + signed percent, so it needs
+    // more room than a bare number column.
+    final deltaColumnWidth = tokens.spacing.step12;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step3),
@@ -305,7 +302,7 @@ class _TableRowLayout extends StatelessWidget {
           ],
           if (showDelta) ...[
             SizedBox(width: tokens.spacing.step4),
-            SizedBox(width: numberColumnWidth, child: delta),
+            SizedBox(width: deltaColumnWidth, child: delta),
           ],
           if (showShare) ...[
             SizedBox(width: tokens.spacing.step4),

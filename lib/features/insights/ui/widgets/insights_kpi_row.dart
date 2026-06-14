@@ -93,7 +93,7 @@ class InsightsKpiRow extends StatelessWidget {
               seconds: kpis.totalSeconds,
               previousSeconds: previousKpis?.totalSeconds,
               headline: topCaption,
-              muted: comparisonInProgress,
+              inProgress: comparisonInProgress,
             ),
           ),
           SizedBox(width: tokens.spacing.cardItemSpacing),
@@ -120,7 +120,7 @@ class InsightsKpiRow extends StatelessWidget {
               seconds: kpis.totalSeconds,
               previousSeconds: previousKpis?.totalSeconds,
               headline: topCaption,
-              muted: comparisonInProgress,
+              inProgress: comparisonInProgress,
             ),
           ),
           SizedBox(width: tokens.spacing.cardItemSpacing),
@@ -131,7 +131,7 @@ class InsightsKpiRow extends StatelessWidget {
               previousSeconds: previousKpis?.focusSeconds,
               caption: focusNames,
               onEdit: () => _editFocusCategories(context),
-              muted: comparisonInProgress,
+              inProgress: comparisonInProgress,
             ),
           ),
           SizedBox(width: tokens.spacing.cardItemSpacing),
@@ -140,7 +140,7 @@ class InsightsKpiRow extends StatelessWidget {
               label: messages.insightsKpiOther,
               seconds: kpis.otherSeconds!,
               previousSeconds: previousKpis?.otherSeconds,
-              muted: comparisonInProgress,
+              inProgress: comparisonInProgress,
             ),
           ),
         ],
@@ -157,7 +157,7 @@ class _KpiTile extends StatelessWidget {
     this.headline,
     this.caption,
     this.onEdit,
-    this.muted = false,
+    this.inProgress = false,
   });
 
   final String label;
@@ -176,9 +176,9 @@ class _KpiTile extends StatelessWidget {
   final String? caption;
   final VoidCallback? onEdit;
 
-  /// In-progress comparison: mutes the delta and annotates the baseline as
-  /// "same days" so a partial period isn't read as a finished swing.
-  final bool muted;
+  /// In-progress comparison: annotates the baseline as "same days" (vs "full
+  /// period" for a completed range) so a partial comparison reads honestly.
+  final bool inProgress;
 
   @override
   Widget build(BuildContext context) {
@@ -250,16 +250,18 @@ class _KpiTile extends StatelessWidget {
                   InsightsDeltaChip(
                     current: seconds,
                     previous: previousSeconds,
-                    muted: muted,
+                    prominent: true,
                   ),
                   SizedBox(width: tokens.spacing.step2),
                   Flexible(
                     child: Text(
                       '${context.messages.insightsCompareVs} '
                       '${formatDurationWithDays(previousSeconds)}'
-                      // Name the baseline as the same elapsed days so the
-                      // partial comparison reads honestly at the number.
-                      '${muted ? ' · ${context.messages.insightsCompareSameDays}' : ''}',
+                      // Name the baseline so the comparison basis is explicit:
+                      // the same elapsed days for an in-progress period, the
+                      // whole period for a completed one.
+                      ' · '
+                      '${inProgress ? context.messages.insightsCompareSameDays : context.messages.insightsCompareFullPeriod}',
                       style: tokens.typography.styles.others.caption.copyWith(
                         color: tokens.colors.text.mediumEmphasis,
                       ),

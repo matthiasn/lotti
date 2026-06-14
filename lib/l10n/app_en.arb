@@ -2572,6 +2572,7 @@
   "insightsComparePrevious": "Previous",
   "insightsCompareVs": "vs",
   "insightsCompareSameDays": "same days",
+  "insightsCompareFullPeriod": "full period",
   "insightsDeletedCategory": "Deleted category",
   "insightsDeltaNew": "new",
   "insightsEmptyBody": "Time you track on entries and tasks will show up here.",

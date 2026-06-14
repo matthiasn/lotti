@@ -2306,6 +2306,7 @@
   "insightsComparePrevious": "Anterior",
   "insightsCompareVs": "vs",
   "insightsCompareSameDays": "mismos días",
+  "insightsCompareFullPeriod": "período completo",
   "insightsDeletedCategory": "Categoría eliminada",
   "insightsDeltaNew": "nuevo",
   "insightsEmptyBody": "El tiempo que registres en tus entradas y tareas aparecerá aquí.",

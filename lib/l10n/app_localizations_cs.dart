@@ -5081,6 +5081,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsCompareSameDays => 'stejné dny';
 
   @override
+  String get insightsCompareFullPeriod => 'celé období';
+
+  @override
   String get insightsDeletedCategory => 'Smazaná kategorie';
 
   @override
