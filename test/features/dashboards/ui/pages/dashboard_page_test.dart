@@ -203,9 +203,11 @@ void main() {
         expect(segmented.timeSpanDays, 90);
 
         // Tap the 30-day segment to trigger onValueChanged → setState.
-        // With the default phone screen width (390 < 450) short labels are used.
-        await tester.ensureVisible(find.text('30d'));
-        await tester.tap(find.text('30d'));
+        // DsSegmentedToggle stacks an invisible width-reserving ghost label
+        // behind the visible one, so '30d' matches two widgets; the first
+        // shares the segment's InkWell.
+        await tester.ensureVisible(find.text('30d').first);
+        await tester.tap(find.text('30d').first);
         await tester.pump(const Duration(seconds: 1));
 
         // After setState the control must reflect the new selection
