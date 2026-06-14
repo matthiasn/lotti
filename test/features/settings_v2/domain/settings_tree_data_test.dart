@@ -13,6 +13,7 @@ List<SettingsNode> _tree({
   bool enableMatrix = true,
   bool enableWhatsNew = true,
   bool enableSpeechTts = false,
+  bool enableHealthImport = false,
 }) => buildSettingsTree(
   labels: _labels,
   enableHabits: enableHabits,
@@ -20,6 +21,7 @@ List<SettingsNode> _tree({
   enableMatrix: enableMatrix,
   enableWhatsNew: enableWhatsNew,
   enableSpeechTts: enableSpeechTts,
+  enableHealthImport: enableHealthImport,
 );
 
 SettingsNode? _find(List<SettingsNode> nodes, String id) {
@@ -157,6 +159,25 @@ void main() {
         );
       },
     );
+  });
+
+  group('buildSettingsTree — enableHealthImport', () {
+    test('omits the health-import leaf when off (default)', () {
+      expect(_ids(_tree()).contains('advanced/health-import'), isFalse);
+    });
+
+    test('adds the health-import leaf under advanced when on', () {
+      final ids = _ids(_tree(enableHealthImport: true));
+      expect(ids.contains('advanced/health-import'), isTrue);
+      // Sits inside the advanced branch, not at the root.
+      final advanced = _tree(
+        enableHealthImport: true,
+      ).firstWhere((n) => n.id == 'advanced');
+      expect(
+        advanced.children!.map((n) => n.id),
+        contains('advanced/health-import'),
+      );
+    });
   });
 
   group('buildSettingsTree — enableWhatsNew', () {

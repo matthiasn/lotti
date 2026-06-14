@@ -629,4 +629,7 @@ bool _inDefinitionsBranch(String path) =>
 bool _inAdvancedBranch(String path) =>
     path == '/settings/advanced' ||
     path.startsWith('/settings/advanced/') ||
-    path == '/settings/flags';
+    path == '/settings/flags' ||
+    // Health import's tree node lives under Advanced but keeps its flat
+    // legacy URL, so match it here to keep the hub in the back stack.
+    path == '/settings/health_import';

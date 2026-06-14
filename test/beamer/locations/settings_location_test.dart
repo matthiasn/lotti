@@ -954,9 +954,13 @@ void main() {
         mockBuildContext,
         beamState,
       );
-      expect(pages.length, 2);
+      // Health import's tree node lives under Advanced, so the hub stays
+      // in the stack beneath it (drill-down back returns to Advanced).
+      expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<HealthImportPage>());
+      expect(pages[1].child, isA<SettingsMobileBranchPage>());
+      expect((pages[1].child as SettingsMobileBranchPage).branchId, 'advanced');
+      expect(pages[2].child, isA<HealthImportPage>());
     });
 
     test('buildPages builds the advanced branch hub', () {

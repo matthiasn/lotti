@@ -28,6 +28,7 @@ List<SettingsNode> buildSettingsTree({
   required bool enableMatrix,
   required bool enableWhatsNew,
   bool enableSpeechTts = false,
+  bool enableHealthImport = false,
 }) {
   SettingsNode leaf(
     String id,
@@ -231,6 +232,18 @@ List<SettingsNode> buildSettingsTree({
           Icons.bug_report_outlined,
           panel: 'advanced-logging',
         ),
+        // Health import is iOS/Android only — the underlying HealthKit /
+        // Health Connect import has no desktop path — so the leaf is
+        // gated on the mobile platform (see `enableHealthImport`, fed
+        // from `isMobile`). Its panel is never rendered on desktop, so it
+        // intentionally has no panel_registry entry; mobile beams to the
+        // existing `/settings/health_import` route.
+        if (enableHealthImport)
+          leaf(
+            'advanced/health-import',
+            Icons.health_and_safety_rounded,
+            panel: 'health-import',
+          ),
         leaf(
           'advanced/maintenance',
           Icons.handyman_outlined,
