@@ -41,8 +41,8 @@ Layering:
 
 ## Period navigation
 
-The range is browsed period by period (with MTD/YTD shortcut pills for the
-two most useful jumps). `InsightsRangeController`
+The range is browsed period by period (with "This month" / "This year"
+to-date shortcut pills for the two most useful jumps). `InsightsRangeController`
 holds an `InsightsPeriodSelection` — a granularity (`InsightsPeriodUnit`:
 day / week / month / quarter / year) plus the resolved `InsightsRange` it
 points at, and a `compareEnabled` flag (see *Comparison* below).
@@ -52,22 +52,26 @@ whole periods. Snapping (`periodContaining`) takes the first weekday;
 shifting (`shiftPeriod`) does not — an aligned week stays aligned under a
 ±7-day move, so week stepping shifts the bounds directly and is independent
 of the first weekday (which matters because it resolves asynchronously).
-The `InsightsPeriodStepper` renders `‹ [unit ▾] label › MTD YTD`: the
-dropdown re-derives the period for a new granularity (keeping the current
-anchor), the chevrons step one period at a time, and forward is disabled
-once the period reaches today. Every step is an in-memory slice within the
-year window (below), so the dashboard updates with no database round trip.
+The `InsightsPeriodStepper` renders
+`‹ [unit ▾] label › | This month  This year | ⇄ Compare`: the dropdown
+re-derives the period for a new granularity (keeping the current anchor),
+the chevrons step one period at a time, and forward is disabled once the
+period reaches today. A vertical divider groups the period controls (stepper
+plus the to-date shortcuts) apart from Compare, which is a mode toggle, not a
+navigation control. Every step is an in-memory slice within the year window
+(below), so the dashboard updates with no database round trip.
 
-**MTD / YTD shortcuts.** Two pills on the stepper row jump straight to the
+**To-date shortcuts.** Two pills on the stepper row jump straight to the
 current month-to-date / year-to-date via
 `InsightsRangeController.selectToDate`, which sets the unit to month/year
 and the range to `periodToDate` — period start through today inclusive,
 rather than the full calendar period (so the chart isn't padded with empty
-future days and avg/day divides by elapsed days only). A pill lights up
-when the selection equals its to-date period; the period label shows the
-actual day span (`Jun 1 – 10`, `Jan 1 – Jun 10`) instead of naming the
-whole month/year. Stepping back from a to-date range lands on the full
-previous period (the stepper's `shiftPeriod` re-snaps month/quarter/year).
+future days and avg/day divides by elapsed days only). They read as plain
+"This month" / "This year" rather than MTD/YTD jargon. A pill lights up when
+the selection equals its to-date period; the period label shows the actual
+day span (`Jun 1 – 10`, `Jan 1 – Jun 10`) instead of naming the whole
+month/year. Stepping back from a to-date range lands on the full previous
+period (the stepper's `shiftPeriod` re-snaps month/quarter/year).
 
 **Region-aware week start.** Week periods (and the calendar grid) start on
 the device region's first weekday — Monday across most of Europe, Sunday in
@@ -102,26 +106,40 @@ already-aligned `state.range` via `shiftPeriod` (so it never re-snaps and
 can't drift out of step with the current range, even if the first weekday
 resolves after the range was built — the page used to re-derive it with a
 Monday default and misaligned the comparison for Sunday/Saturday regions).
-For a partial to-date range (MTD/YTD), `previousPeriod` truncates the
-previous period to the same number of elapsed days — MTD compares against
-the same days of last month, YTD against the same days of last year, never
-a 10-day range against a full month.
-The KPI
-tiles render an `InsightsDeltaChip` (sign and color convey direction;
-`insightsDeltaPercent` returns `null` for a zero baseline, shown as "new"),
-and the per-category table swaps its share / average / bar columns for
-**Previous** and **Δ%** columns. Both windows are ordinary in-memory slices,
-so toggling compare and stepping stay database-free.
+**Elapsed-vs-elapsed is the default, not just for MTD/YTD.** The current
+period is clipped to its elapsed slice (`elapsedPortion`) before the previous
+period is derived, so an in-progress week/month/year always compares its days
+so far against the *same* days of the prior period — never one elapsed day
+against a whole prior week. `previousPeriod` then truncates the prior period
+to that same day count. Whether the basis is partial is decided by a single
+predicate, `isInProgress(range, now)`, which also drives the "(so far)" label
+— so the headline and the comparison can never disagree.
 
-The chart joins the comparison too. `alignedPreviousTotals` projects the
-previous period's per-bucket totals onto the current period's x-axis (extra
-current buckets — a longer month — zero-fill; extra previous buckets drop),
-and the daily bar chart becomes **grouped bars**: each bucket pairs the
-current stacked-by-category bar with a single muted ghost bar for the
-previous total. The daily/cumulative toggle hides while comparing (the
-comparison is a per-bucket total view, where cumulative stacking would only
-muddy it), the legend gains a *Previous* swatch, and the current-bar tooltip
-appends a `Previous … Δ%` footer in the same accents as the delta chip.
+The comparison is **numeric only** — it lives in the KPI tiles and the table,
+never as a second chart series (a previous-period reference bar fights the
+focal data and reads as a loading/empty bar). The KPI tiles render an
+`InsightsDeltaChip` and the per-category table swaps its share / average / bar
+columns for **Previous** and **Change (Δ%)** columns, ordered Current →
+Previous → Change. Both the KPI baseline and the table caption name the basis
+explicitly — "same days" while the period is in progress, "full period" once
+it has fully elapsed — so a per-row change is self-describing. Both windows
+are ordinary in-memory slices, so toggling compare and stepping stay
+database-free.
+
+`InsightsDeltaChip` encodes direction three independent ways so it never
+relies on color alone (color-blind / low-vision / grayscale safe): a leading
+arrow glyph, a `+`/`-` sign, and a green-up / clay-down accent. The accent is
+brightness-aware — the darker `pressed` green/red in the light theme (the
+`hover` green is only ~4:1 on the light card, below WCAG AA), the more
+saturated `hover` step in the dark theme — so the small chip text clears
+4.5:1 in both. A sub-1% swing is rendered neutral (no arrow, no color): it is
+rounding noise on a small base, not a real trend. `insightsDeltaPercent`
+returns `null` for a zero baseline, shown as a neutral "new".
+
+The chart stays a single, clean series while comparing. It only signposts
+where the comparison lives — a muted "Comparison shown in the table below"
+subtitle under the chart caption — so an unchanged chart is never misread as
+"no change". The daily/cumulative toggle stays available throughout.
 
 ## Data semantics
 
@@ -187,29 +205,52 @@ stateDiagram-v2
 
 ## Visualization (Stephen Few rules)
 
-- Stacked bars per bucket (daily) / pre-stacked cumulative area, toggleable;
-  a caption under the title states what the chart shows. No pies, no
-  donuts, zero-based axes, horizontal gridlines only.
+- Stacked bars per bucket / pre-stacked cumulative area, switched by a
+  bordered segmented toggle whose labels track the bucket and avoid jargon —
+  "Per day" / "Per week" / "Per hour" (never a fixed "Daily" over weekly
+  bars) and "Running total" — with a caption under the title restating what
+  the chart shows. No pies, no donuts, zero-based axes, horizontal gridlines
+  only.
+- In-progress periods plot only their **elapsed** buckets (today is the right
+  edge) instead of reserving empty future slots; the period label carries the
+  full scope. Today's bar carries a quiet marker border. Y-axis labels roll
+  hours into days on long ranges (a cumulative year tick reads "42d", not
+  "1008h").
 - Granularity tiers: hourly for 1-day ranges, daily up to 120 days, weekly
   beyond (a full year ≈ 52 x-points). Partial edge weeks are flagged in tooltips.
-- At most 6 series plus a slate **Other (+N)** rollup; uncategorized time is
-  a distinct neutral gray. Series order (largest on the baseline), legend
-  order, and table order are all descending by total.
+- At most 6 series plus a slate **Other (+N)** rollup — tightened to 5 on the
+  dense weekly (Quarter/Year) view (`maxChartSeriesFor`), where ~24 narrow
+  bars would otherwise leave the upper bands as undecodable slivers.
+  Uncategorized time is a distinct neutral gray. Series order (largest on the
+  baseline), legend order, and table order are all descending by total.
 - Chart fills are **muted derivations** of the user-picked category colors
   (hue preserved, saturation/lightness clamped per theme brightness); the
-  saturated original appears only in small swatches. Cumulative bands carry
-  contrast edge strokes (lightened in dark theme, darkened in light theme) so
-  adjacent fills stay separable.
+  saturated original appears only in small swatches. Adjacent fills are kept
+  separable by non-color boundaries: stacked-bar segments get a hairline cut
+  in the card color, and cumulative bands carry contrast edge strokes
+  (lightened in dark theme, darkened in light theme).
 - Tooltips read out every non-zero band for the hovered bucket, largest
   first, with the bucket total in the header.
 - The table is the precise lookup: swatch · category · total (`h:mm`, mono,
   right-aligned) · share (`<1%` guard) · avg/day (over days in range,
   `<0:01` guard, hidden for 1-day ranges) · data bar normalized to the
   largest row.
-- KPI tiles are plain numbers. Focus/Other tiles render only once focus
+- KPI tiles are plain numbers. The Total tile carries a "Most on
+  &lt;category&gt; · &lt;share&gt;" headline so it answers "where did my time
+  go", not only "how much". Focus/Other tiles render only once focus
   categories are configured (stored as a JSON list in SettingsDb,
-  local-only); until then a compact affordance opens the picker, and the
-  FOCUS tile lists its member categories inline.
+  local-only); until then the Total tile keeps its 1/3 width (never a
+  full-width slab) with a compact picker pill beside it. The FOCUS tile lists
+  its member categories inline, and FOCUS/OTHER each carry a plain-language
+  gloss ("Categories you're watching" / "Everything else") so the terse
+  eyebrows aren't opaque to newcomers.
+- Controls share one pill idiom (granularity, MTD/YTD, Compare,
+  Daily/Cumulative). The selected pill is unmistakable: a brand-accent
+  border, a heavier stroke, a stronger accent fill, and semibold high-
+  emphasis text — four cues so selection never rides on hue alone.
+- The empty state offers recovery in the page's bordered-button idiom: a
+  primary "Show the previous period" pill (the likeliest intent) and a
+  quieter "View this year" text link (dropped once already on the year).
 
 ## Navigation
 

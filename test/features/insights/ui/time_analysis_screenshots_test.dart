@@ -296,7 +296,7 @@ void main() {
       categories: insightsScenarioCategories,
     );
     await _selectGranularity(tester, 'Month', 'Month');
-    await _tap(tester, find.text('Cumulative'));
+    await _tap(tester, find.text('Running total'));
     expect(find.text('Running total over the range'), findsOneWidget);
     expect(find.text('Time per day'), findsNothing);
     await _capture(tester, '06_month_cumulative_dark');
@@ -356,7 +356,7 @@ void main() {
       categories: insightsScenarioCategories,
     );
     await _selectGranularity(tester, 'Month', 'Week');
-    await _tap(tester, find.text('Cumulative'));
+    await _tap(tester, find.text('Running total'));
     expect(find.text('Running total over the range'), findsOneWidget);
     await _capture(tester, '11_week_cumulative_dark');
   });
@@ -368,7 +368,7 @@ void main() {
       categories: insightsScenarioCategories,
     );
     await _selectGranularity(tester, 'Month', 'Year');
-    await _tap(tester, find.text('Cumulative'));
+    await _tap(tester, find.text('Running total'));
     expect(find.text('Running total over the range'), findsOneWidget);
     await _capture(tester, '12_year_cumulative_dark');
   });
@@ -381,7 +381,7 @@ void main() {
       brightness: Brightness.light,
     );
     await _selectGranularity(tester, 'Month', 'Month');
-    await _tap(tester, find.text('Cumulative'));
+    await _tap(tester, find.text('Running total'));
     expect(find.text('Running total over the range'), findsOneWidget);
     await _capture(tester, '13_month_cumulative_light');
   });

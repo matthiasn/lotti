@@ -48,6 +48,7 @@ void main() {
   Future<void> pumpCard(
     WidgetTester tester, {
     InsightsChartData? data,
+    bool comparing = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -55,6 +56,7 @@ void main() {
         InsightsChartCard(
           chartData: data ?? chartData(),
           resolver: resolver,
+          comparing: comparing,
         ),
       ),
     );
@@ -82,7 +84,7 @@ void main() {
   ) async {
     await pumpCard(tester);
 
-    await tester.tap(find.text('Cumulative'));
+    await tester.tap(find.text('Running total'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 
@@ -90,10 +92,48 @@ void main() {
     expect(find.byType(BarChart), findsNothing);
     expect(find.text('Running total over the range'), findsOneWidget);
 
-    await tester.tap(find.text('Daily'));
+    await tester.tap(find.text('Per day'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(BarChart), findsOneWidget);
+  });
+
+  testWidgets('the per-bucket toggle label names the actual bucket', (
+    tester,
+  ) async {
+    // Day granularity (default) → "Per day".
+    await pumpCard(tester);
+    expect(find.text('Per day'), findsOneWidget);
+    expect(find.text('Running total'), findsOneWidget);
+
+    // Weekly buckets → "Per week", never a wrong fixed "Daily".
+    await pumpCard(
+      tester,
+      data: InsightsChartData(
+        granularity: InsightsGranularity.week,
+        bucketStarts: [DateTime(2026), DateTime(2026, 1, 5)],
+        seriesKeys: const ['cat-a'],
+        values: const [
+          [3600, 7200],
+        ],
+      ),
+    );
+    expect(find.text('Per week'), findsOneWidget);
+    expect(find.text('Per day'), findsNothing);
+
+    // Hourly buckets → "Per hour".
+    await pumpCard(
+      tester,
+      data: InsightsChartData(
+        granularity: InsightsGranularity.hour,
+        bucketStarts: [for (var h = 0; h < 24; h++) DateTime(2026, 6, 7, h)],
+        seriesKeys: const ['cat-a'],
+        values: [
+          [for (var h = 0; h < 24; h++) 600],
+        ],
+      ),
+    );
+    expect(find.text('Per hour'), findsOneWidget);
   });
 
   testWidgets('legend discloses the Other rollup count', (tester) async {
@@ -270,7 +310,7 @@ void main() {
       'cumulative tooltip de-stacks to running per-series totals',
       (tester) async {
         await pumpCard(tester);
-        await tester.tap(find.text('Cumulative'));
+        await tester.tap(find.text('Running total'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
 
@@ -308,7 +348,19 @@ void main() {
   // Period comparison is no longer drawn in the chart (it reads as a
   // loading/empty reference series). It is surfaced in the KPI deltas and the
   // table's Δ% / Previous columns instead — covered by insights_kpi_row_test
-  // and insights_table_test.
+  // and insights_table_test. The chart only signposts where it lives:
+  testWidgets('compare mode points the eye to the table; off-mode stays quiet', (
+    tester,
+  ) async {
+    await pumpCard(tester);
+    expect(find.text('Comparison shown in the table below'), findsNothing);
+
+    await pumpCard(tester, comparing: true);
+    // Still a single-series chart — the comparison itself is not drawn — but a
+    // muted subtitle routes the reader to the table where the deltas are.
+    expect(find.text('Comparison shown in the table below'), findsOneWidget);
+    expect(find.byType(BarChart), findsOneWidget);
+  });
 
   group('axis edge cases', () {
     testWidgets('absurdly large totals fall back to the coarsest interval', (
@@ -343,7 +395,7 @@ void main() {
         ],
       );
       await pumpCard(tester, data: data);
-      await tester.tap(find.text('Cumulative'));
+      await tester.tap(find.text('Running total'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
 

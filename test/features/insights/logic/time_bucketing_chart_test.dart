@@ -20,7 +20,7 @@ void main() {
     });
   });
 
-  group('bucketTotal / alignedPreviousTotals', () {
+  group('bucketTotal', () {
     InsightsChartData chart(List<List<int>> values, int buckets) =>
         InsightsChartData(
           granularity: InsightsGranularity.day,
@@ -31,7 +31,7 @@ void main() {
           values: values,
         );
 
-    test('bucketTotal sums every series in a bucket', () {
+    test('sums every series in a bucket', () {
       final data = chart([
         [3600, 0, 1800],
         [900, 1800, 0],
@@ -40,40 +40,57 @@ void main() {
       expect(bucketTotal(data, 1), 1800);
       expect(bucketTotal(data, 2), 1800);
     });
+  });
 
-    test('aligns previous totals bucket-for-bucket on equal lengths', () {
-      final current = chart([
-        [3600, 1800, 900],
-      ], 3);
-      final previous = chart([
-        [1800, 3600, 0],
-      ], 3);
-      expect(alignedPreviousTotals(current, previous), [1800, 3600, 0]);
+  group('series cap', () {
+    test('the dense weekly view caps tighter than day/hour', () {
+      expect(
+        maxChartSeriesFor(InsightsGranularity.week),
+        kInsightsMaxChartSeriesDense,
+      );
+      expect(
+        maxChartSeriesFor(InsightsGranularity.day),
+        kInsightsMaxChartSeries,
+      );
+      expect(
+        maxChartSeriesFor(InsightsGranularity.hour),
+        kInsightsMaxChartSeries,
+      );
+      expect(kInsightsMaxChartSeriesDense, lessThan(kInsightsMaxChartSeries));
     });
 
-    test('zero-fills current buckets the previous period lacks', () {
-      // A 31-day current month against a 30-day previous month: the extra
-      // current bucket has no counterpart.
-      final current = chart([
-        [for (var i = 0; i < 31; i++) 600],
-      ], 31);
-      final previous = chart([
-        [for (var i = 0; i < 30; i++) 300],
-      ], 30);
-      final aligned = alignedPreviousTotals(current, previous);
-      expect(aligned, hasLength(31));
-      expect(aligned.last, 0);
-      expect(aligned[29], 300);
-    });
+    test('buildChartData folds one extra category into Other on a year', () {
+      // 8 categories with descending totals, all on the window's first day.
+      final start = epochDay(DateTime(2024, 3));
+      final rows = [
+        for (var c = 1; c <= 8; c++)
+          InsightsTimeRow(
+            dateFrom: DateTime(2024, 3),
+            dateTo: DateTime(2024, 3).add(Duration(minutes: (9 - c) * 20)),
+            categoryId: 'cat-$c',
+          ),
+      ];
+      final buckets = bucketize(rows, windowStartDay: start);
 
-    test('drops previous buckets beyond the current axis', () {
-      final current = chart([
-        [600, 600],
-      ], 2);
-      final previous = chart([
-        [300, 300, 300],
-      ], 3);
-      expect(alignedPreviousTotals(current, previous), [300, 300]);
+      int visible(InsightsChartData d) =>
+          d.seriesKeys.where((k) => k != kInsightsOtherCategoryKey).length;
+
+      // A 30-day (daily) range keeps the full 6 visible series + Other.
+      final dayChart = buildChartData(
+        buckets,
+        InsightsRange(startDay: start, endDayExclusive: start + 30),
+      );
+      expect(visible(dayChart), kInsightsMaxChartSeries);
+      expect(dayChart.seriesKeys, contains(kInsightsOtherCategoryKey));
+
+      // A 200-day (weekly) range folds one more in, leaving 5 + Other so the
+      // narrow stacked bars stay decodable.
+      final weekChart = buildChartData(
+        buckets,
+        InsightsRange(startDay: start, endDayExclusive: start + 200),
+      );
+      expect(visible(weekChart), kInsightsMaxChartSeriesDense);
+      expect(weekChart.seriesKeys, contains(kInsightsOtherCategoryKey));
     });
   });
 

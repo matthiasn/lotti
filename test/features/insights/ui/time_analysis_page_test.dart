@@ -115,9 +115,12 @@ void main() {
     await pumpPage(tester);
 
     expect(find.text('No tracked time in this range'), findsOneWidget);
+    // The likeliest recovery — "show me the last one" — leads as a real
+    // (pill-chrome) button; widening to the year is the quieter text link.
+    expect(find.text('Show the previous period'), findsOneWidget);
     expect(find.text('View this year'), findsOneWidget);
 
-    // The action widens the period to the whole year.
+    // The secondary action widens the period to the whole year.
     await withClock(Clock.fixed(fixedNow), () async {
       await tester.tap(find.text('View this year'));
       await tester.pump();

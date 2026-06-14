@@ -222,6 +222,18 @@ List<MapEntry<String?, int>> rankedCategoryTotals(
 /// full breakdown instead.
 const int kInsightsMaxChartSeries = 6;
 
+/// Tighter series cap for the dense weekly (Quarter/Year) view: ~24+ narrow
+/// bars leave the upper bands as undecodable slivers, so coarse granularities
+/// fold one more category into "Other" to keep every remaining band readable.
+/// Day/hour ranges have wide enough bars for the full [kInsightsMaxChartSeries].
+const int kInsightsMaxChartSeriesDense = 5;
+
+/// Visible-series cap for [granularity]: fewer bands on the dense weekly view.
+int maxChartSeriesFor(InsightsGranularity granularity) =>
+    granularity == InsightsGranularity.week
+    ? kInsightsMaxChartSeriesDense
+    : kInsightsMaxChartSeries;
+
 /// Days above which the chart aggregates to calendar weeks to keep the
 /// x-axis legible and the painter cheap (YTD → ~52 points, not 366).
 const int kInsightsWeeklyThresholdDays = 120;
@@ -308,11 +320,9 @@ InsightsChartData buildChartData(
   }
 
   final ranked = rankedCategoryTotals(perBucket);
-  final visible = ranked.take(kInsightsMaxChartSeries).map((e) => e.key);
-  final rolledUp = ranked
-      .skip(kInsightsMaxChartSeries)
-      .map((e) => e.key)
-      .toSet();
+  final maxSeries = maxChartSeriesFor(granularity);
+  final visible = ranked.take(maxSeries).map((e) => e.key);
+  final rolledUp = ranked.skip(maxSeries).map((e) => e.key).toSet();
 
   final seriesKeys = <String?>[
     ...visible,
@@ -347,24 +357,6 @@ int bucketTotal(InsightsChartData data, int index) {
     total += row[index];
   }
   return total;
-}
-
-/// Previous-period per-bucket totals aligned to [current]'s bucket axis, for
-/// the grouped-bar comparison.
-///
-/// The x-axis always stays the current period: index `i` is the previous
-/// period's total for the bucket sharing current index `i`. Current buckets
-/// with no previous counterpart (a longer current month) get 0, and any
-/// extra previous buckets are dropped. Adjacent periods of the same unit
-/// always share a granularity, so the indices line up bucket-for-bucket.
-List<int> alignedPreviousTotals(
-  InsightsChartData current,
-  InsightsChartData previous,
-) {
-  return [
-    for (var i = 0; i < current.bucketStarts.length; i++)
-      i < previous.bucketStarts.length ? bucketTotal(previous, i) : 0,
-  ];
 }
 
 /// Running-sum transform of `values[series][bucket]` along buckets.

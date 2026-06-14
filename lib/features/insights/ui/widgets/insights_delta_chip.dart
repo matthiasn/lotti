@@ -38,33 +38,49 @@ class InsightsDeltaChip extends StatelessWidget {
     if (current == 0 && previous == 0) return const SizedBox.shrink();
 
     final neutral = tokens.colors.text.mediumEmphasis;
-    // Higher-contrast (hover) accent step so the small text clears 4.5:1 in
-    // both themes (default green fails on the light card).
-    final up = tokens.colors.alert.success.hover;
-    final down = tokens.colors.alert.error.hover;
-    final pct = insightsDeltaPercent(current, previous);
+    // The chip text is small (caption/bodySmall), so the accent must clear WCAG
+    // AA 4.5:1. The light-theme green `hover` step is only ~4.0:1 on the card
+    // and fails; its darker `pressed` step clears ~6:1. The dark theme is the
+    // mirror image — there `hover` is already a high-contrast light green and
+    // `pressed` is a washed-out pastel — so pick the step per theme: the
+    // darker green in light, the more saturated green in dark. Direction never
+    // rides on color alone regardless (the arrow glyph and +/- sign remain).
+    final light = Theme.of(context).brightness == Brightness.light;
+    final up = light
+        ? tokens.colors.alert.success.pressed
+        : tokens.colors.alert.success.hover;
+    final down = light
+        ? tokens.colors.alert.error.pressed
+        : tokens.colors.alert.error.hover;
+    // Raw (unrounded) change drives the dead-band; the rounded value is what we
+    // show. previous == 0 → no baseline to divide by.
+    final raw = previous == 0 ? null : (current - previous) / previous * 100;
+    final pct = raw?.round();
 
     final String text;
     final Color color;
     final IconData? glyph;
-    if (pct == null) {
+    if (raw == null) {
       // No previous time, but the current period has some → brand new. Neutral
       // (not positive-green): "new" is a state, not a win.
       text = messages.insightsDeltaNew;
       color = neutral;
       glyph = null;
-    } else if (pct > 0) {
+    } else if (raw.abs() < 1) {
+      // Sub-1% swing: keep the figure but render it neutrally (no arrow, no
+      // colour) so rounding noise on a small base never reads as a real trend
+      // or — worse — flips sign with the same confident weight as a big move.
+      text = pct! > 0 ? '+$pct%' : '$pct%';
+      color = neutral;
+      glyph = null;
+    } else if (pct! > 0) {
       text = '+$pct%';
       color = up;
       glyph = Icons.arrow_upward_rounded;
-    } else if (pct < 0) {
+    } else {
       text = '$pct%'; // already carries the minus sign
       color = down;
       glyph = Icons.arrow_downward_rounded;
-    } else {
-      text = '0%';
-      color = neutral;
-      glyph = null;
     }
 
     final base = prominent

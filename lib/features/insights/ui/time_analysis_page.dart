@@ -16,6 +16,7 @@ import 'package:lotti/features/insights/ui/widgets/insights_chart_card.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_kpi_row.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_picker.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_table.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -228,16 +229,19 @@ class _DashboardContent extends StatelessWidget {
           _EmptyState(
             title: messages.insightsEmptyTitle,
             body: messages.insightsEmptyBody,
-            // Don't strand the user on a dead period: one click widens to
-            // the whole year, where data is most likely to exist.
-            actionLabel: selection.unit != InsightsPeriodUnit.year
+            // The likeliest intent on a dead current period is "show me the
+            // last one" — so it leads as the primary (pill) action.
+            actionLabel: messages.insightsEmptyPreviousPeriod,
+            onAction: () => onStep(-1),
+            // Don't strand the user on a dead period: widening to the whole
+            // year (where data is likeliest) is the quieter secondary path,
+            // dropped once already viewing the year.
+            secondaryActionLabel: selection.unit != InsightsPeriodUnit.year
                 ? messages.insightsEmptyShowYear
                 : null,
-            onAction: () => onSelectUnit(InsightsPeriodUnit.year),
-            // The likeliest intent on a dead current period is "show me the
-            // last one" — offer it directly instead of only widening to year.
-            secondaryActionLabel: messages.insightsEmptyPreviousPeriod,
-            onSecondaryAction: () => onStep(-1),
+            onSecondaryAction: selection.unit != InsightsPeriodUnit.year
+                ? () => onSelectUnit(InsightsPeriodUnit.year)
+                : null,
           )
         else ...[
           InsightsKpiRow(
@@ -261,6 +265,7 @@ class _DashboardContent extends StatelessWidget {
           InsightsChartCard(
             chartData: chartData,
             resolver: resolver,
+            comparing: previousByCategory != null,
           ),
           SizedBox(height: tokens.spacing.sectionGap),
           InsightsTable(
@@ -339,18 +344,26 @@ class _EmptyState extends StatelessWidget {
               SizedBox(height: tokens.spacing.step5),
               Wrap(
                 spacing: tokens.spacing.step3,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 alignment: WrapAlignment.center,
                 children: [
-                  if (onSecondaryAction != null &&
-                      secondaryActionLabel != null)
+                  // Primary recovery rendered in the page's bordered button
+                  // idiom (the same pill chrome as the header) so the empty
+                  // state offers a real, button-shaped action — not a bare
+                  // text link adrift in the card.
+                  if (actionLabel != null)
+                    InsightsPillButton(
+                      label: actionLabel!,
+                      outlined: true,
+                      active: false,
+                      onTap: onAction,
+                    ),
+                  // The widen-to-year escape hatch stays a quieter text link,
+                  // a clear step down in emphasis from the primary pill.
+                  if (onSecondaryAction != null && secondaryActionLabel != null)
                     TextButton(
                       onPressed: onSecondaryAction,
                       child: Text(secondaryActionLabel!),
-                    ),
-                  if (actionLabel != null)
-                    TextButton(
-                      onPressed: onAction,
-                      child: Text(actionLabel!),
                     ),
                 ],
               ),

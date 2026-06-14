@@ -120,8 +120,8 @@ void main() {
     tester,
   ) async {
     await pump(tester, selection: weekOf(now));
-    expect(find.text('MTD'), findsNothing);
-    expect(find.text('YTD'), findsNothing);
+    expect(find.text('This month'), findsNothing);
+    expect(find.text('This year'), findsNothing);
   });
 
   testWidgets('tapping MTD requests month-to-date', (tester) async {
@@ -131,7 +131,7 @@ void main() {
       selection: weekOf(now),
       onSelectToDate: (unit) => requested = unit,
     );
-    await tester.tap(find.text('MTD'));
+    await tester.tap(find.text('This month'));
     expect(requested, InsightsPeriodUnit.month);
   });
 
@@ -142,7 +142,7 @@ void main() {
       selection: weekOf(now),
       onSelectToDate: (unit) => requested = unit,
     );
-    await tester.tap(find.text('YTD'));
+    await tester.tap(find.text('This year'));
     expect(requested, InsightsPeriodUnit.year);
   });
 
@@ -160,8 +160,8 @@ void main() {
             find.widgetWithText(InsightsPillButton, label),
           )
           .active;
-      expect(pillActive('MTD'), isTrue);
-      expect(pillActive('YTD'), isFalse);
+      expect(pillActive('This month'), isTrue);
+      expect(pillActive('This year'), isFalse);
       // The partial period keeps the month name with a "(so far)" qualifier,
       // so it agrees with the granularity dropdown — never a bare "June 2026".
       expect(find.text('June 2026 (so far)'), findsOneWidget);
@@ -180,7 +180,7 @@ void main() {
       expect(
         tester
             .widget<InsightsPillButton>(
-              find.widgetWithText(InsightsPillButton, 'YTD'),
+              find.widgetWithText(InsightsPillButton, 'This year'),
             )
             .active,
         isTrue,
@@ -198,7 +198,7 @@ void main() {
     expect(
       tester
           .widget<InsightsPillButton>(
-            find.widgetWithText(InsightsPillButton, 'MTD'),
+            find.widgetWithText(InsightsPillButton, 'This month'),
           )
           .active,
       isFalse,

@@ -57,51 +57,64 @@ class InsightsPeriodStepper extends StatelessWidget {
     bool toDateActive(InsightsPeriodUnit unit) =>
         selection.unit == unit && selection.range == periodToDate(unit, now);
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _NavCluster(
-          unit: selection.unit,
-          label: _periodLabel(context, selection),
-          onSelectUnit: onSelectUnit,
-          onStepBack: () => onStep(-1),
-          onStepForward: canStepForward ? () => onStep(1) : null,
-          onOpenCalendar: onOpenCalendar,
-        ),
-        if (onSelectToDate != null) ...[
-          SizedBox(width: tokens.spacing.step3),
-          InsightsPillButton(
-            label: messages.insightsRangeMtd,
-            outlined: true,
-            active: toDateActive(InsightsPeriodUnit.month),
-            onTap: () => onSelectToDate!(InsightsPeriodUnit.month),
-            semanticsLabel: messages.insightsRangeMonthToDate,
-            tooltip: messages.insightsRangeMonthToDate,
+    // IntrinsicHeight so the group divider before Compare can size to the
+    // control row's height.
+    return IntrinsicHeight(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _NavCluster(
+            unit: selection.unit,
+            label: _periodLabel(context, selection),
+            onSelectUnit: onSelectUnit,
+            onStepBack: () => onStep(-1),
+            onStepForward: canStepForward ? () => onStep(1) : null,
+            onOpenCalendar: onOpenCalendar,
           ),
-          SizedBox(width: tokens.spacing.step2),
-          InsightsPillButton(
-            label: messages.insightsRangeYtd,
-            outlined: true,
-            active: toDateActive(InsightsPeriodUnit.year),
-            onTap: () => onSelectToDate!(InsightsPeriodUnit.year),
-            semanticsLabel: messages.insightsRangeYearToDate,
-            tooltip: messages.insightsRangeYearToDate,
-          ),
+          if (onSelectToDate != null) ...[
+            SizedBox(width: tokens.spacing.step3),
+            InsightsPillButton(
+              label: messages.insightsRangeMtd,
+              outlined: true,
+              active: toDateActive(InsightsPeriodUnit.month),
+              onTap: () => onSelectToDate!(InsightsPeriodUnit.month),
+              semanticsLabel: messages.insightsRangeMonthToDate,
+              tooltip: messages.insightsRangeMonthToDate,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            InsightsPillButton(
+              label: messages.insightsRangeYtd,
+              outlined: true,
+              active: toDateActive(InsightsPeriodUnit.year),
+              onTap: () => onSelectToDate!(InsightsPeriodUnit.year),
+              semanticsLabel: messages.insightsRangeYearToDate,
+              tooltip: messages.insightsRangeYearToDate,
+            ),
+          ],
+          if (onToggleCompare != null) ...[
+            // A divider (not just a gap) groups the period controls — stepper
+            // plus the to-date shortcuts — apart from Compare, which is an
+            // independent mode toggle rather than a navigation control.
+            SizedBox(width: tokens.spacing.step4),
+            VerticalDivider(
+              width: 1,
+              thickness: 1,
+              indent: tokens.spacing.step2,
+              endIndent: tokens.spacing.step2,
+              color: tokens.colors.decorative.level02,
+            ),
+            SizedBox(width: tokens.spacing.step4),
+            InsightsPillButton(
+              label: messages.insightsCompare,
+              icon: Icons.compare_arrows_rounded,
+              outlined: true,
+              active: selection.compareEnabled,
+              onTap: onToggleCompare!,
+              tooltip: messages.insightsCompareTooltip,
+            ),
+          ],
         ],
-        if (onToggleCompare != null) ...[
-          // A wider gap sets Compare apart: the stepper + MTD/YTD navigate the
-          // period; Compare is an independent mode toggle.
-          SizedBox(width: tokens.spacing.step6),
-          InsightsPillButton(
-            label: messages.insightsCompare,
-            icon: Icons.compare_arrows_rounded,
-            outlined: true,
-            active: selection.compareEnabled,
-            onTap: onToggleCompare!,
-            tooltip: messages.insightsCompareTooltip,
-          ),
-        ],
-      ],
+      ),
     );
   }
 }

@@ -80,14 +80,16 @@ class InsightsKpiRow extends StatelessWidget {
         if (focusCategoryIds.contains(category.id)) category.name,
     ].join(' · ');
 
-    // Before focus is configured the Total metric leads and the picker is a
-    // compact, content-sized pill beside it — an empty CTA must never claim
-    // tile-equal weight (let alone the wider 2-up footprint) next to the one
-    // real number on screen.
+    // Before focus is configured the Total metric leads at the same 1/3 width
+    // it keeps once FOCUS/OTHER join it — never a full-width slab with 60-70%
+    // dead internal space. The picker is a compact content-sized pill sitting
+    // immediately beside it (left-aligned in the space the other two tiles
+    // will fill), so an empty CTA never claims tile-equal weight next to the
+    // one real number on screen.
     if (!configured) {
       return Row(
         children: [
-          Expanded(
+          Flexible(
             child: _KpiTile(
               label: messages.insightsKpiTotal,
               seconds: kpis.totalSeconds,
@@ -97,12 +99,18 @@ class InsightsKpiRow extends StatelessWidget {
             ),
           ),
           SizedBox(width: tokens.spacing.cardItemSpacing),
-          InsightsPillButton(
-            label: messages.insightsChooseFocusCategories,
-            icon: Icons.center_focus_strong_outlined,
-            active: false,
-            outlined: true,
-            onTap: () => _editFocusCategories(context),
+          Expanded(
+            flex: 2,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: InsightsPillButton(
+                label: messages.insightsChooseFocusCategories,
+                icon: Icons.center_focus_strong_outlined,
+                active: false,
+                outlined: true,
+                onTap: () => _editFocusCategories(context),
+              ),
+            ),
           ),
         ],
       );
@@ -129,6 +137,9 @@ class InsightsKpiRow extends StatelessWidget {
               label: messages.insightsKpiFocus,
               seconds: kpis.focusSeconds!,
               previousSeconds: previousKpis?.focusSeconds,
+              // Plain-language gloss so FOCUS/OTHER aren't opaque jargon to a
+              // first-time user; the category names follow as the detail.
+              helper: messages.insightsKpiFocusHelp,
               caption: focusNames,
               onEdit: () => _editFocusCategories(context),
               inProgress: comparisonInProgress,
@@ -140,6 +151,7 @@ class InsightsKpiRow extends StatelessWidget {
               label: messages.insightsKpiOther,
               seconds: kpis.otherSeconds!,
               previousSeconds: previousKpis?.otherSeconds,
+              helper: messages.insightsKpiOtherHelp,
               inProgress: comparisonInProgress,
             ),
           ),
@@ -155,6 +167,7 @@ class _KpiTile extends StatelessWidget {
     required this.seconds,
     this.previousSeconds,
     this.headline,
+    this.helper,
     this.caption,
     this.onEdit,
     this.inProgress = false,
@@ -170,6 +183,10 @@ class _KpiTile extends StatelessWidget {
   /// "Most on Client Work · 40%"). Rendered a tier above [caption] so the
   /// insight, not the vanity total, carries the tile.
   final String? headline;
+
+  /// Plain-language gloss of what the tile counts (e.g. "Everything else" on
+  /// the OTHER tile), so the terse eyebrow label isn't opaque to newcomers.
+  final String? helper;
 
   /// Quiet single-line annotation under the number (e.g. the focus
   /// category names).
@@ -268,8 +285,21 @@ class _KpiTile extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ],
-            if (caption != null && caption!.isNotEmpty) ...[
+            if (helper != null && helper!.isNotEmpty) ...[
               SizedBox(height: tokens.spacing.step2),
+              Text(
+                helper!,
+                // mediumEmphasis: the gloss is for orientation, a notch more
+                // present than the detail caption below it.
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+            if (caption != null && caption!.isNotEmpty) ...[
+              SizedBox(height: tokens.spacing.step1),
               Text(
                 caption!,
                 style: tokens.typography.styles.others.caption.copyWith(

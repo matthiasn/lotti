@@ -74,8 +74,10 @@ class StackedBarChart extends StatelessWidget {
         // Dense ranges get proportionally wider gaps so 30+ bars don't
         // shimmer into each other.
         final widthFactor = drawCount > 20 ? 0.52 : 0.62;
-        final barWidth = (constraints.maxWidth / drawCount * widthFactor)
-            .clamp(6.0, 44.0);
+        final barWidth = (constraints.maxWidth / drawCount * widthFactor).clamp(
+          6.0,
+          44.0,
+        );
 
         return BarChart(
           BarChartData(
@@ -320,7 +322,12 @@ class StackedAreaChart extends StatelessWidget {
                 if (index < 0 || index >= lastDrawnBucket) {
                   return const SizedBox.shrink();
                 }
-                final label = _bottomAxisLabel(context, data, index, labelEvery);
+                final label = _bottomAxisLabel(
+                  context,
+                  data,
+                  index,
+                  labelEvery,
+                );
                 if (label == null) return const SizedBox.shrink();
                 return SideTitleWidget(
                   meta: meta,
@@ -510,7 +517,9 @@ String _axisLabel(double seconds) {
   // clips to a wrong-order "008h"); also keeps one unit voice with the KPI.
   if (h >= 24) {
     final d = h / 24;
-    return d == d.roundToDouble() ? '${d.round()}d' : '${d.toStringAsFixed(1)}d';
+    return d == d.roundToDouble()
+        ? '${d.round()}d'
+        : '${d.toStringAsFixed(1)}d';
   }
   return h == h.roundToDouble() ? '${h.round()}h' : '${h.toStringAsFixed(1)}h';
 }

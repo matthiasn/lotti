@@ -34,17 +34,21 @@ class InsightsPillButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    // mediumEmphasis for inactive pills: lowEmphasis is near-illegible on
-    // the light theme (32% black) and faint on dark.
+    // Active keeps high-emphasis ink (11:1 on the accent fill); inactive is
+    // mediumEmphasis (lowEmphasis is near-illegible on the light theme at 32%
+    // black and faint on dark). The accent rides the border/fill, NOT the
+    // text — brand teal on the teal-tinted fill would drop the small label
+    // below AA.
     final foreground = active
         ? tokens.colors.text.highEmphasis
         : tokens.colors.text.mediumEmphasis;
-    // Active carries a redundant, stronger border (not only a faint fill) so
-    // the on/off state survives at a glance and for low-vision users; an
-    // inactive outlined pill keeps a quiet resting border so it still reads
-    // as a button.
+    // The on/off state is encoded four ways so it survives at a glance, for
+    // low-vision users, and on a static screenshot: a brand-accent border, a
+    // heavier 1.5px stroke, the stronger accent fill, and semibold text. An
+    // inactive outlined pill keeps a quiet resting border so it still reads as
+    // a button.
     final borderColor = active
-        ? tokens.colors.text.mediumEmphasis
+        ? tokens.colors.interactive.enabled
         : outlined
         ? tokens.colors.decorative.level02
         : Colors.transparent;
@@ -54,7 +58,9 @@ class InsightsPillButton extends StatelessWidget {
       button: true,
       selected: active,
       child: Material(
-        color: active ? tokens.colors.surface.selected : Colors.transparent,
+        // The stronger `active` tint (vs the near-threshold `selected` step)
+        // gives the selected pill real presence at the compact header width.
+        color: active ? tokens.colors.surface.active : Colors.transparent,
         borderRadius: BorderRadius.circular(tokens.radii.s),
         child: InkWell(
           onTap: onTap,

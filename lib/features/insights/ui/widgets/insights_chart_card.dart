@@ -29,11 +29,18 @@ class InsightsChartCard extends StatefulWidget {
   const InsightsChartCard({
     required this.chartData,
     required this.resolver,
+    this.comparing = false,
     super.key,
   });
 
   final InsightsChartData chartData;
   final InsightsCategoryResolver resolver;
+
+  /// Whether period comparison is active. The chart stays single-series by
+  /// design (a previous-period reference bar reads as a loading/empty bar), so
+  /// when true the card signposts where the comparison actually lives — the
+  /// table below — instead of letting an unchanged chart read as "no change".
+  final bool comparing;
 
   @override
   State<InsightsChartCard> createState() => _InsightsChartCardState();
@@ -47,6 +54,15 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
   bool get _cumulativeFallsBack =>
       _mode == InsightsChartMode.cumulative &&
       elapsedBucketCount(widget.chartData) < 2;
+
+  /// The per-bucket toggle label, named for the actual bucket so it never
+  /// reads "Per day" over weekly or hourly bars (the old fixed "Daily").
+  String _perBucketLabel(AppLocalizations messages) =>
+      switch (widget.chartData.granularity) {
+        InsightsGranularity.hour => messages.insightsChartPerHour,
+        InsightsGranularity.day => messages.insightsChartPerDay,
+        InsightsGranularity.week => messages.insightsChartPerWeek,
+      };
 
   String _captionText(AppLocalizations messages) {
     if (_cumulativeFallsBack) return messages.insightsChartCumulativeShort;
@@ -71,8 +87,7 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
     final messages = context.messages;
     // Bars whenever the running-total line can't be drawn, so the cumulative
     // toggle never yields a blank or single-dot card.
-    final showBars =
-        _mode == InsightsChartMode.daily || _cumulativeFallsBack;
+    final showBars = _mode == InsightsChartMode.daily || _cumulativeFallsBack;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -115,22 +130,54 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
+                      // In compare mode the chart deliberately shows only the
+                      // current period; point the eye to the table where the
+                      // deltas live so "Compare" doesn't read as "no change".
+                      if (widget.comparing) ...[
+                        SizedBox(height: tokens.spacing.step1),
+                        Text(
+                          messages.insightsChartCompareHint,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                // Same pill idiom as the range selector — one "pick one of N"
-                // language across the dashboard.
-                InsightsPillButton(
-                  label: messages.insightsChartDaily,
-                  active: _mode == InsightsChartMode.daily,
-                  onTap: () => setState(() => _mode = InsightsChartMode.daily),
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                InsightsPillButton(
-                  label: messages.insightsChartCumulative,
-                  active: _mode == InsightsChartMode.cumulative,
-                  onTap: () =>
-                      setState(() => _mode = InsightsChartMode.cumulative),
+                // A bordered segmented track frames both options so the
+                // unselected mode still reads as a toggle (a lone inactive pill
+                // looked like plain text). Labels are plain and granularity-
+                // accurate — "Per week" over weekly bars, never a wrong
+                // "Daily" — matching the caption's voice.
+                DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(tokens.radii.s),
+                    border: Border.all(color: tokens.colors.decorative.level02),
+                  ),
+                  child: Padding(
+                    padding: EdgeInsets.all(tokens.spacing.step1),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        InsightsPillButton(
+                          label: _perBucketLabel(messages),
+                          active: _mode == InsightsChartMode.daily,
+                          onTap: () =>
+                              setState(() => _mode = InsightsChartMode.daily),
+                        ),
+                        InsightsPillButton(
+                          label: messages.insightsChartRunningTotal,
+                          active: _mode == InsightsChartMode.cumulative,
+                          onTap: () => setState(
+                            () => _mode = InsightsChartMode.cumulative,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
