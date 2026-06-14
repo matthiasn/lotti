@@ -34,30 +34,35 @@ class SettingsMobileTreePage extends StatelessWidget {
     return SettingsMobileShell(
       title: title,
       showBack: showBack,
-      child: ListView(
-        // Only vertical outer padding: the row supplies its own
-        // horizontal content inset, and dropping the active rail
-        // (showActiveRail: false) lets the icon tile line up with the
-        // header title instead of sitting behind an extra left gutter.
-        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
-        children: [
-          for (final node in nodes)
-            SettingsTreeRow(
-              key: ValueKey(node.id),
-              node: node,
-              depth: 0,
-              onActivePath: false,
-              isExpanded: false,
-              showActiveRail: false,
-              showLeafChevron: true,
-              // 3 lines so even the longest section summary stays fully
-              // legible at large OS text sizes (at 1x descriptions fit in
-              // 1–2 lines, so this is just a higher ceiling, not extra
-              // height). The row's min-height grows to fit.
-              descMaxLines: 3,
-              onTap: () => onNodeTap(node),
-            ),
-        ],
+      // `top: false` — the shell header already claims the top inset; this
+      // guards the list against the home indicator / landscape notches.
+      child: SafeArea(
+        top: false,
+        child: ListView(
+          // Only vertical outer padding: the row supplies its own
+          // horizontal content inset, and dropping the active rail
+          // (showActiveRail: false) lets the icon tile line up with the
+          // header title instead of sitting behind an extra left gutter.
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+          children: [
+            for (final node in nodes)
+              SettingsTreeRow(
+                key: ValueKey(node.id),
+                node: node,
+                depth: 0,
+                onActivePath: false,
+                isExpanded: false,
+                showActiveRail: false,
+                showLeafChevron: true,
+                // 3 lines so even the longest section summary stays fully
+                // legible at large OS text sizes (at 1x descriptions fit in
+                // 1–2 lines, so this is just a higher ceiling, not extra
+                // height). The row's min-height grows to fit.
+                descMaxLines: 3,
+                onTap: () => onNodeTap(node),
+              ),
+          ],
+        ),
       ),
     );
   }

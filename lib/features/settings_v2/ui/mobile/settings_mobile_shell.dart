@@ -36,15 +36,19 @@ class SettingsMobileShell extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SafeArea(
-            bottom: false,
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: tokens.colors.background.level01,
-                border: Border(
-                  bottom: BorderSide(color: tokens.colors.decorative.level01),
-                ),
+          // SafeArea sits inside the DecoratedBox so the background and
+          // bottom hairline span the full screen width (edge-to-edge,
+          // matching the sliver SettingsPageHeader) while the bar content
+          // stays inset from notches.
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: tokens.colors.background.level01,
+              border: Border(
+                bottom: BorderSide(color: tokens.colors.decorative.level01),
               ),
+            ),
+            child: SafeArea(
+              bottom: false,
               child: SizedBox(
                 height: settingsHeaderContentHeight(
                   context,

@@ -63,6 +63,7 @@ Widget _app({
         data: MediaQueryData(size: size),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
+          locale: const Locale('en'),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),

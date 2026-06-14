@@ -49,6 +49,7 @@ Widget _app({
         ),
         child: MaterialApp(
           debugShowCheckedModeBanner: false,
+          locale: const Locale('en'),
           theme: brightness == Brightness.dark
               ? DesignSystemTheme.dark()
               : DesignSystemTheme.light(),

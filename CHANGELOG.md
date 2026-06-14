@@ -19,8 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tree. The scroll-shrinking title header is gone — a fixed header sits
   above a clean drill-down list whose rows (icon, title, and a full, no
   longer truncated description) are the same as the desktop sidebar, so
-  phone and desktop now read as one product and are built from a single
-  shared definition. Tapping a section either drills in (Definitions,
+  phone and desktop now share the same navigation and drill-down
+  behavior. Tapping a section either drills in (Definitions,
   Advanced) or opens it directly (AI, Agents, Sync, Theming); back returns
   one level instead of jumping to the top. Rows grow to stay legible at
   large system text sizes.

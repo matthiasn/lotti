@@ -468,10 +468,10 @@ the `sync/conflicts` node to that path via `settingsNodeUrls`).
 
 [`ui/pages/health_import_page.dart`](ui/pages/health_import_page.dart) is a thin
 date-range launcher over [`lib/logic/health_import.dart`](../../logic/health_import.dart).
-Its `/settings/health_import` route still resolves in `SettingsLocation`, but
-the unified tree no longer lists it under Advanced, so there is currently no
-menu entry that beams to it — the page survives as a routable surface without a
-tree node.
+Its `/settings/health_import` route still resolves in `SettingsLocation`, and
+the unified tree exposes it as the flag-gated `advanced/health-import` leaf under
+Advanced when `enableHealthImport` is on (fed from `isMobile`, since the import
+is iOS/Android-only). On desktop the flag is off, so the leaf is absent there.
 
 ### About
 

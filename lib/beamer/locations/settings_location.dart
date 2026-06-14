@@ -118,6 +118,10 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/advanced/conflicts/:conflictId/edit',
     '/settings/advanced/conflicts',
     '/settings/advanced/maintenance',
+    // Flat legacy route for the mobile-only Health import leaf
+    // (`advanced/health-import` in the tree). Declared here so Beamer
+    // selects this location for the URL.
+    '/settings/health_import',
     // Legacy alias. `/settings/maintenance` was declared as a path
     // pattern on `main` but never rendered a page in `buildPages`
     // (the check was `pathContains('advanced/maintenance')`). To keep
