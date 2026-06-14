@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1024]
+### Changed
+- Category selection is now one consistent picker across the app. Assigning a
+  category (journal entries, tasks, projects, habits, dashboards, time blocks)
+  opens the same searchable sheet and applies as soon as you tap a category.
+  Filtering by category in the habits and dashboards views now uses that same
+  sheet and applies when you tap Apply, rather than each tap taking effect
+  immediately.
+- A task's labels now open in that same picker: a searchable, multi-select
+  sheet scoped to the task's category (plus any labels already assigned), with
+  an Apply button and the option to create a new label inline.
+- Search fields no longer sit in a darker box than their surroundings in dark
+  mode. Every search field (tasks, settings, the category and label pickers)
+  is now a subtly raised field that matches its surface instead of a sunken
+  dark well.
+
 ## [0.9.1023]
 ### Added
 - Experimental on-device text-to-speech (macOS and iOS): a play button on the
@@ -77,12 +93,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   table ("Comparison shown in the table below") rather than crowding in a
   ghost reference bar.
 ### Changed
-- Category selection is now one consistent picker across the app. Assigning a
-  category (journal entries, tasks, projects, habits, dashboards, time blocks)
-  opens the same searchable sheet and applies as soon as you tap a category.
-  Filtering by category in the habits and dashboards views now uses that same
-  sheet and applies when you tap Apply, rather than each tap taking effect
-  immediately.
 - All settings definition pages (categories, labels, habits, measurables,
   dashboards) now share one design language. Every list page has the same
   header, search field, grouped rows, floating create button, and
