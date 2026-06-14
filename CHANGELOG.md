@@ -15,6 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1022]
 ### Changed
+- Settings (mobile): the Settings menu was rebuilt to match the desktop
+  tree. The scroll-shrinking title header is gone — a fixed header sits
+  above a clean drill-down list whose rows (icon, title, and a full, no
+  longer truncated description) are the same as the desktop sidebar, so
+  phone and desktop now share the same navigation and drill-down
+  behavior. Tapping a section either drills in (Definitions,
+  Advanced) or opens it directly (AI, Agents, Sync, Theming); back returns
+  one level instead of jumping to the top. Rows grow to stay legible at
+  large system text sizes.
+- Settings: every settings page now wears one consistent header. The
+  scroll-shrinking title is removed throughout (not just on the menu), and
+  the section lists, editors, sync, and AI pages all use the same fixed
+  title typography and the same back button in the same place — instead of
+  each page carrying its own header style. The left gutter of the rows was
+  also tightened on both phone and desktop.
 - Insights dashboards: the chart cards were rebuilt on the app design
   system. Charts no longer sit in near-black boxes in dark mode; value axes
   use rounded, evenly-spaced ticks with legible, never-clipped labels (and the

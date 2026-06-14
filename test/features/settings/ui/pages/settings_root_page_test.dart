@@ -4,8 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
-import 'package:lotti/features/settings/ui/pages/settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
+import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_root_page.dart';
 import 'package:lotti/features/settings_v2/ui/pages/settings_v2_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_state.dart';
@@ -92,17 +92,17 @@ void main() {
 
   group('SettingsRootPage', () {
     testWidgets(
-      'mobile viewport falls back to the single-pane SettingsPage',
+      'mobile viewport renders the SettingsMobileRootPage drill-down',
       (tester) async {
         await pumpRoot(tester, mediaQuery: _mobileMediaQuery);
 
-        expect(find.byType(SettingsPage), findsOneWidget);
+        expect(find.byType(SettingsMobileRootPage), findsOneWidget);
         expect(
           find.byType(SettingsV2Page),
           findsNothing,
           reason:
-              'Mobile is gated to the legacy single-page push-navigation '
-              'flow; the V2 tree-nav layout is desktop-only.',
+              'Mobile renders the tree-driven drill-down; the V2 '
+              'master/detail layout is desktop-only.',
         );
       },
     );
@@ -116,11 +116,11 @@ void main() {
 
         expect(find.byType(SettingsV2Page), findsOneWidget);
         expect(
-          find.byType(SettingsPage),
+          find.byType(SettingsMobileRootPage),
           findsNothing,
           reason:
-              'Desktop must mount only V2 — the legacy SettingsPage chrome '
-              'belongs to mobile and would compete for the same viewport.',
+              'Desktop must mount only V2 — the mobile drill-down belongs '
+              'to narrow viewports and would compete for the same space.',
         );
       },
     );

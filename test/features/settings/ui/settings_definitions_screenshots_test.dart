@@ -342,15 +342,10 @@ void main() {
     return;
   }
 
-  // KNOWN CAPTURE ARTIFACT: `settingsHeaderTitleTextStyle` (the
-  // SettingsPageHeader title) does not pin a fontFamily, so the header
-  // title paints with the test environment's default family
-  // ('FlutterTest'), whose glyphs are solid boxes. The engine resolves
-  // null-family text to that font directly — registering a real font
-  // under 'FlutterTest'/'Roboto' via FontLoader does not change it — so
-  // the page titles render as colored blocks in these captures.
-  // Production is unaffected (real devices fall back to the platform
-  // font). All token-styled text pins Inter and renders normally.
+  // The SettingsPageHeader title now uses the Inter-pinned `heading3`
+  // token (it previously used a null-family style that painted as
+  // FlutterTest blocks), so every title renders with real glyphs in
+  // these captures.
   setUpAll(loadScreenshotFonts);
 
   late TestGetItMocks mocks;

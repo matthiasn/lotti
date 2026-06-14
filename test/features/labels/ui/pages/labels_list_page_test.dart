@@ -711,7 +711,10 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(SettingsPageHeader), findsOneWidget);
-        expect(find.byType(SliverAppBar), findsOneWidget);
+        final header = tester.widget<SettingsPageHeader>(
+          find.byType(SettingsPageHeader),
+        );
+        expect(header.title, 'Labels');
       });
 
       testWidgets('uses CustomScrollView with slivers', (tester) async {

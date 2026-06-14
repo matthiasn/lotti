@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 
 import '../../widget_test_utils.dart';
@@ -128,17 +129,19 @@ void main() {
       }
     });
 
-    testWidgets('scrolling collapses header without errors', (tester) async {
+    testWidgets('pinned header stays fixed (title never scrolls away)', (
+      tester,
+    ) async {
       await _pumpHeader(tester, contentHeight: 1200);
 
-      // Title and subtitle initially visible
       expect(find.text('Matrix Sync Maintenance'), findsOneWidget);
       expect(
         find.text('Run Matrix maintenance tasks and recovery tools'),
         findsOneWidget,
       );
 
-      // Scroll repeatedly to ensure full collapse
+      // The header is fixed (no collapse): repeated scrolling keeps the
+      // title pinned and unchanged.
       for (var i = 0; i < 3; i++) {
         await tester.drag(
           find.byType(CustomScrollView),
@@ -147,7 +150,6 @@ void main() {
         await tester.pumpAndSettle();
       }
 
-      // Still renders without throwing and keeps title visible.
       expect(find.text('Matrix Sync Maintenance'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
@@ -199,36 +201,26 @@ void main() {
       expect(find.text('Unpinned'), findsNothing);
     });
 
-    testWidgets('uses FittedBox at >= 1.5 text scale', (tester) async {
-      await _pumpHeader(
-        tester,
-        title: 'Scale Threshold',
-        subtitle: 'Subtitle',
-        scale: 1.2,
-      );
-      expect(find.byType(FittedBox), findsNothing);
-
-      await _pumpHeader(
-        tester,
-        title: 'Scale Threshold',
-        subtitle: 'Subtitle',
-        scale: 1.5,
-      );
-      expect(find.byType(FittedBox), findsOneWidget);
+    testWidgets('never wraps the title in a FittedBox (it grows instead)', (
+      tester,
+    ) async {
+      for (final scale in <double>[1, 1.5, 2]) {
+        await _pumpHeader(
+          tester,
+          title: 'Scale Threshold',
+          subtitle: 'Subtitle',
+          scale: scale,
+        );
+        // The fixed header grows its extent for large text rather than
+        // squashing the title with a FittedBox.
+        expect(find.byType(FittedBox), findsNothing);
+        expect(tester.takeException(), isNull);
+      }
     });
 
-    testWidgets('title color is neutral onSurface — the accent is '
-        'reserved for actionable controls', (tester) async {
-      AnimatedDefaultTextStyle titleStyle() =>
-          tester.widget<AnimatedDefaultTextStyle>(
-            find
-                .ancestor(
-                  of: find.text('Themed Title'),
-                  matching: find.byType(AnimatedDefaultTextStyle),
-                )
-                .first,
-          );
-
+    testWidgets('title uses the high-emphasis token colour, not the accent', (
+      tester,
+    ) async {
       for (final theme in [ThemeData.light(), ThemeData.dark()]) {
         await _pumpHeader(
           tester,
@@ -237,8 +229,13 @@ void main() {
           theme: theme,
           contentHeight: 200,
         );
-        await tester.pumpAndSettle(); // let the text style animation finish
-        expect(titleStyle().style.color, equals(theme.colorScheme.onSurface));
+        final tokens = tester.element(find.text('Themed Title')).designTokens;
+        final titleText = tester.widget<Text>(find.text('Themed Title'));
+        expect(titleText.style?.color, tokens.colors.text.highEmphasis);
+        expect(
+          titleText.style?.color,
+          isNot(tokens.colors.interactive.enabled),
+        );
       }
     });
   });

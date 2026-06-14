@@ -8,31 +8,42 @@ If another feature needs a configuration surface, Settings is often where the us
 
 In the current codebase, Settings does four concrete things:
 
-1. Renders the `/settings` landing page and several section landing pages.
+1. Renders the `/settings` landing surface and drives the drill-down into every section.
 2. Assembles the Beamer stack for every `/settings/...` route in [`lib/beamer/locations/settings_location.dart`](../../beamer/locations/settings_location.dart).
 3. Turns config flags into visible or hidden navigation.
 4. Hosts a small set of actual settings-owned pages: theming, flags, advanced utilities, health import, about, and shared editor scaffolding for several definition types.
 
 That last point matters. Settings is mostly a router, but not only a router.
 
+One thing Settings no longer does is hand-maintain its own menu. The landing
+list and the section hubs are no longer bespoke widgets with hard-coded item
+arrays. They render from a single declarative tree — `buildSettingsTree(...)`
+in [`lib/features/settings_v2/domain/settings_tree_data.dart`](../settings_v2/domain/settings_tree_data.dart)
+— which the desktop tree-nav already consumed. Mobile and desktop now read the
+same structure, so the two surfaces can never disagree about which settings
+exist, how they are grouped, or which flags gate them.
+
 ## Ownership Boundaries
 
 ### Settings owns
 
-- The landing page in [`ui/pages/settings_page.dart`](ui/pages/settings_page.dart)
+- The layout fork in [`ui/pages/settings_root_page.dart`](ui/pages/settings_root_page.dart) (mobile drill-down vs. desktop tree)
 - Route composition in [`lib/beamer/locations/settings_location.dart`](../../beamer/locations/settings_location.dart)
 - Shared settings presentation widgets in [`ui/widgets/`](ui/widgets/)
-- Shared list/detail scaffolding such as [`ui/pages/definitions_list_page.dart`](ui/pages/definitions_list_page.dart) and [`ui/widgets/entity_detail_card.dart`](ui/widgets/entity_detail_card.dart)
+- Shared list/detail scaffolding such as [`ui/pages/definitions_list_page.dart`](ui/pages/definitions_list_page.dart)
 - Utility pages such as:
   - [`ui/pages/theming_page.dart`](ui/pages/theming_page.dart)
-  - [`ui/pages/definitions_page.dart`](ui/pages/definitions_page.dart)
   - [`ui/pages/flags_page.dart`](ui/pages/flags_page.dart)
-  - [`ui/pages/advanced_settings_page.dart`](ui/pages/advanced_settings_page.dart)
   - [`ui/pages/advanced/logging_settings_page.dart`](ui/pages/advanced/logging_settings_page.dart)
   - [`ui/pages/advanced/maintenance_page.dart`](ui/pages/advanced/maintenance_page.dart)
   - [`ui/pages/advanced/about_page.dart`](ui/pages/advanced/about_page.dart)
   - [`ui/pages/health_import_page.dart`](ui/pages/health_import_page.dart)
 - The two-step destructive/long-running modal wrapper in [`ui/confirmation_progress_modal.dart`](ui/confirmation_progress_modal.dart)
+
+The menu surfaces themselves — the mobile landing and the Definitions /
+Advanced hubs — are no longer Settings-owned widgets. They are rendered from
+the shared tree in the [`settings_v2`](../settings_v2/) feature (see
+[Route Assembly](#route-assembly)).
 
 ### Settings routes into other features
 
@@ -62,156 +73,225 @@ lib/features/settings/
 ├── widgetbook/
 │   └── settings_widgetbook.dart
 └── ui/
+    ├── aggregation_label.dart
     ├── confirmation_progress_modal.dart
     ├── pages/
-    │   ├── settings_page.dart
     │   ├── settings_root_page.dart
     │   ├── advanced/
+    │   │   ├── about_page.dart
+    │   │   ├── logging_settings_page.dart
+    │   │   └── maintenance_page.dart
     │   ├── dashboards/
     │   ├── habits/
     │   ├── measurables/
     │   ├── outbox/
-    │   ├── advanced_settings_page.dart
     │   ├── definitions_list_page.dart
-    │   ├── definitions_page.dart
     │   ├── flags_page.dart
-    │   ├── form_text_field.dart
     │   ├── health_import_page.dart
     │   ├── sliver_box_adapter_page.dart
     │   └── theming_page.dart
     └── widgets/
         ├── dashboards/
         ├── form/
-        ├── entity_detail_card.dart
         ├── settings_card.dart
         └── settings_icon.dart
 ```
 
 The structure mirrors the actual role of the feature:
 
-- `pages/` contains both landing pages and a few editors; `settings_root_page.dart` forks between the mobile single page and the desktop tree-nav layout
-- `widgets/` keeps the settings area visually coherent
-- `constants/` is tiny and currently only exposes theming preference keys
+- `pages/` no longer holds the menu surfaces themselves. The mobile landing
+  list, the Definitions / Advanced hubs, and the desktop tree all live in the
+  [`settings_v2`](../settings_v2/) feature now; what stays here are the leaf
+  utility pages (theming, flags, advanced/*, health import) and the
+  definition list/detail editors (`dashboards/`, `habits/`, `measurables/`).
+- `settings_root_page.dart` is the only landing-ish file left, and it does
+  nothing but fork on layout width (mobile drill-down vs. desktop tree).
+- `widgets/` keeps the settings area visually coherent.
+- `constants/` is tiny and currently only exposes theming preference keys.
 
 ## Route Assembly
 
 The canonical route owner is [`lib/beamer/locations/settings_location.dart`](../../beamer/locations/settings_location.dart).
 
 `SettingsLocation.buildPages` has a hard desktop/mobile fork keyed on
-`NavService.isDesktopMode`:
+`NavService.isDesktopMode`. Both branches now draw their menu from the same
+`buildSettingsTree(...)` data; only the *presentation* differs — desktop keeps
+everything in one page, mobile builds a real Beamer stack.
 
 ```mermaid
 flowchart TD
   Route["Incoming /settings/... path"] --> Location["SettingsLocation.buildPages"]
   Location --> Fork{"NavService.isDesktopMode?"}
   Fork -->|desktop| Desktop["Single BeamPage: SettingsRootPage<br/>(renders SettingsV2Page tree nav)<br/>+ desktopSelectedSettingsRoute notifier"]
-  Fork -->|mobile| MobileStack["Beamer page stack"]
+  Fork -->|mobile| MobileStack["Beamer page stack:<br/>SettingsMobileRootPage → (branch hub) → leaf"]
 ```
 
 ### Desktop (Settings V2 master/detail)
 
 On desktop, `buildPages` pushes exactly **one** page —
-[`SettingsRootPage`](ui/pages/settings_root_page.dart), which renders
-[`SettingsV2Page`](../settings_v2/ui/pages/settings_v2_page.dart) (the
-tree-nav master/detail UI in the separate
+[`SettingsRootPage`](ui/pages/settings_root_page.dart), which (at desktop
+width) renders [`SettingsV2Page`](../settings_v2/ui/pages/settings_v2_page.dart)
+(the tree-nav master/detail UI in the separate
 [`lib/features/settings_v2/`](../settings_v2/) feature). Instead of
 stacking pages, it stores the sub-route in
 `NavService.desktopSelectedSettingsRoute` and routes detail content into
 the right-hand pane via that `ValueNotifier`. The stack model and stack
 examples below apply to the mobile branch only.
 
+```mermaid
+flowchart TD
+  D["SettingsRootPage @ desktop"] --> Tree["SettingsV2Page<br/>(tree master + detail pane)"]
+  Tree --> Master["Tree column<br/>(buildSettingsTree nodes)"]
+  Tree --> Pane["Detail pane<br/>(driven by desktopSelectedSettingsRoute)"]
+```
+
 ### Mobile (page stack)
 
 On mobile the important implementation detail is that Settings builds
-*stacks*, not single pages. Parent pages stay in the Beamer stack for many
-subroutes.
+*stacks*, not single pages. Parent pages stay in the Beamer stack so a back
+tap walks back up the tree one level at a time.
+
+The first page is always [`SettingsMobileRootPage`](../settings_v2/ui/mobile/settings_mobile_root_page.dart),
+which renders the top level of the shared tree. For the two pure-navigation
+branches — `definitions` and `advanced` — a
+[`SettingsMobileBranchPage`](../settings_v2/ui/mobile/settings_mobile_branch_page.dart)
+hub is also pushed and **stays beneath** the leaf, so it is a true drill-down.
+Every other branch (AI / Agents / Sync) has its own landing page and is opened
+directly. Tapping any tree node is routed by
+[`handleSettingsNodeTap`](../settings_v2/ui/mobile/settings_mobile_nav.dart):
+`whats-new` opens a modal, everything else beams to its canonical URL from
+`settingsNodeUrls`, and `SettingsLocation` rebuilds the stack from that URL.
 
 ```mermaid
 flowchart TD
-  Route["Incoming /settings/... path"] --> Location["SettingsLocation"]
-  Location --> Base["SettingsPage is always the first page"]
-  Location --> Section["Optional section page stays in stack"]
-  Section --> Leaf["Optional detail/editor page"]
-
-  Base --> AI["AI / Agents / Sync / Definitions / Theming / Advanced"]
-  Section --> Editor["Dashboard, measurable, habit, project, category, agent, conflict, etc."]
+  Route["Incoming /settings/... path"] --> Location["SettingsLocation (mobile)"]
+  Location --> Base["SettingsMobileRootPage is always the first page"]
+  Base --> BranchHub["Branch hub stays in stack<br/>(definitions / advanced only)"]
+  Base --> DirectLanding["Branch landing page<br/>(AI / Agents / Sync)"]
+  BranchHub --> Leaf["Leaf list / utility page"]
+  DirectLanding --> SubLeaf["Section detail / editor page"]
+  Leaf --> Editor["Detail / editor page"]
 ```
 
 Concrete examples from the current implementation:
 
 ```text
 /settings
-  -> [SettingsPage]
-
-/settings/sync/stats
-  -> [SettingsPage, SyncSettingsPage, SyncStatsPage]
-
-/settings/advanced/about
-  -> [SettingsPage, AdvancedSettingsPage, AboutPage]
+  -> [SettingsMobileRootPage]
 
 /settings/definitions
-  -> [SettingsPage, DefinitionsPage]
-
-/settings/dashboards/:dashboardId
-  -> [SettingsPage, DashboardSettingsPage, EditDashboardPage]
+  -> [SettingsMobileRootPage, SettingsMobileBranchPage(definitions)]
 
 /settings/categories/:categoryId
-  -> [SettingsPage, CategoriesListPage, CategoryDetailsPage]
+  -> [SettingsMobileRootPage, SettingsMobileBranchPage(definitions),
+      CategoriesListPage, CategoryDetailsPage]
+
+/settings/advanced/about
+  -> [SettingsMobileRootPage, SettingsMobileBranchPage(advanced), AboutPage]
+
+/settings/sync/stats
+  -> [SettingsMobileRootPage, SyncSettingsPage, SyncStatsPage]
+
+/settings/dashboards/:dashboardId
+  -> [SettingsMobileRootPage, SettingsMobileBranchPage(definitions),
+      DashboardSettingsPage, EditDashboardPage]
 ```
 
-The Definitions hub is intentionally a flat sub-page rather than a stack
-parent: tapping Habits, Categories, Labels, Dashboards, or Measurables
-beams to the existing leaf URL (e.g. `/settings/categories`), which then
-resolves into `[SettingsPage, CategoriesListPage]`. The hub is replaced
-on navigation, not pushed underneath, so back from a leaf returns
-straight to `/settings` instead of bouncing through Definitions.
+The Definitions and Advanced hubs are pure-navigation branches: in the tree
+their node has `panel == null`, which is exactly the signal `buildPages` uses
+to decide they drill into a child list rather than open a page. Because the hub
+stays in the stack beneath its leaves, back from e.g. Categories returns to the
+Definitions hub, then to the root — not straight to `/settings`. (This replaces
+the older behaviour where the hub was replaced on navigation and a back tap
+skipped it entirely.) The flat leaf URLs are unchanged — the entity leaves are
+namespaced under `definitions/` in the tree but keep their flat Beamer URLs
+(`/settings/categories`, …) via `settingsNodeUrls`, so `_inDefinitionsBranch`
+in the location matches them and pushes the hub underneath.
 
-That stacked model is why detail pages can feel like descendants of a section instead of random teleports. Beamer is doing real work here, which is nice for once.
+Branches that carry their own landing page (`panel != null`: AI, Agents, Sync)
+skip the hub and open that page directly, so e.g. `/settings/sync/stats` stacks
+`SyncSettingsPage` under `SyncStatsPage` with no intermediate hub.
+
+That stacked model is why detail pages feel like descendants of a section instead of random teleports. Beamer is doing real work here, which is nice for once.
 
 ## Runtime Topology
 
+This mirrors the shape of `buildSettingsTree` (the single source of truth), so
+it holds for both platforms — desktop renders it as a tree column, mobile as a
+drill-down.
+
 ```mermaid
 flowchart LR
-  Landing["/settings"] --> AI["AI settings"]
-  Landing --> Agents["Agents settings"]
-  Landing --> Sync["Sync"]
+  Landing["/settings (tree root)"] --> WhatsNew["What's New (if enableWhatsNew)"]
+  Landing --> AI["AI"]
+  Landing --> Agents["Agents"]
+  Landing --> Sync["Sync (if enableMatrix)"]
   Landing --> Definitions["Definitions"]
   Landing --> Theming["Theming"]
   Landing --> Advanced["Advanced"]
 
-  Definitions --> Habits["Habits"]
+  AI --> Providers["Providers"]
+  AI --> Models["Models"]
+  AI --> Profiles["Profiles"]
+
+  Agents --> AgentsStats["Stats"]
+  Agents --> Templates["Templates"]
+  Agents --> Instances["Instances"]
+  Agents --> Souls["Souls"]
+  Agents --> Pending["Pending wakes"]
+
   Definitions --> Categories["Categories"]
   Definitions --> Labels["Labels"]
-  Definitions --> Dashboards["Dashboards"]
+  Definitions --> Habits["Habits (if enableHabits)"]
+  Definitions --> Dashboards["Dashboards (if enableDashboards)"]
   Definitions --> Measurables["Measurables"]
 
   Categories --> Projects["Project detail route (/settings/projects/:projectId)"]
-  Sync --> MatrixMaint["Matrix maintenance"]
   Sync --> NodeProfile["Node profile"]
-  Sync --> Outbox["Outbox monitor"]
-  Sync --> Conflicts["Conflicts page via /settings/advanced/conflicts"]
-  Sync --> Stats["Sync stats"]
   Sync --> Backfill["Backfill settings"]
-  Advanced --> Flags["Config flags"]
+  Sync --> Stats["Sync stats"]
+  Sync --> Outbox["Outbox monitor"]
+  Sync --> Conflicts["Conflicts (URL /settings/advanced/conflicts)"]
+  Sync --> MatrixMaint["Matrix maintenance"]
+  Advanced --> Flags["Config flags (/settings/flags)"]
   Advanced --> Logging["Logging domains"]
-  Advanced --> Health["Health import (mobile only)"]
   Advanced --> Maint["Maintenance"]
   Advanced --> About["About"]
 ```
 
-One slightly awkward but code-accurate detail: the Sync landing page links to conflicts through `/settings/advanced/conflicts`. The UI treats conflicts as sync-adjacent, the route still wears an Advanced nametag, and everyone is currently living with that arrangement.
+One slightly awkward but code-accurate detail: Conflicts is a child of the Sync branch in the tree, but its Beamer URL is still `/settings/advanced/conflicts`. `settingsNodeUrls` maps the `sync/conflicts` node id to that legacy path so existing deep links keep resolving, and everyone is currently living with that arrangement.
 
 ## Landing Page Behavior
 
-[`ui/pages/settings_page.dart`](ui/pages/settings_page.dart) is not a static list. It is assembled from live state:
+The mobile landing is [`SettingsMobileRootPage`](../settings_v2/ui/mobile/settings_mobile_root_page.dart),
+and it is not a hand-maintained list. It calls `watchSettingsTree(...)`
+([`lib/features/settings_v2/ui/settings_tree_builder.dart`](../settings_v2/ui/settings_tree_builder.dart))
+and renders the **top level** of that tree through
+[`SettingsMobileTreePage`](../settings_v2/ui/mobile/settings_mobile_tree_page.dart),
+one full-width `SettingsTreeRow` per node. The chrome is the fixed
+[`SettingsMobileShell`](../settings_v2/ui/mobile/settings_mobile_shell.dart)
+header — a flat, fixed-height bar with a hairline underline, deliberately the
+opposite of the old scroll-shrinking `SliverBoxAdapterPage` / `SettingsPageHeader`
+title that the menu surfaces used to wear.
 
-- `configFlagProvider(enableWhatsNewFlag)` gates What's New at the root level; the Agents tile is always shown
-- Habits and Dashboards gating moved into [`ui/pages/definitions_page.dart`](ui/pages/definitions_page.dart) — the root entry for Definitions is unconditional because Categories, Labels, and Measurables are always visible
-- `configFlagProvider(enableMatrixFlag)` decides whether Sync is shown
-- the Agents tile overlays a pending ritual indicator (`RitualPendingIndicator`)
-- the What's New feature appears both as an app-bar action and as a settings card when enabled
+Because the tree is the source of state, all gating is `buildSettingsTree`
+input, not landing-page logic:
 
-The landing page is therefore equal parts navigation and feature census.
+- `enableWhatsNew` adds a `whats-new` node at the very top; tapping it opens the
+  What's New modal (it has no URL — `handleSettingsNodeTap` special-cases it)
+- `enableMatrix` adds or drops the entire `sync` branch
+- `enableHabits` / `enableDashboards` add or drop those leaves inside the
+  `definitions` branch — the Definitions branch itself is unconditional because
+  Categories, Labels, and Measurables are always present
+- the AI, Agents, Theming, and Advanced branches are always shown
+
+The new menu does not carry the old per-tile decorations (the Agents pending
+indicator and the What's New settings card / app-bar action are gone), and node
+badges are intentionally off the tree until the i18n sweep for badge copy
+lands — the `NodeBadge` type and its render path in `SettingsTreeRow` stay in
+place so reintroducing one is a per-node one-liner.
+
+The landing page is therefore pure navigation over a declarative, flag-gated tree.
 
 ## Flags, Navigation, and Cross-Feature Side Effects
 
@@ -334,9 +414,20 @@ Theme selection is persisted in `SettingsDb`, and the theming controller also wa
 
 ### Definitions
 
-[`ui/pages/definitions_page.dart`](ui/pages/definitions_page.dart) is a flat hub that groups the entity-definition entry points (Habits, Categories, Labels, Dashboards, Measurables). It exists so the v1 root list reads as `AI · Agents · Sync · Definitions · Theming · Advanced` instead of fanning every entity type into a top-level row.
+Definitions is no longer a Settings-owned page. On mobile it is rendered by
+[`SettingsMobileBranchPage(branchId: 'definitions')`](../settings_v2/ui/mobile/settings_mobile_branch_page.dart),
+which looks up the `definitions` branch in the shared tree and lists its
+children (Categories, Labels, Habits, Dashboards, Measurables). It groups the
+entity-definition entry points so the root reads as `AI · Agents · Sync ·
+Definitions · Theming · Advanced` instead of fanning every entity type into a
+top-level row.
 
-Each row beams to the existing leaf URL (`/settings/categories`, `/settings/labels`, …). Habits and Dashboards are still feature-flag-gated, but the gating now lives inside this hub rather than the root list.
+Each row beams to its flat leaf URL (`/settings/categories`, `/settings/labels`,
+…) from `settingsNodeUrls`. Habits and Dashboards are still feature-flag-gated,
+but the gating now lives in `buildSettingsTree` (`enableHabits` /
+`enableDashboards`) rather than in any page. Because Definitions has
+`panel == null`, `SettingsLocation` keeps this hub in the stack beneath each
+leaf, so back from e.g. Categories returns to the Definitions hub.
 
 ### Flags
 
@@ -355,21 +446,32 @@ The Flags entry is reached through Advanced; the `/settings/flags` URL itself is
 
 ### Advanced
 
-[`ui/pages/advanced_settings_page.dart`](ui/pages/advanced_settings_page.dart) is the non-sync maintenance hub.
+Advanced is also no longer a Settings-owned page. On mobile it is rendered by
+[`SettingsMobileBranchPage(branchId: 'advanced')`](../settings_v2/ui/mobile/settings_mobile_branch_page.dart),
+listing the `advanced` branch's children from the shared tree. Like
+Definitions, it has `panel == null`, so it stays in the stack beneath its
+leaves and is a true drill-down.
 
-It currently links to:
+The branch currently exposes:
 
-- config flags (moved here from the v1 root list)
+- config flags (URL `/settings/flags`, kept here rather than at the root)
 - logging domains
-- health import on mobile only
 - maintenance
 - about
 
-The tests enforce that sync-specific items no longer live here as cards, even if a few routes still pass through the Advanced namespace.
+Sync-specific repair tools live under the Sync branch in the tree, not here —
+even though Conflict resolution still wears the legacy
+`/settings/advanced/conflicts` URL for deep-link compatibility (the tree maps
+the `sync/conflicts` node to that path via `settingsNodeUrls`).
 
 ### Health import
 
-[`ui/pages/health_import_page.dart`](ui/pages/health_import_page.dart) is a thin date-range launcher over [`lib/logic/health_import.dart`](../../logic/health_import.dart). In practice it is surfaced through the mobile-only Advanced entry point, even though the route itself still exists in the shared settings location.
+[`ui/pages/health_import_page.dart`](ui/pages/health_import_page.dart) is a thin
+date-range launcher over [`lib/logic/health_import.dart`](../../logic/health_import.dart).
+Its `/settings/health_import` route still resolves in `SettingsLocation`, and
+the unified tree exposes it as the flag-gated `advanced/health-import` leaf under
+Advanced when `enableHealthImport` is on (fed from `isMobile`, since the import
+is iOS/Android-only). On desktop the flag is off, so the leaf is absent there.
 
 ### About
 
@@ -473,11 +575,18 @@ The notable oddball is `/settings/projects/...`: there is no top-level Settings 
 
 ## Notes For Future Changes
 
-- Add new settings routes in [`lib/beamer/locations/settings_location.dart`](../../beamer/locations/settings_location.dart), not just in a tile callback.
+- A new menu entry is a node, not a widget. Add it to `buildSettingsTree`
+  ([`lib/features/settings_v2/domain/settings_tree_data.dart`](../settings_v2/domain/settings_tree_data.dart))
+  so it appears on both platforms at once, and register its URL in
+  `settingsNodeUrls` ([`lib/features/settings_v2/domain/settings_tree_index.dart`](../settings_v2/domain/settings_tree_index.dart)).
+- Add the matching route to [`lib/beamer/locations/settings_location.dart`](../../beamer/locations/settings_location.dart).
+  A branch with `panel == null` becomes a mobile drill-down hub; a branch with a
+  `panel` opens its own landing page — decide which before you wire it up.
 - Decide explicitly whether a new page is:
   - a Settings-owned utility
   - a list/detail shell over another feature's data
   - a pure handoff into another feature
-- If a surface is feature-gated, gate both the entry point and any leaf pages that should not remain reachable.
+- If a surface is feature-gated, gate it once in `buildSettingsTree` and gate any
+  leaf pages that should not remain reachable.
 - Keep sync-specific repair tools with Sync unless they are truly app-wide.
 - Reuse [`DefinitionsListPage<T>`](ui/pages/definitions_list_page.dart) and the existing card widgets before inventing another one-off admin list. Settings already has enough ways to make a form look earnest.

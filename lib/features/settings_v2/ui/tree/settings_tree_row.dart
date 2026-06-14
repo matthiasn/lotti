@@ -17,11 +17,22 @@ class SettingsTreeRow extends StatelessWidget {
     required this.onActivePath,
     required this.isExpanded,
     required this.onTap,
+    this.showLeafChevron = false,
+    this.descMaxLines = 1,
+    this.showActiveRail = true,
     super.key,
   });
 
   final SettingsNode node;
   final int depth;
+
+  /// When `true`, leaf rows (no children) also render a static trailing
+  /// chevron. Branches always show their (rotating) chevron regardless.
+  /// Used by the mobile drill-down surface, where tapping a leaf pushes
+  /// a panel page and the chevron signals that affordance the way native
+  /// settings lists do. Desktop leaves leave this `false` — they select
+  /// in place, so a chevron would imply navigation that does not happen.
+  final bool showLeafChevron;
 
   /// True when this row's id appears anywhere in the current tree
   /// path — drives the active rail, tile fill, and dim/selection
@@ -33,6 +44,20 @@ class SettingsTreeRow extends StatelessWidget {
   final bool isExpanded;
 
   final VoidCallback onTap;
+
+  /// Maximum lines for the description. Desktop keeps the single-line
+  /// truncation (1); the mobile drill-down passes 2 so longer summaries
+  /// wrap instead of clipping mid-word — the row grows to fit because
+  /// its height is a *minimum*, not a fixed value (see [build]).
+  final int descMaxLines;
+
+  /// Whether to reserve the leading active-path rail. Desktop keeps it so
+  /// the row content doesn't shift horizontally when a row becomes
+  /// selected. The mobile drill-down has no persistent selection
+  /// ([onActivePath] is always false there), so it passes `false` to drop
+  /// the permanently-invisible spacer and its margin — otherwise the rail
+  /// adds dead inset on the left.
+  final bool showActiveRail;
 
   @override
   Widget build(BuildContext context) {
@@ -63,29 +88,40 @@ class SettingsTreeRow extends StatelessWidget {
           borderRadius: BorderRadius.circular(tokens.radii.m),
           child: AnimatedContainer(
             duration: SettingsV2Constants.rowFillTransition,
-            height: SettingsV2Constants.rowHeight,
+            // Minimum (not fixed) height + vertical padding so the row
+            // grows for a wrapped 2-line description or large text scale
+            // instead of clipping its content — the a11y failure mode of
+            // the old fixed 62 dp row.
+            constraints: const BoxConstraints(
+              minHeight: SettingsV2Constants.rowHeight,
+            ),
             decoration: BoxDecoration(
               color: rowFill,
               borderRadius: BorderRadius.circular(tokens.radii.m),
             ),
-            padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step3,
+            ),
             child: Row(
               children: [
                 // Teal rail on the left when on path; transparent
                 // placeholder otherwise so the row content doesn't
-                // shift horizontally between states.
-                AnimatedContainer(
-                  duration: SettingsV2Constants.railTransition,
-                  width: SettingsV2Constants.activeRailWidth,
-                  height: SettingsV2Constants.activeRailHeight,
-                  margin: EdgeInsets.only(right: tokens.spacing.step3),
-                  decoration: BoxDecoration(
-                    color: onActivePath ? accent : Colors.transparent,
-                    borderRadius: BorderRadius.circular(
-                      SettingsV2Constants.activeRailCornerRadius,
+                // shift horizontally between states. Omitted entirely on
+                // surfaces with no persistent selection (mobile).
+                if (showActiveRail)
+                  AnimatedContainer(
+                    duration: SettingsV2Constants.railTransition,
+                    width: SettingsV2Constants.activeRailWidth,
+                    height: SettingsV2Constants.activeRailHeight,
+                    margin: EdgeInsets.only(right: tokens.spacing.step3),
+                    decoration: BoxDecoration(
+                      color: onActivePath ? accent : Colors.transparent,
+                      borderRadius: BorderRadius.circular(
+                        SettingsV2Constants.activeRailCornerRadius,
+                      ),
                     ),
                   ),
-                ),
                 // Icon tile
                 Container(
                   width: SettingsV2Constants.iconTileSize,
@@ -119,7 +155,7 @@ class SettingsTreeRow extends StatelessWidget {
                       if (node.desc.isNotEmpty)
                         Text(
                           node.desc,
-                          maxLines: 1,
+                          maxLines: descMaxLines,
                           overflow: TextOverflow.ellipsis,
                           style: tokens.typography.styles.others.caption
                               .copyWith(
@@ -134,8 +170,10 @@ class SettingsTreeRow extends StatelessWidget {
                   SizedBox(width: tokens.spacing.step3),
                   _NodeBadgeChip(badge: badge, tokens: tokens),
                 ],
-                // Chevron — rotates for branches; absent for leaves.
-                if (node.hasChildren) ...[
+                // Chevron — rotates for branches; static right-pointing
+                // for leaves when [showLeafChevron] is set (mobile
+                // drill-down), absent for desktop leaves.
+                if (node.hasChildren || showLeafChevron) ...[
                   SizedBox(width: tokens.spacing.step3),
                   AnimatedRotation(
                     duration: SettingsV2Constants.chevronRotation,
