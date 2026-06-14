@@ -58,14 +58,19 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
       );
     }
 
-    // A single caption, never an "[agg] · [description]" stack: prefer the
-    // human-readable description, fall back to the humanized aggregation
-    // (e.g. "Daily total"), and show nothing when neither is available.
+    // One caption rule shared with every other card: lead with the unit so
+    // the row is consistently unit-bearing across the stack (Water -> "ml",
+    // like the health/workout cards' "bpm"/"kcal"). Only when a measurable has
+    // no unit (e.g. a 1-10 rating) do we fall back to its description, then to
+    // the humanized aggregation. Never an "[agg] · [description]" stack.
+    final unit = measurableDataType.unitName;
     final description = measurableDataType.description;
     final aggregation = aggregationDisplayLabel(context, aggregationType);
-    final subtitle = description.isNotEmpty
-        ? description
-        : (aggregation.isNotEmpty ? aggregation : null);
+    final subtitle = unit.isNotEmpty
+        ? unit
+        : (description.isNotEmpty
+              ? description
+              : (aggregation.isNotEmpty ? aggregation : null));
 
     return DashboardChartHeader(
       title: measurableDataType.displayName,

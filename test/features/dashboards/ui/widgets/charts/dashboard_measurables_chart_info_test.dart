@@ -156,8 +156,11 @@ void main() {
           AggregationType.hourlySum: 'Hourly total',
         };
         for (final entry in expected.entries) {
+          // No unit and no description, so the humanized aggregation is what
+          // falls through to the subtitle.
           final dataType = _makeDataType(
             displayName: 'Steps',
+            unitName: '',
             aggregationType: entry.key,
           );
 
@@ -188,11 +191,14 @@ void main() {
     );
 
     testWidgets(
-      'subtitle is the description alone when one exists (no agg stacking)',
+      'subtitle is the unit, ahead of description and aggregation',
       (tester) async {
+        // Unit-bearing caption, consistent with the health/workout cards:
+        // the unit ("ml") wins over both the description and the aggregation.
         final dataType = _makeDataType(
           displayName: 'Water',
           description: 'Daily water intake',
+          unitName: 'ml',
           aggregationType: AggregationType.dailySum,
         );
 
@@ -206,19 +212,22 @@ void main() {
         );
 
         expect(find.text('Water'), findsOneWidget);
-        // The description wins; the aggregation is NOT joined in with a dot.
-        expect(find.text('Daily water intake'), findsOneWidget);
-        expect(find.textContaining('·'), findsNothing);
+        expect(find.text('ml'), findsOneWidget);
+        // Neither the description nor the aggregation is shown when a unit
+        // exists, and there is never a "·" stack.
+        expect(find.text('Daily water intake'), findsNothing);
         expect(find.textContaining('Daily total'), findsNothing);
+        expect(find.textContaining('·'), findsNothing);
       },
     );
 
     testWidgets(
-      'shows description text when description is not empty',
+      'falls back to the description when there is no unit',
       (tester) async {
         final dataType = _makeDataType(
           displayName: 'Weight',
           description: 'Body weight in kg',
+          unitName: '',
         );
 
         await _pumpWidget(
@@ -235,10 +244,12 @@ void main() {
     );
 
     testWidgets(
-      'subtitle is null when both aggregation and description are empty',
+      'subtitle is null when unit, aggregation and description are all empty',
       (tester) async {
-        // ignore: avoid_redundant_argument_values
-        final dataType = _makeDataType(displayName: 'Weight', description: '');
+        final dataType = _makeDataType(
+          displayName: 'Weight',
+          unitName: '',
+        );
 
         await _pumpWidget(
           tester,
@@ -345,6 +356,7 @@ void main() {
         final dataType = _makeDataType(
           displayName: 'Energy',
           description: 'Daily energy level',
+          unitName: '',
         );
 
         await _pumpWidget(
@@ -357,8 +369,8 @@ void main() {
           mediaQueryData: const MediaQueryData(size: Size(800, 600)),
         );
 
-        // The card header shows the description as its subtitle: exactly one
-        // Text node before the modal opens.
+        // With no unit, the card header shows the description as its subtitle:
+        // exactly one Text node before the modal opens.
         expect(find.text('Daily energy level'), findsOneWidget);
 
         await tester.ensureVisible(find.byIcon(Icons.add_rounded));
