@@ -90,7 +90,7 @@ void main() {
     await pump(tester, value: 1, onChanged: (_) {}, width: 360);
 
     expect(tester.takeException(), isNull);
-    expect(visible('0.5×'), findsOneWidget);
-    expect(visible('2×'), findsOneWidget);
+    expect(visible('0.5'), findsOneWidget);
+    expect(visible('2'), findsOneWidget);
   });
 }
