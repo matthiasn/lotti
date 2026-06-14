@@ -25,6 +25,18 @@ class SynthesisResult {
   final double durationSeconds;
 }
 
+/// Builds an ONNX float tensor from a (possibly nested) double array.
+typedef FloatTensorBuilder =
+    Future<OrtValue> Function(dynamic array, List<int> dims);
+
+/// Builds an ONNX int64 tensor from a 2-D int array.
+typedef IntTensorBuilder =
+    Future<OrtValue> Function(List<List<int>> array, List<int> dims);
+
+/// Builds an ONNX float tensor from a flat scalar list.
+typedef ScalarTensorBuilder =
+    Future<OrtValue> Function(List<double> array, List<int> dims);
+
 /// A loaded Supertonic model — the four ONNX sessions, the tokenizer, and the
 /// config — ready to synthesize. Build via [loadSupertonicSession].
 class SupertonicTtsSession {
@@ -35,11 +47,19 @@ class SupertonicTtsSession {
     required this.textEncoder,
     required this.vectorEstimator,
     required this.vocoder,
+    FloatTensorBuilder? floatTensorBuilder,
+    IntTensorBuilder? intTensorBuilder,
+    ScalarTensorBuilder? scalarTensorBuilder,
   }) : sampleRate = (cfgs['ae'] as Map)['sample_rate'] as int,
        _baseChunkSize = (cfgs['ae'] as Map)['base_chunk_size'] as int,
        _chunkCompressFactor =
            (cfgs['ttl'] as Map)['chunk_compress_factor'] as int,
-       _latentDim = (cfgs['ttl'] as Map)['latent_dim'] as int;
+       _latentDim = (cfgs['ttl'] as Map)['latent_dim'] as int,
+       // The tensor builders wrap the static OrtValue.fromList; injected
+       // (defaulting to the real ones) so synthesis is testable with mocks.
+       _floatTensor = floatTensorBuilder ?? floatTensor,
+       _intTensor = intTensorBuilder ?? intTensor,
+       _scalarTensor = scalarTensorBuilder ?? scalarTensor;
 
   final UnicodeProcessor textProcessor;
   final OrtSession durationPredictor;
@@ -51,6 +71,9 @@ class SupertonicTtsSession {
   final int _baseChunkSize;
   final int _chunkCompressFactor;
   final int _latentDim;
+  final FloatTensorBuilder _floatTensor;
+  final IntTensorBuilder _intTensor;
+  final ScalarTensorBuilder _scalarTensor;
 
   /// Synthesizes [text] in [language], concatenating per-chunk audio with a
   /// short silence between chunks. [totalStep] is the denoising step count
@@ -115,9 +138,9 @@ class SupertonicTtsSession {
     // freed here — they're reused across chunks and disposed by the engine.
     final temporaries = <OrtValue>[];
     try {
-      final textMaskTensor = await floatTensor(textMask, textMaskShape);
+      final textMaskTensor = await _floatTensor(textMask, textMaskShape);
       // Reused by both the duration-predictor and text-encoder runs.
-      final textIdsTensor = await intTensor(textIds, textIdsShape);
+      final textIdsTensor = await _intTensor(textIds, textIdsShape);
       temporaries
         ..add(textMaskTensor)
         ..add(textIdsTensor);
@@ -150,19 +173,22 @@ class SupertonicTtsSession {
         noisyLatent[0].length,
         noisyLatent[0][0].length,
       ];
-      final latentMaskTensor = await floatTensor(latentMask, [
+      final latentMaskTensor = await _floatTensor(latentMask, [
         bsz,
         1,
         latentMask[0][0].length,
       ]);
-      final totalStepTensor = await scalarTensor([totalStep.toDouble()], [bsz]);
+      final totalStepTensor = await _scalarTensor(
+        [totalStep.toDouble()],
+        [bsz],
+      );
       temporaries
         ..add(latentMaskTensor)
         ..add(totalStepTensor);
 
       for (var step = 0; step < totalStep; step++) {
-        final noisyLatentTensor = await floatTensor(noisyLatent, latentShape);
-        final currentStepTensor = await scalarTensor([step.toDouble()], [bsz]);
+        final noisyLatentTensor = await _floatTensor(noisyLatent, latentShape);
+        final currentStepTensor = await _scalarTensor([step.toDouble()], [bsz]);
         final result = await vectorEstimator.run({
           'noisy_latent': noisyLatentTensor,
           'text_emb': textEncResult.values.first,
@@ -190,7 +216,7 @@ class SupertonicTtsSession {
         }
       }
 
-      final vocoderLatentTensor = await floatTensor(noisyLatent, latentShape);
+      final vocoderLatentTensor = await _floatTensor(noisyLatent, latentShape);
       temporaries.add(vocoderLatentTensor);
       final vocoderResult = await vocoder.run({'latent': vocoderLatentTensor});
       temporaries.addAll(vocoderResult.values);

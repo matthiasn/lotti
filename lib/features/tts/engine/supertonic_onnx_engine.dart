@@ -13,6 +13,16 @@ const String _voiceAssetDir = 'assets/tts/voice_styles';
 /// Denoising steps — the upstream example's default (quality vs latency).
 const int _denoisingSteps = 8;
 
+/// Loads a Supertonic session from a model directory.
+typedef SupertonicSessionLoader =
+    Future<SupertonicTtsSession> Function(String modelDir);
+
+/// Loads a batched [VoiceStyle] from one or more voice-style JSON paths.
+typedef VoiceStyleLoader = Future<VoiceStyle> Function(List<String> paths);
+
+/// Resolves a directory for synthesized WAV output.
+typedef TempDirProvider = Future<Directory> Function();
+
 /// [TtsEngine] backed by the Supertonic ONNX models via `flutter_onnxruntime`.
 ///
 /// The loaded session and per-voice styles are cached so repeated playback
@@ -20,7 +30,24 @@ const int _denoisingSteps = 8;
 /// opens. Gated to the Apple platforms (macOS + iOS), where `flutter_onnxruntime`
 /// is integrated and verified to link; other platforms fall back to the
 /// unavailable engine.
+///
+/// The session loader, voice-style loader, and temp-dir provider are injected
+/// (defaulting to the real `flutter_onnxruntime` / `path_provider` calls) so
+/// the caching, output, and disposal logic can be unit-tested with mocks
+/// without the native runtime.
 class SupertonicOnnxEngine implements TtsEngine {
+  SupertonicOnnxEngine({
+    SupertonicSessionLoader? sessionLoader,
+    VoiceStyleLoader? voiceLoader,
+    TempDirProvider? tempDirProvider,
+  }) : _sessionLoader = sessionLoader ?? loadSupertonicSession,
+       _voiceLoader = voiceLoader ?? loadVoiceStyle,
+       _tempDirProvider = tempDirProvider ?? getTemporaryDirectory;
+
+  final SupertonicSessionLoader _sessionLoader;
+  final VoiceStyleLoader _voiceLoader;
+  final TempDirProvider _tempDirProvider;
+
   SupertonicTtsSession? _session;
   String? _sessionDir;
   final Map<String, VoiceStyle> _voiceCache = <String, VoiceStyle>{};
@@ -44,7 +71,7 @@ class SupertonicOnnxEngine implements TtsEngine {
       style: style,
       totalStep: _denoisingSteps,
     );
-    final dir = await getTemporaryDirectory();
+    final dir = await _tempDirProvider();
     final path = '${dir.path}/tts_${voiceId}_${_counter++}.wav';
     await writeWavFile(path, result.samples, session.sampleRate);
     return File(path);
@@ -54,7 +81,7 @@ class SupertonicOnnxEngine implements TtsEngine {
     final existing = _session;
     if (existing != null && _sessionDir == modelDir) return existing;
     await existing?.dispose();
-    final session = await loadSupertonicSession(modelDir);
+    final session = await _sessionLoader(modelDir);
     _session = session;
     _sessionDir = modelDir;
     return session;
@@ -63,7 +90,7 @@ class SupertonicOnnxEngine implements TtsEngine {
   Future<VoiceStyle> _ensureVoice(String voiceId) async {
     final cached = _voiceCache[voiceId];
     if (cached != null) return cached;
-    final style = await loadVoiceStyle(['$_voiceAssetDir/$voiceId.json']);
+    final style = await _voiceLoader(['$_voiceAssetDir/$voiceId.json']);
     _voiceCache[voiceId] = style;
     return style;
   }
