@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
+import 'package:lotti/widgets/app_bar/settings_header_bar.dart';
 
-/// Fixed chrome for the mobile settings surfaces.
+/// Fixed chrome for the mobile settings menu surfaces (the drill-down root
+/// and the branch hubs).
 ///
-/// Deliberately the opposite of the legacy `SettingsPageHeader`: a flat,
-/// fixed-height bar with a hairline underline — no large collapsing
-/// title, no scroll-driven font scaling. The title stays put; the body
-/// scrolls underneath it. Shared by both mobile tree renderers (the
-/// drill-down stack and the inline-expand list) and the leaf panel host
-/// so every mobile settings level wears identical chrome.
+/// Wraps the shared [SettingsHeaderBar] in a fixed bar above the body, so
+/// the menu wears the exact same header — title typography, back glyph,
+/// insets, height, and hairline — as the leaf / list / editor pages
+/// (which render [SettingsHeaderBar] via the sliver `SettingsPageHeader`).
+/// The body scrolls underneath; the title never shrinks.
 class SettingsMobileShell extends StatelessWidget {
   const SettingsMobileShell({
     required this.title,
@@ -24,8 +24,7 @@ class SettingsMobileShell extends StatelessWidget {
   final Widget child;
   final bool showBack;
 
-  /// Defaults to popping the current route. Detail hosts can override to
-  /// beam to an explicit target.
+  /// Defaults to `NavService.beamBack()` via the shared header bar.
   final VoidCallback? onBack;
   final List<Widget>? actions;
 
@@ -39,50 +38,23 @@ class SettingsMobileShell extends StatelessWidget {
         children: [
           SafeArea(
             bottom: false,
-            child: SizedBox(
-              height: SettingsV2Constants.headerHeight,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  color: tokens.colors.background.level01,
-                  border: Border(
-                    bottom: BorderSide(color: tokens.colors.decorative.level01),
-                  ),
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: tokens.colors.background.level01,
+                border: Border(
+                  bottom: BorderSide(color: tokens.colors.decorative.level01),
                 ),
-                child: Padding(
-                  padding: EdgeInsetsDirectional.only(
-                    start: showBack
-                        ? tokens.spacing.step2
-                        : tokens.spacing.step5,
-                    end: tokens.spacing.step4,
-                  ),
-                  child: Row(
-                    children: [
-                      if (showBack)
-                        IconButton(
-                          icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                          iconSize: SettingsV2Constants.chevronSize,
-                          color: tokens.colors.text.mediumEmphasis,
-                          onPressed:
-                              onBack ?? () => Navigator.of(context).pop(),
-                          tooltip: MaterialLocalizations.of(
-                            context,
-                          ).backButtonTooltip,
-                        ),
-                      Expanded(
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.heading.heading3
-                              .copyWith(color: tokens.colors.text.highEmphasis),
-                        ),
-                      ),
-                      if (actions != null) ...[
-                        SizedBox(width: tokens.spacing.step3),
-                        ...actions!,
-                      ],
-                    ],
-                  ),
+              ),
+              child: SizedBox(
+                height: settingsHeaderContentHeight(
+                  context,
+                  hasSubtitle: false,
+                ),
+                child: SettingsHeaderBar(
+                  title: title,
+                  showBackButton: showBack,
+                  onBack: onBack,
+                  actions: actions,
                 ),
               ),
             ),

@@ -100,7 +100,7 @@ class SettingsTreeRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(tokens.radii.m),
             ),
             padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step5,
+              horizontal: tokens.spacing.step4,
               vertical: tokens.spacing.step3,
             ),
             child: Row(

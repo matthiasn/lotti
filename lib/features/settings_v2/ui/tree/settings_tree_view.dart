@@ -29,8 +29,11 @@ class SettingsTreeView extends ConsumerWidget {
     final tree = scope?.tree ?? _fallbackTree(context, ref);
 
     return ListView(
+      // Tight horizontal gutter: the row supplies its own content inset,
+      // so the outer padding stays small to avoid a wide empty band on
+      // the left of the tree column.
       padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step4,
+        horizontal: tokens.spacing.step2,
         vertical: tokens.spacing.step5,
       ),
       children: [
