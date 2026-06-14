@@ -5085,6 +5085,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get insightsChartCumulativeCaption => 'Total cumulé sur la période';
 
   @override
+  String get insightsChartCumulativeShort =>
+      'Pas encore assez de jours pour un total cumulé';
+
+  @override
   String get insightsChartDaily => 'Quotidien';
 
   @override
@@ -5113,6 +5117,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get insightsCompareVs => 'vs';
+
+  @override
+  String get insightsCompareSameDays => 'mêmes jours';
 
   @override
   String get insightsDeletedCategory => 'Catégorie supprimée';
@@ -5151,6 +5158,11 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get insightsKpiTotal => 'TOTAL';
+
+  @override
+  String insightsKpiTopCategory(String category, String share) {
+    return 'Surtout sur $category · $share';
+  }
 
   @override
   String get insightsLoadError => 'Impossible de charger les données de temps';

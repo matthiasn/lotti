@@ -19,6 +19,9 @@ class InsightsKpiRow extends StatelessWidget {
     required this.focusCategoryIds,
     required this.onToggleFocusCategory,
     this.previousKpis,
+    this.comparisonInProgress = false,
+    this.topCategoryLabel,
+    this.topCategoryShare,
     super.key,
   });
 
@@ -26,6 +29,17 @@ class InsightsKpiRow extends StatelessWidget {
 
   /// Previous-period figures when comparison is on; drives the delta chips.
   final InsightsKpis? previousKpis;
+
+  /// Whether the current period is still unfolding. Mutes the delta colour
+  /// (the change is a partial-sample preview) and annotates the baseline as
+  /// "same days" so a half-finished period isn't read as a real swing.
+  final bool comparisonInProgress;
+
+  /// The largest category and its share of the total, surfaced under the Total
+  /// figure so the headline answers "where did my time go", not only "how
+  /// much". Null when there is nothing to rank (zero or one category).
+  final String? topCategoryLabel;
+  final double? topCategoryShare;
 
   /// Active categories, used by the focus-picker dialog.
   final List<CategoryDefinition> categories;
@@ -50,6 +64,16 @@ class InsightsKpiRow extends StatelessWidget {
     final messages = context.messages;
     final configured = kpis.focusSeconds != null;
 
+    // The headline answer beneath the Total figure: which category took the
+    // most time, and its share.
+    final topLabel = topCategoryLabel;
+    final topCaption = topLabel == null
+        ? null
+        : messages.insightsKpiTopCategory(
+            topLabel,
+            formatShare(topCategoryShare ?? 0),
+          );
+
     // The focus tile lists what it counts so it's never a black box.
     final focusNames = [
       for (final category in categories)
@@ -68,6 +92,8 @@ class InsightsKpiRow extends StatelessWidget {
               label: messages.insightsKpiTotal,
               seconds: kpis.totalSeconds,
               previousSeconds: previousKpis?.totalSeconds,
+              caption: topCaption,
+              muted: comparisonInProgress,
             ),
           ),
           SizedBox(width: tokens.spacing.cardItemSpacing),
@@ -93,6 +119,8 @@ class InsightsKpiRow extends StatelessWidget {
               label: messages.insightsKpiTotal,
               seconds: kpis.totalSeconds,
               previousSeconds: previousKpis?.totalSeconds,
+              caption: topCaption,
+              muted: comparisonInProgress,
             ),
           ),
           SizedBox(width: tokens.spacing.cardItemSpacing),
@@ -103,6 +131,7 @@ class InsightsKpiRow extends StatelessWidget {
               previousSeconds: previousKpis?.focusSeconds,
               caption: focusNames,
               onEdit: () => _editFocusCategories(context),
+              muted: comparisonInProgress,
             ),
           ),
           SizedBox(width: tokens.spacing.cardItemSpacing),
@@ -111,6 +140,7 @@ class InsightsKpiRow extends StatelessWidget {
               label: messages.insightsKpiOther,
               seconds: kpis.otherSeconds!,
               previousSeconds: previousKpis?.otherSeconds,
+              muted: comparisonInProgress,
             ),
           ),
         ],
@@ -126,6 +156,7 @@ class _KpiTile extends StatelessWidget {
     this.previousSeconds,
     this.caption,
     this.onEdit,
+    this.muted = false,
   });
 
   final String label;
@@ -139,6 +170,10 @@ class _KpiTile extends StatelessWidget {
   final String? caption;
   final VoidCallback? onEdit;
 
+  /// In-progress comparison: mutes the delta and annotates the baseline as
+  /// "same days" so a partial period isn't read as a finished swing.
+  final bool muted;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -149,7 +184,7 @@ class _KpiTile extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level01,
+        color: tokens.colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
@@ -195,12 +230,16 @@ class _KpiTile extends StatelessWidget {
                   InsightsDeltaChip(
                     current: seconds,
                     previous: previousSeconds,
+                    muted: muted,
                   ),
                   SizedBox(width: tokens.spacing.step2),
                   Flexible(
                     child: Text(
                       '${context.messages.insightsCompareVs} '
-                      '${formatDurationWithDays(previousSeconds)}',
+                      '${formatDurationWithDays(previousSeconds)}'
+                      // Name the baseline as the same elapsed days so the
+                      // partial comparison reads honestly at the number.
+                      '${muted ? ' · ${context.messages.insightsCompareSameDays}' : ''}',
                       style: tokens.typography.styles.others.caption.copyWith(
                         color: tokens.colors.text.mediumEmphasis,
                       ),

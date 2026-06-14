@@ -5086,6 +5086,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get insightsChartCumulativeCaption => 'Total cumulat pe interval';
 
   @override
+  String get insightsChartCumulativeShort =>
+      'Încă nu sunt destule zile pentru un total cumulat';
+
+  @override
   String get insightsChartDaily => 'Zilnic';
 
   @override
@@ -5115,6 +5119,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get insightsCompareVs => 'vs';
+
+  @override
+  String get insightsCompareSameDays => 'aceleași zile';
 
   @override
   String get insightsDeletedCategory => 'Categorie ștearsă';
@@ -5153,6 +5160,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get insightsKpiTotal => 'TOTAL';
+
+  @override
+  String insightsKpiTopCategory(String category, String share) {
+    return 'Cel mai mult pe $category · $share';
+  }
 
   @override
   String get insightsLoadError => 'Datele despre timp nu au putut fi încărcate';

@@ -97,8 +97,9 @@ final insightsBucketsProvider = StreamProvider.autoDispose
       name: 'insightsBucketsProvider',
     );
 
-/// Selected analysis period. Defaults to the current week — the period that
-/// answers "where did my time go this week?".
+/// Selected analysis period. Defaults to month-to-date — a populated first
+/// paint (the current month's elapsed days) that answers "where did my time
+/// go this month?" without the near-empty look of the current week early on.
 ///
 /// Weeks start on the device region's first weekday (Monday across most of
 /// Europe, Sunday in the US), read from [firstDayOfWeekIndexProvider] so the
@@ -153,21 +154,17 @@ class InsightsRangeController extends Notifier<InsightsPeriodSelection> {
       }
     });
 
-    return _defaultSelection(_firstDayOfWeekIndex);
+    return _defaultSelection();
   }
 
-  /// The current-week default for a given first-weekday index.
-  InsightsPeriodSelection _defaultSelection(int firstDayOfWeekIndex) {
-    const unit = InsightsPeriodUnit.week;
-    return InsightsPeriodSelection(
-      unit: unit,
-      range: periodContaining(
-        unit,
-        clock.now(),
-        firstDayOfWeekIndex: firstDayOfWeekIndex,
-      ),
-    );
-  }
+  /// The default landing selection: month-to-date. A populated first paint —
+  /// the current month's elapsed days — instead of a near-empty current week
+  /// early in the week. Month bounds are weekday-independent, so this needs no
+  /// first-weekday arg.
+  InsightsPeriodSelection _defaultSelection() => InsightsPeriodSelection(
+    unit: InsightsPeriodUnit.month,
+    range: periodToDate(InsightsPeriodUnit.month, clock.now()),
+  );
 
   /// The period immediately before the current selection (one whole unit
   /// earlier) — `null` unless comparison is on. Derived purely from the

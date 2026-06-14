@@ -5044,6 +5044,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsChartCumulativeCaption => 'Průběžný součet za období';
 
   @override
+  String get insightsChartCumulativeShort =>
+      'Zatím málo dní pro průběžný součet';
+
+  @override
   String get insightsChartDaily => 'Denně';
 
   @override
@@ -5072,6 +5076,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get insightsCompareVs => 'vs';
+
+  @override
+  String get insightsCompareSameDays => 'stejné dny';
 
   @override
   String get insightsDeletedCategory => 'Smazaná kategorie';
@@ -5109,6 +5116,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get insightsKpiTotal => 'CELKEM';
+
+  @override
+  String insightsKpiTopCategory(String category, String share) {
+    return 'Nejvíce na $category · $share';
+  }
 
   @override
   String get insightsLoadError => 'Data o čase se nepodařilo načíst';

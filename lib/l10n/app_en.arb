@@ -2560,6 +2560,7 @@
   "insightsChartCompareCaptionPartial": "This period so far vs the previous",
   "insightsChartCumulative": "Cumulative",
   "insightsChartCumulativeCaption": "Running total over the range",
+  "insightsChartCumulativeShort": "Not enough days yet for a running total",
   "insightsChartDaily": "Daily",
   "insightsChartDailyCaption": "Time per day",
   "insightsChartHourlyCaption": "Time per hour",
@@ -2570,6 +2571,7 @@
   "insightsCompareTooltip": "Compare with the previous period",
   "insightsComparePrevious": "Previous",
   "insightsCompareVs": "vs",
+  "insightsCompareSameDays": "same days",
   "insightsDeletedCategory": "Deleted category",
   "insightsDeltaNew": "new",
   "insightsEmptyBody": "Time you track on entries and tasks will show up here.",
@@ -2582,6 +2584,13 @@
   "insightsKpiFocus": "FOCUS",
   "insightsKpiOther": "OTHER",
   "insightsKpiTotal": "TOTAL",
+  "insightsKpiTopCategory": "Most on {category} · {share}",
+  "@insightsKpiTopCategory": {
+    "placeholders": {
+      "category": { "type": "String" },
+      "share": { "type": "String" }
+    }
+  },
   "insightsLoadError": "Couldn't load time data",
   "insightsOtherCategories": "Other",
   "insightsPartialWeek": "partial week",

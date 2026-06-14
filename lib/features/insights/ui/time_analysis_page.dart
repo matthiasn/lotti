@@ -65,9 +65,10 @@ class TimeAnalysisPage extends ConsumerWidget {
     );
 
     return Scaffold(
-      // One step up from the app's near-black page base so the dashboard
-      // canvas doesn't read as pure black; cards sit a further step up.
-      backgroundColor: tokens.colors.background.level02,
+      // Dark canvas with the cards a step lighter (level02) sitting on it —
+      // conventional elevation reads with cleaner contrast than a lighter
+      // canvas under darker cards.
+      backgroundColor: tokens.colors.background.level01,
       body: SafeArea(
         child: bucketsAsync.when(
           // Background refreshes and window switches must never blank the
@@ -177,12 +178,14 @@ class _DashboardContent extends StatelessWidget {
     );
     final isEmpty = kpis.totalSeconds == 0;
 
-    // Comparison derivations — only once the previous window has loaded.
+    // Comparison derivations — only once the previous window has loaded. The
+    // comparison is surfaced numerically (KPI deltas + the table's Δ% /
+    // Previous columns), never as a second chart series: a previous-period
+    // reference bar fights the focal data and reads as a loading/empty bar.
     final compareRange = previousRange;
     final prevBuckets = previousBuckets;
     InsightsKpis? previousKpis;
     Map<String?, int>? previousByCategory;
-    List<int>? comparisonTotals;
     if (compareRange != null && prevBuckets != null) {
       previousKpis = buildKpis(
         prevBuckets,
@@ -193,20 +196,6 @@ class _DashboardContent extends StatelessWidget {
         for (final row in buildTableRows(prevBuckets, compareRange))
           row.categoryId: row.seconds,
       };
-      // Previous-period per-bucket totals aligned to the current chart's
-      // x-axis, for the grouped comparison bars. Built over the *whole* prior
-      // period (one unit back) so it shares the current chart's granularity
-      // and aligns bucket-for-bucket (Sun↔Sun, Jun 1↔May 1). The elapsed-only
-      // comparison is then enforced by the chart clipping its render to the
-      // elapsed buckets — using the elapsed-clipped range here instead would
-      // re-bucket a one-day window hourly and misalign the ghost bars.
-      comparisonTotals = alignedPreviousTotals(
-        chartData,
-        buildChartData(
-          prevBuckets,
-          shiftPeriod(range, selection.unit, -1),
-        ),
-      );
     }
 
     return ListView(
@@ -254,16 +243,24 @@ class _DashboardContent extends StatelessWidget {
           InsightsKpiRow(
             kpis: kpis,
             previousKpis: previousKpis,
+            comparisonInProgress: isInProgress(range, clock.now()),
             categories: categories,
             focusCategoryIds: focusCategoryIds,
             onToggleFocusCategory: onToggleFocusCategory,
+            // Largest category (rows are ranked desc) — surfaced under Total so
+            // the headline answers "where did my time go". Only when there is
+            // something to rank.
+            topCategoryLabel: tableRows.length > 1
+                ? resolver.labelFor(tableRows.first.categoryId)
+                : null,
+            topCategoryShare: tableRows.length > 1
+                ? tableRows.first.share
+                : null,
           ),
           SizedBox(height: tokens.spacing.sectionGap),
           InsightsChartCard(
             chartData: chartData,
             resolver: resolver,
-            comparisonTotals: comparisonTotals,
-            comparisonInProgress: isInProgress(range, clock.now()),
           ),
           SizedBox(height: tokens.spacing.sectionGap),
           InsightsTable(
@@ -272,6 +269,7 @@ class _DashboardContent extends StatelessWidget {
             // avg/day equals the total when only one day has elapsed — noise.
             showAvgPerDay: elapsedDays > 1,
             previousSecondsByCategory: previousByCategory,
+            comparisonInProgress: isInProgress(range, clock.now()),
           ),
         ],
         SizedBox(height: tokens.spacing.step6),
@@ -303,7 +301,7 @@ class _EmptyState extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level01,
+        color: tokens.colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),

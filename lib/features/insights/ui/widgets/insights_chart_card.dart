@@ -20,33 +20,20 @@ const double _chartHeight = 260;
 /// baseline, at most `kInsightsMaxChartSeries` bands plus a slate "Other",
 /// and a tooltip that reads out *every* band for the hovered bucket —
 /// middle stack bands are otherwise uncomparable.
+///
+/// Period comparison is intentionally NOT drawn here: a previous-period
+/// reference series fights the focal data and reads as a loading/empty bar.
+/// The comparison lives where it is precise and legible instead — the KPI
+/// deltas and the table's Δ% / Previous columns.
 class InsightsChartCard extends StatefulWidget {
   const InsightsChartCard({
     required this.chartData,
     required this.resolver,
-    this.comparisonTotals,
-    this.comparisonInProgress = false,
-    this.previousLabel,
     super.key,
   });
 
   final InsightsChartData chartData;
   final InsightsCategoryResolver resolver;
-
-  /// Previous-period totals aligned to [chartData]'s buckets (via
-  /// `alignedPreviousTotals`). When non-null the chart switches to grouped
-  /// current-vs-previous bars and hides the daily/cumulative toggle — the
-  /// comparison is a per-bucket total view, so the cumulative mode (and the
-  /// category stacking it shares with the daily bars) would only muddy it.
-  final List<int>? comparisonTotals;
-
-  /// Whether the current period is still unfolding. In compare mode this
-  /// switches the caption to the "so far" wording so the partial-vs-elapsed
-  /// comparison reads honestly.
-  final bool comparisonInProgress;
-
-  /// Names the comparison baseline for the legend (e.g. "Previous week").
-  final String? previousLabel;
 
   @override
   State<InsightsChartCard> createState() => _InsightsChartCardState();
@@ -55,21 +42,24 @@ class InsightsChartCard extends StatefulWidget {
 class _InsightsChartCardState extends State<InsightsChartCard> {
   InsightsChartMode _mode = InsightsChartMode.daily;
 
+  /// A running total needs at least two elapsed buckets to draw a line; with
+  /// one it falls back to bars rather than a lone floating point.
+  bool get _cumulativeFallsBack =>
+      _mode == InsightsChartMode.cumulative &&
+      elapsedBucketCount(widget.chartData) < 2;
+
   String _captionText(AppLocalizations messages) {
-    if (widget.comparisonTotals != null) {
-      return widget.comparisonInProgress
-          ? messages.insightsChartCompareCaptionPartial
-          : messages.insightsChartCompareCaption;
+    if (_cumulativeFallsBack) return messages.insightsChartCumulativeShort;
+    if (_mode == InsightsChartMode.cumulative) {
+      return messages.insightsChartCumulativeCaption;
     }
     // The daily caption must name the bucket the bars actually represent —
     // "Time per day" over weekly or hourly bars misreads their magnitude.
-    final base = _mode == InsightsChartMode.cumulative
-        ? messages.insightsChartCumulativeCaption
-        : switch (widget.chartData.granularity) {
-            InsightsGranularity.hour => messages.insightsChartHourlyCaption,
-            InsightsGranularity.day => messages.insightsChartDailyCaption,
-            InsightsGranularity.week => messages.insightsChartWeeklyCaption,
-          };
+    final base = switch (widget.chartData.granularity) {
+      InsightsGranularity.hour => messages.insightsChartHourlyCaption,
+      InsightsGranularity.day => messages.insightsChartDailyCaption,
+      InsightsGranularity.week => messages.insightsChartWeeklyCaption,
+    };
     final keys = widget.chartData.seriesKeys;
     if (keys.length != 1) return base;
     return '$base · ${widget.resolver.labelFor(keys.single)}';
@@ -79,10 +69,14 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    // Bars whenever the running-total line can't be drawn, so the cumulative
+    // toggle never yields a blank or single-dot card.
+    final showBars =
+        _mode == InsightsChartMode.daily || _cumulativeFallsBack;
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level01,
+        color: tokens.colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
@@ -124,26 +118,20 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
                     ],
                   ),
                 ),
-                // The daily/cumulative toggle is meaningless in compare mode
-                // (the chart is fixed to grouped per-bucket totals), so it
-                // drops out while comparing.
-                if (widget.comparisonTotals == null) ...[
-                  // Same pill idiom as the range selector — one "pick one of
-                  // N" language across the dashboard.
-                  InsightsPillButton(
-                    label: messages.insightsChartDaily,
-                    active: _mode == InsightsChartMode.daily,
-                    onTap: () =>
-                        setState(() => _mode = InsightsChartMode.daily),
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
-                  InsightsPillButton(
-                    label: messages.insightsChartCumulative,
-                    active: _mode == InsightsChartMode.cumulative,
-                    onTap: () =>
-                        setState(() => _mode = InsightsChartMode.cumulative),
-                  ),
-                ],
+                // Same pill idiom as the range selector — one "pick one of N"
+                // language across the dashboard.
+                InsightsPillButton(
+                  label: messages.insightsChartDaily,
+                  active: _mode == InsightsChartMode.daily,
+                  onTap: () => setState(() => _mode = InsightsChartMode.daily),
+                ),
+                SizedBox(width: tokens.spacing.step2),
+                InsightsPillButton(
+                  label: messages.insightsChartCumulative,
+                  active: _mode == InsightsChartMode.cumulative,
+                  onTap: () =>
+                      setState(() => _mode = InsightsChartMode.cumulative),
+                ),
               ],
             ),
             SizedBox(height: tokens.spacing.step5),
@@ -151,13 +139,7 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
               height: _chartHeight,
               child: widget.chartData.isEmpty
                   ? EmptyChart(message: messages.insightsEmptyChart)
-                  : widget.comparisonTotals != null
-                  ? StackedBarChart(
-                      chartData: widget.chartData,
-                      resolver: widget.resolver,
-                      comparisonTotals: widget.comparisonTotals,
-                    )
-                  : _mode == InsightsChartMode.daily
+                  : showBars
                   ? StackedBarChart(
                       chartData: widget.chartData,
                       resolver: widget.resolver,
@@ -168,17 +150,13 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
                     ),
             ),
             // A one-item legend restates the obvious — only render when there
-            // is something to disambiguate (multiple categories, or the
-            // previous-period ghost bar that compare mode adds).
-            if (widget.chartData.seriesKeys.length > 1 ||
-                widget.comparisonTotals != null) ...[
+            // is more than one category to disambiguate.
+            if (widget.chartData.seriesKeys.length > 1) ...[
               SizedBox(height: tokens.spacing.step4),
               ChartLegend(
                 seriesKeys: widget.chartData.seriesKeys,
                 rolledUpCount: widget.chartData.rolledUpCount,
                 resolver: widget.resolver,
-                showPrevious: widget.comparisonTotals != null,
-                previousLabel: widget.previousLabel,
               ),
             ],
           ],

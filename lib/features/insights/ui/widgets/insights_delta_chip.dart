@@ -15,15 +15,21 @@ int? insightsDeltaPercent(int current, int previous) {
 /// low-vision-safe) — muted green up, muted clay down (semantic
 /// success/error tokens, the latter chosen so it never reads as the gold/amber
 /// category hue). Renders nothing when both values are zero.
+///
+/// When [muted] (an in-progress period, where the delta is a partial-sample
+/// preview), the colour is dropped to neutral so a half-finished week doesn't
+/// shout "decline"; the arrow still conveys direction.
 class InsightsDeltaChip extends StatelessWidget {
   const InsightsDeltaChip({
     required this.current,
     required this.previous,
+    this.muted = false,
     super.key,
   });
 
   final int current;
   final int previous;
+  final bool muted;
 
   @override
   Widget build(BuildContext context) {
@@ -31,20 +37,21 @@ class InsightsDeltaChip extends StatelessWidget {
     final messages = context.messages;
     if (current == 0 && previous == 0) return const SizedBox.shrink();
 
+    final neutral = tokens.colors.text.mediumEmphasis;
     // The higher-contrast (hover) step of the semantic accents: the default
     // green fails the 4.5:1 small-text bar on the light card, and the stronger
     // step clears it in both themes (darker on light, lighter on dark).
-    final up = tokens.colors.alert.success.hover;
-    final down = tokens.colors.alert.error.hover;
-    final flat = tokens.colors.text.mediumEmphasis;
+    final up = muted ? neutral : tokens.colors.alert.success.hover;
+    final down = muted ? neutral : tokens.colors.alert.error.hover;
     final pct = insightsDeltaPercent(current, previous);
 
     final String text;
     final Color color;
     if (pct == null) {
-      // No previous time, but the current period has some → brand new.
+      // No previous time, but the current period has some → brand new. Kept
+      // neutral (not positive-green): "new" is a state, not a win.
       text = messages.insightsDeltaNew;
-      color = up;
+      color = neutral;
     } else if (pct > 0) {
       text = '↑$pct%';
       color = up;
@@ -53,7 +60,7 @@ class InsightsDeltaChip extends StatelessWidget {
       color = down;
     } else {
       text = '0%';
-      color = flat;
+      color = neutral;
     }
 
     return Text(

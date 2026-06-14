@@ -8724,6 +8724,12 @@ abstract class AppLocalizations {
   /// **'Running total over the range'**
   String get insightsChartCumulativeCaption;
 
+  /// No description provided for @insightsChartCumulativeShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough days yet for a running total'**
+  String get insightsChartCumulativeShort;
+
   /// No description provided for @insightsChartDaily.
   ///
   /// In en, this message translates to:
@@ -8783,6 +8789,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'vs'**
   String get insightsCompareVs;
+
+  /// No description provided for @insightsCompareSameDays.
+  ///
+  /// In en, this message translates to:
+  /// **'same days'**
+  String get insightsCompareSameDays;
 
   /// No description provided for @insightsDeletedCategory.
   ///
@@ -8855,6 +8867,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'TOTAL'**
   String get insightsKpiTotal;
+
+  /// No description provided for @insightsKpiTopCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Most on {category} · {share}'**
+  String insightsKpiTopCategory(String category, String share);
 
   /// No description provided for @insightsLoadError.
   ///

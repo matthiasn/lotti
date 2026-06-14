@@ -272,15 +272,15 @@ void main() {
   });
 
   group('InsightsRangeController', () {
-    test('defaults to the current Monday-start week', () {
+    test('defaults to month-to-date', () {
       final container = makeContainer();
       final selection = withClock(
         Clock.fixed(fixedNow),
         () => container.read(insightsRangeControllerProvider),
       );
-      expect(selection.unit, InsightsPeriodUnit.week);
-      expect(selection.range.dayCount, 7);
-      // fixedNow is Sun 2026-06-07; its week is Mon Jun 1 – Sun Jun 7.
+      // A populated first paint: the current month through today.
+      expect(selection.unit, InsightsPeriodUnit.month);
+      // fixedNow is 2026-06-07 → Jun 1 through today (exclusive Jun 8).
       expect(dayStart(selection.range.startDay), DateTime(2026, 6));
       expect(dayStart(selection.range.endDayExclusive), DateTime(2026, 6, 8));
     });
@@ -305,6 +305,10 @@ void main() {
         () => container.read(insightsRangeControllerProvider.notifier),
       );
 
+      // Switch to the (Monday-default) current week first; the default is now
+      // month-to-date, but this exercises week stepping.
+      // ignore: cascade_invocations
+      notifier.selectUnit(InsightsPeriodUnit.week);
       // ignore: cascade_invocations
       notifier.step(-1);
       expect(
@@ -364,9 +368,9 @@ void main() {
     test('jumpTo snaps to the current granularity period of a far date', () {
       final container = makeContainer();
       withClock(Clock.fixed(fixedNow), () {
-        container
-            .read(insightsRangeControllerProvider.notifier)
-            .jumpTo(DateTime(2025, 11, 19)); // a Wednesday
+        container.read(insightsRangeControllerProvider.notifier)
+          ..selectUnit(InsightsPeriodUnit.week)
+          ..jumpTo(DateTime(2025, 11, 19)); // a Wednesday
       });
       final selection = container.read(insightsRangeControllerProvider);
       // Still a week (granularity unchanged); snapped to that day's Monday.
@@ -422,7 +426,13 @@ void main() {
           Clock.fixed(fixedNow),
           () => container.read(insightsRangeControllerProvider.notifier),
         );
+        // Navigate to the current week (the default is now month-to-date).
         // fixedNow is Sun 2026-06-07 → current week Sun Jun 7 – Sat Jun 13.
+        withClock(Clock.fixed(fixedNow), () {
+          notifier
+            ..selectUnit(InsightsPeriodUnit.week)
+            ..jumpTo(fixedNow);
+        });
         final current = container.read(insightsRangeControllerProvider).range;
         expect(dayStart(current.startDay), DateTime(2026, 6, 7));
         expect(dayStart(current.endDayExclusive), DateTime(2026, 6, 14));
@@ -435,7 +445,7 @@ void main() {
     );
 
     test(
-      're-anchors the untouched default week when the region resolves',
+      're-anchors the untouched current week when the region resolves',
       () async {
         final completer = Completer<int>();
         final container = makeContainer(
@@ -449,14 +459,18 @@ void main() {
         );
 
         await withClock(Clock.fixed(fixedNow), () async {
-          // First frame: region unresolved → Monday-start default.
+          // Switch to the current week while the region is still unresolved
+          // (Monday-start): the default is now month-to-date.
+          container
+              .read(insightsRangeControllerProvider.notifier)
+              .selectUnit(InsightsPeriodUnit.week);
           expect(startDay(), DateTime(2026, 6)); // Mon Jun 1
 
           // Region resolves to Sunday-first.
           completer.complete(0);
           await pumpEventQueue();
 
-          // The untouched default re-anchors to the Sunday-aligned current week.
+          // The untouched current week re-anchors to the Sunday-aligned week.
           expect(startDay(), DateTime(2026, 6, 7)); // Sun Jun 7
         });
       },
@@ -474,8 +488,10 @@ void main() {
           container.read(insightsRangeControllerProvider);
 
       await withClock(Clock.fixed(fixedNow), () async {
-        // Navigate to the previous (Monday-aligned) week and turn compare on.
+        // Switch to the current week (the default is now month-to-date), then
+        // navigate to the previous (Monday-aligned) week and turn compare on.
         container.read(insightsRangeControllerProvider.notifier)
+          ..selectUnit(InsightsPeriodUnit.week)
           ..step(-1)
           ..toggleCompare();
         expect(dayStart(selection().range.startDay), DateTime(2026, 5, 25));

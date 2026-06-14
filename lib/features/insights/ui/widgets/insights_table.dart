@@ -23,11 +23,16 @@ class InsightsTable extends StatelessWidget {
     required this.resolver,
     this.showAvgPerDay = true,
     this.previousSecondsByCategory,
+    this.comparisonInProgress = false,
     super.key,
   });
 
   final List<InsightsTableRow> rows;
   final InsightsCategoryResolver resolver;
+
+  /// Mutes the Δ% chips while the current period is unfolding, so a partial
+  /// comparison doesn't read as a finished swing (mirrors the KPI tiles).
+  final bool comparisonInProgress;
 
   /// Hidden for single-day ranges, where avg/day would just repeat the
   /// total.
@@ -103,7 +108,7 @@ class InsightsTable extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level01,
+        color: tokens.colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
@@ -166,6 +171,7 @@ class InsightsTable extends StatelessWidget {
                   child: InsightsDeltaChip(
                     current: row.seconds,
                     previous: previousSecondsByCategory?[row.categoryId] ?? 0,
+                    muted: comparisonInProgress,
                   ),
                 ),
                 previous: Text(

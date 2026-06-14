@@ -1,5 +1,4 @@
 import 'package:clock/clock.dart';
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -154,11 +153,11 @@ void main() {
     ]);
     await pumpPage(tester);
 
-    expect(find.text('1h 30m'), findsOneWidget); // current week total
+    expect(find.text('1h 30m'), findsOneWidget); // current month-to-date total
 
     // Widen to the quarter (Apr–Jun 2026), which also contains May 18.
     await withClock(Clock.fixed(fixedNow), () async {
-      await tester.tap(find.text('Week')); // open the granularity dropdown
+      await tester.tap(find.text('Month')); // open the granularity dropdown
       await tester.pumpAndSettle();
       await tester.tap(find.text('Quarter'));
       await tester.pump();
@@ -185,6 +184,15 @@ void main() {
       row(daysAgo: 8, hour: 9, minutes: 60, categoryId: 'cat-client'),
     ]);
     await pumpPage(tester);
+    // The default is month-to-date; switch to the current week for a
+    // week-over-week comparison against the data above.
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.tap(find.text('Month')); // open the granularity dropdown
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Week'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
     expect(find.text('2h 30m'), findsOneWidget); // current week total
 
     await withClock(Clock.fixed(fixedNow), () async {
@@ -193,21 +201,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
     });
 
-    // 2h30m this week vs 1h last week = ↑150%, shown on the KPI tile and the
-    // table's new PREVIOUS column.
+    // 2h30m this week vs 1h last week = ↑150%, surfaced in the KPI tile and the
+    // table's Δ% / PREVIOUS columns. The comparison is numeric only — there is
+    // no second chart series.
     expect(find.text('PREVIOUS'), findsOneWidget);
     expect(find.text('↑150%'), findsWidgets);
     expect(find.text('vs 1h'), findsOneWidget);
-
-    // The chart switches to grouped current-vs-previous bars: every day group
-    // now carries two rods, and the caption announces the comparison.
-    expect(find.text('This period vs the previous'), findsOneWidget);
-    final chart = tester.widget<BarChart>(find.byType(BarChart));
-    expect(
-      chart.data.barGroups,
-      everyElement(
-        isA<BarChartGroupData>().having((g) => g.barRods.length, 'rods', 2),
-      ),
-    );
   });
 }

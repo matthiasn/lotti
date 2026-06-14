@@ -4982,6 +4982,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsChartCumulativeCaption => 'Running total over the range';
 
   @override
+  String get insightsChartCumulativeShort =>
+      'Not enough days yet for a running total';
+
+  @override
   String get insightsChartDaily => 'Daily';
 
   @override
@@ -5010,6 +5014,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get insightsCompareVs => 'vs';
+
+  @override
+  String get insightsCompareSameDays => 'same days';
 
   @override
   String get insightsDeletedCategory => 'Deleted category';
@@ -5047,6 +5054,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get insightsKpiTotal => 'TOTAL';
+
+  @override
+  String insightsKpiTopCategory(String category, String share) {
+    return 'Most on $category · $share';
+  }
 
   @override
   String get insightsLoadError => 'Couldn\'t load time data';
