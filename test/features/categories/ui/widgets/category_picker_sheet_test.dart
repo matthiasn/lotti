@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -406,6 +408,51 @@ void main() {
       expect(find.byType(CategoryCreateModal), findsOneWidget);
     });
 
+    testWidgets('creating a category from search applies it and pops '
+        'CategoryPicked', (tester) async {
+      // The created id is not in the cache or the options list, so resolving
+      // it relies on the picker stashing the just-created definition. Without
+      // that stash the lookup returns null and the picker would hang open.
+      registerAllFallbackValues();
+      final created = CategoryTestUtils.createTestCategory(
+        id: 'cat-new',
+        name: 'BrandNew',
+      );
+      final mockRepository = MockCategoryRepository();
+      when(
+        () => mockRepository.createCategory(
+          name: any(named: 'name'),
+          color: any(named: 'color'),
+          icon: any(named: 'icon'),
+        ),
+      ).thenAnswer((_) async => created);
+
+      final result = await pickSingle(
+        tester,
+        overrides: [
+          categoryRepositoryProvider.overrideWithValue(mockRepository),
+        ],
+        interact: () async {
+          await tester.enterText(find.byType(TextField), 'BrandNew');
+          await tester.pump();
+          await tester.tap(
+            find.byKey(const ValueKey('category-picker-create')),
+          );
+          await tester.pumpAndSettle();
+          final saveButton = find.text('Save');
+          await tester.ensureVisible(saveButton);
+          await tester.pumpAndSettle();
+          await tester.tap(saveButton, warnIfMissed: false);
+          await tester.pumpAndSettle();
+        },
+      );
+
+      expect(result, isA<CategoryPicked>());
+      expect((result! as CategoryPicked).category.id, 'cat-new');
+      // Route popped: the launcher is visible again (picker did not hang).
+      expect(find.text('open'), findsOneWidget);
+    });
+
     testWidgets('shows an empty-state message when nothing matches and create '
         'is disabled', (tester) async {
       await tester.pumpWidget(
@@ -582,6 +629,51 @@ void main() {
         );
       },
     );
+
+    testWidgets('rows announce checked state, not single-select state', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final staged = ValueNotifier<Set<String>>({'cat2'});
+      addTearDown(staged.dispose);
+
+      await tester.pumpWidget(pumpMulti(staged));
+
+      final checked = tester
+          .getSemantics(find.byKey(const ValueKey('category-picker-row-cat2')))
+          .getSemanticsData()
+          .flagsCollection;
+      expect(checked.isChecked, CheckedState.isTrue);
+      // Multi rows are checkboxes, not single-select buttons.
+      expect(checked.isSelected, Tristate.none);
+
+      final unchecked = tester
+          .getSemantics(find.byKey(const ValueKey('category-picker-row-cat1')))
+          .getSemanticsData()
+          .flagsCollection;
+      expect(unchecked.isChecked, CheckedState.isFalse);
+
+      handle.dispose();
+    });
+
+    testWidgets('Enter is a no-op (no commit, no staged change)', (
+      tester,
+    ) async {
+      final staged = ValueNotifier<Set<String>>({});
+      addTearDown(staged.dispose);
+
+      await tester.pumpWidget(pumpMulti(staged));
+
+      // Filter to an existing match so no create row is offered, then submit.
+      await tester.enterText(find.byType(TextField), 'Category 2');
+      await tester.pump();
+      await tester.showKeyboard(find.byType(TextField));
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+
+      // Nothing was staged: in multi mode Enter has no submit target.
+      expect(staged.value, isEmpty);
+    });
   });
 
   group('helper integration (Wolt modal)', () {

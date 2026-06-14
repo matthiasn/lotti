@@ -12,7 +12,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 
@@ -238,6 +237,11 @@ class CategoryPickerSheet extends ConsumerStatefulWidget {
 class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
   bool get _multi => widget.mode == CategoryPickerMode.multi;
 
+  /// The category just created via create-from-search. Stashed so single mode
+  /// can resolve it directly instead of re-looking it up by id (the cache /
+  /// options snapshot may not yet contain a freshly-created category).
+  CategoryDefinition? _lastCreated;
+
   List<PickerEntry> _entries(String query) {
     final q = query.toLowerCase();
     final filtered = q.isEmpty
@@ -294,7 +298,7 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
         if (isPrivate)
           Icon(
             MdiIcons.security,
-            color: context.colorScheme.error,
+            color: context.designTokens.colors.alert.error.defaultColor,
             size: CategoryIconConstants.iconSizeExtraSmall,
           ),
         if (isFavorite)
@@ -337,9 +341,10 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
       Navigator.of(context).pop(const CategoryCleared());
       return;
     }
-    final category =
-        getIt<EntitiesCacheService>().getCategoryById(id) ??
-        widget.options.where((c) => c.id == id).firstOrNull;
+    final category = _lastCreated?.id == id
+        ? _lastCreated
+        : getIt<EntitiesCacheService>().getCategoryById(id) ??
+              widget.options.where((c) => c.id == id).firstOrNull;
     if (category != null) {
       Navigator.of(context).pop(CategoryPicked(category));
     }
@@ -355,6 +360,7 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
         onCategoryCreated: (category) => created = category,
       ),
     );
+    _lastCreated = created;
     return created?.id;
   }
 

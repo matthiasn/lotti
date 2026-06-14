@@ -189,6 +189,9 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
                   // search-box behaviour.
                   widget.onPick?.call(items.first.id);
                 }
+                // Multi mode: Enter is intentionally a no-op — there is no
+                // single "submit" target; selection is toggled per row and
+                // committed via the Apply footer.
               },
               onClear: () => setState(() => _query = ''),
             ),
@@ -316,6 +319,9 @@ class _PickerItemRow extends StatelessWidget {
     final trailing = multi
         ? DesignSystemCheckbox(
             value: selected,
+            // Required non-null by DesignSystemCheckbox's assert, but excluded
+            // from semantics below (the row's own Semantics node carries the
+            // accessible name + checked state), so it is never announced here.
             semanticsLabel: item.title,
             onChanged: onTap == null ? null : (_) => onTap!(),
           )
@@ -427,40 +433,40 @@ class _PickerCreateRow extends StatelessWidget {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
 
-    return MergeSemantics(
-      child: Semantics(
-        button: true,
-        label: query,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            key: rowKey,
-            borderRadius: BorderRadius.circular(tokens.radii.l),
-            onTap: onTap,
-            child: ExcludeSemantics(
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: spacing.step1,
-                  vertical: spacing.step4,
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.add_circle_outline,
-                      color: tokens.colors.text.mediumEmphasis,
+    // A single semantics node for the whole row: the label is the query text
+    // and the visual children are excluded, so no MergeSemantics is needed.
+    return Semantics(
+      button: true,
+      label: query,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          key: rowKey,
+          borderRadius: BorderRadius.circular(tokens.radii.l),
+          onTap: onTap,
+          child: ExcludeSemantics(
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: spacing.step1,
+                vertical: spacing.step4,
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.add_circle_outline,
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  SizedBox(width: spacing.step4),
+                  Expanded(
+                    child: Text(
+                      query,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tokens.typography.styles.subtitle.subtitle1
+                          .copyWith(color: tokens.colors.text.mediumEmphasis),
                     ),
-                    SizedBox(width: spacing.step4),
-                    Expanded(
-                      child: Text(
-                        query,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.subtitle.subtitle1
-                            .copyWith(color: tokens.colors.text.mediumEmphasis),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           ),
