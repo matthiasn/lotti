@@ -84,6 +84,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               isDesktop: isDesktop,
               timeSpanDays: timeSpanDays,
               onValueChanged: (value) => setState(() => timeSpanDays = value),
+              onEditDefinition: () =>
+                  beamToNamed('/settings/dashboards/${widget.dashboardId}'),
             ),
             Expanded(
               child: CustomScrollView(
@@ -127,12 +129,16 @@ class _DashboardHeader extends StatelessWidget {
     required this.isDesktop,
     required this.timeSpanDays,
     required this.onValueChanged,
+    required this.onEditDefinition,
   });
 
   final String title;
   final bool isDesktop;
   final int timeSpanDays;
   final void Function(int) onValueChanged;
+
+  /// Opens the dashboard's definition (the settings editor for this dashboard).
+  final VoidCallback onEditDefinition;
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +149,16 @@ class _DashboardHeader extends StatelessWidget {
     final picker = TimeSpanSegmentedControl(
       timeSpanDays: timeSpanDays,
       onValueChanged: onValueChanged,
+    );
+    final editButton = IconButton(
+      tooltip: context.messages.settingsDashboardDetailsLabel,
+      onPressed: onEditDefinition,
+      visualDensity: VisualDensity.compact,
+      icon: Icon(
+        Icons.tune_rounded,
+        size: tokens.spacing.step6,
+        color: tokens.colors.text.mediumEmphasis,
+      ),
     );
 
     if (isDesktop) {
@@ -156,10 +172,17 @@ class _DashboardHeader extends StatelessWidget {
         child: Row(
           children: [
             Expanded(
-              child: Text(
-                title,
-                style: titleStyle,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      title,
+                      style: titleStyle,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  editButton,
+                ],
               ),
             ),
             SizedBox(width: tokens.spacing.step4),
@@ -190,6 +213,7 @@ class _DashboardHeader extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
+              editButton,
             ],
           ),
           SizedBox(height: tokens.spacing.step3),
