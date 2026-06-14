@@ -389,10 +389,12 @@ void main() {
       await tester.tap(find.byIcon(Icons.edit_outlined));
       await tester.pumpAndSettle();
 
-      // The label selection modal is now open: its search bar and the
-      // Cancel/Apply sticky action bar from openLabelSelector are visible.
-      expect(find.text('Search labels…'), findsOneWidget);
-      expect(find.text('Cancel'), findsOneWidget);
+      // The label selection modal is now open: its search bar and the Apply
+      // sticky action bar from openLabelSelector are visible. DesignSystemSearch
+      // renders the hint twice (a visible overlay plus the TextField's own
+      // transparent hint), so match one-or-more. Dismissal is the top-bar X —
+      // the footer is just Apply, there is no Cancel button.
+      expect(find.text('Search labels…'), findsWidgets);
       expect(find.text('Apply'), findsOneWidget);
     });
 
@@ -420,7 +422,8 @@ void main() {
         await tester.pumpAndSettle();
 
         // Modal opened with the available labels rendered as selectable chips.
-        expect(find.text('Search labels…'), findsOneWidget);
+        // (Hint renders twice via DesignSystemSearch — see above.)
+        expect(find.text('Search labels…'), findsWidgets);
         expect(find.text('Apply'), findsOneWidget);
         expect(find.text('Alpha'), findsWidgets);
       },
