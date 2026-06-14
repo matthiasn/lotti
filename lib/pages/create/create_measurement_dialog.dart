@@ -17,8 +17,8 @@ import 'package:lotti/widgets/date_time/datetime_field.dart';
 ///
 /// Organised around a single hero — the value — which is a label-less,
 /// centered big-digit well (the modal title already names the measurable) with
-/// the unit rendered as an adjacent pill so the number and unit read as one
-/// measurement ("750 ml"). Directly beneath it sit persistent one-tap
+/// the unit rendered as an adjacent inline suffix so the number and unit read
+/// as one measurement ("750 ml"). Directly beneath it sit persistent one-tap
 /// quick-value chips (the fast path for a returning logger). The observed-at
 /// row (defaulting to now) and an optional comment follow in quieter chrome,
 /// and the bottom holds a fixed, always-visible Save button that is disabled
@@ -313,7 +313,8 @@ class _FieldShellState extends State<_FieldShell> {
 }
 
 /// The hero value input: a centered big-digit field with the unit rendered as
-/// an adjacent tinted pill so the number and unit read as one measurement.
+/// an adjacent inline suffix on the same baseline, so the number and unit read
+/// as one measurement ("750 ml").
 class _ValueHeroField extends StatelessWidget {
   const _ValueHeroField({
     required this.controller,
@@ -342,6 +343,8 @@ class _ValueHeroField extends StatelessWidget {
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
         children: [
           Flexible(
             child: IntrinsicWidth(
@@ -352,6 +355,9 @@ class _ValueHeroField extends StatelessWidget {
                   controller: controller,
                   focusNode: focusNode,
                   autofocus: true,
+                  // No caret while the field is empty so it never bisects the
+                  // centered placeholder; it appears the moment a digit lands.
+                  showCursor: controller.text.isNotEmpty,
                   textAlign: TextAlign.center,
                   style: valueStyle,
                   cursorColor: tokens.colors.interactive.enabled,
@@ -364,9 +370,11 @@ class _ValueHeroField extends StatelessWidget {
                   inputFormatters: const [_DecimalTextInputFormatter()],
                   decoration: _bareInputDecoration(
                     hintText: context.messages.measurementValueHint,
-                    hintStyle: valueStyle.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
+                    // A demoted (subtitle, not heading) low-emphasis hint so the
+                    // empty state reads unmistakably as a prompt and never as an
+                    // entered value.
+                    hintStyle: tokens.typography.styles.subtitle.subtitle1
+                        .copyWith(color: tokens.colors.text.lowEmphasis),
                   ),
                 ),
               ),
