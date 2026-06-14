@@ -141,6 +141,11 @@ class StackedBarChart extends StatelessWidget {
               touchTooltipData: BarTouchTooltipData(
                 getTooltipColor: (_) => tokens.colors.background.level03,
                 tooltipBorderRadius: BorderRadius.circular(tokens.radii.s),
+                // Wide enough that "Category  1h 53m" never wraps mid-value,
+                // and kept inside the chart so it can't cover the KPI above.
+                maxContentWidth: tokens.spacing.step13 * 1.5,
+                fitInsideVertically: true,
+                fitInsideHorizontally: true,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   if (bucketTotal(data, group.x) == 0) return null;
                   final style = tokens.typography.styles.others.caption
@@ -329,6 +334,9 @@ class StackedAreaChart extends StatelessWidget {
           touchTooltipData: LineTouchTooltipData(
             getTooltipColor: (_) => tokens.colors.background.level03,
             tooltipBorderRadius: BorderRadius.circular(tokens.radii.s),
+            maxContentWidth: tokens.spacing.step13 * 1.5,
+            fitInsideVertically: true,
+            fitInsideHorizontally: true,
             getTooltipItems: (spots) {
               final style = tokens.typography.styles.others.caption.copyWith(
                 color: tokens.colors.text.highEmphasis,

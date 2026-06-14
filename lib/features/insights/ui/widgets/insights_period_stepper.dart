@@ -120,37 +120,32 @@ String _unitLabel(BuildContext context, InsightsPeriodUnit unit) {
 /// Human label for the current period, formatted per granularity in the
 /// active locale (e.g. `Jun 1 – 7`, `June 2026`, `Q2 2026`, `2026`).
 ///
-/// A partial to-date range (MTD/YTD) keeps the whole-period name and appends a
-/// "(to date)" qualifier (`June 2026 (to date)`, `2026 (to date)`) so it
-/// always agrees with the granularity dropdown instead of reading like a stray
-/// custom span.
+/// Any period whose range still reaches today — the current week/month/year,
+/// or an MTD/YTD to-date range — gets a "(so far)" qualifier so the headline
+/// never overstates a still-partial period. The rule is one predicate (the
+/// range extends to or past today), applied to every granularity, so the same
+/// incomplete June reads identically whether viewed as Month or month-to-date.
 String _periodLabel(BuildContext context, InsightsPeriodSelection selection) {
   final locale = Localizations.localeOf(context).toString();
   final start = dayStart(selection.range.startDay);
   final lastDay = dayStart(selection.range.endDayExclusive - 1);
-  final isPartial =
-      selection.unit != InsightsPeriodUnit.day &&
-      selection.unit != InsightsPeriodUnit.week &&
-      selection.range != periodContaining(selection.unit, start);
+  final soFar = selection.range.endDayExclusive > epochDay(clock.now());
 
-  String toDate(String base) =>
-      '$base (${context.messages.insightsPeriodToDateSuffix})';
+  String label(String base) =>
+      soFar ? '$base (${context.messages.insightsPeriodToDateSuffix})' : base;
 
   switch (selection.unit) {
     case InsightsPeriodUnit.day:
-      return DateFormat.yMMMMd(locale).format(start);
+      return label(DateFormat.yMMMMd(locale).format(start));
     case InsightsPeriodUnit.week:
-      return _spanLabel(locale, start, lastDay);
+      return label(_spanLabel(locale, start, lastDay));
     case InsightsPeriodUnit.month:
-      final base = DateFormat.yMMMM(locale).format(start);
-      return isPartial ? toDate(base) : base;
+      return label(DateFormat.yMMMM(locale).format(start));
     case InsightsPeriodUnit.quarter:
       // yQQQ localizes both the quarter marker and the quarter/year order.
-      final base = DateFormat.yQQQ(locale).format(start);
-      return isPartial ? toDate(base) : base;
+      return label(DateFormat.yQQQ(locale).format(start));
     case InsightsPeriodUnit.year:
-      final base = '${start.year}';
-      return isPartial ? toDate(base) : base;
+      return label('${start.year}');
   }
 }
 

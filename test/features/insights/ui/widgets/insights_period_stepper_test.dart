@@ -48,7 +48,7 @@ void main() {
   ) async {
     await pump(tester, selection: weekOf(now));
     expect(find.text('Week'), findsOneWidget);
-    expect(find.text('Jun 1 – 7'), findsOneWidget);
+    expect(find.text('Jun 1 – 7 (so far)'), findsOneWidget);
   });
 
   testWidgets('the quarter label is localized via DateFormat', (tester) async {
@@ -59,7 +59,7 @@ void main() {
     await pump(tester, selection: q2);
     // yQQQ renders the quarter marker and year in locale order (en: Q2 2026),
     // rather than a hardcoded 'Q2 2026' string.
-    expect(find.text('Q2 2026'), findsOneWidget);
+    expect(find.text('Q2 2026 (so far)'), findsOneWidget);
   });
 
   testWidgets('the back chevron steps one period back', (tester) async {
@@ -101,7 +101,7 @@ void main() {
       selection: weekOf(now),
       onOpenCalendar: () => opened = true,
     );
-    await tester.tap(find.text('Jun 1 – 7'));
+    await tester.tap(find.text('Jun 1 – 7 (so far)'));
     expect(opened, isTrue);
   });
 
@@ -203,7 +203,9 @@ void main() {
           .active,
       isFalse,
     );
-    expect(find.text('June 2026'), findsOneWidget);
+    // The current month is in progress, so it reads "(so far)" too; MTD is
+    // inactive because the range is the full month, not the to-date slice.
+    expect(find.text('June 2026 (so far)'), findsOneWidget);
   });
 
   testWidgets('selecting a granularity from the dropdown reports it', (

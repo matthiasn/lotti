@@ -272,7 +272,7 @@ void main() {
       categories: insightsScenarioCategories,
     );
     await _selectGranularity(tester, 'Month', 'Month');
-    expect(find.text('June 2026'), findsOneWidget);
+    expect(find.text('June 2026 (so far)'), findsOneWidget);
     await _capture(tester, '04_month_dark');
   });
 
