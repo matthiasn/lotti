@@ -6846,6 +6846,12 @@ abstract class AppLocalizations {
   /// **'Measurement Charts'**
   String get dashboardAddMeasurementTitle;
 
+  /// No description provided for @dashboardAddMeasurementTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Add measurement'**
+  String get dashboardAddMeasurementTooltip;
+
   /// No description provided for @dashboardAddSurveyButton.
   ///
   /// In en, this message translates to:
@@ -6870,6 +6876,30 @@ abstract class AppLocalizations {
   /// **'Workout Charts'**
   String get dashboardAddWorkoutTitle;
 
+  /// No description provided for @dashboardAggregationDailyAverage.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily average'**
+  String get dashboardAggregationDailyAverage;
+
+  /// No description provided for @dashboardAggregationDailyMax.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily max'**
+  String get dashboardAggregationDailyMax;
+
+  /// No description provided for @dashboardAggregationDailyTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily total'**
+  String get dashboardAggregationDailyTotal;
+
+  /// No description provided for @dashboardAggregationHourlyTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Hourly total'**
+  String get dashboardAggregationHourlyTotal;
+
   /// No description provided for @dashboardAggregationLabel.
   ///
   /// In en, this message translates to:
@@ -6881,6 +6911,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Category'**
   String get dashboardCategoryLabel;
+
+  /// No description provided for @dashboardChartNoData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data in this range'**
+  String get dashboardChartNoData;
 
   /// No description provided for @dashboardCopyHint.
   ///
@@ -6918,6 +6954,24 @@ abstract class AppLocalizations {
   /// **'Description (optional)'**
   String get dashboardDescriptionLabel;
 
+  /// No description provided for @dashboardHealthBloodPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Blood Pressure'**
+  String get dashboardHealthBloodPressure;
+
+  /// No description provided for @dashboardHealthDiastolic.
+  ///
+  /// In en, this message translates to:
+  /// **'Diastolic'**
+  String get dashboardHealthDiastolic;
+
+  /// No description provided for @dashboardHealthSystolic.
+  ///
+  /// In en, this message translates to:
+  /// **'Systolic'**
+  String get dashboardHealthSystolic;
+
   /// No description provided for @dashboardNameLabel.
   ///
   /// In en, this message translates to:
@@ -6935,6 +6989,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Private'**
   String get dashboardPrivateLabel;
+
+  /// No description provided for @dashboardTakeSurveyTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Take survey'**
+  String get dashboardTakeSurveyTooltip;
 
   /// No description provided for @defaultLanguage.
   ///
@@ -9741,6 +9801,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Measurable not found'**
   String get measurableNotFound;
+
+  /// No description provided for @measurementCommentHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note (optional)'**
+  String get measurementCommentHint;
+
+  /// No description provided for @measurementQuickAddLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Quick add'**
+  String get measurementQuickAddLabel;
 
   /// Context menu action that reveals a media file in Windows File Explorer.
   ///

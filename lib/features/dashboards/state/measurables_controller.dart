@@ -185,6 +185,13 @@ class MeasurableObservationsController
       )).future,
     );
 
+    // No measurements in range -> return empty so the chart shows its "No data"
+    // state. Without this, daily-sum/-max/-hourly aggregations prefill a zero
+    // bucket for every day, so observations would never be empty and the chart
+    // would render a flat run of zero bars instead. (A genuinely all-zero but
+    // non-empty series, e.g. abstinence tracking, still renders as bars.)
+    if (measurements.isEmpty) return const <Observation>[];
+
     return switch (aggregationType) {
       AggregationType.none => aggregateMeasurementNone(measurements),
       AggregationType.dailySum => aggregateSumByDay(
@@ -242,6 +249,8 @@ class MeasurableSuggestionsController extends AsyncNotifier<List<num>?> {
       )).future,
     );
 
-    return rankedByPopularity(measurements: measurements);
+    // Surface up to five popular values so the quick-add chips cover more of a
+    // high-frequency logger's habitual amounts (the chip row wraps).
+    return rankedByPopularity(measurements: measurements, n: 5);
   }
 }

@@ -13,6 +13,11 @@ import '../../../../../widget_test_utils.dart';
 
 /// Pumps a [DashboardHealthBpChart] with the given observation overrides.
 /// Calls [addTearDown(tester.view.reset)] per the conventions.
+///
+/// The card now renders an empty-state message (and no [LineChart]) when both
+/// series are empty, so when the caller supplies no observations this helper
+/// seeds a single systolic reading. That keeps the chart mounted for axis,
+/// gridline, and tooltip-callback tests that don't care about specific data.
 Future<LineChart> hPumpBpChart(
   WidgetTester tester, {
   required DateTime rangeStart,
@@ -23,6 +28,11 @@ Future<LineChart> hPumpBpChart(
   tester.view.physicalSize = const Size(1000, 600);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
+
+  final effectiveSystolic =
+      systolicObservations.isEmpty && diastolicObservations.isEmpty
+      ? [Observation(rangeStart, 120)]
+      : systolicObservations;
 
   await tester.pumpWidget(
     makeTestableWidget(
@@ -35,7 +45,7 @@ Future<LineChart> hPumpBpChart(
           healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
           rangeStart: rangeStart,
           rangeEnd: rangeEnd,
-        ).overrideWithBuild((ref, notifier) => systolicObservations),
+        ).overrideWithBuild((ref, notifier) => effectiveSystolic),
         healthObservationsControllerProvider(
           healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
           rangeStart: rangeStart,

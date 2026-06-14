@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -118,6 +120,17 @@ class _StubHabitCompletionController extends HabitCompletionController {
   }) async => _results;
 }
 
+/// A stub controller that never resolves, leaving the provider in
+/// [AsyncLoading] so the card has no value to render.
+class _LoadingHabitCompletionController extends HabitCompletionController {
+  @override
+  Future<List<HabitResult>> build({
+    required String habitId,
+    required DateTime rangeStart,
+    required DateTime rangeEnd,
+  }) => Completer<List<HabitResult>>().future;
+}
+
 void main() {
   late MockEntitiesCacheService mockCacheService;
   late MockHabitsRepository mockRepository;
@@ -170,6 +183,69 @@ void main() {
       // No card/list-tile rendered — only the invisible shrink box.
       expect(find.byType(ListTile), findsNothing);
     });
+  });
+
+  group('HabitCompletionCard — rebinding to a different habit', () {
+    testWidgets(
+      "drops the previous habit's cached results so they never flash under "
+      'the new habit while it loads',
+      (tester) async {
+        final habitB = habitFlossing.copyWith(
+          id: 'habit-b',
+          name: 'Second habit',
+        );
+        when(
+          () => mockCacheService.getHabitById(habitB.id),
+        ).thenReturn(habitB);
+        when(() => mockRepository.updateStream).thenAnswer(
+          (_) => const Stream<Set<String>>.empty(),
+        );
+
+        // habitFlossing resolves immediately; habitB never resolves.
+        Widget build(String habitId) => ProviderScope(
+          overrides: [
+            habitsRepositoryProvider.overrideWithValue(mockRepository),
+            habitCompletionControllerProvider(
+              habitId: habitFlossing.id,
+              rangeStart: _rangeStart,
+              rangeEnd: _rangeEnd,
+            ).overrideWith(
+              () => _StubHabitCompletionController(
+                _singleResult(HabitCompletionType.success),
+              ),
+            ),
+            habitCompletionControllerProvider(
+              habitId: habitB.id,
+              rangeStart: _rangeStart,
+              rangeEnd: _rangeEnd,
+            ).overrideWith(_LoadingHabitCompletionController.new),
+          ],
+          // No Key on the card: rebuilding at the same position reuses the
+          // State, exercising didUpdateWidget's habitId-change branch.
+          child: makeTestableWidgetWithScaffold(
+            HabitCompletionCard(
+              habitId: habitId,
+              rangeStart: _rangeStart,
+              rangeEnd: _rangeEnd,
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(build(habitFlossing.id));
+        await tester.pump();
+        expect(find.text(habitFlossing.name), findsOneWidget);
+
+        // Rebind the same State to habitB while its provider is still loading.
+        await tester.pumpWidget(build(habitB.id));
+        await tester.pump();
+
+        // The cache reset means the card collapses instead of rendering
+        // habitB's title over habitFlossing's stale completion squares.
+        expect(find.text(habitFlossing.name), findsNothing);
+        expect(find.text(habitB.name), findsNothing);
+        expect(find.byType(ListTile), findsNothing);
+      },
+    );
   });
 
   group('HabitCompletionCard — habit name display', () {

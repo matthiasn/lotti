@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart_info.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -35,12 +36,12 @@ MeasurableDataType _makeDataType({
   );
 }
 
-/// Wraps [widget] (a Positioned) inside a bounded Stack so layout works.
+/// Wraps [widget] inside a bounded box so the header's Row has finite width.
 Widget _wrapInStack(Widget widget) {
   return SizedBox(
     width: 1000,
     height: 600,
-    child: Stack(children: [widget]),
+    child: widget,
   );
 }
 
@@ -63,34 +64,46 @@ Future<void> _pumpWidget(
 // ---------------------------------------------------------------------------
 
 void main() {
-  group('aggregationLabel', () {
-    test('returns empty string for null', () {
-      expect(aggregationLabel(null), '');
-    });
-
-    test('returns empty string for AggregationType.none', () {
-      expect(aggregationLabel(AggregationType.none), '');
-    });
-
-    test('returns formatted label for dailySum', () {
-      expect(
-        aggregationLabel(AggregationType.dailySum),
-        '[dailySum]',
+  group('aggregationDisplayLabel', () {
+    /// Pumps a [Builder] and returns the localized label for [type].
+    Future<String> resolveLabel(
+      WidgetTester tester,
+      AggregationType type,
+    ) async {
+      late String label;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) {
+              label = aggregationDisplayLabel(context, type);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
       );
+      return label;
+    }
+
+    testWidgets('returns empty string for AggregationType.none', (
+      tester,
+    ) async {
+      expect(await resolveLabel(tester, AggregationType.none), '');
     });
 
-    test('returns formatted label for dailyMax', () {
-      expect(
-        aggregationLabel(AggregationType.dailyMax),
-        '[dailyMax]',
-      );
-    });
-
-    test('returns formatted label for hourlySum', () {
-      expect(
-        aggregationLabel(AggregationType.hourlySum),
-        '[hourlySum]',
-      );
+    testWidgets('humanizes each aggregation type', (tester) async {
+      const expected = {
+        AggregationType.dailySum: 'Daily total',
+        AggregationType.dailyMax: 'Daily max',
+        AggregationType.dailyAvg: 'Daily average',
+        AggregationType.hourlySum: 'Hourly total',
+      };
+      for (final entry in expected.entries) {
+        expect(
+          await resolveLabel(tester, entry.key),
+          entry.value,
+          reason: 'label for ${entry.key}',
+        );
+      }
     });
   });
 
@@ -113,7 +126,7 @@ void main() {
     tearDown(tearDownTestGetIt);
 
     testWidgets(
-      'renders displayName without aggregation suffix when AggregationType.none',
+      'title is just the displayName with no bracketed enum suffix',
       (tester) async {
         // ignore: avoid_redundant_argument_values
         final dataType = _makeDataType(displayName: 'Heart Rate');
@@ -127,51 +140,94 @@ void main() {
           ),
         );
 
-        // Text should be just the name with no aggregation suffix
+        // The title is the plain display name — never "Heart Rate [none]".
         expect(find.text('Heart Rate'), findsOneWidget);
-        expect(find.text('Heart Rate '), findsNothing);
+        expect(find.textContaining('['), findsNothing);
       },
     );
 
     testWidgets(
-      'renders displayName with aggregation label when type is not none',
+      'humanized aggregation appears in the subtitle, not the title',
       (tester) async {
-        for (final aggType in [
-          AggregationType.dailySum,
-          AggregationType.dailyMax,
-          AggregationType.dailyAvg,
-          AggregationType.hourlySum,
-        ]) {
+        const expected = {
+          AggregationType.dailySum: 'Daily total',
+          AggregationType.dailyMax: 'Daily max',
+          AggregationType.dailyAvg: 'Daily average',
+          AggregationType.hourlySum: 'Hourly total',
+        };
+        for (final entry in expected.entries) {
+          // No unit and no description, so the humanized aggregation is what
+          // falls through to the subtitle.
           final dataType = _makeDataType(
             displayName: 'Steps',
-            aggregationType: aggType,
+            unitName: '',
+            aggregationType: entry.key,
           );
-          final label = aggregationLabel(aggType);
 
           await _pumpWidget(
             tester,
             MeasurablesChartInfoWidget(
               dataType,
-              aggregationType: aggType,
+              aggregationType: entry.key,
               enableCreate: false,
             ),
           );
 
+          // Title is the bare name; the humanized aggregation is the subtitle.
           expect(
-            find.text('Steps $label'),
+            find.text('Steps'),
             findsOneWidget,
-            reason: 'Expected "Steps $label" for $aggType',
+            reason: 'title for ${entry.key}',
           );
+          expect(
+            find.text(entry.value),
+            findsOneWidget,
+            reason: 'subtitle for ${entry.key}',
+          );
+          // No developer enum bracket leaks into the UI.
+          expect(find.textContaining('['), findsNothing);
         }
       },
     );
 
     testWidgets(
-      'shows description text when description is not empty',
+      'subtitle is the unit, ahead of description and aggregation',
+      (tester) async {
+        // Unit-bearing caption, consistent with the health/workout cards:
+        // the unit ("ml") wins over both the description and the aggregation.
+        final dataType = _makeDataType(
+          displayName: 'Water',
+          description: 'Daily water intake',
+          unitName: 'ml',
+          aggregationType: AggregationType.dailySum,
+        );
+
+        await _pumpWidget(
+          tester,
+          MeasurablesChartInfoWidget(
+            dataType,
+            aggregationType: AggregationType.dailySum,
+            enableCreate: false,
+          ),
+        );
+
+        expect(find.text('Water'), findsOneWidget);
+        expect(find.text('ml'), findsOneWidget);
+        // Neither the description nor the aggregation is shown when a unit
+        // exists, and there is never a "·" stack.
+        expect(find.text('Daily water intake'), findsNothing);
+        expect(find.textContaining('Daily total'), findsNothing);
+        expect(find.textContaining('·'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'falls back to the description when there is no unit',
       (tester) async {
         final dataType = _makeDataType(
           displayName: 'Weight',
           description: 'Body weight in kg',
+          unitName: '',
         );
 
         await _pumpWidget(
@@ -188,10 +244,12 @@ void main() {
     );
 
     testWidgets(
-      'hides description text when description is empty',
+      'subtitle is null when unit, aggregation and description are all empty',
       (tester) async {
-        // ignore: avoid_redundant_argument_values
-        final dataType = _makeDataType(displayName: 'Weight', description: '');
+        final dataType = _makeDataType(
+          displayName: 'Weight',
+          unitName: '',
+        );
 
         await _pumpWidget(
           tester,
@@ -202,8 +260,12 @@ void main() {
           ),
         );
 
-        // Only the title row — no description widget
-        expect(find.text(''), findsNothing);
+        // Title shows; the header receives a null subtitle so none renders.
+        expect(find.text('Weight'), findsOneWidget);
+        final header = tester.widget<DashboardChartHeader>(
+          find.byType(DashboardChartHeader),
+        );
+        expect(header.subtitle, isNull);
       },
     );
 
@@ -282,7 +344,9 @@ void main() {
     testWidgets(
       'tapping add button with description shows description in modal title',
       (tester) async {
-        // _buildModalTitle includes description when non-empty (lines 36-39,41).
+        // The card header now surfaces the description directly as its subtitle
+        // (one Text node). _buildModalTitle renders the same description as its
+        // own Text, so opening the modal adds a second occurrence.
         // Use a narrow viewport so the trailing IconButton stays within bounds.
         tester.view
           ..physicalSize = const Size(800, 600)
@@ -292,6 +356,7 @@ void main() {
         final dataType = _makeDataType(
           displayName: 'Energy',
           description: 'Daily energy level',
+          unitName: '',
         );
 
         await _pumpWidget(
@@ -304,12 +369,19 @@ void main() {
           mediaQueryData: const MediaQueryData(size: Size(800, 600)),
         );
 
+        // With no unit, the card header shows the description as its subtitle:
+        // exactly one Text node before the modal opens.
+        expect(find.text('Daily energy level'), findsOneWidget);
+
         await tester.ensureVisible(find.byIcon(Icons.add_rounded));
         await tester.tap(find.byIcon(Icons.add_rounded));
+        // Let the modal route's open animation run to completion.
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
-        // The modal title widget contains the description text.
-        expect(find.text('Daily energy level'), findsWidgets);
+        // The modal title widget renders the description as a second Text node,
+        // so it now appears twice (card subtitle + modal title).
+        expect(find.text('Daily energy level'), findsNWidgets(2));
       },
     );
   });

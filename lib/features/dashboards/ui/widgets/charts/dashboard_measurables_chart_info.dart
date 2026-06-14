@@ -1,11 +1,11 @@
 import 'dart:core';
-import 'dart:math';
 
-import 'package:enum_to_string/enum_to_string.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class MeasurablesChartInfoWidget extends StatelessWidget {
@@ -21,24 +21,22 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
   final bool enableCreate;
 
   Widget _buildModalTitle(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final tokens = context.designTokens;
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           measurableDataType.displayName,
-          style: context.textTheme.titleMedium?.copyWith(
-            color: colorScheme.onSurface,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.2,
+          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: tokens.colors.text.highEmphasis,
           ),
         ),
         if (measurableDataType.description.isNotEmpty)
           Text(
             measurableDataType.description,
-            style: TextStyle(
-              fontSize: 12,
-              color: colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            textAlign: TextAlign.center,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
       ],
@@ -59,61 +57,47 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
       );
     }
 
-    return Positioned(
-      top: 0,
-      left: 20,
-      child: SizedBox(
-        width: max(MediaQuery.of(context).size.width, 300) - 20,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '${measurableDataType.displayName}'
-                    '${aggregationType != AggregationType.none ? ' ' : ''}'
-                    '${aggregationLabel(aggregationType)}',
-                    style: chartTitleStyle,
-                    overflow: TextOverflow.ellipsis,
-                    softWrap: false,
-                  ),
-                  if (measurableDataType.description.isNotEmpty)
-                    Text(
-                      measurableDataType.description,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                ],
-              ),
-            ),
-            const Spacer(),
-            if (enableCreate)
-              IconButton(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                onPressed: captureData,
-                icon: const Icon(Icons.add_rounded),
-              ),
-          ],
-        ),
-      ),
+    // One caption rule shared with every other card: lead with the unit so
+    // the row is consistently unit-bearing across the stack (Water -> "ml",
+    // like the health/workout cards' "bpm"/"kcal"). Only when a measurable has
+    // no unit (e.g. a 1-10 rating) do we fall back to its description, then to
+    // the humanized aggregation. Never an "[agg] · [description]" stack.
+    final unit = measurableDataType.unitName;
+    final description = measurableDataType.description;
+    final aggregation = aggregationDisplayLabel(context, aggregationType);
+    final subtitle = unit.isNotEmpty
+        ? unit
+        : (description.isNotEmpty
+              ? description
+              : (aggregation.isNotEmpty ? aggregation : null));
+
+    return DashboardChartHeader(
+      title: measurableDataType.displayName,
+      subtitle: subtitle,
+      action: enableCreate
+          ? DashboardChartAddButton(
+              tooltip: context.messages.dashboardAddMeasurementTooltip,
+              onPressed: captureData,
+            )
+          : null,
     );
   }
 }
 
-String aggregationLabel(AggregationType? aggregationType) {
-  if (aggregationType == null) {
-    return '';
+/// Localized, human-readable label for an [AggregationType] (empty for
+/// [AggregationType.none]).
+String aggregationDisplayLabel(BuildContext context, AggregationType type) {
+  final messages = context.messages;
+  switch (type) {
+    case AggregationType.none:
+      return '';
+    case AggregationType.dailySum:
+      return messages.dashboardAggregationDailyTotal;
+    case AggregationType.dailyMax:
+      return messages.dashboardAggregationDailyMax;
+    case AggregationType.dailyAvg:
+      return messages.dashboardAggregationDailyAverage;
+    case AggregationType.hourlySum:
+      return messages.dashboardAggregationHourlyTotal;
   }
-  return aggregationType != AggregationType.none
-      ? '[${EnumToString.convertToString(aggregationType)}]'
-      : '';
 }

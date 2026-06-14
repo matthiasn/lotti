@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import 'time_series_multiline_chart_test_helpers.dart';
 
@@ -159,8 +160,9 @@ void main() {
   });
 
   group('TimeSeriesMultiLineChart — min/max Y values', () {
-    testWidgets('minY accounts for 20% padding below minVal', (tester) async {
-      // minVal=10, maxVal=20: valRange=10, minY = max(10 - 10*0.2, 0) = 8
+    testWidgets('minY/maxY are the nice-axis bounds of minVal..maxVal', (
+      tester,
+    ) async {
       await hPumpChart(
         tester,
         lineBarsData: [],
@@ -171,28 +173,15 @@ void main() {
       );
 
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      expect(lineChart.data.minY, 8.0);
+      final axis = niceAxis(10, 20);
+      expect(lineChart.data.minY, axis.min);
+      expect(lineChart.data.maxY, axis.max);
+      // Nice bounds wrap the supplied data range.
+      expect(lineChart.data.minY, lessThanOrEqualTo(10));
+      expect(lineChart.data.maxY, greaterThanOrEqualTo(20));
     });
 
-    testWidgets('minY is clamped to 0 when padding would go negative', (
-      tester,
-    ) async {
-      // minVal=1, maxVal=11: valRange=10, minY = max(1 - 10*0.2, 0) = max(-1, 0) = 0
-      await hPumpChart(
-        tester,
-        lineBarsData: [],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-        minVal: 1,
-        maxVal: 11,
-      );
-
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      expect(lineChart.data.minY, 0.0);
-    });
-
-    testWidgets('maxY adds 20% of value range above maxVal', (tester) async {
-      // minVal=0, maxVal=100: valRange=100, maxY = 100 + 100*0.2 = 120
+    testWidgets('nice bounds round outward for a wide range', (tester) async {
       await hPumpChart(
         tester,
         lineBarsData: [],
@@ -203,15 +192,19 @@ void main() {
       );
 
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      expect(lineChart.data.maxY, 120.0);
+      final axis = niceAxis(0, 100);
+      expect(lineChart.data.minY, axis.min);
+      expect(lineChart.data.maxY, axis.max);
+      // Tick interval is the same nice interval used by the left axis.
+      expect(
+        lineChart.data.titlesData.leftTitles.sideTitles.interval,
+        axis.interval,
+      );
     });
 
-    testWidgets('both minY and maxY computed from provided minVal/maxVal', (
+    testWidgets('non-zero-based range keeps a tight nice window', (
       tester,
     ) async {
-      // minVal=50, maxVal=150: valRange=100
-      // minY = max(50 - 20, 0) = 30
-      // maxY = 150 + 20 = 170
       await hPumpChart(
         tester,
         lineBarsData: [],
@@ -222,83 +215,54 @@ void main() {
       );
 
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      expect(lineChart.data.minY, 30.0);
-      expect(lineChart.data.maxY, 170.0);
+      final axis = niceAxis(50, 150);
+      expect(lineChart.data.minY, axis.min);
+      expect(lineChart.data.maxY, axis.max);
+      // The window does not start at zero for an offset data range.
+      expect(lineChart.data.minY, greaterThan(0));
+      expect(lineChart.data.minY, lessThanOrEqualTo(50));
+      expect(lineChart.data.maxY, greaterThanOrEqualTo(150));
     });
-  });
-
-  group('TimeSeriesMultiLineChart — grid interval by range length', () {
-    for (final testCase in [
-      (
-        label: '>182 days → gridInterval=30',
-        start: DateTime(2024),
-        end: DateTime(2024, 8), // ~213 days
-        expectedFactor: 30,
-      ),
-      (
-        label: '93–182 days → gridInterval=14',
-        start: DateTime(2024),
-        end: DateTime(2024, 4, 15), // ~105 days
-        expectedFactor: 14,
-      ),
-      (
-        label: '31–92 days → gridInterval=7',
-        start: DateTime(2024),
-        end: DateTime(2024, 3), // ~60 days
-        expectedFactor: 7,
-      ),
-      (
-        label: '<=30 days → gridInterval=1',
-        start: DateTime(2024, 3),
-        end: DateTime(2024, 3, 15), // 14 days
-        expectedFactor: 1,
-      ),
-    ]) {
-      testWidgets(testCase.label, (tester) async {
-        await hPumpChart(
-          tester,
-          lineBarsData: [],
-          rangeStart: testCase.start,
-          rangeEnd: testCase.end,
-        );
-
-        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-        final expectedInterval =
-            Duration.millisecondsPerDay.toDouble() * testCase.expectedFactor;
-        expect(
-          lineChart.data.gridData.verticalInterval,
-          expectedInterval,
-          reason: testCase.label,
-        );
-      });
-    }
   });
 
   group('TimeSeriesMultiLineChart — grid line callbacks', () {
-    testWidgets('getDrawingHorizontalLine returns gridLine', (tester) async {
+    testWidgets(
+      'getDrawingHorizontalLine returns the tokenized chart gridline',
+      (tester) async {
+        await hPumpChart(
+          tester,
+          lineBarsData: [],
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        final tokens = tester.element(find.byType(LineChart)).designTokens;
+        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+        final result = lineChart.data.gridData.getDrawingHorizontalLine(0);
+        expect(result.color, tokens.colors.decorative.level01);
+        expect(result.strokeWidth, 1);
+      },
+    );
+
+    testWidgets('vertical gridlines are disabled and interval is nice', (
+      tester,
+    ) async {
       await hPumpChart(
         tester,
         lineBarsData: [],
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
+        minVal: 0, // ignore: avoid_redundant_argument_values
+        maxVal: 100, // ignore: avoid_redundant_argument_values
       );
 
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      final result = lineChart.data.gridData.getDrawingHorizontalLine(0);
-      expect(result, equals(gridLine));
-    });
-
-    testWidgets('getDrawingVerticalLine returns gridLine', (tester) async {
-      await hPumpChart(
-        tester,
-        lineBarsData: [],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
+      expect(lineChart.data.gridData.drawVerticalLine, isFalse);
+      expect(
+        lineChart.data.gridData.horizontalInterval,
+        niceAxis(0, 100).interval,
       );
-
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      final result = lineChart.data.gridData.getDrawingVerticalLine(0);
-      expect(result, equals(gridLine));
+      expect(lineChart.data.gridData.horizontalInterval, greaterThan(0));
     });
   });
 }

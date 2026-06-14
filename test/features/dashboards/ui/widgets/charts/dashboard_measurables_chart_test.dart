@@ -95,10 +95,14 @@ void main() {
         expect(find.byType(TimeSeriesBarChart), findsOneWidget);
         expect(find.byType(TimeSeriesLineChart), findsNothing);
 
-        // Header info shows the display name plus the aggregation label,
-        // with the description stacked underneath.
-        expect(find.text('Water [dailySum]'), findsOneWidget);
-        expect(find.text('Water intake'), findsOneWidget);
+        // The header title is the bare display name; the subtitle is the
+        // measurable's unit ("ml"), consistent with every other card — never a
+        // "[agg] · [description]" stack or a developer enum suffix.
+        expect(find.text('Water'), findsOneWidget);
+        expect(find.text('ml'), findsOneWidget);
+        expect(find.text('Water intake'), findsNothing);
+        expect(find.textContaining('·'), findsNothing);
+        expect(find.text('Water [dailySum]'), findsNothing);
       },
     );
 
@@ -117,7 +121,26 @@ void main() {
       },
     );
 
-    testWidgets('renders the bar chart even with no observations', (
+    testWidgets('renders the bar chart with the dailyMax aggregation label', (
+      tester,
+    ) async {
+      await pumpChart(
+        tester,
+        dataType: makeDataType(AggregationType.dailyMax),
+        resolvedAggregation: AggregationType.dailyMax,
+        observations: makeObservations([10, 20, 30]),
+      );
+
+      expect(find.byType(TimeSeriesBarChart), findsOneWidget);
+      // Title is the bare name; the subtitle is the unit ("ml") — the
+      // aggregation/description are not stacked in even when configured.
+      expect(find.text('Water'), findsOneWidget);
+      expect(find.text('ml'), findsOneWidget);
+      expect(find.text('Water intake'), findsNothing);
+      expect(find.textContaining('·'), findsNothing);
+    });
+
+    testWidgets('shows the no-data message instead of a chart when empty', (
       tester,
     ) async {
       await pumpChart(
@@ -126,8 +149,12 @@ void main() {
         resolvedAggregation: AggregationType.dailyMax,
       );
 
-      expect(find.byType(TimeSeriesBarChart), findsOneWidget);
-      expect(find.text('Water [dailyMax]'), findsOneWidget);
+      // Empty observations → the card renders the empty state, no chart.
+      expect(find.byType(TimeSeriesBarChart), findsNothing);
+      expect(find.byType(TimeSeriesLineChart), findsNothing);
+      expect(find.text('No data in this range'), findsOneWidget);
+      // The header still renders so the chart stays identifiable.
+      expect(find.text('Water'), findsOneWidget);
     });
   });
 }

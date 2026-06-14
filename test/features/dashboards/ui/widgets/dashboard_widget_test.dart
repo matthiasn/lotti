@@ -185,5 +185,70 @@ void main() {
         expect(chart.rangeEnd, rangeEnd);
       },
     );
+
+    testWidgets(
+      'keys charts by item identity, not range, so stale data cannot cross '
+      'items',
+      (tester) async {
+        when(() => mockCache.getHabitById(any())).thenReturn(null);
+
+        DashboardDefinition twoHabits() => DashboardDefinition(
+          id: 'k-dash',
+          name: 'K',
+          description: '',
+          items: const [
+            DashboardItem.habitChart(habitId: 'habit-A'),
+            DashboardItem.habitChart(habitId: 'habit-B'),
+          ],
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          private: false,
+          version: '',
+          lastReviewed: DateTime(2024, 3, 15),
+          active: true,
+        );
+
+        Future<void> pumpAt(DateTime start) => tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DashboardWidget(
+              dashboardId: 'k-dash',
+              rangeStart: start,
+              rangeEnd: rangeEnd,
+            ),
+            overrides: [
+              dashboardByIdProvider(
+                'k-dash',
+              ).overrideWith((ref) => twoHabits()),
+            ],
+          ),
+        );
+
+        Set<Key?> habitChartKeys() => tester
+            .widgetList<DashboardHabitsChart>(find.byType(DashboardHabitsChart))
+            .map((c) => c.key)
+            .toSet();
+
+        await pumpAt(rangeStart);
+        await tester.pump();
+
+        // Each item gets a distinct identity key — so an item replaced at the
+        // same index can never inherit another item's stale-while-revalidate
+        // cache.
+        expect(habitChartKeys(), {
+          const ValueKey('habit:habit-A'),
+          const ValueKey('habit:habit-B'),
+        });
+
+        // Changing only the range keeps the keys stable, so the charts keep
+        // their State (and last data) across a time-span change.
+        await pumpAt(rangeStart.subtract(const Duration(days: 30)));
+        await tester.pump();
+        expect(habitChartKeys(), {
+          const ValueKey('habit:habit-A'),
+          const ValueKey('habit:habit-B'),
+        });
+      },
+    );
   });
 }

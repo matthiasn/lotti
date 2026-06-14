@@ -1,14 +1,15 @@
 import 'dart:core';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/state/workout_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class WorkoutChartInfoWidget extends StatelessWidget {
@@ -21,23 +22,24 @@ class WorkoutChartInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Positioned(
-      top: 0,
-      left: 20,
-      child: SizedBox(
-        width: max(MediaQuery.of(context).size.width, 350) - 20,
-        child: IgnorePointer(
-          child: Row(
-            children: [
-              Text(
-                chartConfig.displayName,
-                style: chartTitleStyle,
-              ),
-            ],
-          ),
-        ),
-      ),
+    return DashboardChartHeader(
+      title: chartConfig.displayName,
+      subtitle: workoutUnitLabel(chartConfig.valueType),
     );
+  }
+}
+
+/// The unit symbol for a workout value type, shared by the card subtitle and
+/// the bar chart's value tooltip so they always agree (e.g. "12 km", not the
+/// workout's display name).
+String workoutUnitLabel(WorkoutValueType valueType) {
+  switch (valueType) {
+    case WorkoutValueType.duration:
+      return 'min';
+    case WorkoutValueType.distance:
+      return 'km';
+    case WorkoutValueType.energy:
+      return 'kcal';
   }
 }
 
@@ -46,40 +48,47 @@ class DashboardWorkoutChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
-    this.transformationController,
     super.key,
   });
 
   final DashboardWorkoutItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final observations =
-        ref
-            .watch(
-              workoutObservationsControllerProvider(
-                chartConfig: chartConfig,
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-              ),
-            )
-            .value ??
-        [];
+    final tokens = context.designTokens;
 
-    return DashboardChart(
-      chart: TimeSeriesBarChart(
-        data: observations,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-        unit: chartConfig.displayName,
-        transformationController: transformationController,
-        colorByValue: (Observation observation) => colorFromCssHex('#82E6CE'),
+    return StaleAsyncValue<List<Observation>>(
+      async: ref.watch(
+        workoutObservationsControllerProvider(
+          chartConfig: chartConfig,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        ),
       ),
-      chartHeader: WorkoutChartInfoWidget(chartConfig),
-      height: 120,
+      builder: (context, value, isInitialLoading) {
+        final observations = value ?? const <Observation>[];
+        return DashboardChart(
+          chart: TimeSeriesBarChart(
+            data: observations,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+            unit: workoutUnitLabel(chartConfig.valueType),
+            colorByValue: (Observation observation) =>
+                tokens.colors.interactive.enabled,
+          ),
+          dateAxis: DashboardChartDateAxis(
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+          chartHeader: WorkoutChartInfoWidget(chartConfig),
+          isLoading: isInitialLoading,
+          isEmpty: observations.isEmpty,
+          emptyMessage: context.messages.dashboardChartNoData,
+          height: 120,
+        );
+      },
     );
   }
 }

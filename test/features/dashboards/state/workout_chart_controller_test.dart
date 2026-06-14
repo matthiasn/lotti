@@ -184,5 +184,83 @@ void main() {
 
       container.dispose();
     });
+
+    test(
+      'stays loading until the workout fetch completes (no premature zeros)',
+      () async {
+        final completer = Completer<List<JournalEntity>>();
+        when(
+          () => mocks.journalDb.getWorkouts(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) => completer.future);
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final provider = workoutObservationsControllerProvider(
+          chartConfig: runningEnergyConfig,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        final future = container.read(provider.future);
+        await pumpEventQueue();
+
+        // While the DB fetch is pending the observations provider must stay
+        // loading — not resolve to a row of prefilled zero buckets.
+        expect(container.read(provider).isLoading, isTrue);
+
+        completer.complete([
+          makeWorkoutEntry(
+            dateFrom: DateTime(2024, 3, 12, 8),
+            dateTo: DateTime(2024, 3, 12, 9),
+            workoutType: 'running',
+            energy: 500,
+          ),
+        ]);
+
+        final result = await future;
+        expect(result, hasLength(5));
+      },
+    );
+
+    test(
+      'returns empty when no workout of the configured type is in range',
+      () async {
+        // A cycling workout exists, but the chart is configured for running.
+        final entities = [
+          makeWorkoutEntry(
+            dateFrom: DateTime(2024, 3, 12, 8),
+            dateTo: DateTime(2024, 3, 12, 9),
+            workoutType: 'cycling',
+            energy: 500,
+          ),
+        ];
+
+        when(
+          () => mocks.journalDb.getWorkouts(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => entities);
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final result = await container.read(
+          workoutObservationsControllerProvider(
+            chartConfig: runningEnergyConfig,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ).future,
+        );
+
+        // No running workout -> empty (so the chart shows "No data"), rather
+        // than five prefilled zero buckets.
+        expect(result, isEmpty);
+      },
+    );
   });
 }

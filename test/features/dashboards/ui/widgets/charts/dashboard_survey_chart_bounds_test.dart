@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -63,7 +64,7 @@ void main() {
       expect(find.text('PANAS'), findsOneWidget);
     });
 
-    testWidgets('empty entity list produces two series each with zero spots', (
+    testWidgets('empty entity list shows the no-data message, no chart', (
       tester,
     ) async {
       when(
@@ -76,15 +77,11 @@ void main() {
 
       await hPumpSurveyChart(tester, chartConfig: chartConfig);
 
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      expect(
-        lineChart.data.lineBarsData,
-        hasLength(2),
-        reason: 'PANAS chart config has two score keys → two series',
-      );
-      for (final bar in lineChart.data.lineBarsData) {
-        expect(bar.spots, isEmpty);
-      }
+      // No survey completions → the card renders the empty state, no chart.
+      expect(find.byType(LineChart), findsNothing);
+      expect(find.text('No data in this range'), findsOneWidget);
+      // The header still identifies the survey.
+      expect(find.text('PANAS'), findsOneWidget);
     });
 
     testWidgets(
@@ -142,13 +139,23 @@ void main() {
     );
 
     testWidgets('x-axis range matches rangeStart/rangeEnd', (tester) async {
+      // A non-empty result is required so the card mounts the chart rather than
+      // the empty-state message.
+      final entries = <JournalEntity>[
+        hMakeSurveyEntry(
+          id: 'x1',
+          dateFrom: DateTime(2024, 3, 10),
+          scoreKey: 'Positive Affect Score',
+          scoreValue: 30,
+        ),
+      ];
       when(
         () => mockJournalDb.getSurveyCompletionsByType(
           type: any(named: 'type'),
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
         ),
-      ).thenAnswer((_) async => []);
+      ).thenAnswer((_) async => entries);
 
       await hPumpSurveyChart(
         tester,
@@ -233,7 +240,7 @@ void main() {
       colorsByScoreKey: {'CFQ11': '#82E6CE'},
     );
 
-    testWidgets('empty data → minY and maxY both derive from 0', (
+    testWidgets('empty data shows the no-data message instead of a chart', (
       tester,
     ) async {
       when(
@@ -246,14 +253,12 @@ void main() {
 
       await hPumpSurveyChart(tester, chartConfig: chartConfig);
 
-      // minVal=0, maxVal=0 → valRange=0, minY=max(0-0,0)=0, maxY=0+0=0
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      expect(lineChart.data.minY, 0.0);
-      expect(lineChart.data.maxY, 0.0);
+      expect(find.byType(LineChart), findsNothing);
+      expect(find.text('No data in this range'), findsOneWidget);
     });
 
     testWidgets(
-      'two entries with scores 20 and 80 produce correct Y bounds',
+      'two entries with scores 20 and 80 produce nice-axis Y bounds',
       (tester) async {
         final entries = <JournalEntity>[
           hMakeSurveyEntry(
@@ -280,12 +285,14 @@ void main() {
 
         await hPumpSurveyChart(tester, chartConfig: chartConfig);
 
-        // minVal=20, maxVal=80, valRange=60
-        // minY = max(20 - 60*0.2, 0) = max(8, 0) = 8
-        // maxY = 80 + 60*0.2 = 92
+        // minVal=20, maxVal=80 → niceAxis(20, 80) rounds to [20, 80] step 20.
         final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-        expect(lineChart.data.minY, 8.0);
-        expect(lineChart.data.maxY, 92.0);
+        final axis = niceAxis(20, 80);
+        expect(lineChart.data.minY, axis.min);
+        expect(lineChart.data.maxY, axis.max);
+        // The score range is contained within the nice window.
+        expect(lineChart.data.minY, lessThanOrEqualTo(20));
+        expect(lineChart.data.maxY, greaterThanOrEqualTo(80));
       },
     );
   });

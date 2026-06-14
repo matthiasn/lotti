@@ -78,17 +78,17 @@ class HealthObservationsController extends _$HealthObservationsController {
   }) async {
     ref.cacheFor(dashboardCacheDuration);
 
-    final items =
-        ref
-            .watch(
-              healthChartDataControllerProvider(
-                healthDataType: healthDataType,
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-              ),
-            )
-            .value ??
-        [];
+    // Await the upstream future (don't read `.value ?? []`) so this provider
+    // stays in AsyncLoading until the DB fetch completes. Resolving early from
+    // an empty upstream would make the chart's stale-while-revalidate wrapper
+    // see a value and flash an empty "No data" state on first load.
+    final items = await ref.watch(
+      healthChartDataControllerProvider(
+        healthDataType: healthDataType,
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ).future,
+    );
 
     return aggregateByType(items, healthDataType);
   }

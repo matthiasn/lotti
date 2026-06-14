@@ -47,21 +47,6 @@ Future<void> hPumpChart(
   await tester.pump();
 }
 
-/// Returns a minimal [TitleMeta] for testing bottom title widget callbacks.
-TitleMeta makeMeta() {
-  return TitleMeta(
-    min: 0,
-    max: 100,
-    appliedInterval: 1,
-    axisPosition: 0,
-    formattedValue: '',
-    parentAxisSize: 400,
-    sideTitles: const SideTitles(showTitles: true),
-    axisSide: AxisSide.bottom,
-    rotationQuarterTurns: 0,
-  );
-}
-
 /// Builds a simple [LineChartBarData] from a list of (x, y) pairs.
 LineChartBarData makeBarData(
   List<(double, double)> points, {

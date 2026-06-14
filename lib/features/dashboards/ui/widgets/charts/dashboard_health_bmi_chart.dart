@@ -5,126 +5,43 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
-import 'package:lotti/features/dashboards/state/health_bmi_data.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/stale_async_value.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
-
-class BmiRangeLegend extends StatelessWidget {
-  const BmiRangeLegend({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Positioned(
-      bottom: 40,
-      left: 40,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(77), //New
-              blurRadius: 8,
-              offset: const Offset(0, 8),
-            ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: ColoredBox(
-            color: Colors.white.withAlpha(191),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ...bmiRanges.reversed.map(
-                    (range) {
-                      return Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(4),
-                            child: Container(
-                              width: 12,
-                              height: 12,
-                              color: colorFromCssHex(
-                                range.hexColor,
-                              ).withAlpha(178),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 6,
-                          ),
-                          Text(
-                            range.name,
-                            style: chartTitleStyle.copyWith(
-                              fontSize: 11,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 class BmiChartInfoWidget extends ConsumerWidget {
-  const BmiChartInfoWidget(
-    this.chartConfig, {
+  const BmiChartInfoWidget({
     required this.minInRange,
     required this.maxInRange,
     super.key,
   });
 
-  final DashboardHealthItem chartConfig;
   final num minInRange;
   final num maxInRange;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
     final minWeight = '${NumberFormat('#,###.#').format(minInRange)} kg';
     final maxWeight = '${NumberFormat('#,###.#').format(maxInRange)} kg';
 
-    return Positioned(
-      top: 0,
-      left: 20,
-      child: IgnorePointer(
-        child: Container(
-          width: MediaQuery.of(context).size.width - 30,
-          padding: const EdgeInsets.only(
-            right: 10,
-            left: 10,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                healthTypes[chartConfig.healthType]?.displayName ??
-                    chartConfig.healthType,
-                style: chartTitleStyle,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '$minWeight - $maxWeight',
-                style: chartTitleStyle.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
+    return DashboardChartHeader(
+      // The chart plots WEIGHT (not a BMI comparison), so the card title is the
+      // weight health type's display name rather than the configured BMI type's
+      // misleading "Weight vs. Body Mass Index".
+      title: healthTypes['HealthDataType.WEIGHT']?.displayName ?? 'Weight',
+      subtitle: 'kg',
+      trailing: Text(
+        '$minWeight – $maxWeight',
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+          fontWeight: tokens.typography.weight.semiBold,
         ),
       ),
     );
@@ -136,45 +53,47 @@ class DashboardHealthBmiChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
-    this.transformationController,
     super.key,
   });
 
   final DashboardHealthItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final weightData =
-        ref
-            .watch(
-              healthObservationsControllerProvider(
-                healthDataType: 'HealthDataType.WEIGHT',
-                rangeStart: rangeStart,
-                rangeEnd: rangeEnd,
-              ),
-            )
-            .value ??
-        [];
-
-    final minInRange = findMin(weightData);
-    final maxInRange = findMax(weightData);
-    return DashboardChart(
-      chart: TimeSeriesLineChart(
-        data: weightData,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-        transformationController: transformationController,
+    return StaleAsyncValue<List<Observation>>(
+      async: ref.watch(
+        healthObservationsControllerProvider(
+          healthDataType: 'HealthDataType.WEIGHT',
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        ),
       ),
-      chartHeader: BmiChartInfoWidget(
-        chartConfig,
-        minInRange: minInRange,
-        maxInRange: maxInRange,
-      ),
-      height: 320,
-      overlay: const BmiRangeLegend(),
+      builder: (context, value, isInitialLoading) {
+        final weightData = value ?? const <Observation>[];
+        final minInRange = findMin(weightData);
+        final maxInRange = findMax(weightData);
+        return DashboardChart(
+          chart: TimeSeriesLineChart(
+            data: weightData,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+          dateAxis: DashboardChartDateAxis(
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+          chartHeader: BmiChartInfoWidget(
+            minInRange: minInRange,
+            maxInRange: maxInRange,
+          ),
+          isLoading: isInitialLoading,
+          isEmpty: weightData.isEmpty,
+          emptyMessage: context.messages.dashboardChartNoData,
+          height: 320,
+        );
+      },
     );
   }
 }

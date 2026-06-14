@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 
 import 'time_series_multiline_chart_test_helpers.dart';
 
@@ -185,169 +186,29 @@ void main() {
     });
   });
 
-  group('TimeSeriesMultiLineChart — bottom title widgets', () {
-    testWidgets('day=1 renders a SideTitleWidget', (tester) async {
-      final start = DateTime(2024, 3);
-      final end = DateTime(2024, 4, 30);
-
-      await hPumpChart(
-        tester,
-        lineBarsData: [],
-        rangeStart: start,
-        rangeEnd: end,
-      );
-
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      final getTitles =
-          lineChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day1 = DateTime(2024, 3).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day1, makeMeta());
-      expect(widget, isA<SideTitleWidget>());
-    });
-
-    testWidgets(
-      'non-label day (e.g., day 7) in >=30-day range returns SizedBox',
-      (tester) async {
-        final start = DateTime(2024, 3);
-        final end = DateTime(2024, 4, 30);
-
-        await hPumpChart(
-          tester,
-          lineBarsData: [],
-          rangeStart: start,
-          rangeEnd: end,
-        );
-
-        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-        final getTitles =
-            lineChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-        final day7 = DateTime(2024, 3, 7).millisecondsSinceEpoch.toDouble();
-        final widget = getTitles(day7, makeMeta());
-        expect(widget, isA<SizedBox>());
-      },
-    );
-
-    testWidgets('day=15 shows label when rangeInDays < 90', (tester) async {
-      final start = DateTime(2024, 3);
-      final end = DateTime(2024, 4, 30); // ~60 days
-
-      await hPumpChart(
-        tester,
-        lineBarsData: [],
-        rangeStart: start,
-        rangeEnd: end,
-      );
-
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      final getTitles =
-          lineChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day15 = DateTime(2024, 3, 15).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day15, makeMeta());
-      expect(
-        widget,
-        isA<SideTitleWidget>(),
-        reason: 'day=15 should show in <90-day range',
-      );
-    });
-
-    testWidgets('day=15 returns SizedBox in a >=90-day range', (tester) async {
-      final start = DateTime(2024);
-      final end = DateTime(2024, 5, 15); // ~135 days
-
-      await hPumpChart(
-        tester,
-        lineBarsData: [],
-        rangeStart: start,
-        rangeEnd: end,
-      );
-
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      final getTitles =
-          lineChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day15 = DateTime(2024, 3, 15).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day15, makeMeta());
-      expect(
-        widget,
-        isA<SizedBox>(),
-        reason: 'day=15 should NOT show in >=90-day range',
-      );
-    });
-
-    testWidgets('day=8 shows label when rangeInDays < 30', (tester) async {
-      final start = DateTime(2024, 3);
-      final end = DateTime(2024, 3, 20); // 19 days
-
-      await hPumpChart(
-        tester,
-        lineBarsData: [],
-        rangeStart: start,
-        rangeEnd: end,
-      );
-
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      final getTitles =
-          lineChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day8 = DateTime(2024, 3, 8).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day8, makeMeta());
-      expect(
-        widget,
-        isA<SideTitleWidget>(),
-        reason: 'day=8 should show in <30-day range',
-      );
-    });
-
-    testWidgets('day=8 returns SizedBox when rangeInDays >= 30', (
+  group('TimeSeriesMultiLineChart — axis configuration', () {
+    testWidgets('bottom titles are disabled and left uses the shared gutter', (
       tester,
     ) async {
-      final start = DateTime(2024, 3);
-      final end = DateTime(2024, 4, 15); // 45 days
+      final bar = makeBarData([
+        (DateTime(2024, 3, 10).millisecondsSinceEpoch.toDouble(), 5),
+      ]);
 
       await hPumpChart(
         tester,
-        lineBarsData: [],
-        rangeStart: start,
-        rangeEnd: end,
+        lineBarsData: [bar],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
       );
 
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      final getTitles =
-          lineChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day8 = DateTime(2024, 3, 8).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day8, makeMeta());
+      final titlesData = lineChart.data.titlesData;
+      // The bottom date axis is rendered by the shared DashboardChartDateAxis
+      // widget, not by fl_chart.
+      expect(titlesData.bottomTitles.sideTitles.showTitles, isFalse);
       expect(
-        widget,
-        isA<SizedBox>(),
-        reason: 'day=8 should NOT show in >=30-day range',
-      );
-    });
-
-    testWidgets('day=22 shows label when rangeInDays < 30', (tester) async {
-      final start = DateTime(2024, 3);
-      final end = DateTime(2024, 3, 20); // 19 days
-
-      await hPumpChart(
-        tester,
-        lineBarsData: [],
-        rangeStart: start,
-        rangeEnd: end,
-      );
-
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      final getTitles =
-          lineChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day22 = DateTime(2024, 3, 22).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day22, makeMeta());
-      expect(
-        widget,
-        isA<SideTitleWidget>(),
-        reason: 'day=22 should show in <30-day range',
+        titlesData.leftTitles.sideTitles.reservedSize,
+        kChartLeftAxisWidth,
       );
     });
   });

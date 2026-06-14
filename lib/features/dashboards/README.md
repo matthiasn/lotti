@@ -21,7 +21,6 @@ At runtime, this feature owns:
   widgets
 - keeping chart providers warm for 5 minutes via
   `cacheFor(dashboardCacheDuration)`
-- tracking horizontal zoom scale for bar charts with `BarWidthController`
 
 It does not own:
 
@@ -80,7 +79,6 @@ flowchart LR
   Cards --> Page["DashboardPage"]
   Page --> Cache["EntitiesCacheService.getDashboardById()"]
   Page --> Span["TimeSpanSegmentedControl"]
-  Page --> Scale["BarWidthController"]
   Page --> Widget["DashboardWidget"]
 
   Widget --> Measurement["MeasurablesBarChart"]
@@ -146,12 +144,13 @@ Code-backed details worth knowing:
 
 ## Single Dashboard Page Lifecycle
 
-`DashboardPage` is a `ConsumerStatefulWidget` with two pieces of local page
+`DashboardPage` is a `ConsumerStatefulWidget` with a single piece of local page
 state:
 
 - `timeSpanDays`, defaulting to `90`
-- a `TransformationController` whose listener updates
-  `barWidthControllerProvider`
+
+The visible date range is the only range control; the time-span segmented
+control covers it. There is no pinch/scroll zoom gesture.
 
 ```mermaid
 sequenceDiagram
@@ -164,13 +163,11 @@ sequenceDiagram
   User->>Page: open /dashboards/:id
   Page->>Cache: getDashboardById(id)
   alt dashboard exists
-    Page->>Widget: build with date range + transformation controller
+    Page->>Widget: build with date range
     Widget->>Providers: watch item-specific providers
     Providers-->>Widget: entities or observations
     User->>Page: change segmented time span
     Page->>Widget: rebuild with new range
-    User->>Page: pan or zoom chart
-    Page->>Page: update BarWidthController scale
   else dashboard missing
     Page->>Page: beamToNamed('/dashboards')
     Page-->>User: render EmptyScaffoldWithTitle(dashboardNotFound)
@@ -189,7 +186,6 @@ stateDiagram-v2
   state Viewing {
     [*] --> Rendering
     Rendering --> Rendering: timeSpanDays changed
-    Rendering --> Rendering: pan/zoom updates BarWidthController
   }
 ```
 
@@ -244,11 +240,31 @@ In concrete terms:
 The chart widgets are not all built from one abstract chart super-engine, and
 that is fine.
 
+- the bar, line, multiline, and blood-pressure charts no longer draw their own
+  fl_chart bottom date labels. Instead each chart's `bottomTitles` is an empty
+  `AxisTitles()`, and the chart card renders one shared `DashboardChartDateAxis`
+  row (in `ui/widgets/charts/time_series/utils.dart`) directly under the plot via
+  `DashboardChart.dateAxis`. That row prints four evenly-spaced labels (start,
+  +1/3, +2/3, end) aligned with the linear time axis and left-padded by
+  `kChartLeftAxisWidth` so they line up under the plot, not the y-axis gutter.
+  This was done because fl_chart's bar charts clipped/dropped the leading date
+  label at narrow widths (the ~480px desktop detail pane) while line charts kept
+  it, so adjacent cards disagreed on their start date. Rendering the labels
+  ourselves makes every bar and line card show identical, aligned dates at all
+  widths. The date axis is only rendered when the chart is shown — never in the
+  loading or empty states.
 - measurement charts resolve aggregation from either the dashboard item or the
-  measurable type definition
+  measurable type definition. The card caption is a single phrase: the
+  measurable description when present, otherwise the humanized aggregation
+  (`aggregationDisplayLabel`), otherwise nothing — never an "[agg] · [desc]"
+  stack.
 - health charts use the `healthTypes` config map for display names, units, and
   aggregation behavior
+- the `BODY_MASS_INDEX` item plots WEIGHT only, so its card title is the WEIGHT
+  display name rather than the configured type's "Weight vs. Body Mass Index"
 - workout charts always render as bars after aggregating daily totals
+- the blood-pressure chart's value axis steps by 20 (≈80/100/120) while the
+  dashed 80/120 reference lines still land on those gridlines
 - survey charts build `LineChartBarData` locally from survey score keys
 - habit charts intentionally reuse `HabitCompletionCard` rather than copying
   habit chart logic into this feature

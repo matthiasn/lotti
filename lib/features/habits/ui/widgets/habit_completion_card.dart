@@ -7,12 +7,12 @@ import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -24,6 +24,7 @@ class HabitCompletionCard extends ConsumerStatefulWidget {
     required this.rangeStart,
     required this.rangeEnd,
     this.showGaps = true,
+    this.showLinkedDashboard = true,
     super.key,
   });
 
@@ -32,12 +33,35 @@ class HabitCompletionCard extends ConsumerStatefulWidget {
   final DateTime rangeEnd;
   final bool showGaps;
 
+  /// Whether the completion dialog embeds the habit's linked dashboard.
+  /// Set to false when this card is itself rendered inside that dashboard, so
+  /// tapping a row doesn't re-open the dashboard the user is already viewing.
+  final bool showLinkedDashboard;
+
   @override
   ConsumerState<HabitCompletionCard> createState() =>
       _HabitCompletionCardState();
 }
 
 class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
+  /// Last loaded results, retained so changing the time span keeps the card
+  /// visible (stale-while-revalidate) instead of blinking to nothing while the
+  /// new range-keyed provider loads.
+  List<HabitResult>? _lastResults;
+
+  @override
+  void didUpdateWidget(HabitCompletionCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Drop the cache when the card is rebound to a different habit (callers key
+    // by habitId, so this is defensive), otherwise the previous habit's
+    // completion squares would flash under the new habit's name until its
+    // provider resolves. A range-only change deliberately keeps the stale
+    // results visible (see [_lastResults]).
+    if (widget.habitId != oldWidget.habitId) {
+      _lastResults = null;
+    }
+  }
+
   void onTapAdd({String? dateString}) {
     final height = MediaQuery.of(context).size.height;
     final maxHeight = height * 0.8;
@@ -49,11 +73,17 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
       return;
     }
 
+    // Mirror the dialog's gate: the linked dashboard only fills the sheet when
+    // it will actually be shown, otherwise the form floats on a transparent
+    // background.
+    final showLinkedDashboard =
+        widget.showLinkedDashboard && habitDefinition.dashboardId != null;
+
     ModalUtils.showBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       constraints: BoxConstraints(maxHeight: maxHeight),
-      backgroundColor: habitDefinition.dashboardId != null
+      backgroundColor: showLinkedDashboard
           ? Theme.of(context).bottomSheetTheme.backgroundColor
           : Colors.transparent,
       builder: (BuildContext context) {
@@ -61,6 +91,7 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
           habitId: habitDefinition.id,
           themeData: Theme.of(context),
           dateString: dateString,
+          showLinkedDashboard: widget.showLinkedDashboard,
         );
       },
     );
@@ -76,15 +107,17 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
       return const SizedBox.shrink();
     }
 
-    final results = ref
-        .watch(
-          habitCompletionControllerProvider(
-            habitId: habitDefinition.id,
-            rangeStart: widget.rangeStart,
-            rangeEnd: widget.rangeEnd,
-          ),
-        )
-        .value;
+    final resultsAsync = ref.watch(
+      habitCompletionControllerProvider(
+        habitId: habitDefinition.id,
+        rangeStart: widget.rangeStart,
+        rangeEnd: widget.rangeEnd,
+      ),
+    );
+    if (resultsAsync.hasValue) {
+      _lastResults = resultsAsync.value;
+    }
+    final results = _lastResults;
 
     if (results == null) {
       return const SizedBox.shrink();
@@ -98,10 +131,20 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
         }.contains(results.last.completionType);
 
     final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
+    final tokens = context.designTokens;
+    final titleStyle = tokens.typography.styles.subtitle.subtitle1.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
 
     return Opacity(
       opacity: completedToday ? 0.75 : 1,
-      child: Card(
+      child: Material(
+        color: tokens.colors.background.level02,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+          side: BorderSide(color: tokens.colors.decorative.level01),
+        ),
         child: ListTile(
           contentPadding: const EdgeInsets.only(
             left: 10,
@@ -125,13 +168,12 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
                     child: Text(
                       habitDefinition.name,
                       style: completedToday
-                          ? habitTitleStyle.copyWith(
+                          ? titleStyle.copyWith(
                               decoration: TextDecoration.lineThrough,
-                              decorationColor:
-                                  context.textTheme.titleLarge?.color,
+                              decorationColor: tokens.colors.text.highEmphasis,
                               decorationThickness: 2,
                             )
-                          : habitTitleStyle,
+                          : titleStyle,
                       overflow: TextOverflow.fade,
                       softWrap: false,
                     ),
@@ -203,7 +245,7 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
             onPressed: onTapAdd,
             icon: Icon(
               Icons.check_circle_outline,
-              color: oldPrimaryColor,
+              color: tokens.colors.interactive.enabled,
               size: 30,
               semanticLabel: 'Complete ${habitDefinition.name}',
             ),

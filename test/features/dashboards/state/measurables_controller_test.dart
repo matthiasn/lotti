@@ -342,4 +342,92 @@ void main() {
       expect(fetchCount, equals(countAfterBuild));
     });
   });
+
+  group('MeasurableObservationsController', () {
+    const typeId = 'obs-type-id';
+    final rangeStart = DateTime(2024, 3, 10);
+    final rangeEnd = DateTime(2024, 3, 17);
+
+    void stubEmptyUpdates() {
+      when(
+        () => mockUpdateNotifications.updateStream,
+      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+    }
+
+    void stubAggregationDeps() {
+      when(
+        () => mockEntitiesCacheService.getDataTypeById(typeId),
+      ).thenReturn(null);
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(typeId),
+      ).thenAnswer((_) async => null);
+    }
+
+    test(
+      'returns empty for an empty range under dailySum (no prefilled zeros)',
+      () async {
+        stubEmptyUpdates();
+        stubAggregationDeps();
+        when(
+          () => mockJournalDb.getMeasurementsByType(
+            type: typeId,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+        ).thenAnswer((_) async => <JournalEntity>[]);
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final result = await container.read(
+          measurableObservationsControllerProvider((
+            measurableDataTypeId: typeId,
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+            dashboardDefinedAggregationType: AggregationType.dailySum,
+          )).future,
+        );
+
+        // dailySum would otherwise prefill a zero bucket per day; the empty
+        // guard keeps it empty so the chart shows "No data".
+        expect(result, isEmpty);
+      },
+    );
+
+    test('still aggregates (prefilled days) when measurements exist', () async {
+      stubEmptyUpdates();
+      stubAggregationDeps();
+      final entry = buildMeasurementEntry(
+        id: 'm1',
+        timestamp: DateTime(2024, 3, 12, 9),
+        value: 99,
+      );
+      when(
+        () => mockJournalDb.getMeasurementsByType(
+          type: typeId,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        ),
+      ).thenAnswer((_) async => [entry]);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      final result = await container.read(
+        measurableObservationsControllerProvider((
+          measurableDataTypeId: typeId,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+          dashboardDefinedAggregationType: AggregationType.dailySum,
+        )).future,
+      );
+
+      // Real data present -> the day buckets are filled (guard does not fire).
+      expect(result, isNotEmpty);
+      expect(
+        result.firstWhere((o) => o.dateTime == DateTime(2024, 3, 12)).value,
+        99,
+      );
+    });
+  });
 }

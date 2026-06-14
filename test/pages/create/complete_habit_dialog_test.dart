@@ -55,7 +55,10 @@ void main() {
     });
     tearDown(tearDownTestGetIt);
 
-    Future<void> pumpHabitDialog(WidgetTester tester) async {
+    Future<void> pumpHabitDialog(
+      WidgetTester tester, {
+      bool showLinkedDashboard = true,
+    }) async {
       final delegate = BeamerDelegate(
         locationBuilder: RoutesLocationBuilder(
           routes: {
@@ -77,6 +80,7 @@ void main() {
                 child: HabitDialog(
                   habitId: habitFlossing.id,
                   themeData: ThemeData(),
+                  showLinkedDashboard: showLinkedDashboard,
                 ),
               ),
             ),
@@ -210,6 +214,29 @@ void main() {
       final dashboardWidget = tester.widget<DashboardWidget>(dashboardFinder);
       expect(dashboardWidget.dashboardId, 'dash-1');
     });
+
+    testWidgets(
+      'suppresses the dashboard preview when showLinkedDashboard is false, '
+      'even with a dashboard id',
+      (tester) async {
+        // Opened from within the habit's own dashboard: the dialog must not
+        // re-embed that dashboard.
+        final habitWithDashboard = habitFlossing.copyWith(
+          dashboardId: 'dash-1',
+        );
+
+        when(
+          () => mockEntitiesCacheService.getHabitById(habitFlossing.id),
+        ).thenAnswer((_) => habitWithDashboard);
+
+        await pumpHabitDialog(tester, showLinkedDashboard: false);
+
+        // No embedded dashboard, but the completion form is still there.
+        expect(find.byType(DashboardWidget), findsNothing);
+        expect(find.byKey(const Key('habit_save')), findsOneWidget);
+        expect(find.text(habitFlossing.name), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'desktop registers the Cmd+S hotkey on init and unregisters on '

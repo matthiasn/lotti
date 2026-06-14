@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/dashboards/state/health_bmi_data.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bmi_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
@@ -51,51 +50,13 @@ void main() {
     ];
   }
 
-  group('BmiRangeLegend', () {
-    // BmiRangeLegend returns a Positioned, so it must live inside a Stack.
-    testWidgets('renders all BMI category labels from bmiRanges', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const SizedBox(
-            width: 1000,
-            height: 600,
-            child: Stack(children: [BmiRangeLegend()]),
-          ),
-        ),
-      );
-
-      for (final range in bmiRanges) {
-        expect(
-          find.text(range.name),
-          findsOneWidget,
-          reason: 'Expected BMI range "${range.name}" to be displayed',
-        );
-      }
-    });
-
-    testWidgets('renders colour swatch for every BMI range', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const SizedBox(
-            width: 1000,
-            height: 600,
-            child: Stack(children: [BmiRangeLegend()]),
-          ),
-        ),
-      );
-
-      // Each range row contains one Container (the colour swatch).
-      expect(find.byType(Container), findsNWidgets(bmiRanges.length));
-    });
-  });
-
   group('BmiChartInfoWidget', () {
-    testWidgets('shows health type display name when configured', (
+    testWidgets('title is the WEIGHT display name, since it plots weight', (
       tester,
     ) async {
-      // 'HealthDataType.WEIGHT' maps to displayName 'Weight' in healthTypes.
+      // The chart plots WEIGHT, so the card title is the WEIGHT health type's
+      // display name ('Weight'), never the configured BMI type's misleading
+      // "Weight vs. Body Mass Index".
       await tester.pumpWidget(
         makeTestableWidget(
           const SizedBox(
@@ -104,7 +65,6 @@ void main() {
             child: Stack(
               children: [
                 BmiChartInfoWidget(
-                  chartConfig,
                   minInRange: 70,
                   maxInRange: 80,
                 ),
@@ -115,38 +75,8 @@ void main() {
       );
 
       expect(find.text('Weight'), findsOneWidget);
-    });
-
-    testWidgets('falls back to raw health type when not in healthTypes', (
-      tester,
-    ) async {
-      const unknownConfig =
-          DashboardItem.healthChart(
-                color: '#00FF00',
-                healthType: 'UnknownType',
-              )
-              as DashboardHealthItem;
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const SizedBox(
-            width: 1000,
-            height: 600,
-            child: Stack(
-              children: [
-                BmiChartInfoWidget(
-                  unknownConfig,
-                  minInRange: 60,
-                  maxInRange: 90,
-                ),
-              ],
-            ),
-          ),
-          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
-        ),
-      );
-
-      expect(find.text('UnknownType'), findsOneWidget);
+      // The misleading comparison title must never surface.
+      expect(find.text('Weight vs. Body Mass Index'), findsNothing);
     });
 
     testWidgets('formats min/max range with kg suffix', (tester) async {
@@ -158,7 +88,6 @@ void main() {
             child: Stack(
               children: [
                 BmiChartInfoWidget(
-                  chartConfig,
                   minInRange: 68.3,
                   maxInRange: 82.7,
                 ),
@@ -170,7 +99,7 @@ void main() {
       );
 
       // NumberFormat('#,###.#') keeps one decimal place.
-      expect(find.text('68.3 kg - 82.7 kg'), findsOneWidget);
+      expect(find.text('68.3 kg – 82.7 kg'), findsOneWidget);
     });
 
     testWidgets('shows zero values formatted correctly when data is empty', (
@@ -184,7 +113,6 @@ void main() {
             child: Stack(
               children: [
                 BmiChartInfoWidget(
-                  chartConfig,
                   minInRange: 0,
                   maxInRange: 0,
                 ),
@@ -194,10 +122,12 @@ void main() {
         ),
       );
 
-      expect(find.text('0 kg - 0 kg'), findsOneWidget);
+      expect(find.text('0 kg – 0 kg'), findsOneWidget);
     });
 
-    testWidgets('range text uses bold font weight', (tester) async {
+    testWidgets('range text uses an emphasised (semibold) font weight', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidget(
           const SizedBox(
@@ -206,7 +136,6 @@ void main() {
             child: Stack(
               children: [
                 BmiChartInfoWidget(
-                  chartConfig,
                   minInRange: 75,
                   maxInRange: 85,
                 ),
@@ -222,15 +151,15 @@ void main() {
               w is Text &&
               w.data != null &&
               w.data!.contains('kg') &&
-              w.style?.fontWeight == FontWeight.bold,
+              w.style?.fontWeight == FontWeight.w600,
         ),
       );
-      expect(rangeText.data, '75 kg - 85 kg');
+      expect(rangeText.data, '75 kg – 85 kg');
     });
   });
 
   group('DashboardHealthBmiChart', () {
-    testWidgets('renders TimeSeriesLineChart and BmiRangeLegend with data', (
+    testWidgets('renders TimeSeriesLineChart with data and kg subtitle', (
       tester,
     ) async {
       final observations = makeObservations([72.0, 73.5, 74.0]);
@@ -255,7 +184,8 @@ void main() {
       await tester.pump();
 
       expect(find.byType(TimeSeriesLineChart), findsOneWidget);
-      expect(find.byType(BmiRangeLegend), findsOneWidget);
+      // The header now shows a 'kg' unit subtitle (no BMI range legend).
+      expect(find.text('kg'), findsOneWidget);
     });
 
     testWidgets('shows weight display name in header', (tester) async {
@@ -309,7 +239,7 @@ void main() {
         await tester.pump();
 
         // findMin=68.0 → "68 kg", findMax=80.2 → "80.2 kg"
-        expect(find.text('68 kg - 80.2 kg'), findsOneWidget);
+        expect(find.text('68 kg – 80.2 kg'), findsOneWidget);
       },
     );
 
@@ -336,7 +266,7 @@ void main() {
       await tester.pump();
 
       // findMin and findMax return 0 when list is empty.
-      expect(find.text('0 kg - 0 kg'), findsOneWidget);
+      expect(find.text('0 kg – 0 kg'), findsOneWidget);
     });
 
     testWidgets('DashboardChart has height 320', (tester) async {
