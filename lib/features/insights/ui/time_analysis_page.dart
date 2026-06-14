@@ -28,15 +28,39 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// the pure logic functions (~1-3ms per build at 10k-50k entries, measured
 /// — well within a frame),
 /// and passes plain values to dumb child widgets.
-class TimeAnalysisPage extends ConsumerWidget {
+/// **keepPreviousData.** [insightsBucketsProvider] is an `autoDispose.family`
+/// keyed by calendar year ([insightsWindowFor]). Stepping between periods of
+/// the *same* year reuses one cached bucket set — no fetch, no loading. But
+/// stepping across a year boundary (every step at year granularity; Jan↔Dec
+/// for months; the odd week or quarter) is a *new* family instance that starts
+/// at `AsyncLoading` with no value — and `skipLoadingOnReload` cannot bridge
+/// it, since it only retains a value *within* one instance. Left alone, that
+/// flashes a spinner over the whole dashboard on every year-crossing step. So
+/// the last fully-loaded generation is retained by the state and kept on
+/// screen until the new window resolves, while the header/stepper always tracks
+/// the live selection for instant feedback — the Riverpod equivalent of
+/// `keepPreviousData: true`.
+class TimeAnalysisPage extends ConsumerStatefulWidget {
   const TimeAnalysisPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TimeAnalysisPage> createState() => _TimeAnalysisPageState();
+}
+
+class _TimeAnalysisPageState extends ConsumerState<TimeAnalysisPage> {
+  /// The most recent generation whose buckets had fully loaded. Retained across
+  /// builds so a year-boundary window switch keeps rendering it until the new
+  /// buckets arrive, instead of blanking to a spinner. Null only before the
+  /// very first load resolves (or until a cold cache fills on return).
+  _DashboardData? _lastData;
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
 
     final selection = ref.watch(insightsRangeControllerProvider);
+    final controller = ref.read(insightsRangeControllerProvider.notifier);
     final bucketsAsync = ref.watch(
       insightsBucketsProvider(insightsWindowFor(selection.range)),
     );
@@ -46,14 +70,31 @@ class TimeAnalysisPage extends ConsumerWidget {
     // the comparison week for Sunday/Saturday-first regions). `.value`
     // (valueOrNull) so a still-loading previous window never blanks or blocks
     // the established dashboard.
-    final previousRange = ref
-        .read(insightsRangeControllerProvider.notifier)
-        .previousComparisonRange;
+    final previousRange = controller.previousComparisonRange;
     final previousBuckets = previousRange == null
         ? null
         : ref
               .watch(insightsBucketsProvider(insightsWindowFor(previousRange)))
               .value;
+
+    // Capture the freshest fully-loaded generation, pairing the buckets with
+    // the exact selection they cover. `.value` is non-null both for a settled
+    // AsyncData and for a same-instance reload (Riverpod retains the prior
+    // value), so within a year this simply tracks the current data; across a
+    // year it stops updating while the new window loads, freezing [_lastData]
+    // on the previous period. Assigning a field in build() is safe here: it
+    // feeds only this build and the next, and never itself schedules a rebuild.
+    final buckets = bucketsAsync.value;
+    if (buckets != null) {
+      _lastData = _DashboardData(
+        selection: selection,
+        buckets: buckets,
+        previousRange: previousRange,
+        previousBuckets: previousBuckets,
+      );
+    }
+    final data = _lastData;
+
     final preferences = ref.watch(insightsPreferencesControllerProvider);
     final categories =
         ref.watch(categoriesStreamProvider).value ??
@@ -72,55 +113,72 @@ class TimeAnalysisPage extends ConsumerWidget {
       // inverts between light and dark, so page/card swap by brightness).
       backgroundColor: insightsPageSurface(context),
       body: SafeArea(
-        child: bucketsAsync.when(
-          // Background refreshes and window switches must never blank the
-          // established dashboard — loading shells are for first paint only.
-          skipLoadingOnReload: true,
-          skipLoadingOnRefresh: true,
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(
-            child: Text(
-              messages.insightsLoadError,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.lowEmphasis,
+        // First paint only: no generation has loaded yet, so a loading shell
+        // (or the error message if that very first fetch failed) is all there
+        // is to show. Once any generation has rendered, a loading new window or
+        // a transient error keeps the last one on screen rather than blanking.
+        child: data == null
+            ? (bucketsAsync.hasError
+                  ? Center(
+                      child: Text(
+                        messages.insightsLoadError,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                      ),
+                    )
+                  : const Center(child: CircularProgressIndicator()))
+            : _DashboardContent(
+                selection: selection,
+                data: data,
+                resolver: resolver,
+                categories: categories,
+                focusCategoryIds: preferences.focusCategoryIds,
+                onSelectUnit: controller.selectUnit,
+                onStep: controller.step,
+                onSelectToDate: controller.selectToDate,
+                onOpenCalendar: () =>
+                    showInsightsPeriodPicker(context: context),
+                onToggleCompare: controller.toggleCompare,
+                onToggleFocusCategory: ref
+                    .read(insightsPreferencesControllerProvider.notifier)
+                    .toggleFocusCategory,
               ),
-            ),
-          ),
-          data: (buckets) => _DashboardContent(
-            buckets: buckets,
-            selection: selection,
-            previousBuckets: previousBuckets,
-            previousRange: previousRange,
-            resolver: resolver,
-            categories: categories,
-            focusCategoryIds: preferences.focusCategoryIds,
-            onSelectUnit: ref
-                .read(insightsRangeControllerProvider.notifier)
-                .selectUnit,
-            onStep: ref.read(insightsRangeControllerProvider.notifier).step,
-            onSelectToDate: ref
-                .read(insightsRangeControllerProvider.notifier)
-                .selectToDate,
-            onOpenCalendar: () => showInsightsPeriodPicker(context: context),
-            onToggleCompare: ref
-                .read(insightsRangeControllerProvider.notifier)
-                .toggleCompare,
-            onToggleFocusCategory: ref
-                .read(insightsPreferencesControllerProvider.notifier)
-                .toggleFocusCategory,
-          ),
-        ),
       ),
     );
   }
 }
 
+/// A fully-resolved dashboard generation: a bucket set paired with the exact
+/// [selection] (and comparison window) it was computed for. Buckets are
+/// year-windowed, so the range they cover and the buckets must always travel
+/// together — rendering one period's buckets against another period's range
+/// would zero-fill the dashboard. Retained by [_TimeAnalysisPageState] for
+/// keepPreviousData across year-boundary loads.
+@immutable
+class _DashboardData {
+  const _DashboardData({
+    required this.selection,
+    required this.buckets,
+    required this.previousRange,
+    required this.previousBuckets,
+  });
+
+  final InsightsPeriodSelection selection;
+  final InsightsDayBuckets buckets;
+
+  /// Comparison window + its buckets when compare is on (else null). The
+  /// buckets can be null even here if the comparison window had not finished
+  /// loading when this generation was captured; the body simply omits the
+  /// comparison columns until a later generation carries them.
+  final InsightsRange? previousRange;
+  final InsightsDayBuckets? previousBuckets;
+}
+
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent({
-    required this.buckets,
     required this.selection,
-    required this.previousBuckets,
-    required this.previousRange,
+    required this.data,
     required this.resolver,
     required this.categories,
     required this.focusCategoryIds,
@@ -132,12 +190,15 @@ class _DashboardContent extends StatelessWidget {
     required this.onToggleFocusCategory,
   });
 
-  final InsightsDayBuckets buckets;
+  /// The live selection — drives the header/stepper only, so a year-boundary
+  /// step gets instant feedback even while [data] is still the previous
+  /// generation. Every body figure reads [data].selection instead.
   final InsightsPeriodSelection selection;
 
-  /// Previous-period buckets + range when comparison is on (else null).
-  final InsightsDayBuckets? previousBuckets;
-  final InsightsRange? previousRange;
+  /// The generation rendered in the body — possibly the previous period while a
+  /// new window loads (keepPreviousData). Its buckets and range are a matched
+  /// pair, never mixed across generations.
+  final _DashboardData data;
 
   final InsightsCategoryResolver resolver;
   final List<CategoryDefinition> categories;
@@ -153,7 +214,12 @@ class _DashboardContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final range = selection.range;
+    // Body figures derive from the generation's own selection/buckets — never
+    // the live [selection], whose range may point at a year still loading
+    // (which would zero-fill every derivation below).
+    final bodySelection = data.selection;
+    final range = bodySelection.range;
+    final buckets = data.buckets;
 
     // Pure derivations, recomputed per build (~1-3ms at 10k-50k entries,
     // measured — well within a frame). The daily/ranked aggregation is
@@ -184,8 +250,8 @@ class _DashboardContent extends StatelessWidget {
     // comparison is surfaced numerically (KPI deltas + the table's Δ% /
     // Previous columns), never as a second chart series: a previous-period
     // reference bar fights the focal data and reads as a loading/empty bar.
-    final compareRange = previousRange;
-    final prevBuckets = previousBuckets;
+    final compareRange = data.previousRange;
+    final prevBuckets = data.previousBuckets;
     InsightsKpis? previousKpis;
     Map<String?, int>? previousByCategory;
     if (compareRange != null && prevBuckets != null) {
@@ -237,10 +303,10 @@ class _DashboardContent extends StatelessWidget {
             // Don't strand the user on a dead period: widening to the whole
             // year (where data is likeliest) is the quieter secondary path,
             // dropped once already viewing the year.
-            secondaryActionLabel: selection.unit != InsightsPeriodUnit.year
+            secondaryActionLabel: bodySelection.unit != InsightsPeriodUnit.year
                 ? messages.insightsEmptyShowYear
                 : null,
-            onSecondaryAction: selection.unit != InsightsPeriodUnit.year
+            onSecondaryAction: bodySelection.unit != InsightsPeriodUnit.year
                 ? () => onSelectUnit(InsightsPeriodUnit.year)
                 : null,
           )

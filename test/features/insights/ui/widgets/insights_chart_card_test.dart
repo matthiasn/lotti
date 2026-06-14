@@ -278,6 +278,33 @@ void main() {
     expect(borders.last, greaterThan(0.0));
   });
 
+  testWidgets(
+    'every stacked band carries the divider edge, so the bar is one width',
+    (tester) async {
+      // Two bands in one bucket. The baseline band used to skip the hairline
+      // edge while the band above carried it; because fl_chart strokes a stack
+      // item's whole rectangle (sides included), that left the baseline band a
+      // hair wider than the rest. Now every band carries the same edge.
+      final data = InsightsChartData(
+        granularity: InsightsGranularity.day,
+        bucketStarts: [DateTime(2026, 6)],
+        seriesKeys: const ['cat-a', 'cat-b'],
+        values: const [
+          [3600],
+          [1800],
+        ],
+      );
+      await withClock(Clock.fixed(DateTime(2026, 6, 7, 15)), () async {
+        await pumpCard(tester, data: data);
+      });
+
+      final chart = tester.widget<BarChart>(find.byType(BarChart));
+      final stack = chart.data.barGroups.single.barRods.single.rodStackItems;
+      expect(stack.length, 2);
+      expect(stack.every((item) => item.borderSide.width > 0), isTrue);
+    },
+  );
+
   group('tooltips', () {
     testWidgets(
       'bar tooltip reads out every band for the bucket, largest first',
@@ -452,6 +479,27 @@ void main() {
       // Thinned to every 5th label: May 9 shown, May 10 suppressed.
       expect(find.text('May 9'), findsOneWidget);
       expect(find.text('May 10'), findsNothing);
+    });
+
+    testWidgets('y-axis labels stay in whole hours, never days', (
+      tester,
+    ) async {
+      // 24h in one bucket lands a gridline exactly at 24h. The axis used to
+      // roll anything >= 24h into days ("1d"); it now reads plain hours so it
+      // speaks the same unit as the KPI summary.
+      final data = InsightsChartData(
+        granularity: InsightsGranularity.day,
+        bucketStarts: [DateTime(2026, 6)],
+        seriesKeys: const ['cat-a'],
+        values: const [
+          [86400],
+        ],
+      );
+      await withClock(Clock.fixed(DateTime(2026, 6, 7, 15)), () async {
+        await pumpCard(tester, data: data);
+      });
+      expect(find.text('24h'), findsOneWidget);
+      expect(find.text('1d'), findsNothing);
     });
   });
 }

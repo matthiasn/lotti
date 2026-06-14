@@ -33,20 +33,22 @@ void main() {
     });
   });
 
-  group('formatDurationWithDays', () {
+  group('formatDurationSummary', () {
     test('reads like compact below 100h', () {
-      expect(formatDurationWithDays(0), '0m');
-      expect(formatDurationWithDays(2 * 3600 + 15 * 60), '2h 15m');
-      expect(formatDurationWithDays(99 * 3600), '99h');
+      expect(formatDurationSummary(0), '0m');
+      expect(formatDurationSummary(2 * 3600 + 15 * 60), '2h 15m');
+      expect(formatDurationSummary(99 * 3600), '99h');
+      expect(formatDurationSummary(99 * 3600 + 59 * 60), '99h 59m');
     });
 
-    test('rolls into days at and above 100h', () {
-      // 100h = 4 days 4 hours.
-      expect(formatDurationWithDays(100 * 3600), '4d 4h');
-      // Whole days drop the hour component.
-      expect(formatDurationWithDays(120 * 3600), '5d');
-      // ~966h (the legacy hard-to-grasp case) becomes a legible day count.
-      expect(formatDurationWithDays(966 * 3600 + 59 * 60), '40d 6h');
+    test('collapses to rounded whole hours at and above 100h', () {
+      // The minute remainder turns to noise at this magnitude, so it folds
+      // into a single hour count — never the ambiguous "4d 4h".
+      expect(formatDurationSummary(100 * 3600), '100h');
+      // Rounds to the nearest hour: 966h 59m → 967h ...
+      expect(formatDurationSummary(966 * 3600 + 59 * 60), '967h');
+      // ... and 966h 29m → 966h.
+      expect(formatDurationSummary(966 * 3600 + 29 * 60), '966h');
     });
   });
 
