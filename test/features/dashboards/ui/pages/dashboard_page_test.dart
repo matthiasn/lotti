@@ -122,6 +122,22 @@ void main() {
       // the chart host wired to this dashboard id.
       expect(find.text(testDashboardConfig.name), findsOneWidget);
       expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+
+      // The body is hosted inside a SliverToBoxAdapter (unbounded height) and
+      // wrapped in SettingsContentArea (a LayoutBuilder). Guard that the
+      // content is actually laid out — non-zero size and inset from the page
+      // edge — so it can never silently collapse to "header only".
+      final controlRect = tester.getRect(
+        find.byType(TimeSpanSegmentedControl),
+      );
+      expect(controlRect.width, greaterThan(0));
+      expect(controlRect.height, greaterThan(0));
+      expect(
+        controlRect.left,
+        greaterThan(0),
+        reason: 'content must be horizontally inset, not hugging the edge',
+      );
+
       final dashboardWidget = tester.widget<DashboardWidget>(
         find.byType(DashboardWidget),
       );

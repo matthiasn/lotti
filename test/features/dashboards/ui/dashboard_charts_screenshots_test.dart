@@ -322,13 +322,17 @@ Future<void> _pump(
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
             builder: (context) => Scaffold(
-              // Match the real dashboard detail page's lighter (level02)
-              // surface so the review screenshots reflect production.
-              backgroundColor: context.designTokens.colors.background.level02,
+              // Match the real dashboard detail page's app-standard near-black
+              // (level01) page surface so the level02 cards pop the same way
+              // they do in production.
+              backgroundColor: context.designTokens.colors.background.level01,
               body: Align(
                 alignment: Alignment.topCenter,
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  // Vertical breathing room only; the horizontal inset comes
+                  // from the centered, width-capped content column, mirroring
+                  // the real page's SettingsContentArea max-width centering.
+                  padding: const EdgeInsets.symmetric(vertical: 24),
                   child: SizedBox(width: contentWidth, child: _cards()),
                 ),
               ),

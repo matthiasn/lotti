@@ -92,11 +92,7 @@ class DashboardWidget extends ConsumerWidget {
           ),
           if (dashboard.description.isNotEmpty)
             Padding(
-              padding: EdgeInsets.only(
-                top: tokens.spacing.step4,
-                left: tokens.spacing.step2,
-                right: tokens.spacing.step2,
-              ),
+              padding: EdgeInsets.only(top: tokens.spacing.step4),
               child: Text(
                 dashboard.description,
                 style: tokens.typography.styles.others.caption.copyWith(

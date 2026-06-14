@@ -28,9 +28,7 @@ class DashboardsList extends ConsumerWidget {
           decoration: BoxDecoration(
             color: tokens.colors.background.level02,
             borderRadius: borderRadius,
-            // Stronger hairline so the list panel still reads as a distinct
-            // card on the lighter (level02) page surface.
-            border: Border.all(color: tokens.colors.decorative.level02),
+            border: Border.all(color: tokens.colors.decorative.level01),
           ),
           child: ClipRRect(
             borderRadius: borderRadius,

@@ -22,13 +22,10 @@ class DashboardHabitsChart extends StatefulWidget {
 class _DashboardHabitsChartState extends State<DashboardHabitsChart> {
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      child: HabitCompletionCard(
-        habitId: widget.habitId,
-        rangeStart: widget.rangeStart,
-        rangeEnd: widget.rangeEnd,
-      ),
+    return HabitCompletionCard(
+      habitId: widget.habitId,
+      rangeStart: widget.rangeStart,
+      rangeEnd: widget.rangeEnd,
     );
   }
 }

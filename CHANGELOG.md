@@ -71,8 +71,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   survey charts now stays inside the card on desktop instead of being pushed
   off-screen. The time-span selector is now design-system pills instead of a
   plain segmented button, the habit card matches the other chart cards (no
-  more near-black box), and the whole Insights area uses a lighter page
-  surface in dark mode so it no longer reads as one black block.
+  more near-black box), and the chart cards are inset to align with the
+  dashboard title instead of hugging the screen edges.
 
 ## [0.9.1019]
 ### Changed

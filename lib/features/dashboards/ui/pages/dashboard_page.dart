@@ -10,6 +10,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
+import 'package:lotti/widgets/settings/settings_page_layout.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({
@@ -50,25 +51,28 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     return SliverBoxAdapterPage(
       title: dashboard.name,
       showBackButton: true,
-      backgroundColor: tokens.colors.background.level02,
-      child: Column(
-        children: [
-          SizedBox(height: tokens.spacing.step5),
-          TimeSpanSegmentedControl(
-            timeSpanDays: timeSpanDays,
-            onValueChanged: (int value) {
-              setState(() {
-                timeSpanDays = value;
-              });
-            },
-          ),
-          SizedBox(height: tokens.spacing.step5),
-          DashboardWidget(
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-            dashboardId: widget.dashboardId,
-          ),
-        ],
+      // Content shares the header's horizontal inset so the cards align with
+      // the title instead of hugging the page edges.
+      child: SettingsContentArea(
+        child: Column(
+          children: [
+            SizedBox(height: tokens.spacing.step5),
+            TimeSpanSegmentedControl(
+              timeSpanDays: timeSpanDays,
+              onValueChanged: (int value) {
+                setState(() {
+                  timeSpanDays = value;
+                });
+              },
+            ),
+            SizedBox(height: tokens.spacing.step5),
+            DashboardWidget(
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+              dashboardId: widget.dashboardId,
+            ),
+          ],
+        ),
       ),
     );
   }
