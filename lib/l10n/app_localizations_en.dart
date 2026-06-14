@@ -5157,6 +5157,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsRangeYtd => 'This year';
 
   @override
+  String get insightsRefreshError =>
+      'Couldn\'t refresh — showing the last loaded data';
+
+  @override
   String get insightsTableAvgPerDay => 'AVG/DAY';
 
   @override

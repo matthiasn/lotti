@@ -5223,6 +5223,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get insightsRangeYtd => 'Dieses Jahr';
 
   @override
+  String get insightsRefreshError =>
+      'Aktualisierung fehlgeschlagen — zuletzt geladene Daten werden angezeigt';
+
+  @override
   String get insightsTableAvgPerDay => 'Ø/TAG';
 
   @override

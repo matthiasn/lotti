@@ -2352,6 +2352,7 @@
   "insightsRangeMtd": "Dieser Monat",
   "insightsRangeYearToDate": "Dieses Jahr bisher",
   "insightsRangeYtd": "Dieses Jahr",
+  "insightsRefreshError": "Aktualisierung fehlgeschlagen — zuletzt geladene Daten werden angezeigt",
   "insightsTableAvgPerDay": "Ø/TAG",
   "insightsTableCategory": "KATEGORIE",
   "insightsTableCompareNote": "Änderung ggü. dem vorigen Zeitraum",

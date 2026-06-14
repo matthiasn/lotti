@@ -229,7 +229,8 @@ stateDiagram-v2
   whole hours throughout — no day rollup, since days are ambiguous for tracked
   time (a 24h day? an 8h workday?) — so a cumulative year tick reads "1008h"
   and the left gutter (`reservedSize`) reserves extra width for those
-  four-digit ticks. This matches the hours-only KPI summary.
+  four-digit ticks. This matches the KPI summary, which likewise rounds to
+  whole hours at long spans (100h+) and otherwise keeps compact `h m` detail.
 - Granularity tiers: hourly for 1-day ranges, daily up to 120 days, weekly
   beyond (a full year ≈ 52 x-points). Partial edge weeks are flagged in tooltips.
 - At most 6 series plus a slate **Other (+N)** rollup — tightened to 5 on the

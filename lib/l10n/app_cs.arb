@@ -2144,6 +2144,7 @@
   "insightsRangeMtd": "Tento měsíc",
   "insightsRangeYearToDate": "Tento rok zatím",
   "insightsRangeYtd": "Tento rok",
+  "insightsRefreshError": "Nepodařilo se obnovit — zobrazují se naposledy načtená data",
   "insightsTableAvgPerDay": "Ø/DEN",
   "insightsTableCategory": "KATEGORIE",
   "insightsTableCompareNote": "Změna oproti předchozímu období",

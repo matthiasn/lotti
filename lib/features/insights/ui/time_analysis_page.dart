@@ -128,21 +128,36 @@ class _TimeAnalysisPageState extends ConsumerState<TimeAnalysisPage> {
                       ),
                     )
                   : const Center(child: CircularProgressIndicator()))
-            : _DashboardContent(
-                selection: selection,
-                data: data,
-                resolver: resolver,
-                categories: categories,
-                focusCategoryIds: preferences.focusCategoryIds,
-                onSelectUnit: controller.selectUnit,
-                onStep: controller.step,
-                onSelectToDate: controller.selectToDate,
-                onOpenCalendar: () =>
-                    showInsightsPeriodPicker(context: context),
-                onToggleCompare: controller.toggleCompare,
-                onToggleFocusCategory: ref
-                    .read(insightsPreferencesControllerProvider.notifier)
-                    .toggleFocusCategory,
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // A failed window load keeps the last dashboard on screen
+                  // (never a blanking shell — that's the keepPreviousData
+                  // contract) but flags the staleness in a slim, non-blocking
+                  // strip. Without it, a deliberate step whose load fails would
+                  // silently mislabel the previous period's figures as the
+                  // newly selected one. Transient background-refetch errors show
+                  // it too and clear on the next successful refetch.
+                  if (bucketsAsync.hasError) const _StaleDataNotice(),
+                  Expanded(
+                    child: _DashboardContent(
+                      selection: selection,
+                      data: data,
+                      resolver: resolver,
+                      categories: categories,
+                      focusCategoryIds: preferences.focusCategoryIds,
+                      onSelectUnit: controller.selectUnit,
+                      onStep: controller.step,
+                      onSelectToDate: controller.selectToDate,
+                      onOpenCalendar: () =>
+                          showInsightsPeriodPicker(context: context),
+                      onToggleCompare: controller.toggleCompare,
+                      onToggleFocusCategory: ref
+                          .read(insightsPreferencesControllerProvider.notifier)
+                          .toggleFocusCategory,
+                    ),
+                  ),
+                ],
               ),
       ),
     );
@@ -173,6 +188,48 @@ class _DashboardData {
   /// comparison columns until a later generation carries them.
   final InsightsRange? previousRange;
   final InsightsDayBuckets? previousBuckets;
+}
+
+/// Slim, non-blocking strip shown above the (retained) dashboard when a window
+/// load fails. It surfaces the failure without blanking the established data —
+/// the project's "background refresh uses a subtle affordance, never a loading
+/// or error shell" rule. Aligned to the dashboard's content gutter (step6).
+class _StaleDataNotice extends StatelessWidget {
+  const _StaleDataNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step6,
+        tokens.spacing.step4,
+        tokens.spacing.step6,
+        0,
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.sync_problem_rounded,
+            size: tokens.spacing.step5,
+            color: tokens.colors.text.lowEmphasis,
+          ),
+          SizedBox(width: tokens.spacing.step2),
+          Flexible(
+            child: Text(
+              context.messages.insightsRefreshError,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _DashboardContent extends StatelessWidget {
