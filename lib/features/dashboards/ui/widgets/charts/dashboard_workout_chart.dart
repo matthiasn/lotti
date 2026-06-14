@@ -43,14 +43,12 @@ class DashboardWorkoutChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
-    this.transformationController,
     super.key,
   });
 
   final DashboardWorkoutItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -70,7 +68,6 @@ class DashboardWorkoutChart extends ConsumerWidget {
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
         unit: chartConfig.displayName,
-        transformationController: transformationController,
         colorByValue: (Observation observation) =>
             tokens.colors.interactive.enabled,
       ),

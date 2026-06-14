@@ -14,14 +14,12 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 class BmiChartInfoWidget extends ConsumerWidget {
-  const BmiChartInfoWidget(
-    this.chartConfig, {
+  const BmiChartInfoWidget({
     required this.minInRange,
     required this.maxInRange,
     super.key,
   });
 
-  final DashboardHealthItem chartConfig;
   final num minInRange;
   final num maxInRange;
 
@@ -32,9 +30,10 @@ class BmiChartInfoWidget extends ConsumerWidget {
     final maxWeight = '${NumberFormat('#,###.#').format(maxInRange)} kg';
 
     return DashboardChartHeader(
-      title:
-          healthTypes[chartConfig.healthType]?.displayName ??
-          chartConfig.healthType,
+      // The chart plots WEIGHT (not a BMI comparison), so the card title is the
+      // weight health type's display name rather than the configured BMI type's
+      // misleading "Weight vs. Body Mass Index".
+      title: healthTypes['HealthDataType.WEIGHT']?.displayName ?? 'Weight',
       subtitle: 'kg',
       trailing: Text(
         '$minWeight – $maxWeight',
@@ -52,14 +51,12 @@ class DashboardHealthBmiChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
-    this.transformationController,
     super.key,
   });
 
   final DashboardHealthItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -79,10 +76,8 @@ class DashboardHealthBmiChart extends ConsumerWidget {
         data: weightData,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
-        transformationController: transformationController,
       ),
       chartHeader: BmiChartInfoWidget(
-        chartConfig,
         minInRange: minInRange,
         maxInRange: maxInRange,
       ),

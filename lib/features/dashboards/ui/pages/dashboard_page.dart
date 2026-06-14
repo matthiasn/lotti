@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/dashboards/state/chart_scale_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
@@ -27,28 +26,6 @@ class DashboardPage extends ConsumerStatefulWidget {
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   int timeSpanDays = 90;
 
-  late TransformationController _transformationController;
-
-  @override
-  void initState() {
-    _transformationController = TransformationController();
-    _transformationController.addListener(() {
-      ref
-          .read(barWidthControllerProvider.notifier)
-          .updateScale(
-            _transformationController.value,
-          );
-    });
-
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    _transformationController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final dashboard = getIt<EntitiesCacheService>().getDashboardById(
@@ -70,10 +47,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
 
     final tokens = context.designTokens;
-    // Charts share one horizontal zoom (pinch / trackpad). Surface a reset
-    // affordance whenever something is zoomed in so the gesture is reversible
-    // and discoverable instead of leaving the user stranded.
-    final isZoomed = ref.watch(barWidthControllerProvider) > 1.01;
     return SliverBoxAdapterPage(
       title: dashboard.name,
       showBackButton: true,
@@ -88,22 +61,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               });
             },
           ),
-          if (isZoomed)
-            Padding(
-              padding: EdgeInsets.only(top: tokens.spacing.step3),
-              child: TextButton.icon(
-                onPressed: () =>
-                    _transformationController.value = Matrix4.identity(),
-                icon: const Icon(Icons.zoom_out_map_rounded),
-                label: Text(context.messages.dashboardResetZoom),
-              ),
-            ),
           SizedBox(height: tokens.spacing.step5),
           DashboardWidget(
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
             dashboardId: widget.dashboardId,
-            transformationController: _transformationController,
           ),
         ],
       ),

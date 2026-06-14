@@ -259,9 +259,10 @@ void main() {
       final leftTitles = barChart.data.titlesData.leftTitles.sideTitles;
       expect(leftTitles.showTitles, isTrue);
       expect(leftTitles.reservedSize, 52);
-      // The endpoint ticks are suppressed so labels never clip the gutter.
+      // The min tick is suppressed (it overlaps the bottom axis), but the top
+      // nice-number bound is labelled so the value scale's ceiling is readable.
       expect(leftTitles.minIncluded, isFalse);
-      expect(leftTitles.maxIncluded, isFalse);
+      expect(leftTitles.maxIncluded, isTrue);
     });
 
     testWidgets('bottom titles are shown with reservedSize 30', (tester) async {

@@ -15,7 +15,6 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
     required this.rangeEnd,
     required this.minVal,
     required this.maxVal,
-    this.transformationController,
     this.unit = '',
     super.key,
   });
@@ -26,7 +25,6 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
   final num minVal;
   final num maxVal;
   final String unit;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context) {
@@ -37,12 +35,10 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
 
     Widget bottomTitleWidgets(double value, TitleMeta meta) {
       final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-      if (ymd.day == 1 ||
-          (rangeInDays < 90 && ymd.day == 15) ||
-          (rangeInDays < 30 && ymd.day == 8) ||
-          (rangeInDays < 30 && ymd.day == 22)) {
+      if (shouldShowDateLabel(rangeInDays, ymd.day)) {
         return SideTitleWidget(
           meta: meta,
+          fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
           child: ChartLabel(chartDateFormatterMmDd(value)),
         );
       }
@@ -50,16 +46,11 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(
-        top: 20,
-        right: 20,
+      padding: EdgeInsets.only(
+        top: tokens.spacing.step5,
+        right: tokens.spacing.step2,
       ),
       child: LineChart(
-        transformationConfig: FlTransformationConfig(
-          scaleAxis: FlScaleAxis.horizontal,
-          maxScale: maxScale,
-          transformationController: transformationController,
-        ),
         LineChartData(
           gridData: FlGridData(
             drawVerticalLine: false,

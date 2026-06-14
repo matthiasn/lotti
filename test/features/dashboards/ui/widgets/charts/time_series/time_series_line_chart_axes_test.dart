@@ -61,8 +61,8 @@ void main() {
       },
     );
 
-    testWidgets('day=15 shows label when rangeInDays < 90', (tester) async {
-      // Short range (< 90 days): day=15 should render a label.
+    testWidgets('day=15 shows label when rangeInDays < 92', (tester) async {
+      // Short range (< 92 days): day=15 should render a label.
       final shortStart = DateTime(2024, 3);
       final shortEnd = DateTime(2024, 4, 30); // ~60 days
 
@@ -82,12 +82,12 @@ void main() {
       expect(
         widgetShort,
         isA<SideTitleWidget>(),
-        reason: 'day=15 should show in <90-day range',
+        reason: 'day=15 should show in <92-day range',
       );
     });
 
-    testWidgets('day=15 returns SizedBox in a >=90-day range', (tester) async {
-      // Long range (>=90 days): day=15 should NOT render a label.
+    testWidgets('day=15 returns SizedBox in a >=92-day range', (tester) async {
+      // Long range (>=92 days): day=15 should NOT render a label.
       final longStart = DateTime(2024);
       final longEnd = DateTime(2024, 5, 15); // ~135 days
 
@@ -107,7 +107,7 @@ void main() {
       expect(
         widgetLong,
         isA<SizedBox>(),
-        reason: 'day=15 should NOT show in >=90-day range',
+        reason: 'day=15 should NOT show in >=92-day range',
       );
     });
 
@@ -184,6 +184,26 @@ void main() {
         isA<SideTitleWidget>(),
         reason: 'day=22 should show in <30-day range',
       );
+    });
+  });
+
+  group('TimeSeriesLineChart — value axis configuration', () {
+    testWidgets('left titles label the top bound but not the bottom one', (
+      tester,
+    ) async {
+      await hPumpChart(
+        tester,
+        data: [Observation(DateTime(2024, 3, 10), 5)],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      final leftTitles = lineChart.data.titlesData.leftTitles.sideTitles;
+      // The min tick is suppressed (it overlaps the bottom axis), but the top
+      // nice-number bound is labelled so the value scale's ceiling is readable.
+      expect(leftTitles.minIncluded, isFalse);
+      expect(leftTitles.maxIncluded, isTrue);
     });
   });
 

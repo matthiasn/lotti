@@ -16,14 +16,12 @@ class DashboardSurveyChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
-    this.transformationController,
     super.key,
   });
 
   final DashboardSurveyItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -81,7 +79,6 @@ class DashboardSurveyChart extends ConsumerWidget {
         lineBarsData: lineBarsData,
         minVal: minVal,
         maxVal: maxVal,
-        transformationController: transformationController,
       ),
       chartHeader: DashboardChartHeader(
         title: chartConfig.surveyName,

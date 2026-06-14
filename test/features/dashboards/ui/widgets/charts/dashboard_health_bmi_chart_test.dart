@@ -51,10 +51,12 @@ void main() {
   }
 
   group('BmiChartInfoWidget', () {
-    testWidgets('shows health type display name when configured', (
+    testWidgets('title is the WEIGHT display name, since it plots weight', (
       tester,
     ) async {
-      // 'HealthDataType.WEIGHT' maps to displayName 'Weight' in healthTypes.
+      // The chart plots WEIGHT, so the card title is the WEIGHT health type's
+      // display name ('Weight'), never the configured BMI type's misleading
+      // "Weight vs. Body Mass Index".
       await tester.pumpWidget(
         makeTestableWidget(
           const SizedBox(
@@ -63,7 +65,6 @@ void main() {
             child: Stack(
               children: [
                 BmiChartInfoWidget(
-                  chartConfig,
                   minInRange: 70,
                   maxInRange: 80,
                 ),
@@ -74,38 +75,8 @@ void main() {
       );
 
       expect(find.text('Weight'), findsOneWidget);
-    });
-
-    testWidgets('falls back to raw health type when not in healthTypes', (
-      tester,
-    ) async {
-      const unknownConfig =
-          DashboardItem.healthChart(
-                color: '#00FF00',
-                healthType: 'UnknownType',
-              )
-              as DashboardHealthItem;
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const SizedBox(
-            width: 1000,
-            height: 600,
-            child: Stack(
-              children: [
-                BmiChartInfoWidget(
-                  unknownConfig,
-                  minInRange: 60,
-                  maxInRange: 90,
-                ),
-              ],
-            ),
-          ),
-          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
-        ),
-      );
-
-      expect(find.text('UnknownType'), findsOneWidget);
+      // The misleading comparison title must never surface.
+      expect(find.text('Weight vs. Body Mass Index'), findsNothing);
     });
 
     testWidgets('formats min/max range with kg suffix', (tester) async {
@@ -117,7 +88,6 @@ void main() {
             child: Stack(
               children: [
                 BmiChartInfoWidget(
-                  chartConfig,
                   minInRange: 68.3,
                   maxInRange: 82.7,
                 ),
@@ -143,7 +113,6 @@ void main() {
             child: Stack(
               children: [
                 BmiChartInfoWidget(
-                  chartConfig,
                   minInRange: 0,
                   maxInRange: 0,
                 ),
@@ -167,7 +136,6 @@ void main() {
             child: Stack(
               children: [
                 BmiChartInfoWidget(
-                  chartConfig,
                   minInRange: 75,
                   maxInRange: 85,
                 ),

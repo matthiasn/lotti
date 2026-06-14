@@ -15,7 +15,6 @@ class DashboardWidget extends ConsumerWidget {
     required this.rangeStart,
     required this.rangeEnd,
     required this.dashboardId,
-    this.transformationController,
     super.key,
     this.showTitle = false,
   });
@@ -24,7 +23,6 @@ class DashboardWidget extends ConsumerWidget {
   final DateTime rangeEnd;
   final String dashboardId;
   final bool showTitle;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,21 +41,18 @@ class DashboardWidget extends ConsumerWidget {
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
             enableCreate: true,
-            transformationController: transformationController,
           );
         case final DashboardHealthItem health:
           return DashboardHealthChart(
             chartConfig: health,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
-            transformationController: transformationController,
           );
         case final DashboardWorkoutItem workout:
           return DashboardWorkoutChart(
             chartConfig: workout,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
-            transformationController: transformationController,
           );
 
         case final DashboardSurveyItem survey:
@@ -65,7 +60,6 @@ class DashboardWidget extends ConsumerWidget {
             chartConfig: survey,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
-            transformationController: transformationController,
           );
         case final DashboardHabitItem habit:
           return DashboardHabitsChart(

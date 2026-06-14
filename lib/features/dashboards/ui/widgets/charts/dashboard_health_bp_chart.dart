@@ -16,13 +16,11 @@ class DashboardHealthBpChart extends ConsumerWidget {
   const DashboardHealthBpChart({
     required this.rangeStart,
     required this.rangeEnd,
-    this.transformationController,
     super.key,
   });
 
   final DateTime rangeStart;
   final DateTime rangeEnd;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -54,12 +52,10 @@ class DashboardHealthBpChart extends ConsumerWidget {
 
     Widget bottomTitleWidgets(double value, TitleMeta meta) {
       final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-      if (ymd.day == 1 ||
-          (rangeInDays < 90 && ymd.day == 15) ||
-          (rangeInDays < 30 && ymd.day == 8) ||
-          (rangeInDays < 30 && ymd.day == 22)) {
+      if (shouldShowDateLabel(rangeInDays, ymd.day)) {
         return SideTitleWidget(
           meta: meta,
+          fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
           child: ChartLabel(chartDateFormatterMmDd(value)),
         );
       }
@@ -68,17 +64,15 @@ class DashboardHealthBpChart extends ConsumerWidget {
 
     return DashboardChart(
       chart: Padding(
-        padding: const EdgeInsets.only(top: 20, right: 20),
+        padding: EdgeInsets.only(
+          top: tokens.spacing.step5,
+          right: tokens.spacing.step2,
+        ),
         child: LineChart(
-          transformationConfig: FlTransformationConfig(
-            scaleAxis: FlScaleAxis.horizontal,
-            transformationController: transformationController,
-            maxScale: maxScale,
-          ),
           LineChartData(
             gridData: FlGridData(
               drawVerticalLine: false,
-              horizontalInterval: 10,
+              horizontalInterval: 20,
               getDrawingHorizontalLine: (value) {
                 if (value == 80.0) {
                   return chartEmphasisLine(
@@ -142,7 +136,7 @@ class DashboardHealthBpChart extends ConsumerWidget {
               leftTitles: const AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
-                  interval: 10,
+                  interval: 20,
                   getTitlesWidget: leftTitleWidgets,
                   reservedSize: 52,
                   minIncluded: false,

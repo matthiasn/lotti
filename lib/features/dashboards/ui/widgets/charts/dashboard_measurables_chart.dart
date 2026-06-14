@@ -19,7 +19,6 @@ class MeasurablesBarChart extends ConsumerWidget {
     required this.rangeEnd,
     this.aggregationType,
     this.enableCreate = false,
-    this.transformationController,
     super.key,
   });
 
@@ -28,7 +27,6 @@ class MeasurablesBarChart extends ConsumerWidget {
   final DateTime rangeEnd;
   final bool enableCreate;
   final AggregationType? aggregationType;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -69,14 +67,12 @@ class MeasurablesBarChart extends ConsumerWidget {
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
               unit: measurableDataType.unitName,
-              transformationController: transformationController,
             )
           : TimeSeriesBarChart(
               data: data,
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
               unit: measurableDataType.unitName,
-              transformationController: transformationController,
               colorByValue: (Observation observation) =>
                   tokens.colors.interactive.enabled,
             ),

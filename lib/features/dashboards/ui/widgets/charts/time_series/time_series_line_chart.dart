@@ -16,7 +16,6 @@ class TimeSeriesLineChart extends StatelessWidget {
     required this.rangeStart,
     required this.rangeEnd,
     this.unit = '',
-    this.transformationController,
     super.key,
   });
 
@@ -24,7 +23,6 @@ class TimeSeriesLineChart extends StatelessWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final String unit;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context) {
@@ -47,12 +45,10 @@ class TimeSeriesLineChart extends StatelessWidget {
 
     Widget bottomTitleWidgets(double value, TitleMeta meta) {
       final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-      if (ymd.day == 1 ||
-          (rangeInDays < 90 && ymd.day == 15) ||
-          (rangeInDays < 30 && ymd.day == 8) ||
-          (rangeInDays < 30 && ymd.day == 22)) {
+      if (shouldShowDateLabel(rangeInDays, ymd.day)) {
         return SideTitleWidget(
           meta: meta,
+          fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
           child: ChartLabel(chartDateFormatterMmDd(value)),
         );
       }
@@ -60,13 +56,11 @@ class TimeSeriesLineChart extends StatelessWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(top: 20, right: 20),
+      padding: EdgeInsets.only(
+        top: tokens.spacing.step5,
+        right: tokens.spacing.step2,
+      ),
       child: LineChart(
-        transformationConfig: FlTransformationConfig(
-          scaleAxis: FlScaleAxis.horizontal,
-          transformationController: transformationController,
-          maxScale: maxScale,
-        ),
         LineChartData(
           gridData: FlGridData(
             drawVerticalLine: false,
@@ -127,9 +121,10 @@ class TimeSeriesLineChart extends StatelessWidget {
                 showTitles: true,
                 getTitlesWidget: leftTitleWidgets,
                 reservedSize: 52,
+                // Suppress the bottom tick (it overlaps the date axis) but keep
+                // the default top tick so the value scale's ceiling is labelled.
                 interval: axis.interval,
                 minIncluded: false,
-                maxIncluded: false,
               ),
             ),
           ),

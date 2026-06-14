@@ -4,9 +4,7 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/features/dashboards/state/chart_scale_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
@@ -14,7 +12,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-class TimeSeriesBarChart extends ConsumerWidget {
+class TimeSeriesBarChart extends StatelessWidget {
   const TimeSeriesBarChart({
     required this.data,
     required this.rangeStart,
@@ -22,7 +20,6 @@ class TimeSeriesBarChart extends ConsumerWidget {
     required this.colorByValue,
     this.unit = '',
     this.valueInHours = false,
-    this.transformationController,
     super.key,
   });
 
@@ -31,12 +28,11 @@ class TimeSeriesBarChart extends ConsumerWidget {
   final DateTime rangeEnd;
   final String unit;
   final bool valueInHours;
-  final TransformationController? transformationController;
 
   final ColorByValue colorByValue;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final inRange = daysInRange(rangeStart: rangeStart, rangeEnd: rangeEnd);
 
@@ -56,10 +52,6 @@ class TimeSeriesBarChart extends ConsumerWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final barsWidth =
         (screenWidth - 150 - rangeInDays - screenWidth * 0.1) / rangeInDays;
-
-    final scale = transformationController != null
-        ? ref.watch(barWidthControllerProvider)
-        : 1.0;
 
     final maxVal = dataWithEmptyDays.fold<double>(
       0,
@@ -81,7 +73,7 @@ class TimeSeriesBarChart extends ConsumerWidget {
                   topRight: barRadius,
                 ),
                 color: colorByValue(observation),
-                width: max(barsWidth, 1) * scale,
+                width: max(barsWidth, 1),
               ),
             ],
           );
@@ -93,12 +85,10 @@ class TimeSeriesBarChart extends ConsumerWidget {
       TitleMeta meta,
     ) {
       final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-      if (ymd.day == 1 ||
-          (rangeInDays < 92 && ymd.day == 15) ||
-          (rangeInDays < 30 && ymd.day == 8) ||
-          (rangeInDays < 30 && ymd.day == 22)) {
+      if (shouldShowDateLabel(rangeInDays, ymd.day)) {
         return SideTitleWidget(
           meta: meta,
+          fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
           child: ChartLabel(chartDateFormatterMmDd(value)),
         );
       }
@@ -106,16 +96,11 @@ class TimeSeriesBarChart extends ConsumerWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.only(
-        top: 20,
-        right: 20,
+      padding: EdgeInsets.only(
+        top: tokens.spacing.step5,
+        right: tokens.spacing.step2,
       ),
       child: BarChart(
-        transformationConfig: FlTransformationConfig(
-          scaleAxis: FlScaleAxis.horizontal,
-          maxScale: maxScale,
-          transformationController: transformationController,
-        ),
         BarChartData(
           groupsSpace: 5,
           minY: 0,
@@ -165,8 +150,9 @@ class TimeSeriesBarChart extends ConsumerWidget {
                 getTitlesWidget: leftTitleWidgets,
                 reservedSize: 52,
                 interval: axis.interval,
+                // Suppress the bottom tick (it overlaps the date axis) but keep
+                // the default top tick so the value scale's ceiling is labelled.
                 minIncluded: false,
-                maxIncluded: false,
               ),
             ),
           ),

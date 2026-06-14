@@ -229,7 +229,7 @@ void main() {
       },
     );
 
-    testWidgets('day=15 shows label when rangeInDays < 90', (tester) async {
+    testWidgets('day=15 shows label when rangeInDays < 92', (tester) async {
       final start = DateTime(2024, 3);
       final end = DateTime(2024, 4, 30); // ~60 days
 
@@ -249,11 +249,11 @@ void main() {
       expect(
         widget,
         isA<SideTitleWidget>(),
-        reason: 'day=15 should show in <90-day range',
+        reason: 'day=15 should show in <92-day range',
       );
     });
 
-    testWidgets('day=15 returns SizedBox in a >=90-day range', (tester) async {
+    testWidgets('day=15 returns SizedBox in a >=92-day range', (tester) async {
       final start = DateTime(2024);
       final end = DateTime(2024, 5, 15); // ~135 days
 
@@ -273,7 +273,7 @@ void main() {
       expect(
         widget,
         isA<SizedBox>(),
-        reason: 'day=15 should NOT show in >=90-day range',
+        reason: 'day=15 should NOT show in >=92-day range',
       );
     });
 

@@ -4157,9 +4157,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dashboardPrivateLabel => 'Privat';
 
   @override
-  String get dashboardResetZoom => 'Resetează zoomul';
-
-  @override
   String get dashboardTakeSurveyTooltip => 'Completați chestionarul';
 
   @override

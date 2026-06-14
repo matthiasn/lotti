@@ -95,10 +95,11 @@ void main() {
         expect(find.byType(TimeSeriesBarChart), findsOneWidget);
         expect(find.byType(TimeSeriesLineChart), findsNothing);
 
-        // The header title is the bare display name; the humanized aggregation
-        // and the description are joined into the subtitle by " · ".
+        // The header title is the bare display name; the subtitle is the
+        // measurable's description alone (no "[agg] · [description]" stacking).
         expect(find.text('Water'), findsOneWidget);
-        expect(find.text('Daily total · Water intake'), findsOneWidget);
+        expect(find.text('Water intake'), findsOneWidget);
+        expect(find.textContaining('·'), findsNothing);
         // No developer enum suffix leaks into the title.
         expect(find.text('Water [dailySum]'), findsNothing);
       },
@@ -130,9 +131,11 @@ void main() {
       );
 
       expect(find.byType(TimeSeriesBarChart), findsOneWidget);
-      // Title is the bare name; the humanized aggregation is in the subtitle.
+      // Title is the bare name; the subtitle is the description alone — the
+      // aggregation is not stacked in even when one is configured.
       expect(find.text('Water'), findsOneWidget);
-      expect(find.text('Daily max · Water intake'), findsOneWidget);
+      expect(find.text('Water intake'), findsOneWidget);
+      expect(find.textContaining('·'), findsNothing);
     });
 
     testWidgets('shows the no-data message instead of a chart when empty', (

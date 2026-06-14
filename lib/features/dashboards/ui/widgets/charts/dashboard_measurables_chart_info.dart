@@ -58,15 +58,14 @@ class MeasurablesChartInfoWidget extends StatelessWidget {
       );
     }
 
-    // The aggregation is surfaced as a quiet caption (e.g. "Daily total")
-    // rather than concatenating a developer enum like "[dailySum]" into the
-    // title; the human-readable description follows it.
+    // A single caption, never an "[agg] · [description]" stack: prefer the
+    // human-readable description, fall back to the humanized aggregation
+    // (e.g. "Daily total"), and show nothing when neither is available.
+    final description = measurableDataType.description;
     final aggregation = aggregationDisplayLabel(context, aggregationType);
-    final subtitle = [
-      if (aggregation.isNotEmpty) aggregation,
-      if (measurableDataType.description.isNotEmpty)
-        measurableDataType.description,
-    ].join(' · ');
+    final subtitle = description.isNotEmpty
+        ? description
+        : (aggregation.isNotEmpty ? aggregation : null);
 
     return DashboardChartHeader(
       title: measurableDataType.displayName,

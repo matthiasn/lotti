@@ -349,6 +349,53 @@ void main() {
       );
     });
 
+    testWidgets(
+      'value axis steps by 20 and the 80/120 reference lines still render',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            DashboardHealthBpChart(
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            ),
+            overrides: [
+              healthObservationsControllerProvider(
+                healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ).overrideWithBuild((ref, notifier) => sysObs([120.0])),
+              healthObservationsControllerProvider(
+                healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ).overrideWithBuild((ref, notifier) => diaObs([80.0])),
+            ],
+          ),
+        );
+
+        await tester.pump();
+
+        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+        final gridData = lineChart.data.gridData;
+        final leftTitles = lineChart.data.titlesData.leftTitles.sideTitles;
+
+        // The axis ladder is calmed to a 20-unit step (≈80/100/120) rather
+        // than the dense 10-unit ladder.
+        expect(leftTitles.interval, 20);
+        expect(gridData.horizontalInterval, 20);
+
+        // The diastolic (80) and systolic (120) reference lines land on the
+        // 20-step gridlines and still render as dashed emphasis lines, while a
+        // non-reference value stays a plain gridline.
+        final lineAt80 = gridData.getDrawingHorizontalLine(80);
+        final lineAt120 = gridData.getDrawingHorizontalLine(120);
+        final lineAt100 = gridData.getDrawingHorizontalLine(100);
+        expect(lineAt80.dashArray, isNotNull);
+        expect(lineAt120.dashArray, isNotNull);
+        expect(lineAt100.dashArray, isNull);
+      },
+    );
+
     testWidgets('chart container has height 220', (tester) async {
       await tester.pumpWidget(
         makeTestableWidget(

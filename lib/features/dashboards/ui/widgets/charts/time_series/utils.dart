@@ -8,7 +8,17 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 typedef ColorByValue = Color Function(Observation);
 
-const maxScale = 20.0;
+/// Whether the bottom date axis should render a label for [day] of the month,
+/// given the visible [rangeInDays].
+///
+/// Labels thin out as the range widens so they never crowd: the 1st is always
+/// shown; the 15th joins it below 92 days; the 8th and 22nd fill in below 30
+/// days. Shared by the bar/line/multiline/blood-pressure charts so every
+/// dashboard chart's date axis ticks at the same cadence.
+bool shouldShowDateLabel(int rangeInDays, int day) =>
+    day == 1 ||
+    (rangeInDays < 92 && day == 15) ||
+    (rangeInDays < 30 && (day == 8 || day == 22));
 
 /// Axis label used for both the value (left) and date (bottom) axes.
 ///

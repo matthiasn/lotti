@@ -188,7 +188,7 @@ void main() {
     );
 
     testWidgets(
-      'subtitle joins aggregation and description with a middle dot',
+      'subtitle is the description alone when one exists (no agg stacking)',
       (tester) async {
         final dataType = _makeDataType(
           displayName: 'Water',
@@ -206,7 +206,10 @@ void main() {
         );
 
         expect(find.text('Water'), findsOneWidget);
-        expect(find.text('Daily total · Daily water intake'), findsOneWidget);
+        // The description wins; the aggregation is NOT joined in with a dot.
+        expect(find.text('Daily water intake'), findsOneWidget);
+        expect(find.textContaining('·'), findsNothing);
+        expect(find.textContaining('Daily total'), findsNothing);
       },
     );
 
@@ -232,7 +235,7 @@ void main() {
     );
 
     testWidgets(
-      'subtitle is empty when both aggregation and description are empty',
+      'subtitle is null when both aggregation and description are empty',
       (tester) async {
         // ignore: avoid_redundant_argument_values
         final dataType = _makeDataType(displayName: 'Weight', description: '');
@@ -246,12 +249,12 @@ void main() {
           ),
         );
 
-        // Title shows; the header receives an empty subtitle so none renders.
+        // Title shows; the header receives a null subtitle so none renders.
         expect(find.text('Weight'), findsOneWidget);
         final header = tester.widget<DashboardChartHeader>(
           find.byType(DashboardChartHeader),
         );
-        expect(header.subtitle, isEmpty);
+        expect(header.subtitle, isNull);
       },
     );
 
@@ -330,9 +333,9 @@ void main() {
     testWidgets(
       'tapping add button with description shows description in modal title',
       (tester) async {
-        // _buildModalTitle renders the description as its own Text node, so the
-        // modal title carries the raw description even though the card header
-        // folds it into the " · "-joined subtitle.
+        // The card header now surfaces the description directly as its subtitle
+        // (one Text node). _buildModalTitle renders the same description as its
+        // own Text, so opening the modal adds a second occurrence.
         // Use a narrow viewport so the trailing IconButton stays within bounds.
         tester.view
           ..physicalSize = const Size(800, 600)
@@ -354,9 +357,9 @@ void main() {
           mediaQueryData: const MediaQueryData(size: Size(800, 600)),
         );
 
-        // The card header folds the description into the joined subtitle, so
-        // the raw description is not yet a standalone Text node.
-        expect(find.text('Daily energy level'), findsNothing);
+        // The card header shows the description as its subtitle: exactly one
+        // Text node before the modal opens.
+        expect(find.text('Daily energy level'), findsOneWidget);
 
         await tester.ensureVisible(find.byIcon(Icons.add_rounded));
         await tester.tap(find.byIcon(Icons.add_rounded));
@@ -364,8 +367,9 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        // The modal title widget renders the description as its own Text.
-        expect(find.text('Daily energy level'), findsOneWidget);
+        // The modal title widget renders the description as a second Text node,
+        // so it now appears twice (card subtitle + modal title).
+        expect(find.text('Daily energy level'), findsNWidgets(2));
       },
     );
   });
