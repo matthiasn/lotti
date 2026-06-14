@@ -268,7 +268,16 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
 
     return [
       if (!_multi && current != null) _categoryItem(current),
-      if (!_multi && widget.currentCategoryId != null) _clearItem(),
+      // Clear belongs with the canonical (empty-query) list or alongside the
+      // still-visible pinned current. When a search has filtered the current
+      // category out, suppress Clear so it never appears orphaned. The
+      // empty-query branch keeps Clear available even when the current id is
+      // inactive / absent from options (so such an assignment can still be
+      // cleared).
+      if (!_multi &&
+          widget.currentCategoryId != null &&
+          (q.isEmpty || current != null))
+        _clearItem(),
       if (_multi && widget.showUnassignedRow) _unassignedItem(),
       for (final c in favorites) _categoryItem(c),
       if (favorites.isNotEmpty && others.isNotEmpty) const PickerDivider(),

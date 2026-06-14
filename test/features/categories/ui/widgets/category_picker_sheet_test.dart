@@ -310,6 +310,69 @@ void main() {
       expect(result.categoryOrNull, isNull);
     });
 
+    testWidgets('search that hides the current category hides the clear row', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Material(
+            child: CategoryPickerSheet(
+              mode: CategoryPickerMode.single,
+              options: testCategories,
+              currentCategoryId: 'cat2',
+            ),
+          ),
+        ),
+      );
+
+      // Empty query: current is pinned and the clear row is present.
+      expect(
+        find.byKey(const ValueKey('category-picker-clear')),
+        findsOneWidget,
+      );
+
+      // Search for a different category so the current (cat2) is filtered out.
+      await tester.enterText(find.byType(TextField), 'Category 3');
+      await tester.pump();
+
+      // The clear row is suppressed (not left orphaned above the results).
+      expect(
+        find.byKey(const ValueKey('category-picker-clear')),
+        findsNothing,
+      );
+      expect(
+        find.byKey(const ValueKey('category-picker-row-cat3')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('clear row stays available when the current id is not in '
+        'options', (tester) async {
+      // An assignment to an inactive/absent category: it cannot be pinned, but
+      // the user must still be able to clear it from the canonical list.
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Material(
+            child: CategoryPickerSheet(
+              mode: CategoryPickerMode.single,
+              options: testCategories,
+              currentCategoryId: 'cat-inactive',
+            ),
+          ),
+        ),
+      );
+
+      expect(
+        find.byKey(const ValueKey('category-picker-clear')),
+        findsOneWidget,
+      );
+      // No pinned row exists for the absent id.
+      expect(
+        find.byKey(const ValueKey('category-picker-row-cat-inactive')),
+        findsNothing,
+      );
+    });
+
     testWidgets('search filters the list to matching categories', (
       tester,
     ) async {
