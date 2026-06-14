@@ -78,6 +78,10 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
   }) : assert(
          mode == PickerMode.single || stagedNotifier != null,
          'Multi mode requires a stagedNotifier.',
+       ),
+       assert(
+         mode == PickerMode.multi || onPick != null,
+         'Single mode requires an onPick callback.',
        );
 
   final PickerMode mode;

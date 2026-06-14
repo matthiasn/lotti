@@ -49,7 +49,9 @@ void main() {
             emptyMessage: 'Nothing here',
             selectedId: selectedId,
             stagedNotifier: staged,
-            onPick: onPick,
+            // Single mode requires an onPick; default to a no-op for tests that
+            // don't assert on picking.
+            onPick: onPick ?? (mode == PickerMode.single ? (_) {} : null),
             createFromQuery: createFromQuery,
             shouldShowCreate: shouldShowCreate,
             createRowKey: const ValueKey('create'),
@@ -295,6 +297,32 @@ void main() {
         isEmpty,
       );
       expect(find.byKey(const ValueKey('create')), findsNothing);
+    });
+  });
+
+  group('construction contracts', () {
+    test('multi mode requires a stagedNotifier', () {
+      expect(
+        () => EntityPickerSheet(
+          mode: PickerMode.multi,
+          entriesBuilder: (_) => const [],
+          searchHintText: 'Search',
+          emptyMessage: 'Nothing here',
+        ),
+        throwsAssertionError,
+      );
+    });
+
+    test('single mode requires an onPick callback', () {
+      expect(
+        () => EntityPickerSheet(
+          mode: PickerMode.single,
+          entriesBuilder: (_) => const [],
+          searchHintText: 'Search',
+          emptyMessage: 'Nothing here',
+        ),
+        throwsAssertionError,
+      );
     });
   });
 

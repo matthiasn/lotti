@@ -260,6 +260,9 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
       }
     }
 
+    // `current!` is safe: the ternary only takes this branch when current !=
+    // null. The pinned current is rendered separately (above), so drop it from
+    // the main list to avoid showing it twice.
     final listed = (!_multi && current != null)
         ? filtered.where((c) => c.id != current!.id).toList()
         : filtered;
