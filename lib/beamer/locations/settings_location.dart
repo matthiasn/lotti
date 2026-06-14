@@ -46,6 +46,7 @@ import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -110,6 +111,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/agents/instances/:agentId',
     '/settings/flags',
     '/settings/theming',
+    '/settings/speech',
     '/settings/definitions',
     '/settings/advanced',
     '/settings/advanced/logging_domains',
@@ -527,6 +529,13 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-theming'),
           child: ThemingPage(),
+        ),
+
+      // Speech (text-to-speech)
+      if (pathContains('speech'))
+        const BeamPage(
+          key: ValueKey('settings-speech'),
+          child: SpeechSettingsPage(),
         ),
 
       // Definitions hub (groups habits / categories / labels /

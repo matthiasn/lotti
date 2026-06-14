@@ -23,12 +23,21 @@ class DsSegmentedToggle<T> extends StatelessWidget {
     required this.segments,
     required this.selected,
     required this.onChanged,
+    this.expand = false,
     super.key,
   });
 
   final List<DsSegment<T>> segments;
   final T selected;
   final ValueChanged<T> onChanged;
+
+  /// When true, segments share the parent's width equally and the control
+  /// fills it (`MainAxisSize.max`), with tighter per-segment padding. Use for
+  /// controls with more segments than fit at natural width (e.g. a 7-step
+  /// speed picker); the control must be given a bounded width (e.g. inside a
+  /// stretch column). Defaults to false — the shrink-wrap behavior the 2–3
+  /// mode switches use, where each segment hugs its label.
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
@@ -41,14 +50,24 @@ class DsSegmentedToggle<T> extends StatelessWidget {
       ),
       padding: const EdgeInsets.all(3),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
         children: [
           for (final segment in segments)
-            _DsSegmentItem(
-              label: segment.label,
-              isSelected: segment.value == selected,
-              onTap: () => onChanged(segment.value),
-            ),
+            if (expand)
+              Expanded(
+                child: _DsSegmentItem(
+                  label: segment.label,
+                  isSelected: segment.value == selected,
+                  onTap: () => onChanged(segment.value),
+                  dense: true,
+                ),
+              )
+            else
+              _DsSegmentItem(
+                label: segment.label,
+                isSelected: segment.value == selected,
+                onTap: () => onChanged(segment.value),
+              ),
         ],
       ),
     );
@@ -60,11 +79,16 @@ class _DsSegmentItem extends StatelessWidget {
     required this.label,
     required this.isSelected,
     required this.onTap,
+    this.dense = false,
   });
 
   final String label;
   final bool isSelected;
   final VoidCallback onTap;
+
+  /// Tighter horizontal padding for fill-width (`expand`) toggles, where many
+  /// equal-width segments leave little room per label.
+  final bool dense;
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +116,7 @@ class _DsSegmentItem extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
             padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
+              horizontal: dense ? tokens.spacing.step2 : tokens.spacing.step4,
               vertical: tokens.spacing.step2,
             ),
             decoration: BoxDecoration(
@@ -112,12 +136,19 @@ class _DsSegmentItem extends StatelessWidget {
                 ExcludeSemantics(
                   child: Opacity(
                     opacity: 0,
-                    child: Text(label, style: selectedStyle),
+                    child: Text(
+                      label,
+                      style: selectedStyle,
+                      maxLines: 1,
+                      softWrap: false,
+                    ),
                   ),
                 ),
                 Text(
                   label,
                   style: isSelected ? selectedStyle : unselectedStyle,
+                  maxLines: 1,
+                  softWrap: false,
                 ),
               ],
             ),

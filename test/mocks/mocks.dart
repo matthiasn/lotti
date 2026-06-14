@@ -6,6 +6,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:genui/genui.dart' as genui;
 import 'package:http/http.dart' as http;
@@ -137,6 +138,7 @@ import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/tts/engine/supertonic_tts_session.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
@@ -1171,3 +1173,14 @@ class MockQueryExecutor extends Mock implements drift.QueryExecutor {}
 class MockPathProviderPlatform extends Mock
     with MockPlatformInterfaceMixin
     implements PathProviderPlatform {}
+
+/// Mocks for the Supertonic TTS engine's native boundary
+/// (`flutter_onnxruntime`) so the engine/session orchestration — caching,
+/// output, and OrtValue disposal — can be unit-tested without the runtime.
+class MockOrtValue extends Mock implements OrtValue {}
+
+class MockOrtSession extends Mock implements OrtSession {}
+
+class MockOnnxRuntime extends Mock implements OnnxRuntime {}
+
+class MockSupertonicTtsSession extends Mock implements SupertonicTtsSession {}

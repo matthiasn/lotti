@@ -18,6 +18,9 @@ PODS:
     - Flutter
   - flutter_local_notifications (0.0.1):
     - Flutter
+  - flutter_onnxruntime (0.0.1):
+    - Flutter
+    - onnxruntime-objc (= 1.24.2)
   - flutter_openssl_crypto (0.0.1):
     - Flutter
     - OpenSSL-Universal
@@ -66,6 +69,11 @@ PODS:
   - objectbox_flutter_libs (0.0.1):
     - Flutter
     - ObjectBox (= 5.3.0)
+  - onnxruntime-c (1.24.2)
+  - onnxruntime-objc (1.24.2):
+    - onnxruntime-objc/Core (= 1.24.2)
+  - onnxruntime-objc/Core (1.24.2):
+    - onnxruntime-c (= 1.24.2)
   - OpenSSL-Universal (3.6.0000)
   - package_info_plus (0.4.5):
     - Flutter
@@ -137,6 +145,7 @@ DEPENDENCIES:
   - flutter_image_compress_common (from `.symlinks/plugins/flutter_image_compress_common/ios`)
   - flutter_keyboard_visibility_temp_fork (from `.symlinks/plugins/flutter_keyboard_visibility_temp_fork/ios`)
   - flutter_local_notifications (from `.symlinks/plugins/flutter_local_notifications/ios`)
+  - flutter_onnxruntime (from `.symlinks/plugins/flutter_onnxruntime/ios`)
   - flutter_openssl_crypto (from `.symlinks/plugins/flutter_openssl_crypto/ios`)
   - flutter_secure_storage_darwin (from `.symlinks/plugins/flutter_secure_storage_darwin/darwin`)
   - flutter_vodozemac (from `.symlinks/plugins/flutter_vodozemac/ios`)
@@ -169,6 +178,8 @@ SPEC REPOS:
     - libwebp
     - Mantle
     - ObjectBox
+    - onnxruntime-c
+    - onnxruntime-objc
     - OpenSSL-Universal
     - SDWebImage
     - SDWebImageWebPCoder
@@ -191,6 +202,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_keyboard_visibility_temp_fork/ios"
   flutter_local_notifications:
     :path: ".symlinks/plugins/flutter_local_notifications/ios"
+  flutter_onnxruntime:
+    :path: ".symlinks/plugins/flutter_onnxruntime/ios"
   flutter_openssl_crypto:
     :path: ".symlinks/plugins/flutter_openssl_crypto/ios"
   flutter_secure_storage_darwin:
@@ -253,6 +266,7 @@ SPEC CHECKSUMS:
   flutter_image_compress_common: 1697a328fd72bfb335507c6bca1a65fa5ad87df1
   flutter_keyboard_visibility_temp_fork: 95b2d534bacf6ac62e7fcbe5c2a9e2c2a17ce06f
   flutter_local_notifications: 643a3eda1ce1c0599413ca31672536d423dee214
+  flutter_onnxruntime: 577a012771672fd168079e29be7909a9d0f9c302
   flutter_openssl_crypto: 73dcefff7611c3ac324d82726047d8335d0b6e57
   flutter_secure_storage_darwin: acdb3f316ed05a3e68f856e0353b133eec373a23
   flutter_vodozemac: 46015daf07988356d46784d05ab0c7afca00ff36
@@ -269,6 +283,8 @@ SPEC CHECKSUMS:
   mobile_scanner: 9157936403f5a0644ca3779a38ff8404c5434a93
   ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
   objectbox_flutter_libs: 42b57158b8c4869b731487f220e07d6edc6616e0
+  onnxruntime-c: b58bafbc58707d165404665e46a7467a16e8e0e4
+  onnxruntime-objc: 99e0fe4b6d606970c6c1350c194c7629ef6e6fc9
   OpenSSL-Universal: 9110d21982bb7e8b22a962b6db56a8aa805afde7
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
@@ -287,6 +303,6 @@ SPEC CHECKSUMS:
   url_launcher_ios: 7a95fa5b60cc718a708b8f2966718e93db0cef1b
   video_player_avfoundation: 3453f792138786248960ca029747fcd9f318ef52
 
-PODFILE CHECKSUM: 90138dec569c653d81cd70214652d3f78c7edb60
+PODFILE CHECKSUM: 635607a61d3b29e64400ee5e7f0359dd94a3c254
 
 COCOAPODS: 1.16.2

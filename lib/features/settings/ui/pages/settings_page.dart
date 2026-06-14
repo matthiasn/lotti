@@ -27,6 +27,8 @@ class SettingsPage extends ConsumerWidget {
         ref.watch(configFlagProvider(enableWhatsNewFlag)).value ?? false;
     final enableMatrix =
         ref.watch(configFlagProvider(enableMatrixFlag)).value ?? false;
+    final enableSpeechTts =
+        ref.watch(configFlagProvider(enableAiSummaryTtsFlag)).value ?? false;
 
     final tokens = context.designTokens;
 
@@ -87,6 +89,15 @@ class SettingsPage extends ConsumerWidget {
         routePrefix: '/settings/theming',
         onTap: () => context.beamToNamed('/settings/theming'),
       ),
+      if (enableSpeechTts)
+        _SettingsItem(
+          id: '/settings/speech',
+          title: context.messages.settingsSpeechTitle,
+          subtitle: context.messages.settingsSpeechSubtitle,
+          icon: Icons.record_voice_over_rounded,
+          routePrefix: '/settings/speech',
+          onTap: () => context.beamToNamed('/settings/speech'),
+        ),
       _SettingsItem(
         id: '/settings/advanced',
         title: context.messages.settingsAdvancedTitle,

@@ -56,6 +56,7 @@ void main() {
       // Step 7 — simple leaves.
       'flags',
       'theming',
+      'speech',
       'advanced-about',
       'advanced-maintenance',
       'advanced-logging',

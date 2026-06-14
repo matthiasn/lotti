@@ -1042,6 +1042,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.8"
+  flutter_onnxruntime:
+    dependency: "direct main"
+    description:
+      path: "third_party/flutter_onnxruntime"
+      relative: true
+    source: path
+    version: "1.8.0"
   flutter_openssl_crypto:
     dependency: "direct main"
     description:

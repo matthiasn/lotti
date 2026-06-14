@@ -34,6 +34,27 @@ target 'Runner' do
   pod 'OpenSSL-Universal'
 end
 
+# The flutter_onnxruntime plugin vendors onnxruntime-objc/-c as statically
+# linked binaries. Under the project's dynamic use_frameworks!, CocoaPods'
+# target validator (verify_no_static_framework_transitive_dependencies) rejects
+# any *dynamic* pod that transitively depends on a *static* one. So the entire
+# onnxruntime chain must be pulled out of the dynamic set together — the
+# flutter_onnxruntime plugin AND its onnxruntime-* deps all link statically into
+# the app, while every other plugin stays dynamic. (Forcing only the
+# onnxruntime-* leaves static leaves flutter_onnxruntime dynamic and still
+# depending on them, which is precisely the edge the validator rejects. A global
+# `use_frameworks! :linkage => :static` instead breaks super_native_extensions'
+# Rust FFI — the link fails with an undefined `_super_native_extensions_init`.)
+pre_install do |installer|
+  installer.pod_targets.each do |pod|
+    if pod.name == 'flutter_onnxruntime' || pod.name.start_with?('onnxruntime')
+      def pod.build_type
+        Pod::BuildType.static_library
+      end
+    end
+  end
+end
+
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     flutter_additional_macos_build_settings(target)

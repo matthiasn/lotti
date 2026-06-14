@@ -3529,11 +3529,41 @@ abstract class AppLocalizations {
   /// **'AI Setup Wizard'**
   String get aiSetupWizardTitle;
 
+  /// No description provided for @aiSummaryPlayTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Play summary'**
+  String get aiSummaryPlayTooltip;
+
+  /// No description provided for @aiSummaryPreparingTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing audio'**
+  String get aiSummaryPreparingTooltip;
+
   /// No description provided for @aiSummarySpeakTooltip.
   ///
   /// In en, this message translates to:
   /// **'Read summary aloud locally'**
   String get aiSummarySpeakTooltip;
+
+  /// No description provided for @aiSummaryStopTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get aiSummaryStopTooltip;
+
+  /// No description provided for @aiSummaryThinkingLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Thinking…'**
+  String get aiSummaryThinkingLabel;
+
+  /// No description provided for @aiSummaryTtsUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Text-to-speech isn\'t available'**
+  String get aiSummaryTtsUnavailable;
 
   /// No description provided for @aiTaskSummaryTitle.
   ///
@@ -12277,6 +12307,18 @@ abstract class AppLocalizations {
   /// **'Reset In‑App Hints'**
   String get settingsResetHintsTitle;
 
+  /// No description provided for @settingsSpeechSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice and reading aloud'**
+  String get settingsSpeechSubtitle;
+
+  /// No description provided for @settingsSpeechTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech'**
+  String get settingsSpeechTitle;
+
   /// No description provided for @settingsSyncConflictsSubtitle.
   ///
   /// In en, this message translates to:
@@ -12564,6 +12606,72 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Speech Recognition'**
   String get speechModalTitle;
+
+  /// No description provided for @speechSettingsModelDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'On-device speech model'**
+  String get speechSettingsModelDescription;
+
+  /// No description provided for @speechSettingsModelDownloadsOnce.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloads once'**
+  String get speechSettingsModelDownloadsOnce;
+
+  /// No description provided for @speechSettingsModelLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get speechSettingsModelLabel;
+
+  /// No description provided for @speechSettingsRecommendedBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get speechSettingsRecommendedBadge;
+
+  /// No description provided for @speechSettingsSpeedDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'How fast summaries are read'**
+  String get speechSettingsSpeedDescription;
+
+  /// No description provided for @speechSettingsSpeedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading speed'**
+  String get speechSettingsSpeedLabel;
+
+  /// No description provided for @speechSettingsVoiceDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the voice that reads summaries aloud'**
+  String get speechSettingsVoiceDescription;
+
+  /// No description provided for @speechSettingsVoiceLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice'**
+  String get speechSettingsVoiceLabel;
+
+  /// No description provided for @speechVoiceGenderFemale.
+  ///
+  /// In en, this message translates to:
+  /// **'Female'**
+  String get speechVoiceGenderFemale;
+
+  /// No description provided for @speechVoiceGenderMale.
+  ///
+  /// In en, this message translates to:
+  /// **'Male'**
+  String get speechVoiceGenderMale;
+
+  /// No description provided for @speechVoicePreviewTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview voice'**
+  String get speechVoicePreviewTooltip;
 
   /// No description provided for @syncActivityIndicatorSemantics.
   ///

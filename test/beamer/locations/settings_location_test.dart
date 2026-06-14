@@ -155,6 +155,7 @@ void main() {
         '/settings/agents/instances/:agentId',
         '/settings/flags',
         '/settings/theming',
+        '/settings/speech',
         '/settings/definitions',
         '/settings/advanced',
         '/settings/advanced/logging_domains',

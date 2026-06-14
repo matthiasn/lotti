@@ -37,6 +37,7 @@ import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_sync_modal.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/features/tts/ui/speech_settings_body.dart';
 import 'package:lotti/utils/consts.dart';
 
 export 'package:lotti/features/settings_v2/ui/detail/ai_panel_dispatch.dart';
@@ -112,6 +113,7 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
       // unbounded height).
       'flags': SettingsPanelSpec(build: _flagsPanel),
       'theming': SettingsPanelSpec(build: _themingPanel, scrollable: true),
+      'speech': SettingsPanelSpec(build: _speechPanel, scrollable: true),
       'advanced-about': SettingsPanelSpec(
         build: _advancedAboutPanel,
         scrollable: true,
@@ -187,6 +189,7 @@ const Duration kSettingsPanelSwapDuration = Duration(milliseconds: 180);
 // --- Step 7 builders --------------------------------------------------------
 Widget _flagsPanel(BuildContext context) => const FlagsBody();
 Widget _themingPanel(BuildContext context) => const ThemingBody();
+Widget _speechPanel(BuildContext context) => const SpeechSettingsBody();
 Widget _advancedAboutPanel(BuildContext context) => const AboutBody();
 Widget _advancedMaintenancePanel(BuildContext context) =>
     const MaintenanceBody();

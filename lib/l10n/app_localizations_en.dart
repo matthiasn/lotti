@@ -2019,7 +2019,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiSetupWizardTitle => 'AI Setup Wizard';
 
   @override
+  String get aiSummaryPlayTooltip => 'Play summary';
+
+  @override
+  String get aiSummaryPreparingTooltip => 'Preparing audio';
+
+  @override
   String get aiSummarySpeakTooltip => 'Read summary aloud locally';
+
+  @override
+  String get aiSummaryStopTooltip => 'Stop';
+
+  @override
+  String get aiSummaryThinkingLabel => 'Thinking…';
+
+  @override
+  String get aiSummaryTtsUnavailable => 'Text-to-speech isn\'t available';
 
   @override
   String get aiTaskSummaryTitle => 'AI Task Summary';
@@ -7073,6 +7088,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsResetHintsTitle => 'Reset In‑App Hints';
 
   @override
+  String get settingsSpeechSubtitle => 'Voice and reading aloud';
+
+  @override
+  String get settingsSpeechTitle => 'Speech';
+
+  @override
   String get settingsSyncConflictsSubtitle =>
       'Resolve synchronization conflicts to ensure data consistency';
 
@@ -7225,6 +7246,40 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speechModalTitle => 'Speech Recognition';
+
+  @override
+  String get speechSettingsModelDescription => 'On-device speech model';
+
+  @override
+  String get speechSettingsModelDownloadsOnce => 'Downloads once';
+
+  @override
+  String get speechSettingsModelLabel => 'Model';
+
+  @override
+  String get speechSettingsRecommendedBadge => 'Recommended';
+
+  @override
+  String get speechSettingsSpeedDescription => 'How fast summaries are read';
+
+  @override
+  String get speechSettingsSpeedLabel => 'Reading speed';
+
+  @override
+  String get speechSettingsVoiceDescription =>
+      'Choose the voice that reads summaries aloud';
+
+  @override
+  String get speechSettingsVoiceLabel => 'Voice';
+
+  @override
+  String get speechVoiceGenderFemale => 'Female';
+
+  @override
+  String get speechVoiceGenderMale => 'Male';
+
+  @override
+  String get speechVoicePreviewTooltip => 'Preview voice';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
