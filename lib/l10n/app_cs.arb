@@ -1749,6 +1749,7 @@
   "dashboardNameLabel": "Název dashboardu",
   "dashboardNotFound": "Dashboard nenalezen",
   "dashboardPrivateLabel": "Soukromý",
+  "dashboardResetZoom": "Obnovit přiblížení",
   "dashboardTakeSurveyTooltip": "Vyplnit dotazník",
   "defaultLanguage": "Výchozí jazyk",
   "deleteButton": "Smazat",

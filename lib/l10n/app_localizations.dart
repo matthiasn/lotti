@@ -6990,6 +6990,12 @@ abstract class AppLocalizations {
   /// **'Private'**
   String get dashboardPrivateLabel;
 
+  /// No description provided for @dashboardResetZoom.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset zoom'**
+  String get dashboardResetZoom;
+
   /// No description provided for @dashboardTakeSurveyTooltip.
   ///
   /// In en, this message translates to:

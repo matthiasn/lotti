@@ -1,8 +1,5 @@
-import 'dart:ui';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -295,62 +292,6 @@ void main() {
 
       final result = aggregateByType(entities, 'UNKNOWN_TYPE');
       expect(result, isEmpty);
-    });
-  });
-
-  group('colorByValueAndType', () {
-    test('returns default color when config is null', () {
-      final obs = Observation(DateTime(2024, 3, 15), 10000);
-      final color = colorByValueAndType(obs, null);
-      expect(color, isA<Color>());
-    });
-
-    test('returns default color when colorByValue is null', () {
-      final config = HealthTypeConfig(
-        displayName: 'Weight',
-        healthType: 'HealthDataType.WEIGHT',
-        chartType: HealthChartType.lineChart,
-        aggregationType: HealthAggregationType.none,
-        unit: 'kg',
-      );
-      final obs = Observation(DateTime(2024, 3, 15), 72);
-      final color = colorByValueAndType(obs, config);
-      expect(color, isA<Color>());
-    });
-
-    test('selects color based on threshold', () {
-      final config = HealthTypeConfig(
-        displayName: 'Steps',
-        healthType: 'cumulative_step_count',
-        chartType: HealthChartType.barChart,
-        aggregationType: HealthAggregationType.dailyMax,
-        unit: 'steps',
-        colorByValue: {
-          10000: '#82E6CE',
-          6000: '#C4ECE2',
-          0: '#FF9595',
-        },
-      );
-
-      // Above 10000 → should get '#82E6CE'
-      final highObs = Observation(DateTime(2024, 3, 15), 15000);
-      final highColor = colorByValueAndType(highObs, config);
-      expect(highColor, isA<Color>());
-
-      // Between 6000 and 10000 → should get '#C4ECE2'
-      final midObs = Observation(DateTime(2024, 3, 15), 7000);
-      final midColor = colorByValueAndType(midObs, config);
-      expect(midColor, isA<Color>());
-
-      // Below 6000 → should get '#FF9595'
-      final lowObs = Observation(DateTime(2024, 3, 15), 3000);
-      final lowColor = colorByValueAndType(lowObs, config);
-      expect(lowColor, isA<Color>());
-
-      // All three colors should be different
-      expect(highColor, isNot(equals(lowColor)));
-      expect(highColor, isNot(equals(midColor)));
-      expect(midColor, isNot(equals(lowColor)));
     });
   });
 

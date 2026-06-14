@@ -4064,6 +4064,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dashboardPrivateLabel => 'Private';
 
   @override
+  String get dashboardResetZoom => 'Reset zoom';
+
+  @override
   String get dashboardTakeSurveyTooltip => 'Take survey';
 
   @override

@@ -5,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
-import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bmi_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bp_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -79,6 +79,7 @@ class DashboardHealthChart extends ConsumerWidget {
       ),
     );
     final data = dataAsync.value ?? const <Observation>[];
+    final tokens = context.designTokens;
 
     return DashboardChart(
       chart: isBarChart
@@ -89,10 +90,8 @@ class DashboardHealthChart extends ConsumerWidget {
               unit: healthType?.unit ?? '',
               valueInHours: healthType?.unit == 'h',
               transformationController: transformationController,
-              colorByValue: (Observation observation) => colorByValueAndType(
-                observation,
-                healthType,
-              ),
+              colorByValue: (Observation observation) =>
+                  tokens.colors.interactive.enabled,
             )
           : TimeSeriesLineChart(
               data: data,

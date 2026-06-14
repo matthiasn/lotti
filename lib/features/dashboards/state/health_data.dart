@@ -1,37 +1,10 @@
 import 'dart:core';
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-
-Color colorByValueAndType(
-  Observation observation,
-  HealthTypeConfig? healthTypeConfig,
-) {
-  final color = colorFromCssHex('#82E6CE');
-
-  if (healthTypeConfig == null) {
-    return color;
-  }
-
-  if (healthTypeConfig.colorByValue != null) {
-    final colorByValue = healthTypeConfig.colorByValue;
-    final sortedThresholds = colorByValue!.keys.toList()..sort();
-
-    final aboveThreshold = sortedThresholds.reversed.firstWhere(
-      (threshold) => observation.value >= threshold,
-      orElse: () => 0,
-    );
-
-    return colorFromCssHex(colorByValue[aboveThreshold] ?? '#000000');
-  }
-
-  return color;
-}
 
 List<Observation> aggregateNone(
   List<JournalEntity> entities,

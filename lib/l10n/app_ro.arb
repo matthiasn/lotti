@@ -1940,6 +1940,7 @@
   "dashboardNameLabel": "Numele tabloului de bord",
   "dashboardNotFound": "Tablou de bord negasit",
   "dashboardPrivateLabel": "Privat",
+  "dashboardResetZoom": "Resetează zoomul",
   "dashboardTakeSurveyTooltip": "Completați chestionarul",
   "defaultLanguage": "Limbă implicită",
   "deleteButton": "Șterge",

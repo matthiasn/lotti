@@ -70,6 +70,10 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
 
     final tokens = context.designTokens;
+    // Charts share one horizontal zoom (pinch / trackpad). Surface a reset
+    // affordance whenever something is zoomed in so the gesture is reversible
+    // and discoverable instead of leaving the user stranded.
+    final isZoomed = ref.watch(barWidthControllerProvider) > 1.01;
     return SliverBoxAdapterPage(
       title: dashboard.name,
       showBackButton: true,
@@ -84,6 +88,16 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               });
             },
           ),
+          if (isZoomed)
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step3),
+              child: TextButton.icon(
+                onPressed: () =>
+                    _transformationController.value = Matrix4.identity(),
+                icon: const Icon(Icons.zoom_out_map_rounded),
+                label: Text(context.messages.dashboardResetZoom),
+              ),
+            ),
           SizedBox(height: tokens.spacing.step5),
           DashboardWidget(
             rangeStart: rangeStart,

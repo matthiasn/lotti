@@ -104,7 +104,7 @@ void main() {
   });
 
   group('ChartLabel', () {
-    testWidgets('renders centered, legible (medium-emphasis) caption text', (
+    testWidgets('renders centered, legible body-small medium-emphasis text', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -119,9 +119,15 @@ void main() {
       // medium-emphasis token so axis labels stay readable.
       expect(find.byType(Opacity), findsNothing);
 
+      final tokens = tester.element(find.text('hello')).designTokens;
       final text = tester.widget<Text>(find.text('hello'));
       expect(text.textAlign, TextAlign.center);
       expect(text.style?.color, dsTokensLight.colors.text.mediumEmphasis);
+      // Axis labels now use body-small (not the smaller caption) for legibility.
+      expect(
+        text.style?.fontSize,
+        tokens.typography.styles.body.bodySmall.fontSize,
+      );
     });
   });
 }

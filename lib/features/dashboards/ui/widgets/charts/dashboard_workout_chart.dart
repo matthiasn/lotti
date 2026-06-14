@@ -20,7 +20,21 @@ class WorkoutChartInfoWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DashboardChartHeader(title: chartConfig.displayName);
+    return DashboardChartHeader(
+      title: chartConfig.displayName,
+      subtitle: _unitLabel(chartConfig.valueType),
+    );
+  }
+
+  static String _unitLabel(WorkoutValueType valueType) {
+    switch (valueType) {
+      case WorkoutValueType.duration:
+        return 'min';
+      case WorkoutValueType.distance:
+        return 'km';
+      case WorkoutValueType.energy:
+        return 'kcal';
+    }
   }
 }
 

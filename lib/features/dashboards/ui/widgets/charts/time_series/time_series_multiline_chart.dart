@@ -115,7 +115,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
                 showTitles: true,
                 interval: axis.interval,
                 getTitlesWidget: leftTitleWidgets,
-                reservedSize: 44,
+                reservedSize: 52,
                 minIncluded: false,
                 maxIncluded: false,
               ),

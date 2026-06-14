@@ -155,7 +155,7 @@ class DashboardChartHeader extends StatelessWidget {
                 Text(
                   subtitle!,
                   style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
+                    color: tokens.colors.text.mediumEmphasis,
                   ),
                   overflow: TextOverflow.ellipsis,
                   maxLines: 1,
@@ -195,7 +195,8 @@ class DashboardChartAddButton extends StatelessWidget {
     return IconButton(
       tooltip: tooltip,
       onPressed: onPressed,
-      visualDensity: VisualDensity.compact,
+      // Keep the full 48x48 tap target (no compact density) so the control is
+      // comfortably tappable on touch devices.
       style: IconButton.styleFrom(
         backgroundColor: tokens.colors.interactive.enabled.withValues(
           alpha: 0.14,
@@ -240,13 +241,13 @@ class DashboardChartLegend extends StatelessWidget {
                 borderRadius: BorderRadius.circular(tokens.radii.xs),
                 child: ColoredBox(
                   color: entry.color,
-                  child: SizedBox.square(dimension: tokens.spacing.step4),
+                  child: SizedBox.square(dimension: tokens.spacing.step5),
                 ),
               ),
               SizedBox(width: tokens.spacing.step2),
               Text(
                 entry.label,
-                style: tokens.typography.styles.others.caption.copyWith(
+                style: tokens.typography.styles.body.bodySmall.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
                 ),
               ),

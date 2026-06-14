@@ -163,7 +163,7 @@ class TimeSeriesBarChart extends ConsumerWidget {
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: leftTitleWidgets,
-                reservedSize: 44,
+                reservedSize: 52,
                 interval: axis.interval,
                 minIncluded: false,
                 maxIncluded: false,

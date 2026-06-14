@@ -5,36 +5,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
-import 'package:lotti/features/dashboards/state/health_bmi_data.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/state/health_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-
-/// Legend for the BMI weight bands, rendered below the chart (in the card
-/// footer) so it never occludes the weight series.
-class BmiRangeLegend extends StatelessWidget {
-  const BmiRangeLegend({
-    super.key,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return DashboardChartLegend(
-      entries: [
-        for (final range in bmiRanges.reversed)
-          DashboardLegendEntry(
-            color: colorFromCssHex(range.hexColor),
-            label: range.name,
-          ),
-      ],
-    );
-  }
-}
 
 class BmiChartInfoWidget extends ConsumerWidget {
   const BmiChartInfoWidget(
@@ -58,6 +35,7 @@ class BmiChartInfoWidget extends ConsumerWidget {
       title:
           healthTypes[chartConfig.healthType]?.displayName ??
           chartConfig.healthType,
+      subtitle: 'kg',
       trailing: Text(
         '$minWeight – $maxWeight',
         style: tokens.typography.styles.others.caption.copyWith(
@@ -111,7 +89,6 @@ class DashboardHealthBmiChart extends ConsumerWidget {
       isLoading: weightAsync.isLoading && !weightAsync.hasValue,
       isEmpty: weightData.isEmpty,
       emptyMessage: context.messages.dashboardChartNoData,
-      footer: const BmiRangeLegend(),
       height: 320,
     );
   }

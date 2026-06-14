@@ -4119,6 +4119,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dashboardPrivateLabel => 'Soukromý';
 
   @override
+  String get dashboardResetZoom => 'Obnovit přiblížení';
+
+  @override
   String get dashboardTakeSurveyTooltip => 'Vyplnit dotazník';
 
   @override

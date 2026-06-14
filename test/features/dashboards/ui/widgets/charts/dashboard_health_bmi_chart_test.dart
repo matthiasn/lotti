@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/dashboards/state/health_bmi_data.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bmi_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
@@ -50,52 +49,6 @@ void main() {
         Observation(rangeStart.add(Duration(days: i)), values[i]),
     ];
   }
-
-  group('BmiRangeLegend', () {
-    // BmiRangeLegend returns a Positioned, so it must live inside a Stack.
-    testWidgets('renders all BMI category labels from bmiRanges', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const SizedBox(
-            width: 1000,
-            height: 600,
-            child: Stack(children: [BmiRangeLegend()]),
-          ),
-        ),
-      );
-
-      for (final range in bmiRanges) {
-        expect(
-          find.text(range.name),
-          findsOneWidget,
-          reason: 'Expected BMI range "${range.name}" to be displayed',
-        );
-      }
-    });
-
-    testWidgets('renders colour swatch for every BMI range', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const SizedBox(
-            width: 1000,
-            height: 600,
-            child: Stack(children: [BmiRangeLegend()]),
-          ),
-        ),
-      );
-
-      // Each range row contains one ColoredBox (the colour swatch).
-      expect(
-        find.descendant(
-          of: find.byType(BmiRangeLegend),
-          matching: find.byType(ColoredBox),
-        ),
-        findsNWidgets(bmiRanges.length),
-      );
-    });
-  });
 
   group('BmiChartInfoWidget', () {
     testWidgets('shows health type display name when configured', (
@@ -238,7 +191,7 @@ void main() {
   });
 
   group('DashboardHealthBmiChart', () {
-    testWidgets('renders TimeSeriesLineChart and BmiRangeLegend with data', (
+    testWidgets('renders TimeSeriesLineChart with data and kg subtitle', (
       tester,
     ) async {
       final observations = makeObservations([72.0, 73.5, 74.0]);
@@ -263,7 +216,8 @@ void main() {
       await tester.pump();
 
       expect(find.byType(TimeSeriesLineChart), findsOneWidget);
-      expect(find.byType(BmiRangeLegend), findsOneWidget);
+      // The header now shows a 'kg' unit subtitle (no BMI range legend).
+      expect(find.text('kg'), findsOneWidget);
     });
 
     testWidgets('shows weight display name in header', (tester) async {

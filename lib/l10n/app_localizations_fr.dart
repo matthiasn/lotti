@@ -4152,6 +4152,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardPrivateLabel => 'Privé';
 
   @override
+  String get dashboardResetZoom => 'Réinitialiser le zoom';
+
+  @override
   String get dashboardTakeSurveyTooltip => 'Répondre au questionnaire';
 
   @override

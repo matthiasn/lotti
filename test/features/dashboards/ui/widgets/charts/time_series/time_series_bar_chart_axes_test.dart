@@ -247,7 +247,7 @@ void main() {
       );
     });
 
-    testWidgets('left titles are shown with reservedSize 44', (tester) async {
+    testWidgets('left titles are shown with reservedSize 52', (tester) async {
       await hPumpChart(
         tester,
         data: [],
@@ -258,7 +258,7 @@ void main() {
       final barChart = tester.widget<BarChart>(find.byType(BarChart));
       final leftTitles = barChart.data.titlesData.leftTitles.sideTitles;
       expect(leftTitles.showTitles, isTrue);
-      expect(leftTitles.reservedSize, 44);
+      expect(leftTitles.reservedSize, 52);
       // The endpoint ticks are suppressed so labels never clip the gutter.
       expect(leftTitles.minIncluded, isFalse);
       expect(leftTitles.maxIncluded, isFalse);

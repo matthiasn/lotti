@@ -4,8 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bp_chart.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart'
-    hide leftTitleWidgets;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -62,54 +60,6 @@ void main() {
       );
 
       expect(find.text('Blood Pressure'), findsOneWidget);
-    });
-  });
-
-  group('leftTitleWidgets (bp chart)', () {
-    testWidgets('renders integer value as a ChartLabel text', (tester) async {
-      final meta = TitleMeta(
-        min: 0,
-        max: 200,
-        appliedInterval: 10,
-        axisPosition: 0,
-        formattedValue: '80',
-        parentAxisSize: 200,
-        sideTitles: const SideTitles(showTitles: true),
-        axisSide: AxisSide.left,
-        rotationQuarterTurns: 0,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          Builder(builder: (ctx) => leftTitleWidgets(80, meta)),
-        ),
-      );
-
-      // The ChartLabel renders a Text with the integer string.
-      expect(find.byType(ChartLabel), findsOneWidget);
-      expect(find.text('80'), findsOneWidget);
-    });
-
-    testWidgets('truncates decimal part to integer', (tester) async {
-      final meta = TitleMeta(
-        min: 0,
-        max: 200,
-        appliedInterval: 10,
-        axisPosition: 0,
-        formattedValue: '75',
-        parentAxisSize: 200,
-        sideTitles: const SideTitles(showTitles: true),
-        axisSide: AxisSide.left,
-        rotationQuarterTurns: 0,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          Builder(builder: (ctx) => leftTitleWidgets(75.9, meta)),
-        ),
-      );
-
-      expect(find.text('75'), findsOneWidget);
     });
   });
 
@@ -176,18 +126,12 @@ void main() {
         final lineChart = tester.widget<LineChart>(find.byType(LineChart));
         final bars = lineChart.data.lineBarsData;
 
-        // Systolic = alert.error, diastolic = alert.info; both at full opacity
-        // on the line and a 0.1-alpha fill below.
+        // Systolic = alert.error, diastolic = alert.info, drawn as two clean
+        // lines with no area fill below either series.
         expect(bars[0].color, tokens.colors.alert.error.defaultColor);
         expect(bars[1].color, tokens.colors.alert.info.defaultColor);
-        expect(
-          bars[0].belowBarData.color,
-          tokens.colors.alert.error.defaultColor.withValues(alpha: 0.1),
-        );
-        expect(
-          bars[1].belowBarData.color,
-          tokens.colors.alert.info.defaultColor.withValues(alpha: 0.1),
-        );
+        expect(bars[0].belowBarData.show, isFalse);
+        expect(bars[1].belowBarData.show, isFalse);
       },
     );
 

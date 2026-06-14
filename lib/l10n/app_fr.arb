@@ -1940,6 +1940,7 @@
   "dashboardNameLabel": "Nom du tableau de bord",
   "dashboardNotFound": "Tableau de bord non trouvé",
   "dashboardPrivateLabel": "Privé",
+  "dashboardResetZoom": "Réinitialiser le zoom",
   "dashboardTakeSurveyTooltip": "Répondre au questionnaire",
   "defaultLanguage": "Langue par défaut",
   "deleteButton": "Supprimer",

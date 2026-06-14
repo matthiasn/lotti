@@ -25,10 +25,13 @@ class ChartLabel extends StatelessWidget {
     final tokens = context.designTokens;
     return Text(
       text,
-      style: tokens.typography.styles.others.caption.copyWith(
+      // body-small (not the smaller caption) at medium emphasis keeps axis
+      // numbers and dates legible — including for low-vision readers.
+      style: tokens.typography.styles.body.bodySmall.copyWith(
         color: tokens.colors.text.mediumEmphasis,
       ),
       textAlign: TextAlign.center,
+      maxLines: 1,
     );
   }
 }

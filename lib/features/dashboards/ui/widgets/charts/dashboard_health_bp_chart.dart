@@ -144,7 +144,7 @@ class DashboardHealthBpChart extends ConsumerWidget {
                   showTitles: true,
                   interval: 10,
                   getTitlesWidget: leftTitleWidgets,
-                  reservedSize: 40,
+                  reservedSize: 52,
                   minIncluded: false,
                   maxIncluded: false,
                 ),
@@ -168,10 +168,6 @@ class DashboardHealthBpChart extends ConsumerWidget {
                     .toList(),
                 isCurved: true,
                 color: systolicColor,
-                belowBarData: BarAreaData(
-                  show: true,
-                  color: systolicColor.withValues(alpha: 0.1),
-                ),
                 curveSmoothness: 0.1,
                 isStrokeCapRound: true,
                 dotData: const FlDotData(show: false),
@@ -188,10 +184,6 @@ class DashboardHealthBpChart extends ConsumerWidget {
                 isCurved: true,
                 curveSmoothness: 0.1,
                 color: diastolicColor,
-                belowBarData: BarAreaData(
-                  show: true,
-                  color: diastolicColor.withValues(alpha: 0.1),
-                ),
                 isStrokeCapRound: true,
                 dotData: const FlDotData(
                   show: false,
@@ -230,10 +222,7 @@ class BpChartInfoWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return DashboardChartHeader(
       title: context.messages.dashboardHealthBloodPressure,
+      subtitle: 'mmHg',
     );
   }
-}
-
-Widget leftTitleWidgets(double value, TitleMeta meta) {
-  return ChartLabel(value.toInt().toString());
 }
