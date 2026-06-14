@@ -5694,9 +5694,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get measurementQuickAddLabel => 'Ajout rapide';
 
   @override
-  String get measurementValueHint => 'Valeur';
-
-  @override
   String get mediaShowInFileExplorerAction =>
       'Afficher dans l\'Explorateur de fichiers';
 

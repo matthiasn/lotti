@@ -5637,9 +5637,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get measurementQuickAddLabel => 'Schnell hinzufügen';
 
   @override
-  String get measurementValueHint => 'Wert';
-
-  @override
   String get mediaShowInFileExplorerAction => 'Im Datei-Explorer anzeigen';
 
   @override

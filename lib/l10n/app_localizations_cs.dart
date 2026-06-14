@@ -5653,9 +5653,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get measurementQuickAddLabel => 'Rychlé přidání';
 
   @override
-  String get measurementValueHint => 'Hodnota';
-
-  @override
   String get mediaShowInFileExplorerAction => 'Zobrazit v Průzkumníku souborů';
 
   @override

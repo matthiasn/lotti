@@ -9814,12 +9814,6 @@ abstract class AppLocalizations {
   /// **'Quick add'**
   String get measurementQuickAddLabel;
 
-  /// No description provided for @measurementValueHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Value'**
-  String get measurementValueHint;
-
   /// Context menu action that reveals a media file in Windows File Explorer.
   ///
   /// In en, this message translates to:

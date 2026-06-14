@@ -2778,7 +2778,6 @@
   "measurableNotFound": "Measurable not found",
   "measurementCommentHint": "Add a note (optional)",
   "measurementQuickAddLabel": "Quick add",
-  "measurementValueHint": "Value",
   "mediaShowInFileExplorerAction": "Show in File Explorer",
   "@mediaShowInFileExplorerAction": {
     "description": "Context menu action that reveals a media file in Windows File Explorer."

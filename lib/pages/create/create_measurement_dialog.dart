@@ -331,7 +331,7 @@ class _ValueHeroField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final valueStyle = tokens.typography.styles.heading.heading1.copyWith(
+    final valueStyle = tokens.typography.styles.heading.heading2.copyWith(
       color: tokens.colors.text.highEmphasis,
     );
 
@@ -339,7 +339,7 @@ class _ValueHeroField extends StatelessWidget {
       focusNode: focusNode,
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step5,
-        vertical: tokens.spacing.step5,
+        vertical: tokens.spacing.step4,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -355,9 +355,6 @@ class _ValueHeroField extends StatelessWidget {
                   controller: controller,
                   focusNode: focusNode,
                   autofocus: true,
-                  // No caret while the field is empty so it never bisects the
-                  // centered placeholder; it appears the moment a digit lands.
-                  showCursor: controller.text.isNotEmpty,
                   textAlign: TextAlign.center,
                   style: valueStyle,
                   cursorColor: tokens.colors.interactive.enabled,
@@ -368,14 +365,7 @@ class _ValueHeroField extends StatelessWidget {
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => onSubmitted(),
                   inputFormatters: const [_DecimalTextInputFormatter()],
-                  decoration: _bareInputDecoration(
-                    hintText: context.messages.measurementValueHint,
-                    // A demoted (subtitle, not heading) low-emphasis hint so the
-                    // empty state reads unmistakably as a prompt and never as an
-                    // entered value.
-                    hintStyle: tokens.typography.styles.subtitle.subtitle1
-                        .copyWith(color: tokens.colors.text.lowEmphasis),
-                  ),
+                  decoration: _bareInputDecoration(),
                 ),
               ),
             ),

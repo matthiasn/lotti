@@ -5692,9 +5692,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get measurementQuickAddLabel => 'Adăugare rapidă';
 
   @override
-  String get measurementValueHint => 'Valoare';
-
-  @override
   String get mediaShowInFileExplorerAction => 'Afișați în Explorer';
 
   @override
