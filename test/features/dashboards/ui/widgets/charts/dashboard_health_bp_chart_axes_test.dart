@@ -1,8 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart'
-    hide leftTitleWidgets;
+import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -37,21 +36,24 @@ void main() {
   final rangeEnd = DateTime(2024, 3, 31);
 
   group('DashboardHealthBpChart — grid line callbacks', () {
-    testWidgets('getDrawingVerticalLine returns gridLine for any value', (
-      tester,
-    ) async {
+    // Tests use the light theme, so the tokens are dsTokensLight.
+    const tokens = dsTokensLight;
+    final systolicColor = tokens.colors.alert.error.defaultColor;
+    final diastolicColor = tokens.colors.alert.info.defaultColor;
+    final plainGridColor = tokens.colors.decorative.level01;
+
+    testWidgets('vertical gridlines are disabled', (tester) async {
       final lineChart = await hPumpBpChart(
         tester,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
       );
 
-      final result = lineChart.data.gridData.getDrawingVerticalLine(42);
-      expect(result, equals(gridLine));
+      expect(lineChart.data.gridData.drawVerticalLine, isFalse);
     });
 
     testWidgets(
-      'getDrawingHorizontalLine returns emphasised blue line for value 80',
+      'horizontal line at 80 is the dashed diastolic reference line',
       (tester) async {
         final lineChart = await hPumpBpChart(
           tester,
@@ -60,15 +62,14 @@ void main() {
         );
 
         final result = lineChart.data.gridData.getDrawingHorizontalLine(80);
-        // The 80 mmHg line uses a blue tint — verify stroke width is non-zero
-        // and the color has a blue component to distinguish it from a plain gridLine.
-        expect(result.color, isNotNull);
-        expect(result.color, isNot(equals(gridLine.color)));
+        // 80 mmHg → dashed emphasis line tinted by the diastolic (info) token.
+        expect(result.color, diastolicColor.withValues(alpha: 0.5));
+        expect(result.dashArray, [5, 3]);
       },
     );
 
     testWidgets(
-      'getDrawingHorizontalLine returns emphasised red line for value 120',
+      'horizontal line at 120 is the dashed systolic reference line',
       (tester) async {
         final lineChart = await hPumpBpChart(
           tester,
@@ -77,26 +78,32 @@ void main() {
         );
 
         final result = lineChart.data.gridData.getDrawingHorizontalLine(120);
-        expect(result.color, isNotNull);
-        expect(result.color, isNot(equals(gridLine.color)));
+        // 120 mmHg → dashed emphasis line tinted by the systolic (error) token.
+        expect(result.color, systolicColor.withValues(alpha: 0.5));
+        expect(result.dashArray, [5, 3]);
       },
     );
 
-    testWidgets('getDrawingHorizontalLine returns gridLine for other values', (
-      tester,
-    ) async {
-      final lineChart = await hPumpBpChart(
-        tester,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
+    testWidgets(
+      'horizontal lines other than 80/120 use the plain tokenized gridline',
+      (tester) async {
+        final lineChart = await hPumpBpChart(
+          tester,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
 
-      // Values other than 80 and 120 should return the plain gridLine.
-      for (final value in [0.0, 60.0, 100.0, 140.0]) {
-        final result = lineChart.data.gridData.getDrawingHorizontalLine(value);
-        expect(result, equals(gridLine), reason: 'value=$value');
-      }
-    });
+        for (final value in [0.0, 60.0, 100.0, 140.0]) {
+          final result = lineChart.data.gridData.getDrawingHorizontalLine(
+            value,
+          );
+          expect(result.color, plainGridColor, reason: 'value=$value');
+          expect(result.strokeWidth, 1, reason: 'value=$value');
+          // Plain gridlines are solid, not dashed.
+          expect(result.dashArray, isNull, reason: 'value=$value');
+        }
+      },
+    );
   });
 
   group('DashboardHealthBpChart — tooltip callbacks', () {

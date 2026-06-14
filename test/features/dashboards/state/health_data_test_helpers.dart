@@ -28,21 +28,6 @@ extension AnyHealthData on glados.Any {
         12,
         glados.any.intInRange(1, 6000),
       );
-
-  /// A threshold-to-hex-color map with 1–4 entries.
-  glados.Generator<Map<num, String>> get thresholdMap =>
-      glados.CombinableAny(this).combine4(
-        glados.any.intInRange(0, 300),
-        glados.any.intInRange(301, 600),
-        glados.any.intInRange(601, 900),
-        glados.AnyUtils(this).choose(const [true, false]),
-        (int t1, int t2, int t3, bool includeThird) => <num, String>{
-          0: '#FF0000',
-          t1: '#FFAA00',
-          t2: '#00FF00',
-          if (includeThird) t3: '#0000FF',
-        },
-      );
 }
 
 /// Converts an [EntrySpec] list to [QuantitativeEntry] items anchored at

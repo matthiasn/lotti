@@ -48,6 +48,11 @@ class _DashboardsListPageState extends ConsumerState<DashboardsListPage> {
     final tokens = context.designTokens;
 
     final listScaffold = Scaffold(
+      // Match the Tasks list pane exactly: the app-standard near-black
+      // `background.level01` (#181818). Set explicitly because the shell's
+      // MaterialApp theme falls back to `Colors.black87` (a darker, off-token
+      // near-black) when no Scaffold background is given.
+      backgroundColor: tokens.colors.background.level01,
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(

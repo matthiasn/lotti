@@ -5,6 +5,7 @@ import 'package:lotti/features/dashboards/state/workout_chart_controller.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 import '../../../../../helpers/fallbacks.dart';
@@ -68,16 +69,32 @@ void main() {
         find.byType(TimeSeriesBarChart),
       );
       expect(chart.data, hasLength(2));
-      expect(chart.unit, 'Running calories');
+      // The bar chart's value-tooltip unit is the value-type symbol (energy ->
+      // "kcal"), not the card's display name.
+      expect(chart.unit, 'kcal');
+      // The display name is the card title, kept distinct from the unit.
       expect(find.text('Running calories'), findsOneWidget);
+
+      // Bars are tinted with the interactive-enabled token, regardless of the
+      // observation value.
+      final tokens = tester
+          .element(find.byType(TimeSeriesBarChart))
+          .designTokens;
+      expect(
+        chart.colorByValue(chart.data.first),
+        tokens.colors.interactive.enabled,
+      );
     });
 
-    testWidgets('renders an empty bar chart when there are no observations', (
+    testWidgets('shows the no-data message instead of a chart when empty', (
       tester,
     ) async {
       await pumpChart(tester, observations: const []);
 
-      expect(find.byType(TimeSeriesBarChart), findsOneWidget);
+      // Empty observations → the card renders the empty state, no chart.
+      expect(find.byType(TimeSeriesBarChart), findsNothing);
+      expect(find.text('No data in this range'), findsOneWidget);
+      // The header still identifies the chart.
       expect(find.text('Running calories'), findsOneWidget);
     });
   });
@@ -97,6 +114,8 @@ void main() {
       );
 
       expect(find.text('Running calories'), findsOneWidget);
+      // The subtitle carries the value-type unit symbol (energy -> "kcal").
+      expect(find.text('kcal'), findsOneWidget);
     });
   });
 }

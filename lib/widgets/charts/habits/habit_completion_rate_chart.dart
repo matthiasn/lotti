@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/themes/colors.dart';
@@ -110,12 +111,14 @@ class HabitCompletionRateChart extends ConsumerWidget
                   verticalInterval: 1,
                   getDrawingHorizontalLine: (value) {
                     if (value == 80.0) {
-                      return gridLineEmphasized;
+                      return chartEmphasisLine(
+                        context.designTokens.colors.text.lowEmphasis,
+                      );
                     }
 
-                    return gridLine;
+                    return chartGridLine(context);
                   },
-                  getDrawingVerticalLine: (value) => gridLine,
+                  getDrawingVerticalLine: (value) => chartGridLine(context),
                 ),
                 titlesData: FlTitlesData(
                   rightTitles: const AxisTitles(),
@@ -140,9 +143,7 @@ class HabitCompletionRateChart extends ConsumerWidget
                 borderData: FlBorderData(
                   show: true,
                   border: Border.all(
-                    color: chartTextColor.withAlpha(
-                      (labelOpacity * 255).floor(),
-                    ),
+                    color: context.designTokens.colors.decorative.level01,
                   ),
                 ),
                 minX: 0,

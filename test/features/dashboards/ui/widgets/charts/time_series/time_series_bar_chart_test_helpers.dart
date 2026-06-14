@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
@@ -48,22 +47,3 @@ Future<void> hPumpChart(
   );
   await tester.pump();
 }
-
-/// Returns a minimal [TitleMeta] for testing bottom title widget callbacks.
-TitleMeta makeMeta() {
-  return TitleMeta(
-    min: 0,
-    max: 100,
-    appliedInterval: 1,
-    axisPosition: 0,
-    formattedValue: '',
-    parentAxisSize: 400,
-    sideTitles: const SideTitles(showTitles: true),
-    axisSide: AxisSide.bottom,
-    rotationQuarterTurns: 0,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------

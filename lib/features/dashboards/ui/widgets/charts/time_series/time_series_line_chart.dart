@@ -5,10 +5,10 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 class TimeSeriesLineChart extends StatelessWidget {
   const TimeSeriesLineChart({
@@ -16,7 +16,6 @@ class TimeSeriesLineChart extends StatelessWidget {
     required this.rangeStart,
     required this.rangeEnd,
     this.unit = '',
-    this.transformationController,
     super.key,
   });
 
@@ -24,19 +23,10 @@ class TimeSeriesLineChart extends StatelessWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final String unit;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context) {
-    final rangeInDays = rangeEnd.difference(rangeStart).inDays;
-
-    final gridInterval = rangeInDays > 182
-        ? 30
-        : rangeInDays > 92
-        ? 14
-        : rangeInDays > 30
-        ? 7
-        : 1;
+    final tokens = context.designTokens;
 
     final spots = data
         .map(
@@ -50,37 +40,19 @@ class TimeSeriesLineChart extends StatelessWidget {
     final spotValues = spots.map((spot) => spot.y).toList();
     final minY = spotValues.isNotEmpty ? spotValues.reduce(min).floor() : 0;
     final maxY = spotValues.isNotEmpty ? spotValues.reduce(max).ceil() : 1;
-
-    Widget bottomTitleWidgets(double value, TitleMeta meta) {
-      final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-      if (ymd.day == 1 ||
-          (rangeInDays < 90 && ymd.day == 15) ||
-          (rangeInDays < 30 && ymd.day == 8) ||
-          (rangeInDays < 30 && ymd.day == 22)) {
-        return SideTitleWidget(
-          meta: meta,
-          child: ChartLabel(chartDateFormatterMmDd(value)),
-        );
-      }
-      return const SizedBox.shrink();
-    }
+    final axis = niceAxis(minY, maxY);
 
     return Padding(
-      padding: const EdgeInsets.only(top: 20, right: 20),
+      padding: EdgeInsets.only(
+        top: tokens.spacing.step5,
+        right: tokens.spacing.step2,
+      ),
       child: LineChart(
-        transformationConfig: FlTransformationConfig(
-          scaleAxis: FlScaleAxis.horizontal,
-          transformationController: transformationController,
-          maxScale: maxScale,
-        ),
         LineChartData(
           gridData: FlGridData(
-            show: false,
-            horizontalInterval: double.maxFinite,
-            verticalInterval:
-                Duration.millisecondsPerDay.toDouble() * gridInterval,
-            getDrawingHorizontalLine: (value) => gridLine,
-            getDrawingVerticalLine: (value) => gridLine,
+            drawVerticalLine: false,
+            horizontalInterval: axis.interval,
+            getDrawingHorizontalLine: (value) => chartGridLine(context),
           ),
           clipData: const FlClipData.horizontal(),
           lineTouchData: LineTouchData(
@@ -90,8 +62,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                 horizontal: 8,
                 vertical: 3,
               ),
-              getTooltipColor: (_) =>
-                  Theme.of(context).primaryColor.desaturate(),
+              getTooltipColor: (_) => tokens.colors.background.level03,
               tooltipBorderRadius: BorderRadius.circular(8),
               getTooltipItems: (List<LineBarSpot> spots) {
                 return spots.map((spot) {
@@ -104,7 +75,7 @@ class TimeSeriesLineChart extends StatelessWidget {
                     TextStyle(
                       fontSize: fontSizeSmall,
                       fontWeight: FontWeight.w300,
-                      color: context.colorScheme.onPrimary,
+                      color: tokens.colors.text.highEmphasis,
                     ),
                     children: [
                       TextSpan(
@@ -124,46 +95,37 @@ class TimeSeriesLineChart extends StatelessWidget {
           titlesData: FlTitlesData(
             rightTitles: const AxisTitles(),
             topTitles: const AxisTitles(),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                interval: Duration.millisecondsPerDay.toDouble(),
-                getTitlesWidget: bottomTitleWidgets,
-              ),
-            ),
-            leftTitles: const AxisTitles(
+            bottomTitles: const AxisTitles(),
+            leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: leftTitleWidgets,
-                reservedSize: 40,
-                interval: double.maxFinite,
+                reservedSize: kChartLeftAxisWidth,
+                // Suppress the bottom tick (it overlaps the date axis) but keep
+                // the default top tick so the value scale's ceiling is labelled.
+                interval: axis.interval,
+                minIncluded: false,
               ),
             ),
           ),
           borderData: FlBorderData(
             show: true,
-            border: Border.all(color: const Color(0xff37434d)),
+            border: Border.all(color: tokens.colors.decorative.level01),
           ),
           minX: rangeStart.millisecondsSinceEpoch.toDouble(),
           maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
-          minY: minY - 1,
-          maxY: maxY + 1,
+          minY: axis.min,
+          maxY: axis.max,
           lineBarsData: [
             LineChartBarData(
               spots: spots,
-              gradient: LinearGradient(
-                colors: gradientColors,
-              ),
-              dotData: const FlDotData(
-                show: false,
-              ),
+              color: tokens.colors.interactive.enabled,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
               belowBarData: BarAreaData(
                 show: true,
-                gradient: LinearGradient(
-                  colors: gradientColors
-                      .map((color) => color.withAlpha(77))
-                      .toList(),
+                color: tokens.colors.interactive.enabled.withValues(
+                  alpha: 0.12,
                 ),
               ),
             ),

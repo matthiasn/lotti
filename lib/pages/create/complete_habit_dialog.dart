@@ -26,12 +26,18 @@ class HabitDialog extends StatefulWidget {
     required this.habitId,
     required this.themeData,
     this.dateString,
+    this.showLinkedDashboard = true,
     super.key,
   });
 
   final String habitId;
   final String? dateString;
   final ThemeData themeData;
+
+  /// Whether to embed the habit's linked dashboard above the completion form.
+  /// Suppressed when the dialog is opened from within that same dashboard,
+  /// where it is already on screen.
+  final bool showLinkedDashboard;
 
   @override
   State<HabitDialog> createState() => _HabitDialogState();
@@ -130,6 +136,12 @@ class _HabitDialogState extends State<HabitDialog> {
 
     final rangeEnd = getEndOfToday();
 
+    // Only embed the linked dashboard when the caller wants it (suppressed when
+    // the dialog opens from within that dashboard) and the habit actually has
+    // one.
+    final showLinkedDashboard =
+        widget.showLinkedDashboard && habitDefinition.dashboardId != null;
+
     return Theme(
       data: widget.themeData,
       child: Padding(
@@ -138,7 +150,7 @@ class _HabitDialogState extends State<HabitDialog> {
         ),
         child: Stack(
           children: [
-            if (habitDefinition.dashboardId != null)
+            if (showLinkedDashboard)
               SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 280),
@@ -151,7 +163,7 @@ class _HabitDialogState extends State<HabitDialog> {
               ),
             Align(
               alignment: Alignment.bottomCenter,
-              heightFactor: habitDefinition.dashboardId != null ? 10 : 1,
+              heightFactor: showLinkedDashboard ? 10 : 1,
               child: Card(
                 margin: EdgeInsets.zero,
                 elevation: 10,

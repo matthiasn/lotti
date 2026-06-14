@@ -4078,6 +4078,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardAddMeasurementTitle => 'Graphiques de mesures';
 
   @override
+  String get dashboardAddMeasurementTooltip => 'Ajouter une mesure';
+
+  @override
   String get dashboardAddSurveyButton => 'Graphiques des questionnaires';
 
   @override
@@ -4090,10 +4093,25 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardAddWorkoutTitle => 'Graphiques d\'entraînement';
 
   @override
+  String get dashboardAggregationDailyAverage => 'Moyenne quotidienne';
+
+  @override
+  String get dashboardAggregationDailyMax => 'Maximum quotidien';
+
+  @override
+  String get dashboardAggregationDailyTotal => 'Total quotidien';
+
+  @override
+  String get dashboardAggregationHourlyTotal => 'Total horaire';
+
+  @override
   String get dashboardAggregationLabel => 'Type d\'agrégation :';
 
   @override
   String get dashboardCategoryLabel => 'Catégorie';
+
+  @override
+  String get dashboardChartNoData => 'Aucune donnée sur cette période';
 
   @override
   String get dashboardCopyHint =>
@@ -4116,6 +4134,15 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dashboardDescriptionLabel => 'Description';
 
   @override
+  String get dashboardHealthBloodPressure => 'Tension artérielle';
+
+  @override
+  String get dashboardHealthDiastolic => 'Diastolique';
+
+  @override
+  String get dashboardHealthSystolic => 'Systolique';
+
+  @override
   String get dashboardNameLabel => 'Nom du tableau de bord';
 
   @override
@@ -4123,6 +4150,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get dashboardPrivateLabel => 'Privé';
+
+  @override
+  String get dashboardTakeSurveyTooltip => 'Répondre au questionnaire';
 
   @override
   String get defaultLanguage => 'Langue par défaut';
@@ -5656,6 +5686,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get measurableNotFound => 'Élément mesurable introuvable';
+
+  @override
+  String get measurementCommentHint => 'Ajoute une note (facultatif)';
+
+  @override
+  String get measurementQuickAddLabel => 'Ajout rapide';
 
   @override
   String get mediaShowInFileExplorerAction =>

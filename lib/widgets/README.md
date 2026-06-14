@@ -95,7 +95,7 @@ Status indicator chip with modern design, used for showing states like active/in
 Located in `/lib/widgets/charts/`
 
 ### DashboardHabitsChart
-Chart component for visualizing habit tracking data on the dashboard.
+Dashboard host for a habit's completion strip. Delegates to `HabitCompletionCard`, passing `showLinkedDashboard: false` so that tapping a row inside a dashboard does not re-embed that same dashboard in the completion dialog.
 
 ### DashboardItemModal
 Modal dialog for displaying detailed dashboard item information.

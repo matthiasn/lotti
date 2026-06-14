@@ -1,18 +1,28 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_form_builder/flutter_form_builder.dart';
-import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/create/suggest_measurement.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 
+/// Bottom-sheet body for logging a measurement value.
+///
+/// Organised around a single hero — the value — which is a label-less,
+/// centered big-digit well (the modal title already names the measurable) with
+/// the unit rendered as an adjacent inline suffix so the number and unit read
+/// as one measurement ("750 ml"). Directly beneath it sit persistent one-tap
+/// quick-value chips (the fast path for a returning logger). The observed-at
+/// row (defaulting to now) and an optional comment follow in quieter chrome,
+/// and the bottom holds a fixed, always-visible Save button that is disabled
+/// until the entered value is a valid number.
 class MeasurementDialog extends StatefulWidget {
   const MeasurementDialog({
     required this.measurableId,
@@ -27,65 +37,68 @@ class MeasurementDialog extends StatefulWidget {
 
 class _MeasurementDialogState extends State<MeasurementDialog> {
   final PersistenceLogic persistenceLogic = getIt<PersistenceLogic>();
-  final _formKey = GlobalKey<FormBuilderState>();
-  bool dirty = false;
+  final TextEditingController _valueController = TextEditingController();
+  final TextEditingController _commentController = TextEditingController();
+  final FocusNode _valueFocus = FocusNode();
+  final FocusNode _commentFocus = FocusNode();
+
   DateTime measurementTime = DateTime.now();
 
-  final hotkeyCmdS = HotKey(
-    key: LogicalKeyboardKey.keyS,
-    modifiers: [HotKeyModifier.meta],
-    scope: HotKeyScope.inapp,
-  );
+  @override
+  void initState() {
+    super.initState();
+    // Rebuild as the value changes so the Save button's enabled state tracks
+    // validity live.
+    _valueController.addListener(_onValueChanged);
+  }
 
-  Future<void> saveMeasurement({
-    required MeasurableDataType measurableDataType,
-    required DateTime measurementTime,
-    num? value,
-  }) async {
-    _formKey.currentState!.save();
-    final formData = _formKey.currentState?.value;
+  @override
+  void dispose() {
+    _valueController
+      ..removeListener(_onValueChanged)
+      ..dispose();
+    _commentController.dispose();
+    _valueFocus.dispose();
+    _commentFocus.dispose();
+    super.dispose();
+  }
 
-    // When value is provided directly (from suggestion chips), bypass validation
-    // Otherwise validate the form input
-    if (value == null && !validate()) {
-      return;
-    }
+  void _onValueChanged() => setState(() {});
 
-    setState(() {
-      dirty = false;
-    });
+  num? _parse(String raw) {
+    final normalized = raw.trim().replaceAll(',', '.');
+    if (normalized.isEmpty) return null;
+    return num.tryParse(normalized);
+  }
+
+  bool get _isValid => _parse(_valueController.text) != null;
+
+  Future<void> _save(MeasurableDataType dataType, {num? value}) async {
+    final resolved = value ?? _parse(_valueController.text);
+    if (resolved == null) return;
 
     final measurement = MeasurementData(
-      dataTypeId: measurableDataType.id,
+      dataTypeId: dataType.id,
       dateTo: measurementTime,
       dateFrom: measurementTime,
-      value: value ?? nf.parse('${formData!['value']}'.replaceAll(',', '.')),
+      value: resolved,
     );
     Navigator.pop(context, 'Saved');
 
     await persistenceLogic.createMeasurementEntry(
       data: measurement,
-      comment: (formData?['comment'] as String?) ?? '',
-      private: measurableDataType.private ?? false,
+      comment: _commentController.text,
+      private: dataType.private ?? false,
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    hotKeyManager.unregister(hotkeyCmdS);
-  }
-
-  bool validate() {
-    if (_formKey.currentState != null) {
-      return _formKey.currentState!.validate();
-    }
-    return false;
+  Future<void> _pickDateTime() {
+    return showDateTimePickerModal(
+      context,
+      dateTime: measurementTime,
+      labelText: context.messages.addMeasurementDateLabel,
+      setDateTime: (picked) => setState(() => measurementTime = picked),
+    );
   }
 
   @override
@@ -98,165 +111,345 @@ class _MeasurementDialogState extends State<MeasurementDialog> {
       return const SizedBox.shrink();
     }
 
-    return FormBuilder(
-      key: _formKey,
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-      onChanged: () {
-        setState(() {
-          dirty = true;
-        });
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Value input field
-          _ValueInputField(dataType: dataType),
+    final tokens = context.designTokens;
 
-          const SizedBox(height: 16),
-
-          // Date & Time field
-          DateTimeField(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _ValueHeroField(
+          controller: _valueController,
+          focusNode: _valueFocus,
+          unit: dataType.unitName,
+          onSubmitted: () => _save(dataType),
+        ),
+        MeasurementSuggestions(
+          measurableDataType: dataType,
+          onSelect: (value) => _save(dataType, value: value),
+        ),
+        SizedBox(height: tokens.spacing.sectionGap),
+        _LabeledField(
+          label: context.messages.addMeasurementDateLabel,
+          child: _ObservedAtField(
+            key: const Key('measurement_observed_at'),
             dateTime: measurementTime,
-            labelText: context.messages.addMeasurementDateLabel,
-            setDateTime: (picked) {
-              setState(() {
-                measurementTime = picked;
-              });
-            },
+            onTap: _pickDateTime,
           ),
-
-          const SizedBox(height: 16),
-
-          // Comment field
-          FormBuilderTextField(
-            initialValue: '',
-            key: const Key('measurement_comment_field'),
-            decoration: inputDecoration(
-              labelText: context.messages.addMeasurementCommentLabel,
-              themeData: Theme.of(context),
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        _LabeledField(
+          label: context.messages.addMeasurementCommentLabel,
+          child: _FieldShell(
+            focusNode: _commentFocus,
+            child: TextField(
+              key: const Key('measurement_comment_field'),
+              controller: _commentController,
+              focusNode: _commentFocus,
+              minLines: 1,
+              maxLines: 3,
+              cursorColor: tokens.colors.interactive.enabled,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+              decoration: _bareInputDecoration(
+                hintText: context.messages.measurementCommentHint,
+                hintStyle: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
             ),
-            keyboardAppearance: Theme.of(context).brightness,
-            name: 'comment',
-            maxLines: 2,
           ),
-
-          const SizedBox(height: 24),
-
-          // Action area with animated transition
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            switchInCurve: Curves.easeOut,
-            switchOutCurve: Curves.easeIn,
-            child: !dirty
-                ? MeasurementSuggestions(
-                    key: const ValueKey('suggestions'),
-                    measurableDataType: dataType,
-                    saveMeasurement: saveMeasurement,
-                    measurementTime: measurementTime,
-                  )
-                : (_formKey.currentState?.isValid ?? false)
-                ? SizedBox(
-                    key: const ValueKey('save'),
-                    width: double.infinity,
-                    height: 48,
-                    child: FilledButton.icon(
-                      key: const Key('measurement_save'),
-                      onPressed: () => saveMeasurement(
-                        measurableDataType: dataType,
-                        measurementTime: measurementTime,
-                      ),
-                      icon: const Icon(Icons.check_rounded),
-                      label: Text(context.messages.addMeasurementSaveButton),
-                    ),
-                  )
-                : const SizedBox.shrink(key: ValueKey('empty')),
+        ),
+        SizedBox(height: tokens.spacing.sectionGap),
+        Align(
+          child: DesignSystemButton(
+            key: const Key('measurement_save'),
+            label: context.messages.addMeasurementSaveButton,
+            size: DesignSystemButtonSize.large,
+            leadingIcon: Icons.check_rounded,
+            onPressed: _isValid ? () => unawaited(_save(dataType)) : null,
           ),
+        ),
+      ],
+    );
+  }
+}
+
+/// An [InputDecoration] with every border state nulled so the field draws no
+/// box of its own — the surrounding [_FieldShell] owns the border and focus
+/// ring. Nulling all six border slots (not just `border`) is required because
+/// the app's `inputDecorationTheme` defines an outline border that would
+/// otherwise bleed through `InputDecoration.collapsed` as a second box.
+InputDecoration _bareInputDecoration({String? hintText, TextStyle? hintStyle}) {
+  return InputDecoration(
+    isDense: true,
+    isCollapsed: true,
+    filled: false,
+    contentPadding: EdgeInsets.zero,
+    border: InputBorder.none,
+    enabledBorder: InputBorder.none,
+    disabledBorder: InputBorder.none,
+    focusedBorder: InputBorder.none,
+    errorBorder: InputBorder.none,
+    focusedErrorBorder: InputBorder.none,
+    hintText: hintText,
+    hintStyle: hintStyle,
+  );
+}
+
+/// Restricts input to a single optional leading minus, the digits, and at most
+/// one decimal separator (`.` or `,`) — so malformed numbers like `1..2` can
+/// never be entered and silently disable Save.
+class _DecimalTextInputFormatter extends TextInputFormatter {
+  const _DecimalTextInputFormatter();
+
+  static final RegExp _pattern = RegExp(r'^-?\d*[.,]?\d*$');
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    return _pattern.hasMatch(newValue.text) ? newValue : oldValue;
+  }
+}
+
+/// A field with a design-system label above the [child] box.
+class _LabeledField extends StatelessWidget {
+  const _LabeledField({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          label,
+          style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        child,
+      ],
+    );
+  }
+}
+
+/// Design-system field surface: a rounded box whose hairline ramps from a
+/// faint idle border to `interactive.enabled` (teal, 2px) on focus and
+/// `text.mediumEmphasis` on hover — matching `DesignSystemTextInput`.
+class _FieldShell extends StatefulWidget {
+  const _FieldShell({
+    required this.focusNode,
+    required this.child,
+    this.padding,
+  });
+
+  final FocusNode focusNode;
+  final Widget child;
+  final EdgeInsetsGeometry? padding;
+
+  @override
+  State<_FieldShell> createState() => _FieldShellState();
+}
+
+class _FieldShellState extends State<_FieldShell> {
+  bool _focused = false;
+  bool _hovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focusNode.addListener(_onFocusChanged);
+  }
+
+  @override
+  void didUpdateWidget(_FieldShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.focusNode != oldWidget.focusNode) {
+      oldWidget.focusNode.removeListener(_onFocusChanged);
+      widget.focusNode.addListener(_onFocusChanged);
+      _focused = widget.focusNode.hasFocus;
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_onFocusChanged);
+    super.dispose();
+  }
+
+  void _onFocusChanged() =>
+      setState(() => _focused = widget.focusNode.hasFocus);
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final Color borderColor;
+    if (_focused) {
+      borderColor = tokens.colors.interactive.enabled;
+    } else if (_hovered) {
+      borderColor = tokens.colors.text.mediumEmphasis;
+    } else {
+      borderColor = tokens.colors.text.highEmphasis.withValues(alpha: 0.12);
+    }
+
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+          border: Border.all(color: borderColor, width: _focused ? 2 : 1),
+        ),
+        child: Padding(
+          padding:
+              widget.padding ??
+              EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step4,
+              ),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
+/// The hero value input: a centered big-digit field with the unit rendered as
+/// an adjacent inline suffix on the same baseline, so the number and unit read
+/// as one measurement ("750 ml").
+class _ValueHeroField extends StatelessWidget {
+  const _ValueHeroField({
+    required this.controller,
+    required this.focusNode,
+    required this.unit,
+    required this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final String unit;
+  final VoidCallback onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final valueStyle = tokens.typography.styles.heading.heading2.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
+
+    return _FieldShell(
+      focusNode: focusNode,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step4,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.baseline,
+        textBaseline: TextBaseline.alphabetic,
+        children: [
+          Flexible(
+            child: IntrinsicWidth(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minWidth: tokens.spacing.step8),
+                child: TextField(
+                  key: const Key('measurement_value_field'),
+                  controller: controller,
+                  focusNode: focusNode,
+                  autofocus: true,
+                  textAlign: TextAlign.center,
+                  style: valueStyle,
+                  cursorColor: tokens.colors.interactive.enabled,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                    signed: true,
+                  ),
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => onSubmitted(),
+                  inputFormatters: const [_DecimalTextInputFormatter()],
+                  decoration: _bareInputDecoration(),
+                ),
+              ),
+            ),
+          ),
+          if (unit.isNotEmpty) ...[
+            SizedBox(width: tokens.spacing.step2),
+            Text(
+              unit,
+              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-/// Value input field with unit suffix
-class _ValueInputField extends StatelessWidget {
-  const _ValueInputField({required this.dataType});
+/// A tappable, clearly-editable summary of the observed-at timestamp. Carries a
+/// trailing edit-calendar glyph so it never reads as a locked, read-only value,
+/// and opens the shared date/time picker on tap.
+class _ObservedAtField extends StatelessWidget {
+  const _ObservedAtField({
+    required this.dateTime,
+    required this.onTap,
+    super.key,
+  });
 
-  final MeasurableDataType dataType;
+  final DateTime dateTime;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final hasUnit = dataType.unitName.isNotEmpty;
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.m);
 
-    return FormBuilderTextField(
-      initialValue: '',
-      key: const Key('measurement_value_field'),
-      name: 'value',
-      autofocus: true,
-      style: context.textTheme.headlineMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-        color: context.colorScheme.onSurface,
-      ),
-      decoration:
-          inputDecoration(
-            labelText: dataType.displayName,
-            themeData: Theme.of(context),
-          ).copyWith(
-            hintText: '0',
-            hintStyle: context.textTheme.headlineMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-              color: context.colorScheme.onSurfaceVariant.withValues(
-                alpha: 0.3,
-              ),
-            ),
-            suffixIcon: hasUnit
-                ? Padding(
-                    padding: const EdgeInsets.only(right: 12),
-                    child: Center(
-                      widthFactor: 1,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: context.colorScheme.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          dataType.unitName,
-                          style: context.textTheme.labelMedium?.copyWith(
-                            color: context.colorScheme.onPrimaryContainer,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  )
-                : null,
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: onTap,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: radius,
+            border: Border.all(
+              color: tokens.colors.text.highEmphasis.withValues(alpha: 0.12),
             ),
           ),
-      keyboardType: const TextInputType.numberWithOptions(
-        decimal: true,
-        signed: true,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step4,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    dfShorter.format(dateTime),
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.edit_calendar_outlined,
+                  size: tokens.spacing.step6,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
-      validator: FormBuilderValidators.compose([
-        FormBuilderValidators.required(),
-        (value) {
-          if (value == null || value.isEmpty) return null;
-          final normalized = value.replaceAll(',', '.');
-          if (num.tryParse(normalized) == null) {
-            return FormBuilderValidators.numeric<String>().call(value);
-          }
-          return null;
-        },
-      ]),
-      inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'^-?[\d.,]*$')),
-      ],
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
@@ -70,18 +69,21 @@ void main() {
 
   /// Pumps the chart, optionally pinning the habits state to [state] instead
   /// of letting the real controller load from the (mocked) database.
+  ///
+  /// Uses [makeTestableWidgetNoScroll] so the active theme carries the DsTokens
+  /// extension (the chart now reads `context.designTokens` for its tokenized
+  /// gridlines and border) and the AppLocalizations delegates are present for
+  /// the info-label strings.
   Future<void> pumpChart(WidgetTester tester, {HabitsState? state}) async {
     await tester.pumpWidget(
-      ProviderScope(
+      makeTestableWidgetNoScroll(
+        const Scaffold(body: HabitCompletionRateChart()),
         overrides: [
           if (state != null)
             habitsControllerProvider.overrideWith(
               () => _FixedStateController(state),
             ),
         ],
-        child: const MaterialApp(
-          home: Scaffold(body: HabitCompletionRateChart()),
-        ),
       ),
     );
     // Two pumps: one for the first frame, one for the controller's async load.
@@ -223,8 +225,12 @@ void main() {
 
   group('leftTitleWidgets', () {
     Future<void> pumpTitleWidget(WidgetTester tester, double value) async {
+      // Labelled values render a ChartLabel, which reads context.designTokens,
+      // so the active theme must carry the DsTokens extension.
       await tester.pumpWidget(
-        MaterialApp(home: Scaffold(body: leftTitleWidgets(value, _makeMeta()))),
+        makeTestableWidgetNoScroll(
+          Scaffold(body: leftTitleWidgets(value, _makeMeta())),
+        ),
       );
     }
 

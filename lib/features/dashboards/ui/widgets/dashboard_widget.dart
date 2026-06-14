@@ -7,7 +7,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_cha
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_measurables_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 
 class DashboardWidget extends ConsumerWidget {
@@ -15,7 +15,6 @@ class DashboardWidget extends ConsumerWidget {
     required this.rangeStart,
     required this.rangeEnd,
     required this.dashboardId,
-    this.transformationController,
     super.key,
     this.showTitle = false,
   });
@@ -24,7 +23,6 @@ class DashboardWidget extends ConsumerWidget {
   final DateTime rangeEnd;
   final String dashboardId;
   final bool showTitle;
-  final TransformationController? transformationController;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -43,21 +41,18 @@ class DashboardWidget extends ConsumerWidget {
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
             enableCreate: true,
-            transformationController: transformationController,
           );
         case final DashboardHealthItem health:
           return DashboardHealthChart(
             chartConfig: health,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
-            transformationController: transformationController,
           );
         case final DashboardWorkoutItem workout:
           return DashboardWorkoutChart(
             chartConfig: workout,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
-            transformationController: transformationController,
           );
 
         case final DashboardSurveyItem survey:
@@ -65,7 +60,6 @@ class DashboardWidget extends ConsumerWidget {
             chartConfig: survey,
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
-            transformationController: transformationController,
           );
         case final DashboardHabitItem habit:
           return DashboardHabitsChart(
@@ -76,30 +70,36 @@ class DashboardWidget extends ConsumerWidget {
       }
     });
 
+    final tokens = context.designTokens;
     return Padding(
-      padding: const EdgeInsets.only(top: 16),
+      padding: EdgeInsets.only(top: tokens.spacing.step5),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (showTitle)
-            Text(
-              dashboard.name,
-              style: taskTitleStyle,
-            ),
-          ...intersperse(const SizedBox(height: 16), items.whereType<Widget>()),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Flexible(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 10),
-                  child: Text(
-                    dashboard.description,
-                    style: chartTitleStyle,
-                  ),
+            Padding(
+              padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+              child: Text(
+                dashboard.name,
+                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                  color: tokens.colors.text.highEmphasis,
                 ),
               ),
-            ],
+            ),
+          ...intersperse(
+            SizedBox(height: tokens.spacing.cardItemSpacing),
+            items.whereType<Widget>(),
           ),
+          if (dashboard.description.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step4),
+              child: Text(
+                dashboard.description,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+            ),
         ],
       ),
     );

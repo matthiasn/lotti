@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/utils/segmented_button.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 
+/// "Pick one of N" time-span selector for the Insights dashboards and the
+/// Habits page.
+///
+/// Renders with the shared [DsSegmentedToggle] so the time-frame switch speaks
+/// the same visual language as the Daily OS plan switch and the Time Analysis
+/// chart-mode toggle. This widget just maps the integer day spans to labelled
+/// segments ("30d", "90d", …) so both pages share one mapping.
 class TimeSpanSegmentedControl extends StatelessWidget {
   const TimeSpanSegmentedControl({
     required this.timeSpanDays,
@@ -15,24 +22,12 @@ class TimeSpanSegmentedControl extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final shortLabels = MediaQuery.of(context).size.width < 450;
-
-    ButtonSegment<int> segment(int days) {
-      return buttonSegment(
-        context: context,
-        value: days,
-        selected: timeSpanDays,
-        label: shortLabels ? '${days}d' : '$days days',
-      );
-    }
-
-    return SegmentedButton<int>(
-      selected: {timeSpanDays},
-      showSelectedIcon: false,
-      onSelectionChanged: (selected) => onValueChanged(selected.first),
+    return DsSegmentedToggle<int>(
       segments: [
-        ...segments.map(segment),
+        for (final days in segments) DsSegment(days, '${days}d'),
       ],
+      selected: timeSpanDays,
+      onChanged: onValueChanged,
     );
   }
 }

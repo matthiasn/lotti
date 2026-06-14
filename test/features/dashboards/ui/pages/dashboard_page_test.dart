@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/dashboards/state/chart_scale_controller.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
+import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -124,6 +126,22 @@ void main() {
       // the chart host wired to this dashboard id.
       expect(find.text(testDashboardConfig.name), findsOneWidget);
       expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+
+      // The body is hosted inside a SliverToBoxAdapter (unbounded height) and
+      // wrapped in SettingsContentArea (a LayoutBuilder). Guard that the
+      // content is actually laid out — non-zero size and inset from the page
+      // edge — so it can never silently collapse to "header only".
+      final controlRect = tester.getRect(
+        find.byType(TimeSpanSegmentedControl),
+      );
+      expect(controlRect.width, greaterThan(0));
+      expect(controlRect.height, greaterThan(0));
+      expect(
+        controlRect.left,
+        greaterThan(0),
+        reason: 'content must be horizontally inset, not hugging the edge',
+      );
+
       final dashboardWidget = tester.widget<DashboardWidget>(
         find.byType(DashboardWidget),
       );
@@ -189,9 +207,11 @@ void main() {
         expect(segmented.timeSpanDays, 90);
 
         // Tap the 30-day segment to trigger onValueChanged → setState.
-        // With the default phone screen width (390 < 450) short labels are used.
-        await tester.ensureVisible(find.text('30d'));
-        await tester.tap(find.text('30d'));
+        // DsSegmentedToggle stacks an invisible width-reserving ghost label
+        // behind the visible one, so '30d' matches two widgets; tap the last
+        // (the visible label painted on top) to avoid an occluded-hit warning.
+        await tester.ensureVisible(find.text('30d').last);
+        await tester.tap(find.text('30d').last);
         await tester.pump(const Duration(seconds: 1));
 
         // After setState the control must reflect the new selection
@@ -202,8 +222,14 @@ void main() {
       },
     );
 
+    // A window wide enough (>= the 960px desktop breakpoint) that the page
+    // renders its desktop layout. The harness injects MediaQuery from this
+    // (tester.view does not drive MediaQuery here), so isDesktopLayout reads
+    // this width.
+    const desktopMediaQuery = MediaQueryData(size: Size(1280, 1400));
+
     testWidgets(
-      'transformation controller listener propagates scale to barWidthControllerProvider',
+      'desktop layout puts the title and picker in one row, with no back button',
       (tester) async {
         when(
           () => mockPersistenceLogic.createMeasurementEntry(
@@ -212,64 +238,126 @@ void main() {
           ),
         ).thenAnswer((_) async => null);
 
-        // Track calls to updateScale via a capturing override of the notifier.
-        final scalesReceived = <double>[];
+        tester.view.physicalSize = const Size(1280, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             DashboardPage(dashboardId: testDashboardConfig.id),
-            overrides: [
-              barWidthControllerProvider.overrideWith(
-                () => _CapturingBarWidthController(
-                  onScaleUpdate: scalesReceived.add,
-                ),
-              ),
-            ],
+            mediaQueryData: desktopMediaQuery,
           ),
         );
+        await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.pump(const Duration(seconds: 1));
-
-        // DashboardPage creates the TransformationController in initState and
-        // hands it down to DashboardWidget, which forwards it to every chart's
-        // fl_chart interactive viewer. Grab that exact controller from the
-        // rendered DashboardWidget so we can drive it the same way fl_chart's
-        // pinch gesture would. A synthetic two-pointer pinch on the chart does
-        // not propagate through fl_chart's internal viewer in the headless test
-        // environment, so we mutate the shared controller directly instead.
-        final dashboardWidget = tester.widget<DashboardWidget>(
-          find.byType(DashboardWidget),
+        expect(find.text(testDashboardConfig.name), findsOneWidget);
+        expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+        // The edit-definition link.
+        expect(find.byIcon(Icons.tune_rounded), findsOneWidget);
+        // The desktop header has no back button (the dashboards list stays
+        // visible beside this pane) — this is what sets it apart from mobile.
+        expect(find.byType(BackWidget), findsNothing);
+        // Title and picker share a single horizontal band (their vertical
+        // centers line up), not stacked as on mobile.
+        expect(
+          tester.getCenter(find.text(testDashboardConfig.name)).dy,
+          moreOrLessEquals(
+            tester.getCenter(find.byType(TimeSpanSegmentedControl)).dy,
+            epsilon: 1,
+          ),
         );
-        final controller = dashboardWidget.transformationController;
-        expect(controller, isNotNull);
+      },
+    );
 
-        // Apply a horizontal pinch-out (2x scale on the x-axis). Setting the
-        // controller value fires the listener registered by DashboardPage in
-        // initState, which calls updateScale → scalesReceived is populated.
-        controller!.value = Matrix4.identity()..scaleByDouble(2, 1, 1, 1);
-        await tester.pump(const Duration(seconds: 1));
+    /// Stubs the dashboard-definition editor's reads so it can be pushed
+    /// (from the header's edit link) without throwing.
+    void stubDefinitionEditor() {
+      ensureThemingServicesRegistered();
+      when(
+        mockJournalDb.getAllCategories,
+      ).thenAnswer((_) async => [categoryMindfulness]);
+      when(
+        mockJournalDb.getAllHabitDefinitions,
+      ).thenAnswer((_) async => <HabitDefinition>[]);
+      when(
+        () => mockJournalDb.getMeasurableDataTypeById(any()),
+      ).thenAnswer((_) async => measurableWater);
+      nav_service.beamToNamedOverride = (_) {};
+      addTearDown(() => nav_service.beamToNamedOverride = null);
+    }
 
-        // The listener must have fired: the captured scale is the x-axis factor
-        // we applied (> 0, and equal to 2.0 for this pinch-out).
-        expect(scalesReceived, isNotEmpty);
-        for (final s in scalesReceived) {
-          expect(s, greaterThan(0));
-        }
-        expect(scalesReceived.last, 2.0);
+    testWidgets(
+      'tapping edit on desktop opens a clamped side panel; back pops it',
+      (tester) async {
+        stubDefinitionEditor();
+
+        tester.view.physicalSize = const Size(1280, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DashboardPage(dashboardId: testDashboardConfig.id),
+            mediaQueryData: desktopMediaQuery,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.tune_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DashboardDefinitionPage), findsOneWidget);
+        // The side panel clamps the editor to half the window (max 640px), so
+        // it never fills the 1280px width — that's what distinguishes it from
+        // the mobile full-screen push.
+        expect(
+          tester.getSize(find.byType(DashboardDefinitionPage)).width,
+          lessThanOrEqualTo(640),
+        );
+
+        // The editor was pushed with popOnClose: true, so its header back
+        // button pops the route instead of beaming to the settings list. The
+        // desktop dashboard header has no back button, so this is the only one.
+        await tester.tap(find.byType(BackWidget));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DashboardDefinitionPage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping the edit link below the desktop breakpoint pushes full-screen',
+      (tester) async {
+        stubDefinitionEditor();
+
+        // Below the 960px desktop breakpoint (so the mobile push path runs),
+        // but wide enough that the embedded charts' date axis lays out without
+        // an unrelated horizontal overflow.
+        tester.view.physicalSize = const Size(900, 1400);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DashboardPage(dashboardId: testDashboardConfig.id),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.tune_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DashboardDefinitionPage), findsOneWidget);
+        // A full-screen MaterialPageRoute fills the window width — proving this
+        // is the push path, not the width-clamped desktop side panel.
+        expect(
+          tester.getSize(find.byType(DashboardDefinitionPage)).width,
+          greaterThan(640),
+        );
       },
     );
   });
-}
-
-/// A [BarWidthController] variant that records every [updateScale] call,
-/// allowing tests to verify the DashboardPage listener fires correctly.
-class _CapturingBarWidthController extends BarWidthController {
-  _CapturingBarWidthController({required this.onScaleUpdate});
-
-  final void Function(double scale) onScaleUpdate;
-
-  @override
-  void updateScale(Matrix4 scale) {
-    super.updateScale(scale);
-    onScaleUpdate(scale.row0.x);
-  }
 }

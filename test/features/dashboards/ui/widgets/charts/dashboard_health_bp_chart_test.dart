@@ -2,9 +2,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/state/health_chart_controller.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bp_chart.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart'
-    hide leftTitleWidgets;
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -49,66 +49,17 @@ void main() {
 
   group('BpChartInfoWidget', () {
     testWidgets('renders "Blood Pressure" label', (tester) async {
-      // BpChartInfoWidget returns a Positioned, so it must live inside a Stack.
       await tester.pumpWidget(
         makeTestableWidget(
           const SizedBox(
             width: 400,
             height: 400,
-            child: Stack(children: [BpChartInfoWidget()]),
+            child: BpChartInfoWidget(),
           ),
         ),
       );
 
       expect(find.text('Blood Pressure'), findsOneWidget);
-    });
-  });
-
-  group('leftTitleWidgets (bp chart)', () {
-    testWidgets('renders integer value as a ChartLabel text', (tester) async {
-      final meta = TitleMeta(
-        min: 0,
-        max: 200,
-        appliedInterval: 10,
-        axisPosition: 0,
-        formattedValue: '80',
-        parentAxisSize: 200,
-        sideTitles: const SideTitles(showTitles: true),
-        axisSide: AxisSide.left,
-        rotationQuarterTurns: 0,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          Builder(builder: (ctx) => leftTitleWidgets(80, meta)),
-        ),
-      );
-
-      // The ChartLabel renders a Text with the integer string.
-      expect(find.byType(ChartLabel), findsOneWidget);
-      expect(find.text('80'), findsOneWidget);
-    });
-
-    testWidgets('truncates decimal part to integer', (tester) async {
-      final meta = TitleMeta(
-        min: 0,
-        max: 200,
-        appliedInterval: 10,
-        axisPosition: 0,
-        formattedValue: '75',
-        parentAxisSize: 200,
-        sideTitles: const SideTitles(showTitles: true),
-        axisSide: AxisSide.left,
-        rotationQuarterTurns: 0,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          Builder(builder: (ctx) => leftTitleWidgets(75.9, meta)),
-        ),
-      );
-
-      expect(find.text('75'), findsOneWidget);
     });
   });
 
@@ -146,7 +97,7 @@ void main() {
     });
 
     testWidgets(
-      'systolic series uses red colour and diastolic uses blue colour',
+      'systolic uses the error token colour and diastolic the info token',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidget(
@@ -171,14 +122,55 @@ void main() {
 
         await tester.pump();
 
+        final tokens = tester.element(find.byType(LineChart)).designTokens;
         final lineChart = tester.widget<LineChart>(find.byType(LineChart));
         final bars = lineChart.data.lineBarsData;
 
-        // First bar is systolic (red), second is diastolic (blue).
-        expect(bars[0].color, Colors.red);
-        expect(bars[1].color, Colors.blue);
+        // Systolic = alert.error, diastolic = alert.info, drawn as two clean
+        // lines with no area fill below either series.
+        expect(bars[0].color, tokens.colors.alert.error.defaultColor);
+        expect(bars[1].color, tokens.colors.alert.info.defaultColor);
+        expect(bars[0].belowBarData.show, isFalse);
+        expect(bars[1].belowBarData.show, isFalse);
       },
     );
+
+    testWidgets('footer legend labels Systolic and Diastolic series', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          DashboardHealthBpChart(
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          ),
+          overrides: [
+            healthObservationsControllerProvider(
+              healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            ).overrideWithBuild((ref, notifier) => sysObs([120.0])),
+            healthObservationsControllerProvider(
+              healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            ).overrideWithBuild((ref, notifier) => diaObs([80.0])),
+          ],
+        ),
+      );
+
+      await tester.pump();
+
+      final tokens = tester.element(find.byType(LineChart)).designTokens;
+      final legend = tester.widget<DashboardChartLegend>(
+        find.byType(DashboardChartLegend),
+      );
+      expect(legend.entries, hasLength(2));
+      expect(legend.entries[0].label, 'Systolic');
+      expect(legend.entries[0].color, tokens.colors.alert.error.defaultColor);
+      expect(legend.entries[1].label, 'Diastolic');
+      expect(legend.entries[1].color, tokens.colors.alert.info.defaultColor);
+    });
 
     testWidgets('systolic spots map observation values correctly', (
       tester,
@@ -289,36 +281,38 @@ void main() {
       expect(find.text('Blood Pressure'), findsOneWidget);
     });
 
-    testWidgets('renders with empty data — no spots in either series', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          DashboardHealthBpChart(
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
+    testWidgets(
+      'empty data shows the no-data message instead of the chart',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            DashboardHealthBpChart(
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            ),
+            overrides: [
+              healthObservationsControllerProvider(
+                healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ).overrideWithBuild((ref, notifier) => <Observation>[]),
+              healthObservationsControllerProvider(
+                healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            ],
           ),
-          overrides: [
-            healthObservationsControllerProvider(
-              healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
-              rangeStart: rangeStart,
-              rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
-            healthObservationsControllerProvider(
-              healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
-              rangeStart: rangeStart,
-              rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
-          ],
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
 
-      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-      expect(lineChart.data.lineBarsData[0].spots, isEmpty);
-      expect(lineChart.data.lineBarsData[1].spots, isEmpty);
-    });
+        // With both series empty the card renders the empty-state message and
+        // no LineChart at all.
+        expect(find.byType(LineChart), findsNothing);
+        expect(find.text('No data in this range'), findsOneWidget);
+      },
+    );
 
     testWidgets('minX and maxX match rangeStart and rangeEnd', (tester) async {
       await tester.pumpWidget(
@@ -332,7 +326,7 @@ void main() {
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            ).overrideWithBuild((ref, notifier) => sysObs([120.0])),
             healthObservationsControllerProvider(
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
               rangeStart: rangeStart,
@@ -354,6 +348,53 @@ void main() {
         rangeEnd.millisecondsSinceEpoch.toDouble(),
       );
     });
+
+    testWidgets(
+      'value axis steps by 20 and the 80/120 reference lines still render',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            DashboardHealthBpChart(
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            ),
+            overrides: [
+              healthObservationsControllerProvider(
+                healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ).overrideWithBuild((ref, notifier) => sysObs([120.0])),
+              healthObservationsControllerProvider(
+                healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ).overrideWithBuild((ref, notifier) => diaObs([80.0])),
+            ],
+          ),
+        );
+
+        await tester.pump();
+
+        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+        final gridData = lineChart.data.gridData;
+        final leftTitles = lineChart.data.titlesData.leftTitles.sideTitles;
+
+        // The axis ladder is calmed to a 20-unit step (≈80/100/120) rather
+        // than the dense 10-unit ladder.
+        expect(leftTitles.interval, 20);
+        expect(gridData.horizontalInterval, 20);
+
+        // The diastolic (80) and systolic (120) reference lines land on the
+        // 20-step gridlines and still render as dashed emphasis lines, while a
+        // non-reference value stays a plain gridline.
+        final lineAt80 = gridData.getDrawingHorizontalLine(80);
+        final lineAt120 = gridData.getDrawingHorizontalLine(120);
+        final lineAt100 = gridData.getDrawingHorizontalLine(100);
+        expect(lineAt80.dashArray, isNotNull);
+        expect(lineAt120.dashArray, isNotNull);
+        expect(lineAt100.dashArray, isNull);
+      },
+    );
 
     testWidgets('chart container has height 220', (tester) async {
       await tester.pumpWidget(
