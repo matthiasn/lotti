@@ -31,14 +31,14 @@ void main() {
       );
     }
 
-    testWidgets('shows an up-arrow percent for growth', (tester) async {
+    testWidgets('shows a signed-up percent for growth', (tester) async {
       await pump(tester, current: 118, previous: 100);
-      expect(find.text('↑18%'), findsOneWidget);
+      expect(find.text('+18%'), findsOneWidget);
     });
 
-    testWidgets('shows a down-arrow percent for a decline', (tester) async {
+    testWidgets('shows a signed-down percent for a decline', (tester) async {
       await pump(tester, current: 88, previous: 100);
-      expect(find.text('↓12%'), findsOneWidget);
+      expect(find.text('-12%'), findsOneWidget);
     });
 
     testWidgets('shows "new" when there is no previous time', (tester) async {

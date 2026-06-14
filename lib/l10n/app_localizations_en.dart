@@ -5088,7 +5088,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsPeriodQuarter => 'Quarter';
 
   @override
-  String get insightsPeriodToDateSuffix => 'to date';
+  String get insightsPeriodToDateSuffix => 'so far';
 
   @override
   String get insightsPeriodWeek => 'Week';
@@ -5097,13 +5097,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsPeriodYear => 'Year';
 
   @override
-  String get insightsRangeMonthToDate => 'Month to date';
+  String get insightsRangeMonthToDate => 'This month so far';
 
   @override
   String get insightsRangeMtd => 'MTD';
 
   @override
-  String get insightsRangeYearToDate => 'Year to date';
+  String get insightsRangeYearToDate => 'This year so far';
 
   @override
   String get insightsRangeYtd => 'YTD';
@@ -5115,7 +5115,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsTableCategory => 'CATEGORY';
 
   @override
-  String get insightsTableDelta => 'Δ%';
+  String get insightsTableCurrent => 'CURRENT';
+
+  @override
+  String get insightsTableDelta => 'Change';
 
   @override
   String get insightsTablePrevious => 'PREVIOUS';

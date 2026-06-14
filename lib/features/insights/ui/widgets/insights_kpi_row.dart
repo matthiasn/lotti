@@ -92,7 +92,7 @@ class InsightsKpiRow extends StatelessWidget {
               label: messages.insightsKpiTotal,
               seconds: kpis.totalSeconds,
               previousSeconds: previousKpis?.totalSeconds,
-              caption: topCaption,
+              headline: topCaption,
               muted: comparisonInProgress,
             ),
           ),
@@ -119,7 +119,7 @@ class InsightsKpiRow extends StatelessWidget {
               label: messages.insightsKpiTotal,
               seconds: kpis.totalSeconds,
               previousSeconds: previousKpis?.totalSeconds,
-              caption: topCaption,
+              headline: topCaption,
               muted: comparisonInProgress,
             ),
           ),
@@ -154,6 +154,7 @@ class _KpiTile extends StatelessWidget {
     required this.label,
     required this.seconds,
     this.previousSeconds,
+    this.headline,
     this.caption,
     this.onEdit,
     this.muted = false,
@@ -164,6 +165,11 @@ class _KpiTile extends StatelessWidget {
 
   /// Previous-period seconds for the delta chip; null hides comparison.
   final int? previousSeconds;
+
+  /// Load-bearing line under the figure — the "where it went" answer (e.g.
+  /// "Most on Client Work · 40%"). Rendered a tier above [caption] so the
+  /// insight, not the vanity total, carries the tile.
+  final String? headline;
 
   /// Quiet single-line annotation under the number (e.g. the focus
   /// category names).
@@ -223,6 +229,20 @@ class _KpiTile extends StatelessWidget {
               formatDurationWithDays(seconds),
               style: calmDisplayStyle(tokens),
             ),
+            if (headline != null && headline!.isNotEmpty) ...[
+              SizedBox(height: tokens.spacing.step2),
+              Text(
+                headline!,
+                // The answer to "where did my time go" — a full tier above the
+                // delta caption, in high-emphasis body so it reads as the
+                // tile's point.
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
             if (previousSeconds != null) ...[
               SizedBox(height: tokens.spacing.step2),
               Row(

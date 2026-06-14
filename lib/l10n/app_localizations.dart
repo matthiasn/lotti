@@ -8931,7 +8931,7 @@ abstract class AppLocalizations {
   /// No description provided for @insightsPeriodToDateSuffix.
   ///
   /// In en, this message translates to:
-  /// **'to date'**
+  /// **'so far'**
   String get insightsPeriodToDateSuffix;
 
   /// No description provided for @insightsPeriodWeek.
@@ -8949,7 +8949,7 @@ abstract class AppLocalizations {
   /// No description provided for @insightsRangeMonthToDate.
   ///
   /// In en, this message translates to:
-  /// **'Month to date'**
+  /// **'This month so far'**
   String get insightsRangeMonthToDate;
 
   /// No description provided for @insightsRangeMtd.
@@ -8961,7 +8961,7 @@ abstract class AppLocalizations {
   /// No description provided for @insightsRangeYearToDate.
   ///
   /// In en, this message translates to:
-  /// **'Year to date'**
+  /// **'This year so far'**
   String get insightsRangeYearToDate;
 
   /// No description provided for @insightsRangeYtd.
@@ -8982,10 +8982,16 @@ abstract class AppLocalizations {
   /// **'CATEGORY'**
   String get insightsTableCategory;
 
+  /// No description provided for @insightsTableCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'CURRENT'**
+  String get insightsTableCurrent;
+
   /// No description provided for @insightsTableDelta.
   ///
   /// In en, this message translates to:
-  /// **'Δ%'**
+  /// **'Change'**
   String get insightsTableDelta;
 
   /// No description provided for @insightsTablePrevious.

@@ -5159,13 +5159,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsPeriodYear => 'Rok';
 
   @override
-  String get insightsRangeMonthToDate => 'Od začátku měsíce';
+  String get insightsRangeMonthToDate => 'Tento měsíc zatím';
 
   @override
   String get insightsRangeMtd => 'MTD';
 
   @override
-  String get insightsRangeYearToDate => 'Od začátku roku';
+  String get insightsRangeYearToDate => 'Tento rok zatím';
 
   @override
   String get insightsRangeYtd => 'YTD';
@@ -5177,7 +5177,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsTableCategory => 'KATEGORIE';
 
   @override
-  String get insightsTableDelta => 'Δ%';
+  String get insightsTableCurrent => 'AKTUÁLNÍ';
+
+  @override
+  String get insightsTableDelta => 'Změna';
 
   @override
   String get insightsTablePrevious => 'PŘEDCHOZÍ';

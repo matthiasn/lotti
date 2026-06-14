@@ -63,7 +63,12 @@ class InsightsPillButton extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(tokens.radii.s),
-              border: Border.all(color: borderColor),
+              // A heavier active border adds a non-color "this is on" cue that
+              // survives for low-vision users and on a static screenshot.
+              border: Border.all(
+                color: borderColor,
+                width: active ? 1.5 : 1.0,
+              ),
             ),
             child: Padding(
               padding: EdgeInsets.symmetric(

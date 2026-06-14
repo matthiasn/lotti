@@ -162,9 +162,9 @@ void main() {
           .active;
       expect(pillActive('MTD'), isTrue);
       expect(pillActive('YTD'), isFalse);
-      // The partial period keeps the month name with a "(to date)" qualifier,
+      // The partial period keeps the month name with a "(so far)" qualifier,
       // so it agrees with the granularity dropdown — never a bare "June 2026".
-      expect(find.text('June 2026 (to date)'), findsOneWidget);
+      expect(find.text('June 2026 (so far)'), findsOneWidget);
       expect(find.text('June 2026'), findsNothing);
     },
   );
@@ -185,7 +185,7 @@ void main() {
             .active,
         isTrue,
       );
-      expect(find.text('2026 (to date)'), findsOneWidget);
+      expect(find.text('2026 (so far)'), findsOneWidget);
     },
   );
 

@@ -11,7 +11,7 @@ int? insightsDeltaPercent(int current, int previous) {
 }
 
 /// Current-vs-previous change indicator: the percent change with a leading
-/// arrow so direction is never carried by color alone (color-blind- and
+/// +/- sign so direction is never carried by color alone (color-blind- and
 /// low-vision-safe) — muted green up, muted clay down (semantic
 /// success/error tokens, the latter chosen so it never reads as the gold/amber
 /// category hue). Renders nothing when both values are zero.
@@ -53,16 +53,18 @@ class InsightsDeltaChip extends StatelessWidget {
       text = messages.insightsDeltaNew;
       color = neutral;
     } else if (pct > 0) {
-      text = '↑$pct%';
+      text = '+$pct%';
       color = up;
     } else if (pct < 0) {
-      text = '↓${pct.abs()}%';
+      text = '$pct%'; // already carries the minus sign
       color = down;
     } else {
       text = '0%';
       color = neutral;
     }
 
+    // Body-size mono (tabular figures): a leading +/- sign carries direction in
+    // text — readable when the colour is muted, and never reliant on hue alone.
     return Text(
       text,
       maxLines: 1,
@@ -70,7 +72,7 @@ class InsightsDeltaChip extends StatelessWidget {
       style: monoMetaStyle(
         tokens,
         tokens.colors,
-        base: tokens.typography.styles.others.caption,
+        base: tokens.typography.styles.body.bodySmall,
         color: color,
       ),
     );

@@ -201,11 +201,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 600));
     });
 
-    // 2h30m this week vs 1h last week = ↑150%, surfaced in the KPI tile and the
+    // 2h30m this week vs 1h last week = +150%, surfaced in the KPI tile and the
     // table's Δ% / PREVIOUS columns. The comparison is numeric only — there is
     // no second chart series.
     expect(find.text('PREVIOUS'), findsOneWidget);
-    expect(find.text('↑150%'), findsWidgets);
+    expect(find.text('+150%'), findsWidgets);
     expect(find.text('vs 1h'), findsOneWidget);
   });
 }

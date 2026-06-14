@@ -89,7 +89,9 @@ class InsightsPeriodStepper extends StatelessWidget {
           ),
         ],
         if (onToggleCompare != null) ...[
-          SizedBox(width: tokens.spacing.step3),
+          // A wider gap sets Compare apart: the stepper + MTD/YTD navigate the
+          // period; Compare is an independent mode toggle.
+          SizedBox(width: tokens.spacing.step6),
           InsightsPillButton(
             label: messages.insightsCompare,
             icon: Icons.compare_arrows_rounded,

@@ -131,7 +131,11 @@ class InsightsTable extends StatelessWidget {
                 style: headerStyle,
               ),
               total: Text(
-                messages.insightsTableTotal,
+                // In compare the column is the current period (CURRENT), not
+                // the all-of-range TOTAL — keep the label's meaning stable.
+                compare
+                    ? messages.insightsTableCurrent
+                    : messages.insightsTableTotal,
                 style: headerStyle,
                 textAlign: TextAlign.right,
               ),
@@ -293,13 +297,15 @@ class _TableRowLayout extends StatelessWidget {
         children: [
           Expanded(child: category),
           if (showTotal) SizedBox(width: numberColumnWidth, child: total),
-          if (showDelta) ...[
-            SizedBox(width: tokens.spacing.step4),
-            SizedBox(width: numberColumnWidth, child: delta),
-          ],
+          // Baseline before the verdict: Current → Previous → Change reads
+          // left-to-right like the KPI's "X vs Y".
           if (showPrevious) ...[
             SizedBox(width: tokens.spacing.step4),
             SizedBox(width: numberColumnWidth, child: previous),
+          ],
+          if (showDelta) ...[
+            SizedBox(width: tokens.spacing.step4),
+            SizedBox(width: numberColumnWidth, child: delta),
           ],
           if (showShare) ...[
             SizedBox(width: tokens.spacing.step4),

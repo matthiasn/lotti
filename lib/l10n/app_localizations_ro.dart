@@ -5203,13 +5203,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get insightsPeriodYear => 'An';
 
   @override
-  String get insightsRangeMonthToDate => 'De la începutul lunii';
+  String get insightsRangeMonthToDate => 'Luna aceasta până acum';
 
   @override
   String get insightsRangeMtd => 'MTD';
 
   @override
-  String get insightsRangeYearToDate => 'De la începutul anului';
+  String get insightsRangeYearToDate => 'Anul acesta până acum';
 
   @override
   String get insightsRangeYtd => 'YTD';
@@ -5221,7 +5221,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get insightsTableCategory => 'CATEGORIE';
 
   @override
-  String get insightsTableDelta => 'Δ%';
+  String get insightsTableCurrent => 'CURENT';
+
+  @override
+  String get insightsTableDelta => 'Modificare';
 
   @override
   String get insightsTablePrevious => 'ANTERIOR';
