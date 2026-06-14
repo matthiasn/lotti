@@ -28,6 +28,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import 'screenshot_fonts.dart';
 
 const ValueKey<String> _boundaryKey = ValueKey<String>('list-screenshot');
 
@@ -54,7 +55,10 @@ Future<void> _capture(WidgetTester tester, String name) async {
   });
 }
 
-Future<void> _pump(WidgetTester tester, {required Brightness brightness}) async {
+Future<void> _pump(
+  WidgetTester tester, {
+  required Brightness brightness,
+}) async {
   tester.view
     ..physicalSize = const Size(900, 1400)
     ..devicePixelRatio = 2;
@@ -96,6 +100,7 @@ void main() {
   }
 
   setUpAll(registerAllFallbackValues);
+  setUpAll(loadScreenshotFonts);
 
   late MockJournalDb mockJournalDb;
 
@@ -115,7 +120,9 @@ void main() {
     ).thenReturn(ValueNotifier<String?>(null));
 
     final mockCache = MockEntitiesCacheService();
-    when(() => mockCache.getCategoryById(any())).thenReturn(categoryMindfulness);
+    when(
+      () => mockCache.getCategoryById(any()),
+    ).thenReturn(categoryMindfulness);
 
     await setUpTestGetIt(
       additionalSetup: () {

@@ -30,6 +30,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
+import 'screenshot_fonts.dart';
 
 const ValueKey<String> _boundaryKey = ValueKey<String>('surfaces-screenshot');
 final DateTime _now = DateTime(2026, 3, 31, 12);
@@ -47,9 +48,12 @@ List<HabitResult> _results() {
   return [
     for (var i = 0; i < 30; i++)
       HabitResult(
-        dayString: _rangeStart.add(Duration(days: i)).toIso8601String().split(
-          'T',
-        )[0],
+        dayString: _rangeStart
+            .add(Duration(days: i))
+            .toIso8601String()
+            .split(
+              'T',
+            )[0],
         completionType: cycle[i % cycle.length],
       ),
   ];
@@ -78,7 +82,10 @@ Future<void> _capture(WidgetTester tester, String name) async {
   });
 }
 
-Future<void> _pump(WidgetTester tester, {required Brightness brightness}) async {
+Future<void> _pump(
+  WidgetTester tester, {
+  required Brightness brightness,
+}) async {
   tester.view
     ..physicalSize = const Size(800, 700)
     ..devicePixelRatio = 2;
@@ -152,11 +159,14 @@ void main() {
   }
 
   setUpAll(registerAllFallbackValues);
+  setUpAll(loadScreenshotFonts);
 
   setUp(() async {
     final mockCache = MockEntitiesCacheService();
     when(() => mockCache.getHabitById(any())).thenReturn(habitFlossing);
-    when(() => mockCache.getCategoryById(any())).thenReturn(categoryMindfulness);
+    when(
+      () => mockCache.getCategoryById(any()),
+    ).thenReturn(categoryMindfulness);
     await setUpTestGetIt(
       additionalSetup: () {
         getIt.registerSingleton<EntitiesCacheService>(mockCache);

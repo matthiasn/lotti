@@ -19,7 +19,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -43,6 +42,7 @@ import 'package:path/path.dart' as p;
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+import 'screenshot_fonts.dart';
 
 const Size _desktopSize = Size(1280, 2400);
 const ValueKey<String> _boundaryKey = ValueKey<String>('dashboard-screenshot');
@@ -359,41 +359,7 @@ void main() {
     return;
   }
 
-  setUpAll(() async {
-    TestWidgetsFlutterBinding.ensureInitialized();
-    Future<ByteData> fontBytes(String path) async {
-      final bytes = await File(path).readAsBytes();
-      return ByteData.view(bytes.buffer);
-    }
-
-    final inter = FontLoader('Inter')
-      ..addFont(
-        fontBytes('assets/fonts/Inter/Inter-VariableFont_opsz,wght.ttf'),
-      );
-    final inconsolata = FontLoader('Inconsolata')
-      ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Regular.ttf'))
-      ..addFont(fontBytes('assets/fonts/Inconsolata/Inconsolata-Medium.ttf'));
-    await inter.load();
-    await inconsolata.load();
-
-    final flutterRoot =
-        Platform.environment['FLUTTER_ROOT'] ?? '.fvm/flutter_sdk';
-    final iconFont = File(
-      p.join(
-        flutterRoot,
-        'bin',
-        'cache',
-        'artifacts',
-        'material_fonts',
-        'MaterialIcons-Regular.otf',
-      ),
-    );
-    if (iconFont.existsSync()) {
-      final icons = FontLoader('MaterialIcons')
-        ..addFont(fontBytes(iconFont.path));
-      await icons.load();
-    }
-  });
+  setUpAll(loadScreenshotFonts);
 
   setUp(() async {
     await setUpTestGetIt(
