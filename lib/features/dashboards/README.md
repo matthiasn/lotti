@@ -240,11 +240,19 @@ In concrete terms:
 The chart widgets are not all built from one abstract chart super-engine, and
 that is fine.
 
-- the bar, line, multiline, and blood-pressure charts share one bottom date axis
-  cadence via `shouldShowDateLabel(rangeInDays, day)` in
-  `ui/widgets/charts/time_series/utils.dart` (the 1st always shows; the 15th
-  below 92 days; the 8th and 22nd below 30 days). Every bottom `SideTitleWidget`
-  uses `fitInside` so the leading/trailing labels never clip the plot edge.
+- the bar, line, multiline, and blood-pressure charts no longer draw their own
+  fl_chart bottom date labels. Instead each chart's `bottomTitles` is an empty
+  `AxisTitles()`, and the chart card renders one shared `DashboardChartDateAxis`
+  row (in `ui/widgets/charts/time_series/utils.dart`) directly under the plot via
+  `DashboardChart.dateAxis`. That row prints four evenly-spaced labels (start,
+  +1/3, +2/3, end) aligned with the linear time axis and left-padded by
+  `kChartLeftAxisWidth` so they line up under the plot, not the y-axis gutter.
+  This was done because fl_chart's bar charts clipped/dropped the leading date
+  label at narrow widths (the ~480px desktop detail pane) while line charts kept
+  it, so adjacent cards disagreed on their start date. Rendering the labels
+  ourselves makes every bar and line card show identical, aligned dates at all
+  widths. The date axis is only rendered when the chart is shown — never in the
+  loading or empty states.
 - measurement charts resolve aggregation from either the dashboard item or the
   measurable type definition. The card caption is a single phrase: the
   measurable description when present, otherwise the humanized aggregation

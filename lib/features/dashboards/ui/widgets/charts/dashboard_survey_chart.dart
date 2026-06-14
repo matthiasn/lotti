@@ -8,6 +8,7 @@ import 'package:lotti/features/dashboards/state/survey_chart_controller.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/surveys/tools/run_surveys.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -79,6 +80,10 @@ class DashboardSurveyChart extends ConsumerWidget {
         lineBarsData: lineBarsData,
         minVal: minVal,
         maxVal: maxVal,
+      ),
+      dateAxis: DashboardChartDateAxis(
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
       ),
       chartHeader: DashboardChartHeader(
         title: chartConfig.surveyName,

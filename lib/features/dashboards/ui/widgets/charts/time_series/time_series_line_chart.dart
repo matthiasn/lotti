@@ -27,7 +27,6 @@ class TimeSeriesLineChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final rangeInDays = rangeEnd.difference(rangeStart).inDays;
 
     final spots = data
         .map(
@@ -42,18 +41,6 @@ class TimeSeriesLineChart extends StatelessWidget {
     final minY = spotValues.isNotEmpty ? spotValues.reduce(min).floor() : 0;
     final maxY = spotValues.isNotEmpty ? spotValues.reduce(max).ceil() : 1;
     final axis = niceAxis(minY, maxY);
-
-    Widget bottomTitleWidgets(double value, TitleMeta meta) {
-      final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-      if (shouldShowDateLabel(rangeInDays, ymd.day)) {
-        return SideTitleWidget(
-          meta: meta,
-          fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
-          child: ChartLabel(chartDateFormatterMmDd(value)),
-        );
-      }
-      return const SizedBox.shrink();
-    }
 
     return Padding(
       padding: EdgeInsets.only(
@@ -108,19 +95,12 @@ class TimeSeriesLineChart extends StatelessWidget {
           titlesData: FlTitlesData(
             rightTitles: const AxisTitles(),
             topTitles: const AxisTitles(),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                interval: Duration.millisecondsPerDay.toDouble(),
-                getTitlesWidget: bottomTitleWidgets,
-              ),
-            ),
+            bottomTitles: const AxisTitles(),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: leftTitleWidgets,
-                reservedSize: 52,
+                reservedSize: kChartLeftAxisWidth,
                 // Suppress the bottom tick (it overlaps the date axis) but keep
                 // the default top tick so the value scale's ceiling is labelled.
                 interval: axis.interval,

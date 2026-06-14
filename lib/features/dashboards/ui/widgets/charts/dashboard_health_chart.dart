@@ -10,6 +10,7 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bmi
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_bp_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_line_chart.dart';
+import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -94,6 +95,10 @@ class DashboardHealthChart extends ConsumerWidget {
               rangeEnd: rangeEnd,
               unit: healthType?.unit ?? '',
             ),
+      dateAxis: DashboardChartDateAxis(
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      ),
       chartHeader: HealthChartInfoWidget(chartConfig),
       isLoading: dataAsync.isLoading && !dataAsync.hasValue,
       isEmpty: data.isEmpty,

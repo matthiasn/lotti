@@ -22,6 +22,7 @@ class DashboardChart extends StatelessWidget {
     required this.chart,
     required this.chartHeader,
     required this.height,
+    this.dateAxis,
     this.footer,
     this.overlay,
     this.isLoading = false,
@@ -32,6 +33,13 @@ class DashboardChart extends StatelessWidget {
 
   final Widget chart;
   final Widget chartHeader;
+
+  /// Optional shared date-axis row rendered directly under the chart area (a
+  /// `DashboardChartDateAxis`). Replaces fl_chart's per-chart bottom date labels
+  /// so every bar and line card shows identical, aligned dates at all widths.
+  /// Only rendered when the chart itself is shown (never in the loading or
+  /// empty states).
+  final Widget? dateAxis;
 
   /// Optional content rendered below the chart area (e.g. a series legend).
   final Widget? footer;
@@ -98,6 +106,10 @@ class DashboardChart extends StatelessWidget {
             chartHeader,
             SizedBox(height: tokens.spacing.step3),
             SizedBox(height: height, child: chartArea),
+            if (dateAxis != null && !isLoading && !isEmpty) ...[
+              SizedBox(height: tokens.spacing.step2),
+              dateAxis!,
+            ],
             if (footer != null) ...[
               SizedBox(height: tokens.spacing.step3),
               footer!,

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 import '../../../../../../widget_test_utils.dart';
 
@@ -127,6 +128,75 @@ void main() {
       expect(
         text.style?.fontSize,
         tokens.typography.styles.body.bodySmall.fontSize,
+      );
+    });
+  });
+
+  group('DashboardChartDateAxis', () {
+    final rangeStart = DateTime(2024, 3);
+    final rangeEnd = DateTime(2024, 3, 31);
+
+    testWidgets(
+      'renders four evenly-spaced labels with the range bounds at the ends',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Scaffold(
+              body: DashboardChartDateAxis(
+                rangeStart: rangeStart,
+                rangeEnd: rangeEnd,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final labels = tester.widgetList<ChartLabel>(find.byType(ChartLabel));
+        // Four ticks: start, +1/3, +2/3, end — aligned with the linear axis.
+        expect(labels, hasLength(4));
+
+        final texts = labels.map((l) => l.text).toList();
+        // First label is the formatted rangeStart, last is the rangeEnd —
+        // both bar and line cards now agree on the start/end date at the ends.
+        expect(
+          texts.first,
+          chartDateFormatterMmDd(rangeStart.millisecondsSinceEpoch),
+        );
+        expect(
+          texts.last,
+          chartDateFormatterMmDd(rangeEnd.millisecondsSinceEpoch),
+        );
+      },
+    );
+
+    testWidgets('left-pads by the shared value-axis gutter width', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: DashboardChartDateAxis(
+              rangeStart: rangeStart,
+              rangeEnd: rangeEnd,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final padding = tester.widget<Padding>(
+        find
+            .descendant(
+              of: find.byType(DashboardChartDateAxis),
+              matching: find.byType(Padding),
+            )
+            .first,
+      );
+      // The gutter pad lines the labels up under the plot, not under the
+      // y-axis numbers, so they match the chart's reserved left-titles width.
+      expect(
+        (padding.padding as EdgeInsets).left,
+        kChartLeftAxisWidth,
       );
     });
   });

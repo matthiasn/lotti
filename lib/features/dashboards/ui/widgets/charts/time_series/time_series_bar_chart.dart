@@ -80,21 +80,6 @@ class TimeSeriesBarChart extends StatelessWidget {
         })
         .toList();
 
-    Widget bottomTitleWidgets(
-      double value,
-      TitleMeta meta,
-    ) {
-      final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-      if (shouldShowDateLabel(rangeInDays, ymd.day)) {
-        return SideTitleWidget(
-          meta: meta,
-          fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
-          child: ChartLabel(chartDateFormatterMmDd(value)),
-        );
-      }
-      return const SizedBox.shrink();
-    }
-
     return Padding(
       padding: EdgeInsets.only(
         top: tokens.spacing.step5,
@@ -136,19 +121,12 @@ class TimeSeriesBarChart extends StatelessWidget {
           titlesData: FlTitlesData(
             rightTitles: const AxisTitles(),
             topTitles: const AxisTitles(),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                interval: Duration.millisecondsPerDay.toDouble(),
-                getTitlesWidget: bottomTitleWidgets,
-              ),
-            ),
+            bottomTitles: const AxisTitles(),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 getTitlesWidget: leftTitleWidgets,
-                reservedSize: 52,
+                reservedSize: kChartLeftAxisWidth,
                 interval: axis.interval,
                 // Suppress the bottom tick (it overlaps the date axis) but keep
                 // the default top tick so the value scale's ceiling is labelled.

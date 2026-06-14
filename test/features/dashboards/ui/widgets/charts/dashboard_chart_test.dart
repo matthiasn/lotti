@@ -102,6 +102,64 @@ void main() {
         findsNothing,
       );
     });
+
+    testWidgets('renders the date axis under the chart when provided', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const DashboardChart(
+            chart: Text('Chart'),
+            chartHeader: Text('Header'),
+            height: 200,
+            dateAxis: Text('Date Axis'),
+          ),
+        ),
+      );
+
+      expect(find.text('Date Axis'), findsOneWidget);
+    });
+
+    testWidgets('hides the date axis while loading (chart not shown)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const DashboardChart(
+            chart: Text('Chart'),
+            chartHeader: Text('Header'),
+            height: 200,
+            isLoading: true,
+            dateAxis: Text('Date Axis'),
+          ),
+        ),
+      );
+
+      // The chart itself is replaced by the progress affordance, so the date
+      // axis must not render either.
+      expect(find.text('Chart'), findsNothing);
+      expect(find.text('Date Axis'), findsNothing);
+    });
+
+    testWidgets('hides the date axis when empty (no data in range)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const DashboardChart(
+            chart: Text('Chart'),
+            chartHeader: Text('Header'),
+            height: 200,
+            isEmpty: true,
+            emptyMessage: 'No data',
+            dateAxis: Text('Date Axis'),
+          ),
+        ),
+      );
+
+      expect(find.text('No data'), findsOneWidget);
+      expect(find.text('Date Axis'), findsNothing);
+    });
   });
 
   group('DashboardChartHeader', () {

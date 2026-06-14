@@ -31,20 +31,6 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
     final tokens = context.designTokens;
     final axis = niceAxis(minVal, maxVal);
 
-    final rangeInDays = rangeEnd.difference(rangeStart).inDays;
-
-    Widget bottomTitleWidgets(double value, TitleMeta meta) {
-      final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-      if (shouldShowDateLabel(rangeInDays, ymd.day)) {
-        return SideTitleWidget(
-          meta: meta,
-          fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
-          child: ChartLabel(chartDateFormatterMmDd(value)),
-        );
-      }
-      return const SizedBox.shrink();
-    }
-
     return Padding(
       padding: EdgeInsets.only(
         top: tokens.spacing.step5,
@@ -93,20 +79,13 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
           titlesData: FlTitlesData(
             rightTitles: const AxisTitles(),
             topTitles: const AxisTitles(),
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                reservedSize: 30,
-                interval: Duration.millisecondsPerDay.toDouble(),
-                getTitlesWidget: bottomTitleWidgets,
-              ),
-            ),
+            bottomTitles: const AxisTitles(),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 interval: axis.interval,
                 getTitlesWidget: leftTitleWidgets,
-                reservedSize: 52,
+                reservedSize: kChartLeftAxisWidth,
                 minIncluded: false,
                 maxIncluded: false,
               ),

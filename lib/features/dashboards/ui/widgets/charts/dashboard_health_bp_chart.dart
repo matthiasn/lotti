@@ -48,20 +48,6 @@ class DashboardHealthBpChart extends ConsumerWidget {
         (systolicAsync.isLoading && !systolicAsync.hasValue) ||
         (diastolicAsync.isLoading && !diastolicAsync.hasValue);
 
-    final rangeInDays = rangeEnd.difference(rangeStart).inDays;
-
-    Widget bottomTitleWidgets(double value, TitleMeta meta) {
-      final ymd = DateTime.fromMillisecondsSinceEpoch(value.toInt());
-      if (shouldShowDateLabel(rangeInDays, ymd.day)) {
-        return SideTitleWidget(
-          meta: meta,
-          fitInside: SideTitleFitInsideData.fromTitleMeta(meta),
-          child: ChartLabel(chartDateFormatterMmDd(value)),
-        );
-      }
-      return const SizedBox.shrink();
-    }
-
     return DashboardChart(
       chart: Padding(
         padding: EdgeInsets.only(
@@ -122,23 +108,16 @@ class DashboardHealthBpChart extends ConsumerWidget {
                 },
               ),
             ),
-            titlesData: FlTitlesData(
-              rightTitles: const AxisTitles(),
-              topTitles: const AxisTitles(),
-              bottomTitles: AxisTitles(
-                sideTitles: SideTitles(
-                  showTitles: true,
-                  reservedSize: 30,
-                  interval: Duration.millisecondsPerDay.toDouble(),
-                  getTitlesWidget: bottomTitleWidgets,
-                ),
-              ),
-              leftTitles: const AxisTitles(
+            titlesData: const FlTitlesData(
+              rightTitles: AxisTitles(),
+              topTitles: AxisTitles(),
+              bottomTitles: AxisTitles(),
+              leftTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
                   interval: 20,
                   getTitlesWidget: leftTitleWidgets,
-                  reservedSize: 52,
+                  reservedSize: kChartLeftAxisWidth,
                   minIncluded: false,
                   maxIncluded: false,
                 ),
@@ -187,6 +166,10 @@ class DashboardHealthBpChart extends ConsumerWidget {
           ),
           duration: Duration.zero,
         ),
+      ),
+      dateAxis: DashboardChartDateAxis(
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
       ),
       chartHeader: const BpChartInfoWidget(),
       isLoading: isLoading,

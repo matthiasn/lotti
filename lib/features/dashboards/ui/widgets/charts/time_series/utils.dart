@@ -8,17 +8,52 @@ import 'package:lotti/widgets/charts/utils.dart';
 
 typedef ColorByValue = Color Function(Observation);
 
-/// Whether the bottom date axis should render a label for [day] of the month,
-/// given the visible [rangeInDays].
+/// Width of the value (left) axis gutter reserved inside every time-series
+/// chart. The shared [DashboardChartDateAxis] left-pads by exactly this much so
+/// its labels line up under the plot, not under the y-axis numbers.
+const double kChartLeftAxisWidth = 52;
+
+/// Shared, controlled date-axis row rendered *below* a time-series chart.
 ///
-/// Labels thin out as the range widens so they never crowd: the 1st is always
-/// shown; the 15th joins it below 92 days; the 8th and 22nd fill in below 30
-/// days. Shared by the bar/line/multiline/blood-pressure charts so every
-/// dashboard chart's date axis ticks at the same cadence.
-bool shouldShowDateLabel(int rangeInDays, int day) =>
-    day == 1 ||
-    (rangeInDays < 92 && day == 15) ||
-    (rangeInDays < 30 && (day == 8 || day == 22));
+/// fl_chart's per-chart bottom axis clipped/dropped the leading date label on
+/// bar charts at narrow widths (the ~480px desktop detail pane) while line
+/// charts kept it, so adjacent cards disagreed on their start date. We render
+/// the date labels ourselves instead: four evenly-spaced ticks (start, +1/3,
+/// +2/3, end) that align with the charts' linear time axis, left-padded by
+/// [kChartLeftAxisWidth] so they sit under the plot. Every bar and line card
+/// now shows identical, aligned dates at all widths.
+class DashboardChartDateAxis extends StatelessWidget {
+  const DashboardChartDateAxis({
+    required this.rangeStart,
+    required this.rangeEnd,
+    super.key,
+  });
+
+  final DateTime rangeStart;
+  final DateTime rangeEnd;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final startMs = rangeStart.millisecondsSinceEpoch;
+    final endMs = rangeEnd.millisecondsSinceEpoch;
+    const count = 4; // start, +1/3, +2/3, end — aligns with the linear axis.
+    final labels = [
+      for (var i = 0; i < count; i++)
+        chartDateFormatterMmDd(startMs + (endMs - startMs) * i / (count - 1)),
+    ];
+    return Padding(
+      padding: EdgeInsets.only(
+        left: kChartLeftAxisWidth,
+        right: tokens.spacing.step2,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [for (final l in labels) ChartLabel(l)],
+      ),
+    );
+  }
+}
 
 /// Axis label used for both the value (left) and date (bottom) axes.
 ///
