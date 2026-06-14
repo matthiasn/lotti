@@ -7,12 +7,12 @@ import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -98,10 +98,20 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
         }.contains(results.last.completionType);
 
     final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
+    final tokens = context.designTokens;
+    final titleStyle = tokens.typography.styles.subtitle.subtitle1.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
 
     return Opacity(
       opacity: completedToday ? 0.75 : 1,
-      child: Card(
+      child: Material(
+        color: tokens.colors.background.level02,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+          side: BorderSide(color: tokens.colors.decorative.level01),
+        ),
         child: ListTile(
           contentPadding: const EdgeInsets.only(
             left: 10,
@@ -125,13 +135,12 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
                     child: Text(
                       habitDefinition.name,
                       style: completedToday
-                          ? habitTitleStyle.copyWith(
+                          ? titleStyle.copyWith(
                               decoration: TextDecoration.lineThrough,
-                              decorationColor:
-                                  context.textTheme.titleLarge?.color,
+                              decorationColor: tokens.colors.text.highEmphasis,
                               decorationThickness: 2,
                             )
-                          : habitTitleStyle,
+                          : titleStyle,
                       overflow: TextOverflow.fade,
                       softWrap: false,
                     ),
@@ -203,7 +212,7 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
             onPressed: onTapAdd,
             icon: Icon(
               Icons.check_circle_outline,
-              color: oldPrimaryColor,
+              color: tokens.colors.interactive.enabled,
               size: 30,
               semanticLabel: 'Complete ${habitDefinition.name}',
             ),
