@@ -47,8 +47,10 @@ import 'screenshot_fonts.dart';
 const Size _desktopSize = Size(1280, 2400);
 const ValueKey<String> _boundaryKey = ValueKey<String>('dashboard-screenshot');
 
+// ~90 days of daily data so the bar charts are dense — the case where the old
+// screen-width-based bar sizing overflowed the card on a narrow pane.
 final DateTime _rangeStart = DateTime(2026, 3);
-final DateTime _rangeEnd = DateTime(2026, 3, 31);
+final DateTime _rangeEnd = DateTime(2026, 5, 31);
 
 const _measureBarId = 'screenshot-water';
 const _measureLineId = 'screenshot-mood';
