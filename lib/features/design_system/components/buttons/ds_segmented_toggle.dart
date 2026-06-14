@@ -78,33 +78,50 @@ class _DsSegmentItem extends StatelessWidget {
       color: tokens.colors.text.mediumEmphasis,
       fontWeight: FontWeight.w500,
     );
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step4,
-          vertical: tokens.spacing.step2,
-        ),
-        decoration: BoxDecoration(
-          color: isSelected ? teal.withValues(alpha: 0.18) : Colors.transparent,
+    // Material + InkWell + Semantics (the codebase's button pattern) so each
+    // segment is Tab-focusable, Enter/Space-activatable, and announced as a
+    // selected/unselected button — GestureDetector alone gave none of that.
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      child: Material(
+        type: MaterialType.transparency,
+        child: InkWell(
+          onTap: onTap,
           borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-        ),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            // Invisible ghost at the selected weight reserves the width so the
-            // control's size never changes with the selection (a bold label is
-            // wider) — callers can measure it and the row won't jump on tap.
-            Opacity(
-              opacity: 0,
-              child: Text(label, style: selectedStyle),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 120),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step2,
             ),
-            Text(
-              label,
-              style: isSelected ? selectedStyle : unselectedStyle,
+            decoration: BoxDecoration(
+              color: isSelected
+                  ? teal.withValues(alpha: 0.18)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
             ),
-          ],
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                // Invisible ghost at the selected weight reserves the width so
+                // the control's size never changes with the selection (a bold
+                // label is wider) — callers can measure it and the row won't
+                // jump on tap. Hidden from semantics so the label isn't read
+                // twice.
+                ExcludeSemantics(
+                  child: Opacity(
+                    opacity: 0,
+                    child: Text(label, style: selectedStyle),
+                  ),
+                ),
+                Text(
+                  label,
+                  style: isSelected ? selectedStyle : unselectedStyle,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

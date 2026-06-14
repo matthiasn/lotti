@@ -1825,7 +1825,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get aiRunningActivityOpenProgress =>
-      'Afficher la progression de l\'AI';
+      'Afficher la progression de l\'IA';
 
   @override
   String get aiSettingsAddedLabel => 'Ajouté';
@@ -4888,7 +4888,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitShowAlertAtLabel => 'Afficher l\'alerte à';
 
   @override
-  String get habitShowFromLabel => 'Afficher de';
+  String get habitShowFromLabel => 'Afficher à partir de';
 
   @override
   String get habitsOpenHeader => 'Dues maintenant';

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -64,6 +65,67 @@ void main() {
       expect(selected.style?.fontWeight, FontWeight.w600);
       expect(unselected.style?.color, tokens.colors.text.mediumEmphasis);
       expect(unselected.style?.fontWeight, FontWeight.w500);
+    });
+
+    testWidgets('each segment is announced as a selected/unselected button', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _wrap(
+          DsSegmentedToggle<_Mode>(
+            selected: _Mode.first,
+            onChanged: (_) {},
+            segments: const [
+              DsSegment(_Mode.first, 'Per day'),
+              DsSegment(_Mode.second, 'Running total'),
+            ],
+          ),
+        ),
+      );
+
+      // isSemantics (non-exhaustive) so InkWell's tap/focus actions
+      // don't fail the match — we only assert the button role + selected state.
+      expect(
+        tester.getSemantics(_visible('Per day')),
+        isSemantics(isButton: true, isSelected: true, label: 'Per day'),
+      );
+      expect(
+        tester.getSemantics(_visible('Running total')),
+        isSemantics(
+          isButton: true,
+          hasSelectedState: true,
+          label: 'Running total',
+        ),
+      );
+      handle.dispose();
+    });
+
+    testWidgets('is keyboard operable — Tab to a segment, Enter activates it', (
+      tester,
+    ) async {
+      _Mode? received;
+      await tester.pumpWidget(
+        _wrap(
+          DsSegmentedToggle<_Mode>(
+            selected: _Mode.first,
+            onChanged: (v) => received = v,
+            segments: const [
+              DsSegment(_Mode.first, 'Per day'),
+              DsSegment(_Mode.second, 'Running total'),
+            ],
+          ),
+        ),
+      );
+
+      // Tab into the first segment, then the second, and activate with Enter.
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(received, _Mode.second);
     });
 
     testWidgets('tapping a segment reports its value', (tester) async {
