@@ -76,6 +76,17 @@ void main() {
     expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
   });
 
+  testWidgets('rows drop the active-path rail (no dead left gutter)', (
+    tester,
+  ) async {
+    await pump(tester, onNodeTap: (_) {});
+    final rows = tester.widgetList<SettingsTreeRow>(
+      find.byType(SettingsTreeRow),
+    );
+    expect(rows, isNotEmpty);
+    expect(rows.every((r) => r.showActiveRail == false), isTrue);
+  });
+
   testWidgets('passes showBack through to the shell', (tester) async {
     await pump(tester, onNodeTap: (_) {}, showBack: true);
     final shell = tester.widget<SettingsMobileShell>(

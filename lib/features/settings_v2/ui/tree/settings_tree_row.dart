@@ -19,6 +19,7 @@ class SettingsTreeRow extends StatelessWidget {
     required this.onTap,
     this.showLeafChevron = false,
     this.descMaxLines = 1,
+    this.showActiveRail = true,
     super.key,
   });
 
@@ -49,6 +50,14 @@ class SettingsTreeRow extends StatelessWidget {
   /// wrap instead of clipping mid-word — the row grows to fit because
   /// its height is a *minimum*, not a fixed value (see [build]).
   final int descMaxLines;
+
+  /// Whether to reserve the leading active-path rail. Desktop keeps it so
+  /// the row content doesn't shift horizontally when a row becomes
+  /// selected. The mobile drill-down has no persistent selection
+  /// ([onActivePath] is always false there), so it passes `false` to drop
+  /// the permanently-invisible spacer and its margin — otherwise the rail
+  /// adds dead inset on the left.
+  final bool showActiveRail;
 
   @override
   Widget build(BuildContext context) {
@@ -98,19 +107,21 @@ class SettingsTreeRow extends StatelessWidget {
               children: [
                 // Teal rail on the left when on path; transparent
                 // placeholder otherwise so the row content doesn't
-                // shift horizontally between states.
-                AnimatedContainer(
-                  duration: SettingsV2Constants.railTransition,
-                  width: SettingsV2Constants.activeRailWidth,
-                  height: SettingsV2Constants.activeRailHeight,
-                  margin: EdgeInsets.only(right: tokens.spacing.step3),
-                  decoration: BoxDecoration(
-                    color: onActivePath ? accent : Colors.transparent,
-                    borderRadius: BorderRadius.circular(
-                      SettingsV2Constants.activeRailCornerRadius,
+                // shift horizontally between states. Omitted entirely on
+                // surfaces with no persistent selection (mobile).
+                if (showActiveRail)
+                  AnimatedContainer(
+                    duration: SettingsV2Constants.railTransition,
+                    width: SettingsV2Constants.activeRailWidth,
+                    height: SettingsV2Constants.activeRailHeight,
+                    margin: EdgeInsets.only(right: tokens.spacing.step3),
+                    decoration: BoxDecoration(
+                      color: onActivePath ? accent : Colors.transparent,
+                      borderRadius: BorderRadius.circular(
+                        SettingsV2Constants.activeRailCornerRadius,
+                      ),
                     ),
                   ),
-                ),
                 // Icon tile
                 Container(
                   width: SettingsV2Constants.iconTileSize,

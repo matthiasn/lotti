@@ -35,10 +35,11 @@ class SettingsMobileTreePage extends StatelessWidget {
       title: title,
       showBack: showBack,
       child: ListView(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step4,
-          vertical: tokens.spacing.step4,
-        ),
+        // Only vertical outer padding: the row supplies its own
+        // horizontal content inset, and dropping the active rail
+        // (showActiveRail: false) lets the icon tile line up with the
+        // header title instead of sitting behind an extra left gutter.
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
         children: [
           for (final node in nodes)
             SettingsTreeRow(
@@ -47,6 +48,7 @@ class SettingsMobileTreePage extends StatelessWidget {
               depth: 0,
               onActivePath: false,
               isExpanded: false,
+              showActiveRail: false,
               showLeafChevron: true,
               // 3 lines so even the longest section summary stays fully
               // legible at large OS text sizes (at 1x descriptions fit in
