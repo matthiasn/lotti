@@ -204,10 +204,10 @@ void main() {
 
         // Tap the 30-day segment to trigger onValueChanged → setState.
         // DsSegmentedToggle stacks an invisible width-reserving ghost label
-        // behind the visible one, so '30d' matches two widgets; the first
-        // shares the segment's InkWell.
-        await tester.ensureVisible(find.text('30d').first);
-        await tester.tap(find.text('30d').first);
+        // behind the visible one, so '30d' matches two widgets; tap the last
+        // (the visible label painted on top) to avoid an occluded-hit warning.
+        await tester.ensureVisible(find.text('30d').last);
+        await tester.tap(find.text('30d').last);
         await tester.pump(const Duration(seconds: 1));
 
         // After setState the control must reflect the new selection

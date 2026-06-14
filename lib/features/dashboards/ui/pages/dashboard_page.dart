@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({
@@ -25,18 +28,26 @@ class DashboardPage extends ConsumerStatefulWidget {
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   int timeSpanDays = 90;
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(getIt<UserActivityService>().updateActivity);
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(getIt<UserActivityService>().updateActivity)
+      ..dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final dashboard = getIt<EntitiesCacheService>().getDashboardById(
       widget.dashboardId,
-    );
-
-    final rangeStart = DateTime.now()
-        .subtract(Duration(days: timeSpanDays))
-        .dayAtMidnight;
-    final rangeEnd = DateTime.now().dayAtMidnight.add(
-      const Duration(hours: 23, minutes: 59, seconds: 59),
     );
 
     if (dashboard == null) {
@@ -47,33 +58,146 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
 
     final tokens = context.designTokens;
-    return SliverBoxAdapterPage(
-      title: dashboard.name,
-      showBackButton: true,
-      // Match the dashboards list's horizontal gutter (step5) so the content
-      // window and the list share the same margins, and the charts fill the
-      // pane instead of being capped to a narrow form width.
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+    final isDesktop = isDesktopLayout(context);
+
+    final rangeStart = DateTime.now()
+        .subtract(Duration(days: timeSpanDays))
+        .dayAtMidnight;
+    final rangeEnd = DateTime.now().dayAtMidnight.add(
+      const Duration(hours: 23, minutes: 59, seconds: 59),
+    );
+
+    final bottomClearance = DesignSystemBottomNavigationBar.occupiedHeight(
+      context,
+    );
+
+    return Scaffold(
+      backgroundColor: tokens.colors.background.level01,
+      body: SafeArea(
+        bottom: false,
         child: Column(
           children: [
-            SizedBox(height: tokens.spacing.step5),
-            TimeSpanSegmentedControl(
+            // Stable, pinned header: the title and the time-span picker never
+            // collapse or scroll away — only the charts scroll beneath them.
+            _DashboardHeader(
+              title: dashboard.name,
+              isDesktop: isDesktop,
               timeSpanDays: timeSpanDays,
-              onValueChanged: (int value) {
-                setState(() {
-                  timeSpanDays = value;
-                });
-              },
+              onValueChanged: (value) => setState(() => timeSpanDays = value),
             ),
-            SizedBox(height: tokens.spacing.step5),
-            DashboardWidget(
-              rangeStart: rangeStart,
-              rangeEnd: rangeEnd,
-              dashboardId: widget.dashboardId,
+            Expanded(
+              child: CustomScrollView(
+                controller: _scrollController,
+                slivers: [
+                  SliverPadding(
+                    // Same step5 gutter as the dashboards list; the last card
+                    // clears the bottom navigation bar.
+                    padding: EdgeInsets.fromLTRB(
+                      tokens.spacing.step5,
+                      0,
+                      tokens.spacing.step5,
+                      bottomClearance + tokens.spacing.sectionGap,
+                    ),
+                    sliver: SliverToBoxAdapter(
+                      child: DashboardWidget(
+                        rangeStart: rangeStart,
+                        rangeEnd: rangeEnd,
+                        dashboardId: widget.dashboardId,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Stable, non-collapsing header for a dashboard. On desktop the title and the
+/// time-span picker share one row (no back button — the dashboards list is
+/// always visible beside this pane). On mobile the title sits above the picker
+/// in a compact, back-navigable block. The title font is fixed at every scroll
+/// offset.
+class _DashboardHeader extends StatelessWidget {
+  const _DashboardHeader({
+    required this.title,
+    required this.isDesktop,
+    required this.timeSpanDays,
+    required this.onValueChanged,
+  });
+
+  final String title;
+  final bool isDesktop;
+  final int timeSpanDays;
+  final void Function(int) onValueChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final titleStyle = tokens.typography.styles.heading.heading3.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
+    final picker = TimeSpanSegmentedControl(
+      timeSpanDays: timeSpanDays,
+      onValueChanged: onValueChanged,
+    );
+
+    if (isDesktop) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(
+          tokens.spacing.step5,
+          tokens.spacing.step5,
+          tokens.spacing.step5,
+          tokens.spacing.step4,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                title,
+                style: titleStyle,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            SizedBox(width: tokens.spacing.step4),
+            picker,
+          ],
+        ),
+      );
+    }
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step2,
+        tokens.spacing.step2,
+        tokens.spacing.step5,
+        tokens.spacing.step3,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              const BackWidget(),
+              Expanded(
+                child: Text(
+                  title,
+                  style: titleStyle,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          Padding(
+            padding: EdgeInsets.only(left: tokens.spacing.step3),
+            child: picker,
+          ),
+        ],
       ),
     );
   }

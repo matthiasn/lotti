@@ -68,11 +68,11 @@ void main() {
       await tester.pump();
 
       // DsSegmentedToggle stacks an invisible ghost label behind the visible
-      // one to reserve width, so each label matches two widgets; tapping the
-      // first hits the shared InkWell.
-      await tester.tap(find.text('30d').first);
+      // one to reserve width, so each label matches two widgets; tap the last
+      // (the visible one on top) to hit the segment cleanly.
+      await tester.tap(find.text('30d').last);
       await tester.pump();
-      await tester.tap(find.text('365d').first);
+      await tester.tap(find.text('365d').last);
       await tester.pump();
 
       expect(tapped, [30, 365]);
