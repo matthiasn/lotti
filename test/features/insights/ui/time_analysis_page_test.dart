@@ -6,6 +6,7 @@ import 'package:lotti/features/categories/state/categories_list_controller.dart'
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/features/insights/ui/time_analysis_page.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_period_picker.dart';
 import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -128,6 +129,37 @@ void main() {
     });
     // The year is now selected; the year-specific action is gone.
     expect(find.text('View this year'), findsNothing);
+  });
+
+  testWidgets('empty-state primary action steps to the previous period', (
+    tester,
+  ) async {
+    stubRows(const []);
+    await pumpPage(tester);
+    expect(find.text('June 2026 (so far)'), findsOneWidget);
+
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.tap(find.text('Show the previous period'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+    // Stepped back from month-to-date June to the full previous month.
+    expect(find.text('May 2026'), findsOneWidget);
+    expect(find.text('June 2026 (so far)'), findsNothing);
+  });
+
+  testWidgets('tapping the period label opens the jump-to-date calendar', (
+    tester,
+  ) async {
+    stubRows([row(daysAgo: 1, hour: 9, minutes: 60, categoryId: 'cat-client')]);
+    await pumpPage(tester);
+
+    await withClock(Clock.fixed(fixedNow), () async {
+      await tester.tap(find.text('June 2026 (so far)'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+    });
+    expect(find.byType(InsightsPeriodPickerBody), findsOneWidget);
   });
 
   testWidgets('repository errors surface the error message, not a crash', (

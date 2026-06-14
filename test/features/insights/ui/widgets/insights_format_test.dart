@@ -33,6 +33,23 @@ void main() {
     });
   });
 
+  group('formatDurationWithDays', () {
+    test('reads like compact below 100h', () {
+      expect(formatDurationWithDays(0), '0m');
+      expect(formatDurationWithDays(2 * 3600 + 15 * 60), '2h 15m');
+      expect(formatDurationWithDays(99 * 3600), '99h');
+    });
+
+    test('rolls into days at and above 100h', () {
+      // 100h = 4 days 4 hours.
+      expect(formatDurationWithDays(100 * 3600), '4d 4h');
+      // Whole days drop the hour component.
+      expect(formatDurationWithDays(120 * 3600), '5d');
+      // ~966h (the legacy hard-to-grasp case) becomes a legible day count.
+      expect(formatDurationWithDays(966 * 3600 + 59 * 60), '40d 6h');
+    });
+  });
+
   group('formatAvgDuration', () {
     test('guards real-but-tiny averages and passes others through', () {
       expect(formatAvgDuration(0), '0:00');

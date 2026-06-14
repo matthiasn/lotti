@@ -51,6 +51,25 @@ void main() {
     expect(find.text('Jun 1 – 7 (so far)'), findsOneWidget);
   });
 
+  testWidgets('the day label renders the full localized date', (tester) async {
+    final day = InsightsPeriodSelection(
+      unit: InsightsPeriodUnit.day,
+      range: periodContaining(InsightsPeriodUnit.day, DateTime(2026, 6, 5)),
+    );
+    await pump(tester, selection: day);
+    // yMMMMd → "June 5, 2026" (a past day, so no "(so far)" suffix).
+    expect(find.text('June 5, 2026'), findsOneWidget);
+  });
+
+  testWidgets('a week spanning two months shows both month names', (
+    tester,
+  ) async {
+    // Mon Jun 29 – Sun Jul 5 2026 crosses the month boundary, so the span
+    // names the end month too rather than just the day.
+    await pump(tester, selection: weekOf(DateTime(2026, 6, 30)));
+    expect(find.text('Jun 29 – Jul 5'), findsOneWidget);
+  });
+
   testWidgets('the quarter label is localized via DateFormat', (tester) async {
     final q2 = InsightsPeriodSelection(
       unit: InsightsPeriodUnit.quarter,
