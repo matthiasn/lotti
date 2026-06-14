@@ -69,7 +69,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Index"; and each chart shows an explicit "No data in this range" state
   instead of a flat zero line. The add-value (+) button on measurement and
   survey charts now stays inside the card on desktop instead of being pushed
-  off-screen.
+  off-screen. The time-span selector is now design-system pills instead of a
+  plain segmented button, the habit card matches the other chart cards (no
+  more near-black box), and the whole Insights area uses a lighter page
+  surface in dark mode so it no longer reads as one black block.
 
 ## [0.9.1019]
 ### Changed

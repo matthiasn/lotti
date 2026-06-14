@@ -110,7 +110,7 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(tokens.radii.m),
-          side: BorderSide(color: tokens.colors.decorative.level01),
+          side: BorderSide(color: tokens.colors.decorative.level02),
         ),
         child: ListTile(
           contentPadding: const EdgeInsets.only(

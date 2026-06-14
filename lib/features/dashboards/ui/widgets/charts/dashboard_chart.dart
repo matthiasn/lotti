@@ -95,7 +95,9 @@ class DashboardChart extends StatelessWidget {
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(color: tokens.colors.decorative.level01),
+        // Stronger hairline so the card stays defined against the lighter
+        // (level02) dashboard page surface.
+        border: Border.all(color: tokens.colors.decorative.level02),
       ),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.cardPadding),

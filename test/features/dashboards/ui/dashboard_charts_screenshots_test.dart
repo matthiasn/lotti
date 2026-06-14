@@ -320,12 +320,17 @@ Future<void> _pump(
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Align(
-              alignment: Alignment.topCenter,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: SizedBox(width: contentWidth, child: _cards()),
+          home: Builder(
+            builder: (context) => Scaffold(
+              // Match the real dashboard detail page's lighter (level02)
+              // surface so the review screenshots reflect production.
+              backgroundColor: context.designTokens.colors.background.level02,
+              body: Align(
+                alignment: Alignment.topCenter,
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: SizedBox(width: contentWidth, child: _cards()),
+                ),
               ),
             ),
           ),

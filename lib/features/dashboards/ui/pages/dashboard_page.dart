@@ -50,6 +50,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     return SliverBoxAdapterPage(
       title: dashboard.name,
       showBackButton: true,
+      backgroundColor: tokens.colors.background.level02,
       child: Column(
         children: [
           SizedBox(height: tokens.spacing.step5),

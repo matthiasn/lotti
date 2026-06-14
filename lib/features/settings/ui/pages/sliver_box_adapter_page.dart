@@ -15,6 +15,7 @@ class SliverBoxAdapterPage extends StatefulWidget {
     this.padding = EdgeInsets.zero,
     this.actions,
     this.fillRemaining = false,
+    this.backgroundColor,
     super.key,
   });
 
@@ -24,6 +25,11 @@ class SliverBoxAdapterPage extends StatefulWidget {
   final bool showBackButton;
   final EdgeInsets padding;
   final List<Widget>? actions;
+
+  /// Scaffold background. Defaults to the app-wide near-black page surface
+  /// (`background.level01`); pages can pass a lighter surface (e.g. the
+  /// dashboards use `level02`) when they want the page to read less heavy.
+  final Color? backgroundColor;
 
   /// When `true`, the body is hosted inside a
   /// `SliverFillRemaining(hasScrollBody: true)` — the body claims the
@@ -59,7 +65,9 @@ class _SliverBoxAdapterPageState extends State<SliverBoxAdapterPage> {
     );
 
     return Scaffold(
-      backgroundColor: context.designTokens.colors.background.level01,
+      backgroundColor:
+          widget.backgroundColor ??
+          context.designTokens.colors.background.level01,
       body: CustomScrollView(
         controller: _scrollController,
         slivers: <Widget>[

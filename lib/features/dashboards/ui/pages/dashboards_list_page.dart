@@ -48,6 +48,7 @@ class _DashboardsListPageState extends ConsumerState<DashboardsListPage> {
     final tokens = context.designTokens;
 
     final listScaffold = Scaffold(
+      backgroundColor: tokens.colors.background.level02,
       body: SafeArea(
         bottom: false,
         child: CustomScrollView(
