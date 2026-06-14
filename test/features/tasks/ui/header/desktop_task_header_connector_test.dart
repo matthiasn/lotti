@@ -21,7 +21,6 @@ import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
-import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -30,6 +29,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -566,8 +566,8 @@ void main() {
         // state — asserting on that content proves the modal actually opened
         // and populated its (empty) label list, not merely that the type is
         // present somewhere in the tree.
-        expect(find.byType(LabelSelectionSliverContent), findsOneWidget);
-        expect(find.text('No labels available yet.'), findsOneWidget);
+        expect(find.byType(EntityPickerSheet), findsOneWidget);
+        expect(find.text('No matches'), findsOneWidget);
       },
     );
 
@@ -1228,7 +1228,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(LabelSelectionSliverContent), findsOneWidget);
+        expect(find.byType(EntityPickerSheet), findsOneWidget);
       },
     );
   });

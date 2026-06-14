@@ -72,7 +72,7 @@ flowchart TD
 
   Visible --> Settings["LabelsListPage"]
   Repo --> Editor["LabelDetailsPage / LabelEditorController"]
-  Scoped --> Picker["LabelSelectionSliverContent"]
+  Scoped --> Picker["EntityPickerSheet"]
   Picker --> Repo
 
   AI["assign_task_labels"] --> Parse["parseLabelCallArgs(...)"]
@@ -261,8 +261,8 @@ Assignment UI is reusable and not task-exclusive, even though tasks are the most
 The main pieces are:
 
 - `EntryLabelsDisplay` for showing assigned chips on generic entry surfaces
-- `LabelSelectionModalUtils` for opening the shared modal shell and sticky action bar
-- `LabelSelectionSliverContent` in `features/tasks` for the actual selectable list
+- `LabelSelectionModalUtils.openLabelSelector` opens the unified picker (`EntityPickerSheet`, the same one categories use) as a Wolt sheet, scoped to the entry's category but unioned with already-assigned labels
+- `EntityPickerSheet` (`lib/widgets/picker/`) renders the rows; the apply footer commits via `LabelsRepository.setLabels`
 - `DesktopTaskHeader` in `features/tasks` for the task-specific "Add Label" / assigned-label surface — assigned labels render as filled `DsPill` chips (`DsPillVariant.filled`) with a leading color dot and the same long-press description dialog; the "Add Label" placeholder chip opens the selector when no labels are assigned
 
 `LabelChip` itself is intentionally modest: neutral chip chrome, a colored dot, and a tooltip that prefers the description over the bare name.
@@ -272,7 +272,7 @@ The main pieces are:
 ```mermaid
 sequenceDiagram
   participant UI as "Entry or task surface"
-  participant Modal as "LabelSelectionSliverContent"
+  participant Modal as "EntityPickerSheet"
   participant Scope as "availableLabelsForCategoryProvider"
   participant Cache as "EntitiesCacheService"
   participant Repo as "LabelsRepository"
