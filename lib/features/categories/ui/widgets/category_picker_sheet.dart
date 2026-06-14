@@ -282,7 +282,17 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
       return;
     }
     final newCategory = created;
-    if (newCategory != null && !_multi) {
+    if (newCategory == null) {
+      return;
+    }
+    if (_multi) {
+      // The new category is already staged; clear the search so the stale
+      // "create" row for the same query cannot reappear (and re-create a dup).
+      setState(() {
+        _query = '';
+        _searchController.clear();
+      });
+    } else {
       Navigator.of(context).pop(CategoryPicked(newCategory));
     }
   }
@@ -338,10 +348,14 @@ class _CategoryPickerSheetState extends ConsumerState<CategoryPickerSheet> {
             child: DesignSystemSearch(
               controller: _searchController,
               hintText: context.messages.categorySearchPlaceholder,
+              semanticsLabel: context.messages.categorySearchPlaceholder,
               onChanged: (value) => setState(() => _query = value),
               onSubmitted: (value) {
                 if (showCreateRow) {
                   _openCreate(value.trim());
+                } else if (!_multi && filtered.length == 1) {
+                  // Single mode: Enter applies the lone match, mirroring a tap.
+                  _pick(filtered.first);
                 }
               },
               onClear: () => setState(() => _query = ''),

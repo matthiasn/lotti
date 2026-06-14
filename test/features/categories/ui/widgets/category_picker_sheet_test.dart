@@ -451,6 +451,21 @@ void main() {
 
       handle.dispose();
     });
+
+    testWidgets('Enter applies the lone search match', (tester) async {
+      final result = await pickSingle(
+        tester,
+        interact: () async {
+          await tester.enterText(find.byType(TextField), 'Category 2');
+          await tester.pump();
+          await tester.showKeyboard(find.byType(TextField));
+          await tester.testTextInput.receiveAction(TextInputAction.search);
+        },
+      );
+
+      expect(result, isA<CategoryPicked>());
+      expect((result! as CategoryPicked).category.id, 'cat2');
+    });
   });
 
   group('multi mode', () {
@@ -516,6 +531,57 @@ void main() {
         findsNothing,
       );
     });
+
+    testWidgets(
+      'create-from-search stages the new category and clears search',
+      (
+        tester,
+      ) async {
+        registerAllFallbackValues();
+        final mockRepository = MockCategoryRepository();
+        when(
+          () => mockRepository.createCategory(
+            name: any(named: 'name'),
+            color: any(named: 'color'),
+            icon: any(named: 'icon'),
+          ),
+        ).thenAnswer(
+          (_) async => CategoryTestUtils.createTestCategory(
+            id: 'cat-new',
+            name: 'BrandNew',
+          ),
+        );
+
+        final staged = ValueNotifier<Set<String>>({});
+        addTearDown(staged.dispose);
+
+        await tester.pumpWidget(
+          pumpMulti(
+            staged,
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'BrandNew');
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('category-picker-create')));
+        await tester.pumpAndSettle();
+        final saveButton = find.text('Save');
+        await tester.ensureVisible(saveButton);
+        await tester.pumpAndSettle();
+        await tester.tap(saveButton, warnIfMissed: false);
+        await tester.pumpAndSettle();
+
+        // The created id is staged, and the stale create row is gone.
+        expect(staged.value, contains('cat-new'));
+        expect(
+          find.byKey(const ValueKey('category-picker-create')),
+          findsNothing,
+        );
+      },
+    );
   });
 
   group('helper integration (Wolt modal)', () {
