@@ -71,6 +71,16 @@ void main() {
     ).called(1);
   });
 
+  test('setModel updates state and persists', () {
+    final container = makeContainer();
+    container.read(ttsSettingsControllerProvider.notifier).setModel('m2');
+
+    expect(container.read(ttsSettingsControllerProvider).modelId, 'm2');
+    verify(
+      () => mocks.settingsDb.saveSettingsItem(ttsModelIdKey, 'm2'),
+    ).called(1);
+  });
+
   test('setSpeed clamps, updates state, and persists the clamped value', () {
     final container = makeContainer();
     container.read(ttsSettingsControllerProvider.notifier).setSpeed(5);

@@ -76,6 +76,27 @@ void main() {
       expect(find.text('Advanced Settings'), findsOneWidget);
     });
 
+    testWidgets('shows the Speech item when the TTS playback flag is on', (
+      tester,
+    ) async {
+      when(mockJournalDb.watchConfigFlags).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+          {
+            const ConfigFlag(
+              name: enableAiSummaryTtsFlag,
+              description: 'Enable local AI summary playback?',
+              status: true,
+            ),
+          },
+        ]),
+      );
+
+      await hPumpSettingsPage(tester, mockJournalDb);
+
+      expect(find.text('Speech'), findsOneWidget);
+      expect(find.byIcon(Icons.record_voice_over_rounded), findsOneWidget);
+    });
+
     testWidgets('renders DesignSystemListItem components with dividers', (
       tester,
     ) async {
