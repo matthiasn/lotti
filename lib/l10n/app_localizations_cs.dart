@@ -2432,6 +2432,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryDeleteTitle => 'Smazat kategorii?';
 
   @override
+  String get categoryFavoriteBadgeLabel => 'Oblíbená';
+
+  @override
   String get categoryFavoriteDescription =>
       'Označit tuto kategorii jako oblíbenou';
 
@@ -2455,6 +2458,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get categoryNotFound => 'Kategorie nenalezena';
+
+  @override
+  String get categoryPrivateBadgeLabel => 'Soukromá';
 
   @override
   String get categoryPrivateDescription =>

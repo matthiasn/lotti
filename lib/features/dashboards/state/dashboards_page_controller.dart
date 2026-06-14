@@ -38,6 +38,12 @@ class SelectedCategoryIds extends Notifier<Set<String>> {
       state = {...state, categoryId};
     }
   }
+
+  /// Replaces the whole selection in one write (used by the deferred category
+  /// picker, which commits the staged set on Apply).
+  void setAll(Set<String> categoryIds) {
+    state = {...categoryIds};
+  }
 }
 
 /// Stream provider for categories from database.

@@ -3,8 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/settings/ui/widgets/dashboards/dashboard_category.dart';
-import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -172,8 +172,8 @@ void main() {
         expect(find.text('Alpha'), findsOneWidget);
         expect(find.text('Beta'), findsOneWidget);
 
-        // Each category is presented as a SettingsCard.
-        expect(find.byType(SettingsCard), findsNWidgets(2));
+        // The picker hosts the category rows.
+        expect(find.byType(CategoryPickerSheet), findsOneWidget);
       });
 
       testWidgets(
@@ -198,6 +198,7 @@ void main() {
           // Tap the first category.
           final alphaCard = find.text('Alpha');
           await tester.ensureVisible(alphaCard);
+          await tester.pumpAndSettle();
           await tester.tap(alphaCard);
           await tester.pumpAndSettle();
 
@@ -219,16 +220,17 @@ void main() {
           await tester.tap(textField);
           await tester.pumpAndSettle();
 
-          expect(find.byType(SettingsCard), findsWidgets);
+          expect(find.byType(CategoryPickerSheet), findsOneWidget);
 
           // Tap a category.
           final betaCard = find.text('Beta');
           await tester.ensureVisible(betaCard);
+          await tester.pumpAndSettle();
           await tester.tap(betaCard);
           await tester.pumpAndSettle();
 
-          // Modal is dismissed – SettingsCards are gone.
-          expect(find.byType(SettingsCard), findsNothing);
+          // Modal is dismissed.
+          expect(find.byType(CategoryPickerSheet), findsNothing);
         },
       );
 

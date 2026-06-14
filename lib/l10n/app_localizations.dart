@@ -4135,6 +4135,12 @@ abstract class AppLocalizations {
   /// **'Delete Category?'**
   String get categoryDeleteTitle;
 
+  /// No description provided for @categoryFavoriteBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Favorite'**
+  String get categoryFavoriteBadgeLabel;
+
   /// No description provided for @categoryFavoriteDescription.
   ///
   /// In en, this message translates to:
@@ -4182,6 +4188,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Category not found'**
   String get categoryNotFound;
+
+  /// No description provided for @categoryPrivateBadgeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get categoryPrivateBadgeLabel;
 
   /// No description provided for @categoryPrivateDescription.
   ///

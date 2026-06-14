@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboards_filter.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -19,6 +23,22 @@ void main() {
     when(
       mocks.journalDb.getAllCategories,
     ).thenAnswer((_) async => [categoryMindfulness, categoryYoga]);
+
+    // The picker rows resolve their icon via the cache.
+    final mockCache = MockEntitiesCacheService();
+    when(
+      () => mockCache.sortedCategories,
+    ).thenReturn([categoryMindfulness, categoryYoga]);
+    when(
+      () => mockCache.getCategoryById(categoryMindfulness.id),
+    ).thenReturn(categoryMindfulness);
+    when(
+      () => mockCache.getCategoryById(categoryYoga.id),
+    ).thenReturn(categoryYoga);
+    if (getIt.isRegistered<EntitiesCacheService>()) {
+      getIt.unregister<EntitiesCacheService>();
+    }
+    getIt.registerSingleton<EntitiesCacheService>(mockCache);
   });
 
   tearDown(tearDownTestGetIt);
@@ -32,9 +52,15 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
   }
 
-  Future<void> openModal(WidgetTester tester) async {
+  Future<void> openPicker(WidgetTester tester) async {
     await tester.tap(find.byKey(const Key('dashboard_category_filter')));
     // Bounded pump for the bottom-sheet entrance animation.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 600));
+  }
+
+  Future<void> applyPicker(WidgetTester tester) async {
+    await tester.tap(find.byKey(const ValueKey('category-picker-apply')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
   }
@@ -45,15 +71,6 @@ void main() {
       matching: find.byType(Icon),
     ),
   );
-
-  double chipOpacity(WidgetTester tester, String name) => tester
-      .widget<Opacity>(
-        find.ancestor(
-          of: find.widgetWithText(ActionChip, name),
-          matching: find.byType(Opacity),
-        ),
-      )
-      .opacity;
 
   group('DashboardsFilter', () {
     testWidgets('shows the outlined low-emphasis icon with no selection', (
@@ -69,32 +86,30 @@ void main() {
       expect(icon.color, tokens.colors.text.lowEmphasis);
     });
 
-    testWidgets('opens the modal listing one dimmed chip per category', (
-      tester,
-    ) async {
+    testWidgets('opens the picker listing every category', (tester) async {
       await pumpFilter(tester);
-      await openModal(tester);
+      await openPicker(tester);
 
-      expect(find.byType(ActionChip), findsNWidgets(2));
-      // Unselected chips render dimmed.
-      expect(chipOpacity(tester, 'Mindfulness'), 0.4);
-      expect(chipOpacity(tester, 'Yoga'), 0.4);
+      expect(find.byType(CategoryPickerSheet), findsOneWidget);
+      expect(find.text('Mindfulness'), findsOneWidget);
+      expect(find.text('Yoga'), findsOneWidget);
     });
 
-    testWidgets('tapping a chip selects it and activates the filter icon', (
+    testWidgets('icon stays inactive until Apply commits the selection', (
       tester,
     ) async {
       await pumpFilter(tester);
-      await openModal(tester);
+      await openPicker(tester);
 
-      await tester.tap(find.widgetWithText(ActionChip, 'Mindfulness'));
+      await tester.tap(find.text('Mindfulness'));
       await tester.pump();
 
-      // The tapped chip lights up; the other stays dimmed.
-      expect(chipOpacity(tester, 'Mindfulness'), 1.0);
-      expect(chipOpacity(tester, 'Yoga'), 0.4);
+      // Deferred: staging a category does not change the filter behind the
+      // sheet — the icon only flips once Apply commits.
+      expect(filterIcon(tester).icon, Icons.filter_alt_outlined);
 
-      // The filter button behind the sheet flips to the active state.
+      await applyPicker(tester);
+
       final icon = filterIcon(tester);
       final tokens = tester
           .element(find.byKey(const Key('dashboard_category_filter')))
@@ -103,18 +118,23 @@ void main() {
       expect(icon.color, tokens.colors.text.highEmphasis);
     });
 
-    testWidgets('tapping a selected chip clears the selection again', (
+    testWidgets('deselecting and applying clears the filter again', (
       tester,
     ) async {
       await pumpFilter(tester);
-      await openModal(tester);
 
-      await tester.tap(find.widgetWithText(ActionChip, 'Mindfulness'));
+      // Select + Apply.
+      await openPicker(tester);
+      await tester.tap(find.text('Mindfulness'));
       await tester.pump();
-      await tester.tap(find.widgetWithText(ActionChip, 'Mindfulness'));
-      await tester.pump();
+      await applyPicker(tester);
+      expect(filterIcon(tester).icon, Icons.filter_alt_rounded);
 
-      expect(chipOpacity(tester, 'Mindfulness'), 0.4);
+      // Reopen (seeded with the committed set), deselect + Apply.
+      await openPicker(tester);
+      await tester.tap(find.text('Mindfulness'));
+      await tester.pump();
+      await applyPicker(tester);
       expect(filterIcon(tester).icon, Icons.filter_alt_outlined);
     });
   });

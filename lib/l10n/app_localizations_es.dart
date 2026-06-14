@@ -2430,6 +2430,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get categoryDeleteTitle => '¿Eliminar categoría?';
 
   @override
+  String get categoryFavoriteBadgeLabel => 'Favorita';
+
+  @override
   String get categoryFavoriteDescription =>
       'Marcar esta categoría como favorita';
 
@@ -2453,6 +2456,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get categoryNotFound => 'Categoría no encontrada';
+
+  @override
+  String get categoryPrivateBadgeLabel => 'Privada';
 
   @override
   String get categoryPrivateDescription =>

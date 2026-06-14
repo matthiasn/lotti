@@ -6,7 +6,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
@@ -107,22 +107,17 @@ class ProjectDetailsPage extends ConsumerWidget {
     WidgetRef ref,
     ProjectEntry project,
   ) async {
-    await ModalUtils.showSinglePageModal<void>(
+    final result = await showCategoryPicker(
       context: context,
       title: context.messages.habitCategoryLabel,
-      builder: (sheetContext) {
-        return CategorySelectionModalContent(
-          initialCategoryId: project.meta.categoryId,
-          onCategorySelected: (category) async {
-            Navigator.of(sheetContext).pop();
-            final controller = ref.read(
-              projectDetailControllerProvider(projectId).notifier,
-            );
-            await (controller..updateCategoryId(category?.id)).saveChanges();
-          },
-        );
-      },
+      currentCategoryId: project.meta.categoryId,
     );
+    if (result == null) return;
+    final controller = ref.read(
+      projectDetailControllerProvider(projectId).notifier,
+    );
+    await (controller..updateCategoryId(result.categoryOrNull?.id))
+        .saveChanges();
   }
 
   Future<void> _pickTargetDate(

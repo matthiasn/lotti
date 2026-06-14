@@ -8,7 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_selection_icon_button.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -118,14 +118,14 @@ void main() {
       await tester.tap(find.byType(IconButton));
       await tester.pumpAndSettle();
 
-      expect(find.byType(CategorySelectionModalContent), findsOneWidget);
+      expect(find.byType(CategoryPickerSheet), findsOneWidget);
 
       await tester.tap(find.text('Focus'));
       await tester.pumpAndSettle();
 
       expect(tracker.updateCategoryIdCalls, equals(['cat-pick']));
       // Modal closed.
-      expect(find.byType(CategorySelectionModalContent), findsNothing);
+      expect(find.byType(CategoryPickerSheet), findsNothing);
       // Outer nested route was NOT popped — the icon button is still
       // mounted. A pop targeting the outer context would have removed
       // the MaterialPageRoute hosting it.

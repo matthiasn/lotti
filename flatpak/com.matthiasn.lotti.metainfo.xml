@@ -48,6 +48,7 @@
     </release>
     <release version="0.9.1020" date="2026-06-13">
       <description>
+          <p>Category selection is now one consistent picker across the app: assigning a category (entries, tasks, projects, habits, dashboards, time blocks) opens the same searchable sheet and applies on tap, and the habits and dashboards category filters use that same sheet with an Apply button instead of toggling on each tap.</p>
           <p>Settings: all definition pages (categories, labels, habits, measurables, dashboards) now share one design language. Lists get the same header, search, grouped rows, floating create button, and localized empty states; editors share a sticky bottom action bar floating on blurred glass with Save/Create (enabled once something changed), Cancel, and Delete with confirmation, Cmd/Ctrl+S keyboard save, design-system fields in titled section cards, and consistent "Edit habit"/"Edit category" titles without stray label colons.</p>
           <p>Settings: creating a category now opens the same full create page as other definition types instead of a popup — it asks only for name, color, and icon, then lands in the new category's editor for the rest. The Projects section moved out of category settings (projects have their own page), and on desktop habit editing opens inline in the settings split pane.</p>
           <p>Settings: dashboard editor save-and-copy moved to a header action, and saving with an invalid form no longer navigates away while silently discarding changes.</p>

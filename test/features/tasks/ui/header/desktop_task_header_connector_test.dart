@@ -11,7 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -518,10 +518,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // CategorySelectionModalContent renders with an empty category
+        // CategoryPickerSheet renders with an empty category
         // list — verify that the header's own "unassigned" chip has been
         // covered by a modal on top.
-        expect(find.byType(CategorySelectionModalContent), findsOneWidget);
+        expect(find.byType(CategoryPickerSheet), findsOneWidget);
       },
     );
 
@@ -890,7 +890,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Modal closed.
-        expect(find.byType(CategorySelectionModalContent), findsNothing);
+        expect(find.byType(CategoryPickerSheet), findsNothing);
         // Outer nested route was NOT popped — the connector is still
         // mounted. A pop targeting the connector's outer context would
         // have removed the MaterialPageRoute hosting the connector.

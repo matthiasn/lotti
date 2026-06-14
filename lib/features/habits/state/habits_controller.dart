@@ -334,6 +334,13 @@ class HabitsController extends _$HabitsController {
     _determineHabitSuccessByDays();
   }
 
+  /// Replaces the selected categories filter in a single write (used by the
+  /// deferred category picker, which commits the whole set on Apply).
+  void setSelectedCategoryIds(Set<String> categoryIds) {
+    state = state.copyWith(selectedCategoryIds: {...categoryIds});
+    _determineHabitSuccessByDays();
+  }
+
   /// Sets the selected day for info display in the chart.
   void setInfoYmd(String ymd) {
     final newState = state.copyWith(selectedInfoYmd: ymd);

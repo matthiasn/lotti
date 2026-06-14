@@ -8,7 +8,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -248,21 +248,13 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     Task task,
   ) async {
     final controller = ref.read(entryControllerProvider(id: taskId).notifier);
-    await ModalUtils.showSinglePageModal<void>(
+    final result = await showCategoryPicker(
       context: context,
       title: context.messages.habitCategoryLabel,
-      builder: (modalContext) => CategorySelectionModalContent(
-        onCategorySelected: (category) {
-          controller.updateCategoryId(category?.id);
-          // Pop via modalContext — same pattern as the estimate /
-          // due-date pickers (c6627fe8d). The outer task page lives in
-          // a per-tab nested Navigator while the modal is hosted on the
-          // root Navigator on narrow widths.
-          Navigator.of(modalContext).pop();
-        },
-        initialCategoryId: task.meta.categoryId,
-      ),
+      currentCategoryId: task.meta.categoryId,
     );
+    if (result == null) return;
+    await controller.updateCategoryId(result.categoryOrNull?.id);
   }
 
   Future<void> _showProjectPicker(

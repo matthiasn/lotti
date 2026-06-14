@@ -77,6 +77,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   table ("Comparison shown in the table below") rather than crowding in a
   ghost reference bar.
 ### Changed
+- Category selection is now one consistent picker across the app. Assigning a
+  category (journal entries, tasks, projects, habits, dashboards, time blocks)
+  opens the same searchable sheet and applies as soon as you tap a category.
+  Filtering by category in the habits and dashboards views now uses that same
+  sheet and applies when you tap Apply, rather than each tap taking effect
+  immediately.
 - All settings definition pages (categories, labels, habits, measurables,
   dashboards) now share one design language. Every list page has the same
   header, search field, grouped rows, floating create button, and

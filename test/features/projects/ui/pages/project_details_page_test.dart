@@ -8,7 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
@@ -852,7 +852,7 @@ void main() {
         (tester) async {
           sizeViewForModal(tester);
 
-          // CategorySelectionModalContent requires EntitiesCacheService
+          // CategoryPickerSheet requires EntitiesCacheService
           // from GetIt.
           final mockCache = MockEntitiesCacheService();
           when(() => mockCache.sortedCategories).thenReturn([]);
@@ -879,10 +879,10 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // The modal should contain the CategorySelectionModalContent
+          // The modal should contain the CategoryPickerSheet
           // widget and display the 'Category' title.
           expect(
-            find.byType(CategorySelectionModalContent),
+            find.byType(CategoryPickerSheet),
             findsOneWidget,
           );
           expect(find.text('Category'), findsOneWidget);
@@ -1150,7 +1150,7 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          expect(find.byType(CategorySelectionModalContent), findsOneWidget);
+          expect(find.byType(CategoryPickerSheet), findsOneWidget);
 
           // Tap the 'UniqueTestCategory' option inside the modal.
           final categoryTile = find.text('UniqueTestCategory');
