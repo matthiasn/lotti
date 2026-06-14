@@ -49,22 +49,18 @@ void main() {
 
   group('InsightsPillButton', () {
     testWidgets(
-      'active state stacks four cues: accent fill, accent border, heavier '
-      'stroke, and semibold ink',
+      'active state stacks three width-invariant cues: accent fill, accent '
+      'border, and high-emphasis ink',
       (tester) async {
         await pump(tester, active: true);
 
         // Accent fill (the stronger `active` step, not the faint `selected`).
         expect(fillOf(tester).color, tokens.colors.surface.active);
-        // Brand-accent border at the heavier 1.5px stroke.
+        // Brand-accent border.
         final border = borderOf(tester);
         expect(border.top.color, tokens.colors.interactive.enabled);
-        expect(border.top.width, 1.5);
-        // High-emphasis semibold label (kept off the accent so it clears AA on
-        // the tinted fill).
-        final label = labelOf(tester);
-        expect(label.style?.color, tokens.colors.text.highEmphasis);
-        expect(label.style?.fontWeight, tokens.typography.weight.semiBold);
+        // High-emphasis ink (kept off the accent so it clears AA on the fill).
+        expect(labelOf(tester).style?.color, tokens.colors.text.highEmphasis);
       },
     );
 
@@ -76,9 +72,7 @@ void main() {
         await pump(tester, active: false, outlined: true);
 
         expect(fillOf(tester).color, Colors.transparent);
-        final border = borderOf(tester);
-        expect(border.top.color, tokens.colors.decorative.level02);
-        expect(border.top.width, 1.0);
+        expect(borderOf(tester).top.color, tokens.colors.decorative.level02);
         expect(labelOf(tester).style?.color, tokens.colors.text.mediumEmphasis);
       },
     );
@@ -91,6 +85,22 @@ void main() {
       expect(fillOf(tester).color, Colors.transparent);
       expect(borderOf(tester).top.color, Colors.transparent);
     });
+
+    testWidgets(
+      'toggling active does not change border width or font weight, so the '
+      'pill keeps its width (no header jump)',
+      (tester) async {
+        await pump(tester, active: false, outlined: true);
+        final inactiveWidth = borderOf(tester).top.width;
+        final inactiveWeight = labelOf(tester).style?.fontWeight;
+
+        await pump(tester, active: true, outlined: true);
+        // Border stroke and label weight are identical in both states — only
+        // colour/fill change — so the active pill is exactly as wide.
+        expect(borderOf(tester).top.width, inactiveWidth);
+        expect(labelOf(tester).style?.fontWeight, inactiveWeight);
+      },
+    );
 
     testWidgets('renders the tooltip message when provided', (tester) async {
       await pump(tester, active: false, tooltip: 'This month so far');

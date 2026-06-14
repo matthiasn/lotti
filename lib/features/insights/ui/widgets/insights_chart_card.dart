@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_chart_card_charts.dart';
-import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -91,7 +92,7 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+        color: insightsCardSurface(context),
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
@@ -147,37 +148,23 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
                     ],
                   ),
                 ),
-                // A bordered segmented track frames both options so the
-                // unselected mode still reads as a toggle (a lone inactive pill
-                // looked like plain text). Labels are plain and granularity-
-                // accurate — "Per week" over weekly bars, never a wrong
-                // "Daily" — matching the caption's voice.
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(tokens.radii.s),
-                    border: Border.all(color: tokens.colors.decorative.level02),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(tokens.spacing.step1),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        InsightsPillButton(
-                          label: _perBucketLabel(messages),
-                          active: _mode == InsightsChartMode.daily,
-                          onTap: () =>
-                              setState(() => _mode = InsightsChartMode.daily),
-                        ),
-                        InsightsPillButton(
-                          label: messages.insightsChartRunningTotal,
-                          active: _mode == InsightsChartMode.cumulative,
-                          onTap: () => setState(
-                            () => _mode = InsightsChartMode.cumulative,
-                          ),
-                        ),
-                      ],
+                // The shared segmented toggle (same control as the Daily OS
+                // plan-view switch) so the dashboard speaks one visual
+                // language. Labels are plain and granularity-accurate — "Per
+                // week" over weekly bars, never a wrong "Daily".
+                DsSegmentedToggle<InsightsChartMode>(
+                  selected: _mode,
+                  onChanged: (mode) => setState(() => _mode = mode),
+                  segments: [
+                    DsSegment(
+                      InsightsChartMode.daily,
+                      _perBucketLabel(messages),
                     ),
-                  ),
+                    DsSegment(
+                      InsightsChartMode.cumulative,
+                      messages.insightsChartRunningTotal,
+                    ),
+                  ],
                 ),
               ],
             ),

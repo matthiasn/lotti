@@ -42,11 +42,13 @@ class InsightsPillButton extends StatelessWidget {
     final foreground = active
         ? tokens.colors.text.highEmphasis
         : tokens.colors.text.mediumEmphasis;
-    // The on/off state is encoded four ways so it survives at a glance, for
-    // low-vision users, and on a static screenshot: a brand-accent border, a
-    // heavier 1.5px stroke, the stronger accent fill, and semibold text. An
-    // inactive outlined pill keeps a quiet resting border so it still reads as
-    // a button.
+    // The on/off state is encoded three width-invariant ways so it survives at
+    // a glance and for low-vision users without reflowing the row when toggled
+    // (a bold label or a thicker stroke changes the pill's width and makes the
+    // header jump under the pointer): a brand-accent border colour, the
+    // stronger accent fill, and high-emphasis ink. Border width and font weight
+    // stay constant across states. An inactive outlined pill keeps a quiet
+    // resting border so it still reads as a button.
     final borderColor = active
         ? tokens.colors.interactive.enabled
         : outlined
@@ -61,48 +63,53 @@ class InsightsPillButton extends StatelessWidget {
         // The stronger `active` tint (vs the near-threshold `selected` step)
         // gives the selected pill real presence at the compact header width.
         color: active ? tokens.colors.surface.active : Colors.transparent,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(tokens.radii.s),
+          borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
           hoverColor: tokens.colors.surface.hover,
           child: DecoratedBox(
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(tokens.radii.s),
-              // A heavier active border adds a non-color "this is on" cue that
-              // survives for low-vision users and on a static screenshot.
+              borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+              // Constant 1.5px stroke in every state: only the colour changes,
+              // so toggling never reflows the pill width.
               border: Border.all(
                 color: borderColor,
-                width: active ? 1.5 : 1.0,
+                width: 1.5,
               ),
             ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step3,
-                vertical: tokens.spacing.step2,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: tokens.spacing.step5, color: foreground),
-                    SizedBox(width: tokens.spacing.step2),
-                  ],
-                  // Flexible so an extreme pane resize ellipsizes the label
-                  // instead of overflowing the pill.
-                  Flexible(
-                    child: Text(
-                      label,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: foreground,
-                        fontWeight: active
-                            ? tokens.typography.weight.semiBold
-                            : null,
+            // Center (widthFactor 1) so the label sits mid-height when the pill
+            // is stretched to a taller row height (e.g. the header), while
+            // still hugging its content width everywhere else.
+            child: Center(
+              widthFactor: 1,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step3,
+                  vertical: tokens.spacing.step2,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (icon != null) ...[
+                      Icon(icon, size: tokens.spacing.step5, color: foreground),
+                      SizedBox(width: tokens.spacing.step2),
+                    ],
+                    // Flexible so an extreme pane resize ellipsizes the label
+                    // instead of overflowing the pill.
+                    Flexible(
+                      child: Text(
+                        label,
+                        overflow: TextOverflow.ellipsis,
+                        // Weight stays constant across states — bolding the
+                        // active label would widen the pill and jump the row.
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: foreground,
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

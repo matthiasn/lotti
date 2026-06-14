@@ -17,6 +17,7 @@ import 'package:lotti/features/insights/ui/widgets/insights_kpi_row.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_picker.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_table.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -66,10 +67,10 @@ class TimeAnalysisPage extends ConsumerWidget {
     );
 
     return Scaffold(
-      // Dark canvas with the cards a step lighter (level02) sitting on it —
-      // conventional elevation reads with cleaner contrast than a lighter
-      // canvas under darker cards.
-      backgroundColor: tokens.colors.background.level01,
+      // Darker page canvas with the cards a step lighter on it — conventional
+      // elevation in both themes (see insights_surfaces.dart; the DS ramp
+      // inverts between light and dark, so page/card swap by brightness).
+      backgroundColor: insightsPageSurface(context),
       body: SafeArea(
         child: bucketsAsync.when(
           // Background refreshes and window switches must never blank the
@@ -306,7 +307,7 @@ class _EmptyState extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+        color: insightsCardSurface(context),
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),

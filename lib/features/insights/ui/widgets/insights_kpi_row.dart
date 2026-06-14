@@ -6,6 +6,7 @@ import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_delta_chip.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Headline numbers: plain figures in quiet tiles — no gauges, no donuts.
@@ -207,7 +208,7 @@ class _KpiTile extends StatelessWidget {
 
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
+        color: insightsCardSurface(context),
         borderRadius: BorderRadius.circular(tokens.radii.m),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
@@ -373,7 +374,7 @@ class _FocusCategoriesDialogState extends State<_FocusCategoriesDialog> {
     final messages = context.messages;
 
     return AlertDialog(
-      backgroundColor: tokens.colors.background.level02,
+      backgroundColor: insightsCardSurface(context),
       title: Text(
         messages.insightsFocusCategoriesTitle,
         style: tokens.typography.styles.heading.heading3,

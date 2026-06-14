@@ -6,6 +6,7 @@ import 'package:lotti/features/insights/logic/period_navigation.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Compact period navigator for the Time Analysis dashboard:
@@ -57,11 +58,12 @@ class InsightsPeriodStepper extends StatelessWidget {
     bool toDateActive(InsightsPeriodUnit unit) =>
         selection.unit == unit && selection.range == periodToDate(unit, now);
 
-    // IntrinsicHeight so the group divider before Compare can size to the
-    // control row's height.
+    // IntrinsicHeight + stretch so every control (cluster, pills, dividers) is
+    // the same height and the group divider spans it fully.
     return IntrinsicHeight(
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _NavCluster(
             unit: selection.unit,
@@ -81,7 +83,8 @@ class InsightsPeriodStepper extends StatelessWidget {
               semanticsLabel: messages.insightsRangeMonthToDate,
               tooltip: messages.insightsRangeMonthToDate,
             ),
-            SizedBox(width: tokens.spacing.step2),
+            // A touch more room between the two to-date shortcuts.
+            SizedBox(width: tokens.spacing.step3),
             InsightsPillButton(
               label: messages.insightsRangeYtd,
               outlined: true,
@@ -198,31 +201,42 @@ class _NavCluster extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
 
+    // Pill-shaped (badgesPills) to match the segmented toggle and the
+    // to-date/Compare pills, so the whole header speaks one rounded idiom.
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.s),
+        borderRadius: radius,
         border: Border.all(color: tokens.colors.decorative.level02),
       ),
-      child: IntrinsicHeight(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _ClusterButton(
-              icon: Icons.chevron_left_rounded,
-              tooltip: messages.insightsPeriodPrevious,
-              onPressed: onStepBack,
-            ),
-            _ClusterDivider(tokens: tokens),
-            _UnitDropdown(unit: unit, onSelectUnit: onSelectUnit),
-            _ClusterDivider(tokens: tokens),
-            _PeriodLabel(label: label, onTap: onOpenCalendar),
-            _ClusterDivider(tokens: tokens),
-            _ClusterButton(
-              icon: Icons.chevron_right_rounded,
-              tooltip: messages.insightsPeriodNext,
-              onPressed: onStepForward,
-            ),
-          ],
+      // Clip so the end chevrons' tap ripples follow the rounded corners.
+      child: ClipRRect(
+        borderRadius: radius,
+        child: IntrinsicHeight(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            // stretch so each segment (and the dividers between them) fills the
+            // full cluster height — the chevron hover then covers the whole
+            // height instead of leaving a gap top and bottom.
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _ClusterButton(
+                icon: Icons.chevron_left_rounded,
+                tooltip: messages.insightsPeriodPrevious,
+                onPressed: onStepBack,
+              ),
+              _ClusterDivider(tokens: tokens),
+              _UnitDropdown(unit: unit, onSelectUnit: onSelectUnit),
+              _ClusterDivider(tokens: tokens),
+              _PeriodLabel(label: label, onTap: onOpenCalendar),
+              _ClusterDivider(tokens: tokens),
+              _ClusterButton(
+                icon: Icons.chevron_right_rounded,
+                tooltip: messages.insightsPeriodNext,
+                onPressed: onStepForward,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -238,8 +252,8 @@ class _ClusterDivider extends StatelessWidget {
   Widget build(BuildContext context) => VerticalDivider(
     width: 1,
     thickness: 1,
-    indent: tokens.spacing.step2,
-    endIndent: tokens.spacing.step2,
+    // No indent: the hairline spans the full cluster height so it lines up with
+    // the full-height segment hovers on either side.
     color: tokens.colors.decorative.level02,
   );
 }
@@ -259,40 +273,59 @@ class _UnitDropdown extends StatelessWidget {
       tooltip: '',
       position: PopupMenuPosition.under,
       onSelected: onSelectUnit,
+      // Match the dashboard's card surface + rounded corners instead of the
+      // default Material popup look.
+      color: insightsCardSurface(context),
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        side: BorderSide(color: tokens.colors.decorative.level01),
+      ),
       itemBuilder: (context) => [
         for (final value in InsightsPeriodUnit.values)
           PopupMenuItem<InsightsPeriodUnit>(
             value: value,
+            // The current unit reads as selected (teal, semibold).
             child: Text(
               _unitLabel(context, value),
               style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.highEmphasis,
+                color: value == unit
+                    ? tokens.colors.interactive.enabled
+                    : tokens.colors.text.highEmphasis,
+                fontWeight: value == unit
+                    ? tokens.typography.weight.semiBold
+                    : null,
               ),
             ),
           ),
       ],
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: tokens.spacing.step3,
-          vertical: tokens.spacing.step2,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _unitLabel(context, unit),
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.highEmphasis,
-                fontWeight: tokens.typography.weight.semiBold,
+      // Center (widthFactor 1) keeps the label mid-height when the cluster row
+      // is stretched, so it lines up with the chevrons.
+      child: Center(
+        widthFactor: 1,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step3,
+            vertical: tokens.spacing.step2,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _unitLabel(context, unit),
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                  fontWeight: tokens.typography.weight.semiBold,
+                ),
               ),
-            ),
-            SizedBox(width: tokens.spacing.step1),
-            Icon(
-              Icons.expand_more_rounded,
-              size: tokens.spacing.step5,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ],
+              SizedBox(width: tokens.spacing.step1),
+              Icon(
+                Icons.expand_more_rounded,
+                size: tokens.spacing.step5,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -308,34 +341,55 @@ class _PeriodLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final content = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          label,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.highEmphasis,
-            fontWeight: tokens.typography.weight.semiBold,
-          ),
-        ),
-        if (onTap != null) ...[
-          SizedBox(width: tokens.spacing.step2),
-          // A calendar glyph marks the label as the jump-to-date affordance;
-          // without it the most powerful navigation reads as static text.
-          Icon(
-            Icons.calendar_today_rounded,
-            size: tokens.spacing.step4,
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-        ],
-      ],
-    );
-    final padded = Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step2,
+    final content = ConstrainedBox(
+      // A stable minimum so stepping (which changes the label text, and with it
+      // its width) never shifts the chevrons that sit on either side of the
+      // cluster — the arrows must not jump under the pointer. Sized to hold the
+      // longest realistic label ("September 2026 (so far)") plus the glyph;
+      // shorter labels centre within it.
+      constraints: BoxConstraints(
+        minWidth: tokens.spacing.step13 + tokens.spacing.step7,
       ),
-      child: content,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.highEmphasis,
+                fontWeight: tokens.typography.weight.semiBold,
+              ),
+            ),
+          ),
+          if (onTap != null) ...[
+            SizedBox(width: tokens.spacing.step2),
+            // A calendar glyph marks the label as the jump-to-date affordance;
+            // without it the most powerful navigation reads as static text.
+            Icon(
+              Icons.calendar_today_rounded,
+              size: tokens.spacing.step4,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ],
+        ],
+      ),
+    );
+    // Center (widthFactor 1) so the label sits mid-height and its hover fills
+    // the full stretched cluster height, lining up with the chevrons.
+    final padded = Center(
+      widthFactor: 1,
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step3,
+          vertical: tokens.spacing.step2,
+        ),
+        child: content,
+      ),
     );
     if (onTap == null) return padded;
     return Tooltip(

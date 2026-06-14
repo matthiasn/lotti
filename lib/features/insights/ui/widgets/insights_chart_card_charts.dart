@@ -9,6 +9,7 @@ import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_surfaces.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// How many leading buckets of [data] have elapsed (start on or before today).
@@ -66,7 +67,7 @@ class StackedBarChart extends StatelessWidget {
     // Hairline in the card colour cuts each stacked segment from the next, a
     // non-colour boundary so adjacent muted fills never smear together.
     final segmentEdge = BorderSide(
-      color: tokens.colors.background.level02,
+      color: insightsCardSurface(context),
     );
 
     return LayoutBuilder(

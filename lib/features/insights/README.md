@@ -205,12 +205,13 @@ stateDiagram-v2
 
 ## Visualization (Stephen Few rules)
 
-- Stacked bars per bucket / pre-stacked cumulative area, switched by a
-  bordered segmented toggle whose labels track the bucket and avoid jargon —
-  "Per day" / "Per week" / "Per hour" (never a fixed "Daily" over weekly
-  bars) and "Running total" — with a caption under the title restating what
-  the chart shows. No pies, no donuts, zero-based axes, horizontal gridlines
-  only.
+- Stacked bars per bucket / pre-stacked cumulative area, switched by the
+  shared `DsSegmentedToggle` (the same pill-shaped control as the Daily OS
+  plan-view switch, so the app speaks one visual language). Its labels track
+  the bucket and avoid jargon — "Per day" / "Per week" / "Per hour" (never a
+  fixed "Daily" over weekly bars) and "Running total" — with a caption under
+  the title restating what the chart shows. No pies, no donuts, zero-based
+  axes, horizontal gridlines only.
 - In-progress periods plot only their **elapsed** buckets (today is the right
   edge) instead of reserving empty future slots; the period label carries the
   full scope. Today's bar carries a quiet marker border. Y-axis labels roll
@@ -244,13 +245,28 @@ stateDiagram-v2
   its member categories inline, and FOCUS/OTHER each carry a plain-language
   gloss ("Categories you're watching" / "Everything else") so the terse
   eyebrows aren't opaque to newcomers.
-- Controls share one pill idiom (granularity, MTD/YTD, Compare,
-  Daily/Cumulative). The selected pill is unmistakable: a brand-accent
-  border, a heavier stroke, a stronger accent fill, and semibold high-
-  emphasis text — four cues so selection never rides on hue alone.
+- The header controls share one rounded idiom: the period-stepper cluster and
+  the `InsightsPillButton`s (This month / This year, Compare) are all capsule
+  (`radii.badgesPills`) at the same height — the cluster's chevrons are sized
+  to the label/dropdown text so it never stands taller than the pills — so the
+  whole top bar matches the `DsSegmentedToggle` look. The selected pill is
+  unmistakable via three **width-invariant** cues — a brand-accent border, the
+  stronger accent fill, and high-emphasis ink — so selection never rides on hue
+  alone *and* toggling never reflows the row (a bold label or thicker stroke
+  would change the pill width and jump the header). The chart mode switch uses
+  `DsSegmentedToggle`, which reserves its selected (bold) width with an
+  invisible ghost for the same stability.
+- The period label reserves a minimum width and centres its text, so stepping
+  (which changes the label, and with it its natural width) never shifts the
+  chevrons on either side.
 - The empty state offers recovery in the page's bordered-button idiom: a
   primary "Show the previous period" pill (the likeliest intent) and a
   quieter "View this year" text link (dropped once already on the year).
+- **Elevation.** The page is a darker canvas with the cards a step lighter on
+  it in *both* themes (`insights_surfaces.dart`). The design-system background
+  ramp inverts between themes — `level02` is lighter than `level01` in dark,
+  but darker than the white `level01` in light — so the page and card surfaces
+  swap by brightness to keep cards reading as raised, not recessed.
 
 ## Navigation
 

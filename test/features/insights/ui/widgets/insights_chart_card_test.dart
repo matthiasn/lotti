@@ -45,6 +45,11 @@ void main() {
     partialFirstBucket: partialFirstBucket,
   );
 
+  // The shared segmented toggle stacks an invisible bold "ghost" under each
+  // visible label to reserve width, so a plain find.text matches two Texts —
+  // the visible one is the Stack's last child.
+  Finder toggle(String label) => find.text(label).last;
+
   Future<void> pumpCard(
     WidgetTester tester, {
     InsightsChartData? data,
@@ -84,7 +89,7 @@ void main() {
   ) async {
     await pumpCard(tester);
 
-    await tester.tap(find.text('Running total'));
+    await tester.tap(toggle('Running total'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
 
@@ -92,7 +97,7 @@ void main() {
     expect(find.byType(BarChart), findsNothing);
     expect(find.text('Running total over the range'), findsOneWidget);
 
-    await tester.tap(find.text('Per day'));
+    await tester.tap(toggle('Per day'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 600));
     expect(find.byType(BarChart), findsOneWidget);
@@ -103,8 +108,8 @@ void main() {
   ) async {
     // Day granularity (default) → "Per day".
     await pumpCard(tester);
-    expect(find.text('Per day'), findsOneWidget);
-    expect(find.text('Running total'), findsOneWidget);
+    expect(toggle('Per day'), findsOneWidget);
+    expect(toggle('Running total'), findsOneWidget);
 
     // Weekly buckets → "Per week", never a wrong fixed "Daily".
     await pumpCard(
@@ -118,7 +123,7 @@ void main() {
         ],
       ),
     );
-    expect(find.text('Per week'), findsOneWidget);
+    expect(toggle('Per week'), findsOneWidget);
     expect(find.text('Per day'), findsNothing);
 
     // Hourly buckets → "Per hour".
@@ -133,7 +138,7 @@ void main() {
         ],
       ),
     );
-    expect(find.text('Per hour'), findsOneWidget);
+    expect(toggle('Per hour'), findsOneWidget);
   });
 
   testWidgets('legend discloses the Other rollup count', (tester) async {
@@ -310,7 +315,7 @@ void main() {
       'cumulative tooltip de-stacks to running per-series totals',
       (tester) async {
         await pumpCard(tester);
-        await tester.tap(find.text('Running total'));
+        await tester.tap(toggle('Running total'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 600));
 
@@ -395,7 +400,7 @@ void main() {
         ],
       );
       await pumpCard(tester, data: data);
-      await tester.tap(find.text('Running total'));
+      await tester.tap(toggle('Running total'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
 
