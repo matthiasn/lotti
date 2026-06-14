@@ -1,10 +1,12 @@
 import 'package:beamer/beamer.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
@@ -351,5 +353,94 @@ void main() {
       // Back on the dialog: the value field is still present.
       expect(find.byKey(const Key('measurement_value_field')), findsOneWidget);
     });
+
+    testWidgets('submitting the value field via the keyboard saves', (
+      tester,
+    ) async {
+      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
+        return mockPersistenceLogic.createMeasurementEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          private: false,
+        );
+      }
+
+      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
+
+      await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.enterText(
+        find.byKey(const Key('measurement_value_field')),
+        '750',
+      );
+      await tester.pump();
+
+      // The value field is autofocused, so the keyboard "done" action targets
+      // it and fires onSubmitted -> _save (no Save-button tap involved).
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verify(mockCreateMeasurementEntry).called(1);
+    });
+
+    testWidgets(
+      'hovering a field ramps its border to the hover colour, then back',
+      (tester) async {
+        await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The nearest bordered DecoratedBox above the comment field is its
+        // _FieldShell surface; read the border colour off it.
+        Color commentBorderColor() {
+          final box = tester.widget<DecoratedBox>(
+            find
+                .ancestor(
+                  of: find.byKey(const Key('measurement_comment_field')),
+                  matching: find.byWidgetPredicate(
+                    (w) =>
+                        w is DecoratedBox &&
+                        w.decoration is BoxDecoration &&
+                        (w.decoration as BoxDecoration).border != null,
+                  ),
+                )
+                .first,
+          );
+          return ((box.decoration as BoxDecoration).border! as Border)
+              .top
+              .color;
+        }
+
+        final tokens = tester
+            .element(find.byKey(const Key('measurement_comment_field')))
+            .designTokens;
+
+        // The comment field is not focused (the value field has autofocus), so
+        // it starts in the idle border state.
+        final idleColor = commentBorderColor();
+        expect(idleColor, isNot(tokens.colors.text.mediumEmphasis));
+
+        final gesture = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+        );
+        await gesture.addPointer(location: Offset.zero);
+        addTearDown(gesture.removePointer);
+
+        // Hover onto the field -> MouseRegion.onEnter -> hovered border.
+        await gesture.moveTo(
+          tester.getCenter(find.byKey(const Key('measurement_comment_field'))),
+        );
+        await tester.pump();
+        expect(commentBorderColor(), tokens.colors.text.mediumEmphasis);
+
+        // Move away -> MouseRegion.onExit -> back to the idle border.
+        await gesture.moveTo(Offset.zero);
+        await tester.pump();
+        expect(commentBorderColor(), idleColor);
+      },
+    );
   });
 }
