@@ -233,15 +233,17 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
 
-      // Tap the category chip to filter
+      // Tap the category row to stage it.
       final categoryChip = find.text(categoryMindfulness.name);
       expect(categoryChip, findsOneWidget);
       await tester.tap(categoryChip);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Close the modal
-      await tester.tapAt(Offset.zero);
+      // Commit via the picker's Apply footer. The unified multi-picker is
+      // deferred — dismissing the sheet would discard the staged selection
+      // instead of applying it.
+      await tester.tap(find.byKey(const ValueKey('category-picker-apply')));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 600));
 

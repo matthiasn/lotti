@@ -1,150 +1,201 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
-import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
+import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
+import 'package:lotti/features/tasks/ui/labels/label_ui_utils.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:lotti/widgets/search/index.dart';
+import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 
-/// Utility functions for opening the label selection modal.
+/// Opens the label selector for a journal entry.
 ///
-/// Consolidates the modal opening logic used by both ModernLabelsItem
-/// and EntryLabelsDisplay to avoid code duplication.
+/// A multi-select [EntityPickerSheet] (the same picker categories use), scoped
+/// to the entry's category but unioned with already-assigned labels so
+/// out-of-category labels can still be removed. Applying commits the staged set
+/// via [LabelsRepository.setLabels]; dismissing discards it.
 class LabelSelectionModalUtils {
   LabelSelectionModalUtils._();
 
-  /// Opens the label selection modal for a journal entry.
-  ///
-  /// [context] - Build context for showing the modal
-  /// [entryId] - The ID of the entry being labeled
-  /// [initialLabelIds] - Currently assigned label IDs
-  /// [categoryId] - Optional category ID for filtering labels
   static Future<void> openLabelSelector({
     required BuildContext context,
     required String entryId,
     required List<String> initialLabelIds,
     String? categoryId,
   }) async {
-    final applyController = ValueNotifier<Future<bool> Function()?>(null);
-    final searchNotifier = ValueNotifier<String>('');
-    final searchController = TextEditingController();
-
+    final staged = ValueNotifier<Set<String>>({...initialLabelIds});
     try {
-      await ModalUtils.showSingleSliverPageModal<void>(
+      await ModalUtils.showSinglePageModal<void>(
         context: context,
-        builder: (modalContext) {
-          return ModalUtils.sliverModalSheetPage(
-            context: modalContext,
-            navBarHeight: 80,
-            showCloseButton: false,
-            titleWidget: Padding(
-              padding: const EdgeInsets.only(
-                top: 8,
-                left: 20,
-                right: 20,
-                bottom: 8,
-              ),
-              child: LottiSearchBar(
-                hintText: context.messages.tasksLabelsSheetSearchHint,
-                controller: searchController,
-                useGradientInDark: false,
-                onChanged: (value) => searchNotifier.value = value,
-                onClear: () {
-                  searchNotifier.value = '';
-                  searchController.clear();
-                },
-                textCapitalization: TextCapitalization.words,
-              ),
-            ),
-            stickyActionBar: LabelSelectionStickyActionBar(
-              applyController: applyController,
-            ),
-            slivers: [
-              LabelSelectionSliverContent(
-                entryId: entryId,
-                initialLabelIds: initialLabelIds,
-                categoryId: categoryId,
-                applyController: applyController,
-                searchQuery: searchNotifier,
-              ),
-              // Bottom padding sliver
-              const SliverPadding(
-                padding: EdgeInsets.only(bottom: 100),
-              ),
-            ],
-          );
-        },
+        title: context.messages.settingsLabelsTitle,
+        stickyActionBarBuilder: (_) =>
+            _LabelApplyFooter(staged: staged, entryId: entryId),
+        builder: (_) => _LabelPickerBody(
+          entryId: entryId,
+          initialLabelIds: initialLabelIds,
+          categoryId: categoryId,
+          staged: staged,
+        ),
       );
     } finally {
-      applyController.dispose();
-      searchNotifier.dispose();
-      searchController.dispose();
+      staged.dispose();
     }
   }
 }
 
-/// Sticky action bar widget for the label selection modal.
-///
-/// Contains Cancel and Apply buttons with proper styling.
-class LabelSelectionStickyActionBar extends StatelessWidget {
-  const LabelSelectionStickyActionBar({
-    required this.applyController,
-    super.key,
+class _LabelPickerBody extends ConsumerWidget {
+  const _LabelPickerBody({
+    required this.entryId,
+    required this.initialLabelIds,
+    required this.categoryId,
+    required this.staged,
   });
 
-  final ValueNotifier<Future<bool> Function()?> applyController;
+  final String entryId;
+  final List<String> initialLabelIds;
+  final String? categoryId;
+  final ValueNotifier<Set<String>> staged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final available = ref.watch(availableLabelsForCategoryProvider(categoryId));
+    final allLabels =
+        ref.watch(labelsStreamProvider).value ?? const <LabelDefinition>[];
+    final cache = getIt<EntitiesCacheService>();
+    final assignedDefs = initialLabelIds
+        .map(cache.getLabelById)
+        .whereType<LabelDefinition>()
+        .toList();
+
+    List<PickerEntry> entriesBuilder(String query) {
+      final result = buildSelectorLabelList(
+        available: available,
+        assignedDefs: assignedDefs,
+        selectedIds: staged.value,
+        searchLower: query.toLowerCase(),
+      );
+      final availableIds = result.availableIds;
+      return [
+        for (final label in result.items)
+          _labelPickerItem(
+            label,
+            outOfCategory: !availableIds.contains(label.id),
+          ),
+      ];
+    }
+
+    bool shouldShowCreate(String query) {
+      if (query.isEmpty) {
+        return false;
+      }
+      final q = query.toLowerCase();
+      // Show create unless an existing label already has this exact name
+      // (checked across all labels to avoid cross-category duplicates).
+      return !allLabels.any((l) => l.name.toLowerCase() == q);
+    }
+
+    Future<String?> createFromQuery(String query) async {
+      final trimmed = query.trim();
+      final result = await ModalUtils.showBottomSheet<LabelDefinition>(
+        context: context,
+        isScrollControlled: true,
+        useRootNavigator: true,
+        builder: (_) =>
+            LabelEditorSheet(initialName: trimmed.isEmpty ? null : trimmed),
+      );
+      return result?.id;
+    }
+
+    return EntityPickerSheet(
+      mode: PickerMode.multi,
+      entriesBuilder: entriesBuilder,
+      searchHintText: context.messages.tasksLabelsSheetSearchHint,
+      emptyMessage: context.messages.filterSelectionNoMatches,
+      stagedNotifier: staged,
+      createFromQuery: createFromQuery,
+      shouldShowCreate: shouldShowCreate,
+      createRowKey: const ValueKey('label-picker-create'),
+    );
+  }
+}
+
+PickerItem _labelPickerItem(
+  LabelDefinition label, {
+  required bool outOfCategory,
+}) {
+  final subtitle = buildLabelSubtitleText(label, outOfCategory: outOfCategory);
+  return PickerItem(
+    id: label.id,
+    rowKey: ValueKey('label-picker-row-${label.id}'),
+    leading: _LabelColorDot(label.color),
+    title: label.name,
+    subtitle: subtitle,
+    // The subtitle is visual-only (excluded from the row's child semantics),
+    // so fold it into the accessible name.
+    semanticLabel: subtitle == null ? label.name : '${label.name}, $subtitle',
+  );
+}
+
+class _LabelApplyFooter extends ConsumerWidget {
+  const _LabelApplyFooter({required this.staged, required this.entryId});
+
+  final ValueNotifier<Set<String>> staged;
+  final String entryId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return buildPickerApplyFooter(
+      context: context,
+      label: context.messages.tasksLabelsSheetApply,
+      buttonKey: const ValueKey('label-picker-apply'),
+      onTap: () async {
+        final navigator = Navigator.of(context);
+        final messages = context.messages;
+        final repository = ref.read(labelsRepositoryProvider);
+        final ok = await repository.setLabels(
+          journalEntityId: entryId,
+          labelIds: staged.value.toList(),
+        );
+        if (!context.mounted) {
+          return;
+        }
+        if (ok ?? false) {
+          navigator.pop();
+        } else {
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: messages.tasksLabelsUpdateFailed,
+          );
+        }
+      },
+    );
+  }
+}
+
+/// The label leading: a colour dot centred in a slot the same width as the
+/// category icon chip, so label and category rows align identically.
+class _LabelColorDot extends StatelessWidget {
+  const _LabelColorDot(this.colorHex);
+
+  final String? colorHex;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return SafeArea(
-      top: false,
-      child: Container(
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHigh,
-          border: Border(
-            top: BorderSide(
-              color: colorScheme.outline.withValues(alpha: 0.12),
-            ),
-          ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            Expanded(
-              child: OutlinedButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: Text(context.messages.cancelButton),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ValueListenableBuilder<Future<bool> Function()?>(
-                valueListenable: applyController,
-                builder: (context, applyFn, _) {
-                  return FilledButton(
-                    onPressed: applyFn == null
-                        ? null
-                        : () async {
-                            final ok = await applyFn();
-                            if (!context.mounted) return;
-                            if (ok) {
-                              Navigator.of(context).pop();
-                            } else {
-                              context.showToast(
-                                tone: DesignSystemToastTone.error,
-                                title: context.messages.tasksLabelsUpdateFailed,
-                              );
-                            }
-                          },
-                    child: Text(context.messages.tasksLabelsSheetApply),
-                  );
-                },
-              ),
-            ),
-          ],
+    final color = colorFromCssHex(colorHex, substitute: Colors.grey);
+    return SizedBox(
+      width: CategoryIconConstants.iconSizeMedium,
+      child: Center(
+        child: Container(
+          width: CategoryIconConstants.iconSizeSmall,
+          height: CategoryIconConstants.iconSizeSmall,
+          decoration: BoxDecoration(shape: BoxShape.circle, color: color),
         ),
       ),
     );

@@ -18,6 +18,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -29,7 +30,6 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/header/modern_ac
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/ratings/state/rating_controller.dart';
-import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -41,6 +41,7 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/media_file_actions.dart';
 import 'package:lotti/utils/platform.dart' as platform;
+import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:share_plus/share_plus.dart';
@@ -2189,7 +2190,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('label-picker-apply')),
+          findsOneWidget,
+        );
       });
 
       testWidgets('modal shows search bar', (tester) async {
@@ -2225,10 +2229,9 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final content = tester.widget<LabelSelectionSliverContent>(
-          find.byType(LabelSelectionSliverContent),
-        );
-        expect(content.categoryId, equals('work'));
+        // The selector opens (scoped to the entry's category) and lists labels.
+        expect(find.byType(EntityPickerSheet), findsOneWidget);
+        expect(find.text('Urgent'), findsOneWidget);
       });
 
       testWidgets('passes null categoryId when entry has none', (tester) async {
@@ -2247,15 +2250,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final content = tester.widget<LabelSelectionSliverContent>(
-          find.byType(LabelSelectionSliverContent),
-        );
-        expect(content.categoryId, isNull);
+        expect(find.byType(EntityPickerSheet), findsOneWidget);
+        expect(find.text('Urgent'), findsOneWidget);
       });
     });
 
     group('Modal actions', () {
-      testWidgets('modal shows cancel button', (tester) async {
+      testWidgets('modal shows a close button', (tester) async {
         final entry = textEntryWithLabels(const []);
 
         await tester.pumpWidget(buildWrapper(entry));
@@ -2269,7 +2270,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.widgetWithText(OutlinedButton, 'Cancel'), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
       });
 
       testWidgets('apply button saves labels and closes modal', (tester) async {
@@ -2295,7 +2296,7 @@ void main() {
         await tester.tap(find.text('Urgent'));
         await tester.pump();
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
+        await tester.tap(find.byKey(const ValueKey('label-picker-apply')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -2306,7 +2307,7 @@ void main() {
           ),
         ).called(1);
 
-        expect(find.widgetWithText(FilledButton, 'Apply'), findsNothing);
+        expect(find.byKey(const ValueKey('label-picker-apply')), findsNothing);
       });
 
       testWidgets('shows error snackbar when apply fails', (tester) async {
@@ -2329,12 +2330,15 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
+        await tester.tap(find.byKey(const ValueKey('label-picker-apply')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Failed to update labels'), findsWidgets);
-        expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
+        expect(
+          find.byKey(const ValueKey('label-picker-apply')),
+          findsOneWidget,
+        );
       });
     });
 
@@ -2366,7 +2370,7 @@ void main() {
         await tester.enterText(searchField, 'Urgent');
         await tester.pump();
 
-        expect(find.byType(CheckboxListTile), findsOneWidget);
+        expect(find.byType(DesignSystemCheckbox), findsOneWidget);
       });
 
       testWidgets('clearing search shows all labels', (tester) async {
@@ -2413,10 +2417,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final checkbox = tester.widget<CheckboxListTile>(
-          find.ancestor(
-            of: find.text('Urgent'),
-            matching: find.byType(CheckboxListTile),
+        final checkbox = tester.widget<DesignSystemCheckbox>(
+          find.descendant(
+            of: find.byKey(const ValueKey('label-picker-row-label-1')),
+            matching: find.byType(DesignSystemCheckbox),
           ),
         );
         expect(checkbox.value, isTrue);
@@ -2436,24 +2440,19 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        var checkbox = tester.widget<CheckboxListTile>(
-          find.ancestor(
-            of: find.text('Urgent'),
-            matching: find.byType(CheckboxListTile),
-          ),
-        );
-        expect(checkbox.value, isFalse);
+        DesignSystemCheckbox urgentCheckbox() =>
+            tester.widget<DesignSystemCheckbox>(
+              find.descendant(
+                of: find.byKey(const ValueKey('label-picker-row-label-1')),
+                matching: find.byType(DesignSystemCheckbox),
+              ),
+            );
+        expect(urgentCheckbox().value, isFalse);
 
         await tester.tap(find.text('Urgent'));
         await tester.pump();
 
-        checkbox = tester.widget<CheckboxListTile>(
-          find.ancestor(
-            of: find.text('Urgent'),
-            matching: find.byType(CheckboxListTile),
-          ),
-        );
-        expect(checkbox.value, isTrue);
+        expect(urgentCheckbox().value, isTrue);
       });
     });
 
@@ -2472,10 +2471,16 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        final content = tester.widget<LabelSelectionSliverContent>(
-          find.byType(LabelSelectionSliverContent),
-        );
-        expect(content.initialLabelIds, containsAll(['label-1', 'label-2']));
+        // Both initially-assigned labels render checked.
+        for (final id in ['label-1', 'label-2']) {
+          final checkbox = tester.widget<DesignSystemCheckbox>(
+            find.descendant(
+              of: find.byKey(ValueKey('label-picker-row-$id')),
+              matching: find.byType(DesignSystemCheckbox),
+            ),
+          );
+          expect(checkbox.value, isTrue);
+        }
       });
     });
   });

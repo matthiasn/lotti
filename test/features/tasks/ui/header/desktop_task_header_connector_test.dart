@@ -11,7 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -21,7 +21,6 @@ import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
-import 'package:lotti/features/tasks/ui/labels/label_selection_modal_content.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -30,6 +29,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -518,10 +518,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // CategorySelectionModalContent renders with an empty category
+        // CategoryPickerSheet renders with an empty category
         // list — verify that the header's own "unassigned" chip has been
         // covered by a modal on top.
-        expect(find.byType(CategorySelectionModalContent), findsOneWidget);
+        expect(find.byType(CategoryPickerSheet), findsOneWidget);
       },
     );
 
@@ -566,8 +566,8 @@ void main() {
         // state — asserting on that content proves the modal actually opened
         // and populated its (empty) label list, not merely that the type is
         // present somewhere in the tree.
-        expect(find.byType(LabelSelectionSliverContent), findsOneWidget);
-        expect(find.text('No labels available yet.'), findsOneWidget);
+        expect(find.byType(EntityPickerSheet), findsOneWidget);
+        expect(find.text('No matches'), findsOneWidget);
       },
     );
 
@@ -890,7 +890,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Modal closed.
-        expect(find.byType(CategorySelectionModalContent), findsNothing);
+        expect(find.byType(CategoryPickerSheet), findsNothing);
         // Outer nested route was NOT popped — the connector is still
         // mounted. A pop targeting the connector's outer context would
         // have removed the MaterialPageRoute hosting the connector.
@@ -1228,7 +1228,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byType(LabelSelectionSliverContent), findsOneWidget);
+        expect(find.byType(EntityPickerSheet), findsOneWidget);
       },
     );
   });

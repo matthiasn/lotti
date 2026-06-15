@@ -251,6 +251,24 @@ void main() {
       expect(state.selectedCategoryIds, isEmpty);
     });
 
+    test(
+      'setCategoryIds replaces the whole set (applies adds and removes)',
+      () {
+        final provider = labelEditorControllerProvider(
+          const LabelEditorArgs(),
+        );
+        final notifier = container.read(provider.notifier);
+
+        notifier.addCategoryId('cat-1');
+        // The multi-picker commits the full edited set: cat-1 is dropped and
+        // cat-2/cat-3 added in one write.
+        notifier.setCategoryIds({'cat-2', 'cat-3'});
+        final state = container.read(provider);
+        expect(state.selectedCategoryIds, {'cat-2', 'cat-3'});
+        expect(state.hasChanges, isTrue);
+      },
+    );
+
     test('save passes applicableCategoryIds on create', () async {
       when(() => repository.getAllLabels()).thenAnswer((_) async => []);
       when(

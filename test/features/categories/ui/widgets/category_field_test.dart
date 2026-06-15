@@ -4,7 +4,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -181,7 +181,7 @@ void main() {
 
       expect(selectedCategory, equals(testCategory));
       // Modal closed.
-      expect(find.byType(CategorySelectionModalContent), findsNothing);
+      expect(find.byType(CategoryPickerSheet), findsNothing);
       // Outer nested route was NOT popped — the field is still mounted.
       // If the pop had targeted the field's outer context, the nested
       // Navigator's MaterialPageRoute would have been removed and the

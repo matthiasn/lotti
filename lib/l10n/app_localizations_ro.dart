@@ -2443,6 +2443,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get categoryDeleteTitle => 'Ștergeți categoria?';
 
   @override
+  String get categoryFavoriteBadgeLabel => 'Favorită';
+
+  @override
   String get categoryFavoriteDescription =>
       'Marcați această categorie ca favorită';
 
@@ -2466,6 +2469,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get categoryNotFound => 'Categorie negăsită';
+
+  @override
+  String get categoryPrivateBadgeLabel => 'Privată';
 
   @override
   String get categoryPrivateDescription =>

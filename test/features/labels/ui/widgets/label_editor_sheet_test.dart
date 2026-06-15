@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/labels/state/label_editor_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_editor_sheet.dart';
@@ -210,10 +210,10 @@ void main() {
       await tester.tap(addButton);
       await tester.pumpAndSettle();
 
-      // The real CategorySelectionModalContent is shown with the stubbed
+      // The real CategoryPickerSheet is shown with the stubbed
       // category, proving the OutlinedButton.onPressed (which constructs the
       // modal incl. the line-257 onCategorySelected closure) executed.
-      expect(find.byType(CategorySelectionModalContent), findsOneWidget);
+      expect(find.byType(CategoryPickerSheet), findsOneWidget);
       expect(find.text('Health'), findsOneWidget);
     });
   });

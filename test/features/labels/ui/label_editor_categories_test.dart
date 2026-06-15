@@ -120,7 +120,9 @@ void main() {
       await tester.pump();
     }
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+    // The unified category multi-picker commits via its glass Apply footer
+    // (keyed), not the old modal's FilledButton "Done".
+    await tester.tap(find.byKey(const ValueKey('category-picker-apply')));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
   }

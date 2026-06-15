@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_filter.dart';
@@ -16,6 +16,7 @@ import 'package:pie_chart/pie_chart.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -65,111 +66,71 @@ void main() {
     await getIt.popScope();
   });
 
+  Future<void> pumpFilter(
+    WidgetTester tester,
+    HabitsController Function() controller,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        const HabitsFilter(),
+        overrides: [habitsControllerProvider.overrideWith(controller)],
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
   group('HabitsFilter', () {
     testWidgets('renders filter icon when no habits', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider.overrideWith(_EmptyController.new),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitsFilter(),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await pumpFilter(tester, _EmptyController.new);
 
-      // Should show the empty filter icon
       expect(find.byIcon(Icons.filter_alt_off_outlined), findsOneWidget);
     });
 
     testWidgets('renders pie chart when habits have categories', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider.overrideWith(_WithHabitsController.new),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitsFilter(),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await pumpFilter(tester, _WithHabitsController.new);
 
-      // Should have an IconButton containing the PieChart
       expect(find.byType(IconButton), findsOneWidget);
       expect(find.byType(PieChart), findsOneWidget);
     });
 
-    testWidgets('opens modal when tapped', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider.overrideWith(_WithHabitsController.new),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitsFilter(),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+    testWidgets('opens the deferred category picker when tapped', (
+      tester,
+    ) async {
+      await pumpFilter(tester, _WithHabitsController.new);
 
-      // Tap the filter button
       await tester.tap(find.byKey(const Key('habit_category_filter')));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 500));
 
-      // Modal should show category chips
-      expect(find.byType(ActionChip), findsWidgets);
+      // The unified picker is shown with the category row.
+      expect(find.byType(CategoryPickerSheet), findsOneWidget);
+      expect(find.text(categoryMindfulness.name), findsOneWidget);
     });
 
-    testWidgets('toggles category when chip is tapped', (tester) async {
-      // Reset the recorded category id before the test
-      _TrackingController.lastToggledCategoryId = null;
+    testWidgets('commits the selected categories on Apply', (tester) async {
+      _TrackingController.lastSetCategoryIds = null;
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider.overrideWith(_TrackingController.new),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitsFilter(),
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await pumpFilter(tester, _TrackingController.new);
 
-      // Tap the filter button to open modal
+      // Open the picker.
       await tester.tap(find.byKey(const Key('habit_category_filter')));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 500));
 
-      // Find and tap a category chip
-      final chipFinder = find.byType(ActionChip);
-      expect(chipFinder, findsWidgets);
-
-      await tester.tap(chipFinder.first);
+      // Stage the category, then commit via Apply.
+      await tester.tap(find.text(categoryMindfulness.name));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.byKey(const ValueKey('category-picker-apply')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
 
-      // Verify toggleSelectedCategoryIds was called with the correct category
+      // Nothing was committed until Apply, and Apply set the whole staged set.
       expect(
-        _TrackingController.lastToggledCategoryId,
-        categoryMindfulness.id,
+        _TrackingController.lastSetCategoryIds,
+        {categoryMindfulness.id},
       );
     });
   });
@@ -180,9 +141,6 @@ class _EmptyController extends HabitsController {
   HabitsState build() {
     return HabitsState.initial();
   }
-
-  @override
-  void toggleSelectedCategoryIds(String categoryId) {}
 }
 
 class _WithHabitsController extends HabitsController {
@@ -193,14 +151,11 @@ class _WithHabitsController extends HabitsController {
       habitDefinitions: [habitFlossing],
     );
   }
-
-  @override
-  void toggleSelectedCategoryIds(String categoryId) {}
 }
 
-/// Controller that tracks the last toggled category id for testing
+/// Controller that records the committed category set for testing.
 class _TrackingController extends HabitsController {
-  static String? lastToggledCategoryId;
+  static Set<String>? lastSetCategoryIds;
 
   @override
   HabitsState build() {
@@ -211,7 +166,7 @@ class _TrackingController extends HabitsController {
   }
 
   @override
-  void toggleSelectedCategoryIds(String categoryId) {
-    lastToggledCategoryId = categoryId;
+  void setSelectedCategoryIds(Set<String> categoryIds) {
+    lastSetCategoryIds = categoryIds;
   }
 }

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/textareas/design_system_textarea.dart';
@@ -15,7 +15,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/settings/settings_color_picker_field.dart';
 import 'package:lotti/widgets/settings/settings_detail_scaffold.dart';
 import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
@@ -356,22 +355,16 @@ class _LabelDetailsPageState extends ConsumerState<LabelDetailsPage> {
             leadingIcon: Icons.add,
             variant: DesignSystemButtonVariant.secondary,
             onPressed: () async {
-              final result =
-                  await ModalUtils.showBottomSheet<List<CategoryDefinition>>(
-                    context: context,
-                    isScrollControlled: true,
-                    useRootNavigator: true,
-                    builder: (context) => CategorySelectionModalContent(
-                      onCategorySelected: (_) {},
-                      multiSelect: true,
-                      initiallySelectedCategoryIds: state.selectedCategoryIds,
-                    ),
-                  );
-              if (result != null && result.isNotEmpty) {
-                for (final cat in result) {
-                  controller.addCategoryId(cat.id);
-                }
-              }
+              final result = await showCategoryMultiPicker(
+                context: context,
+                title: context.messages.settingsLabelsCategoriesAdd,
+                initialSelectedIds: state.selectedCategoryIds,
+              );
+              if (result == null) return;
+              // The picker is seeded with the current set and returns the full
+              // edited set, so replace it wholesale — applying the user's
+              // additions and removals together.
+              controller.setCategoryIds(result.ids);
             },
           ),
         ),

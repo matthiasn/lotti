@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
@@ -75,21 +75,21 @@ class _ColorSpyController extends _FakeLabelEditorController {
   }
 }
 
-/// Records every [addCategoryId] argument while still mutating state, so a
-/// test can both verify the exact ids forwarded by the page and observe the
-/// resulting chips render.
+/// Records the id sets the page forwards — the multi-picker commits the whole
+/// edited set via [setCategoryIds] — while still mutating state, so a test can
+/// verify the forwarded ids and observe the resulting chips render.
 class _AddCategorySpyController extends _FakeLabelEditorController {
   _AddCategorySpyController(
     super.params, {
     required super.initialState,
   });
 
-  final addedIds = <String>[];
+  final setIdsCalls = <Set<String>>[];
 
   @override
-  void addCategoryId(String id) {
-    addedIds.add(id);
-    super.addCategoryId(id);
+  void setCategoryIds(Set<String> ids) {
+    setIdsCalls.add(ids);
+    super.setCategoryIds(ids);
   }
 }
 
@@ -413,7 +413,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // The category selection modal is mounted.
-      expect(find.byType(CategorySelectionModalContent), findsOneWidget);
+      expect(find.byType(CategoryPickerSheet), findsOneWidget);
     });
 
     testWidgets('keyboard shortcut Cmd+S triggers save', (tester) async {
@@ -904,12 +904,14 @@ void main() {
         await tester.tap(find.text('Mindfulness').first);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
-        await tester.tap(find.widgetWithText(FilledButton, 'Done'));
+        await tester.tap(find.byKey(const ValueKey('category-picker-apply')));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The page forwarded exactly the selected id to the controller...
-        expect(controller.addedIds, [categoryMindfulness.id]);
+        // The page forwarded the full edited set to the controller...
+        expect(controller.setIdsCalls, [
+          {categoryMindfulness.id},
+        ]);
         // ...and the resulting chip is now rendered.
         expect(
           find.widgetWithText(InputChip, 'Mindfulness'),

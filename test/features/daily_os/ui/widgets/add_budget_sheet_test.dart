@@ -8,7 +8,7 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart';
@@ -387,13 +387,13 @@ void main() {
         await tester.tap(find.text('Choose a category...'));
         await tester.pumpAndSettle();
 
-        expect(find.byType(CategorySelectionModalContent), findsOneWidget);
+        expect(find.byType(CategoryPickerSheet), findsOneWidget);
 
         await tester.tap(find.text('Work'));
         await tester.pumpAndSettle();
 
         // Modal closed.
-        expect(find.byType(CategorySelectionModalContent), findsNothing);
+        expect(find.byType(CategoryPickerSheet), findsNothing);
         // Selection took effect — placeholder is replaced by the
         // category name in the sheet.
         expect(find.text('Choose a category...'), findsNothing);

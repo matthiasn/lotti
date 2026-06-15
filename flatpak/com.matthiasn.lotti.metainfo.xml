@@ -32,6 +32,13 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1024" date="2026-06-15">
+      <description>
+          <p>Category selection is now one consistent picker across the app: assigning a category (entries, tasks, projects, habits, dashboards, time blocks) opens the same searchable sheet and applies on tap, and the habits and dashboards category filters use that same sheet with an Apply button instead of toggling on each tap.</p>
+          <p>A task's labels now open in that same picker — a searchable, multi-select sheet scoped to the task's category (plus any labels already assigned), with an Apply button and the option to create a new label inline.</p>
+          <p>Search fields no longer sit in a darker box than their surroundings in dark mode: every search field (tasks, settings, the category and label pickers) is now a subtly raised field that matches its surface instead of a sunken dark well.</p>
+      </description>
+    </release>
     <release version="0.9.1023" date="2026-06-14">
       <description>
           <p>On macOS and iOS: experimental on-device text-to-speech reads a task's AI summary aloud — its TL;DR, or the full report when expanded — synthesized locally with the Supertonic model, with no cloud involved. Choose the voice, model, and reading speed under the new Settings → Speech page. Off by default; opt in via the "Enable local AI summary playback" flag. The model (~400 MB) downloads once on first use.</p>

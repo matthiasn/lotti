@@ -3,10 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class CategorySelectionIconButton extends ConsumerWidget {
   const CategorySelectionIconButton({
@@ -25,24 +24,16 @@ class CategorySelectionIconButton extends ConsumerWidget {
     final notifier = ref.read(provider.notifier);
 
     return IconButton(
-      onPressed: () {
-        ModalUtils.showSinglePageModal<void>(
+      onPressed: () async {
+        final result = await showCategoryPicker(
           context: context,
           title: context.messages.habitCategoryLabel,
-          builder: (modalContext) {
-            return CategorySelectionModalContent(
-              onCategorySelected: (category) {
-                notifier.updateCategoryId(category?.id);
-                // Pop via modalContext — the modal is hosted on the root
-                // Navigator on narrow widths; the outer context resolves
-                // to a per-tab nested Navigator. See CategoryField for
-                // the full rationale.
-                Navigator.of(modalContext).pop();
-              },
-              initialCategoryId: entry.categoryId,
-            );
-          },
+          currentCategoryId: entry.categoryId,
         );
+        // null = dismissed (no change); CategoryPicked -> the id;
+        // CategoryCleared -> null (categoryOrNull maps both to null).
+        if (result == null) return;
+        await notifier.updateCategoryId(result.categoryOrNull?.id);
       },
       icon: CategoryIconCompact(
         entry.categoryId,

@@ -235,6 +235,37 @@ void main() {
       );
     });
 
+    test(
+      'setSelectedCategoryIds replaces the whole selection in one write',
+      () {
+        final controller = container.read(habitsControllerProvider.notifier);
+        expect(
+          container.read(habitsControllerProvider).selectedCategoryIds,
+          isEmpty,
+        );
+
+        controller.setSelectedCategoryIds({'cat-1'});
+        expect(
+          container.read(habitsControllerProvider).selectedCategoryIds,
+          {'cat-1'},
+        );
+
+        // The deferred picker commits the full edited set, replacing (not
+        // merging) the previous one.
+        controller.setSelectedCategoryIds({'cat-2', 'cat-3'});
+        expect(
+          container.read(habitsControllerProvider).selectedCategoryIds,
+          {'cat-2', 'cat-3'},
+        );
+
+        controller.setSelectedCategoryIds(<String>{});
+        expect(
+          container.read(habitsControllerProvider).selectedCategoryIds,
+          isEmpty,
+        );
+      },
+    );
+
     test('setTimeSpan updates timeSpanDays', () async {
       // Wait for initialization to complete
       await pumpEventQueue();

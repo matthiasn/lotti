@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/modal/index.dart';
 
 typedef CategoryCallback = void Function(CategoryDefinition?);
 
@@ -26,24 +25,16 @@ class CategoryField extends StatelessWidget {
     final category = getIt<EntitiesCacheService>().getCategoryById(categoryId);
     final controller = TextEditingController()..text = category?.name ?? '';
 
-    void onTap() {
-      ModalUtils.showSinglePageModal<void>(
+    Future<void> onTap() async {
+      final result = await showCategoryPicker(
         context: context,
         title: context.messages.habitCategoryLabel,
-        builder: (modalContext) {
-          return CategorySelectionModalContent(
-            onCategorySelected: (category) {
-              onSave(category);
-              // Pop via modalContext: the modal is hosted on the root
-              // Navigator (shouldUseRootNavigatorForBottomSheet on narrow
-              // widths); the outer context resolves to a per-tab nested
-              // Navigator and would pop the wrong stack.
-              Navigator.of(modalContext).pop();
-            },
-            initialCategoryId: categoryId,
-          );
-        },
+        currentCategoryId: categoryId,
       );
+      // null = dismissed (no change); otherwise apply the pick or the clear
+      // (categoryOrNull is null for an explicit "clear" row).
+      if (result == null) return;
+      onSave(result.categoryOrNull);
     }
 
     final categoryUndefined = category == null;

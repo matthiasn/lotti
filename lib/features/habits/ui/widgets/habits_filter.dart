@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:pie_chart/pie_chart.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 class HabitsFilter extends ConsumerWidget {
   const HabitsFilter({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final categories = getIt<EntitiesCacheService>().sortedCategories;
     final state = ref.watch(habitsControllerProvider);
 
     final dataMap = <String, double>{};
@@ -54,60 +53,15 @@ class HabitsFilter extends ConsumerWidget {
                 showChartValues: false,
               ),
             ),
-      onPressed: () {
-        ModalUtils.showBottomSheet<void>(
+      onPressed: () async {
+        final controller = ref.read(habitsControllerProvider.notifier);
+        final result = await showCategoryMultiPicker(
           context: context,
-          builder: (BuildContext modalContext) {
-            return Consumer(
-              builder: (context, ref, child) {
-                final modalState = ref.watch(habitsControllerProvider);
-                final modalController = ref.read(
-                  habitsControllerProvider.notifier,
-                );
-
-                return Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 20,
-                    horizontal: 10,
-                  ),
-                  child: Wrap(
-                    spacing: 5,
-                    runSpacing: 5,
-                    children: [
-                      ...categories.map((category) {
-                        final color = colorFromCssHex(category.color);
-
-                        return Opacity(
-                          opacity:
-                              modalState.selectedCategoryIds.contains(
-                                category.id,
-                              )
-                              ? 1
-                              : 0.4,
-                          child: ActionChip(
-                            onPressed: () =>
-                                modalController.toggleSelectedCategoryIds(
-                                  category.id,
-                                ),
-                            label: Text(
-                              category.name,
-                              style: TextStyle(
-                                color: color.isLight
-                                    ? Colors.black
-                                    : Colors.white,
-                              ),
-                            ),
-                            backgroundColor: color,
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+          title: context.messages.habitCategoryLabel,
+          initialSelectedIds: state.selectedCategoryIds,
         );
+        if (result == null || !result.changed) return;
+        controller.setSelectedCategoryIds(result.ids);
       },
     );
   }

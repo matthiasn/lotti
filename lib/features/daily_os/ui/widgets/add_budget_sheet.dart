@@ -3,7 +3,7 @@ import 'package:flutter_material_design_icons/flutter_material_design_icons.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/ui/widgets/category_selection_modal_content.dart';
+import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -37,26 +37,16 @@ class _AddBlockSheetState extends ConsumerState<AddBlockSheet> {
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
 
-  void _showCategorySelector() {
-    ModalUtils.showSinglePageModal<void>(
+  Future<void> _showCategorySelector() async {
+    final result = await showCategoryPicker(
       context: context,
       title: context.messages.dailyOsSelectCategory,
-      builder: (modalContext) {
-        return CategorySelectionModalContent(
-          onCategorySelected: (category) {
-            setState(() {
-              _selectedCategory = category;
-            });
-            // Pop via modalContext — the modal is hosted on the root
-            // Navigator on narrow widths; the outer context resolves to
-            // a per-tab nested Navigator. See CategoryField for the full
-            // rationale.
-            Navigator.of(modalContext).pop();
-          },
-          initialCategoryId: _selectedCategory?.id,
-        );
-      },
+      currentCategoryId: _selectedCategory?.id,
     );
+    if (result == null || !mounted) return;
+    setState(() {
+      _selectedCategory = result.categoryOrNull;
+    });
   }
 
   Future<void> _selectStartTime() async {
