@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/features/sync/ui/widgets/matrix/verification_emojis_row.da
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:matrix/matrix.dart';
 
 class VerificationModal extends ConsumerStatefulWidget {
@@ -165,13 +165,14 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                   ),
                   const SizedBox(height: 20),
                   if (runner == null)
-                    LottiPrimaryButton(
+                    DesignSystemButton(
                       key: const Key('matrix_start_verify'),
                       onPressed: _verificationStartInFlight
                           ? null
                           : () => unawaited(startVerification()),
                       label:
                           context.messages.settingsMatrixStartVerificationLabel,
+                      size: DesignSystemButtonSize.large,
                     ),
                   if (lastStep?.isEmpty ?? false)
                     Column(
@@ -182,7 +183,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                               .settingsMatrixContinueVerificationLabel,
                         ),
                         const SizedBox(height: 12),
-                        LottiPrimaryButton(
+                        DesignSystemButton(
                           key: const Key('matrix_restart_verify'),
                           onPressed: _verificationStartInFlight
                               ? null
@@ -190,6 +191,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                           label: context
                               .messages
                               .settingsMatrixStartVerificationLabel,
+                          size: DesignSystemButtonSize.large,
                         ),
                       ],
                     ),
@@ -198,12 +200,13 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                       context.messages.settingsMatrixVerificationCancelledLabel,
                     ),
                   if (isLastStepKey && emojis == null)
-                    LottiPrimaryButton(
+                    DesignSystemButton(
                       key: const Key('matrix_accept_verify'),
                       onPressed: () => _acceptEmojiVerification(runner),
                       label: context
                           .messages
                           .settingsMatrixAcceptVerificationLabel,
+                      size: DesignSystemButtonSize.large,
                     ),
                   if (!isDone && emojis != null) ...[
                     if (_awaitingOtherDevice)
@@ -228,19 +231,20 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Flexible(
-                          child: LottiPrimaryButton(
+                          child: DesignSystemButton(
                             key: const Key('matrix_cancel_verification'),
                             onPressed: () async {
                               await runner?.cancelVerification();
                               pop();
                             },
                             label: context.messages.settingsMatrixCancel,
-                            isDestructive: true,
+                            variant: DesignSystemButtonVariant.danger,
+                            size: DesignSystemButtonSize.large,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Flexible(
-                          child: LottiPrimaryButton(
+                          child: DesignSystemButton(
                             onPressed: _awaitingOtherDevice
                                 ? null
                                 : () => _acceptEmojiVerification(runner),
@@ -249,6 +253,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                                       .messages
                                       .settingsMatrixContinueVerificationLabel
                                 : context.messages.settingsMatrixAccept,
+                            size: DesignSystemButtonSize.large,
                           ),
                         ),
                       ],
@@ -272,7 +277,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        LottiPrimaryButton(
+                        DesignSystemButton(
                           onPressed: () {
                             unawaited(refreshUnverifiedDevices());
                             runner?.stopTimer();
@@ -281,6 +286,7 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                           label: context
                               .messages
                               .settingsMatrixVerificationSuccessConfirm,
+                          size: DesignSystemButtonSize.large,
                         ),
                       ],
                     ),

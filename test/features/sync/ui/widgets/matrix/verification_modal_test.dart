@@ -6,6 +6,7 @@ import 'package:flutter_material_design_icons/flutter_material_design_icons.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -476,6 +477,7 @@ void main() {
           ],
           child: MaterialApp(
             navigatorKey: navigatorKey,
+            theme: resolveTestTheme(),
             localizationsDelegates: const [
               AppLocalizations.delegate,
               FormBuilderLocalizations.delegate,
@@ -515,12 +517,12 @@ void main() {
       // Invoke the confirm button's onPressed directly: the button sits in a
       // Row(mainAxisAlignment: end) that may render at x > screenWidth in the
       // unconstrained route layout, making pointer-based tap() unreliable.
-      final lastFilledBtn = tester
-          .widgetList<FilledButton>(
-            find.byType(FilledButton),
+      final confirmBtn = tester
+          .widgetList<DesignSystemButton>(
+            find.byType(DesignSystemButton),
           )
           .last;
-      lastFilledBtn.onPressed?.call();
+      confirmBtn.onPressed?.call();
       await tester.pump();
 
       // stopTimer is invoked: once from the button (line 278) and once from

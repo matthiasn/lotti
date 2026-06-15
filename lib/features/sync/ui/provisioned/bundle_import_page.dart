@@ -4,13 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -134,14 +133,17 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
                     const SizedBox(height: 12),
                     _BundleSummaryCard(bundle: _decodedBundle!),
                     const SizedBox(height: 16),
-                    LottiPrimaryButton(
-                      onPressed: () {
-                        ref
-                            .read(provisioningControllerProvider.notifier)
-                            .configureFromBundle(_decodedBundle!);
-                        widget.pageIndexNotifier.value = 1;
-                      },
-                      label: messages.provisionedSyncConfigureButton,
+                    Align(
+                      child: DesignSystemButton(
+                        onPressed: () {
+                          ref
+                              .read(provisioningControllerProvider.notifier)
+                              .configureFromBundle(_decodedBundle!);
+                          widget.pageIndexNotifier.value = 1;
+                        },
+                        label: messages.provisionedSyncConfigureButton,
+                        size: DesignSystemButtonSize.large,
+                      ),
                     ),
                   ],
                 )
@@ -188,40 +190,40 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
                     ),
                     const SizedBox(height: 16),
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         if (isDesktop)
-                          LottiSecondaryButton(
+                          DesignSystemButton(
                             onPressed: _pasteFromClipboard,
-                            icon: Icons.content_paste,
+                            leadingIcon: Icons.content_paste,
                             label: messages.provisionedSyncPasteClipboard,
+                            variant: DesignSystemButtonVariant.secondary,
+                            size: DesignSystemButtonSize.large,
                           ),
                         if (isMobile)
-                          Expanded(
-                            child: LottiSecondaryButton(
-                              onPressed: () {
-                                setState(() {
-                                  _showScanner = !_showScanner;
-                                  _lastScannedCode = null;
-                                });
-                              },
-                              icon: Icons.qr_code_scanner,
-                              label: messages.provisionedSyncScanButton,
-                            ),
+                          DesignSystemButton(
+                            onPressed: () {
+                              setState(() {
+                                _showScanner = !_showScanner;
+                                _lastScannedCode = null;
+                              });
+                            },
+                            leadingIcon: Icons.qr_code_scanner,
+                            label: messages.provisionedSyncScanButton,
+                            variant: DesignSystemButtonVariant.secondary,
+                            size: DesignSystemButtonSize.large,
                           ),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: LottiPrimaryButton(
-                            onPressed: _textController.text.trim().isEmpty
-                                ? null
-                                : () => _importBundle(_textController.text),
-                            label: messages.provisionedSyncImportButton,
-                          ),
-                        ),
-                      ],
+                    Align(
+                      child: DesignSystemButton(
+                        onPressed: _textController.text.trim().isEmpty
+                            ? null
+                            : () => _importBundle(_textController.text),
+                        label: messages.provisionedSyncImportButton,
+                        size: DesignSystemButtonSize.large,
+                      ),
                     ),
                     if (isMobile && _showScanner) ...[
                       const SizedBox(height: 16),

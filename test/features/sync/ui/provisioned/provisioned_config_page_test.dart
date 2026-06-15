@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
@@ -17,7 +18,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -837,15 +837,19 @@ void main() {
     }
 
     testWidgets(
-      'previous button (LottiSecondaryButton) is present and navigates to page 0',
+      'previous button (secondary) is present and navigates to page 0',
       (tester) async {
         final localNotifier = await pumpConfigPage(
           tester,
           state: const ProvisioningState.loggingIn(),
         );
 
-        // The previous button (LottiSecondaryButton) must be in the action bar.
-        final prevFinder = find.byType(LottiSecondaryButton);
+        // The previous button (secondary) must be in the action bar.
+        final prevFinder = find.byWidgetPredicate(
+          (w) =>
+              w is DesignSystemButton &&
+              w.variant == DesignSystemButtonVariant.secondary,
+        );
         expect(prevFinder, findsOneWidget);
 
         // Set to a non-zero value so the navigation back to 0 is observable.
@@ -853,7 +857,7 @@ void main() {
 
         // Invoke the callback directly to avoid WoltModalSheet trying to
         // render page 1 (which doesn't exist in our single-page test setup).
-        final prevBtn = tester.widget<LottiSecondaryButton>(prevFinder);
+        final prevBtn = tester.widget<DesignSystemButton>(prevFinder);
         prevBtn.onPressed!();
 
         expect(localNotifier.value, 0);
@@ -875,8 +879,12 @@ void main() {
         (tester) async {
           await pumpConfigPage(tester, state: state);
 
-          final nextBtn = tester.widget<LottiPrimaryButton>(
-            find.byType(LottiPrimaryButton),
+          final nextBtn = tester.widget<DesignSystemButton>(
+            find.byWidgetPredicate(
+              (w) =>
+                  w is DesignSystemButton &&
+                  w.variant == DesignSystemButtonVariant.primary,
+            ),
           );
           expect(
             nextBtn.onPressed,
@@ -895,8 +903,12 @@ void main() {
           state: const ProvisioningState.ready('handover'),
         );
 
-        final nextFinder = find.byType(LottiPrimaryButton);
-        final nextBtn = tester.widget<LottiPrimaryButton>(nextFinder);
+        final nextFinder = find.byWidgetPredicate(
+          (w) =>
+              w is DesignSystemButton &&
+              w.variant == DesignSystemButtonVariant.primary,
+        );
+        final nextBtn = tester.widget<DesignSystemButton>(nextFinder);
         expect(nextBtn.onPressed, isNotNull);
 
         // Invoke the callback directly to avoid the WoltModalSheet trying to
@@ -915,8 +927,12 @@ void main() {
           state: const ProvisioningState.done(),
         );
 
-        final nextBtn = tester.widget<LottiPrimaryButton>(
-          find.byType(LottiPrimaryButton),
+        final nextBtn = tester.widget<DesignSystemButton>(
+          find.byWidgetPredicate(
+            (w) =>
+                w is DesignSystemButton &&
+                w.variant == DesignSystemButtonVariant.primary,
+          ),
         );
         expect(nextBtn.onPressed, isNotNull);
       },

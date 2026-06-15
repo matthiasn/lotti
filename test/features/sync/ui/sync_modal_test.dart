@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 class MockSyncMaintenanceRepository extends Mock
     implements SyncMaintenanceRepository {}
@@ -247,6 +249,7 @@ void main() {
         syncControllerProvider.overrideWith(SpySyncController.new),
       ],
       child: MaterialApp(
+        theme: resolveTestTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Material(
@@ -426,6 +429,7 @@ void main() {
               syncControllerProvider.overrideWith(() => testController),
             ],
             child: MaterialApp(
+              theme: resolveTestTheme(),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
               home: Builder(
@@ -467,6 +471,7 @@ void main() {
             syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
           ],
           child: MaterialApp(
+            theme: resolveTestTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Builder(
@@ -523,9 +528,9 @@ void main() {
       await tester.pump();
 
       // Tapping Done invokes reset() and closes the modal.
-      final doneButton = tester.widget<LottiPrimaryButton>(
+      final doneButton = tester.widget<DesignSystemButton>(
         find.widgetWithText(
-          LottiPrimaryButton,
+          DesignSystemButton,
           messages.doneButton.toUpperCase(),
         ),
       );

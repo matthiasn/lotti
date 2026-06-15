@@ -3,19 +3,21 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 
 class DiagnosticInfoButton extends ConsumerWidget {
   const DiagnosticInfoButton({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return LottiSecondaryButton(
+    return DesignSystemButton(
       label: context.messages.settingsMatrixDiagnosticShowButton,
+      variant: DesignSystemButtonVariant.secondary,
+      size: DesignSystemButtonSize.large,
       onPressed: () async {
         final info = await ref.read(matrixServiceProvider).getDiagnosticInfo();
         final prettyJson = const JsonEncoder.withIndent('  ').convert(info);

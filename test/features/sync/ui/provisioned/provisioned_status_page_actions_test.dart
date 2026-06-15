@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/ui/provisioned/provisioned_status_page.dart';
@@ -11,7 +12,6 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -298,7 +298,7 @@ void main() {
         await tester.tap(find.text('Open Action Bar'));
         await tester.pumpAndSettle();
 
-        final context = tester.element(find.byType(LottiSecondaryButton));
+        final context = tester.element(find.byType(DesignSystemButton));
         final closeFinder = find.text(
           context.messages.tasksLabelsDialogClose,
         );
@@ -309,7 +309,7 @@ void main() {
 
         // Notifier was reset and the action-bar route was popped.
         expect(pageIndexNotifier.value, 0);
-        expect(find.byType(LottiSecondaryButton), findsNothing);
+        expect(find.byType(DesignSystemButton), findsNothing);
         expect(find.text('Open Action Bar'), findsOneWidget);
       },
     );

@@ -25,10 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   cloud. Still off by default; the model (~400 MB) downloads once on first use.
 
 ### Changed
-- The delete-confirmation dialog and the date/time picker now use the app's
-  unified button style, so their Cancel / confirm / Now / Done buttons match
-  the buttons used elsewhere in the app instead of carrying their own older
-  styling.
+- Buttons across the app are moving to one unified style. The first surfaces
+  converted are the delete-confirmation dialog, the date/time picker, and the
+  Matrix sync screens (setup, bundle import, device verification, and the sync
+  maintenance modals) — their buttons now match the buttons used elsewhere in
+  the app instead of carrying their own older styling.
 
 ## [0.9.1024]
 ### Changed

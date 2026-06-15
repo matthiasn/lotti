@@ -224,6 +224,7 @@ void main() {
             matrixServiceProvider.overrideWithValue(mockMatrixService),
           ],
           child: MaterialApp(
+            theme: resolveTestTheme(),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Consumer(

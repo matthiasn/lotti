@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
@@ -15,8 +16,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -63,18 +62,21 @@ class _ConfigActionBar extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Flexible(
-              child: LottiSecondaryButton(
+              child: DesignSystemButton(
                 onPressed: () => pageIndexNotifier.value = 0,
                 label: context.messages.settingsMatrixPreviousPage,
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
               ),
             ),
             const SizedBox(width: 8),
             Flexible(
-              child: LottiPrimaryButton(
+              child: DesignSystemButton(
                 onPressed: isComplete
                     ? () => pageIndexNotifier.value = 2
                     : null,
                 label: context.messages.settingsMatrixNextPage,
+                size: DesignSystemButtonSize.large,
               ),
             ),
           ],
@@ -445,9 +447,11 @@ class _ErrorView extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
-          LottiSecondaryButton(
+          DesignSystemButton(
             onPressed: onRetry,
             label: messages.provisionedSyncRetry,
+            variant: DesignSystemButtonVariant.secondary,
+            size: DesignSystemButtonSize.large,
           ),
           const SizedBox(height: 8),
         ],
