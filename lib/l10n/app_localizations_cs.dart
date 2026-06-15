@@ -4915,6 +4915,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get imageGenerationGenerating => 'Generování obrázku...';
 
   @override
+  String get imageGenerationProviderRejectedTitle =>
+      'Poskytovatel obrázků tuto žádost odmítl';
+
+  @override
   String imageGenerationWithReferences(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

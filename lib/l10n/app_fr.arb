@@ -2233,6 +2233,7 @@
   "habitsPendingLaterHeader": "Plus tard dans la journée",
   "imageGenerationError": "Échec de la génération d'image",
   "imageGenerationGenerating": "Génération de l'image...",
+  "imageGenerationProviderRejectedTitle": "Le fournisseur d'images a refusé cette demande",
   "imageGenerationWithReferences": "{count, plural, =0{Aucune image de référence} =1{Avec 1 image de référence} other{Avec {count} images de référence}}",
   "@imageGenerationWithReferences": {
     "placeholders": {

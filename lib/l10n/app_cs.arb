@@ -2042,6 +2042,7 @@
   "habitsPendingLaterHeader": "Později dnes",
   "imageGenerationError": "Nepodařilo se vygenerovat obrázek",
   "imageGenerationGenerating": "Generování obrázku...",
+  "imageGenerationProviderRejectedTitle": "Poskytovatel obrázků tuto žádost odmítl",
   "imageGenerationWithReferences": "{count, plural, =0{Žádné referenční obrázky} =1{Používá se 1 referenční obrázek} other{Používá se {count} referenčních obrázků}}",
   "@imageGenerationWithReferences": {
     "placeholders": {

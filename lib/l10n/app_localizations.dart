@@ -8520,6 +8520,12 @@ abstract class AppLocalizations {
   /// **'Generating image...'**
   String get imageGenerationGenerating;
 
+  /// No description provided for @imageGenerationProviderRejectedTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The image provider rejected this request'**
+  String get imageGenerationProviderRejectedTitle;
+
   /// No description provided for @imageGenerationWithReferences.
   ///
   /// In en, this message translates to:

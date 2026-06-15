@@ -4,6 +4,7 @@ import 'dart:developer' as developer;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
@@ -177,6 +178,15 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
     final isError = _hasObservedRunning && status == InferenceStatus.error;
     final isRunning = status == InferenceStatus.running || !_hasObservedRunning;
 
+    // When errored, the provider's verbatim reason (e.g. `PROHIBITED_CONTENT`)
+    // is shown as-is under a localized "rejected" title. `null` (no provider
+    // reason, e.g. a network error) falls back to a generic message.
+    final errorReason = isError
+        ? ref.watch(
+            imageGenerationErrorControllerProvider(id: widget.linkedTaskId),
+          )
+        : null;
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -204,7 +214,12 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
           const SizedBox(height: 24),
           // Status text
           Text(
-            _statusText(context, isComplete: isComplete, isError: isError),
+            _statusText(
+              context,
+              isComplete: isComplete,
+              isError: isError,
+              errorReason: errorReason,
+            ),
             textAlign: TextAlign.center,
             style: context.textTheme.titleMedium,
           ),
@@ -215,6 +230,7 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
               context,
               isComplete: isComplete,
               isError: isError,
+              errorReason: errorReason,
             ),
             textAlign: TextAlign.center,
             style: context.textTheme.bodyMedium?.copyWith(
@@ -231,8 +247,15 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
     BuildContext context, {
     required bool isComplete,
     required bool isError,
+    required String? errorReason,
   }) {
-    if (isError) return context.messages.imageGenerationError;
+    if (isError) {
+      // A provider reason means the request was rejected by the provider;
+      // surface that with a localized title. Otherwise it's a generic failure.
+      return errorReason != null
+          ? context.messages.imageGenerationProviderRejectedTitle
+          : context.messages.imageGenerationError;
+    }
     if (isComplete) return context.messages.coverArtGenerationComplete;
     return context.messages.imageGenerationGenerating;
   }
@@ -241,8 +264,14 @@ class _CoverArtProgressViewState extends ConsumerState<_CoverArtProgressView> {
     BuildContext context, {
     required bool isComplete,
     required bool isError,
+    required String? errorReason,
   }) {
-    if (isError || isComplete) {
+    if (isError) {
+      // Show the provider's verbatim reason (e.g. `PROHIBITED_CONTENT`) as-is;
+      // fall back to the dismiss hint when no provider reason is available.
+      return errorReason ?? context.messages.coverArtGenerationDismissHint;
+    }
+    if (isComplete) {
       return context.messages.coverArtGenerationDismissHint;
     }
     // Running

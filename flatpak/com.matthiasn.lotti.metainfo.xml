@@ -35,6 +35,7 @@
     <release version="0.9.1026" date="2026-06-16">
       <description>
           <p>Creating a project now opens a compact overlay — a bottom sheet on phones, a centered dialog on desktop — instead of taking over the whole screen. The fields are unchanged (title, category, target date), and the new project shows up in the list as soon as you save.</p>
+          <p>When the image provider turns down a cover art request, the modal now says the provider rejected it and shows the provider's own reason verbatim (for example "PROHIBITED_CONTENT") instead of a generic "Failed to generate image" — so it's clear the block is the AI provider's content policy, not Lotti, and you can reword the request and try again.</p>
       </description>
     </release>
     <release version="0.9.1025" date="2026-06-15">

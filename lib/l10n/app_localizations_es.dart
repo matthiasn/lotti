@@ -4944,6 +4944,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get imageGenerationGenerating => 'Generando imagen...';
 
   @override
+  String get imageGenerationProviderRejectedTitle =>
+      'El proveedor de imágenes rechazó esta solicitud';
+
+  @override
   String imageGenerationWithReferences(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

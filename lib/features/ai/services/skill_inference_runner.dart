@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/helpers/skill_prompt_builder.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -96,6 +98,28 @@ class SkillInferenceRunner {
     }
   }
 
+  /// Sets the [ImageGenerationErrorController] for an entity (and optionally
+  /// its linked task) so the cover-art UI can show the provider's verbatim
+  /// failure reason. Passing `null` clears any stale error from a previous
+  /// attempt.
+  void _setImageGenerationError(
+    String? providerReason, {
+    required String entityId,
+    String? linkedTaskId,
+  }) {
+    _ref
+        .read(imageGenerationErrorControllerProvider(id: entityId).notifier)
+        .setError(providerReason);
+
+    if (linkedTaskId != null) {
+      _ref
+          .read(
+            imageGenerationErrorControllerProvider(id: linkedTaskId).notifier,
+          )
+          .setError(providerReason);
+    }
+  }
+
   /// Wraps a skill inference body with status tracking.
   ///
   /// Sets status to [InferenceStatus.running] before [body], then
@@ -107,6 +131,7 @@ class SkillInferenceRunner {
     required String subDomain,
     required Future<void> Function() body,
     String? linkedTaskId,
+    void Function(Object error)? onError,
   }) async {
     _setStatus(
       InferenceStatus.running,
@@ -135,6 +160,7 @@ class SkillInferenceRunner {
         stackTrace: stack,
         subDomain: subDomain,
       );
+      onError?.call(e);
     }
   }
 
@@ -835,11 +861,31 @@ class SkillInferenceRunner {
         automationResult.skill?.skillType.toResponseType ??
         AiResponseType.imageGeneration;
 
+    // Clear any error from a previous attempt so the UI starts this run fresh.
+    _setImageGenerationError(
+      null,
+      entityId: entryId,
+      linkedTaskId: linkedTaskId,
+    );
+
     await _withStatusTracking(
       entityId: entryId,
       responseType: responseType,
       subDomain: 'runImageGeneration',
       linkedTaskId: linkedTaskId,
+      onError: (error) {
+        // Surface the provider's verbatim reason to the UI when we have one
+        // (e.g. a Gemini `finishReason`); other failures (network, internal)
+        // carry no provider reason and fall back to a generic message.
+        final providerReason = error is ImageGenerationException
+            ? error.providerReason
+            : null;
+        _setImageGenerationError(
+          providerReason,
+          entityId: entryId,
+          linkedTaskId: linkedTaskId,
+        );
+      },
       body: () async {
         // 0. Validate automation result — inside status tracking so the UI
         // transitions to running before any early throw/return (prevents the

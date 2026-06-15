@@ -4953,6 +4953,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get imageGenerationGenerating => 'Se generează imaginea...';
 
   @override
+  String get imageGenerationProviderRejectedTitle =>
+      'Furnizorul de imagini a respins această solicitare';
+
+  @override
   String imageGenerationWithReferences(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
