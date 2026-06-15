@@ -12,23 +12,56 @@ import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/categories/ui/widgets/category_field.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
-import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
-import 'package:lotti/widgets/ui/form_bottom_bar.dart';
+import 'package:lotti/widgets/modal/modal_utils.dart';
 
-class ProjectCreatePage extends ConsumerStatefulWidget {
-  const ProjectCreatePage({
+/// Upper bound on the form's height as a fraction of the viewport.
+///
+/// The form fields live in a scroll view so a soft keyboard, landscape phone,
+/// or large accessibility text size shrinks the scroll area instead of
+/// overflowing the sheet. Mirrors the established create-modal sizing used by
+/// `CategoryCreateModal`.
+const double _modalMaxHeightFraction = 0.9;
+
+/// Opens the responsive project-creation overlay.
+///
+/// Reuses [ModalUtils.showSinglePageModal], which renders a draggable bottom
+/// sheet on narrow (mobile) layouts and a centered dialog on wide (desktop)
+/// ones — the switch happens automatically at the modal page breakpoint, so
+/// callers do not branch on platform or screen size themselves.
+///
+/// Resolves to the freshly created [ProjectEntry] when a project is saved, or
+/// `null` when the overlay is dismissed (Cancel, the close button, the scrim,
+/// or back). [categoryId] preselects a category for the new project.
+Future<ProjectEntry?> showProjectCreateModal({
+  required BuildContext context,
+  String? categoryId,
+}) {
+  return ModalUtils.showSinglePageModal<ProjectEntry>(
+    context: context,
+    title: context.messages.projectCreateTitle,
+    builder: (modalContext) => ProjectCreateForm(categoryId: categoryId),
+  );
+}
+
+/// The project-creation form rendered inside [showProjectCreateModal].
+///
+/// Collects a title, optional category, and optional target date, then persists
+/// the project through [ProjectRepository] and provisions a project agent when a
+/// matching template exists. On success it pops the enclosing modal with the
+/// created [ProjectEntry]; on failure it surfaces a toast and stays open.
+class ProjectCreateForm extends ConsumerStatefulWidget {
+  const ProjectCreateForm({
     this.categoryId,
     super.key,
   });
@@ -36,10 +69,10 @@ class ProjectCreatePage extends ConsumerStatefulWidget {
   final String? categoryId;
 
   @override
-  ConsumerState<ProjectCreatePage> createState() => _ProjectCreatePageState();
+  ConsumerState<ProjectCreateForm> createState() => _ProjectCreateFormState();
 }
 
-class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
+class _ProjectCreateFormState extends ConsumerState<ProjectCreateForm> {
   late final TextEditingController _titleController;
   DateTime? _targetDate;
   String? _categoryId;
@@ -50,19 +83,6 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
     super.initState();
     _titleController = TextEditingController();
     _categoryId = widget.categoryId;
-  }
-
-  @override
-  void didUpdateWidget(covariant ProjectCreatePage oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Re-seed `_categoryId` if the route hands the same State a new
-    // `categoryId` (e.g. a parent rebuild that swaps the query param
-    // without disposing the page). Without this, the user's earlier
-    // selection — or the original prefill — would silently override
-    // the updated route input on save.
-    if (oldWidget.categoryId != widget.categoryId) {
-      _categoryId = widget.categoryId;
-    }
   }
 
   @override
@@ -85,8 +105,8 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
 
     setState(() => _isSaving = true);
 
-    // Capture services before any async gap so they remain valid even if
-    // the page is unmounted during an in-flight await.
+    // Capture services before any async gap so provisioning still completes
+    // even if the modal is dismissed during an in-flight await.
     final repository = ref.read(projectRepositoryProvider);
     final templateService = ref.read(agentTemplateServiceProvider);
     final agentService = ref.read(projectAgentServiceProvider);
@@ -121,7 +141,7 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
 
       if (created != null) {
         // Provision a project agent if a projectAgent template exists.
-        // Uses pre-captured services so this works even after unmounting.
+        // Uses pre-captured services so this works even after the modal closes.
         await _provisionProjectAgent(
           templateService: templateService,
           agentService: agentService,
@@ -130,13 +150,16 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
           categoryId: categoryId,
         );
 
+        // The freshly-created project appears in the projects list
+        // immediately on close (the list watches `projectsOverviewProvider`),
+        // which is enough confirmation on its own. The created project is
+        // returned to the caller for any follow-up (e.g. navigation).
+        //
+        // Guard on `mounted`: if the user dismissed the modal while the create
+        // was in-flight, the agent was still provisioned above, but popping a
+        // stale navigator could close an unrelated route — so skip it.
         if (mounted) {
-          // The freshly-created project appears in the projects list
-          // immediately on pop (the list watches `projectsOverviewProvider`),
-          // which is enough confirmation on its own — a success SnackBar
-          // would have to push the list's FAB up to fit, and the
-          // motion read as more disruptive than informative.
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(created);
         }
       } else if (mounted) {
         context.showToast(
@@ -147,7 +170,7 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
     } catch (e, s) {
       developer.log(
         'Failed to create project',
-        name: 'ProjectCreatePage',
+        name: 'ProjectCreateForm',
         error: e,
         stackTrace: s,
       );
@@ -180,8 +203,8 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
   /// Finds the first available projectAgent template and provisions an agent.
   ///
   /// Accepts pre-captured service references so that provisioning succeeds
-  /// even if the page was unmounted during the preceding async gap (e.g.,
-  /// the user closed the page while `createProject` was in-flight).
+  /// even if the modal was closed during the preceding async gap (e.g., the
+  /// user dismissed it while `createProject` was in-flight).
   ///
   /// Prefers category-scoped templates when a category ID is available,
   /// falling back to the global template list — consistent with the
@@ -231,7 +254,7 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
     } catch (e, s) {
       developer.log(
         'Failed to provision project agent',
-        name: 'ProjectCreatePage',
+        name: 'ProjectCreateForm',
         error: e,
         stackTrace: s,
       );
@@ -241,6 +264,7 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    final tokens = context.designTokens;
 
     return CallbackShortcuts(
       bindings: {
@@ -249,73 +273,58 @@ class _ProjectCreatePageState extends ConsumerState<ProjectCreatePage> {
         const SingleActivator(LogicalKeyboardKey.keyS, control: true):
             _handleCreate,
       },
-      child: Scaffold(
-        backgroundColor: context.colorScheme.surface,
-        body: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              title: Text(
-                messages.projectCreateTitle,
-                style: appBarTextStyleNewLarge.copyWith(
-                  color: Theme.of(context).primaryColor,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight:
+              MediaQuery.sizeOf(context).height * _modalMaxHeightFraction,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    LottiTextField(
+                      controller: _titleController,
+                      labelText: messages.projectTitleLabel,
+                      autofocus: true,
+                      textCapitalization: TextCapitalization.sentences,
+                    ),
+                    SizedBox(height: tokens.spacing.step5),
+                    CategoryField(
+                      categoryId: _categoryId,
+                      onSave: (category) =>
+                          setState(() => _categoryId = category?.id),
+                    ),
+                    SizedBox(height: tokens.spacing.step5),
+                    ProjectTargetDateField(
+                      targetDate: _targetDate,
+                      onDatePicked: _pickTargetDate,
+                      onCleared: () => setState(() => _targetDate = null),
+                    ),
+                  ],
                 ),
               ),
-              pinned: true,
             ),
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  LottiFormSection(
-                    title: messages.projectTitleLabel,
-                    icon: Icons.folder_outlined,
-                    children: [
-                      LottiTextField(
-                        controller: _titleController,
-                        labelText: messages.projectTitleLabel,
-                        autofocus: true,
-                        textCapitalization: TextCapitalization.sentences,
-                      ),
-                      const SizedBox(height: 16),
-                      CategoryField(
-                        categoryId: _categoryId,
-                        onSave: (category) =>
-                            setState(() => _categoryId = category?.id),
-                      ),
-                      const SizedBox(height: 16),
-                      ProjectTargetDateField(
-                        targetDate: _targetDate,
-                        onDatePicked: _pickTargetDate,
-                        onCleared: () => setState(() => _targetDate = null),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 80),
-                ]),
-              ),
+            SizedBox(height: tokens.spacing.step6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                DesignSystemButton(
+                  label: messages.cancelButton,
+                  variant: DesignSystemButtonVariant.secondary,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                SizedBox(width: tokens.spacing.step4),
+                DesignSystemButton(
+                  label: messages.createButton,
+                  onPressed: _isSaving ? null : _handleCreate,
+                ),
+              ],
             ),
           ],
-        ),
-        // Pad the form bar above the app shell's bottom navigation pill on
-        // mobile so the Save/Cancel row isn't hidden behind it. The
-        // helper returns 0 in desktop layouts where the sidebar replaces
-        // the pill, so this is a no-op there.
-        bottomNavigationBar: Padding(
-          padding: EdgeInsets.only(
-            bottom: DesignSystemBottomNavigationBar.occupiedHeight(context),
-          ),
-          child: FormBottomBar(
-            rightButtons: [
-              LottiSecondaryButton(
-                onPressed: () => Navigator.of(context).pop(),
-                label: messages.cancelButton,
-              ),
-              LottiPrimaryButton(
-                onPressed: _isSaving ? null : _handleCreate,
-                label: messages.createButton,
-              ),
-            ],
-          ),
         ),
       ),
     );

@@ -1,10 +1,18 @@
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
-import 'package:lotti/features/projects/ui/pages/project_create_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+
+/// Reserved slug left over from the retired full-screen create route.
+///
+/// Project creation now happens in a modal launched from the list FAB (see
+/// `showProjectCreateModal`), so there is no `/projects/create` page. The
+/// `/projects/:projectId` pattern would still greedily match a stale
+/// `/projects/create` deep link, so this slug is treated as "no project" and
+/// the list is shown instead of a detail page rendered against a non-id.
+const String _reservedCreateSlug = 'create';
 
 class ProjectsLocation extends BeamLocation<BeamState> {
   ProjectsLocation(RouteInformation super.routeInformation);
@@ -12,22 +20,21 @@ class ProjectsLocation extends BeamLocation<BeamState> {
   @override
   List<String> get pathPatterns => [
     '/projects',
-    '/projects/create',
     '/projects/:projectId',
   ];
 
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
-    final projectId = state.pathParameters['projectId'];
-    final isCreate = state.uri.path == '/projects/create';
+    final rawProjectId = state.pathParameters['projectId'];
+    final isStaleCreateSlug = rawProjectId == _reservedCreateSlug;
+    final projectId = isStaleCreateSlug ? null : rawProjectId;
     final navService = getIt<NavService>();
     final isDesktop = navService.isDesktopMode;
 
-    // The literal `/projects/create` route shares the `/projects/:projectId`
-    // pattern, so Beamer hands back `projectId == 'create'`. Treat that as
-    // the create flow and skip the desktop detail-pane sync — there is no
-    // project to select yet.
-    if (isDesktop && !isCreate) {
+    // Skip the desktop detail-pane sync for the stale create slug — it is not
+    // a real project id, and overwriting the notifier would clear the current
+    // right-pane selection when the user bounces back to the list.
+    if (isDesktop && !isStaleCreateSlug) {
       navService.desktopSelectedProjectId.value = projectId;
     }
 
@@ -37,21 +44,7 @@ class ProjectsLocation extends BeamLocation<BeamState> {
         title: 'Projects',
         child: ProjectsTabPage(),
       ),
-      if (isCreate)
-        BeamPage(
-          key: const ValueKey('project-create'),
-          title: 'New Project',
-          child: ProjectCreatePage(
-            // Treat `?categoryId=` (and any whitespace-only variant) as
-            // "no category" rather than letting an empty string flow
-            // into `createMetadata` and create a project pinned to an
-            // unresolvable category id.
-            categoryId: _normalizeCategoryId(
-              state.uri.queryParameters['categoryId'],
-            ),
-          ),
-        ),
-      if (!isDesktop && !isCreate && projectId != null)
+      if (!isDesktop && projectId != null)
         BeamPage(
           key: ValueKey('project-details-$projectId'),
           title: 'Project Details',
@@ -59,10 +52,4 @@ class ProjectsLocation extends BeamLocation<BeamState> {
         ),
     ];
   }
-}
-
-String? _normalizeCategoryId(String? raw) {
-  if (raw == null) return null;
-  final trimmed = raw.trim();
-  return trimmed.isEmpty ? null : trimmed;
 }

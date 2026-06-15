@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1026]
+### Changed
+- Creating a project now opens a compact overlay — a bottom sheet on phones, a
+  centered dialog on desktop — instead of taking over the whole screen. The
+  fields are unchanged (title, category, target date); Cancel/Create sit inside
+  the overlay, and the new project shows up in the list as soon as you save.
+
 ## [0.9.1025]
 ### Added
 - Experimental on-device text-to-speech is now available on Linux too (in

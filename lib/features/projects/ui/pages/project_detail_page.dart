@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
@@ -16,8 +17,6 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
@@ -330,13 +329,14 @@ class _ProjectDetailPageState extends ConsumerState<ProjectDetailPage> {
     final messages = context.messages;
     return FormBottomBar(
       rightButtons: [
-        LottiSecondaryButton(
-          onPressed: _handleBackNavigation,
+        DesignSystemButton(
           label: messages.cancelButton,
+          variant: DesignSystemButtonVariant.secondary,
+          onPressed: _handleBackNavigation,
         ),
-        LottiPrimaryButton(
-          onPressed: state.isSaving || !state.hasChanges ? null : _handleSave,
+        DesignSystemButton(
           label: messages.saveButton,
+          onPressed: state.isSaving || !state.hasChanges ? null : _handleSave,
         ),
       ],
     );

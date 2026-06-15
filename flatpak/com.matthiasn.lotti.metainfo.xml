@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1026" date="2026-06-16">
+      <description>
+          <p>Creating a project now opens a compact overlay — a bottom sheet on phones, a centered dialog on desktop — instead of taking over the whole screen. The fields are unchanged (title, category, target date), and the new project shows up in the list as soon as you save.</p>
+      </description>
+    </release>
     <release version="0.9.1025" date="2026-06-15">
       <description>
           <p>Experimental on-device text-to-speech is now available on Linux too: with the "Enable local AI summary playback" flag on, the AI summary card's play button reads a task's TL;DR aloud, synthesized locally with the Supertonic model — no cloud. Still off by default; the model (~400 MB) downloads once on first use.</p>

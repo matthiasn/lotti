@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
+import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_filter_modal.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_content.dart';
@@ -120,7 +121,7 @@ class _ProjectsListScaffold extends ConsumerWidget {
     final floatingActionButton = visibleGroupsAsync.maybeWhen(
       data: (_) => DesignSystemFloatingActionButton(
         semanticLabel: context.messages.projectCreateButton,
-        onPressed: () => beamToNamed('/projects/create'),
+        onPressed: () => showProjectCreateModal(context: context),
       ),
       orElse: () => null,
     );

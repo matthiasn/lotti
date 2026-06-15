@@ -571,7 +571,7 @@ This is the route shape that currently matters in practice:
 - `/settings/advanced/conflicts/...`
 - `/settings/advanced/maintenance`
 
-The notable oddball is `/settings/projects/...`: there is no top-level Settings tile for projects, but the project **detail** route (`/settings/projects/:projectId`) still lives under the settings namespace because category and project management meet there. The project **create** flow does not — it lives under `ProjectsLocation` at `/projects/create`, and `SettingsLocation` explicitly excludes the reserved `create` slug so a stale `/settings/projects/create` deep link cannot render a detail page against a non-id slug.
+The notable oddball is `/settings/projects/...`: there is no top-level Settings tile for projects, but the project **detail** route (`/settings/projects/:projectId`) still lives under the settings namespace because category and project management meet there. The project **create** flow does not — creation runs in a modal launched from the Projects tab FAB (`showProjectCreateModal`), with no route of its own. `SettingsLocation` still explicitly excludes the reserved `create` slug so a stale `/settings/projects/create` deep link cannot render a detail page against a non-id slug.
 
 ## Notes For Future Changes
 

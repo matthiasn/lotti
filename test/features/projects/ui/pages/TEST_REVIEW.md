@@ -1,13 +1,17 @@
 # Test Review: projects/ui/pages
 
+> **Update:** `project_create_page.dart` (the full-screen create page) was
+> retired. Project creation now runs in a responsive overlay,
+> `lib/features/projects/ui/widgets/project_create_modal.dart`, covered by
+> `test/features/projects/ui/widgets/project_create_modal_test.dart`. The
+> entries below for the create page are kept as historical record.
+
 **Scope:**
-- `lib/features/projects/ui/pages/project_create_page.dart` (323 lines)
 - `lib/features/projects/ui/pages/project_detail_page.dart` (344 lines)
 - `lib/features/projects/ui/pages/project_details_page.dart` (242 lines)
 - `lib/features/projects/ui/pages/projects_tab_page.dart` (286 lines)
 
 Tests:
-- `test/features/projects/ui/pages/project_create_page_test.dart` (740 lines)
 - `test/features/projects/ui/pages/project_detail_page_test.dart` (1161 lines)
 - `test/features/projects/ui/pages/project_details_page_test.dart` (1288 lines)
 - `test/features/projects/ui/pages/projects_tab_page_test.dart` (772 lines)

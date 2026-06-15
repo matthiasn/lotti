@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
@@ -592,8 +593,8 @@ void main() {
           ),
         );
 
-        final saveButton = find.widgetWithText(FilledButton, 'Save');
-        final button = tester.widget<FilledButton>(saveButton);
+        final saveButton = find.widgetWithText(DesignSystemButton, 'Save');
+        final button = tester.widget<DesignSystemButton>(saveButton);
         expect(
           button.onPressed,
           isNull,
@@ -607,8 +608,8 @@ void main() {
           controllerState: defaultState(),
         );
 
-        final saveButton = find.widgetWithText(FilledButton, 'Save');
-        final button = tester.widget<FilledButton>(saveButton);
+        final saveButton = find.widgetWithText(DesignSystemButton, 'Save');
+        final button = tester.widget<DesignSystemButton>(saveButton);
         expect(
           button.onPressed,
           isNull,
@@ -630,8 +631,8 @@ void main() {
           ),
         );
 
-        final saveButton = find.widgetWithText(FilledButton, 'Save');
-        final button = tester.widget<FilledButton>(saveButton);
+        final saveButton = find.widgetWithText(DesignSystemButton, 'Save');
+        final button = tester.widget<DesignSystemButton>(saveButton);
         expect(
           button.onPressed,
           isNotNull,
@@ -935,7 +936,7 @@ void main() {
         );
 
         // Tap the save button
-        final saveButton = find.widgetWithText(FilledButton, 'Save');
+        final saveButton = find.widgetWithText(DesignSystemButton, 'Save');
         await tester.tap(saveButton);
         await tester.pump();
 

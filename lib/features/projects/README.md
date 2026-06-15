@@ -113,29 +113,40 @@ ORDER BY` sort.
 
 ## Create Flow
 
-Project creation is where project data and the agent system connect.
+Project creation is where project data and the agent system connect. It runs
+in a responsive overlay launched from the Projects list FAB —
+`showProjectCreateModal` reuses `ModalUtils.showSinglePageModal`, which renders
+a draggable bottom sheet on narrow (mobile) layouts and a centered dialog on
+wide (desktop) ones. There is no full-screen create page or `/projects/create`
+route; a stale deep link to that path degrades to the list.
 
 ```mermaid
 sequenceDiagram
-  participant UI as "ProjectCreatePage"
+  participant FAB as "Projects FAB"
+  participant Form as "ProjectCreateForm"
   participant Repo as "ProjectRepository"
   participant Template as "AgentTemplateService"
   participant Agent as "ProjectAgentService"
 
-  UI->>Repo: createProject(ProjectEntry)
-  Repo-->>UI: persisted project
-  UI->>Template: find matching projectAgent template
+  FAB->>Form: showProjectCreateModal(context, categoryId?)
+  Form->>Repo: createProject(ProjectEntry)
+  Repo-->>Form: persisted project
+  Form->>Template: find matching projectAgent template
   alt template available
-    UI->>Agent: createProjectAgent(projectId, template)
-    Agent-->>UI: agent identity created
+    Form->>Agent: createProjectAgent(projectId, template)
+    Agent-->>Form: agent identity created
   else no template
-    UI-->>UI: project exists without agent
+    Form-->>Form: project exists without agent
   end
+  Form-->>FAB: pop(created project)
 ```
 
 The template lookup prefers category-scoped project-agent templates and falls
 back to global ones. If no matching template exists, the project still exists
 just fine. It simply starts life without an agent until one is created later.
+The modal resolves to the freshly created `ProjectEntry` (or `null` when
+dismissed); the list refreshes on its own because it watches
+`projectsOverviewProvider`.
 
 ## Repository Responsibilities
 
@@ -290,9 +301,9 @@ It is responsible for:
 - search
 - filter modal
 - navigation into project details
-- floating create action that beams to `/projects/create` so creation
-  stays inside the Projects tab and the form can prefill a category
-  via the `?categoryId=` query parameter
+- floating create action that opens the responsive create overlay
+  (`showProjectCreateModal`) in place, so creation stays inside the Projects
+  tab; an optional `categoryId` argument prefills the category
 
 ### Project Detail Pages
 

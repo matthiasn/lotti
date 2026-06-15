@@ -111,9 +111,9 @@ bool isSettingsEntityDefinitionRoute(BeamLocation<dynamic>? location) {
           (segments[2] == 'by_id' && segments.length >= 4),
     // Projects has no list page under settings — only `/settings/projects/
     // <projectId>` editors. The reserved `create` slug is deliberately not
-    // rendered by [SettingsLocation] (creation lives under
-    // `/projects/create`), so a stale deep link to it must not hide the
-    // bar over the bare settings root.
+    // rendered by [SettingsLocation] (creation runs in a modal launched from
+    // the Projects tab, with no route of its own), so a stale deep link to it
+    // must not hide the bar over the bare settings root.
     'projects' => segments[2] != 'create',
     _ => false,
   };
