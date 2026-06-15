@@ -129,6 +129,62 @@ void main() {
     expect(expectedDurableState.detail, contains('120'));
   });
 
+  test('cascade manifest binds trace topology evidence', () {
+    final scenario = taskWorkflowChecklistTranscriptCascadeScenario;
+    final wakeCount = scenario.appState.taskLogEntries.length;
+    final topologyEvidence = EvalProvenance.taskLogCascadeTraceTopologyEvidence(
+      scenarioSetDigest: EvalProvenance.scenarioSetDigest([scenario]),
+      profileSetDigest: EvalProvenance.profileSetDigest(
+        const [kFrontierProfile],
+      ),
+      agentDirectiveVariantSetDigest:
+          EvalProvenance.agentDirectiveVariantSetDigest(
+            const [EvalAgentDirectiveVariant()],
+          ),
+      cascadeWakeCountByScenarioId: {scenario.id: wakeCount},
+    );
+    final manifest = EvalProvenance.captureRunManifest(
+      runId: 'cascade-topology-test',
+      targetName: 'live-task-cascade',
+      targetKind: 'live',
+      scenarios: [scenario],
+      profiles: const [kFrontierProfile],
+      createdAt: DateTime.utc(2026, 6, 12),
+      command: 'cascade topology test',
+      environment: const <String, String>{},
+      traceTopologyEvidence: topologyEvidence,
+    );
+    final traces = [
+      for (var wakeIndex = 0; wakeIndex < wakeCount; wakeIndex++)
+        _cascadeTrace(
+          scenario: scenario,
+          manifest: manifest,
+          wakeIndex: wakeIndex,
+          wakeCount: wakeCount,
+        ),
+    ];
+
+    final verification = EvalRunVerifier.verify(
+      runId: manifest.runId,
+      traces: traces,
+      scenarios: [scenario],
+      profiles: const [kFrontierProfile],
+      manifest: manifest,
+      requireVerdicts: false,
+    );
+
+    expect(
+      manifest.traceTopologyEvidence?.cascadeWakeCountByScenarioId,
+      {scenario.id: wakeCount},
+    );
+    expect(
+      verification.errors.where(
+        (error) => error.contains('traceTopologyEvidence'),
+      ),
+      isEmpty,
+    );
+  });
+
   test(
     'produces live task-agent cascade traces',
     () async {
@@ -159,6 +215,21 @@ void main() {
         scenarios: catalog.scenarios,
         profiles: profiles,
         scenarioCatalogEvidence: catalog.evidence,
+        traceTopologyEvidence:
+            EvalProvenance.taskLogCascadeTraceTopologyEvidence(
+              scenarioSetDigest: EvalProvenance.scenarioSetDigest(
+                catalog.scenarios,
+              ),
+              profileSetDigest: EvalProvenance.profileSetDigest(profiles),
+              agentDirectiveVariantSetDigest:
+                  EvalProvenance.agentDirectiveVariantSetDigest(
+                    const [EvalAgentDirectiveVariant()],
+                  ),
+              cascadeWakeCountByScenarioId: {
+                for (final scenario in catalog.scenarios)
+                  scenario.id: scenario.appState.taskLogEntries.length,
+              },
+            ),
         profileExecutionBindings: [
           for (final profile in profiles)
             settings.profileBindingConfigFor(profile).toExecutionBinding(),
@@ -286,6 +357,41 @@ void main() {
     },
     timeout: const Timeout(Duration(minutes: 45)),
     skip: _liveRunnerSkip(settings),
+  );
+}
+
+EvalTrace _cascadeTrace({
+  required EvalScenario scenario,
+  required EvalRunManifest manifest,
+  required int wakeIndex,
+  required int wakeCount,
+}) {
+  const output = AgentRunOutput(
+    success: true,
+    usage: InferenceUsage.empty,
+  );
+  final cascadeWake = EvalTraceCascadeWake(
+    cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+    wakeIndex: wakeIndex,
+    wakeCount: wakeCount,
+  );
+  return EvalTrace(
+    runId: manifest.runId,
+    scenario: scenario,
+    profile: kFrontierProfile,
+    provenance: EvalProvenance.capture(
+      scenario: scenario,
+      profile: kFrontierProfile,
+      manifestDigest: manifest.manifestDigest!,
+    ),
+    cascadeWake: cascadeWake,
+    output: output,
+    level1Checks: _cascadeWakeLevel1Checks(
+      scenario: scenario,
+      profile: kFrontierProfile,
+      wakeIndex: wakeIndex,
+      output: output,
+    ),
   );
 }
 

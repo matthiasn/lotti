@@ -988,7 +988,7 @@ abstract final class EvalReporter {
       final report = trace.output.report;
       buffer
         ..writeln()
-        ..writeln('${_traceLabel(trace)}')
+        ..writeln(_traceLabel(trace))
         ..writeln('  provider: $provider')
         ..writeln('  tools: ${_namesOrDash(trace.output.toolNames)}')
         ..writeln(

@@ -74,6 +74,9 @@ class TraceWriter {
     );
   }
 
+  File pairwiseReadinessPlanRegistrationFileFor(String runId) =>
+      File('${runDir(runId)}/pairwise_readiness_plan.registration.json');
+
   Future<File> writeManifest(
     EvalRunManifest manifest, {
     bool overwrite = false,
@@ -175,6 +178,21 @@ class TraceWriter {
     return file;
   }
 
+  Future<File> writePairwiseReadinessPlanRegistration(
+    EvalPairwiseReadinessPlanRegistration registration, {
+    bool overwrite = false,
+  }) async {
+    final file = pairwiseReadinessPlanRegistrationFileFor(registration.runId);
+    if (file.existsSync() && !overwrite) {
+      throw StateError(
+        'Pairwise readiness plan registration already exists: ${file.path}',
+      );
+    }
+    await file.parent.create(recursive: true);
+    await file.writeAsString(_encoder.convert(registration.toJson()));
+    return file;
+  }
+
   /// Computes the digest a verdict must cite to prove which trace it graded.
   Future<String> traceDigest(File traceFile) async =>
       'sha256:${sha256.convert(await traceFile.readAsBytes())}';
@@ -221,10 +239,38 @@ class TraceWriter {
     String runId, {
     List<EvalTrace>? traces,
   }) async {
+    final artifacts = await readPairwisePreferenceArtifacts(
+      runId,
+      traces: traces,
+    );
+    return artifacts.votes;
+  }
+
+  /// Reads pairwise preference votes and the raw trace-file refs that bind them.
+  Future<
+    ({
+      List<EvalPairwisePreferenceVote> votes,
+      Map<String, EvalPairwiseTraceRef> traceRefsByKey,
+    })
+  >
+  readPairwisePreferenceArtifacts(
+    String runId, {
+    List<EvalTrace>? traces,
+  }) async {
+    final boundTraces = traces ?? await readTraces(runId);
+    final refsByKey = Map<String, EvalPairwiseTraceRef>.unmodifiable(
+      await _pairwiseTraceRefsByKey(boundTraces),
+    );
+    final votes = await _readPairwisePreferenceVotes(runId, refsByKey);
+    return (votes: votes, traceRefsByKey: refsByKey);
+  }
+
+  Future<List<EvalPairwisePreferenceVote>> _readPairwisePreferenceVotes(
+    String runId,
+    Map<String, EvalPairwiseTraceRef> refsByKey,
+  ) async {
     final dir = Directory(runDir(runId));
     if (!dir.existsSync()) return const <EvalPairwisePreferenceVote>[];
-    final boundTraces = traces ?? await readTraces(runId);
-    final refsByKey = await _pairwiseTraceRefsByKey(boundTraces);
     final votes = <EvalPairwisePreferenceVote>[];
     await for (final entity in dir.list()) {
       if (entity is! File || !entity.path.endsWith('.preference.json')) {
@@ -258,11 +304,35 @@ class TraceWriter {
     return votes;
   }
 
+  /// Reads the raw trace-file digest refs used to bind pairwise votes.
+  Future<Map<String, EvalPairwiseTraceRef>> readPairwiseTraceRefs(
+    String runId, {
+    List<EvalTrace>? traces,
+  }) async {
+    final boundTraces = traces ?? await readTraces(runId);
+    return Map.unmodifiable(await _pairwiseTraceRefsByKey(boundTraces));
+  }
+
   Future<EvalRunManifest?> readManifest(String runId) async {
     final file = manifestFileFor(runId);
     if (!file.existsSync()) return null;
     final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
     return EvalRunManifest.fromJson(json);
+  }
+
+  Future<EvalPairwiseReadinessPlanRegistration?>
+  readPairwiseReadinessPlanRegistration(String runId) async {
+    final file = pairwiseReadinessPlanRegistrationFileFor(runId);
+    if (!file.existsSync()) return null;
+    final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+    final registration = EvalPairwiseReadinessPlanRegistration.fromJson(json);
+    if (registration.runId != runId) {
+      throw StateError(
+        'Pairwise readiness plan registration runId ${registration.runId} '
+        'does not match directory $runId',
+      );
+    }
+    return registration;
   }
 
   Future<EvalRunArtifacts> readRun(String runId) async {

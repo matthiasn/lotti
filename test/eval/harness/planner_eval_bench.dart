@@ -268,7 +268,6 @@ abstract final class PlannerEvalBench {
           agentDirectiveVariant,
         ),
         agentId: _templateId,
-        directives: _baselineDirective,
         generalDirective: agentDirectiveVariant.mergedGeneralDirective(
           _baselineDirective,
         ),

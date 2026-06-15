@@ -307,7 +307,16 @@ void main() {
 
       final loaded = await writer.readTraces('run-1');
       final loadedManifest = await writer.readManifest('run-1');
+      const defaultTuningPolicy = EvalTuningPolicy.modelClassTuning();
       expect(loadedManifest!.manifestDigest, result.manifest.manifestDigest);
+      expect(
+        loadedManifest.tuningReadinessPolicyEvidence?.policyName,
+        defaultTuningPolicy.name,
+      );
+      expect(
+        loadedManifest.tuningReadinessPolicyEvidence?.policyDigest,
+        defaultTuningPolicy.policyDigest,
+      );
       expect(
         loaded.map((trace) => trace.provenance.manifestDigest).toSet(),
         {result.manifest.manifestDigest},
@@ -385,6 +394,361 @@ void main() {
       reason: 'the manifest must not persist local promotion-plan paths',
     );
   });
+
+  test(
+    'records use-case work-order launch evidence in the run manifest',
+    () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'lotti-eval-work-order-launch-',
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+      });
+      final target = _RecordingTarget();
+      final writer = TraceWriter(runsRoot: tempDir.path);
+      final runner = EvalMatrixRunner(target: target, writer: writer);
+      final capabilityId =
+          taskReleaseNotesScenario.metadata.primaryCapabilityId!;
+      final launchEvidence = _workOrderLaunchEvidence(
+        capabilityId: capabilityId,
+      );
+
+      final result = await runner.run(
+        runId: 'run-work-order-launch',
+        scenarios: [taskReleaseNotesScenario],
+        profiles: const [stableProfile],
+        requiredPrimaryCapabilityIds: {capabilityId},
+        useCaseWorkOrderLaunchEvidence: launchEvidence,
+      );
+
+      expect(
+        result.manifest.useCaseWorkOrderLaunchEvidence?.toJson(),
+        launchEvidence.toJson(),
+      );
+      final loaded = await writer.readManifest('run-work-order-launch');
+      expect(
+        loaded!.useCaseWorkOrderLaunchEvidence?.toJson(),
+        launchEvidence.toJson(),
+      );
+      expect(
+        EvalRunVerifier.verify(
+          runId: 'run-work-order-launch',
+          traces: result.traces,
+          scenarios: [taskReleaseNotesScenario],
+          profiles: const [stableProfile],
+          manifest: loaded,
+          artifactNames: [
+            result.manifestFile.uri.pathSegments.last,
+            for (final file in result.traceFiles) file.uri.pathSegments.last,
+          ],
+          requireVerdicts: false,
+        ).errors,
+        isEmpty,
+      );
+    },
+  );
+
+  test(
+    'records pairwise readiness plan evidence in the run manifest',
+    () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'lotti-eval-pairwise-plan-',
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+      });
+      final target = _RecordingTarget();
+      final writer = TraceWriter(runsRoot: tempDir.path);
+      final runner = EvalMatrixRunner(target: target, writer: writer);
+      final scenarios = [taskReleaseNotesScenario];
+      const profiles = [stableProfile, singleProfile];
+      final pairwiseReadinessPlan = _pairwiseReadinessPlanFor(
+        scenarios: scenarios,
+        profiles: profiles,
+      );
+      final pairwiseEvidence = pairwiseReadinessPlan.toManifestEvidence();
+      final plan = runner.plan(
+        runId: 'run-pairwise-plan',
+        scenarios: scenarios,
+        profiles: profiles,
+        pairwiseReadinessPlan: pairwiseReadinessPlan,
+      );
+      expect(
+        EvalMatrixPlanRenderer.render(plan),
+        contains('Pairwise Readiness Plan Evidence'),
+      );
+      expect(
+        EvalMatrixPlanRenderer.render(plan),
+        contains('Tuning Readiness Policy Evidence'),
+      );
+
+      final result = await runner.run(
+        runId: 'run-pairwise-plan',
+        scenarios: scenarios,
+        profiles: profiles,
+        pairwiseReadinessPlan: pairwiseReadinessPlan,
+      );
+
+      final evidence = result.manifest.pairwiseReadinessPlanEvidence;
+      expect(evidence?.toJson(), pairwiseEvidence.toJson());
+      final policy = EvalTuningPolicy.modelClassTuning(
+        minBlindedPairwisePreferenceDecisions:
+            pairwiseReadinessPlan.minBlindedPairwisePreferenceDecisions,
+        requiredBlindedPairwisePreferenceComparisonKeys:
+            pairwiseReadinessPlan.requiredComparisonKeys,
+        requiredBlindedPairwisePreferenceIntentKeys:
+            pairwiseReadinessPlan.requiredComparisonIntentKeys,
+        blindedPairwisePreferencePolicy: pairwiseReadinessPlan.preferencePolicy,
+      );
+      expect(
+        result.manifest.tuningReadinessPolicyEvidence?.policyDigest,
+        policy.policyDigest,
+      );
+      final loaded = await writer.readManifest('run-pairwise-plan');
+      expect(
+        loaded!.pairwiseReadinessPlanEvidence?.toJson(),
+        pairwiseEvidence.toJson(),
+      );
+      expect(
+        loaded.tuningReadinessPolicyEvidence?.policyDigest,
+        policy.policyDigest,
+      );
+    },
+  );
+
+  test(
+    'records pairwise readiness intent evidence before export exists',
+    () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'lotti-eval-pairwise-intent-',
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+      });
+      final target = _RecordingTarget();
+      final writer = TraceWriter(runsRoot: tempDir.path);
+      final runner = EvalMatrixRunner(target: target, writer: writer);
+      final scenarios = [taskReleaseNotesScenario];
+      const profiles = [stableProfile, singleProfile];
+      final pairwiseReadinessIntent = _pairwiseReadinessIntentFor(
+        scenarios: scenarios,
+        profiles: profiles,
+      );
+      final pairwiseEvidence = pairwiseReadinessIntent.toManifestEvidence();
+      final plan = runner.plan(
+        runId: 'run-pairwise-intent',
+        scenarios: scenarios,
+        profiles: profiles,
+        pairwiseReadinessIntent: pairwiseReadinessIntent,
+      );
+      expect(
+        EvalMatrixPlanRenderer.render(plan),
+        contains('Pairwise Readiness Plan Evidence'),
+      );
+
+      final result = await runner.run(
+        runId: 'run-pairwise-intent',
+        scenarios: scenarios,
+        profiles: profiles,
+        pairwiseReadinessIntent: pairwiseReadinessIntent,
+      );
+
+      expect(
+        result.manifest.pairwiseReadinessPlanEvidence?.toJson(),
+        pairwiseEvidence.toJson(),
+      );
+      expect(
+        result.manifest.toJson().toString(),
+        isNot(contains('reviewPayloadDigest')),
+        reason: 'pre-run intent evidence must not require post-run export data',
+      );
+      final policy = EvalTuningPolicy.modelClassTuning(
+        minBlindedPairwisePreferenceDecisions:
+            pairwiseReadinessIntent.minBlindedPairwisePreferenceDecisions,
+        requiredBlindedPairwisePreferenceIntentKeys:
+            pairwiseReadinessIntent.requiredComparisonIntentKeys,
+        requiredBlindedPairwisePreferenceOutcomeExpectationsByIntentKey:
+            pairwiseReadinessIntent.outcomeExpectationsByIntentKey,
+        blindedPairwisePreferencePolicy:
+            pairwiseReadinessIntent.preferencePolicy,
+      );
+      expect(
+        result.manifest.tuningReadinessPolicyEvidence?.policyDigest,
+        policy.policyDigest,
+      );
+      final loaded = await writer.readManifest('run-pairwise-intent');
+      expect(
+        loaded!.pairwiseReadinessPlanEvidence?.toJson(),
+        pairwiseEvidence.toJson(),
+      );
+    },
+  );
+
+  test('rejects pairwise readiness plan that does not refine intent', () {
+    final target = _RecordingTarget();
+    final runner = EvalMatrixRunner(target: target);
+    final scenarios = [taskReleaseNotesScenario];
+    const profiles = [stableProfile, singleProfile];
+    final intent = _pairwiseReadinessIntentFor(
+      scenarios: scenarios,
+      profiles: profiles,
+    );
+    final stalePlan = _pairwiseReadinessPlanFor(
+      scenarios: scenarios,
+      profiles: profiles,
+    );
+
+    expect(
+      () => runner.plan(
+        runId: 'run-pairwise-mismatched-intent-plan',
+        scenarios: scenarios,
+        profiles: profiles,
+        pairwiseReadinessIntent: intent,
+        pairwiseReadinessPlan: stalePlan,
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('does not refine the supplied readiness intent'),
+        ),
+      ),
+    );
+    expect(target.calls, isEmpty);
+  });
+
+  test('rejects duplicate pairwise readiness intent pairs before running', () {
+    final target = _RecordingTarget();
+    final runner = EvalMatrixRunner(target: target);
+    final scenarios = [taskReleaseNotesScenario];
+    const profiles = [stableProfile, singleProfile];
+    final intent = _pairwiseReadinessIntentFor(
+      scenarios: scenarios,
+      profiles: profiles,
+    );
+    final comparison = intent.comparisons.single;
+    final duplicatePairIntent = _copyPairwiseReadinessIntent(
+      intent,
+      comparisons: [
+        comparison,
+        EvalPairwiseReadinessIntentComparison(
+          pairId: comparison.pairId,
+          intentKey: '${comparison.intentKey}::duplicate',
+          axis: comparison.axis,
+          scenarioId: comparison.scenarioId,
+          scenarioDigest: comparison.scenarioDigest,
+          agentKind: comparison.agentKind,
+          capabilityId: comparison.capabilityId,
+          trialIndex: comparison.trialIndex,
+          optionA: comparison.optionA,
+          optionB: comparison.optionB,
+          preferredOption: comparison.preferredOption,
+          outcomeRequirement: comparison.outcomeRequirement,
+        ),
+      ],
+    );
+
+    expect(
+      () => runner.plan(
+        runId: 'run-pairwise-duplicate-intent',
+        scenarios: scenarios,
+        profiles: profiles,
+        pairwiseReadinessIntent: duplicatePairIntent,
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('duplicate pairId'),
+        ),
+      ),
+    );
+    expect(target.calls, isEmpty);
+  });
+
+  test(
+    'records tuning readiness contract evidence in the run manifest',
+    () async {
+      final tempDir = await Directory.systemTemp.createTemp(
+        'lotti-eval-readiness-contract-',
+      );
+      addTearDown(() async {
+        if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+      });
+      final target = _RecordingTarget();
+      final writer = TraceWriter(runsRoot: tempDir.path);
+      final runner = EvalMatrixRunner(target: target, writer: writer);
+      final scenarios = [
+        taskReleaseNotesScenario,
+        plannerMorningCapacityScenario,
+      ];
+      final requiredCapabilities = {
+        taskReleaseNotesScenario.metadata.primaryCapabilityId!,
+        plannerMorningCapacityScenario.metadata.primaryCapabilityId!,
+      };
+      final plan = runner.plan(
+        runId: 'run-readiness-contract',
+        scenarios: scenarios,
+        profiles: const [singleProfile],
+        requiredPrimaryCapabilityIds: requiredCapabilities,
+      );
+      expect(
+        EvalMatrixPlanRenderer.render(plan),
+        contains('Tuning Readiness Contract Evidence'),
+      );
+      expect(
+        EvalMatrixPlanRenderer.render(plan),
+        contains('Tuning Readiness Policy Evidence'),
+      );
+
+      final result = await runner.run(
+        runId: 'run-readiness-contract',
+        scenarios: scenarios,
+        profiles: const [singleProfile],
+        requiredPrimaryCapabilityIds: requiredCapabilities,
+      );
+
+      final evidence = result.manifest.tuningReadinessContractEvidence;
+      final policyEvidence = result.manifest.tuningReadinessPolicyEvidence;
+      expect(evidence, isNotNull);
+      expect(evidence!.scenarioSetDigest, result.manifest.scenarioSetDigest);
+      expect(evidence.requiredPrimaryCapabilityIds, requiredCapabilities);
+      expect(
+        evidence.readinessContractSubjectDigest,
+        EvalProvenance.tuningReadinessContractSubjectDigest(evidence),
+      );
+      final loaded = await writer.readManifest('run-readiness-contract');
+      expect(
+        loaded!.tuningReadinessContractEvidence?.toJson(),
+        evidence.toJson(),
+      );
+      expect(policyEvidence, isNotNull);
+      expect(
+        policyEvidence!.policyDigest,
+        EvalTuningPolicy.modelClassTuning(
+          requiredPrimaryCapabilityIds: requiredCapabilities,
+        ).policyDigest,
+      );
+
+      expect(
+        () => runner.plan(
+          runId: 'run-readiness-contract-missing',
+          scenarios: [taskReleaseNotesScenario],
+          profiles: const [singleProfile],
+          requiredPrimaryCapabilityIds: const {
+            'planner.capability.absent',
+          },
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('Required primary capability planner.capability.absent'),
+          ),
+        ),
+      );
+    },
+  );
 
   test(
     'fails the run after writing traces when Level 1 semantics fail',
@@ -477,6 +841,35 @@ void main() {
     );
     expect(target.calls, isEmpty);
   });
+
+  test(
+    'rejects pairwise readiness plans for another scenario set before running',
+    () {
+      final target = _RecordingTarget();
+      final runner = EvalMatrixRunner(target: target);
+      final pairwiseEvidence = _pairwiseReadinessPlanEvidenceFor(
+        scenarios: [plannerMorningCapacityScenario],
+        profiles: const [stableProfile, singleProfile],
+      );
+
+      expect(
+        () => runner.plan(
+          runId: 'run-pairwise-drift',
+          scenarios: [taskReleaseNotesScenario],
+          profiles: const [stableProfile, singleProfile],
+          pairwiseReadinessPlanEvidence: pairwiseEvidence,
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('Pairwise readiness plan scenarioSetDigest'),
+          ),
+        ),
+      );
+      expect(target.calls, isEmpty);
+    },
+  );
 
   test('rejects promotion plans for another profile set before running', () {
     final target = _RecordingTarget();
@@ -908,4 +1301,207 @@ EvalPromotionPlan _promotionPlanFor({
   policyDigest: EvalProvenance.digestText('promotion-policy'),
   createdAt: '2026-06-10T00:00:00Z',
   notes: 'test fixture',
+);
+
+EvalUseCaseWorkOrderLaunchEvidence _workOrderLaunchEvidence({
+  required String capabilityId,
+}) {
+  final batchRef = EvalProvenance.digestText('work-order-batch');
+  final evidence = EvalUseCaseWorkOrderLaunchEvidence(
+    workOrderRef: EvalProvenance.digestText('work-order-ref'),
+    workOrderDigest: EvalProvenance.digestText('work-order'),
+    sourceExperimentPlanDigest: EvalProvenance.digestText('plan'),
+    sourceMatrixDigest: EvalProvenance.digestText('matrix'),
+    workOrderBatchRefs: [batchRef],
+    workOrderBatchSetDigest: EvalProvenance.digestJson([batchRef]),
+    requiredPrimaryCapabilityIds: {capabilityId},
+    promptVariantNames: const ['default'],
+    workOrderLaunchSubjectDigest: '',
+  );
+  return EvalUseCaseWorkOrderLaunchEvidence(
+    workOrderRef: evidence.workOrderRef,
+    workOrderDigest: evidence.workOrderDigest,
+    sourceExperimentPlanDigest: evidence.sourceExperimentPlanDigest,
+    sourceMatrixDigest: evidence.sourceMatrixDigest,
+    workOrderBatchRefs: evidence.workOrderBatchRefs,
+    workOrderBatchSetDigest: evidence.workOrderBatchSetDigest,
+    requiredPrimaryCapabilityIds: evidence.requiredPrimaryCapabilityIds,
+    promptVariantNames: evidence.promptVariantNames,
+    workOrderLaunchSubjectDigest:
+        EvalProvenance.useCaseWorkOrderLaunchSubjectDigest(evidence),
+  );
+}
+
+EvalPairwiseReadinessPlan _pairwiseReadinessPlanFor({
+  required List<EvalScenario> scenarios,
+  required List<EvalProfile> profiles,
+}) => EvalPairwiseReadinessPlan(
+  planId: 'pairwise-readiness-plan-test',
+  baseReadinessPolicy: 'modelClassTuning',
+  scenarioSetDigest: EvalProvenance.scenarioSetDigest(scenarios),
+  profileSetDigest: EvalProvenance.profileSetDigest(profiles),
+  profileBindingSetDigest: EvalProvenance.profileBindingSetDigest([
+    for (final profile in profiles)
+      evalProfileConfig(profile).toExecutionBinding(),
+  ]),
+  minBlindedPairwisePreferenceDecisions: 1,
+  comparisons: [
+    EvalPairwiseReadinessComparison(
+      comparisonKey: 'profile::single-local::stable-frontier',
+      intentKey: 'profile::single-local::stable-frontier',
+      reviewPayloadDigest: EvalProvenance.digestText(
+        'pairwise-readiness-review-payload',
+      ),
+    ),
+  ],
+  reviewProtocol: EvalPairwiseReadinessReviewProtocol(
+    reviewerKind: EvalPairwiseReviewerKind.human,
+    reviewerModel: null,
+    promptDigest: EvalProvenance.digestText('pairwise-readiness-prompt'),
+    calibrationSetVersion: 'pairwise-human-gold-v1',
+    profileVisible: false,
+    modelIdentityVisible: false,
+    peerVotesVisible: false,
+    traceOrderRandomized: true,
+  ),
+  importBinding: EvalPairwiseReadinessImportBinding(
+    judgeManifestDigest: EvalProvenance.digestText(
+      'pairwise-readiness-judge-manifest',
+    ),
+    privateKeyDigest: EvalProvenance.digestText(
+      'pairwise-readiness-private-key',
+    ),
+  ),
+  minVotes: 1,
+  quorumFraction: 1,
+  createdAt: '2026-06-10T00:00:00Z',
+  notes: 'test fixture',
+);
+
+EvalPairwiseReadinessIntent _pairwiseReadinessIntentFor({
+  required List<EvalScenario> scenarios,
+  required List<EvalProfile> profiles,
+}) {
+  final scenario = scenarios.single;
+  final baseline = profiles.firstWhere(
+    (profile) => profile.name == 'single-local',
+  );
+  final candidate = profiles.firstWhere(
+    (profile) => profile.name == 'stable-frontier',
+  );
+  const variant = EvalAgentDirectiveVariant();
+  final scenarioDigest = EvalProvenance.capture(
+    scenario: scenario,
+    profile: profiles.first,
+  ).scenarioDigest;
+
+  return EvalPairwiseReadinessIntent(
+    planId: 'pairwise-readiness-intent-test',
+    baseReadinessPolicy: 'modelClassTuning',
+    scenarioSetDigest: EvalProvenance.scenarioSetDigest(scenarios),
+    profileSetDigest: EvalProvenance.profileSetDigest(profiles),
+    profileBindingSetDigest: EvalProvenance.profileBindingSetDigest([
+      for (final profile in profiles)
+        evalProfileConfig(profile).toExecutionBinding(),
+    ]),
+    agentDirectiveVariantSetDigest:
+        EvalProvenance.agentDirectiveVariantSetDigest(
+          const [variant],
+        ),
+    minBlindedPairwisePreferenceDecisions: 1,
+    comparisons: [
+      EvalPairwiseReadinessIntentComparison(
+        pairId: 'pair-1',
+        intentKey: 'profile::task_release_notes::single-local-vs-stable',
+        axis: EvalPairwiseComparisonAxis.profile,
+        scenarioId: scenario.id,
+        scenarioDigest: scenarioDigest,
+        agentKind: scenario.agentKind,
+        capabilityId: scenario.metadata.primaryCapabilityId!,
+        trialIndex: 0,
+        optionA: _pairwiseReadinessIntentOptionFor(
+          scenario: scenario,
+          profile: baseline,
+          variant: variant,
+        ),
+        optionB: _pairwiseReadinessIntentOptionFor(
+          scenario: scenario,
+          profile: candidate,
+          variant: variant,
+        ),
+        preferredOption: EvalPairwiseReadinessPreferredOption.optionB,
+        outcomeRequirement: EvalPairwiseReadinessOutcomeRequirement.mustNotLose,
+      ),
+    ],
+    reviewProtocol: EvalPairwiseReadinessReviewProtocol(
+      reviewerKind: EvalPairwiseReviewerKind.human,
+      reviewerModel: null,
+      promptDigest: EvalProvenance.digestText('pairwise-readiness-prompt'),
+      calibrationSetVersion: 'pairwise-human-gold-v1',
+      profileVisible: false,
+      modelIdentityVisible: false,
+      peerVotesVisible: false,
+      traceOrderRandomized: true,
+    ),
+    minVotes: 1,
+    quorumFraction: 1,
+    createdAt: '2026-06-10T00:00:00Z',
+    notes: 'test fixture',
+  );
+}
+
+EvalPairwiseReadinessIntent _copyPairwiseReadinessIntent(
+  EvalPairwiseReadinessIntent intent, {
+  required List<EvalPairwiseReadinessIntentComparison> comparisons,
+}) => EvalPairwiseReadinessIntent(
+  planId: intent.planId,
+  baseReadinessPolicy: intent.baseReadinessPolicy,
+  scenarioSetDigest: intent.scenarioSetDigest,
+  profileSetDigest: intent.profileSetDigest,
+  profileBindingSetDigest: intent.profileBindingSetDigest,
+  agentDirectiveVariantSetDigest: intent.agentDirectiveVariantSetDigest,
+  minBlindedPairwisePreferenceDecisions:
+      intent.minBlindedPairwisePreferenceDecisions,
+  comparisons: comparisons,
+  reviewProtocol: intent.reviewProtocol,
+  minVotes: intent.minVotes,
+  quorumFraction: intent.quorumFraction,
+  createdAt: intent.createdAt,
+  notes: intent.notes,
+);
+
+EvalPairwiseReadinessIntentOption _pairwiseReadinessIntentOptionFor({
+  required EvalScenario scenario,
+  required EvalProfile profile,
+  required EvalAgentDirectiveVariant variant,
+}) => EvalPairwiseReadinessIntentOption(
+  profileName: profile.name,
+  profileDigest: EvalProvenance.capture(
+    scenario: scenario,
+    profile: profile,
+  ).profileDigest,
+  modelClass: profile.modelClass,
+  agentDirectiveVariantName: variant.name,
+  agentDirectiveVariantDigest: EvalProvenance.agentDirectiveVariantDigest(
+    variant,
+  ),
+);
+
+EvalPairwiseReadinessPlanEvidence _pairwiseReadinessPlanEvidenceFor({
+  required List<EvalScenario> scenarios,
+  required List<EvalProfile> profiles,
+}) => EvalPairwiseReadinessPlanEvidence(
+  planId: 'pairwise-readiness-plan-test',
+  baseReadinessPolicy: 'modelClassTuning',
+  scenarioSetDigest: EvalProvenance.scenarioSetDigest(scenarios),
+  profileSetDigest: EvalProvenance.profileSetDigest(profiles),
+  profileBindingSetDigest: EvalProvenance.profileBindingSetDigest([
+    for (final profile in profiles)
+      evalProfileConfig(profile).toExecutionBinding(),
+  ]),
+  minBlindedPairwisePreferenceDecisions: 1,
+  comparisonCount: 1,
+  pairwiseReadinessPlanSubjectDigest: EvalProvenance.digestText(
+    'pairwise-readiness-plan-subject',
+  ),
 );

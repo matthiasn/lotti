@@ -51,6 +51,7 @@ void main() {
           '--dart-define=EVAL_SCENARIOS=/private/path/protected_scenarios.json '
           '--dart-define=EVAL_PROFILES=/private/path/profiles.json '
           '--dart-define=EVAL_PROMOTION_PLAN=/private/path/promotion_plan.json '
+          '--dart-define=EVAL_USE_CASE_RUN_WORK_ORDER=/private/path/work_order.json '
           'run',
       environment: const {
         'LOTTI_EVAL_LIVE': '1',
@@ -61,6 +62,7 @@ void main() {
         'EVAL_PROFILES': '/private/path/profiles.json',
         'EVAL_PROFILE_NAMES': 'frontier-gemini',
         'EVAL_PROMOTION_PLAN': '/private/path/promotion_plan.json',
+        'EVAL_USE_CASE_RUN_WORK_ORDER': '/private/path/work_order.json',
       },
     );
     final json = jsonEncode(manifest.toJson());
@@ -73,14 +75,20 @@ void main() {
     expect(manifest.envPresence['EVAL_PROFILES'], isTrue);
     expect(manifest.envPresence['EVAL_PROFILE_NAMES'], isTrue);
     expect(manifest.envPresence['EVAL_PROMOTION_PLAN'], isTrue);
+    expect(manifest.envPresence['EVAL_USE_CASE_RUN_WORK_ORDER'], isTrue);
     expect(json, isNot(contains('secret-value')));
     expect(json, isNot(contains('/private/path/protected_scenarios.json')));
     expect(json, isNot(contains('/private/path/profiles.json')));
     expect(json, isNot(contains('/private/path/promotion_plan.json')));
+    expect(json, isNot(contains('/private/path/work_order.json')));
     expect(manifest.command, contains('OPENAI_API_KEY=<redacted>'));
     expect(manifest.command, contains('EVAL_SCENARIOS=<redacted>'));
     expect(manifest.command, contains('EVAL_PROFILES=<redacted>'));
     expect(manifest.command, contains('EVAL_PROMOTION_PLAN=<redacted>'));
+    expect(
+      manifest.command,
+      contains('EVAL_USE_CASE_RUN_WORK_ORDER=<redacted>'),
+    );
   });
 
   test('manifest records non-secret scenario catalog evidence', () {

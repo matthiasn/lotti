@@ -74,33 +74,32 @@ void main() {
         containsPair('reviewPayloadDigest', reviewPayloadDigest),
       );
       expect(
-        (reviewPayload['profileContext'] as Map<String, dynamic>)['modelClass'],
-        EvalModelClass.frontierFast.name,
+        reviewPayload['profileContext'] as Map<String, dynamic>,
+        containsPair('modelClass', EvalModelClass.frontierFast.name),
       );
       expect(
-        (reviewPayload['profileContext']
-            as Map<String, dynamic>)['profileAlias'],
-        'profile-01',
+        reviewPayload['profileContext'] as Map<String, dynamic>,
+        containsPair('profileAlias', 'profile-01'),
       );
       expect(reviewPayload['promptVariantAlias'], 'prompt-variant-01');
       expect(
-        (reviewPayload['output'] as Map<String, dynamic>),
+        reviewPayload['output'] as Map<String, dynamic>,
         isNot(contains('resolvedModel')),
       );
       expect(
-        (reviewPayload['output'] as Map<String, dynamic>),
+        reviewPayload['output'] as Map<String, dynamic>,
         isNot(contains('providerDecision')),
       );
       expect(
-        (reviewPayload['output'] as Map<String, dynamic>),
+        reviewPayload['output'] as Map<String, dynamic>,
         isNot(contains('modelInvocations')),
       );
       expect(
-        (reviewPayload['output'] as Map<String, dynamic>),
+        reviewPayload['output'] as Map<String, dynamic>,
         isNot(contains('providerRequests')),
       );
       expect(
-        (reviewPayload['output'] as Map<String, dynamic>),
+        reviewPayload['output'] as Map<String, dynamic>,
         isNot(contains('providerResponses')),
       );
       expect(judgePayload, isNot(contains('frontier-secret-profile')));
@@ -112,7 +111,7 @@ void main() {
       expect(privatePayload, contains('gpt-secret-model'));
       expect(privatePayload, contains('metadata-secret-v1'));
       expect(privatePayload, contains(rawTraceDigest));
-      expect(privatePayload, contains(manifest.manifestDigest!));
+      expect(privatePayload, contains(manifest.manifestDigest));
       expect(privatePayload, contains(rawTraceFile.uri.pathSegments.last));
     },
   );

@@ -21,6 +21,7 @@ EvalScenario _reviewedScenario(
   required String rationale,
 }) {
   final json = scenario.toJson();
+  final isAdversarial = scenario.metadata.isAdversarial;
   final metadata = <String, dynamic>{
     ...(json['metadata'] as Map<String, dynamic>),
     'review': EvalScenarioReview(
@@ -29,6 +30,14 @@ EvalScenario _reviewedScenario(
       reviewedAt: '2026-06-10T12:00:00.000Z',
       subjectDigest: EvalProvenance.scenarioReviewSubjectDigest(scenario),
       rationale: rationale,
+      sourceDigest: isAdversarial
+          ? EvalProvenance.digestJson(<String, dynamic>{
+              'scenarioId': scenario.id,
+              'source': 'public-adversarial-catalog',
+            })
+          : null,
+      sourceLabel: isAdversarial ? 'public-adversarial-catalog' : null,
+      generator: isAdversarial ? 'human-authored-adversarial-case' : null,
     ).toJson(),
   };
   json['metadata'] = metadata;
@@ -1121,6 +1130,168 @@ taskWorkflowRejectedProposalStickinessScenario = _reviewedScenario(
       'and stale rejected-history suppression.',
 );
 
+final EvalScenario taskWorkflowRetractionChurnGuardScenario = _reviewedScenario(
+  EvalScenario(
+    id: 'task_workflow_retraction_churn_guard',
+    title: 'Real workflow: ignore retract-and-repropose churn',
+    agentKind: AgentKind.taskAgent,
+    metadata: const EvalScenarioMetadata(
+      capabilityIds: ['task.proposals.retractionchurn'],
+      split: EvalScenarioSplit.canary,
+      source: EvalScenarioSource.adversarial,
+      isAdversarial: true,
+      tags: {
+        'task',
+        'workflow',
+        'proposals',
+        'adversarial',
+        'scope-boundary',
+        'stale-state',
+      },
+    ),
+    appState: MockedAppState(
+      now: DateTime(2026, 6, 9, 10, 5),
+      categoryIds: const ['cat-001'],
+      tasks: const [
+        MockTask(
+          id: 'task-notes',
+          title: 'Write release notes for 0.x',
+          status: 'IN PROGRESS',
+          categoryId: 'cat-001',
+          checklist: [MockChecklistItem(id: 'ci-1', title: 'Draft summary')],
+        ),
+      ],
+      proposalSets: [
+        MockProposalSet(
+          id: 'open-review-changelog',
+          createdAt: DateTime(2026, 6, 9, 9, 45),
+          items: const [
+            MockProposalItem(
+              toolName: 'add_checklist_item',
+              args: {'title': 'Review changelog'},
+              humanSummary: 'Add: "Review changelog"',
+            ),
+          ],
+        ),
+      ],
+    ),
+    userInput: const UserInput(
+      transcript:
+          'Review the open release-note suggestion state. If an open '
+          'suggestion is still valid, leave it open instead of replacing '
+          'it with the same action.',
+      triggerTokens: {'decided_task:task-notes'},
+    ),
+    expectations: const EvalExpectations(
+      durableState: ExpectedDurableState(
+        proposalCount: 1,
+        requiredProposals: [
+          ExpectedProposalState(
+            changeSetId: 'open-review-changelog',
+            toolName: 'add_checklist_item',
+            targetId: 'task-notes',
+            status: 'pending',
+            changeSetStatus: 'pending',
+            argsContain: {'title': 'Review changelog'},
+            humanSummaryContains: {'Review changelog'},
+          ),
+        ],
+        forbiddenProposals: [
+          ExpectedProposalState(
+            status: 'retracted',
+            argsContain: {'title': 'Review changelog'},
+          ),
+        ],
+      ),
+    ),
+  ),
+  rationale:
+      'Reviewed as a public adversarial task-agent case for weaker-model '
+      'retract-and-repropose churn on still-valid open suggestions.',
+);
+
+final EvalScenario taskWorkflowStaleResolvedProposalScenario =
+    _reviewedScenario(
+      EvalScenario(
+        id: 'task_workflow_stale_resolved_proposal_cleanup',
+        title: 'Real workflow: ignore stale resolved proposal rows',
+        agentKind: AgentKind.taskAgent,
+        metadata: const EvalScenarioMetadata(
+          capabilityIds: ['task.proposals.staleresolved'],
+          split: EvalScenarioSplit.canary,
+          source: EvalScenarioSource.adversarial,
+          isAdversarial: true,
+          tags: {
+            'task',
+            'workflow',
+            'proposals',
+            'adversarial',
+            'scope-boundary',
+            'stale-state',
+          },
+        ),
+        appState: MockedAppState(
+          now: DateTime(2026, 6, 9, 10, 15),
+          categoryIds: const ['cat-001'],
+          tasks: const [
+            MockTask(
+              id: 'task-notes',
+              title: 'Write release notes for 0.x',
+              status: 'IN PROGRESS',
+              categoryId: 'cat-001',
+              checklist: [
+                MockChecklistItem(id: 'ci-1', title: 'Draft summary'),
+              ],
+            ),
+          ],
+          proposalSets: [
+            MockProposalSet(
+              id: 'stale-resolved-security-review',
+              status: 'resolved',
+              createdAt: DateTime(2026, 6, 9, 9, 45),
+              resolvedAt: DateTime(2026, 6, 9, 9, 50),
+              items: const [
+                MockProposalItem(
+                  toolName: 'add_checklist_item',
+                  args: {'title': 'Security review'},
+                  humanSummary: 'Add: "Security review"',
+                ),
+              ],
+            ),
+          ],
+        ),
+        userInput: const UserInput(
+          transcript:
+              'Continue grooming the release-note task, ignore stale resolved '
+              'suggestions, and add a publish checklist item if it is missing.',
+          triggerTokens: {'decided_task:task-notes'},
+        ),
+        expectations: const EvalExpectations(
+          durableState: ExpectedDurableState(
+            proposalCount: 1,
+            requiredProposals: [
+              ExpectedProposalState(
+                toolName: 'add_checklist_item',
+                targetId: 'task-notes',
+                status: 'pending',
+                changeSetStatus: 'pending',
+                argsContain: {'title': 'Publish release notes'},
+                humanSummaryContains: {'Publish release notes'},
+              ),
+            ],
+            forbiddenProposals: [
+              ExpectedProposalState(
+                argsContain: {'title': 'Security review'},
+              ),
+            ],
+          ),
+        ),
+      ),
+      rationale:
+          'Reviewed as a public adversarial task-agent case for stale resolved '
+          'proposal rows whose embedded items still claim pending status.',
+    );
+
 final EvalScenario taskWorkflowCheckedChecklistNoopScenario = _reviewedScenario(
   EvalScenario(
     id: 'task_workflow_checked_checklist_noop',
@@ -1368,6 +1539,8 @@ final allEvalScenarios = <EvalScenario>[
   taskWorkflowCompletionBoundaryScenario,
   taskWorkflowPendingProposalMergeScenario,
   taskWorkflowRejectedProposalStickinessScenario,
+  taskWorkflowRetractionChurnGuardScenario,
+  taskWorkflowStaleResolvedProposalScenario,
   taskWorkflowCheckedChecklistNoopScenario,
   taskWorkflowChecklistTranscriptCascadeScenario,
 ];

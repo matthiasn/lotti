@@ -65,6 +65,54 @@ void main() {
     },
   );
 
+  test('durable-state oracle distinguishes proposal change set identity', () {
+    final scenario = _withExpectations(
+      taskWorkflowRetractionChurnGuardScenario,
+      const EvalExpectations(
+        durableState: ExpectedDurableState(
+          requiredProposals: [
+            ExpectedProposalState(
+              changeSetId: 'open-review-changelog',
+              toolName: 'add_checklist_item',
+              targetId: 'task-notes',
+              status: 'pending',
+              changeSetStatus: 'pending',
+              argsContain: {'title': 'Review changelog'},
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final checks = runLevel1(
+      scenario,
+      const AgentRunOutput(
+        success: true,
+        usage: InferenceUsage(inputTokens: 800, outputTokens: 120),
+        proposals: [
+          ProposalRecord(
+            changeSetId: 'fresh-duplicate',
+            changeSetStatus: 'pending',
+            targetId: 'task-notes',
+            itemIndex: 0,
+            toolName: 'add_checklist_item',
+            args: {'title': 'Review changelog'},
+            humanSummary: 'Add Review changelog',
+            status: 'pending',
+          ),
+        ],
+      ),
+      profile: kLocalOllamaProfile,
+    );
+
+    final oracle = _named(checks, 'expected_durable_state');
+    expect(oracle.passed, isFalse);
+    expect(
+      oracle.detail,
+      contains('changeSetId=open-review-changelog'),
+    );
+  });
+
   test('durable-state oracle reports missing and forbidden task state', () {
     final scenario = _withExpectations(
       taskWorkflowReleaseNotesScenario,
@@ -824,6 +872,7 @@ void main() {
           reportContains: {'release'},
           requiredProposals: [
             ExpectedProposalState(
+              changeSetId: 'cs-label',
               toolName: 'assign_task_label',
               argsContain: {'id': 'lbl-release'},
             ),
@@ -856,7 +905,10 @@ void main() {
           ],
           proposalCounts: [
             ExpectedProposalCount(
-              matcher: ExpectedProposalState(status: 'pending'),
+              matcher: ExpectedProposalState(
+                changeSetId: 'cs-label',
+                status: 'pending',
+              ),
               exactCount: 1,
             ),
           ],

@@ -13,6 +13,7 @@ import 'eval_models.dart';
 import 'eval_provenance.dart';
 import 'eval_run_verifier.dart';
 import 'eval_target.dart';
+import 'eval_tuning_readiness.dart';
 import 'trace_writer.dart';
 
 class EvalMatrixRunResult {
@@ -206,6 +207,69 @@ abstract final class EvalMatrixPlanRenderer {
         ..writeln();
     }
 
+    final pairwiseEvidence = plan.manifest.pairwiseReadinessPlanEvidence;
+    if (pairwiseEvidence != null) {
+      buffer
+        ..writeln('Pairwise Readiness Plan Evidence')
+        ..writeln('- planId: ${pairwiseEvidence.planId}')
+        ..writeln('- basePolicy: ${pairwiseEvidence.baseReadinessPolicy}')
+        ..writeln(
+          '- profileBindingSetDigest: '
+          '${pairwiseEvidence.profileBindingSetDigest}',
+        )
+        ..writeln(
+          '- minDecisions: '
+          '${pairwiseEvidence.minBlindedPairwisePreferenceDecisions}',
+        )
+        ..writeln('- comparisonCount: ${pairwiseEvidence.comparisonCount}')
+        ..writeln(
+          '- subjectDigest: '
+          '${pairwiseEvidence.pairwiseReadinessPlanSubjectDigest}',
+        )
+        ..writeln();
+    }
+
+    final readinessContract = plan.manifest.tuningReadinessContractEvidence;
+    if (readinessContract != null) {
+      buffer
+        ..writeln('Tuning Readiness Contract Evidence')
+        ..writeln(
+          '- requiredPrimaryCapabilityIds: '
+          '${readinessContract.requiredPrimaryCapabilityIds.toList()..sort()}',
+        )
+        ..writeln(
+          '- subjectDigest: '
+          '${readinessContract.readinessContractSubjectDigest}',
+        )
+        ..writeln();
+    }
+
+    final readinessPolicy = plan.manifest.tuningReadinessPolicyEvidence;
+    if (readinessPolicy != null) {
+      buffer
+        ..writeln('Tuning Readiness Policy Evidence')
+        ..writeln('- policyName: ${readinessPolicy.policyName}')
+        ..writeln('- policyDigest: ${readinessPolicy.policyDigest}')
+        ..writeln();
+    }
+
+    final workOrderLaunch = plan.manifest.useCaseWorkOrderLaunchEvidence;
+    if (workOrderLaunch != null) {
+      buffer
+        ..writeln('Use-Case Work-Order Launch Evidence')
+        ..writeln('- workOrderRef: ${workOrderLaunch.workOrderRef}')
+        ..writeln('- workOrderDigest: ${workOrderLaunch.workOrderDigest}')
+        ..writeln(
+          '- workOrderBatchRefs: '
+          '${workOrderLaunch.workOrderBatchRefs.length}',
+        )
+        ..writeln(
+          '- subjectDigest: '
+          '${workOrderLaunch.workOrderLaunchSubjectDigest}',
+        )
+        ..writeln();
+    }
+
     buffer.writeln('Profiles');
     final bindingByProfileName = {
       for (final binding in plan.manifest.profileExecutionBindings)
@@ -312,6 +376,11 @@ class EvalMatrixRunner {
     ],
     EvalScenarioCatalogEvidence? scenarioCatalogEvidence,
     EvalPromotionPlan? promotionPlan,
+    EvalPairwiseReadinessIntent? pairwiseReadinessIntent,
+    EvalPairwiseReadinessPlan? pairwiseReadinessPlan,
+    EvalPairwiseReadinessPlanEvidence? pairwiseReadinessPlanEvidence,
+    Set<String> requiredPrimaryCapabilityIds = const <String>{},
+    EvalUseCaseWorkOrderLaunchEvidence? useCaseWorkOrderLaunchEvidence,
     bool overwrite = false,
     bool deleteVerdictOnOverwrite = false,
   }) {
@@ -339,6 +408,35 @@ class EvalMatrixRunner {
       scenarios: canonicalScenarios,
       profiles: canonicalProfiles,
     );
+    final resolvedPairwiseEvidence = _resolvePairwiseReadinessPlanEvidence(
+      pairwiseReadinessIntent: pairwiseReadinessIntent,
+      pairwiseReadinessPlan: pairwiseReadinessPlan,
+      pairwiseReadinessPlanEvidence: pairwiseReadinessPlanEvidence,
+    );
+    _validatePairwiseReadinessPlanEvidenceForRun(
+      resolvedPairwiseEvidence,
+      scenarios: canonicalScenarios,
+      profiles: canonicalProfiles,
+      agentDirectiveVariants: canonicalAgentDirectiveVariants,
+      pairwiseReadinessIntent: pairwiseReadinessIntent,
+    );
+    _validateRequiredPrimaryCapabilities(
+      requiredPrimaryCapabilityIds,
+      scenarios: canonicalScenarios,
+    );
+    final tuningReadinessContractEvidence = requiredPrimaryCapabilityIds.isEmpty
+        ? null
+        : EvalProvenance.tuningReadinessContractEvidence(
+            scenarioSetDigest: EvalProvenance.scenarioSetDigest(
+              canonicalScenarios,
+            ),
+            requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+          );
+    final tuningReadinessPolicyEvidence = _tuningReadinessPolicyEvidence(
+      requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+      pairwiseReadinessIntent: pairwiseReadinessIntent,
+      pairwiseReadinessPlan: pairwiseReadinessPlan,
+    );
     final manifest = EvalProvenance.captureRunManifest(
       runId: runId,
       targetName: target.profileName,
@@ -347,6 +445,10 @@ class EvalMatrixRunner {
       profiles: canonicalProfiles,
       scenarioCatalogEvidence: scenarioCatalogEvidence,
       promotionPlan: promotionPlan,
+      pairwiseReadinessPlanEvidence: resolvedPairwiseEvidence,
+      tuningReadinessContractEvidence: tuningReadinessContractEvidence,
+      tuningReadinessPolicyEvidence: tuningReadinessPolicyEvidence,
+      useCaseWorkOrderLaunchEvidence: useCaseWorkOrderLaunchEvidence,
       profileExecutionBindings: profileExecutionBindings,
       agentDirectiveVariants: canonicalAgentDirectiveVariants,
     );
@@ -420,6 +522,11 @@ class EvalMatrixRunner {
     ],
     EvalScenarioCatalogEvidence? scenarioCatalogEvidence,
     EvalPromotionPlan? promotionPlan,
+    EvalPairwiseReadinessIntent? pairwiseReadinessIntent,
+    EvalPairwiseReadinessPlan? pairwiseReadinessPlan,
+    EvalPairwiseReadinessPlanEvidence? pairwiseReadinessPlanEvidence,
+    Set<String> requiredPrimaryCapabilityIds = const <String>{},
+    EvalUseCaseWorkOrderLaunchEvidence? useCaseWorkOrderLaunchEvidence,
     bool overwrite = false,
     bool deleteVerdictOnOverwrite = false,
   }) async {
@@ -430,6 +537,11 @@ class EvalMatrixRunner {
       agentDirectiveVariants: agentDirectiveVariants,
       scenarioCatalogEvidence: scenarioCatalogEvidence,
       promotionPlan: promotionPlan,
+      pairwiseReadinessIntent: pairwiseReadinessIntent,
+      pairwiseReadinessPlan: pairwiseReadinessPlan,
+      pairwiseReadinessPlanEvidence: pairwiseReadinessPlanEvidence,
+      requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+      useCaseWorkOrderLaunchEvidence: useCaseWorkOrderLaunchEvidence,
       overwrite: overwrite,
       deleteVerdictOnOverwrite: deleteVerdictOnOverwrite,
     );
@@ -759,6 +871,223 @@ class EvalMatrixRunner {
         'Promotion plan profileSetDigest ${promotionPlan.profileSetDigest} '
         'does not match planned run $profileSetDigest',
       );
+    }
+  }
+
+  void _validatePairwiseReadinessPlanEvidenceForRun(
+    EvalPairwiseReadinessPlanEvidence? evidence, {
+    required List<EvalScenario> scenarios,
+    required List<EvalProfile> profiles,
+    required List<EvalAgentDirectiveVariant> agentDirectiveVariants,
+    required EvalPairwiseReadinessIntent? pairwiseReadinessIntent,
+  }) {
+    if (evidence == null) return;
+    final scenarioSetDigest = EvalProvenance.scenarioSetDigest(scenarios);
+    if (evidence.scenarioSetDigest != scenarioSetDigest) {
+      throw StateError(
+        'Pairwise readiness plan scenarioSetDigest '
+        '${evidence.scenarioSetDigest} does not match planned run '
+        '$scenarioSetDigest',
+      );
+    }
+    final profileSetDigest = EvalProvenance.profileSetDigest(profiles);
+    if (evidence.profileSetDigest != profileSetDigest) {
+      throw StateError(
+        'Pairwise readiness plan profileSetDigest '
+        '${evidence.profileSetDigest} does not match planned run '
+        '$profileSetDigest',
+      );
+    }
+    final profileBindingSetDigest = EvalProvenance.profileBindingSetDigest(
+      profileExecutionBindingsForTarget(target, profiles),
+    );
+    if (evidence.profileBindingSetDigest != profileBindingSetDigest) {
+      throw StateError(
+        'Pairwise readiness plan profileBindingSetDigest '
+        '${evidence.profileBindingSetDigest} does not match planned run '
+        '$profileBindingSetDigest',
+      );
+    }
+    if (pairwiseReadinessIntent != null) {
+      final intentFailures = pairwiseReadinessIntent.validate();
+      if (intentFailures.isNotEmpty) {
+        throw StateError(
+          'Invalid pairwise readiness intent: ${intentFailures.join('; ')}',
+        );
+      }
+      final variantSetDigest = EvalProvenance.agentDirectiveVariantSetDigest(
+        agentDirectiveVariants,
+      );
+      if (pairwiseReadinessIntent.agentDirectiveVariantSetDigest !=
+          variantSetDigest) {
+        throw StateError(
+          'Pairwise readiness intent agentDirectiveVariantSetDigest '
+          '${pairwiseReadinessIntent.agentDirectiveVariantSetDigest} does '
+          'not match planned run $variantSetDigest',
+        );
+      }
+      if (pairwiseReadinessIntent.profileBindingSetDigest !=
+          profileBindingSetDigest) {
+        throw StateError(
+          'Pairwise readiness intent profileBindingSetDigest '
+          '${pairwiseReadinessIntent.profileBindingSetDigest} does not match '
+          'planned run $profileBindingSetDigest',
+        );
+      }
+      final scenariosById = {
+        for (final scenario in scenarios) scenario.id: scenario,
+      };
+      final profilesByName = {
+        for (final profile in profiles) profile.name: profile,
+      };
+      final variantsByName = {
+        for (final variant in agentDirectiveVariants) variant.name: variant,
+      };
+      for (final comparison in pairwiseReadinessIntent.comparisons) {
+        final scenario = scenariosById[comparison.scenarioId];
+        if (scenario == null) {
+          throw StateError(
+            'Pairwise readiness intent scenario ${comparison.scenarioId} is '
+            'not in the planned run.',
+          );
+        }
+        final capabilityId = scenario.metadata.primaryCapabilityId;
+        final scenarioDigest = EvalProvenance.capture(
+          scenario: scenario,
+          profile: profiles.first,
+        ).scenarioDigest;
+        if (scenario.agentKind != comparison.agentKind ||
+            capabilityId != comparison.capabilityId ||
+            scenarioDigest != comparison.scenarioDigest) {
+          throw StateError(
+            'Pairwise readiness intent comparison ${comparison.intentKey} '
+            'does not match scenario ${scenario.id}.',
+          );
+        }
+        for (final option in [comparison.optionA, comparison.optionB]) {
+          final profile = profilesByName[option.profileName];
+          final profileDigest = profile == null
+              ? null
+              : EvalProvenance.capture(
+                  scenario: scenario,
+                  profile: profile,
+                ).profileDigest;
+          if (profile == null ||
+              profile.modelClass != option.modelClass ||
+              profileDigest != option.profileDigest) {
+            throw StateError(
+              'Pairwise readiness intent comparison ${comparison.intentKey} '
+              'references profile ${option.profileName} outside the planned '
+              'run.',
+            );
+          }
+          final variant = variantsByName[option.agentDirectiveVariantName];
+          if (variant == null ||
+              EvalProvenance.agentDirectiveVariantDigest(variant) !=
+                  option.agentDirectiveVariantDigest) {
+            throw StateError(
+              'Pairwise readiness intent comparison ${comparison.intentKey} '
+              'references prompt variant '
+              '${option.agentDirectiveVariantName} outside the planned run.',
+            );
+          }
+        }
+      }
+    }
+  }
+
+  EvalPairwiseReadinessPlanEvidence? _resolvePairwiseReadinessPlanEvidence({
+    required EvalPairwiseReadinessIntent? pairwiseReadinessIntent,
+    required EvalPairwiseReadinessPlan? pairwiseReadinessPlan,
+    required EvalPairwiseReadinessPlanEvidence? pairwiseReadinessPlanEvidence,
+  }) {
+    final intentEvidence = pairwiseReadinessIntent?.toManifestEvidence();
+    final planEvidence = pairwiseReadinessPlan?.toManifestEvidence();
+    if (intentEvidence != null &&
+        planEvidence != null &&
+        intentEvidence.pairwiseReadinessPlanSubjectDigest !=
+            planEvidence.pairwiseReadinessPlanSubjectDigest) {
+      throw StateError(
+        'Pairwise readiness plan does not refine the supplied readiness intent.',
+      );
+    }
+    final resolved = intentEvidence ?? planEvidence;
+    if (resolved == null || pairwiseReadinessPlanEvidence == null) {
+      return resolved ?? pairwiseReadinessPlanEvidence;
+    }
+    if (resolved.pairwiseReadinessPlanSubjectDigest !=
+        pairwiseReadinessPlanEvidence.pairwiseReadinessPlanSubjectDigest) {
+      throw StateError(
+        'Pairwise readiness plan evidence does not match the supplied '
+        'pairwise readiness intent or plan.',
+      );
+    }
+    return resolved;
+  }
+
+  EvalTuningReadinessPolicyEvidence _tuningReadinessPolicyEvidence({
+    required Set<String> requiredPrimaryCapabilityIds,
+    required EvalPairwiseReadinessIntent? pairwiseReadinessIntent,
+    required EvalPairwiseReadinessPlan? pairwiseReadinessPlan,
+  }) {
+    final pairwiseIntentKeys =
+        pairwiseReadinessIntent?.requiredComparisonIntentKeys ??
+        pairwiseReadinessPlan?.requiredComparisonIntentKeys ??
+        const <String>{};
+    final pairwiseDecisionCount =
+        pairwiseReadinessIntent?.minBlindedPairwisePreferenceDecisions ??
+        pairwiseReadinessPlan?.minBlindedPairwisePreferenceDecisions ??
+        0;
+    final pairwisePolicy =
+        pairwiseReadinessIntent?.preferencePolicy ??
+        pairwiseReadinessPlan?.preferencePolicy;
+    final pairwiseOutcomeExpectationsByIntentKey =
+        pairwiseReadinessIntent?.outcomeExpectationsByIntentKey ??
+        pairwiseReadinessPlan?.outcomeExpectationsByIntentKey ??
+        const <String, EvalPairwiseReadinessOutcomeExpectation>{};
+    final pairwiseOutcomeExpectationsByComparisonKey =
+        pairwiseReadinessPlan?.outcomeExpectationsByComparisonKey ??
+        const <String, EvalPairwiseReadinessOutcomeExpectation>{};
+    final policy = pairwiseIntentKeys.isEmpty
+        ? EvalTuningPolicy.modelClassTuning(
+            requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+          )
+        : EvalTuningPolicy.modelClassTuning(
+            requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+            minBlindedPairwisePreferenceDecisions: pairwiseDecisionCount,
+            requiredBlindedPairwisePreferenceComparisonKeys: pairwiseIntentKeys,
+            requiredBlindedPairwisePreferenceIntentKeys: pairwiseIntentKeys,
+            requiredBlindedPairwisePreferenceOutcomeExpectationsByComparisonKey:
+                pairwiseOutcomeExpectationsByComparisonKey,
+            requiredBlindedPairwisePreferenceOutcomeExpectationsByIntentKey:
+                pairwiseOutcomeExpectationsByIntentKey,
+            blindedPairwisePreferencePolicy: pairwisePolicy!,
+          );
+    return EvalTuningReadinessPolicyEvidence(
+      policyName: policy.name,
+      policyDigest: policy.policyDigest,
+    );
+  }
+
+  void _validateRequiredPrimaryCapabilities(
+    Set<String> requiredPrimaryCapabilityIds, {
+    required List<EvalScenario> scenarios,
+  }) {
+    final primaryCapabilityIds = {
+      for (final scenario in scenarios) ?scenario.metadata.primaryCapabilityId,
+    };
+    for (final capabilityId in requiredPrimaryCapabilityIds) {
+      if (!_capabilityIdPattern.hasMatch(capabilityId)) {
+        throw ArgumentError(
+          'required primary capability id is invalid: $capabilityId',
+        );
+      }
+      if (!primaryCapabilityIds.contains(capabilityId)) {
+        throw StateError(
+          'Required primary capability $capabilityId is missing from '
+          'planned scenarios',
+        );
+      }
     }
   }
 

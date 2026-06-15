@@ -50,6 +50,11 @@ abstract final class EvalProvenance {
     String? command,
     Map<String, String>? environment,
     EvalPromotionPlan? promotionPlan,
+    EvalPairwiseReadinessPlanEvidence? pairwiseReadinessPlanEvidence,
+    EvalTuningReadinessContractEvidence? tuningReadinessContractEvidence,
+    EvalTuningReadinessPolicyEvidence? tuningReadinessPolicyEvidence,
+    EvalTraceTopologyEvidence? traceTopologyEvidence,
+    EvalUseCaseWorkOrderLaunchEvidence? useCaseWorkOrderLaunchEvidence,
     List<EvalProfileExecutionBinding>? profileExecutionBindings,
     List<EvalAgentDirectiveVariant> agentDirectiveVariants = const [
       EvalAgentDirectiveVariant(),
@@ -98,6 +103,11 @@ abstract final class EvalProvenance {
       promotionPlanEvidence: promotionPlan == null
           ? null
           : promotionPlanEvidence(promotionPlan),
+      pairwiseReadinessPlanEvidence: pairwiseReadinessPlanEvidence,
+      tuningReadinessContractEvidence: tuningReadinessContractEvidence,
+      tuningReadinessPolicyEvidence: tuningReadinessPolicyEvidence,
+      traceTopologyEvidence: traceTopologyEvidence,
+      useCaseWorkOrderLaunchEvidence: useCaseWorkOrderLaunchEvidence,
       envPresence: envPresence(env),
     );
     return manifest.withManifestDigest(manifestDigest(manifest));
@@ -153,6 +163,63 @@ abstract final class EvalProvenance {
 
   static String promotionPlanSubjectDigest(EvalPromotionPlan plan) =>
       digestJson(plan.toSubjectJson());
+
+  static String tuningReadinessContractSubjectDigest(
+    EvalTuningReadinessContractEvidence evidence,
+  ) => digestJson(evidence.toSubjectJson());
+
+  static String traceTopologySubjectDigest(
+    EvalTraceTopologyEvidence evidence,
+  ) => digestJson(evidence.toSubjectJson());
+
+  static String useCaseWorkOrderLaunchSubjectDigest(
+    EvalUseCaseWorkOrderLaunchEvidence evidence,
+  ) => digestJson(evidence.toSubjectJson());
+
+  static EvalTraceTopologyEvidence taskLogCascadeTraceTopologyEvidence({
+    required String scenarioSetDigest,
+    required String profileSetDigest,
+    required String agentDirectiveVariantSetDigest,
+    required Map<String, int> cascadeWakeCountByScenarioId,
+  }) {
+    final evidence = EvalTraceTopologyEvidence(
+      mode: EvalTraceTopologyEvidence.taskLogCascadeMode,
+      scenarioSetDigest: scenarioSetDigest,
+      profileSetDigest: profileSetDigest,
+      agentDirectiveVariantSetDigest: agentDirectiveVariantSetDigest,
+      cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+      cascadeWakeCountByScenarioId: Map.unmodifiable(
+        cascadeWakeCountByScenarioId,
+      ),
+      traceTopologySubjectDigest: '',
+    );
+    return EvalTraceTopologyEvidence(
+      mode: evidence.mode,
+      scenarioSetDigest: evidence.scenarioSetDigest,
+      profileSetDigest: evidence.profileSetDigest,
+      agentDirectiveVariantSetDigest: evidence.agentDirectiveVariantSetDigest,
+      cascadeId: evidence.cascadeId,
+      cascadeWakeCountByScenarioId: evidence.cascadeWakeCountByScenarioId,
+      traceTopologySubjectDigest: traceTopologySubjectDigest(evidence),
+    );
+  }
+
+  static EvalTuningReadinessContractEvidence tuningReadinessContractEvidence({
+    required String scenarioSetDigest,
+    required Set<String> requiredPrimaryCapabilityIds,
+  }) {
+    final subjectJson = EvalTuningReadinessContractEvidence.subjectJson(
+      scenarioSetDigest: scenarioSetDigest,
+      requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+    );
+    return EvalTuningReadinessContractEvidence(
+      scenarioSetDigest: scenarioSetDigest,
+      requiredPrimaryCapabilityIds: Set.unmodifiable(
+        requiredPrimaryCapabilityIds,
+      ),
+      readinessContractSubjectDigest: digestJson(subjectJson),
+    );
+  }
 
   static EvalPromotionPlanEvidence promotionPlanEvidence(
     EvalPromotionPlan plan,
@@ -255,9 +322,12 @@ abstract final class EvalProvenance {
     'EVAL_SCENARIOS',
     'EVAL_SCENARIOS_MODE',
     'EVAL_SCENARIO_IDS',
+    'EVAL_REQUIRED_CAPABILITIES',
     'EVAL_PROFILE_NAMES',
     'EVAL_PROMPT_VARIANTS',
     'EVAL_PROMPT_VARIANT_NAMES',
+    'EVAL_USE_CASE_RUN_WORK_ORDER',
+    'EVAL_USE_CASE_RUN_WORK_ORDER_BATCH_REFS',
     'LOTTI_EVAL_ALLOW_CI',
     'LOTTI_EVAL_LIVE',
     'LOTTI_EVAL_LOCAL_MODEL',
@@ -316,7 +386,7 @@ abstract final class EvalProvenance {
     );
     return secretRedacted.replaceAllMapped(
       RegExp(
-        r'((?:EVAL_SCENARIOS|EVAL_PROFILES|EVAL_PROMOTION_PLAN)=)([^\s]+)',
+        r'((?:EVAL_SCENARIOS|EVAL_PROFILES|EVAL_PROMOTION_PLAN|EVAL_USE_CASE_RUN_WORK_ORDER)=)([^\s]+)',
       ),
       (match) => '${match.group(1)}<redacted>',
     );

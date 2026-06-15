@@ -7,6 +7,7 @@
 // scripted. result.success is the real signal; Level 1 gates the output.
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -1203,6 +1204,117 @@ void main() {
   );
 
   test(
+    'suppresses retract-and-repropose churn for the same open proposal',
+    () async {
+      final fingerprint = ChangeItem.fingerprintFromParts(
+        'add_checklist_item',
+        {'title': 'Review changelog'},
+      );
+      final behavior = ScriptedAgentBehavior(
+        toolCalls: [
+          goodReport,
+          ToolCallRecord(
+            name: 'retract_suggestions',
+            args: {
+              'proposals': [
+                {
+                  'fingerprint': fingerprint,
+                  'reason': 'Will recreate the same suggestion.',
+                },
+              ],
+            },
+          ),
+          const ToolCallRecord(
+            name: 'add_multiple_checklist_items',
+            args: {
+              'items': [
+                {'title': 'Review changelog'},
+              ],
+            },
+          ),
+        ],
+        usage: const InferenceUsage(inputTokens: 1280, outputTokens: 255),
+      );
+
+      final output = await ScriptedEvalTarget.fromMap(
+        {taskWorkflowRetractionChurnGuardScenario.id: behavior},
+        profileName: kFrontierProfile.name,
+      ).run(taskWorkflowRetractionChurnGuardScenario, kFrontierProfile);
+
+      expect(output.success, isTrue, reason: output.error);
+      expect(output.toolCalls.map((call) => call.name), [
+        'update_report',
+        'retract_suggestions',
+        'add_multiple_checklist_items',
+      ]);
+      expect(output.proposals, hasLength(1));
+      final proposal = output.proposals.single;
+      expect(proposal.changeSetId, 'open-review-changelog');
+      expect(proposal.changeSetStatus, 'pending');
+      expect(proposal.status, 'pending');
+      expect(proposal.args, {'title': 'Review changelog'});
+      expect(
+        output.proposals.where((proposal) => proposal.status == 'retracted'),
+        isEmpty,
+        reason:
+            'same-wake retraction of an identically re-proposed item is churn',
+      );
+      final failed = runLevel1(
+        taskWorkflowRetractionChurnGuardScenario,
+        output,
+        profile: kFrontierProfile,
+      ).where((check) => !check.passed).map((check) => check.detail).toList();
+      expect(failed, isEmpty, reason: failed.join('\n'));
+    },
+  );
+
+  test(
+    'filters stale resolved parent proposal rows from final proposals',
+    () async {
+      const behavior = ScriptedAgentBehavior(
+        toolCalls: [
+          goodReport,
+          ToolCallRecord(
+            name: 'add_multiple_checklist_items',
+            args: {
+              'items': [
+                {'title': 'Publish release notes'},
+              ],
+            },
+          ),
+        ],
+        usage: InferenceUsage(inputTokens: 1275, outputTokens: 250),
+      );
+
+      final output = await ScriptedEvalTarget.fromMap(
+        {taskWorkflowStaleResolvedProposalScenario.id: behavior},
+        profileName: kFrontierProfile.name,
+      ).run(taskWorkflowStaleResolvedProposalScenario, kFrontierProfile);
+
+      expect(output.success, isTrue, reason: output.error);
+      expect(output.proposals, hasLength(1));
+      final proposal = output.proposals.single;
+      expect(proposal.changeSetStatus, 'pending');
+      expect(proposal.status, 'pending');
+      expect(proposal.toolName, 'add_checklist_item');
+      expect(proposal.targetId, 'task-notes');
+      expect(proposal.args, {'title': 'Publish release notes'});
+      expect(
+        output.proposals.map((item) => item.args['title']),
+        isNot(contains('Security review')),
+        reason:
+            'resolved parent rows with stale pending items must not leak into eval output',
+      );
+      final failed = runLevel1(
+        taskWorkflowStaleResolvedProposalScenario,
+        output,
+        profile: kFrontierProfile,
+      ).where((check) => !check.passed).map((check) => check.detail).toList();
+      expect(failed, isEmpty, reason: failed.join('\n'));
+    },
+  );
+
+  test(
     'suppresses already-satisfied checklist updates from durable proposals',
     () async {
       const behavior = ScriptedAgentBehavior(
@@ -1291,6 +1403,8 @@ void main() {
       taskWorkflowLabelScopeBoundaryScenario.id,
       taskWorkflowCompletionBoundaryScenario.id,
       taskWorkflowRejectedProposalStickinessScenario.id,
+      taskWorkflowRetractionChurnGuardScenario.id,
+      taskWorkflowStaleResolvedProposalScenario.id,
       taskWorkflowCheckedChecklistNoopScenario.id,
     };
     final requiredScenarioIds = taskEvalScenarios

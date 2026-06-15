@@ -1204,6 +1204,7 @@ class ExpectedProposalCount {
 
 class ExpectedProposalState {
   const ExpectedProposalState({
+    this.changeSetId,
     this.toolName,
     this.targetId,
     this.status,
@@ -1214,6 +1215,7 @@ class ExpectedProposalState {
 
   factory ExpectedProposalState.fromJson(Map<String, dynamic> json) =>
       ExpectedProposalState(
+        changeSetId: json['changeSetId'] as String?,
         toolName: json['toolName'] as String?,
         targetId: json['targetId'] as String?,
         status: json['status'] as String?,
@@ -1225,6 +1227,7 @@ class ExpectedProposalState {
                 .toSet(),
       );
 
+  final String? changeSetId;
   final String? toolName;
   final String? targetId;
   final String? status;
@@ -1233,6 +1236,7 @@ class ExpectedProposalState {
   final Set<String> humanSummaryContains;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
+    if (changeSetId != null) 'changeSetId': changeSetId,
     if (toolName != null) 'toolName': toolName,
     if (targetId != null) 'targetId': targetId,
     if (status != null) 'status': status,
@@ -2908,6 +2912,16 @@ class BlindedVerdictImportRecord {
   });
 
   factory BlindedVerdictImportRecord.fromJson(Map<String, dynamic> json) {
+    _rejectUnknownFields(json, 'BlindedVerdictImportRecord', {
+      'schemaVersion',
+      'kind',
+      'blindedTraceId',
+      'reviewPayloadDigest',
+      'judgeManifestDigest',
+      'privateKeyDigest',
+      'sourceManifestDigest',
+      'rawTraceDigest',
+    });
     final rawVersion = json['schemaVersion'];
     if (rawVersion != schemaVersion) {
       throw FormatException(
@@ -2915,17 +2929,25 @@ class BlindedVerdictImportRecord {
         '(expected $schemaVersion)',
       );
     }
+    final kind = _requiredNonEmptyString(json, 'kind');
+    if (kind != kindValue) {
+      throw FormatException(
+        'Unsupported BlindedVerdictImportRecord kind "$kind" '
+        '(expected $kindValue)',
+      );
+    }
     return BlindedVerdictImportRecord(
-      blindedTraceId: json['blindedTraceId'] as String,
-      reviewPayloadDigest: json['reviewPayloadDigest'] as String,
-      judgeManifestDigest: json['judgeManifestDigest'] as String,
-      privateKeyDigest: json['privateKeyDigest'] as String,
-      sourceManifestDigest: json['sourceManifestDigest'] as String,
-      rawTraceDigest: json['rawTraceDigest'] as String,
+      blindedTraceId: _requiredNonEmptyString(json, 'blindedTraceId'),
+      reviewPayloadDigest: _requiredDigest(json, 'reviewPayloadDigest'),
+      judgeManifestDigest: _requiredDigest(json, 'judgeManifestDigest'),
+      privateKeyDigest: _requiredDigest(json, 'privateKeyDigest'),
+      sourceManifestDigest: _requiredDigest(json, 'sourceManifestDigest'),
+      rawTraceDigest: _requiredDigest(json, 'rawTraceDigest'),
     );
   }
 
   static const schemaVersion = 1;
+  static const kindValue = 'lotti.blindedTraceImport';
 
   final String blindedTraceId;
   final String reviewPayloadDigest;
@@ -2936,7 +2958,7 @@ class BlindedVerdictImportRecord {
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'schemaVersion': schemaVersion,
-    'kind': 'lotti.blindedTraceImport',
+    'kind': kindValue,
     'blindedTraceId': blindedTraceId,
     'reviewPayloadDigest': reviewPayloadDigest,
     'judgeManifestDigest': judgeManifestDigest,
@@ -2962,6 +2984,18 @@ class JudgeVerdict {
   });
 
   factory JudgeVerdict.fromJson(Map<String, dynamic> json) {
+    _rejectUnknownFields(json, 'JudgeVerdict', {
+      'schemaVersion',
+      'goalAttainment',
+      'quality',
+      'efficiency',
+      'pass',
+      'judge',
+      'traceDigest',
+      'blindedImport',
+      'rationale',
+      'issues',
+    });
     final rawVersion = json['schemaVersion'];
     if (rawVersion != schemaVersion) {
       throw FormatException(
@@ -3293,6 +3327,476 @@ class EvalPromotionPlanEvidence {
   };
 }
 
+/// Non-secret evidence that a pairwise readiness plan existed before outcomes.
+///
+/// The completed report-time plan carries the final run manifest digest, but
+/// the manifest records only a subject digest over the pre-run fields. This
+/// prevents post-hoc comparison-key selection without storing pair outcomes.
+class EvalPairwiseReadinessPlanEvidence {
+  const EvalPairwiseReadinessPlanEvidence({
+    required this.planId,
+    required this.baseReadinessPolicy,
+    required this.scenarioSetDigest,
+    required this.profileSetDigest,
+    required this.profileBindingSetDigest,
+    required this.minBlindedPairwisePreferenceDecisions,
+    required this.comparisonCount,
+    required this.pairwiseReadinessPlanSubjectDigest,
+  });
+
+  factory EvalPairwiseReadinessPlanEvidence.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final schemaVersion = json['schemaVersion'];
+    if (schemaVersion != schemaVersionValue) {
+      throw FormatException(
+        'Unsupported EvalPairwiseReadinessPlanEvidence schemaVersion '
+        '$schemaVersion (expected $schemaVersionValue)',
+      );
+    }
+    return EvalPairwiseReadinessPlanEvidence(
+      planId: _requiredNonEmptyString(json, 'planId'),
+      baseReadinessPolicy: _requiredNonEmptyString(
+        json,
+        'baseReadinessPolicy',
+      ),
+      scenarioSetDigest: _requiredDigest(json, 'scenarioSetDigest'),
+      profileSetDigest: _requiredDigest(json, 'profileSetDigest'),
+      profileBindingSetDigest: _requiredDigest(
+        json,
+        'profileBindingSetDigest',
+      ),
+      minBlindedPairwisePreferenceDecisions: _requiredNonNegativeInt(
+        json,
+        'minBlindedPairwisePreferenceDecisions',
+      ),
+      comparisonCount: _requiredNonNegativeInt(json, 'comparisonCount'),
+      pairwiseReadinessPlanSubjectDigest: _requiredDigest(
+        json,
+        'pairwiseReadinessPlanSubjectDigest',
+      ),
+    );
+  }
+
+  static const schemaVersionValue = 1;
+
+  final String planId;
+  final String baseReadinessPolicy;
+  final String scenarioSetDigest;
+  final String profileSetDigest;
+  final String profileBindingSetDigest;
+  final int minBlindedPairwisePreferenceDecisions;
+  final int comparisonCount;
+  final String pairwiseReadinessPlanSubjectDigest;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'schemaVersion': schemaVersionValue,
+    'planId': planId,
+    'baseReadinessPolicy': baseReadinessPolicy,
+    'scenarioSetDigest': scenarioSetDigest,
+    'profileSetDigest': profileSetDigest,
+    'profileBindingSetDigest': profileBindingSetDigest,
+    'minBlindedPairwisePreferenceDecisions':
+        minBlindedPairwisePreferenceDecisions,
+    'comparisonCount': comparisonCount,
+    'pairwiseReadinessPlanSubjectDigest': pairwiseReadinessPlanSubjectDigest,
+  };
+}
+
+class EvalPairwiseReadinessPlanRegistration {
+  const EvalPairwiseReadinessPlanRegistration({
+    required this.runId,
+    required this.sourceManifestDigest,
+    required this.evidence,
+  });
+
+  factory EvalPairwiseReadinessPlanRegistration.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final schemaVersion = json['schemaVersion'];
+    if (schemaVersion != schemaVersionValue) {
+      throw FormatException(
+        'Unsupported EvalPairwiseReadinessPlanRegistration schemaVersion '
+        '$schemaVersion (expected $schemaVersionValue)',
+      );
+    }
+    final kind = _requiredNonEmptyString(json, 'kind');
+    if (kind != kindValue) {
+      throw FormatException(
+        'Unsupported EvalPairwiseReadinessPlanRegistration kind "$kind" '
+        '(expected $kindValue)',
+      );
+    }
+    return EvalPairwiseReadinessPlanRegistration(
+      runId: _requiredNonEmptyString(json, 'runId'),
+      sourceManifestDigest: _requiredDigest(json, 'sourceManifestDigest'),
+      evidence: EvalPairwiseReadinessPlanEvidence.fromJson(
+        json['evidence'] as Map<String, dynamic>,
+      ),
+    );
+  }
+
+  static const schemaVersionValue = 1;
+  static const kindValue = 'lotti.evalPairwiseReadinessPlanRegistration';
+
+  final String runId;
+  final String sourceManifestDigest;
+  final EvalPairwiseReadinessPlanEvidence evidence;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'schemaVersion': schemaVersionValue,
+    'kind': kindValue,
+    'runId': runId,
+    'sourceManifestDigest': sourceManifestDigest,
+    'evidence': evidence.toJson(),
+  };
+}
+
+/// Non-secret evidence for the use-case contract required for tuning claims.
+///
+/// The required capability IDs are primary scenario capability IDs, not broad
+/// aggregate buckets. Keeping the contract in the run manifest prevents a
+/// report from silently dropping or changing required use cases after traces
+/// have already been produced.
+class EvalTuningReadinessContractEvidence {
+  const EvalTuningReadinessContractEvidence({
+    required this.scenarioSetDigest,
+    required this.requiredPrimaryCapabilityIds,
+    required this.readinessContractSubjectDigest,
+  });
+
+  factory EvalTuningReadinessContractEvidence.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final schemaVersion = json['schemaVersion'];
+    if (schemaVersion != schemaVersionValue) {
+      throw FormatException(
+        'Unsupported EvalTuningReadinessContractEvidence schemaVersion '
+        '$schemaVersion (expected $schemaVersionValue)',
+      );
+    }
+    final ids = <String>{};
+    for (final rawId
+        in (json['requiredPrimaryCapabilityIds'] as List<dynamic>? ??
+            const [])) {
+      if (rawId is! String) {
+        throw const FormatException(
+          'requiredPrimaryCapabilityIds must contain strings',
+        );
+      }
+      final id = rawId.trim();
+      if (!_isCapabilityId(id)) {
+        throw FormatException(
+          'requiredPrimaryCapabilityIds contains invalid capability id $rawId',
+        );
+      }
+      if (!ids.add(id)) {
+        throw FormatException(
+          'requiredPrimaryCapabilityIds contains duplicate id $id',
+        );
+      }
+    }
+    return EvalTuningReadinessContractEvidence(
+      scenarioSetDigest: _requiredDigest(json, 'scenarioSetDigest'),
+      requiredPrimaryCapabilityIds: Set.unmodifiable(ids),
+      readinessContractSubjectDigest: _requiredDigest(
+        json,
+        'readinessContractSubjectDigest',
+      ),
+    );
+  }
+
+  static const schemaVersionValue = 1;
+
+  final String scenarioSetDigest;
+  final Set<String> requiredPrimaryCapabilityIds;
+  final String readinessContractSubjectDigest;
+
+  static Map<String, dynamic> subjectJson({
+    required String scenarioSetDigest,
+    required Set<String> requiredPrimaryCapabilityIds,
+  }) => <String, dynamic>{
+    'schemaVersion': schemaVersionValue,
+    'scenarioSetDigest': scenarioSetDigest,
+    'requiredPrimaryCapabilityIds': requiredPrimaryCapabilityIds.toList()
+      ..sort(),
+  };
+
+  Map<String, dynamic> toSubjectJson() => subjectJson(
+    scenarioSetDigest: scenarioSetDigest,
+    requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+  );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    ...toSubjectJson(),
+    'readinessContractSubjectDigest': readinessContractSubjectDigest,
+  };
+}
+
+/// Non-secret fingerprint of the exact tuning-readiness policy for a run.
+///
+/// The full policy lives in code, but this digest is over the canonical policy
+/// JSON used during run planning. Report mode rejects policy drift instead of
+/// silently reinterpreting old traces under weaker thresholds.
+class EvalTuningReadinessPolicyEvidence {
+  const EvalTuningReadinessPolicyEvidence({
+    required this.policyName,
+    required this.policyDigest,
+  });
+
+  factory EvalTuningReadinessPolicyEvidence.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final schemaVersion = json['schemaVersion'];
+    if (schemaVersion != schemaVersionValue) {
+      throw FormatException(
+        'Unsupported EvalTuningReadinessPolicyEvidence schemaVersion '
+        '$schemaVersion (expected $schemaVersionValue)',
+      );
+    }
+    return EvalTuningReadinessPolicyEvidence(
+      policyName: _requiredNonEmptyString(json, 'policyName'),
+      policyDigest: _requiredDigest(json, 'policyDigest'),
+    );
+  }
+
+  static const schemaVersionValue = 1;
+
+  final String policyName;
+  final String policyDigest;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'schemaVersion': schemaVersionValue,
+    'policyName': policyName,
+    'policyDigest': policyDigest,
+  };
+}
+
+/// Non-secret evidence for the trace topology chosen before execution.
+///
+/// Direct matrix runs omit this field. Cascade sidecar runs record the scenario
+/// wake counts here so verification can build the expected trace keys from the
+/// manifest instead of inferring topology from whichever traces happen to exist.
+class EvalTraceTopologyEvidence {
+  const EvalTraceTopologyEvidence({
+    required this.mode,
+    required this.scenarioSetDigest,
+    required this.profileSetDigest,
+    required this.agentDirectiveVariantSetDigest,
+    required this.cascadeId,
+    required this.cascadeWakeCountByScenarioId,
+    required this.traceTopologySubjectDigest,
+  });
+
+  factory EvalTraceTopologyEvidence.fromJson(Map<String, dynamic> json) {
+    final schemaVersion = json['schemaVersion'];
+    if (schemaVersion != schemaVersionValue) {
+      throw FormatException(
+        'Unsupported EvalTraceTopologyEvidence schemaVersion $schemaVersion '
+        '(expected $schemaVersionValue)',
+      );
+    }
+    final rawWakeCounts = json['cascadeWakeCountByScenarioId'];
+    if (rawWakeCounts is! Map<String, dynamic>) {
+      throw const FormatException(
+        'cascadeWakeCountByScenarioId must be an object',
+      );
+    }
+    final wakeCounts = <String, int>{};
+    for (final entry in rawWakeCounts.entries) {
+      final scenarioId = entry.key.trim();
+      final value = entry.value;
+      if (scenarioId.isEmpty) {
+        throw const FormatException(
+          'cascadeWakeCountByScenarioId contains an empty scenario id',
+        );
+      }
+      if (value is! num || !value.isFinite || value < 1) {
+        throw FormatException(
+          'cascadeWakeCountByScenarioId[$scenarioId] must be a positive int',
+        );
+      }
+      final wakeCount = value.toInt();
+      if (wakeCount != value) {
+        throw FormatException(
+          'cascadeWakeCountByScenarioId[$scenarioId] must be a positive int',
+        );
+      }
+      wakeCounts[scenarioId] = wakeCount;
+    }
+    return EvalTraceTopologyEvidence(
+      mode: _requiredNonEmptyString(json, 'mode'),
+      scenarioSetDigest: _requiredDigest(json, 'scenarioSetDigest'),
+      profileSetDigest: _requiredDigest(json, 'profileSetDigest'),
+      agentDirectiveVariantSetDigest: _requiredDigest(
+        json,
+        'agentDirectiveVariantSetDigest',
+      ),
+      cascadeId: _requiredNonEmptyString(json, 'cascadeId'),
+      cascadeWakeCountByScenarioId: Map.unmodifiable(wakeCounts),
+      traceTopologySubjectDigest: _requiredDigest(
+        json,
+        'traceTopologySubjectDigest',
+      ),
+    );
+  }
+
+  static const schemaVersionValue = 1;
+  static const taskLogCascadeMode = 'taskLogCascade';
+
+  final String mode;
+  final String scenarioSetDigest;
+  final String profileSetDigest;
+  final String agentDirectiveVariantSetDigest;
+  final String cascadeId;
+  final Map<String, int> cascadeWakeCountByScenarioId;
+  final String traceTopologySubjectDigest;
+
+  static Map<String, dynamic> subjectJson({
+    required String mode,
+    required String scenarioSetDigest,
+    required String profileSetDigest,
+    required String agentDirectiveVariantSetDigest,
+    required String cascadeId,
+    required Map<String, int> cascadeWakeCountByScenarioId,
+  }) => <String, dynamic>{
+    'schemaVersion': schemaVersionValue,
+    'mode': mode,
+    'scenarioSetDigest': scenarioSetDigest,
+    'profileSetDigest': profileSetDigest,
+    'agentDirectiveVariantSetDigest': agentDirectiveVariantSetDigest,
+    'cascadeId': cascadeId,
+    'cascadeWakeCountByScenarioId': {
+      for (final key in cascadeWakeCountByScenarioId.keys.toList()..sort())
+        key: cascadeWakeCountByScenarioId[key],
+    },
+  };
+
+  Map<String, dynamic> toSubjectJson() => subjectJson(
+    mode: mode,
+    scenarioSetDigest: scenarioSetDigest,
+    profileSetDigest: profileSetDigest,
+    agentDirectiveVariantSetDigest: agentDirectiveVariantSetDigest,
+    cascadeId: cascadeId,
+    cascadeWakeCountByScenarioId: cascadeWakeCountByScenarioId,
+  );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    ...toSubjectJson(),
+    'traceTopologySubjectDigest': traceTopologySubjectDigest,
+  };
+}
+
+/// Non-secret proof that a Level 2 run was launched from a specific
+/// use-case next-run work order.
+///
+/// The private work-order path is never stored. The manifest stores only the
+/// work-order digest/ref, selected public batch refs, and the public selectors
+/// that were already permitted by the work-order command template.
+class EvalUseCaseWorkOrderLaunchEvidence {
+  const EvalUseCaseWorkOrderLaunchEvidence({
+    required this.workOrderRef,
+    required this.workOrderDigest,
+    required this.sourceExperimentPlanDigest,
+    required this.sourceMatrixDigest,
+    required this.workOrderBatchRefs,
+    required this.workOrderBatchSetDigest,
+    required this.requiredPrimaryCapabilityIds,
+    required this.promptVariantNames,
+    required this.workOrderLaunchSubjectDigest,
+  });
+
+  factory EvalUseCaseWorkOrderLaunchEvidence.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final schemaVersion = json['schemaVersion'];
+    if (schemaVersion != schemaVersionValue) {
+      throw FormatException(
+        'Unsupported EvalUseCaseWorkOrderLaunchEvidence schemaVersion '
+        '$schemaVersion (expected $schemaVersionValue)',
+      );
+    }
+    return EvalUseCaseWorkOrderLaunchEvidence(
+      workOrderRef: _requiredDigest(json, 'workOrderRef'),
+      workOrderDigest: _requiredDigest(json, 'workOrderDigest'),
+      sourceExperimentPlanDigest: _requiredDigest(
+        json,
+        'sourceExperimentPlanDigest',
+      ),
+      sourceMatrixDigest: _requiredDigest(json, 'sourceMatrixDigest'),
+      workOrderBatchRefs: List.unmodifiable(
+        _requiredDigestList(json, 'workOrderBatchRefs'),
+      ),
+      workOrderBatchSetDigest: _requiredDigest(
+        json,
+        'workOrderBatchSetDigest',
+      ),
+      requiredPrimaryCapabilityIds: Set.unmodifiable(
+        _requiredCapabilityIdSet(json, 'requiredPrimaryCapabilityIds'),
+      ),
+      promptVariantNames: List.unmodifiable(
+        _requiredNonEmptyStringList(json, 'promptVariantNames'),
+      ),
+      workOrderLaunchSubjectDigest: _requiredDigest(
+        json,
+        'workOrderLaunchSubjectDigest',
+      ),
+    );
+  }
+
+  static const schemaVersionValue = 1;
+  static const kind = 'lotti.evalUseCaseWorkOrderLaunchEvidence';
+
+  final String workOrderRef;
+  final String workOrderDigest;
+  final String sourceExperimentPlanDigest;
+  final String sourceMatrixDigest;
+  final List<String> workOrderBatchRefs;
+  final String workOrderBatchSetDigest;
+  final Set<String> requiredPrimaryCapabilityIds;
+  final List<String> promptVariantNames;
+  final String workOrderLaunchSubjectDigest;
+
+  static Map<String, dynamic> subjectJson({
+    required String workOrderRef,
+    required String workOrderDigest,
+    required String sourceExperimentPlanDigest,
+    required String sourceMatrixDigest,
+    required List<String> workOrderBatchRefs,
+    required String workOrderBatchSetDigest,
+    required Set<String> requiredPrimaryCapabilityIds,
+    required List<String> promptVariantNames,
+  }) => <String, dynamic>{
+    'schemaVersion': schemaVersionValue,
+    'kind': kind,
+    'workOrderRef': workOrderRef,
+    'workOrderDigest': workOrderDigest,
+    'sourceExperimentPlanDigest': sourceExperimentPlanDigest,
+    'sourceMatrixDigest': sourceMatrixDigest,
+    'workOrderBatchRefs': [...workOrderBatchRefs]..sort(),
+    'workOrderBatchSetDigest': workOrderBatchSetDigest,
+    'requiredPrimaryCapabilityIds': requiredPrimaryCapabilityIds.toList()
+      ..sort(),
+    'promptVariantNames': [...promptVariantNames]..sort(),
+  };
+
+  Map<String, dynamic> toSubjectJson() => subjectJson(
+    workOrderRef: workOrderRef,
+    workOrderDigest: workOrderDigest,
+    sourceExperimentPlanDigest: sourceExperimentPlanDigest,
+    sourceMatrixDigest: sourceMatrixDigest,
+    workOrderBatchRefs: workOrderBatchRefs,
+    workOrderBatchSetDigest: workOrderBatchSetDigest,
+    requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+    promptVariantNames: promptVariantNames,
+  );
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    ...toSubjectJson(),
+    'workOrderLaunchSubjectDigest': workOrderLaunchSubjectDigest,
+  };
+}
+
 /// One run-level manifest persisted before Level 2 traces are written.
 class EvalRunManifest {
   const EvalRunManifest({
@@ -3316,6 +3820,11 @@ class EvalRunManifest {
     this.dirtyDiffDigest,
     this.scenarioCatalogEvidence,
     this.promotionPlanEvidence,
+    this.pairwiseReadinessPlanEvidence,
+    this.tuningReadinessContractEvidence,
+    this.tuningReadinessPolicyEvidence,
+    this.traceTopologyEvidence,
+    this.useCaseWorkOrderLaunchEvidence,
     this.manifestDigest,
   });
 
@@ -3371,6 +3880,35 @@ class EvalRunManifest {
           : EvalPromotionPlanEvidence.fromJson(
               json['promotionPlanEvidence'] as Map<String, dynamic>,
             ),
+      pairwiseReadinessPlanEvidence:
+          json['pairwiseReadinessPlanEvidence'] == null
+          ? null
+          : EvalPairwiseReadinessPlanEvidence.fromJson(
+              json['pairwiseReadinessPlanEvidence'] as Map<String, dynamic>,
+            ),
+      tuningReadinessContractEvidence:
+          json['tuningReadinessContractEvidence'] == null
+          ? null
+          : EvalTuningReadinessContractEvidence.fromJson(
+              json['tuningReadinessContractEvidence'] as Map<String, dynamic>,
+            ),
+      tuningReadinessPolicyEvidence:
+          json['tuningReadinessPolicyEvidence'] == null
+          ? null
+          : EvalTuningReadinessPolicyEvidence.fromJson(
+              json['tuningReadinessPolicyEvidence'] as Map<String, dynamic>,
+            ),
+      traceTopologyEvidence: json['traceTopologyEvidence'] == null
+          ? null
+          : EvalTraceTopologyEvidence.fromJson(
+              json['traceTopologyEvidence'] as Map<String, dynamic>,
+            ),
+      useCaseWorkOrderLaunchEvidence:
+          json['useCaseWorkOrderLaunchEvidence'] == null
+          ? null
+          : EvalUseCaseWorkOrderLaunchEvidence.fromJson(
+              json['useCaseWorkOrderLaunchEvidence'] as Map<String, dynamic>,
+            ),
       envPresence: ((json['envPresence'] as Map<String, dynamic>?) ?? const {})
           .map((key, value) => MapEntry(key, value as bool)),
       manifestDigest: json['manifestDigest'] as String?,
@@ -3399,6 +3937,11 @@ class EvalRunManifest {
   final Map<String, bool> envPresence;
   final EvalScenarioCatalogEvidence? scenarioCatalogEvidence;
   final EvalPromotionPlanEvidence? promotionPlanEvidence;
+  final EvalPairwiseReadinessPlanEvidence? pairwiseReadinessPlanEvidence;
+  final EvalTuningReadinessContractEvidence? tuningReadinessContractEvidence;
+  final EvalTuningReadinessPolicyEvidence? tuningReadinessPolicyEvidence;
+  final EvalTraceTopologyEvidence? traceTopologyEvidence;
+  final EvalUseCaseWorkOrderLaunchEvidence? useCaseWorkOrderLaunchEvidence;
   final String? manifestDigest;
 
   EvalRunManifest withManifestDigest(String digest) => EvalRunManifest(
@@ -3422,6 +3965,11 @@ class EvalRunManifest {
     envPresence: envPresence,
     scenarioCatalogEvidence: scenarioCatalogEvidence,
     promotionPlanEvidence: promotionPlanEvidence,
+    pairwiseReadinessPlanEvidence: pairwiseReadinessPlanEvidence,
+    tuningReadinessContractEvidence: tuningReadinessContractEvidence,
+    tuningReadinessPolicyEvidence: tuningReadinessPolicyEvidence,
+    traceTopologyEvidence: traceTopologyEvidence,
+    useCaseWorkOrderLaunchEvidence: useCaseWorkOrderLaunchEvidence,
     manifestDigest: digest,
   );
 
@@ -3461,6 +4009,20 @@ class EvalRunManifest {
         'scenarioCatalogEvidence': scenarioCatalogEvidence!.toJson(),
       if (promotionPlanEvidence != null)
         'promotionPlanEvidence': promotionPlanEvidence!.toJson(),
+      if (pairwiseReadinessPlanEvidence != null)
+        'pairwiseReadinessPlanEvidence': pairwiseReadinessPlanEvidence!
+            .toJson(),
+      if (tuningReadinessContractEvidence != null)
+        'tuningReadinessContractEvidence': tuningReadinessContractEvidence!
+            .toJson(),
+      if (tuningReadinessPolicyEvidence != null)
+        'tuningReadinessPolicyEvidence': tuningReadinessPolicyEvidence!
+            .toJson(),
+      if (traceTopologyEvidence != null)
+        'traceTopologyEvidence': traceTopologyEvidence!.toJson(),
+      if (useCaseWorkOrderLaunchEvidence != null)
+        'useCaseWorkOrderLaunchEvidence': useCaseWorkOrderLaunchEvidence!
+            .toJson(),
       'envPresence': {
         for (final key in envPresence.keys.toList()..sort())
           key: envPresence[key],
@@ -3482,10 +4044,102 @@ String? _optionalString(Map<String, dynamic> json, String key) {
   throw FormatException('$key must be a string');
 }
 
+void _rejectUnknownFields(
+  Map<String, dynamic> json,
+  String typeName,
+  Set<String> allowedFields,
+) {
+  final unknown = json.keys.where((key) => !allowedFields.contains(key));
+  if (unknown.isNotEmpty) {
+    throw FormatException(
+      '$typeName has unsupported field ${unknown.first}',
+    );
+  }
+}
+
 String _requiredDigest(Map<String, dynamic> json, String key) {
   final value = _requiredNonEmptyString(json, key);
   if (_isDigest(value)) return value;
   throw FormatException('$key must be a sha256 digest');
+}
+
+List<String> _requiredDigestList(Map<String, dynamic> json, String key) {
+  final rawValues = json[key];
+  if (rawValues is! List<dynamic>) {
+    throw FormatException('$key must be a list');
+  }
+  final values = <String>[];
+  for (final rawValue in rawValues) {
+    if (rawValue is! String || !_isDigest(rawValue)) {
+      throw FormatException('$key must contain sha256 digests');
+    }
+    if (values.contains(rawValue)) {
+      throw FormatException('$key contains duplicate digest $rawValue');
+    }
+    values.add(rawValue);
+  }
+  if (values.isEmpty) {
+    throw FormatException('$key must not be empty');
+  }
+  return values;
+}
+
+Set<String> _requiredCapabilityIdSet(
+  Map<String, dynamic> json,
+  String key,
+) {
+  final rawValues = json[key];
+  if (rawValues is! List<dynamic>) {
+    throw FormatException('$key must be a list');
+  }
+  final values = <String>{};
+  for (final rawValue in rawValues) {
+    if (rawValue is! String || !_isCapabilityId(rawValue.trim())) {
+      throw FormatException('$key contains invalid capability id $rawValue');
+    }
+    final value = rawValue.trim();
+    if (!values.add(value)) {
+      throw FormatException('$key contains duplicate id $value');
+    }
+  }
+  if (values.isEmpty) {
+    throw FormatException('$key must not be empty');
+  }
+  return values;
+}
+
+List<String> _requiredNonEmptyStringList(
+  Map<String, dynamic> json,
+  String key,
+) {
+  final rawValues = json[key];
+  if (rawValues is! List<dynamic>) {
+    throw FormatException('$key must be a list');
+  }
+  final values = <String>[];
+  for (final rawValue in rawValues) {
+    if (rawValue is! String || rawValue.trim().isEmpty) {
+      throw FormatException('$key must contain non-empty strings');
+    }
+    final value = rawValue.trim();
+    if (values.contains(value)) {
+      throw FormatException('$key contains duplicate value $value');
+    }
+    values.add(value);
+  }
+  if (values.isEmpty) {
+    throw FormatException('$key must not be empty');
+  }
+  return values;
+}
+
+int _requiredNonNegativeInt(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is num && value.isFinite && value >= 0) {
+    final asInt = value.toInt();
+    if (value == asInt) return asInt;
+  }
+  throw FormatException('$key must be a non-negative integer');
 }
 
 String? _optionalDigest(Map<String, dynamic> json, String key) {
@@ -3497,6 +4151,9 @@ String? _optionalDigest(Map<String, dynamic> json, String key) {
 
 bool _isDigest(String value) =>
     RegExp(r'^sha256:[0-9a-f]{64}$').hasMatch(value);
+
+bool _isCapabilityId(String value) =>
+    RegExp(r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$').hasMatch(value);
 
 /// Identifies one wake inside a multi-wake cascade trace sequence.
 class EvalTraceCascadeWake {
@@ -3534,9 +4191,9 @@ class EvalTrace {
     required this.runId,
     required this.scenario,
     required this.profile,
-    this.agentDirectiveVariant = const EvalAgentDirectiveVariant(),
     required this.provenance,
     required this.output,
+    this.agentDirectiveVariant = const EvalAgentDirectiveVariant(),
     this.trialIndex = 0,
     this.cascadeWake,
     this.level1Checks = const <EvalCheck>[],

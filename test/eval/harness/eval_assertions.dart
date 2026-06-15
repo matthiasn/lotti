@@ -937,6 +937,10 @@ bool _proposalMatches(
   ProposalRecord proposal,
   ExpectedProposalState matcher,
 ) {
+  if (matcher.changeSetId != null &&
+      proposal.changeSetId != matcher.changeSetId) {
+    return false;
+  }
   if (matcher.toolName != null && proposal.toolName != matcher.toolName) {
     return false;
   }
@@ -1110,6 +1114,7 @@ String _describeToolCallMatcherGroups(
 
 String _describeProposalMatcher(ExpectedProposalState matcher) {
   final parts = <String>[
+    if (matcher.changeSetId != null) 'changeSetId=${matcher.changeSetId}',
     if (matcher.toolName != null) 'tool=${matcher.toolName}',
     if (matcher.targetId != null) 'target=${matcher.targetId}',
     if (matcher.status != null) 'status=${matcher.status}',

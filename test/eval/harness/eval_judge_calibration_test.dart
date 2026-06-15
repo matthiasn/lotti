@@ -111,10 +111,16 @@ void main() {
     expect(
       ids,
       [
-        'task_release_notes::frontier-calibration::'
-            'prompt-default::trial-0',
-        'task_release_notes::frontier-calibration::'
-            'prompt-metadata-first-v2::trial-0',
+        _traceKeyId(
+          'task_release_notes',
+          'frontier-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'task_release_notes',
+          'frontier-calibration',
+          'prompt-metadata-first-v2',
+        ),
       ],
     );
     expect(
@@ -393,6 +399,24 @@ void main() {
     expect(frontier.falsePassCount, 1);
     expect(frontier.falseFailCount, 1);
 
+    final frontierBasic = report.modelClassCapabilitySummaries.singleWhere(
+      (summary) =>
+          summary.name ==
+          '${EvalModelClass.frontierFast.name}@task.grooming.basic',
+    );
+    expect(frontierBasic.labelCount, 1);
+    expect(frontierBasic.evaluatedCount, 1);
+    expect(frontierBasic.passAgreementRate, 1);
+
+    final frontierMerge = report.modelClassCapabilitySummaries.singleWhere(
+      (summary) =>
+          summary.name ==
+          '${EvalModelClass.frontierFast.name}@'
+              'task.proposals.mergepending',
+    );
+    expect(frontierMerge.falsePassCount, 1);
+    expect(frontierMerge.scoreAgreementRate, 1);
+
     final local = report.modelClassSummaries.singleWhere(
       (summary) => summary.name == EvalModelClass.localReasoning.name,
     );
@@ -425,6 +449,7 @@ void main() {
     expect(rendered, contains('coverage'));
     expect(rendered, contains('Capability calibration'));
     expect(rendered, contains('Model-class calibration'));
+    expect(rendered, contains('Model-class capability calibration'));
     expect(rendered, contains('Prompt-variant calibration'));
     expect(rendered, contains('Model-class prompt-variant calibration'));
     expect(rendered, contains('passMismatch'));
@@ -794,9 +819,16 @@ void main() {
         return EvalTraceKey.fromJson(key).id;
       }),
       [
-        'task_release_notes::frontier-calibration::prompt-default::trial-0',
-        'task_workflow_release_notes::local-calibration::prompt-default::'
-            'trial-0',
+        _traceKeyId(
+          'task_release_notes',
+          'frontier-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'task_workflow_release_notes',
+          'local-calibration',
+          'prompt-default',
+        ),
       ],
     );
     expect(labels.first['traceDigest'], _traceDigest(5, 4, 3));
@@ -910,13 +942,13 @@ void main() {
       version: 'human-gold-v1',
       traces: traces,
       manifest: manifest,
-      maxRows: 4,
+      maxRows: 5,
     );
     final reversedTemplate = EvalJudgeCalibration.labelTemplateJson(
       version: 'human-gold-v1',
       traces: traces.reversed.toList(),
       manifest: manifest,
-      maxRows: 4,
+      maxRows: 5,
     );
     final labels = template['labelTemplates']! as List<Map<String, dynamic>>;
     final selection =
@@ -927,13 +959,20 @@ void main() {
         reversedTemplate['calibrationTemplateSelection']!
             as Map<String, dynamic>;
 
-    expect(labels, hasLength(4));
+    expect(labels, hasLength(5));
+    expect(selection['schemaVersion'], 1);
+    expect(selection['templateSchemaVersion'], 2);
     expect(selection['policy'], 'stratified-v2');
-    expect(selection['maxRows'], 4);
+    expect(selection['maxRows'], 5);
+    expect(selection['sourceRunDigest'], startsWith('sha256:'));
+    expect(selection['sourceTemplateDigest'], startsWith('sha256:'));
+    expect(selection['selectedTemplateRowsDigest'], startsWith('sha256:'));
+    expect(selection['candidateTraceMaterialDigest'], startsWith('sha256:'));
+    expect(selection['templateMetadataDigest'], startsWith('sha256:'));
     expect(selection['candidateTraceCount'], 5);
-    expect(selection['selectedTraceCount'], 4);
-    expect(selection['omittedTraceCount'], 1);
-    expect(selection['requiredCoverageRows'], 4);
+    expect(selection['selectedTraceCount'], 5);
+    expect(selection['omittedTraceCount'], 0);
+    expect(selection['requiredCoverageRows'], 5);
     expect(selection['candidateSetDigest'], startsWith('sha256:'));
     expect(selection['selectedKeyDigest'], startsWith('sha256:'));
     expect(selection['candidateCoverage'], {
@@ -956,11 +995,15 @@ void main() {
       'agentKindByVerdict': 4,
       'modelClassByVerdict': 4,
       'protectionByVerdict': 4,
+      'modelClassByCapability': 5,
+      'protectionByCapability': 4,
     });
     expect(selection['selectedCrossCellCoverage'], {
       'agentKindByVerdict': 4,
       'modelClassByVerdict': 4,
       'protectionByVerdict': 4,
+      'modelClassByCapability': 5,
+      'protectionByCapability': 4,
     });
     expect(
       labels.map((label) {
@@ -968,13 +1011,31 @@ void main() {
         return EvalTraceKey.fromJson(key).id;
       }),
       [
-        'planner_capture_ambiguous_person::local-calibration::'
-            'prompt-default::trial-0',
-        'task_release_notes::frontier-calibration::prompt-default::trial-0',
-        'planner_workflow_focus_boundary::frontier-calibration::'
-            'prompt-default::trial-0',
-        'task_workflow_release_notes::local-calibration::prompt-default::'
-            'trial-0',
+        _traceKeyId(
+          'planner_capture_ambiguous_person',
+          'local-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'task_release_notes',
+          'frontier-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'planner_workflow_focus_boundary',
+          'frontier-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'task_release_notes',
+          'local-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'task_workflow_release_notes',
+          'local-calibration',
+          'prompt-default',
+        ),
       ],
     );
     expect(
@@ -983,13 +1044,31 @@ void main() {
         return EvalTraceKey.fromJson(key).id;
       }),
       [
-        'planner_capture_ambiguous_person::local-calibration::'
-            'prompt-default::trial-0',
-        'task_release_notes::frontier-calibration::prompt-default::trial-0',
-        'planner_workflow_focus_boundary::frontier-calibration::'
-            'prompt-default::trial-0',
-        'task_workflow_release_notes::local-calibration::prompt-default::'
-            'trial-0',
+        _traceKeyId(
+          'planner_capture_ambiguous_person',
+          'local-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'task_release_notes',
+          'frontier-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'planner_workflow_focus_boundary',
+          'frontier-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'task_release_notes',
+          'local-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'task_workflow_release_notes',
+          'local-calibration',
+          'prompt-default',
+        ),
       ],
     );
     expect(reversedSelection, selection);
@@ -1056,10 +1135,16 @@ void main() {
         return EvalTraceKey.fromJson(key).id;
       }),
       [
-        'planner_capture_ambiguous_person::local-calibration::'
-            'prompt-default::trial-0',
-        'task_release_notes::frontier-calibration::'
-            'prompt-metadata-first-v2::trial-0',
+        _traceKeyId(
+          'planner_capture_ambiguous_person',
+          'local-calibration',
+          'prompt-default',
+        ),
+        _traceKeyId(
+          'task_release_notes',
+          'frontier-calibration',
+          'prompt-metadata-first-v2',
+        ),
       ],
     );
   });
@@ -1183,6 +1268,398 @@ void main() {
     );
   });
 
+  test('calibration report summarizes protected holdout labels', () {
+    final developmentTrace = _trace(
+      scenario: taskReleaseNotesScenario,
+      profile: frontierProfile,
+      verdict: _verdict(
+        pass: true,
+        goalAttainment: 5,
+        quality: 4,
+        efficiency: 3,
+      ),
+    );
+    final protectedTrace = _trace(
+      scenario: plannerWorkflowFocusBoundaryScenario,
+      profile: localProfile,
+      verdict: _verdict(
+        pass: true,
+        goalAttainment: 4,
+        quality: 4,
+        efficiency: 4,
+      ),
+    );
+    final report = EvalJudgeCalibration.evaluate(
+      traces: [developmentTrace, protectedTrace],
+      calibrationSet: JudgeCalibrationSet(
+        version: 'human-gold-v1',
+        labels: [
+          _label(
+            scenario: taskReleaseNotesScenario,
+            profile: frontierProfile,
+            expectedPass: true,
+            goalAttainment: 5,
+            quality: 4,
+            efficiency: 3,
+          ),
+          _label(
+            scenario: plannerWorkflowFocusBoundaryScenario,
+            profile: localProfile,
+            expectedPass: true,
+            goalAttainment: 4,
+            quality: 4,
+            efficiency: 4,
+          ),
+        ],
+      ),
+      scenarioCatalogEvidence: EvalScenarioCatalogEvidence(
+        scenarioSetDigest: EvalProvenance.digestText(
+          'protected-calibration-report',
+        ),
+        publicScenarioCount: 1,
+        externalScenarioCount: 1,
+        externalCatalogDigest: EvalProvenance.digestText('private-catalog'),
+        protectedHoldout: true,
+        protectedScenarioIds: const ['planner_workflow_focus_boundary'],
+        protectedHoldoutScenarioIds: const [
+          'planner_workflow_focus_boundary',
+        ],
+      ),
+    );
+
+    expect(report.evaluatedCount, 2);
+    expect(report.protectedHoldoutLabelCount, 1);
+    expect(report.protectedHoldoutEvaluatedCount, 1);
+    expect(
+      report.protectedHoldoutModelClassSummaries.single.name,
+      EvalModelClass.localReasoning.name,
+    );
+    expect(
+      report.protectedHoldoutModelClassSummaries.single.evaluatedCount,
+      1,
+    );
+    expect(
+      EvalJudgeCalibration.render(report),
+      contains('protected holdout labels=1 evaluated=1'),
+    );
+  });
+
+  test('completed calibration sets preserve sourceRun binding', () {
+    final trace = _trace(
+      scenario: taskReleaseNotesScenario,
+      profile: frontierProfile,
+      verdict: _verdict(
+        pass: true,
+        goalAttainment: 5,
+        quality: 4,
+        efficiency: 3,
+      ),
+    );
+    final manifest = _manifestFor(
+      [trace],
+      scenarioCatalogEvidence: EvalScenarioCatalogEvidence(
+        scenarioSetDigest: EvalProvenance.digestText('private-scenarios'),
+        publicScenarioCount: 0,
+        externalScenarioCount: 1,
+        externalCatalogDigest: EvalProvenance.digestText('private-catalog'),
+        externalCatalogId: 'private-production-replay-v1',
+        externalSourceLabel: 'private_scenarios.json',
+        protectedHoldout: true,
+        protectedScenarioIds: const ['SENTINEL_PROTECTED_SCENARIO_ID'],
+        protectedHoldoutScenarioIds: const [
+          'SENTINEL_PROTECTED_SCENARIO_ID',
+        ],
+      ),
+    );
+    final set = JudgeCalibrationSet(
+      version: 'human-gold-v1',
+      sourceRun: JudgeCalibrationSourceRun.fromManifest(manifest),
+      labels: [
+        _label(
+          scenario: taskReleaseNotesScenario,
+          profile: frontierProfile,
+          expectedPass: true,
+          goalAttainment: 5,
+          quality: 4,
+          efficiency: 3,
+        ),
+      ],
+    );
+
+    final decoded = JudgeCalibrationSet.fromJson(set.toJson());
+
+    expect(decoded.sourceRun, isNotNull);
+    expect(decoded.sourceRun!.runId, manifest.runId);
+    expect(decoded.sourceRun!.manifestDigest, manifest.manifestDigest);
+    expect(decoded.sourceRun!.validateManifestBinding(manifest), isEmpty);
+    final driftedManifest = manifest.withManifestDigest(
+      EvalProvenance.digestText('drifted-manifest'),
+    );
+    expect(
+      decoded.sourceRun!.validateManifestBinding(driftedManifest),
+      contains(
+        startsWith('calibration sourceRun manifestDigest is sha256:'),
+      ),
+    );
+    final encoded = decoded.toJson().toString();
+    expect(encoded, isNot(contains('SENTINEL_PROTECTED_SCENARIO_ID')));
+    expect(encoded, isNot(contains('private-production-replay-v1')));
+    expect(encoded, isNot(contains('private_scenarios.json')));
+  });
+
+  test(
+    'completed bounded calibration sets preserve template selection proof',
+    () {
+      final traces = [
+        _trace(
+          scenario: taskReleaseNotesScenario,
+          profile: frontierProfile,
+          verdict: _verdict(
+            pass: true,
+            goalAttainment: 5,
+            quality: 4,
+            efficiency: 3,
+          ),
+        ),
+        _trace(
+          scenario: taskReleaseNotesScenario,
+          profile: frontierProfile,
+          trialIndex: 1,
+          verdict: _verdict(
+            pass: true,
+            goalAttainment: 4,
+            quality: 4,
+            efficiency: 4,
+          ),
+        ),
+      ];
+      final manifest = _manifestFor(
+        traces,
+        scenarioCatalogEvidence: EvalScenarioCatalogEvidence(
+          scenarioSetDigest: EvalProvenance.digestText('private-scenarios'),
+          publicScenarioCount: 0,
+          externalScenarioCount: 2,
+          externalCatalogDigest: EvalProvenance.digestText('private-catalog'),
+          externalCatalogId: 'private-production-replay-v1',
+          externalSourceLabel: 'private_scenarios.json',
+          protectedHoldout: true,
+          protectedScenarioIds: const [
+            'task_release_notes',
+            'SENTINEL_PROTECTED_SCENARIO_ID',
+          ],
+          protectedHoldoutScenarioIds: const ['task_release_notes'],
+        ),
+      );
+      final template = EvalJudgeCalibration.labelTemplateJson(
+        version: 'human-gold-v1',
+        traces: traces,
+        manifest: manifest,
+        maxRows: 1,
+      );
+      final templateRows =
+          template['labelTemplates']! as List<Map<String, dynamic>>;
+      final tracesByKey = {
+        for (final trace in traces) EvalTraceKey.fromTrace(trace).id: trace,
+      };
+      final completedLabels = [
+        for (final row in templateRows)
+          _completedLabelForTrace(
+            tracesByKey[EvalTraceKey.fromJson(
+              row['key']! as Map<String, dynamic>,
+            ).id]!,
+          ).toJson(),
+      ];
+      final completed = JudgeCalibrationSet.fromJson({
+        'version': template['version'],
+        'judgeCalibrationSetVersion': template['judgeCalibrationSetVersion'],
+        'sourceRun': template['sourceRun'],
+        'calibrationTemplateSelection':
+            template['calibrationTemplateSelection'],
+        'labels': completedLabels,
+      });
+
+      expect(templateRows, hasLength(1));
+      expect(completed.templateSelection, isNotNull);
+      expect(completed.templateSelection!.sampled, isTrue);
+      expect(
+        completed.templateSelection!.sourceRunDigest,
+        startsWith('sha256:'),
+      );
+      expect(
+        completed.templateSelection!.sourceTemplateDigest,
+        startsWith('sha256:'),
+      );
+      expect(
+        completed.templateSelection!.selectedTemplateRowsDigest,
+        startsWith('sha256:'),
+      );
+      expect(
+        completed.templateSelection!.candidateTraceMaterialDigest,
+        startsWith('sha256:'),
+      );
+      expect(
+        completed.templateSelection!.templateMetadataDigest,
+        startsWith('sha256:'),
+      );
+      expect(
+        EvalJudgeCalibration.validateTemplateSelectionBinding(
+          traces: traces,
+          calibrationSet: completed,
+          scenarioCatalogEvidence: manifest.scenarioCatalogEvidence,
+        ),
+        isEmpty,
+      );
+      final encoded = completed.toJson().toString();
+      expect(encoded, isNot(contains('SENTINEL_PROTECTED_SCENARIO_ID')));
+      expect(encoded, isNot(contains('private-production-replay-v1')));
+      expect(encoded, isNot(contains('private_scenarios.json')));
+
+      final forgedSelection = {
+        ...(template['calibrationTemplateSelection']! as Map<String, dynamic>),
+        'selectedTemplateRowsDigest': EvalProvenance.digestText(
+          'forged-selected-template-rows',
+        ),
+      };
+      final forged = JudgeCalibrationSet.fromJson({
+        'version': template['version'],
+        'judgeCalibrationSetVersion': template['judgeCalibrationSetVersion'],
+        'sourceRun': template['sourceRun'],
+        'calibrationTemplateSelection': forgedSelection,
+        'labels': completedLabels,
+      });
+      expect(
+        EvalJudgeCalibration.validateTemplateSelectionBinding(
+          traces: traces,
+          calibrationSet: forged,
+          scenarioCatalogEvidence: manifest.scenarioCatalogEvidence,
+        ),
+        contains(
+          'calibration template selection evidence does not match current '
+          'stratified template',
+        ),
+      );
+
+      final forgedCandidateMaterial = JudgeCalibrationSet.fromJson({
+        'version': template['version'],
+        'judgeCalibrationSetVersion': template['judgeCalibrationSetVersion'],
+        'sourceRun': template['sourceRun'],
+        'calibrationTemplateSelection': {
+          ...(template['calibrationTemplateSelection']!
+              as Map<String, dynamic>),
+          'candidateTraceMaterialDigest': EvalProvenance.digestText(
+            'forged-candidate-material',
+          ),
+        },
+        'labels': completedLabels,
+      });
+      expect(
+        EvalJudgeCalibration.validateTemplateSelectionBinding(
+          traces: traces,
+          calibrationSet: forgedCandidateMaterial,
+          scenarioCatalogEvidence: manifest.scenarioCatalogEvidence,
+        ),
+        contains(
+          'calibration template selection evidence does not match current '
+          'stratified template',
+        ),
+      );
+
+      final forgedCompletedLabelSourceRows = JudgeCalibrationSet.fromJson({
+        'version': template['version'],
+        'judgeCalibrationSetVersion': template['judgeCalibrationSetVersion'],
+        'sourceRun': template['sourceRun'],
+        'calibrationTemplateSelection':
+            template['calibrationTemplateSelection'],
+        'labels': [
+          for (final label in completedLabels)
+            {
+              ...label,
+              'traceDigest': EvalProvenance.digestText(
+                'forged-completed-label-trace',
+              ),
+            },
+        ],
+      });
+      expect(
+        EvalJudgeCalibration.validateTemplateSelectionBinding(
+          traces: traces,
+          calibrationSet: forgedCompletedLabelSourceRows,
+          scenarioCatalogEvidence: manifest.scenarioCatalogEvidence,
+        ),
+        contains(
+          'calibration template selectedTemplateRowsDigest does not match '
+          'completed label source rows',
+        ),
+      );
+    },
+  );
+
+  test('completed template selection proof rejects unknown fields', () {
+    final traces = [
+      _trace(
+        scenario: taskReleaseNotesScenario,
+        profile: frontierProfile,
+        verdict: _verdict(
+          pass: true,
+          goalAttainment: 5,
+          quality: 4,
+          efficiency: 3,
+        ),
+      ),
+      _trace(
+        scenario: taskReleaseNotesScenario,
+        profile: frontierProfile,
+        trialIndex: 1,
+        verdict: _verdict(
+          pass: true,
+          goalAttainment: 4,
+          quality: 4,
+          efficiency: 4,
+        ),
+      ),
+    ];
+    final template = EvalJudgeCalibration.labelTemplateJson(
+      version: 'human-gold-v1',
+      traces: traces,
+      manifest: _manifestFor(traces),
+      maxRows: 1,
+    );
+    final selection = {
+      ...(template['calibrationTemplateSelection']! as Map<String, dynamic>),
+      'protectedScenarioIds': const ['SENTINEL_PROTECTED_SCENARIO_ID'],
+    };
+    final selectionWithPrivateCoverageKey = {
+      ...(template['calibrationTemplateSelection']! as Map<String, dynamic>),
+      'candidateCoverage': {
+        ...((template['calibrationTemplateSelection']!
+                as Map<String, dynamic>)['candidateCoverage']!
+            as Map<String, dynamic>),
+        'SENTINEL_PROTECTED_SCENARIO_ID': 1,
+      },
+    };
+
+    expect(
+      () => JudgeCalibrationSet.fromJson({
+        'version': template['version'],
+        'judgeCalibrationSetVersion': template['judgeCalibrationSetVersion'],
+        'sourceRun': template['sourceRun'],
+        'calibrationTemplateSelection': selection,
+        'labels': [_completedLabelForTrace(traces.first).toJson()],
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => JudgeCalibrationSet.fromJson({
+        'version': template['version'],
+        'judgeCalibrationSetVersion': template['judgeCalibrationSetVersion'],
+        'sourceRun': template['sourceRun'],
+        'calibrationTemplateSelection': selectionWithPrivateCoverageKey,
+        'labels': [_completedLabelForTrace(traces.first).toJson()],
+      }),
+      throwsFormatException,
+    );
+  });
+
   test('template generation rejects mixed judge calibration versions', () {
     expect(
       () => EvalJudgeCalibration.labelTemplateJson(
@@ -1273,6 +1750,120 @@ void main() {
         'calibrationTemplateSchemaVersion': 2,
         'version': 'human-gold-v1',
         'labelTemplates': <Map<String, dynamic>>[],
+      }),
+      throwsFormatException,
+    );
+  });
+
+  test('completed calibration JSON rejects unsupported private fields', () {
+    final trace = _trace(
+      scenario: taskReleaseNotesScenario,
+      profile: frontierProfile,
+      verdict: _verdict(
+        pass: true,
+        goalAttainment: 5,
+        quality: 4,
+        efficiency: 3,
+      ),
+    );
+    final setJson = JudgeCalibrationSet(
+      version: 'human-gold-v1',
+      sourceRun: JudgeCalibrationSourceRun.fromManifest(_manifestFor([trace])),
+      labels: [_completedLabelForTrace(trace)],
+    ).toJson();
+    final sourceRun = setJson['sourceRun']! as Map<String, dynamic>;
+    final catalogEvidence =
+        sourceRun['scenarioCatalogEvidence']! as Map<String, dynamic>;
+    final label = (setJson['labels']! as List).single as Map<String, dynamic>;
+    final key = label['key']! as Map<String, dynamic>;
+
+    expect(
+      () => JudgeCalibrationSet.fromJson({
+        ...setJson,
+        'rawPrompt': 'SENTINEL_RAW_PROMPT_DO_NOT_COPY',
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => JudgeCalibrationSet.fromJson({
+        ...setJson,
+        'sourceRun': {
+          ...sourceRun,
+          'apiKey': 'SENTINEL_API_KEY_DO_NOT_COPY',
+        },
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => JudgeCalibrationSet.fromJson({
+        ...setJson,
+        'sourceRun': {
+          ...sourceRun,
+          'scenarioCatalogEvidence': {
+            ...catalogEvidence,
+            'protectedScenarioIds': const [
+              'SENTINEL_PROTECTED_SCENARIO_ID',
+            ],
+          },
+        },
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => JudgeCalibrationSet.fromJson({
+        ...setJson,
+        'labels': [
+          {
+            ...label,
+            'transcript': 'SENTINEL_TRANSCRIPT_DO_NOT_COPY',
+          },
+        ],
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => JudgeCalibrationSet.fromJson({
+        ...setJson,
+        'labels': [
+          {
+            ...label,
+            'key': {
+              ...key,
+              'modelOutput': 'SENTINEL_MODEL_OUTPUT_DO_NOT_COPY',
+            },
+          },
+        ],
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => JudgeCalibrationSet.fromJson({
+        ...setJson,
+        'labels': [
+          {
+            ...label,
+            'key': {
+              ...key,
+              'cascadeWake': const {
+                'cascadeId': EvalTraceCascadeWake.taskLogCascadeId,
+                'wakeIndex': 0,
+                'wakeCount': 1,
+                'modelOutput': 'SENTINEL_MODEL_OUTPUT_DO_NOT_COPY',
+              },
+            },
+          },
+        ],
+      }),
+      throwsFormatException,
+    );
+    expect(
+      () => JudgeCalibrationHumanReview.fromJson(const {
+        'reviewer': 'reviewer-a',
+        'expectedPass': true,
+        'goalAttainment': 5,
+        'quality': 4,
+        'efficiency': 3,
+        'rawToolArguments': 'SENTINEL_TOOL_ARGS_DO_NOT_COPY',
       }),
       throwsFormatException,
     );
@@ -1653,6 +2244,28 @@ EvalRunManifest _manifestFor(
   );
 }
 
+JudgeCalibrationLabel _completedLabelForTrace(EvalTrace trace) {
+  final verdict = trace.verdict!;
+  return JudgeCalibrationLabel(
+    key: EvalTraceKey.fromTrace(trace),
+    scenarioDigest: trace.provenance.scenarioDigest,
+    profileDigest: trace.provenance.profileDigest,
+    agentDirectiveVariantDigest: trace.provenance.agentDirectiveVariantDigest,
+    traceDigest: verdict.traceDigest,
+    verdictDigest: EvalProvenance.digestJson(verdict.toJson()),
+    expectedPass: verdict.pass,
+    goalAttainmentMin: verdict.goalAttainment,
+    goalAttainmentMax: verdict.goalAttainment,
+    qualityMin: verdict.quality,
+    qualityMax: verdict.quality,
+    efficiencyMin: verdict.efficiency,
+    efficiencyMax: verdict.efficiency,
+    labeler: 'reviewer-a',
+    adjudicationStatus: 'reviewed',
+    rationale: 'Reviewed selected calibration template row.',
+  );
+}
+
 JudgeCalibrationLabel _label({
   required EvalScenario scenario,
   required EvalProfile profile,
@@ -1778,6 +2391,12 @@ JudgeVerdict _verdict({
 
 String _traceDigest(int goalAttainment, int quality, int efficiency) =>
     EvalProvenance.digestText('trace-$goalAttainment-$quality-$efficiency');
+
+String _traceKeyId(
+  String scenarioId,
+  String profileName,
+  String promptVariantName,
+) => '$scenarioId::$profileName::$promptVariantName::trial-0';
 
 String _verdictDigest({
   required bool pass,

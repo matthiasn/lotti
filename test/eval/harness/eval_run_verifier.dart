@@ -47,7 +47,7 @@ abstract final class EvalRunVerifier {
     JudgeCalibrationReport? calibrationReport,
   }) {
     final errors = <String>[];
-    final cascadeScenarioIds = {
+    final observedCascadeScenarioIds = {
       for (final trace in traces)
         if (trace.isCascadeWake) trace.scenario.id,
     };
@@ -55,7 +55,8 @@ abstract final class EvalRunVerifier {
       scenarios,
       profiles,
       agentDirectiveVariants,
-      cascadeScenarioIds: cascadeScenarioIds,
+      traceTopologyEvidence: manifest?.traceTopologyEvidence,
+      observedCascadeScenarioIds: observedCascadeScenarioIds,
     );
     final scenarioById = {
       for (final scenario in scenarios) scenario.id: scenario,
@@ -104,9 +105,15 @@ abstract final class EvalRunVerifier {
         scenarios: scenarios,
         profiles: profiles,
         agentDirectiveVariants: agentDirectiveVariants,
+        tuningPolicy: tuningPolicy,
         errors: errors,
       );
     }
+    _validateTraceTopologyTraceSet(
+      manifest: manifest,
+      traces: traces,
+      errors: errors,
+    );
 
     final duplicates = _duplicates(traceKeys);
     for (final key in duplicates) {
@@ -222,7 +229,14 @@ abstract final class EvalRunVerifier {
         continue;
       }
       if (verdict == null) continue;
-      _validateVerdict(trace, verdict, recomputedChecks, key, errors);
+      _validateVerdict(
+        trace,
+        verdict,
+        recomputedChecks,
+        key,
+        errors,
+        manifest: manifest,
+      );
     }
     _validateJudgeConsistency(traces, errors);
 
@@ -233,8 +247,14 @@ abstract final class EvalRunVerifier {
     List<EvalScenario> scenarios,
     List<EvalProfile> profiles,
     List<EvalAgentDirectiveVariant> agentDirectiveVariants, {
-    required Set<String> cascadeScenarioIds,
+    required EvalTraceTopologyEvidence? traceTopologyEvidence,
+    required Set<String> observedCascadeScenarioIds,
   }) {
+    final cascadeWakeCountByScenarioId = _cascadeWakeCountByScenarioId(
+      scenarios: scenarios,
+      traceTopologyEvidence: traceTopologyEvidence,
+      observedCascadeScenarioIds: observedCascadeScenarioIds,
+    );
     return {
       for (final scenario in scenarios)
         for (final profile in profiles)
@@ -244,11 +264,10 @@ abstract final class EvalRunVerifier {
               trialIndex < profile.trialCount;
               trialIndex++
             )
-              if (cascadeScenarioIds.contains(scenario.id) &&
-                  scenario.appState.taskLogEntries.isNotEmpty)
+              if (cascadeWakeCountByScenarioId.containsKey(scenario.id))
                 for (
                   var wakeIndex = 0;
-                  wakeIndex < scenario.appState.taskLogEntries.length;
+                  wakeIndex < cascadeWakeCountByScenarioId[scenario.id]!;
                   wakeIndex++
                 )
                   _key(
@@ -259,7 +278,7 @@ abstract final class EvalRunVerifier {
                     cascadeWake: EvalTraceCascadeWake(
                       cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
                       wakeIndex: wakeIndex,
-                      wakeCount: scenario.appState.taskLogEntries.length,
+                      wakeCount: cascadeWakeCountByScenarioId[scenario.id]!,
                     ),
                   )
               else
@@ -269,6 +288,22 @@ abstract final class EvalRunVerifier {
                   variant.name,
                   trialIndex,
                 ),
+    };
+  }
+
+  static Map<String, int> _cascadeWakeCountByScenarioId({
+    required List<EvalScenario> scenarios,
+    required EvalTraceTopologyEvidence? traceTopologyEvidence,
+    required Set<String> observedCascadeScenarioIds,
+  }) {
+    if (traceTopologyEvidence != null) {
+      return traceTopologyEvidence.cascadeWakeCountByScenarioId;
+    }
+    return {
+      for (final scenario in scenarios)
+        if (observedCascadeScenarioIds.contains(scenario.id) &&
+            scenario.appState.taskLogEntries.isNotEmpty)
+          scenario.id: scenario.appState.taskLogEntries.length,
     };
   }
 
@@ -286,8 +321,9 @@ abstract final class EvalRunVerifier {
     JudgeVerdict verdict,
     List<EvalCheck> recomputedChecks,
     String key,
-    List<String> errors,
-  ) {
+    List<String> errors, {
+    EvalRunManifest? manifest,
+  }) {
     for (final dimension in [
       ('goalAttainment', verdict.goalAttainment),
       ('quality', verdict.quality),
@@ -318,6 +354,13 @@ abstract final class EvalRunVerifier {
       errors.add('$key verdict traceDigest is not a sha256 digest');
     }
     _validateJudgeProvenance(trace, verdict.judge, key, errors);
+    _validateBlindedVerdictImport(
+      trace,
+      verdict,
+      key,
+      errors,
+      manifest: manifest,
+    );
   }
 
   static void _validateJudgeProvenance(
@@ -348,6 +391,76 @@ abstract final class EvalRunVerifier {
       errors.add(
         '$key verdict judge.profileVisible must be true for profile-aware '
         'efficiency grading',
+      );
+    }
+  }
+
+  static void _validateBlindedVerdictImport(
+    EvalTrace trace,
+    JudgeVerdict verdict,
+    String key,
+    List<String> errors, {
+    EvalRunManifest? manifest,
+  }) {
+    final provenance = verdict.blindedImport;
+    if (verdict.judge.modelIdentityVisible) {
+      if (provenance != null) {
+        errors.add(
+          '$key verdict blindedImport is present but '
+          'judge.modelIdentityVisible is true',
+        );
+      }
+      return;
+    }
+    if (provenance == null) {
+      errors.add(
+        '$key verdict judge.modelIdentityVisible is false but '
+        'blindedImport is missing',
+      );
+      return;
+    }
+    if (provenance.blindedTraceId.trim().isEmpty) {
+      errors.add('$key verdict blindedImport.blindedTraceId is empty');
+    }
+    for (final field in [
+      ('reviewPayloadDigest', provenance.reviewPayloadDigest),
+      ('judgeManifestDigest', provenance.judgeManifestDigest),
+      ('privateKeyDigest', provenance.privateKeyDigest),
+      ('sourceManifestDigest', provenance.sourceManifestDigest),
+      ('rawTraceDigest', provenance.rawTraceDigest),
+    ]) {
+      final (name, digest) = field;
+      if (!EvalProvenance.isDigest(digest)) {
+        errors.add('$key verdict blindedImport.$name is not a sha256 digest');
+      }
+    }
+    final manifestDigest = manifest?.manifestDigest;
+    if (manifest != null && manifestDigest == null) {
+      errors.add(
+        '$key verdict blindedImport.sourceManifestDigest cannot be checked '
+        'because run manifestDigest is missing',
+      );
+    }
+    final expectedSourceManifestDigest =
+        manifestDigest ?? trace.provenance.manifestDigest;
+    if (provenance.sourceManifestDigest != expectedSourceManifestDigest) {
+      errors.add(
+        '$key verdict blindedImport.sourceManifestDigest is '
+        '${provenance.sourceManifestDigest}, expected '
+        '$expectedSourceManifestDigest',
+      );
+    }
+    final traceDigest = verdict.traceDigest;
+    if (traceDigest == null) {
+      errors.add(
+        '$key verdict blindedImport.rawTraceDigest requires verdict '
+        'traceDigest',
+      );
+    } else if (provenance.rawTraceDigest != traceDigest) {
+      errors.add(
+        '$key verdict blindedImport.rawTraceDigest is '
+        '${provenance.rawTraceDigest}, expected verdict traceDigest '
+        '$traceDigest',
       );
     }
   }
@@ -544,6 +657,7 @@ abstract final class EvalRunVerifier {
     required List<EvalScenario> scenarios,
     required List<EvalProfile> profiles,
     required List<EvalAgentDirectiveVariant> agentDirectiveVariants,
+    required EvalTuningPolicy? tuningPolicy,
     required List<String> errors,
   }) {
     if (manifest.runId != runId) {
@@ -659,6 +773,141 @@ abstract final class EvalRunVerifier {
       manifest.scenarioSetDigest,
       errors,
     );
+    _validatePromotionPlanEvidence(
+      manifest.promotionPlanEvidence,
+      manifest.scenarioSetDigest,
+      manifest.profileSetDigest,
+      profiles,
+      errors,
+    );
+    _validatePairwiseReadinessPlanEvidence(
+      manifest.pairwiseReadinessPlanEvidence,
+      manifest.scenarioSetDigest,
+      manifest.profileSetDigest,
+      manifest.profileBindingSetDigest,
+      errors,
+    );
+    _validateTuningReadinessContractEvidence(
+      manifest.tuningReadinessContractEvidence,
+      manifest.scenarioSetDigest,
+      scenarios,
+      errors,
+    );
+    _validateTuningReadinessPolicyEvidence(
+      manifest.tuningReadinessPolicyEvidence,
+      tuningPolicy,
+      errors,
+    );
+    _validateTraceTopologyEvidence(
+      manifest.traceTopologyEvidence,
+      manifest.scenarioSetDigest,
+      manifest.profileSetDigest,
+      manifest.agentDirectiveVariantSetDigest,
+      scenarios,
+      errors,
+    );
+    _validateUseCaseWorkOrderLaunchEvidence(
+      manifest.useCaseWorkOrderLaunchEvidence,
+      manifest.tuningReadinessContractEvidence,
+      manifest.agentDirectiveVariants,
+      errors,
+    );
+  }
+
+  static void _validateUseCaseWorkOrderLaunchEvidence(
+    EvalUseCaseWorkOrderLaunchEvidence? evidence,
+    EvalTuningReadinessContractEvidence? readinessContract,
+    List<EvalAgentDirectiveVariant> agentDirectiveVariants,
+    List<String> errors,
+  ) {
+    if (evidence == null) return;
+    for (final field in [
+      ('workOrderRef', evidence.workOrderRef),
+      ('workOrderDigest', evidence.workOrderDigest),
+      (
+        'sourceExperimentPlanDigest',
+        evidence.sourceExperimentPlanDigest,
+      ),
+      ('sourceMatrixDigest', evidence.sourceMatrixDigest),
+      ('workOrderBatchSetDigest', evidence.workOrderBatchSetDigest),
+      (
+        'workOrderLaunchSubjectDigest',
+        evidence.workOrderLaunchSubjectDigest,
+      ),
+    ]) {
+      final (name, value) = field;
+      if (!EvalProvenance.isDigest(value)) {
+        errors.add(
+          'manifest useCaseWorkOrderLaunchEvidence.$name is not a '
+          'sha256 digest',
+        );
+      }
+    }
+    if (evidence.workOrderBatchRefs.isEmpty) {
+      errors.add(
+        'manifest useCaseWorkOrderLaunchEvidence.workOrderBatchRefs is empty',
+      );
+    }
+    for (final ref in evidence.workOrderBatchRefs) {
+      if (!EvalProvenance.isDigest(ref)) {
+        errors.add(
+          'manifest useCaseWorkOrderLaunchEvidence.workOrderBatchRefs '
+          'contains a non-sha256 digest',
+        );
+      }
+    }
+    final expectedBatchSetDigest = EvalProvenance.digestJson(
+      [...evidence.workOrderBatchRefs]..sort(),
+    );
+    if (evidence.workOrderBatchSetDigest != expectedBatchSetDigest) {
+      errors.add(
+        'manifest useCaseWorkOrderLaunchEvidence.workOrderBatchSetDigest is '
+        '${evidence.workOrderBatchSetDigest}, expected '
+        '$expectedBatchSetDigest',
+      );
+    }
+    final expectedSubjectDigest =
+        EvalProvenance.useCaseWorkOrderLaunchSubjectDigest(evidence);
+    if (evidence.workOrderLaunchSubjectDigest != expectedSubjectDigest) {
+      errors.add(
+        'manifest useCaseWorkOrderLaunchEvidence subject digest is '
+        '${evidence.workOrderLaunchSubjectDigest}, expected '
+        '$expectedSubjectDigest',
+      );
+    }
+    if (evidence.requiredPrimaryCapabilityIds.isEmpty) {
+      errors.add(
+        'manifest useCaseWorkOrderLaunchEvidence '
+        'requiredPrimaryCapabilityIds is empty',
+      );
+    }
+    for (final capabilityId in evidence.requiredPrimaryCapabilityIds) {
+      if (!_capabilityIdPattern.hasMatch(capabilityId)) {
+        errors.add(
+          'manifest useCaseWorkOrderLaunchEvidence capability id '
+          '$capabilityId is invalid',
+        );
+      }
+    }
+    final readinessCapabilities =
+        readinessContract?.requiredPrimaryCapabilityIds ?? const <String>{};
+    if (!readinessCapabilities.containsAll(
+      evidence.requiredPrimaryCapabilityIds,
+    )) {
+      errors.add(
+        'manifest useCaseWorkOrderLaunchEvidence capabilities must be covered '
+        'by tuningReadinessContractEvidence',
+      );
+    }
+    final availablePromptVariants = {
+      for (final variant in agentDirectiveVariants) variant.name,
+    };
+    if (!availablePromptVariants.containsAll(evidence.promptVariantNames)) {
+      errors.add(
+        'manifest useCaseWorkOrderLaunchEvidence prompt variants must be '
+        'covered by agentDirectiveVariants',
+      );
+    }
   }
 
   static void _validateManifestAgentDirectiveVariants({
@@ -881,6 +1130,424 @@ abstract final class EvalRunVerifier {
         errors.add(
           'manifest scenarioCatalogEvidence holdout id $scenarioId is not '
           'listed as protected',
+        );
+      }
+    }
+  }
+
+  static void _validateTuningReadinessContractEvidence(
+    EvalTuningReadinessContractEvidence? evidence,
+    String manifestScenarioSetDigest,
+    List<EvalScenario> scenarios,
+    List<String> errors,
+  ) {
+    if (evidence == null) return;
+    if (evidence.scenarioSetDigest != manifestScenarioSetDigest) {
+      errors.add(
+        'manifest tuningReadinessContractEvidence scenarioSetDigest is '
+        '${evidence.scenarioSetDigest}, expected $manifestScenarioSetDigest',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.scenarioSetDigest)) {
+      errors.add(
+        'manifest tuningReadinessContractEvidence scenarioSetDigest is not a '
+        'sha256 digest',
+      );
+    }
+    final expectedSubjectDigest =
+        EvalProvenance.tuningReadinessContractSubjectDigest(evidence);
+    if (evidence.readinessContractSubjectDigest != expectedSubjectDigest) {
+      errors.add(
+        'manifest tuningReadinessContractEvidence '
+        'readinessContractSubjectDigest is '
+        '${evidence.readinessContractSubjectDigest}, expected '
+        '$expectedSubjectDigest',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.readinessContractSubjectDigest)) {
+      errors.add(
+        'manifest tuningReadinessContractEvidence '
+        'readinessContractSubjectDigest is not a sha256 digest',
+      );
+    }
+    if (evidence.requiredPrimaryCapabilityIds.isEmpty) {
+      errors.add(
+        'manifest tuningReadinessContractEvidence '
+        'requiredPrimaryCapabilityIds are missing',
+      );
+    }
+    final primaryCapabilityIds = {
+      for (final scenario in scenarios) ?scenario.metadata.primaryCapabilityId,
+    };
+    for (final capabilityId in evidence.requiredPrimaryCapabilityIds) {
+      if (!_capabilityIdPattern.hasMatch(capabilityId)) {
+        errors.add(
+          'manifest tuningReadinessContractEvidence has invalid required '
+          'primary capability $capabilityId',
+        );
+      }
+      if (!primaryCapabilityIds.contains(capabilityId)) {
+        errors.add(
+          'manifest tuningReadinessContractEvidence required primary '
+          'capability $capabilityId is missing from configured scenarios',
+        );
+      }
+    }
+  }
+
+  static void _validatePromotionPlanEvidence(
+    EvalPromotionPlanEvidence? evidence,
+    String manifestScenarioSetDigest,
+    String manifestProfileSetDigest,
+    List<EvalProfile> profiles,
+    List<String> errors,
+  ) {
+    if (evidence == null) return;
+    if (evidence.planId.trim().isEmpty) {
+      errors.add('manifest promotionPlanEvidence planId is empty');
+    }
+    if (evidence.candidateProfileName.trim().isEmpty) {
+      errors.add(
+        'manifest promotionPlanEvidence candidateProfileName is empty',
+      );
+    }
+    if (evidence.baselineProfileName.trim().isEmpty) {
+      errors.add(
+        'manifest promotionPlanEvidence baselineProfileName is empty',
+      );
+    }
+    if (evidence.candidateProfileName == evidence.baselineProfileName) {
+      errors.add(
+        'manifest promotionPlanEvidence candidateProfileName and '
+        'baselineProfileName must differ',
+      );
+    }
+    final profileNames = profiles.map((profile) => profile.name).toSet();
+    if (!profileNames.contains(evidence.candidateProfileName)) {
+      errors.add(
+        'manifest promotionPlanEvidence candidateProfileName '
+        '${evidence.candidateProfileName} is missing from configured '
+        'profiles',
+      );
+    }
+    if (!profileNames.contains(evidence.baselineProfileName)) {
+      errors.add(
+        'manifest promotionPlanEvidence baselineProfileName '
+        '${evidence.baselineProfileName} is missing from configured profiles',
+      );
+    }
+    if (evidence.scenarioSetDigest != manifestScenarioSetDigest) {
+      errors.add(
+        'manifest promotionPlanEvidence scenarioSetDigest is '
+        '${evidence.scenarioSetDigest}, expected $manifestScenarioSetDigest',
+      );
+    }
+    if (evidence.profileSetDigest != manifestProfileSetDigest) {
+      errors.add(
+        'manifest promotionPlanEvidence profileSetDigest is '
+        '${evidence.profileSetDigest}, expected $manifestProfileSetDigest',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.scenarioSetDigest)) {
+      errors.add(
+        'manifest promotionPlanEvidence scenarioSetDigest is not a '
+        'sha256 digest',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.profileSetDigest)) {
+      errors.add(
+        'manifest promotionPlanEvidence profileSetDigest is not a '
+        'sha256 digest',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.policyDigest)) {
+      errors.add(
+        'manifest promotionPlanEvidence policyDigest is not a sha256 digest',
+      );
+    }
+    final expectedSubjectDigest = EvalProvenance.digestJson(
+      <String, dynamic>{
+        'schemaVersion': EvalPromotionPlan.schemaVersionValue,
+        'planId': evidence.planId,
+        'candidateProfileName': evidence.candidateProfileName,
+        'baselineProfileName': evidence.baselineProfileName,
+        'scenarioSetDigest': evidence.scenarioSetDigest,
+        'profileSetDigest': evidence.profileSetDigest,
+        'policyDigest': evidence.policyDigest,
+      },
+    );
+    if (evidence.promotionPlanSubjectDigest != expectedSubjectDigest) {
+      errors.add(
+        'manifest promotionPlanEvidence promotionPlanSubjectDigest is '
+        '${evidence.promotionPlanSubjectDigest}, expected '
+        '$expectedSubjectDigest',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.promotionPlanSubjectDigest)) {
+      errors.add(
+        'manifest promotionPlanEvidence promotionPlanSubjectDigest is not a '
+        'sha256 digest',
+      );
+    }
+  }
+
+  static void _validatePairwiseReadinessPlanEvidence(
+    EvalPairwiseReadinessPlanEvidence? evidence,
+    String manifestScenarioSetDigest,
+    String manifestProfileSetDigest,
+    String manifestProfileBindingSetDigest,
+    List<String> errors,
+  ) {
+    if (evidence == null) return;
+    if (evidence.planId.trim().isEmpty) {
+      errors.add('manifest pairwiseReadinessPlanEvidence planId is empty');
+    }
+    if (evidence.baseReadinessPolicy.trim().isEmpty) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence baseReadinessPolicy is empty',
+      );
+    }
+    if (evidence.baseReadinessPolicy != 'modelClassTuning') {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence baseReadinessPolicy is '
+        '${evidence.baseReadinessPolicy}, expected modelClassTuning',
+      );
+    }
+    if (evidence.scenarioSetDigest != manifestScenarioSetDigest) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence scenarioSetDigest is '
+        '${evidence.scenarioSetDigest}, expected $manifestScenarioSetDigest',
+      );
+    }
+    if (evidence.profileSetDigest != manifestProfileSetDigest) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence profileSetDigest is '
+        '${evidence.profileSetDigest}, expected $manifestProfileSetDigest',
+      );
+    }
+    if (evidence.profileBindingSetDigest != manifestProfileBindingSetDigest) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence profileBindingSetDigest is '
+        '${evidence.profileBindingSetDigest}, expected '
+        '$manifestProfileBindingSetDigest',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.scenarioSetDigest)) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence scenarioSetDigest is not a '
+        'sha256 digest',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.profileSetDigest)) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence profileSetDigest is not a '
+        'sha256 digest',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.profileBindingSetDigest)) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence profileBindingSetDigest is '
+        'not a sha256 digest',
+      );
+    }
+    if (!EvalProvenance.isDigest(
+      evidence.pairwiseReadinessPlanSubjectDigest,
+    )) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence '
+        'pairwiseReadinessPlanSubjectDigest is not a sha256 digest',
+      );
+    }
+    if (evidence.comparisonCount < 1) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence comparisonCount must be at '
+        'least 1',
+      );
+    }
+    if (evidence.minBlindedPairwisePreferenceDecisions < 1) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence '
+        'minBlindedPairwisePreferenceDecisions must be at least 1',
+      );
+    }
+    if (evidence.minBlindedPairwisePreferenceDecisions >
+        evidence.comparisonCount) {
+      errors.add(
+        'manifest pairwiseReadinessPlanEvidence '
+        'minBlindedPairwisePreferenceDecisions '
+        '${evidence.minBlindedPairwisePreferenceDecisions} exceeds '
+        'comparisonCount ${evidence.comparisonCount}',
+      );
+    }
+  }
+
+  static void _validateTuningReadinessPolicyEvidence(
+    EvalTuningReadinessPolicyEvidence? evidence,
+    EvalTuningPolicy? tuningPolicy,
+    List<String> errors,
+  ) {
+    if (evidence == null) return;
+    if (evidence.policyName.trim().isEmpty) {
+      errors.add(
+        'manifest tuningReadinessPolicyEvidence policyName is empty',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.policyDigest)) {
+      errors.add(
+        'manifest tuningReadinessPolicyEvidence policyDigest is not a '
+        'sha256 digest',
+      );
+    }
+    if (tuningPolicy == null) return;
+    if (evidence.policyName != tuningPolicy.name) {
+      errors.add(
+        'manifest tuningReadinessPolicyEvidence policyName is '
+        '${evidence.policyName}, expected ${tuningPolicy.name}',
+      );
+    }
+    if (evidence.policyDigest != tuningPolicy.policyDigest) {
+      errors.add(
+        'manifest tuningReadinessPolicyEvidence policyDigest is '
+        '${evidence.policyDigest}, expected ${tuningPolicy.policyDigest}',
+      );
+    }
+  }
+
+  static void _validateTraceTopologyEvidence(
+    EvalTraceTopologyEvidence? evidence,
+    String manifestScenarioSetDigest,
+    String manifestProfileSetDigest,
+    String manifestAgentDirectiveVariantSetDigest,
+    List<EvalScenario> scenarios,
+    List<String> errors,
+  ) {
+    if (evidence == null) return;
+    if (evidence.mode != EvalTraceTopologyEvidence.taskLogCascadeMode) {
+      errors.add(
+        'manifest traceTopologyEvidence mode is ${evidence.mode}, expected '
+        '${EvalTraceTopologyEvidence.taskLogCascadeMode}',
+      );
+    }
+    if (evidence.scenarioSetDigest != manifestScenarioSetDigest) {
+      errors.add(
+        'manifest traceTopologyEvidence scenarioSetDigest is '
+        '${evidence.scenarioSetDigest}, expected $manifestScenarioSetDigest',
+      );
+    }
+    if (evidence.profileSetDigest != manifestProfileSetDigest) {
+      errors.add(
+        'manifest traceTopologyEvidence profileSetDigest is '
+        '${evidence.profileSetDigest}, expected $manifestProfileSetDigest',
+      );
+    }
+    if (evidence.agentDirectiveVariantSetDigest !=
+        manifestAgentDirectiveVariantSetDigest) {
+      errors.add(
+        'manifest traceTopologyEvidence agentDirectiveVariantSetDigest is '
+        '${evidence.agentDirectiveVariantSetDigest}, expected '
+        '$manifestAgentDirectiveVariantSetDigest',
+      );
+    }
+    if (evidence.cascadeId != EvalTraceCascadeWake.taskLogCascadeId) {
+      errors.add(
+        'manifest traceTopologyEvidence cascadeId is ${evidence.cascadeId}, '
+        'expected ${EvalTraceCascadeWake.taskLogCascadeId}',
+      );
+    }
+    if (evidence.cascadeWakeCountByScenarioId.isEmpty) {
+      errors.add(
+        'manifest traceTopologyEvidence cascadeWakeCountByScenarioId is empty',
+      );
+    }
+    final expectedSubjectDigest = EvalProvenance.traceTopologySubjectDigest(
+      evidence,
+    );
+    if (evidence.traceTopologySubjectDigest != expectedSubjectDigest) {
+      errors.add(
+        'manifest traceTopologyEvidence traceTopologySubjectDigest is '
+        '${evidence.traceTopologySubjectDigest}, expected '
+        '$expectedSubjectDigest',
+      );
+    }
+    if (!EvalProvenance.isDigest(evidence.traceTopologySubjectDigest)) {
+      errors.add(
+        'manifest traceTopologyEvidence traceTopologySubjectDigest is not a '
+        'sha256 digest',
+      );
+    }
+
+    final scenarioById = {
+      for (final scenario in scenarios) scenario.id: scenario,
+    };
+    for (final entry in evidence.cascadeWakeCountByScenarioId.entries) {
+      final scenario = scenarioById[entry.key];
+      if (scenario == null) {
+        errors.add(
+          'manifest traceTopologyEvidence declares unknown scenario '
+          '${entry.key}',
+        );
+        continue;
+      }
+      final expectedWakeCount = scenario.appState.taskLogEntries.length;
+      if (expectedWakeCount == 0) {
+        errors.add(
+          'manifest traceTopologyEvidence declares cascade scenario '
+          '${entry.key} without appState.taskLogEntries',
+        );
+      } else if (entry.value != expectedWakeCount) {
+        errors.add(
+          'manifest traceTopologyEvidence wake count for ${entry.key} is '
+          '${entry.value}, expected $expectedWakeCount',
+        );
+      }
+    }
+  }
+
+  static void _validateTraceTopologyTraceSet({
+    required EvalRunManifest? manifest,
+    required List<EvalTrace> traces,
+    required List<String> errors,
+  }) {
+    final cascadeTraces = traces
+        .where((trace) => trace.isCascadeWake)
+        .toList(growable: false);
+    final evidence = manifest?.traceTopologyEvidence;
+    if (cascadeTraces.isNotEmpty && manifest != null && evidence == null) {
+      errors.add(
+        'manifest traceTopologyEvidence is required for cascade wake traces',
+      );
+    }
+    if (evidence == null) return;
+    if (cascadeTraces.isEmpty) {
+      errors.add(
+        'manifest traceTopologyEvidence declares cascade topology but run has '
+        'no cascade wake traces',
+      );
+    }
+    final declaredScenarioIds = evidence.cascadeWakeCountByScenarioId.keys
+        .toSet();
+    for (final trace in cascadeTraces) {
+      final key = _traceKey(trace);
+      final cascadeWake = trace.cascadeWake!;
+      if (!declaredScenarioIds.contains(trace.scenario.id)) {
+        errors.add(
+          '$key cascadeWake is not declared by manifest traceTopologyEvidence',
+        );
+        continue;
+      }
+      if (cascadeWake.cascadeId != evidence.cascadeId) {
+        errors.add(
+          '$key cascadeWake.cascadeId is ${cascadeWake.cascadeId}, expected '
+          '${evidence.cascadeId} from manifest traceTopologyEvidence',
+        );
+      }
+      final expectedWakeCount =
+          evidence.cascadeWakeCountByScenarioId[trace.scenario.id];
+      if (expectedWakeCount != null &&
+          cascadeWake.wakeCount != expectedWakeCount) {
+        errors.add(
+          '$key cascadeWake.wakeCount is ${cascadeWake.wakeCount}, expected '
+          '$expectedWakeCount from manifest traceTopologyEvidence',
         );
       }
     }

@@ -13,6 +13,7 @@ import 'package:path/path.dart' as p;
 import 'eval_models.dart';
 import 'eval_pairwise_preference.dart';
 import 'eval_provenance.dart';
+import 'eval_tuning_readiness.dart';
 import 'trace_writer.dart';
 
 class EvalPairwiseReviewPair {
@@ -33,6 +34,8 @@ class EvalBlindedPairwiseExportResult {
     required this.privateDir,
     required this.judgeManifestFile,
     required this.privateKeyFile,
+    required this.readinessPlanFile,
+    required this.readinessPlanRegistrationFile,
     required this.blindedPairFiles,
   });
 
@@ -40,6 +43,8 @@ class EvalBlindedPairwiseExportResult {
   final Directory privateDir;
   final File judgeManifestFile;
   final File privateKeyFile;
+  final File readinessPlanFile;
+  final File readinessPlanRegistrationFile;
   final List<File> blindedPairFiles;
 }
 
@@ -73,9 +78,40 @@ abstract final class EvalBlindedPairwisePreference {
     required List<EvalPairwiseReviewPair> pairs,
     bool overwrite = false,
     String? exportSeed,
+    String? readinessPlanId,
+    EvalPairwiseReadinessIntent? readinessIntent,
+    EvalPairwiseReadinessReviewProtocol? readinessReviewProtocol,
+    int? readinessMinBlindedPairwisePreferenceDecisions,
+    int readinessMinVotes = 1,
+    double readinessQuorumFraction = 1,
   }) async {
     if (pairs.isEmpty) {
       throw StateError('Cannot write a blinded pairwise export with no pairs');
+    }
+    _validateReadinessPlanSettings(
+      pairCount: pairs.length,
+      planId: readinessPlanId,
+      intent: readinessIntent,
+      reviewProtocol: readinessReviewProtocol,
+      minBlindedPairwisePreferenceDecisions:
+          readinessMinBlindedPairwisePreferenceDecisions,
+      minVotes: readinessMinVotes,
+      quorumFraction: readinessQuorumFraction,
+    );
+    final manifestDigest = run.manifest.manifestDigest;
+    if (manifestDigest == null) {
+      throw StateError(
+        'Cannot write a blinded pairwise export without a run manifestDigest',
+      );
+    }
+    final registrationFile = writer.pairwiseReadinessPlanRegistrationFileFor(
+      run.manifest.runId,
+    );
+    if (registrationFile.existsSync() && !overwrite) {
+      throw StateError(
+        'Pairwise readiness plan registration already exists: '
+        '${registrationFile.path}',
+      );
     }
     if (outputDir.existsSync()) {
       final hasFiles = !(await outputDir.list().isEmpty);
@@ -115,6 +151,7 @@ abstract final class EvalBlindedPairwisePreference {
 
     final manifestEntries = <Map<String, dynamic>>[];
     final keyEntries = <Map<String, dynamic>>[];
+    final readinessComparisons = <EvalPairwiseReadinessComparison>[];
     final pairFiles = <File>[];
     final pairIds = <String>{};
     var index = 0;
@@ -143,6 +180,21 @@ abstract final class EvalBlindedPairwisePreference {
         variantAliases: variantAliases,
       );
       final reviewPayloadDigest = EvalProvenance.digestJson(reviewPayload);
+      final intentComparison = _intentComparisonForPair(
+        pair: pair,
+        optionA: optionA,
+        optionB: optionB,
+        intent: readinessIntent,
+      );
+      readinessComparisons.add(
+        EvalPairwiseReadinessComparison(
+          comparisonKey: _comparisonKey(optionA, optionB),
+          intentKey:
+              intentComparison?.intentKey ?? _comparisonKey(optionA, optionB),
+          reviewPayloadDigest: reviewPayloadDigest,
+          outcomeExpectation: intentComparison?.outcomeExpectation,
+        ),
+      );
       final blindedPairJson = <String, dynamic>{
         'schemaVersion': schemaVersion,
         'kind': pairKind,
@@ -215,14 +267,46 @@ abstract final class EvalBlindedPairwisePreference {
       'pairCount': keyEntries.length,
       'entries': keyEntries,
     };
+    final privateKeyDigest = EvalProvenance.digestJson(privateKey);
     final privateKeyFile = File('${privateDir.path}/key.json');
     await privateKeyFile.writeAsString(_encoder.convert(privateKey));
+    final readinessPlan = _readinessPlan(
+      run: run,
+      manifestDigest: manifestDigest,
+      planId: readinessPlanId,
+      intent: readinessIntent,
+      reviewProtocol: readinessReviewProtocol,
+      minBlindedPairwisePreferenceDecisions:
+          readinessMinBlindedPairwisePreferenceDecisions,
+      minVotes: readinessMinVotes,
+      quorumFraction: readinessQuorumFraction,
+      comparisons: readinessComparisons,
+      judgeManifestDigest: EvalProvenance.digestJson(judgeManifest),
+      privateKeyDigest: privateKeyDigest,
+    );
+    final readinessPlanFile = File(
+      '${privateDir.path}/pairwise_readiness_plan.json',
+    );
+    await readinessPlanFile.writeAsString(
+      _encoder.convert(readinessPlan.toJson()),
+    );
+    final readinessRegistrationFile = await writer
+        .writePairwiseReadinessPlanRegistration(
+          EvalPairwiseReadinessPlanRegistration(
+            runId: run.manifest.runId,
+            sourceManifestDigest: manifestDigest,
+            evidence: readinessPlan.toManifestEvidence(),
+          ),
+          overwrite: overwrite,
+        );
 
     return EvalBlindedPairwiseExportResult(
       judgeDir: judgeDir,
       privateDir: privateDir,
       judgeManifestFile: judgeManifestFile,
       privateKeyFile: privateKeyFile,
+      readinessPlanFile: readinessPlanFile,
+      readinessPlanRegistrationFile: readinessRegistrationFile,
       blindedPairFiles: List.unmodifiable(pairFiles),
     );
   }
@@ -492,9 +576,7 @@ abstract final class EvalBlindedPairwisePreference {
     final failures = vote.validate(
       const EvalPairwisePreferencePolicy(
         minVotes: 1,
-        requireModelIdentityBlind: true,
         requireProfileBlind: true,
-        requirePeerVoteBlind: true,
         requireTraceOrderRandomized: true,
         requireBlindedImport: true,
       ),
@@ -668,9 +750,7 @@ abstract final class EvalBlindedPairwisePreference {
     final failures = draft.validate(
       const EvalPairwisePreferencePolicy(
         minVotes: 1,
-        requireModelIdentityBlind: true,
         requireProfileBlind: true,
-        requirePeerVoteBlind: true,
         requireTraceOrderRandomized: true,
       ),
     );
@@ -790,6 +870,209 @@ abstract final class EvalBlindedPairwisePreference {
     choice: EvalPairwisePreferenceChoice.tie,
     rationale: 'axis',
   ).comparisonAxis;
+
+  static EvalPairwiseReadinessIntentComparison? _intentComparisonForPair({
+    required EvalPairwiseReviewPair pair,
+    required EvalPairwiseTraceRef optionA,
+    required EvalPairwiseTraceRef optionB,
+    required EvalPairwiseReadinessIntent? intent,
+  }) {
+    if (intent == null) return null;
+    final matches = intent.comparisons
+        .where((comparison) => comparison.pairId == pair.pairId)
+        .toList();
+    if (matches.length != 1) {
+      throw StateError(
+        'Pairwise readiness intent must contain exactly one comparison for '
+        'pairId ${pair.pairId}; found ${matches.length}.',
+      );
+    }
+    final comparison = matches.single;
+    final failures = _intentRefFailures(
+      comparison: comparison,
+      optionA: optionA,
+      optionB: optionB,
+    );
+    if (failures.isNotEmpty) {
+      throw StateError(
+        'Pairwise readiness intent comparison ${comparison.intentKey} does '
+        'not match exported pair ${pair.pairId}: ${failures.join('; ')}',
+      );
+    }
+    return comparison;
+  }
+
+  static List<String> _intentRefFailures({
+    required EvalPairwiseReadinessIntentComparison comparison,
+    required EvalPairwiseTraceRef optionA,
+    required EvalPairwiseTraceRef optionB,
+  }) => comparison.validateTraceRefs(optionA: optionA, optionB: optionB);
+
+  static String _comparisonKey(
+    EvalPairwiseTraceRef optionA,
+    EvalPairwiseTraceRef optionB,
+  ) => EvalPairwisePreferenceVote(
+    voteId: 'comparison-key',
+    optionA: optionA,
+    optionB: optionB,
+    reviewerId: 'comparison-key',
+    reviewerKind: EvalPairwiseReviewerKind.human,
+    promptDigest: EvalProvenance.digestText('comparison-key'),
+    calibrationSetVersion: 'comparison-key',
+    profileVisible: false,
+    modelIdentityVisible: false,
+    peerVotesVisible: false,
+    traceOrderRandomized: true,
+    choice: EvalPairwisePreferenceChoice.tie,
+    rationale: 'comparison key',
+  ).comparisonKey;
+
+  static EvalPairwiseReadinessPlan _readinessPlan({
+    required EvalRunArtifacts run,
+    required String manifestDigest,
+    required String? planId,
+    required EvalPairwiseReadinessIntent? intent,
+    required EvalPairwiseReadinessReviewProtocol? reviewProtocol,
+    required int? minBlindedPairwisePreferenceDecisions,
+    required int minVotes,
+    required double quorumFraction,
+    required List<EvalPairwiseReadinessComparison> comparisons,
+    required String judgeManifestDigest,
+    required String privateKeyDigest,
+  }) {
+    final resolvedPlanId = planId?.trim();
+    final resolvedIntent = intent;
+    final plan = EvalPairwiseReadinessPlan(
+      planId:
+          resolvedIntent?.planId ??
+          (resolvedPlanId == null || resolvedPlanId.isEmpty
+              ? 'pairwise-readiness-${run.manifest.runId}'
+              : resolvedPlanId),
+      baseReadinessPolicy: 'modelClassTuning',
+      scenarioSetDigest: run.manifest.scenarioSetDigest,
+      profileSetDigest: run.manifest.profileSetDigest,
+      profileBindingSetDigest: run.manifest.profileBindingSetDigest,
+      manifestDigest: manifestDigest,
+      minBlindedPairwisePreferenceDecisions:
+          resolvedIntent?.minBlindedPairwisePreferenceDecisions ??
+          minBlindedPairwisePreferenceDecisions ??
+          comparisons.length,
+      comparisons: List.unmodifiable(comparisons),
+      intent: resolvedIntent,
+      reviewProtocol:
+          resolvedIntent?.reviewProtocol ??
+          reviewProtocol ??
+          defaultReadinessReviewProtocol(),
+      importBinding: EvalPairwiseReadinessImportBinding(
+        judgeManifestDigest: judgeManifestDigest,
+        privateKeyDigest: privateKeyDigest,
+      ),
+      minVotes: resolvedIntent?.minVotes ?? minVotes,
+      quorumFraction: resolvedIntent?.quorumFraction ?? quorumFraction,
+      notes: 'Generated by blinded pairwise export before preference import.',
+    );
+    final failures = plan.validate();
+    if (failures.isNotEmpty) {
+      throw StateError(
+        'Invalid generated pairwise readiness plan: ${failures.join('; ')}',
+      );
+    }
+    return plan;
+  }
+
+  static void _validateReadinessPlanSettings({
+    required int pairCount,
+    required String? planId,
+    required EvalPairwiseReadinessIntent? intent,
+    required EvalPairwiseReadinessReviewProtocol? reviewProtocol,
+    required int? minBlindedPairwisePreferenceDecisions,
+    required int minVotes,
+    required double quorumFraction,
+  }) {
+    if (planId != null && planId.trim().isEmpty) {
+      throw StateError('Pairwise readiness plan id must not be blank.');
+    }
+    if (intent != null) {
+      if (planId != null &&
+          planId.trim().isNotEmpty &&
+          planId != intent.planId) {
+        throw StateError(
+          'Pairwise readiness plan id "$planId" does not match intent '
+          '"${intent.planId}".',
+        );
+      }
+      if (reviewProtocol != null &&
+          reviewProtocol.fingerprint != intent.reviewProtocol.fingerprint) {
+        throw StateError(
+          'Pairwise readiness review protocol does not match intent.',
+        );
+      }
+      if (minBlindedPairwisePreferenceDecisions != null &&
+          minBlindedPairwisePreferenceDecisions !=
+              intent.minBlindedPairwisePreferenceDecisions) {
+        throw StateError(
+          'Pairwise readiness min decisions does not match intent.',
+        );
+      }
+      if (minVotes != intent.minVotes) {
+        throw StateError('Pairwise readiness min votes does not match intent.');
+      }
+      if (quorumFraction != intent.quorumFraction) {
+        throw StateError(
+          'Pairwise readiness quorum fraction does not match intent.',
+        );
+      }
+      if (pairCount != intent.comparisons.length) {
+        throw StateError(
+          'Pairwise readiness pair count $pairCount does not match intent '
+          'comparison count ${intent.comparisons.length}.',
+        );
+      }
+    }
+    if (minBlindedPairwisePreferenceDecisions != null) {
+      if (minBlindedPairwisePreferenceDecisions < 1) {
+        throw StateError(
+          'Pairwise readiness min decisions must be at least 1.',
+        );
+      }
+      if (minBlindedPairwisePreferenceDecisions > pairCount) {
+        throw StateError(
+          'Pairwise readiness min decisions '
+          '$minBlindedPairwisePreferenceDecisions cannot exceed pair count '
+          '$pairCount.',
+        );
+      }
+    }
+    if (minVotes < 1) {
+      throw StateError('Pairwise readiness min votes must be at least 1.');
+    }
+    if (!quorumFraction.isFinite || quorumFraction <= 0 || quorumFraction > 1) {
+      throw StateError(
+        'Pairwise readiness quorum fraction must be > 0 and <= 1.',
+      );
+    }
+    if (reviewProtocol == null) return;
+    final failures = reviewProtocol.validate();
+    if (failures.isNotEmpty) {
+      throw StateError(
+        'Invalid pairwise readiness review protocol: ${failures.join('; ')}',
+      );
+    }
+  }
+
+  static EvalPairwiseReadinessReviewProtocol defaultReadinessReviewProtocol() =>
+      EvalPairwiseReadinessReviewProtocol(
+        reviewerKind: EvalPairwiseReviewerKind.human,
+        reviewerModel: null,
+        promptDigest: EvalProvenance.digestText(
+          'lotti-pairwise-preference-review-v1',
+        ),
+        calibrationSetVersion: 'pairwise-human-gold-v1',
+        profileVisible: false,
+        modelIdentityVisible: false,
+        peerVotesVisible: false,
+        traceOrderRandomized: true,
+      );
 
   static Map<String, String> _aliases(
     Iterable<String> values, {

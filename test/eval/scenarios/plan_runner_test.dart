@@ -32,6 +32,21 @@ const _protectedTraceAck = String.fromEnvironment(
   'LOTTI_EVAL_PROTECTED_TRACE_ACK',
 );
 const _promotionPlanPath = String.fromEnvironment('EVAL_PROMOTION_PLAN');
+const _pairwiseReadinessIntentPath = String.fromEnvironment(
+  'EVAL_PAIRWISE_READINESS_INTENT',
+);
+const _pairwiseReadinessPlanPath = String.fromEnvironment(
+  'EVAL_PAIRWISE_READINESS_PLAN',
+);
+const _requiredCapabilities = String.fromEnvironment(
+  'EVAL_REQUIRED_CAPABILITIES',
+);
+const _useCaseRunWorkOrderPath = String.fromEnvironment(
+  'EVAL_USE_CASE_RUN_WORK_ORDER',
+);
+const _useCaseRunWorkOrderBatchRefs = String.fromEnvironment(
+  'EVAL_USE_CASE_RUN_WORK_ORDER_BATCH_REFS',
+);
 
 void main() {
   final settings = LiveEvalSettings.fromEnvironment(Platform.environment);
@@ -47,6 +62,14 @@ void main() {
       final target = LiveEvalTarget(settings: settings);
       addTearDown(target.dispose);
       final promotionPlan = _readPromotionPlanFromDefine();
+      final pairwiseReadinessIntent = _readPairwiseReadinessIntentFromDefine();
+      final pairwiseReadinessPlan = _readPairwiseReadinessPlanFromDefine();
+      final requiredPrimaryCapabilityIds =
+          _requiredPrimaryCapabilityIdsFromDefine();
+      final workOrderLaunchEvidence = _readWorkOrderLaunchEvidenceFromDefine(
+        requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+        promptVariants: promptVariantCatalog.variants,
+      );
 
       final plan =
           EvalMatrixRunner(
@@ -59,6 +82,10 @@ void main() {
             agentDirectiveVariants: promptVariantCatalog.variants,
             scenarioCatalogEvidence: catalog.evidence,
             promotionPlan: promotionPlan,
+            pairwiseReadinessIntent: pairwiseReadinessIntent,
+            pairwiseReadinessPlan: pairwiseReadinessPlan,
+            requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+            useCaseWorkOrderLaunchEvidence: workOrderLaunchEvidence,
           );
 
       // ignore: avoid_print
@@ -117,6 +144,53 @@ void main() {
         protectedTraceAck: '1',
       ),
       returnsNormally,
+    );
+  });
+
+  test('use-case run work-order read errors omit private paths', () {
+    final tempDir = Directory.systemTemp.createTempSync(
+      'lotti-plan-work-order-',
+    );
+    addTearDown(() async {
+      if (tempDir.existsSync()) await tempDir.delete(recursive: true);
+    });
+    final nonObjectFile = File('${tempDir.path}/work-order.json')
+      ..writeAsStringSync('[]');
+    final missingFile = File('${tempDir.path}/missing-work-order.json');
+
+    expect(
+      () => _readWorkOrderLaunchEvidenceFromFile(
+        missingFile,
+        requiredPrimaryCapabilityIds: const {'task.workflow'},
+        promptVariants: const [EvalAgentDirectiveVariant()],
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          allOf([
+            contains('Missing use-case run work order'),
+            isNot(contains(missingFile.path)),
+          ]),
+        ),
+      ),
+    );
+    expect(
+      () => _readWorkOrderLaunchEvidenceFromFile(
+        nonObjectFile,
+        requiredPrimaryCapabilityIds: const {'task.workflow'},
+        promptVariants: const [EvalAgentDirectiveVariant()],
+      ),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          allOf([
+            contains('Use-case run work order JSON must be an object'),
+            isNot(contains(nonObjectFile.path)),
+          ]),
+        ),
+      ),
     );
   });
 }
@@ -187,6 +261,119 @@ EvalPromotionPlan? _readPromotionPlanFromDefine() {
     throw StateError('Invalid promotion plan ${file.path}: ${error.message}');
   }
 }
+
+EvalPairwiseReadinessIntent? _readPairwiseReadinessIntentFromDefine() {
+  final path = _pairwiseReadinessIntentPath.trim();
+  if (path.isEmpty) return null;
+  final file = File(path);
+  if (!file.existsSync()) {
+    throw StateError('Missing pairwise readiness intent: ${file.path}');
+  }
+  final decoded = jsonDecode(file.readAsStringSync());
+  if (decoded is! Map<String, dynamic>) {
+    throw StateError(
+      'Pairwise readiness intent JSON must be an object: ${file.path}',
+    );
+  }
+  try {
+    return EvalPairwiseReadinessIntent.fromJson(decoded);
+  } on FormatException catch (error) {
+    throw StateError(
+      'Invalid pairwise readiness intent ${file.path}: ${error.message}',
+    );
+  }
+}
+
+EvalPairwiseReadinessPlan? _readPairwiseReadinessPlanFromDefine() {
+  final path = _pairwiseReadinessPlanPath.trim();
+  if (path.isEmpty) return null;
+  final file = File(path);
+  if (!file.existsSync()) {
+    throw StateError('Missing pairwise readiness plan: ${file.path}');
+  }
+  final decoded = jsonDecode(file.readAsStringSync());
+  if (decoded is! Map<String, dynamic>) {
+    throw StateError(
+      'Pairwise readiness plan JSON must be an object: ${file.path}',
+    );
+  }
+  try {
+    return EvalPairwiseReadinessPlan.fromJson(decoded);
+  } on FormatException catch (error) {
+    throw StateError(
+      'Invalid pairwise readiness plan ${file.path}: ${error.message}',
+    );
+  }
+}
+
+EvalUseCaseWorkOrderLaunchEvidence? _readWorkOrderLaunchEvidenceFromDefine({
+  required Set<String> requiredPrimaryCapabilityIds,
+  required List<EvalAgentDirectiveVariant> promptVariants,
+}) {
+  final path = _useCaseRunWorkOrderPath.trim();
+  if (path.isEmpty) return null;
+  return _readWorkOrderLaunchEvidenceFromFile(
+    File(path),
+    requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+    promptVariants: promptVariants,
+  );
+}
+
+EvalUseCaseWorkOrderLaunchEvidence _readWorkOrderLaunchEvidenceFromFile(
+  File file, {
+  required Set<String> requiredPrimaryCapabilityIds,
+  required List<EvalAgentDirectiveVariant> promptVariants,
+}) {
+  if (!file.existsSync()) {
+    throw StateError('Missing use-case run work order.');
+  }
+  final decoded = _readJsonWithoutPath(file);
+  if (decoded is! Map<String, dynamic>) {
+    throw StateError('Use-case run work order JSON must be an object.');
+  }
+  return EvalUseCaseNextRunWorkOrder.launchEvidenceForRun(
+    workOrder: decoded,
+    requiredPrimaryCapabilityIds: requiredPrimaryCapabilityIds,
+    promptVariantNames: [for (final variant in promptVariants) variant.name],
+    workOrderBatchRefs: _csv(_useCaseRunWorkOrderBatchRefs),
+  );
+}
+
+Object? _readJsonWithoutPath(File file) {
+  try {
+    return jsonDecode(file.readAsStringSync());
+  } on FileSystemException catch (error) {
+    throw StateError(
+      'Unable to read use-case run work order: ${error.message}.',
+    );
+  } on FormatException catch (error) {
+    throw StateError('Invalid use-case run work order JSON: ${error.message}');
+  }
+}
+
+Set<String> _requiredPrimaryCapabilityIdsFromDefine({
+  String value = _requiredCapabilities,
+}) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return const <String>{};
+  final ids = <String>{};
+  for (final rawPart in value.split(',')) {
+    final part = rawPart.trim();
+    if (part.isEmpty) {
+      throw StateError(
+        'EVAL_REQUIRED_CAPABILITIES must contain non-empty comma-separated '
+        'capability ids.',
+      );
+    }
+    ids.add(part);
+  }
+  return Set.unmodifiable(ids);
+}
+
+List<String> _csv(String value) => [
+  for (final part in value.split(',').map((part) => part.trim()))
+    if (part.isNotEmpty) part,
+];
 
 void _guardProtectedTraceOutput(
   EvalScenarioCatalog catalog,

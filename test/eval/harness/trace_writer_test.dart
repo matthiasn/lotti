@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 
 import '../harness/eval_harness.dart';
 import '../scenarios/eval_scenarios.dart';
+import 'eval_profile_config.dart';
 
 void main() {
   test('rejects trace files that embed verdicts', () async {
@@ -310,6 +311,129 @@ void main() {
     expect(run.artifactNames, contains('vote-1.preference.json'));
     expect(summary.status, EvalPairwisePreferenceStatus.optionBWins);
     expect(summary.preferredTrace?.profileName, kFrontierProfile.name);
+  });
+
+  test('passes raw pairwise trace refs into tuning readiness', () async {
+    final dir = await Directory.systemTemp.createTemp(
+      'lotti-pairwise-readiness-',
+    );
+    addTearDown(() async {
+      if (dir.existsSync()) await dir.delete(recursive: true);
+    });
+    const baselineProfile = EvalProfile(
+      name: 'trace-writer-baseline',
+      isLocal: true,
+      modelClass: EvalModelClass.localSmall,
+      modelId: 'trace-writer-baseline-model',
+      tokenBudget: 6000,
+    );
+    const candidateProfile = EvalProfile(
+      name: 'trace-writer-candidate',
+      isLocal: false,
+      modelClass: EvalModelClass.frontierFast,
+      modelId: 'trace-writer-candidate-model',
+      tokenBudget: 60000,
+    );
+    const profiles = [baselineProfile, candidateProfile];
+    final writer = TraceWriter(runsRoot: dir.path);
+    final manifest = _validManifest(
+      'run-1',
+      profiles: profiles,
+      pairwiseReadinessPlanEvidence: _pairwiseReadinessPlanEvidence(
+        profiles: profiles,
+      ),
+    );
+    await writer.writeManifest(manifest);
+    final baselineTrace = _validTrace(
+      'run-1',
+      profile: baselineProfile,
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final candidateTrace = _validTrace(
+      'run-1',
+      profile: candidateProfile,
+      manifestDigest: manifest.manifestDigest!,
+    );
+    final baselineFile = await writer.writeTrace(baselineTrace);
+    final candidateFile = await writer.writeTrace(candidateTrace);
+    await writer.writeVerdict(
+      baselineFile,
+      _verdict(goalAttainment: 5, quality: 5, efficiency: 4, pass: true),
+    );
+    await writer.writeVerdict(
+      candidateFile,
+      _verdict(goalAttainment: 5, quality: 5, efficiency: 5, pass: true),
+    );
+    final optionA = EvalPairwiseTraceRef.fromTrace(
+      candidateTrace,
+      traceDigest: await writer.traceDigest(candidateFile),
+    );
+    final optionB = EvalPairwiseTraceRef.fromTrace(
+      baselineTrace,
+      traceDigest: await writer.traceDigest(baselineFile),
+    );
+    final vote =
+        _preferenceVote(
+          voteId: 'vote-readiness',
+          optionA: optionA,
+          optionB: optionB,
+        ).withBlindedImport(
+          BlindedPairwisePreferenceImportRecord(
+            blindedPairId: EvalProvenance.digestText(
+              'blind:${optionA.artifactKey}:${optionB.artifactKey}',
+            ),
+            reviewPayloadDigest: EvalProvenance.digestText(
+              'review:${optionA.artifactKey}:${optionB.artifactKey}',
+            ),
+            judgeManifestDigest: EvalProvenance.digestText(
+              'pairwise-readiness-judge-manifest',
+            ),
+            privateKeyDigest: EvalProvenance.digestText(
+              'pairwise-readiness-private-key',
+            ),
+            sourceManifestDigest: manifest.manifestDigest!,
+            optionARawTraceDigest: optionA.traceDigest,
+            optionBRawTraceDigest: optionB.traceDigest,
+          ),
+        );
+    await writer.writePairwisePreferenceVote(vote);
+
+    final run = await writer.readRun('run-1');
+    final pairwiseArtifacts = await writer.readPairwisePreferenceArtifacts(
+      'run-1',
+      traces: run.traces,
+    );
+    final readiness = EvalTuningReadiness.assess(
+      traces: run.traces,
+      scenarios: [taskReleaseNotesScenario],
+      profiles: profiles,
+      manifest: run.manifest,
+      pairwisePreferenceVotes: pairwiseArtifacts.votes,
+      pairwiseTraceRefsByKey: pairwiseArtifacts.traceRefsByKey,
+      policy: EvalTuningPolicy(
+        name: 'traceWriterPairwiseArtifacts',
+        requireAllVerdicts: true,
+        minBlindedPairwisePreferenceDecisions: 1,
+        requiredBlindedPairwisePreferenceComparisonKeys: {vote.comparisonKey},
+        blindedPairwisePreferencePolicy: const EvalPairwisePreferencePolicy(
+          minVotes: 1,
+          quorumFraction: 1,
+          requireProfileBlind: true,
+          requireTraceOrderRandomized: true,
+          requireBlindedImport: true,
+        ),
+      ),
+    );
+
+    expect(pairwiseArtifacts.votes.map((vote) => vote.voteId), [
+      'vote-readiness',
+    ]);
+    expect(
+      pairwiseArtifacts.traceRefsByKey[optionA.traceKey]?.traceDigest,
+      optionA.traceDigest,
+    );
+    expect(readiness.ready, isTrue, reason: readiness.failures.join('\n'));
+    expect(readiness.pairwisePreferenceEvidence?.decisionCount, 1);
   });
 
   test('binds pairwise preferences for non-default prompt variants', () async {
@@ -728,6 +852,7 @@ EvalRunManifest _validManifest(
   List<EvalAgentDirectiveVariant> agentDirectiveVariants = const [
     EvalAgentDirectiveVariant(),
   ],
+  EvalPairwiseReadinessPlanEvidence? pairwiseReadinessPlanEvidence,
 }) => EvalProvenance.captureRunManifest(
   runId: runId,
   targetName: 'trace-writer-test',
@@ -735,9 +860,30 @@ EvalRunManifest _validManifest(
   scenarios: [taskReleaseNotesScenario],
   profiles: profiles,
   agentDirectiveVariants: agentDirectiveVariants,
+  pairwiseReadinessPlanEvidence: pairwiseReadinessPlanEvidence,
   createdAt: DateTime(2026, 6, 10, 12),
   command: 'trace-writer-test',
   environment: const <String, String>{},
+);
+
+EvalPairwiseReadinessPlanEvidence _pairwiseReadinessPlanEvidence({
+  required List<EvalProfile> profiles,
+}) => EvalPairwiseReadinessPlanEvidence(
+  planId: 'trace-writer-pairwise-plan',
+  baseReadinessPolicy: 'modelClassTuning',
+  scenarioSetDigest: EvalProvenance.scenarioSetDigest([
+    taskReleaseNotesScenario,
+  ]),
+  profileSetDigest: EvalProvenance.profileSetDigest(profiles),
+  profileBindingSetDigest: EvalProvenance.profileBindingSetDigest([
+    for (final profile in profiles)
+      evalProfileConfig(profile).toExecutionBinding(),
+  ]),
+  minBlindedPairwisePreferenceDecisions: 1,
+  comparisonCount: 1,
+  pairwiseReadinessPlanSubjectDigest: EvalProvenance.digestText(
+    'trace-writer-pairwise-plan-subject',
+  ),
 );
 
 EvalTrace _validTrace(

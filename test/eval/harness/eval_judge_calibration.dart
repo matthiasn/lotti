@@ -28,6 +28,16 @@ class JudgeCalibrationHumanReview {
   });
 
   factory JudgeCalibrationHumanReview.fromJson(Map<String, dynamic> json) {
+    _rejectUnknownFields(json, 'independentReviews[]', const {
+      'reviewer',
+      'expectedPass',
+      'goalAttainment',
+      'quality',
+      'efficiency',
+      'blindToJudgeVerdict',
+      'blindToModelIdentity',
+      'blindToPeerVotes',
+    });
     final review = JudgeCalibrationHumanReview(
       reviewer: ((json['reviewer'] as String?) ?? '').trim(),
       expectedPass: json['expectedPass'] as bool,
@@ -92,19 +102,43 @@ class EvalTraceKey {
     cascadeWake: trace.cascadeWake,
   );
 
-  factory EvalTraceKey.fromJson(Map<String, dynamic> json) => EvalTraceKey(
-    scenarioId: json['scenarioId'] as String,
-    profileName: json['profileName'] as String,
-    agentDirectiveVariantName:
-        (json['agentDirectiveVariantName'] as String?) ??
-        const EvalAgentDirectiveVariant().name,
-    trialIndex: (json['trialIndex'] as num).toInt(),
-    cascadeWake: json['cascadeWake'] == null
+  factory EvalTraceKey.fromJson(Map<String, dynamic> json) {
+    _rejectUnknownFields(json, 'key', const {
+      'scenarioId',
+      'profileName',
+      'agentDirectiveVariantName',
+      'trialIndex',
+      'cascadeWake',
+    });
+    final rawCascadeWake = json['cascadeWake'];
+    final rawCascadeWakeJson = rawCascadeWake == null
         ? null
-        : EvalTraceCascadeWake.fromJson(
-            json['cascadeWake'] as Map<String, dynamic>,
-          ),
-  );
+        : rawCascadeWake as Map<String, dynamic>;
+    if (rawCascadeWake != null) {
+      _rejectUnknownFields(
+        rawCascadeWakeJson!,
+        'key.cascadeWake',
+        const {
+          'cascadeId',
+          'wakeIndex',
+          'wakeCount',
+        },
+      );
+    }
+    return EvalTraceKey(
+      scenarioId: json['scenarioId'] as String,
+      profileName: json['profileName'] as String,
+      agentDirectiveVariantName:
+          (json['agentDirectiveVariantName'] as String?) ??
+          const EvalAgentDirectiveVariant().name,
+      trialIndex: (json['trialIndex'] as num).toInt(),
+      cascadeWake: rawCascadeWakeJson == null
+          ? null
+          : EvalTraceCascadeWake.fromJson(
+              rawCascadeWakeJson,
+            ),
+    );
+  }
 
   final String scenarioId;
   final String profileName;
@@ -155,6 +189,30 @@ class JudgeCalibrationLabel {
   });
 
   factory JudgeCalibrationLabel.fromJson(Map<String, dynamic> json) {
+    _rejectUnknownFields(json, 'labels[]', const {
+      'key',
+      'scenarioDigest',
+      'profileDigest',
+      'agentDirectiveVariantDigest',
+      'traceDigest',
+      'verdictDigest',
+      'expectedPass',
+      'goalAttainmentMin',
+      'goalAttainmentMax',
+      'qualityMin',
+      'qualityMax',
+      'efficiencyMin',
+      'efficiencyMax',
+      'goalAttainment',
+      'quality',
+      'efficiency',
+      'scoreTolerance',
+      'labeler',
+      'labelerCount',
+      'adjudicationStatus',
+      'rationale',
+      'independentReviews',
+    });
     final rawKey = json['key'] as Map<String, dynamic>;
     if (!rawKey.containsKey('agentDirectiveVariantName')) {
       throw const FormatException(
@@ -329,12 +387,625 @@ class JudgeCalibrationLabel {
   };
 }
 
+/// Non-secret run envelope copied from a generated human-label template.
+///
+/// This binds a completed calibration set to the manifest and catalog bundle
+/// that produced the trace/verdict artifacts under review, without copying raw
+/// trace payloads or protected scenario ids into the label file.
+class JudgeCalibrationSourceRun {
+  const JudgeCalibrationSourceRun({
+    required this.runId,
+    required this.scenarioSetDigest,
+    required this.profileSetDigest,
+    required this.agentDirectiveVariantSetDigest,
+    required this.promptDigest,
+    required this.toolSchemaDigest,
+    required this.traceSchemaVersion,
+    this.manifestDigest,
+    this.scenarioCatalogEvidence,
+  });
+
+  factory JudgeCalibrationSourceRun.fromManifest(EvalRunManifest manifest) {
+    return JudgeCalibrationSourceRun(
+      runId: manifest.runId,
+      manifestDigest: manifest.manifestDigest,
+      scenarioSetDigest: manifest.scenarioSetDigest,
+      profileSetDigest: manifest.profileSetDigest,
+      agentDirectiveVariantSetDigest: manifest.agentDirectiveVariantSetDigest,
+      promptDigest: manifest.promptDigest,
+      toolSchemaDigest: manifest.toolSchemaDigest,
+      traceSchemaVersion: manifest.traceSchemaVersion,
+      scenarioCatalogEvidence: manifest.scenarioCatalogEvidence == null
+          ? null
+          : JudgeCalibrationSourceRunCatalogEvidence.fromCatalogEvidence(
+              manifest.scenarioCatalogEvidence!,
+            ),
+    );
+  }
+
+  factory JudgeCalibrationSourceRun.fromJson(Map<String, dynamic> json) {
+    _rejectUnknownFields(json, 'sourceRun', const {
+      'runId',
+      'manifestDigest',
+      'scenarioSetDigest',
+      'profileSetDigest',
+      'agentDirectiveVariantSetDigest',
+      'promptDigest',
+      'toolSchemaDigest',
+      'traceSchemaVersion',
+      'scenarioCatalogEvidence',
+    });
+    final sourceRun = JudgeCalibrationSourceRun(
+      runId: _requiredSourceString(json, 'runId'),
+      manifestDigest: _optionalSourceString(json, 'manifestDigest'),
+      scenarioSetDigest: _requiredSourceString(json, 'scenarioSetDigest'),
+      profileSetDigest: _requiredSourceString(json, 'profileSetDigest'),
+      agentDirectiveVariantSetDigest: _requiredSourceString(
+        json,
+        'agentDirectiveVariantSetDigest',
+      ),
+      promptDigest: _requiredSourceString(json, 'promptDigest'),
+      toolSchemaDigest: _requiredSourceString(json, 'toolSchemaDigest'),
+      traceSchemaVersion: _requiredSourceInt(json, 'traceSchemaVersion'),
+      scenarioCatalogEvidence: json['scenarioCatalogEvidence'] == null
+          ? null
+          : JudgeCalibrationSourceRunCatalogEvidence.fromJson(
+              json['scenarioCatalogEvidence'] as Map<String, dynamic>,
+            ),
+    )..validate();
+    return sourceRun;
+  }
+
+  final String runId;
+  final String? manifestDigest;
+  final String scenarioSetDigest;
+  final String profileSetDigest;
+  final String agentDirectiveVariantSetDigest;
+  final String promptDigest;
+  final String toolSchemaDigest;
+  final int traceSchemaVersion;
+  final JudgeCalibrationSourceRunCatalogEvidence? scenarioCatalogEvidence;
+
+  void validate() {
+    if (runId.trim().isEmpty) {
+      throw const FormatException('sourceRun.runId must not be empty');
+    }
+    final manifestDigest = this.manifestDigest;
+    if (manifestDigest != null) {
+      _validateDigest(label: 'sourceRun.manifestDigest', value: manifestDigest);
+    }
+    _validateDigest(
+      label: 'sourceRun.scenarioSetDigest',
+      value: scenarioSetDigest,
+    );
+    _validateDigest(
+      label: 'sourceRun.profileSetDigest',
+      value: profileSetDigest,
+    );
+    _validateDigest(
+      label: 'sourceRun.agentDirectiveVariantSetDigest',
+      value: agentDirectiveVariantSetDigest,
+    );
+    _validateDigest(label: 'sourceRun.promptDigest', value: promptDigest);
+    _validateDigest(
+      label: 'sourceRun.toolSchemaDigest',
+      value: toolSchemaDigest,
+    );
+    if (traceSchemaVersion < 1) {
+      throw const FormatException(
+        'sourceRun.traceSchemaVersion must be at least 1',
+      );
+    }
+    scenarioCatalogEvidence?.validate();
+  }
+
+  List<String> validateManifestBinding(EvalRunManifest? manifest) {
+    if (manifest == null) {
+      return const [
+        'calibration sourceRun cannot be checked without run manifest',
+      ];
+    }
+    final failures = <String>[];
+    void compare(String field, Object? actual, Object? expected) {
+      if (actual == expected) return;
+      failures.add(
+        'calibration sourceRun $field is $actual, expected $expected',
+      );
+    }
+
+    compare('runId', runId, manifest.runId);
+    final manifestDigest = this.manifestDigest;
+    if (manifestDigest == null) {
+      failures.add('calibration sourceRun manifestDigest is missing');
+    } else {
+      compare('manifestDigest', manifestDigest, manifest.manifestDigest);
+    }
+    compare('scenarioSetDigest', scenarioSetDigest, manifest.scenarioSetDigest);
+    compare('profileSetDigest', profileSetDigest, manifest.profileSetDigest);
+    compare(
+      'agentDirectiveVariantSetDigest',
+      agentDirectiveVariantSetDigest,
+      manifest.agentDirectiveVariantSetDigest,
+    );
+    compare('promptDigest', promptDigest, manifest.promptDigest);
+    compare('toolSchemaDigest', toolSchemaDigest, manifest.toolSchemaDigest);
+    compare(
+      'traceSchemaVersion',
+      traceSchemaVersion,
+      manifest.traceSchemaVersion,
+    );
+
+    final expectedCatalogEvidence = manifest.scenarioCatalogEvidence == null
+        ? null
+        : JudgeCalibrationSourceRunCatalogEvidence.fromCatalogEvidence(
+            manifest.scenarioCatalogEvidence!,
+          );
+    final actualCatalogEvidence = scenarioCatalogEvidence;
+    if (expectedCatalogEvidence == null) {
+      if (actualCatalogEvidence != null) {
+        failures.add(
+          'calibration sourceRun scenarioCatalogEvidence is present but '
+          'manifest has none',
+        );
+      }
+    } else if (actualCatalogEvidence == null) {
+      failures.add('calibration sourceRun scenarioCatalogEvidence is missing');
+    } else {
+      failures.addAll(
+        actualCatalogEvidence.validateBinding(expectedCatalogEvidence),
+      );
+    }
+    return failures;
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'runId': runId,
+    if (manifestDigest != null) 'manifestDigest': manifestDigest,
+    'scenarioSetDigest': scenarioSetDigest,
+    'profileSetDigest': profileSetDigest,
+    'agentDirectiveVariantSetDigest': agentDirectiveVariantSetDigest,
+    'promptDigest': promptDigest,
+    'toolSchemaDigest': toolSchemaDigest,
+    'traceSchemaVersion': traceSchemaVersion,
+    if (scenarioCatalogEvidence != null)
+      'scenarioCatalogEvidence': scenarioCatalogEvidence!.toJson(),
+  };
+}
+
+class JudgeCalibrationSourceRunCatalogEvidence {
+  const JudgeCalibrationSourceRunCatalogEvidence({
+    required this.scenarioSetDigest,
+    required this.publicScenarioCount,
+    required this.externalScenarioCount,
+    required this.protectedHoldout,
+    required this.protectedScenarioCount,
+    required this.protectedHoldoutScenarioCount,
+    this.externalCatalogDigest,
+  });
+
+  factory JudgeCalibrationSourceRunCatalogEvidence.fromCatalogEvidence(
+    EvalScenarioCatalogEvidence evidence,
+  ) {
+    return JudgeCalibrationSourceRunCatalogEvidence(
+      scenarioSetDigest: evidence.scenarioSetDigest,
+      publicScenarioCount: evidence.publicScenarioCount,
+      externalScenarioCount: evidence.externalScenarioCount,
+      externalCatalogDigest: evidence.externalCatalogDigest,
+      protectedHoldout: evidence.protectedHoldout,
+      protectedScenarioCount: evidence.protectedScenarioIds.length,
+      protectedHoldoutScenarioCount:
+          evidence.protectedHoldoutScenarioIds.length,
+    );
+  }
+
+  factory JudgeCalibrationSourceRunCatalogEvidence.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    _rejectUnknownFields(json, 'sourceRun.scenarioCatalogEvidence', const {
+      'scenarioSetDigest',
+      'publicScenarioCount',
+      'externalScenarioCount',
+      'externalCatalogDigest',
+      'protectedHoldout',
+      'protectedScenarioCount',
+      'protectedHoldoutScenarioCount',
+    });
+    final evidence = JudgeCalibrationSourceRunCatalogEvidence(
+      scenarioSetDigest: _requiredSourceString(json, 'scenarioSetDigest'),
+      publicScenarioCount: _requiredSourceInt(json, 'publicScenarioCount'),
+      externalScenarioCount: _requiredSourceInt(json, 'externalScenarioCount'),
+      externalCatalogDigest: _optionalSourceString(
+        json,
+        'externalCatalogDigest',
+      ),
+      protectedHoldout: json['protectedHoldout'] as bool,
+      protectedScenarioCount: _requiredSourceInt(
+        json,
+        'protectedScenarioCount',
+      ),
+      protectedHoldoutScenarioCount: _requiredSourceInt(
+        json,
+        'protectedHoldoutScenarioCount',
+      ),
+    )..validate();
+    return evidence;
+  }
+
+  final String scenarioSetDigest;
+  final int publicScenarioCount;
+  final int externalScenarioCount;
+  final String? externalCatalogDigest;
+  final bool protectedHoldout;
+  final int protectedScenarioCount;
+  final int protectedHoldoutScenarioCount;
+
+  void validate() {
+    _validateDigest(
+      label: 'sourceRun.scenarioCatalogEvidence.scenarioSetDigest',
+      value: scenarioSetDigest,
+    );
+    final externalCatalogDigest = this.externalCatalogDigest;
+    if (externalCatalogDigest != null) {
+      _validateDigest(
+        label: 'sourceRun.scenarioCatalogEvidence.externalCatalogDigest',
+        value: externalCatalogDigest,
+      );
+    }
+    void nonNegative(String field, int value) {
+      if (value < 0) {
+        throw FormatException(
+          'sourceRun.scenarioCatalogEvidence.$field must be at least 0',
+        );
+      }
+    }
+
+    nonNegative('publicScenarioCount', publicScenarioCount);
+    nonNegative('externalScenarioCount', externalScenarioCount);
+    nonNegative('protectedScenarioCount', protectedScenarioCount);
+    nonNegative(
+      'protectedHoldoutScenarioCount',
+      protectedHoldoutScenarioCount,
+    );
+  }
+
+  List<String> validateBinding(
+    JudgeCalibrationSourceRunCatalogEvidence expected,
+  ) {
+    final failures = <String>[];
+    void compare(String field, Object? actual, Object? expectedValue) {
+      if (actual == expectedValue) return;
+      failures.add(
+        'calibration sourceRun scenarioCatalogEvidence.$field is $actual, '
+        'expected $expectedValue',
+      );
+    }
+
+    compare('scenarioSetDigest', scenarioSetDigest, expected.scenarioSetDigest);
+    compare(
+      'publicScenarioCount',
+      publicScenarioCount,
+      expected.publicScenarioCount,
+    );
+    compare(
+      'externalScenarioCount',
+      externalScenarioCount,
+      expected.externalScenarioCount,
+    );
+    compare(
+      'externalCatalogDigest',
+      externalCatalogDigest,
+      expected.externalCatalogDigest,
+    );
+    compare('protectedHoldout', protectedHoldout, expected.protectedHoldout);
+    compare(
+      'protectedScenarioCount',
+      protectedScenarioCount,
+      expected.protectedScenarioCount,
+    );
+    compare(
+      'protectedHoldoutScenarioCount',
+      protectedHoldoutScenarioCount,
+      expected.protectedHoldoutScenarioCount,
+    );
+    return failures;
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'scenarioSetDigest': scenarioSetDigest,
+    'publicScenarioCount': publicScenarioCount,
+    'externalScenarioCount': externalScenarioCount,
+    if (externalCatalogDigest != null)
+      'externalCatalogDigest': externalCatalogDigest,
+    'protectedHoldout': protectedHoldout,
+    'protectedScenarioCount': protectedScenarioCount,
+    'protectedHoldoutScenarioCount': protectedHoldoutScenarioCount,
+  };
+}
+
+/// Digest-bound provenance for a bounded calibration template selection.
+///
+/// This is copied from `calibrationTemplateSelection` when humans complete a
+/// sampled label template. It contains only counts and digests, not trace text
+/// or protected scenario ids.
+class JudgeCalibrationTemplateSelectionEvidence {
+  const JudgeCalibrationTemplateSelectionEvidence({
+    required this.templateSchemaVersion,
+    required this.policy,
+    required this.maxRows,
+    required this.sourceRunDigest,
+    required this.sourceTemplateDigest,
+    required this.selectedTemplateRowsDigest,
+    required this.candidateTraceMaterialDigest,
+    required this.templateMetadataDigest,
+    required this.candidateTraceCount,
+    required this.selectedTraceCount,
+    required this.omittedTraceCount,
+    required this.requiredCoverageRows,
+    required this.candidateSetDigest,
+    required this.selectedKeyDigest,
+    required this.candidateCoverage,
+    required this.selectedCoverage,
+    required this.candidateCrossCellCoverage,
+    required this.selectedCrossCellCoverage,
+  });
+
+  factory JudgeCalibrationTemplateSelectionEvidence.fromJson(
+    Map<String, dynamic> json,
+  ) {
+    final unknown = json.keys.where(
+      (key) => !const {
+        'schemaVersion',
+        'templateSchemaVersion',
+        'policy',
+        'maxRows',
+        'sourceRunDigest',
+        'sourceTemplateDigest',
+        'selectedTemplateRowsDigest',
+        'candidateTraceMaterialDigest',
+        'templateMetadataDigest',
+        'candidateTraceCount',
+        'selectedTraceCount',
+        'omittedTraceCount',
+        'requiredCoverageRows',
+        'candidateSetDigest',
+        'selectedKeyDigest',
+        'candidateCoverage',
+        'selectedCoverage',
+        'candidateCrossCellCoverage',
+        'selectedCrossCellCoverage',
+      }.contains(key),
+    );
+    if (unknown.isNotEmpty) {
+      throw FormatException(
+        'calibrationTemplateSelection has unsupported field ${unknown.first}',
+      );
+    }
+    final schemaVersion = json['schemaVersion'];
+    if (schemaVersion != 1) {
+      throw FormatException(
+        'calibrationTemplateSelection schemaVersion must be 1, got '
+        '$schemaVersion',
+      );
+    }
+    final evidence = JudgeCalibrationTemplateSelectionEvidence(
+      templateSchemaVersion: _requiredSourceInt(
+        json,
+        'templateSchemaVersion',
+      ),
+      policy: _requiredSourceString(json, 'policy'),
+      maxRows: _requiredSourceInt(json, 'maxRows'),
+      sourceRunDigest: _requiredSourceString(json, 'sourceRunDigest'),
+      sourceTemplateDigest: _requiredSourceString(
+        json,
+        'sourceTemplateDigest',
+      ),
+      selectedTemplateRowsDigest: _requiredSourceString(
+        json,
+        'selectedTemplateRowsDigest',
+      ),
+      candidateTraceMaterialDigest: _requiredSourceString(
+        json,
+        'candidateTraceMaterialDigest',
+      ),
+      templateMetadataDigest: _requiredSourceString(
+        json,
+        'templateMetadataDigest',
+      ),
+      candidateTraceCount: _requiredSourceInt(json, 'candidateTraceCount'),
+      selectedTraceCount: _requiredSourceInt(json, 'selectedTraceCount'),
+      omittedTraceCount: _requiredSourceInt(json, 'omittedTraceCount'),
+      requiredCoverageRows: _requiredSourceInt(json, 'requiredCoverageRows'),
+      candidateSetDigest: _requiredSourceString(json, 'candidateSetDigest'),
+      selectedKeyDigest: _requiredSourceString(json, 'selectedKeyDigest'),
+      candidateCoverage: _intMap(
+        json,
+        'candidateCoverage',
+        _coverageMapKeys,
+      ),
+      selectedCoverage: _intMap(json, 'selectedCoverage', _coverageMapKeys),
+      candidateCrossCellCoverage: _intMap(
+        json,
+        'candidateCrossCellCoverage',
+        _crossCellCoverageMapKeys,
+      ),
+      selectedCrossCellCoverage: _intMap(
+        json,
+        'selectedCrossCellCoverage',
+        _crossCellCoverageMapKeys,
+      ),
+    )..validate();
+    return evidence;
+  }
+
+  final int templateSchemaVersion;
+  final String policy;
+  final int maxRows;
+  final String sourceRunDigest;
+  final String sourceTemplateDigest;
+  final String selectedTemplateRowsDigest;
+  final String candidateTraceMaterialDigest;
+  final String templateMetadataDigest;
+  final int candidateTraceCount;
+  final int selectedTraceCount;
+  final int omittedTraceCount;
+  final int requiredCoverageRows;
+  final String candidateSetDigest;
+  final String selectedKeyDigest;
+  final Map<String, int> candidateCoverage;
+  final Map<String, int> selectedCoverage;
+  final Map<String, int> candidateCrossCellCoverage;
+  final Map<String, int> selectedCrossCellCoverage;
+
+  bool get sampled => selectedTraceCount < candidateTraceCount;
+
+  void validate() {
+    if (templateSchemaVersion != _calibrationTemplateSchemaVersion) {
+      throw const FormatException(
+        'calibrationTemplateSelection templateSchemaVersion must be '
+        '$_calibrationTemplateSchemaVersion',
+      );
+    }
+    if (policy != _calibrationTemplateSelectionPolicy) {
+      throw const FormatException(
+        'calibrationTemplateSelection policy must be '
+        '$_calibrationTemplateSelectionPolicy',
+      );
+    }
+    void nonNegative(String field, int value) {
+      if (value < 0) {
+        throw FormatException(
+          'calibrationTemplateSelection.$field must be at least 0',
+        );
+      }
+    }
+
+    if (maxRows < 1) {
+      throw const FormatException(
+        'calibrationTemplateSelection.maxRows must be at least 1',
+      );
+    }
+    nonNegative('candidateTraceCount', candidateTraceCount);
+    nonNegative('selectedTraceCount', selectedTraceCount);
+    nonNegative('omittedTraceCount', omittedTraceCount);
+    nonNegative('requiredCoverageRows', requiredCoverageRows);
+    if (selectedTraceCount > candidateTraceCount) {
+      throw const FormatException(
+        'calibrationTemplateSelection selectedTraceCount exceeds '
+        'candidateTraceCount',
+      );
+    }
+    if (omittedTraceCount != candidateTraceCount - selectedTraceCount) {
+      throw const FormatException(
+        'calibrationTemplateSelection omittedTraceCount must equal '
+        'candidateTraceCount - selectedTraceCount',
+      );
+    }
+    _validateDigest(
+      label: 'calibrationTemplateSelection.sourceRunDigest',
+      value: sourceRunDigest,
+    );
+    _validateDigest(
+      label: 'calibrationTemplateSelection.sourceTemplateDigest',
+      value: sourceTemplateDigest,
+    );
+    _validateDigest(
+      label: 'calibrationTemplateSelection.selectedTemplateRowsDigest',
+      value: selectedTemplateRowsDigest,
+    );
+    _validateDigest(
+      label: 'calibrationTemplateSelection.candidateTraceMaterialDigest',
+      value: candidateTraceMaterialDigest,
+    );
+    _validateDigest(
+      label: 'calibrationTemplateSelection.templateMetadataDigest',
+      value: templateMetadataDigest,
+    );
+    _validateDigest(
+      label: 'calibrationTemplateSelection.candidateSetDigest',
+      value: candidateSetDigest,
+    );
+    _validateDigest(
+      label: 'calibrationTemplateSelection.selectedKeyDigest',
+      value: selectedKeyDigest,
+    );
+  }
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'schemaVersion': 1,
+    'templateSchemaVersion': templateSchemaVersion,
+    'policy': policy,
+    'maxRows': maxRows,
+    'sourceRunDigest': sourceRunDigest,
+    'sourceTemplateDigest': sourceTemplateDigest,
+    'selectedTemplateRowsDigest': selectedTemplateRowsDigest,
+    'candidateTraceMaterialDigest': candidateTraceMaterialDigest,
+    'templateMetadataDigest': templateMetadataDigest,
+    'candidateTraceCount': candidateTraceCount,
+    'selectedTraceCount': selectedTraceCount,
+    'omittedTraceCount': omittedTraceCount,
+    'requiredCoverageRows': requiredCoverageRows,
+    'candidateSetDigest': candidateSetDigest,
+    'selectedKeyDigest': selectedKeyDigest,
+    'candidateCoverage': candidateCoverage,
+    'selectedCoverage': selectedCoverage,
+    'candidateCrossCellCoverage': candidateCrossCellCoverage,
+    'selectedCrossCellCoverage': selectedCrossCellCoverage,
+  };
+
+  static const _coverageMapKeys = {
+    'agentKinds',
+    'modelClasses',
+    'promptVariants',
+    'verdictOutcomes',
+    'protectionBuckets',
+    'primaryCapabilities',
+  };
+
+  static const _crossCellCoverageMapKeys = {
+    'agentKindByVerdict',
+    'modelClassByVerdict',
+    'protectionByVerdict',
+    'modelClassByCapability',
+    'protectionByCapability',
+  };
+
+  static Map<String, int> _intMap(
+    Map<String, dynamic> json,
+    String key,
+    Set<String> allowedKeys,
+  ) {
+    final value = json[key];
+    if (value is! Map<String, dynamic>) {
+      throw FormatException('calibrationTemplateSelection.$key must be a map');
+    }
+    final unknown = value.keys.where((mapKey) => !allowedKeys.contains(mapKey));
+    if (unknown.isNotEmpty) {
+      throw FormatException(
+        'calibrationTemplateSelection.$key has unsupported key '
+        '${unknown.first}',
+      );
+    }
+    return {
+      for (final entry in value.entries)
+        entry.key: switch (entry.value) {
+          final num count when count.isFinite && count == count.toInt() =>
+            count.toInt(),
+          _ => throw FormatException(
+            'calibrationTemplateSelection.$key.${entry.key} must be an int',
+          ),
+        },
+    };
+  }
+}
+
 /// Versioned human-label set for judge calibration.
 class JudgeCalibrationSet {
   const JudgeCalibrationSet({
     required this.version,
     required this.labels,
     String? judgeCalibrationSetVersion,
+    this.sourceRun,
+    this.templateSelection,
   }) : judgeCalibrationSetVersion = judgeCalibrationSetVersion ?? version;
 
   factory JudgeCalibrationSet.fromJson(Map<String, dynamic> json) {
@@ -344,6 +1015,13 @@ class JudgeCalibrationSet {
         'Calibration template must be completed before calibrate can read it',
       );
     }
+    _rejectUnknownFields(json, 'JudgeCalibrationSet', const {
+      'version',
+      'judgeCalibrationSetVersion',
+      'sourceRun',
+      'calibrationTemplateSelection',
+      'labels',
+    });
     final version = (json['version'] as String?)?.trim();
     if (version == null || version.isEmpty) {
       throw const FormatException('Calibration set version must not be empty');
@@ -364,6 +1042,16 @@ class JudgeCalibrationSet {
     return JudgeCalibrationSet(
       version: version,
       judgeCalibrationSetVersion: judgeCalibrationSetVersion,
+      sourceRun: json['sourceRun'] == null
+          ? null
+          : JudgeCalibrationSourceRun.fromJson(
+              json['sourceRun'] as Map<String, dynamic>,
+            ),
+      templateSelection: json['calibrationTemplateSelection'] == null
+          ? null
+          : JudgeCalibrationTemplateSelectionEvidence.fromJson(
+              json['calibrationTemplateSelection'] as Map<String, dynamic>,
+            ),
       labels: rawLabels
           .map(
             (e) => JudgeCalibrationLabel.fromJson(e as Map<String, dynamic>),
@@ -374,11 +1062,16 @@ class JudgeCalibrationSet {
 
   final String version;
   final String judgeCalibrationSetVersion;
+  final JudgeCalibrationSourceRun? sourceRun;
+  final JudgeCalibrationTemplateSelectionEvidence? templateSelection;
   final List<JudgeCalibrationLabel> labels;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'version': version,
     'judgeCalibrationSetVersion': judgeCalibrationSetVersion,
+    if (sourceRun != null) 'sourceRun': sourceRun!.toJson(),
+    if (templateSelection != null)
+      'calibrationTemplateSelection': templateSelection!.toJson(),
     'labels': labels.map((label) => label.toJson()).toList(),
   };
 }
@@ -463,9 +1156,17 @@ class JudgeCalibrationReport {
     required this.scoreAgreementCount,
     required this.capabilitySummaries,
     required this.modelClassSummaries,
+    required this.modelClassCapabilitySummaries,
     required this.promptVariantSummaries,
     required this.modelClassPromptVariantSummaries,
     required this.findings,
+    this.protectedHoldoutLabelCount = 0,
+    this.protectedHoldoutEvaluatedCount = 0,
+    this.protectedHoldoutCapabilitySummaries = const [],
+    this.protectedHoldoutModelClassSummaries = const [],
+    this.protectedHoldoutModelClassCapabilitySummaries = const [],
+    this.protectedHoldoutPromptVariantSummaries = const [],
+    this.protectedHoldoutModelClassPromptVariantSummaries = const [],
     this.humanReviewPairCount = 0,
     this.humanPassAgreementPairCount = 0,
     this.humanScoreAgreementPairCount = 0,
@@ -488,6 +1189,8 @@ class JudgeCalibrationReport {
   final int judgeCalibrationMismatchCount;
   final int passAgreementCount;
   final int scoreAgreementCount;
+  final int protectedHoldoutLabelCount;
+  final int protectedHoldoutEvaluatedCount;
   final int humanReviewPairCount;
   final int humanPassAgreementPairCount;
   final int humanScoreAgreementPairCount;
@@ -495,8 +1198,17 @@ class JudgeCalibrationReport {
   final int unblindedHumanReviewCount;
   final List<JudgeCalibrationSliceSummary> capabilitySummaries;
   final List<JudgeCalibrationSliceSummary> modelClassSummaries;
+  final List<JudgeCalibrationSliceSummary> modelClassCapabilitySummaries;
   final List<JudgeCalibrationSliceSummary> promptVariantSummaries;
   final List<JudgeCalibrationSliceSummary> modelClassPromptVariantSummaries;
+  final List<JudgeCalibrationSliceSummary> protectedHoldoutCapabilitySummaries;
+  final List<JudgeCalibrationSliceSummary> protectedHoldoutModelClassSummaries;
+  final List<JudgeCalibrationSliceSummary>
+  protectedHoldoutModelClassCapabilitySummaries;
+  final List<JudgeCalibrationSliceSummary>
+  protectedHoldoutPromptVariantSummaries;
+  final List<JudgeCalibrationSliceSummary>
+  protectedHoldoutModelClassPromptVariantSummaries;
   final List<JudgeCalibrationFinding> findings;
 
   double get goldCoverageRate =>
@@ -636,16 +1348,128 @@ abstract final class EvalJudgeCalibration {
           labelerCount: labelerCount,
         ),
     ];
+    final sourceRunJson = manifest == null
+        ? null
+        : JudgeCalibrationSourceRun.fromManifest(manifest).toJson();
+    final selectionReport = selection.report;
+    if (selectionReport != null && sourceRunJson == null) {
+      throw ArgumentError.value(
+        manifest,
+        'manifest',
+        'bounded calibration templates require sourceRun manifest binding',
+      );
+    }
     return <String, dynamic>{
       'calibrationTemplateSchemaVersion': _calibrationTemplateSchemaVersion,
       'version': version,
       'judgeCalibrationSetVersion': judgeCalibrationSetVersions.single,
-      if (manifest != null) 'sourceRun': _sourceRunJson(manifest),
-      if (selection.report != null)
-        'calibrationTemplateSelection': selection.report!.toJson(),
+      'sourceRun': ?sourceRunJson,
+      if (selectionReport != null)
+        'calibrationTemplateSelection': _templateSelectionEvidenceJson(
+          report: selectionReport,
+          candidates: candidates,
+          selectedCandidates: selection.candidates,
+          sourceRunJson: sourceRunJson!,
+          version: version,
+          judgeCalibrationSetVersion: judgeCalibrationSetVersions.single,
+        ),
       'labelTemplates': labels,
     };
   }
+
+  static Map<String, dynamic> _templateSelectionEvidenceJson({
+    required _CalibrationTemplateSelectionReport report,
+    required List<_CalibrationTemplateCandidate> candidates,
+    required List<_CalibrationTemplateCandidate> selectedCandidates,
+    required Map<String, dynamic> sourceRunJson,
+    required String version,
+    required String judgeCalibrationSetVersion,
+  }) {
+    final sourceRunDigest = EvalProvenance.digestJson(sourceRunJson);
+    final reportJson = report.toJson();
+    final selectedTemplateRowsDigest = _selectedTemplateRowsDigest(
+      selectedCandidates,
+    );
+    final candidateTraceMaterialDigest = _candidateTraceMaterialDigest(
+      candidates,
+    );
+    final templateMetadataDigest = EvalProvenance.digestJson({
+      'calibrationTemplateSchemaVersion': _calibrationTemplateSchemaVersion,
+      'version': version,
+      'judgeCalibrationSetVersion': judgeCalibrationSetVersion,
+    });
+    final sourceTemplateDigest = EvalProvenance.digestJson({
+      'calibrationTemplateSchemaVersion': _calibrationTemplateSchemaVersion,
+      'version': version,
+      'judgeCalibrationSetVersion': judgeCalibrationSetVersion,
+      'sourceRunDigest': sourceRunDigest,
+      'selectedTemplateRowsDigest': selectedTemplateRowsDigest,
+      'candidateTraceMaterialDigest': candidateTraceMaterialDigest,
+      'templateMetadataDigest': templateMetadataDigest,
+      'selection': reportJson,
+    });
+    return <String, dynamic>{
+      ...reportJson,
+      'templateSchemaVersion': _calibrationTemplateSchemaVersion,
+      'sourceRunDigest': sourceRunDigest,
+      'sourceTemplateDigest': sourceTemplateDigest,
+      'selectedTemplateRowsDigest': selectedTemplateRowsDigest,
+      'candidateTraceMaterialDigest': candidateTraceMaterialDigest,
+      'templateMetadataDigest': templateMetadataDigest,
+    };
+  }
+
+  static String _selectedTemplateRowsDigest(
+    List<_CalibrationTemplateCandidate> candidates,
+  ) => _candidateTraceMaterialDigest(candidates);
+
+  static String _candidateTraceMaterialDigest(
+    List<_CalibrationTemplateCandidate> candidates,
+  ) => EvalProvenance.digestJson([
+    for (final candidate in [
+      ...candidates,
+    ]..sort((a, b) => a.sortKey.compareTo(b.sortKey)))
+      _candidateTraceMaterialJson(candidate),
+  ]);
+
+  static Map<String, dynamic> _candidateTraceMaterialJson(
+    _CalibrationTemplateCandidate candidate,
+  ) => <String, dynamic>{
+    'key': candidate.key.toJson(),
+    'scenarioDigest': candidate.trace.provenance.scenarioDigest,
+    'profileDigest': candidate.trace.provenance.profileDigest,
+    'agentDirectiveVariantDigest':
+        candidate.trace.provenance.agentDirectiveVariantDigest,
+    'traceDigest': candidate.verdict.traceDigest,
+    'verdictDigest': candidate.verdictDigest,
+    'judgeCalibrationSetVersion': candidate.verdict.judge.calibrationSetVersion,
+  };
+
+  static String _completedLabelTraceMaterialDigest({
+    required List<JudgeCalibrationLabel> labels,
+    required String judgeCalibrationSetVersion,
+  }) => EvalProvenance.digestJson([
+    for (final label in [
+      ...labels,
+    ]..sort((a, b) => a.key.id.compareTo(b.key.id)))
+      _completedLabelTraceMaterialJson(
+        label: label,
+        judgeCalibrationSetVersion: judgeCalibrationSetVersion,
+      ),
+  ]);
+
+  static Map<String, dynamic> _completedLabelTraceMaterialJson({
+    required JudgeCalibrationLabel label,
+    required String judgeCalibrationSetVersion,
+  }) => <String, dynamic>{
+    'key': label.key.toJson(),
+    'scenarioDigest': label.scenarioDigest,
+    'profileDigest': label.profileDigest,
+    'agentDirectiveVariantDigest': label.agentDirectiveVariantDigest,
+    'traceDigest': label.traceDigest,
+    'verdictDigest': label.verdictDigest,
+    'judgeCalibrationSetVersion': judgeCalibrationSetVersion,
+  };
 
   static Map<String, dynamic> _labelTemplateRow({
     required _CalibrationTemplateCandidate candidate,
@@ -675,43 +1499,10 @@ abstract final class EvalJudgeCalibration {
     };
   }
 
-  static Map<String, dynamic> _sourceRunJson(EvalRunManifest manifest) {
-    return <String, dynamic>{
-      'runId': manifest.runId,
-      if (manifest.manifestDigest != null)
-        'manifestDigest': manifest.manifestDigest,
-      'scenarioSetDigest': manifest.scenarioSetDigest,
-      'profileSetDigest': manifest.profileSetDigest,
-      'agentDirectiveVariantSetDigest': manifest.agentDirectiveVariantSetDigest,
-      'promptDigest': manifest.promptDigest,
-      'toolSchemaDigest': manifest.toolSchemaDigest,
-      'traceSchemaVersion': manifest.traceSchemaVersion,
-      if (manifest.scenarioCatalogEvidence != null)
-        'scenarioCatalogEvidence': _sourceRunCatalogEvidenceJson(
-          manifest.scenarioCatalogEvidence!,
-        ),
-    };
-  }
-
-  static Map<String, dynamic> _sourceRunCatalogEvidenceJson(
-    EvalScenarioCatalogEvidence evidence,
-  ) {
-    return <String, dynamic>{
-      'scenarioSetDigest': evidence.scenarioSetDigest,
-      'publicScenarioCount': evidence.publicScenarioCount,
-      'externalScenarioCount': evidence.externalScenarioCount,
-      if (evidence.externalCatalogDigest != null)
-        'externalCatalogDigest': evidence.externalCatalogDigest,
-      'protectedHoldout': evidence.protectedHoldout,
-      'protectedScenarioCount': evidence.protectedScenarioIds.length,
-      'protectedHoldoutScenarioCount':
-          evidence.protectedHoldoutScenarioIds.length,
-    };
-  }
-
   static JudgeCalibrationReport evaluate({
     required List<EvalTrace> traces,
     required JudgeCalibrationSet calibrationSet,
+    EvalScenarioCatalogEvidence? scenarioCatalogEvidence,
   }) {
     final findings = <JudgeCalibrationFinding>[];
     final labelsByKey = <String, JudgeCalibrationLabel>{};
@@ -754,13 +1545,33 @@ abstract final class EvalJudgeCalibration {
     var humanScoreAgreementPairCount = 0;
     var unresolvedHumanDisagreementCount = 0;
     var unblindedHumanReviewCount = 0;
+    var protectedHoldoutLabelCount = 0;
+    var protectedHoldoutEvaluatedCount = 0;
+    final protectedHoldoutScenarioIds =
+        scenarioCatalogEvidence?.protectedHoldoutScenarioIds.toSet() ??
+        const <String>{};
     final capabilityAccumulators = <String, _CalibrationAccumulator>{};
     final modelClassAccumulators = <String, _CalibrationAccumulator>{};
+    final modelClassCapabilityAccumulators =
+        <String, _CalibrationAccumulator>{};
     final promptVariantAccumulators = <String, _CalibrationAccumulator>{};
     final modelClassPromptVariantAccumulators =
         <String, _CalibrationAccumulator>{};
+    final protectedHoldoutCapabilityAccumulators =
+        <String, _CalibrationAccumulator>{};
+    final protectedHoldoutModelClassAccumulators =
+        <String, _CalibrationAccumulator>{};
+    final protectedHoldoutModelClassCapabilityAccumulators =
+        <String, _CalibrationAccumulator>{};
+    final protectedHoldoutPromptVariantAccumulators =
+        <String, _CalibrationAccumulator>{};
+    final protectedHoldoutModelClassPromptVariantAccumulators =
+        <String, _CalibrationAccumulator>{};
 
     for (final label in labelsByKey.values) {
+      if (protectedHoldoutScenarioIds.contains(label.key.scenarioId)) {
+        protectedHoldoutLabelCount++;
+      }
       final matches = tracesByKey[label.key.id] ?? const <EvalTrace>[];
       if (matches.isEmpty) {
         missingTraceCount++;
@@ -789,6 +1600,7 @@ abstract final class EvalJudgeCalibration {
           trace.scenario.metadata.primaryCapabilityId ?? 'uncategorized';
       final modelClass = trace.profile.modelClass.name;
       final promptVariant = trace.agentDirectiveVariant.name;
+      final modelClassCapability = '$modelClass@$capabilityId';
       final modelClassPromptVariant = '$modelClass@$promptVariant';
       final capability = capabilityAccumulators.putIfAbsent(
         capabilityId,
@@ -800,6 +1612,12 @@ abstract final class EvalJudgeCalibration {
         () => _CalibrationAccumulator(modelClass),
       );
       modelClassAccumulator.labelCount++;
+      final modelClassCapabilityAccumulator = modelClassCapabilityAccumulators
+          .putIfAbsent(
+            modelClassCapability,
+            () => _CalibrationAccumulator(modelClassCapability),
+          );
+      modelClassCapabilityAccumulator.labelCount++;
       final promptVariantAccumulator = promptVariantAccumulators.putIfAbsent(
         promptVariant,
         () => _CalibrationAccumulator(promptVariant),
@@ -811,14 +1629,63 @@ abstract final class EvalJudgeCalibration {
             () => _CalibrationAccumulator(modelClassPromptVariant),
           );
       modelClassPromptVariantAccumulator.labelCount++;
+      final protectedHoldoutTrace = protectedHoldoutScenarioIds.contains(
+        trace.scenario.id,
+      );
+      final protectedAccumulators = <_CalibrationAccumulator>[];
+      if (protectedHoldoutTrace) {
+        final protectedCapability = protectedHoldoutCapabilityAccumulators
+            .putIfAbsent(
+              capabilityId,
+              () => _CalibrationAccumulator(capabilityId),
+            );
+        final protectedModelClass = protectedHoldoutModelClassAccumulators
+            .putIfAbsent(
+              modelClass,
+              () => _CalibrationAccumulator(modelClass),
+            );
+        final protectedModelClassCapability =
+            protectedHoldoutModelClassCapabilityAccumulators.putIfAbsent(
+              modelClassCapability,
+              () => _CalibrationAccumulator(modelClassCapability),
+            );
+        final protectedPromptVariant = protectedHoldoutPromptVariantAccumulators
+            .putIfAbsent(
+              promptVariant,
+              () => _CalibrationAccumulator(promptVariant),
+            );
+        final protectedModelClassPromptVariant =
+            protectedHoldoutModelClassPromptVariantAccumulators.putIfAbsent(
+              modelClassPromptVariant,
+              () => _CalibrationAccumulator(modelClassPromptVariant),
+            );
+        protectedAccumulators.addAll([
+          protectedCapability,
+          protectedModelClass,
+          protectedModelClassCapability,
+          protectedPromptVariant,
+          protectedModelClassPromptVariant,
+        ]);
+        for (final accumulator in protectedAccumulators) {
+          accumulator.labelCount++;
+        }
+      }
+
+      void updateProtected(
+        void Function(_CalibrationAccumulator accumulator) update,
+      ) {
+        protectedAccumulators.forEach(update);
+      }
 
       final staleReasons = _staleLabelReasons(label: label, trace: trace);
       if (staleReasons.isNotEmpty) {
         staleLabelCount++;
         capability.staleLabelCount++;
         modelClassAccumulator.staleLabelCount++;
+        modelClassCapabilityAccumulator.staleLabelCount++;
         promptVariantAccumulator.staleLabelCount++;
         modelClassPromptVariantAccumulator.staleLabelCount++;
+        updateProtected((accumulator) => accumulator.staleLabelCount++);
         findings.add(
           JudgeCalibrationFinding(
             kind: JudgeCalibrationFindingKind.staleGoldLabel,
@@ -834,8 +1701,10 @@ abstract final class EvalJudgeCalibration {
         missingVerdictCount++;
         capability.missingVerdictCount++;
         modelClassAccumulator.missingVerdictCount++;
+        modelClassCapabilityAccumulator.missingVerdictCount++;
         promptVariantAccumulator.missingVerdictCount++;
         modelClassPromptVariantAccumulator.missingVerdictCount++;
+        updateProtected((accumulator) => accumulator.missingVerdictCount++);
         findings.add(
           JudgeCalibrationFinding(
             kind: JudgeCalibrationFindingKind.missingVerdict,
@@ -851,8 +1720,10 @@ abstract final class EvalJudgeCalibration {
         staleLabelCount++;
         capability.staleLabelCount++;
         modelClassAccumulator.staleLabelCount++;
+        modelClassCapabilityAccumulator.staleLabelCount++;
         promptVariantAccumulator.staleLabelCount++;
         modelClassPromptVariantAccumulator.staleLabelCount++;
+        updateProtected((accumulator) => accumulator.staleLabelCount++);
         findings.add(
           JudgeCalibrationFinding(
             kind: JudgeCalibrationFindingKind.staleGoldLabel,
@@ -871,8 +1742,10 @@ abstract final class EvalJudgeCalibration {
           staleLabelCount++;
           capability.staleLabelCount++;
           modelClassAccumulator.staleLabelCount++;
+          modelClassCapabilityAccumulator.staleLabelCount++;
           promptVariantAccumulator.staleLabelCount++;
           modelClassPromptVariantAccumulator.staleLabelCount++;
+          updateProtected((accumulator) => accumulator.staleLabelCount++);
           findings.add(
             JudgeCalibrationFinding(
               kind: JudgeCalibrationFindingKind.staleGoldLabel,
@@ -890,8 +1763,12 @@ abstract final class EvalJudgeCalibration {
         judgeCalibrationMismatchCount++;
         capability.judgeCalibrationMismatchCount++;
         modelClassAccumulator.judgeCalibrationMismatchCount++;
+        modelClassCapabilityAccumulator.judgeCalibrationMismatchCount++;
         promptVariantAccumulator.judgeCalibrationMismatchCount++;
         modelClassPromptVariantAccumulator.judgeCalibrationMismatchCount++;
+        updateProtected(
+          (accumulator) => accumulator.judgeCalibrationMismatchCount++,
+        );
         findings.add(
           JudgeCalibrationFinding(
             kind: JudgeCalibrationFindingKind.judgeCalibrationVersionMismatch,
@@ -907,8 +1784,13 @@ abstract final class EvalJudgeCalibration {
       evaluatedCount++;
       capability.evaluatedCount++;
       modelClassAccumulator.evaluatedCount++;
+      modelClassCapabilityAccumulator.evaluatedCount++;
       promptVariantAccumulator.evaluatedCount++;
       modelClassPromptVariantAccumulator.evaluatedCount++;
+      if (protectedHoldoutTrace) {
+        protectedHoldoutEvaluatedCount++;
+      }
+      updateProtected((accumulator) => accumulator.evaluatedCount++);
 
       final passMatches = verdict.pass == label.expectedPass;
       final scoresMatch =
@@ -932,21 +1814,27 @@ abstract final class EvalJudgeCalibration {
         passAgreementCount++;
         capability.passAgreementCount++;
         modelClassAccumulator.passAgreementCount++;
+        modelClassCapabilityAccumulator.passAgreementCount++;
         promptVariantAccumulator.passAgreementCount++;
         modelClassPromptVariantAccumulator.passAgreementCount++;
+        updateProtected((accumulator) => accumulator.passAgreementCount++);
       } else {
         if (verdict.pass && !label.expectedPass) {
           falsePassCount++;
           capability.falsePassCount++;
           modelClassAccumulator.falsePassCount++;
+          modelClassCapabilityAccumulator.falsePassCount++;
           promptVariantAccumulator.falsePassCount++;
           modelClassPromptVariantAccumulator.falsePassCount++;
+          updateProtected((accumulator) => accumulator.falsePassCount++);
         } else if (!verdict.pass && label.expectedPass) {
           falseFailCount++;
           capability.falseFailCount++;
           modelClassAccumulator.falseFailCount++;
+          modelClassCapabilityAccumulator.falseFailCount++;
           promptVariantAccumulator.falseFailCount++;
           modelClassPromptVariantAccumulator.falseFailCount++;
+          updateProtected((accumulator) => accumulator.falseFailCount++);
         }
         findings.add(
           JudgeCalibrationFinding(
@@ -961,8 +1849,10 @@ abstract final class EvalJudgeCalibration {
         scoreAgreementCount++;
         capability.scoreAgreementCount++;
         modelClassAccumulator.scoreAgreementCount++;
+        modelClassCapabilityAccumulator.scoreAgreementCount++;
         promptVariantAccumulator.scoreAgreementCount++;
         modelClassPromptVariantAccumulator.scoreAgreementCount++;
+        updateProtected((accumulator) => accumulator.scoreAgreementCount++);
       } else {
         final scoreMismatchDetail = _scoreMismatchDetail(
           verdict: verdict,
@@ -1050,6 +1940,8 @@ abstract final class EvalJudgeCalibration {
       judgeCalibrationMismatchCount: judgeCalibrationMismatchCount,
       passAgreementCount: passAgreementCount,
       scoreAgreementCount: scoreAgreementCount,
+      protectedHoldoutLabelCount: protectedHoldoutLabelCount,
+      protectedHoldoutEvaluatedCount: protectedHoldoutEvaluatedCount,
       humanReviewPairCount: humanReviewPairCount,
       humanPassAgreementPairCount: humanPassAgreementPairCount,
       humanScoreAgreementPairCount: humanScoreAgreementPairCount,
@@ -1057,12 +1949,138 @@ abstract final class EvalJudgeCalibration {
       unblindedHumanReviewCount: unblindedHumanReviewCount,
       capabilitySummaries: _summaries(capabilityAccumulators),
       modelClassSummaries: _summaries(modelClassAccumulators),
+      modelClassCapabilitySummaries: _summaries(
+        modelClassCapabilityAccumulators,
+      ),
       promptVariantSummaries: _summaries(promptVariantAccumulators),
       modelClassPromptVariantSummaries: _summaries(
         modelClassPromptVariantAccumulators,
       ),
+      protectedHoldoutCapabilitySummaries: _summaries(
+        protectedHoldoutCapabilityAccumulators,
+      ),
+      protectedHoldoutModelClassSummaries: _summaries(
+        protectedHoldoutModelClassAccumulators,
+      ),
+      protectedHoldoutModelClassCapabilitySummaries: _summaries(
+        protectedHoldoutModelClassCapabilityAccumulators,
+      ),
+      protectedHoldoutPromptVariantSummaries: _summaries(
+        protectedHoldoutPromptVariantAccumulators,
+      ),
+      protectedHoldoutModelClassPromptVariantSummaries: _summaries(
+        protectedHoldoutModelClassPromptVariantAccumulators,
+      ),
       findings: findings,
     );
+  }
+
+  static List<String> validateTemplateSelectionBinding({
+    required List<EvalTrace> traces,
+    required JudgeCalibrationSet calibrationSet,
+    EvalScenarioCatalogEvidence? scenarioCatalogEvidence,
+  }) {
+    final evidence = calibrationSet.templateSelection;
+    if (evidence == null) return const <String>[];
+    final failures = <String>[];
+    final candidates = <_CalibrationTemplateCandidate>[];
+    final seenKeys = <String>{};
+    final protectedScenarioIds =
+        scenarioCatalogEvidence?.protectedScenarioIds.toSet() ??
+        const <String>{};
+    for (final trace in traces) {
+      final key = EvalTraceKey.fromTrace(trace);
+      if (!seenKeys.add(key.id)) {
+        failures.add('calibration template candidate duplicate key ${key.id}');
+        continue;
+      }
+      final verdict = trace.verdict;
+      if (verdict == null) {
+        failures.add('calibration template candidate ${key.id} has no verdict');
+        continue;
+      }
+      candidates.add(
+        _CalibrationTemplateCandidate(
+          key: key,
+          trace: trace,
+          verdict: verdict,
+          verdictDigest: EvalProvenance.digestJson(verdict.toJson()),
+          protectedTrace: protectedScenarioIds.contains(trace.scenario.id),
+        ),
+      );
+    }
+    if (failures.isNotEmpty) return failures;
+    final sourceRun = calibrationSet.sourceRun;
+    if (sourceRun == null) {
+      failures.add(
+        'calibration template sourceRunDigest cannot be checked without '
+        'sourceRun',
+      );
+      return failures;
+    }
+    final sourceRunJson = sourceRun.toJson();
+    final sourceRunDigest = EvalProvenance.digestJson(sourceRunJson);
+    if (sourceRunDigest != evidence.sourceRunDigest) {
+      failures.add(
+        'calibration template sourceRunDigest does not match sourceRun',
+      );
+    }
+    late final _CalibrationTemplateSelection expectedSelection;
+    try {
+      expectedSelection = _selectCalibrationTemplateCandidates(
+        candidates: candidates,
+        maxRows: evidence.maxRows,
+      );
+    } on Object catch (error) {
+      failures.add('calibration template selection cannot be replayed: $error');
+      return failures;
+    }
+    final expected = expectedSelection.report!;
+    final expectedJson = _templateSelectionEvidenceJson(
+      report: expected,
+      candidates: candidates,
+      selectedCandidates: expectedSelection.candidates,
+      sourceRunJson: sourceRunJson,
+      version: calibrationSet.version,
+      judgeCalibrationSetVersion: calibrationSet.judgeCalibrationSetVersion,
+    );
+    final actualJson = evidence.toJson();
+    final labelKeyDigest = EvalProvenance.digestJson(
+      [
+        for (final label in calibrationSet.labels) label.key.id,
+      ]..sort(),
+    );
+    if (labelKeyDigest != evidence.selectedKeyDigest) {
+      failures.add(
+        'calibration template selectedKeyDigest does not match completed '
+        'label keys',
+      );
+    }
+    final completedLabelRowsDigest = _completedLabelTraceMaterialDigest(
+      labels: calibrationSet.labels,
+      judgeCalibrationSetVersion: calibrationSet.judgeCalibrationSetVersion,
+    );
+    if (completedLabelRowsDigest != evidence.selectedTemplateRowsDigest) {
+      failures.add(
+        'calibration template selectedTemplateRowsDigest does not match '
+        'completed label source rows',
+      );
+    }
+    if (evidence.selectedTraceCount != calibrationSet.labels.length) {
+      failures.add(
+        'calibration template selectedTraceCount '
+        '${evidence.selectedTraceCount} != completed label count '
+        '${calibrationSet.labels.length}',
+      );
+    }
+    if (EvalProvenance.digestJson(actualJson) !=
+        EvalProvenance.digestJson(expectedJson)) {
+      failures.add(
+        'calibration template selection evidence does not match current '
+        'stratified template',
+      );
+    }
+    return failures;
   }
 
   static String render(JudgeCalibrationReport report) {
@@ -1105,12 +2123,24 @@ abstract final class EvalJudgeCalibration {
         '${report.unresolvedHumanDisagreementCount.toString().padLeft(16)}  '
         '${report.unblindedHumanReviewCount.toString().padLeft(15)}',
       );
+    if (report.protectedHoldoutLabelCount > 0 ||
+        report.protectedHoldoutEvaluatedCount > 0) {
+      buffer.writeln(
+        'protected holdout labels=${report.protectedHoldoutLabelCount} '
+        'evaluated=${report.protectedHoldoutEvaluatedCount}',
+      );
+    }
 
     _renderSlices(buffer, 'Capability calibration', report.capabilitySummaries);
     _renderSlices(
       buffer,
       'Model-class calibration',
       report.modelClassSummaries,
+    );
+    _renderSlices(
+      buffer,
+      'Model-class capability calibration',
+      report.modelClassCapabilitySummaries,
     );
     _renderSlices(
       buffer,
@@ -1121,6 +2151,31 @@ abstract final class EvalJudgeCalibration {
       buffer,
       'Model-class prompt-variant calibration',
       report.modelClassPromptVariantSummaries,
+    );
+    _renderSlices(
+      buffer,
+      'Protected holdout capability calibration',
+      report.protectedHoldoutCapabilitySummaries,
+    );
+    _renderSlices(
+      buffer,
+      'Protected holdout model-class calibration',
+      report.protectedHoldoutModelClassSummaries,
+    );
+    _renderSlices(
+      buffer,
+      'Protected holdout model-class capability calibration',
+      report.protectedHoldoutModelClassCapabilitySummaries,
+    );
+    _renderSlices(
+      buffer,
+      'Protected holdout prompt-variant calibration',
+      report.protectedHoldoutPromptVariantSummaries,
+    );
+    _renderSlices(
+      buffer,
+      'Protected holdout model-class prompt-variant calibration',
+      report.protectedHoldoutModelClassPromptVariantSummaries,
     );
     if (report.findings.isNotEmpty) {
       buffer
@@ -1357,8 +2412,13 @@ class _CalibrationTemplateCandidate {
     'promptVariant:${trace.agentDirectiveVariant.name}',
     'verdict:${verdict.pass ? 'pass' : 'fail'}',
     'protection:${protectedTrace ? 'protected' : 'nonProtected'}',
-    'primaryCapability:${trace.scenario.metadata.primaryCapabilityId ?? 'uncategorized'}',
+    'primaryCapability:$primaryCapabilityId',
+    'modelClassCapability:${trace.profile.modelClass.name}@$primaryCapabilityId',
+    'protectionCapability:${protectedTrace ? 'protected' : 'nonProtected'}@$primaryCapabilityId',
   };
+
+  String get primaryCapabilityId =>
+      trace.scenario.metadata.primaryCapabilityId ?? 'uncategorized';
 }
 
 class _HumanReviewReliability {
@@ -1564,8 +2624,11 @@ Map<String, int> _crossCellCoverageCounts(
   final agentKindByVerdict = <String>{};
   final modelClassByVerdict = <String>{};
   final protectionByVerdict = <String>{};
+  final modelClassByCapability = <String>{};
+  final protectionByCapability = <String>{};
   for (final candidate in candidates) {
     final verdict = candidate.verdict.pass ? 'pass' : 'fail';
+    final capabilityId = candidate.primaryCapabilityId;
     agentKindByVerdict.add(
       '${candidate.trace.scenario.agentKind.name}:$verdict',
     );
@@ -1575,11 +2638,19 @@ Map<String, int> _crossCellCoverageCounts(
     protectionByVerdict.add(
       '${candidate.protectedTrace ? 'protected' : 'nonProtected'}:$verdict',
     );
+    modelClassByCapability.add(
+      '${candidate.trace.profile.modelClass.name}@$capabilityId',
+    );
+    protectionByCapability.add(
+      '${candidate.protectedTrace ? 'protected' : 'nonProtected'}@$capabilityId',
+    );
   }
   return <String, int>{
     'agentKindByVerdict': agentKindByVerdict.length,
     'modelClassByVerdict': modelClassByVerdict.length,
     'protectionByVerdict': protectionByVerdict.length,
+    'modelClassByCapability': modelClassByCapability.length,
+    'protectionByCapability': protectionByCapability.length,
   };
 }
 
@@ -1644,6 +2715,38 @@ int _clampScore(int value) {
   if (value < 1) return 1;
   if (value > 5) return 5;
   return value;
+}
+
+String _requiredSourceString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is String && value.trim().isNotEmpty) return value;
+  throw FormatException('sourceRun.$key must be a non-empty string');
+}
+
+void _rejectUnknownFields(
+  Map<String, dynamic> json,
+  String owner,
+  Set<String> allowedFields,
+) {
+  final unknown = json.keys.where((key) => !allowedFields.contains(key));
+  if (unknown.isNotEmpty) {
+    throw FormatException('$owner has unsupported field ${unknown.first}');
+  }
+}
+
+String? _optionalSourceString(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value == null) return null;
+  if (value is String && value.trim().isNotEmpty) return value;
+  throw FormatException('sourceRun.$key must be a non-empty string');
+}
+
+int _requiredSourceInt(Map<String, dynamic> json, String key) {
+  final value = json[key];
+  if (value is num && value.isFinite && value == value.toInt()) {
+    return value.toInt();
+  }
+  throw FormatException('sourceRun.$key must be an integer');
 }
 
 void _validateScoreBand({

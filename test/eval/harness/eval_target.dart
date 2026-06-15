@@ -40,15 +40,14 @@ class EvalTargetRunContext {
     required this.runId,
     required this.scenarioId,
     required this.profileName,
-    this.agentDirectiveVariant = const EvalAgentDirectiveVariant(),
     required this.trialIndex,
+    this.agentDirectiveVariant = const EvalAgentDirectiveVariant(),
   });
 
   static const direct = EvalTargetRunContext(
     runId: 'direct',
     scenarioId: 'direct',
     profileName: 'direct',
-    agentDirectiveVariant: EvalAgentDirectiveVariant(),
     trialIndex: 0,
   );
 

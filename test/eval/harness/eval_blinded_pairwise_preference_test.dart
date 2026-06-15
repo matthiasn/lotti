@@ -18,7 +18,29 @@ void main() {
       final pairJson = await bench.blindedPairJson();
       final reviewPayload = pairJson['reviewPayload'] as Map<String, dynamic>;
       final reviewPayloadDigest = EvalProvenance.digestJson(reviewPayload);
+      final readinessPlan = await bench.readinessPlan();
+      final readinessRegistration = await bench.readinessPlanRegistration();
       expect(pairJson['reviewPayloadDigest'], reviewPayloadDigest);
+      expect(readinessPlan.manifestDigest, bench.run.manifest.manifestDigest);
+      expect(readinessPlan.comparisons, hasLength(1));
+      expect(
+        readinessPlan.comparisons.single.reviewPayloadDigest,
+        reviewPayloadDigest,
+      );
+      expect(
+        readinessRegistration?.sourceManifestDigest,
+        bench.run.manifest.manifestDigest,
+      );
+      expect(
+        readinessRegistration?.evidence.toJson(),
+        readinessPlan.toManifestEvidence().toJson(),
+      );
+      expect(
+        bench._result.readinessPlanRegistrationFile.path,
+        bench.writer
+            .pairwiseReadinessPlanRegistrationFileFor('pairwise-blind-run')
+            .path,
+      );
       expect(publicPayload, isNot(contains('frontier-secret-profile')));
       expect(publicPayload, isNot(contains('local-secret-profile')));
       expect(publicPayload, isNot(contains('gpt-secret-model')));
@@ -64,6 +86,10 @@ void main() {
       expect(votes.single.peerVotesVisible, isFalse);
       expect(votes.single.traceOrderRandomized, isTrue);
       expect(votes.single.blindedImport, isNotNull);
+      expect(
+        votes.single.reviewProtocolFingerprint,
+        readinessPlan.reviewProtocolFingerprint,
+      );
       expect(
         votes.single.blindedImport!.reviewPayloadDigest,
         reviewPayloadDigest,
@@ -116,7 +142,7 @@ void main() {
       final bench = await _PairwiseBench.create();
       await bench.writeBlindedPreference();
       await File(
-        '${bench.result.judgeDir.path}/pairs/extra.blinded-preference.json',
+        '${bench._result.judgeDir.path}/pairs/extra.blinded-preference.json',
       ).writeAsString(
         const JsonEncoder.withIndent('  ').convert({
           'schemaVersion': EvalBlindedPairwisePreference.schemaVersion,
@@ -178,6 +204,145 @@ void main() {
       isEmpty,
     );
   });
+
+  test('exports custom pairwise readiness plan settings', () async {
+    final bench = await _PairwiseBench.create(export: false);
+    final protocol = EvalPairwiseReadinessReviewProtocol(
+      reviewerKind: EvalPairwiseReviewerKind.llmJudge,
+      reviewerModel: 'gpt-5.4',
+      promptDigest: EvalProvenance.digestText('llm-pairwise-review-v2'),
+      calibrationSetVersion: 'pairwise-llm-gold-v2',
+      profileVisible: false,
+      modelIdentityVisible: false,
+      peerVotesVisible: false,
+      traceOrderRandomized: true,
+    );
+
+    final result = await bench.writePairs(
+      readinessPlanId: 'custom-pairwise-gate',
+      readinessReviewProtocol: protocol,
+      readinessMinBlindedPairwisePreferenceDecisions: 1,
+      readinessMinVotes: 2,
+      readinessQuorumFraction: 0.75,
+    );
+    final plan = EvalPairwiseReadinessPlan.fromJson(
+      jsonDecode(await result.readinessPlanFile.readAsString())
+          as Map<String, dynamic>,
+    );
+    final registration = await bench.writer
+        .readPairwiseReadinessPlanRegistration(
+          bench.run.manifest.runId,
+        );
+
+    expect(plan.planId, 'custom-pairwise-gate');
+    expect(plan.reviewProtocolFingerprint, protocol.fingerprint);
+    expect(plan.minBlindedPairwisePreferenceDecisions, 1);
+    expect(plan.preferencePolicy.minVotes, 2);
+    expect(plan.preferencePolicy.quorumFraction, 0.75);
+    expect(registration?.evidence.toJson(), plan.toManifestEvidence().toJson());
+  });
+
+  test('exports pairwise readiness plans that refine pre-run intent', () async {
+    final bench = await _PairwiseBench.create(export: false);
+    final intent = bench.readinessIntent();
+
+    final result = await bench.writePairs(readinessIntent: intent);
+    final plan = EvalPairwiseReadinessPlan.fromJson(
+      jsonDecode(await result.readinessPlanFile.readAsString())
+          as Map<String, dynamic>,
+    );
+    final registration = await bench.writer
+        .readPairwiseReadinessPlanRegistration(
+          bench.run.manifest.runId,
+        );
+
+    expect(plan.intent?.toJson(), intent.toJson());
+    expect(
+      plan.toManifestEvidence().toJson(),
+      intent.toManifestEvidence().toJson(),
+    );
+    expect(
+      plan.comparisons.single.intentKey,
+      intent.comparisons.single.intentKey,
+    );
+    expect(
+      plan.comparisons.single.comparisonKey,
+      contains('pairwise-blind-run::task_release_notes'),
+    );
+    expect(
+      registration?.evidence.toJson(),
+      intent.toManifestEvidence().toJson(),
+    );
+  });
+
+  test('rejects pairwise readiness intent option drift', () async {
+    final bench = await _PairwiseBench.create(export: false);
+    final intent = bench.readinessIntent(
+      optionB: EvalPairwiseReadinessIntentOption(
+        profileName: bench.optionB.profileName,
+        profileDigest: EvalProvenance.digestText('stale-profile-digest'),
+        modelClass: bench.optionB.modelClass,
+        agentDirectiveVariantName: bench.optionB.agentDirectiveVariantName,
+        agentDirectiveVariantDigest: bench.optionB.agentDirectiveVariantDigest,
+      ),
+    );
+
+    await expectLater(
+      bench.writePairs(readinessIntent: intent),
+      throwsA(
+        isA<StateError>().having(
+          (error) => error.message,
+          'message',
+          contains('does not match exported pair pair-1'),
+        ),
+      ),
+    );
+    expect(
+      bench.writer
+          .pairwiseReadinessPlanRegistrationFileFor(bench.run.manifest.runId)
+          .existsSync(),
+      isFalse,
+    );
+  });
+
+  test(
+    'rejects invalid readiness settings before writing export files',
+    () async {
+      final bench = await _PairwiseBench.create(export: false);
+
+      await expectLater(
+        bench.writePairs(
+          readinessMinBlindedPairwisePreferenceDecisions: 2,
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('cannot exceed pair count'),
+          ),
+        ),
+      );
+      expect(bench.exportDir.existsSync(), isFalse);
+      expect(
+        bench.writer
+            .pairwiseReadinessPlanRegistrationFileFor(bench.run.manifest.runId)
+            .existsSync(),
+        isFalse,
+      );
+
+      await expectLater(
+        bench.writePairs(readinessPlanId: '   '),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('plan id must not be blank'),
+          ),
+        ),
+      );
+      expect(bench.exportDir.existsSync(), isFalse);
+    },
+  );
 }
 
 class _PairwiseBench {
@@ -195,13 +360,13 @@ class _PairwiseBench {
   final TraceWriter writer;
   final EvalRunArtifacts run;
   final Directory exportDir;
-  final EvalBlindedPairwiseExportResult result;
+  final EvalBlindedPairwiseExportResult? result;
   final EvalPairwiseTraceRef optionA;
   final EvalPairwiseTraceRef optionB;
   final File optionAFile;
   final File optionBFile;
 
-  static Future<_PairwiseBench> create() async {
+  static Future<_PairwiseBench> create({bool export = true}) async {
     final dir = await Directory.systemTemp.createTemp(
       'lotti-blinded-pairwise-',
     );
@@ -231,7 +396,49 @@ class _PairwiseBench {
     );
     final run = await writer.readRun('pairwise-blind-run');
     final exportDir = Directory('${dir.path}/blind-pairwise');
-    final result = await EvalBlindedPairwisePreference.writePairs(
+    final bench = _PairwiseBench(
+      writer: writer,
+      run: run,
+      exportDir: exportDir,
+      result: null,
+      optionA: optionA,
+      optionB: optionB,
+      optionAFile: optionAFile,
+      optionBFile: optionBFile,
+    );
+    if (!export) return bench;
+    return bench.withResult(await bench.writePairs());
+  }
+
+  EvalBlindedPairwiseExportResult get _result {
+    final exportResult = result;
+    if (exportResult == null) {
+      throw StateError('Pairwise bench has no export result.');
+    }
+    return exportResult;
+  }
+
+  _PairwiseBench withResult(EvalBlindedPairwiseExportResult result) =>
+      _PairwiseBench(
+        writer: writer,
+        run: run,
+        exportDir: exportDir,
+        result: result,
+        optionA: optionA,
+        optionB: optionB,
+        optionAFile: optionAFile,
+        optionBFile: optionBFile,
+      );
+
+  Future<EvalBlindedPairwiseExportResult> writePairs({
+    String? readinessPlanId,
+    EvalPairwiseReadinessIntent? readinessIntent,
+    EvalPairwiseReadinessReviewProtocol? readinessReviewProtocol,
+    int? readinessMinBlindedPairwisePreferenceDecisions,
+    int readinessMinVotes = 1,
+    double readinessQuorumFraction = 1,
+  }) {
+    return EvalBlindedPairwisePreference.writePairs(
       run: run,
       writer: writer,
       outputDir: exportDir,
@@ -243,29 +450,72 @@ class _PairwiseBench {
           optionB: optionB,
         ),
       ],
-    );
-    return _PairwiseBench(
-      writer: writer,
-      run: run,
-      exportDir: exportDir,
-      result: result,
-      optionA: optionA,
-      optionB: optionB,
-      optionAFile: optionAFile,
-      optionBFile: optionBFile,
+      readinessPlanId: readinessPlanId,
+      readinessIntent: readinessIntent,
+      readinessReviewProtocol: readinessReviewProtocol,
+      readinessMinBlindedPairwisePreferenceDecisions:
+          readinessMinBlindedPairwisePreferenceDecisions,
+      readinessMinVotes: readinessMinVotes,
+      readinessQuorumFraction: readinessQuorumFraction,
     );
   }
 
+  EvalPairwiseReadinessIntent readinessIntent({
+    EvalPairwiseReadinessIntentOption? optionA,
+    EvalPairwiseReadinessIntentOption? optionB,
+  }) => EvalPairwiseReadinessIntent(
+    planId: 'pairwise-readiness-pairwise-blind-run',
+    baseReadinessPolicy: 'modelClassTuning',
+    scenarioSetDigest: run.manifest.scenarioSetDigest,
+    profileSetDigest: run.manifest.profileSetDigest,
+    profileBindingSetDigest: run.manifest.profileBindingSetDigest,
+    agentDirectiveVariantSetDigest:
+        EvalProvenance.agentDirectiveVariantSetDigest(
+          const [EvalAgentDirectiveVariant()],
+        ),
+    minBlindedPairwisePreferenceDecisions: 1,
+    comparisons: [
+      EvalPairwiseReadinessIntentComparison(
+        pairId: 'pair-1',
+        intentKey: 'profile::task_release_notes::frontier-vs-local',
+        axis: EvalPairwiseComparisonAxis.profile,
+        scenarioId: this.optionA.scenarioId,
+        scenarioDigest: this.optionA.scenarioDigest,
+        agentKind: this.optionA.agentKind,
+        capabilityId: this.optionA.capabilityId,
+        trialIndex: this.optionA.trialIndex,
+        optionA: optionA ?? _intentOptionFor(this.optionA),
+        optionB: optionB ?? _intentOptionFor(this.optionB),
+        preferredOption: EvalPairwiseReadinessPreferredOption.optionA,
+        outcomeRequirement: EvalPairwiseReadinessOutcomeRequirement.mustNotLose,
+      ),
+    ],
+    reviewProtocol:
+        EvalBlindedPairwisePreference.defaultReadinessReviewProtocol(),
+    minVotes: 1,
+    quorumFraction: 1,
+    notes: 'test intent fixture',
+  );
+
   Future<Map<String, dynamic>> blindedPairJson() async =>
-      jsonDecode(await result.blindedPairFiles.single.readAsString())
+      jsonDecode(await _result.blindedPairFiles.single.readAsString())
           as Map<String, dynamic>;
 
   Future<Map<String, dynamic>> privateKeyJson() async =>
-      jsonDecode(await result.privateKeyFile.readAsString())
+      jsonDecode(await _result.privateKeyFile.readAsString())
           as Map<String, dynamic>;
 
+  Future<EvalPairwiseReadinessPlan> readinessPlan() async =>
+      EvalPairwiseReadinessPlan.fromJson(
+        jsonDecode(await _result.readinessPlanFile.readAsString())
+            as Map<String, dynamic>,
+      );
+
+  Future<EvalPairwiseReadinessPlanRegistration?> readinessPlanRegistration() =>
+      writer.readPairwiseReadinessPlanRegistration('pairwise-blind-run');
+
   Future<String> publicPayload() async => jsonEncode({
-    'manifest': jsonDecode(await result.judgeManifestFile.readAsString()),
+    'manifest': jsonDecode(await _result.judgeManifestFile.readAsString()),
     'pair': await blindedPairJson(),
   });
 
@@ -280,7 +530,7 @@ class _PairwiseBench {
     final digest =
         reviewPayloadDigest ?? (pair['reviewPayloadDigest'] as String);
     final file = File(
-      result.blindedPairFiles.single.path.replaceFirst(
+      _result.blindedPairFiles.single.path.replaceFirst(
         '.blinded-pair.json',
         '.blinded-preference.json',
       ),
@@ -289,8 +539,12 @@ class _PairwiseBench {
       'voteId': 'vote-1',
       'reviewerId': 'reviewer-a',
       'reviewerKind': EvalPairwiseReviewerKind.human.name,
-      'promptDigest': EvalProvenance.digestText('pairwise-review-prompt'),
-      'calibrationSetVersion': 'pairwise-gold-v1',
+      'promptDigest':
+          EvalBlindedPairwisePreference.defaultReadinessReviewProtocol()
+              .promptDigest,
+      'calibrationSetVersion':
+          EvalBlindedPairwisePreference.defaultReadinessReviewProtocol()
+              .calibrationSetVersion,
       'profileVisible': false,
       'modelIdentityVisible': false,
       'peerVotesVisible': false,
@@ -311,6 +565,15 @@ class _PairwiseBench {
     );
   }
 }
+
+EvalPairwiseReadinessIntentOption _intentOptionFor(EvalPairwiseTraceRef ref) =>
+    EvalPairwiseReadinessIntentOption(
+      profileName: ref.profileName,
+      profileDigest: ref.profileDigest,
+      modelClass: ref.modelClass,
+      agentDirectiveVariantName: ref.agentDirectiveVariantName,
+      agentDirectiveVariantDigest: ref.agentDirectiveVariantDigest,
+    );
 
 const _frontierProfile = EvalProfile(
   name: 'frontier-secret-profile',
@@ -343,10 +606,10 @@ EvalTrace _trace({
   required String manifestDigest,
   required EvalProfile profile,
 }) {
-  final output = AgentRunOutput(
+  const output = AgentRunOutput(
     success: true,
-    usage: const InferenceUsage(inputTokens: 100, outputTokens: 25),
-    report: const AgentReportRecord(
+    usage: InferenceUsage(inputTokens: 100, outputTokens: 25),
+    report: AgentReportRecord(
       oneLiner: 'Updated metadata',
       tldr: 'Task metadata was updated.',
       content: 'Task metadata was updated with the requested fields.',

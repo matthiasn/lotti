@@ -69,12 +69,21 @@ void main() {
       tokenBudget: 10000,
     );
     final scenario = _cascadeScenarioWithId('task_log_cascade_verifier');
+    final manifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: const [cascadeProfile],
+      traceTopologyEvidence: _traceTopologyEvidenceFor(
+        [scenario],
+        profiles: const [cascadeProfile],
+      ),
+    );
     final output = _outputFor(cascadeProfile);
     final traces = [
       for (final expectedWake in scenario.expectations.cascadeWakes)
         _trace(
           scenario: scenario,
           profile: cascadeProfile,
+          manifest: manifest,
           output: output,
           level1Checks: runCascadeWakeLevel1(
             scenario,
@@ -95,12 +104,14 @@ void main() {
       traces: traces,
       scenarios: [scenario],
       profiles: const [cascadeProfile],
+      manifest: manifest,
     );
     final missingWake = _verify(
       runId: 'run-1',
       traces: traces.take(2).toList(),
       scenarios: [scenario],
       profiles: const [cascadeProfile],
+      manifest: manifest,
     );
 
     expect(passing.errors, isEmpty);
@@ -129,6 +140,11 @@ void main() {
     final manifest = _manifestFor(
       scenarios: [cascadeScenario, normalScenario],
       profiles: const [cascadeProfile],
+      traceTopologyEvidence: _traceTopologyEvidenceFor(
+        [cascadeScenario, normalScenario],
+        profiles: const [cascadeProfile],
+        cascadeScenarios: [cascadeScenario],
+      ),
     );
     final output = _outputFor(cascadeProfile);
     final traces = [
@@ -490,6 +506,128 @@ void main() {
         'task_release_notes::verifier-profile::trial-0 '
         'verdict judge.profileVisible must be true for profile-aware '
         'efficiency grading',
+      ),
+    );
+  });
+
+  test('rejects forged blinded verdict import provenance', () {
+    final manifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+    );
+    final baseTrace = _trace(
+      scenario: scenario,
+      profile: profile,
+      manifest: manifest,
+    );
+    final traceDigest = EvalProvenance.digestText('raw-trace');
+
+    EvalRunVerification verifyVerdict(JudgeVerdict verdict) => _verify(
+      runId: 'run-1',
+      traces: [baseTrace.withVerdict(verdict)],
+      scenarios: [scenario],
+      profiles: [profile],
+      manifest: manifest,
+    );
+
+    final missingImport = verifyVerdict(
+      _verdict(
+        traceDigest: traceDigest,
+        judgePromptDigest: baseTrace.provenance.promptDigest,
+        judge: JudgeProvenanceRecord(
+          judgeName: 'claude-code',
+          judgeModel: 'test-judge',
+          promptDigest: baseTrace.provenance.promptDigest,
+          calibrationSetVersion: 'test-gold-v1',
+          profileVisible: true,
+          modelIdentityVisible: false,
+        ),
+      ),
+    );
+    final visibleWithImport = verifyVerdict(
+      _verdict(
+        traceDigest: traceDigest,
+        judgePromptDigest: baseTrace.provenance.promptDigest,
+        blindedImport: _blindedVerdictImport(
+          sourceManifestDigest: manifest.manifestDigest!,
+          rawTraceDigest: traceDigest,
+        ),
+      ),
+    );
+    final missingTraceDigest = verifyVerdict(
+      _verdict(
+        traceDigest: null,
+        judgePromptDigest: baseTrace.provenance.promptDigest,
+        judge: JudgeProvenanceRecord(
+          judgeName: 'claude-code',
+          judgeModel: 'test-judge',
+          promptDigest: baseTrace.provenance.promptDigest,
+          calibrationSetVersion: 'test-gold-v1',
+          profileVisible: true,
+          modelIdentityVisible: false,
+        ),
+        blindedImport: _blindedVerdictImport(
+          sourceManifestDigest: manifest.manifestDigest!,
+          rawTraceDigest: traceDigest,
+        ),
+      ),
+    );
+    final staleImport = verifyVerdict(
+      _verdict(
+        traceDigest: traceDigest,
+        judgePromptDigest: baseTrace.provenance.promptDigest,
+        judge: JudgeProvenanceRecord(
+          judgeName: 'claude-code',
+          judgeModel: 'test-judge',
+          promptDigest: baseTrace.provenance.promptDigest,
+          calibrationSetVersion: 'test-gold-v1',
+          profileVisible: true,
+          modelIdentityVisible: false,
+        ),
+        blindedImport: _blindedVerdictImport(
+          sourceManifestDigest: EvalProvenance.digestText('wrong-manifest'),
+          rawTraceDigest: EvalProvenance.digestText('wrong-raw-trace'),
+        ),
+      ),
+    );
+
+    expect(
+      missingImport.errors,
+      contains(
+        'task_release_notes::verifier-profile::trial-0 verdict '
+        'judge.modelIdentityVisible is false but blindedImport is missing',
+      ),
+    );
+    expect(
+      visibleWithImport.errors,
+      contains(
+        'task_release_notes::verifier-profile::trial-0 verdict '
+        'blindedImport is present but judge.modelIdentityVisible is true',
+      ),
+    );
+    expect(
+      missingTraceDigest.errors,
+      contains(
+        'task_release_notes::verifier-profile::trial-0 verdict '
+        'blindedImport.rawTraceDigest requires verdict traceDigest',
+      ),
+    );
+    expect(
+      staleImport.errors,
+      contains(
+        'task_release_notes::verifier-profile::trial-0 verdict '
+        'blindedImport.sourceManifestDigest is '
+        '${EvalProvenance.digestText('wrong-manifest')}, expected '
+        '${manifest.manifestDigest}',
+      ),
+    );
+    expect(
+      staleImport.errors,
+      contains(
+        'task_release_notes::verifier-profile::trial-0 verdict '
+        'blindedImport.rawTraceDigest is '
+        '${EvalProvenance.digestText('wrong-raw-trace')}, expected '
+        'verdict traceDigest $traceDigest',
       ),
     );
   });
@@ -2380,6 +2518,542 @@ void main() {
     );
   });
 
+  test('validates manifest tuning readiness contract evidence', () {
+    final requiredCapabilityId = scenario.metadata.primaryCapabilityId!;
+    final evidence = EvalProvenance.tuningReadinessContractEvidence(
+      scenarioSetDigest: EvalProvenance.scenarioSetDigest([scenario]),
+      requiredPrimaryCapabilityIds: {requiredCapabilityId},
+    );
+    final manifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      tuningReadinessContractEvidence: evidence,
+    );
+    final trace = _trace(
+      scenario: scenario,
+      profile: profile,
+      manifest: manifest,
+    );
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [trace],
+        scenarios: [scenario],
+        profiles: [profile],
+        manifest: manifest,
+      ).errors,
+      isEmpty,
+    );
+
+    final tamperedEvidence = EvalTuningReadinessContractEvidence(
+      scenarioSetDigest: evidence.scenarioSetDigest,
+      requiredPrimaryCapabilityIds: evidence.requiredPrimaryCapabilityIds,
+      readinessContractSubjectDigest: EvalProvenance.digestText(
+        'tampered-readiness-contract',
+      ),
+    );
+    final tamperedManifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      tuningReadinessContractEvidence: tamperedEvidence,
+    );
+    final tamperedTrace = _trace(
+      scenario: scenario,
+      profile: profile,
+      manifest: tamperedManifest,
+    );
+    final missingCapabilityEvidence =
+        EvalProvenance.tuningReadinessContractEvidence(
+          scenarioSetDigest: EvalProvenance.scenarioSetDigest([scenario]),
+          requiredPrimaryCapabilityIds: const {
+            'planner.capability.absent',
+          },
+        );
+    final missingCapabilityManifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      tuningReadinessContractEvidence: missingCapabilityEvidence,
+    );
+    final missingCapabilityTrace = _trace(
+      scenario: scenario,
+      profile: profile,
+      manifest: missingCapabilityManifest,
+    );
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [tamperedTrace],
+        scenarios: [scenario],
+        profiles: [profile],
+        manifest: tamperedManifest,
+      ).errors.any(
+        (error) => error.contains('readinessContractSubjectDigest'),
+      ),
+      isTrue,
+    );
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [missingCapabilityTrace],
+        scenarios: [scenario],
+        profiles: [profile],
+        manifest: missingCapabilityManifest,
+      ).errors,
+      contains(
+        'manifest tuningReadinessContractEvidence required primary '
+        'capability planner.capability.absent is missing from configured '
+        'scenarios',
+      ),
+    );
+  });
+
+  test('validates manifest tuning readiness policy evidence', () {
+    const tuningPolicy = EvalTuningPolicy.modelClassTuning(
+      requiredPrimaryCapabilityIds: {'task.grooming.basic'},
+    );
+    final evidence = EvalTuningReadinessPolicyEvidence(
+      policyName: tuningPolicy.name,
+      policyDigest: tuningPolicy.policyDigest,
+    );
+    final manifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      tuningReadinessPolicyEvidence: evidence,
+    );
+    final trace = _trace(
+      scenario: scenario,
+      profile: profile,
+      manifest: manifest,
+    );
+    final driftedManifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      tuningReadinessPolicyEvidence: EvalTuningReadinessPolicyEvidence(
+        policyName: tuningPolicy.name,
+        policyDigest: EvalProvenance.digestText('stale-readiness-policy'),
+      ),
+    );
+    final driftedTrace = _trace(
+      scenario: scenario,
+      profile: profile,
+      manifest: driftedManifest,
+    );
+    final missingEvidenceManifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+    );
+    final missingEvidenceTrace = _trace(
+      scenario: scenario,
+      profile: profile,
+      manifest: missingEvidenceManifest,
+    );
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [trace],
+        scenarios: [scenario],
+        profiles: [profile],
+        manifest: manifest,
+        tuningPolicy: tuningPolicy,
+      ).errors.where(
+        (error) => error.contains('tuningReadinessPolicyEvidence'),
+      ),
+      isEmpty,
+    );
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [driftedTrace],
+        scenarios: [scenario],
+        profiles: [profile],
+        manifest: driftedManifest,
+        tuningPolicy: tuningPolicy,
+      ).errors,
+      contains(
+        'manifest tuningReadinessPolicyEvidence policyDigest is '
+        '${EvalProvenance.digestText('stale-readiness-policy')}, expected '
+        '${tuningPolicy.policyDigest}',
+      ),
+    );
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [missingEvidenceTrace],
+        scenarios: [scenario],
+        profiles: [profile],
+        manifest: missingEvidenceManifest,
+        tuningPolicy: tuningPolicy,
+      ).errors,
+      contains(
+        'tuning readiness failed: run manifest '
+        'tuningReadinessPolicyEvidence is required for modelClassTuning',
+      ),
+    );
+  });
+
+  test('validates manifest trace topology evidence for cascade traces', () {
+    final cascadeScenario = taskWorkflowChecklistTranscriptCascadeScenario;
+    final topologyEvidence = _traceTopologyEvidenceFor(
+      [cascadeScenario],
+      profiles: const [profile],
+    );
+    final manifest = _manifestFor(
+      scenarios: [cascadeScenario],
+      profiles: [profile],
+      traceTopologyEvidence: topologyEvidence,
+    );
+    final traces = [
+      for (
+        var wakeIndex = 0;
+        wakeIndex < cascadeScenario.appState.taskLogEntries.length;
+        wakeIndex++
+      )
+        _trace(
+          scenario: cascadeScenario,
+          profile: profile,
+          manifest: manifest,
+          includeVerdict: false,
+          cascadeWake: EvalTraceCascadeWake(
+            cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+            wakeIndex: wakeIndex,
+            wakeCount: cascadeScenario.appState.taskLogEntries.length,
+          ),
+        ),
+    ];
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: traces,
+        scenarios: [cascadeScenario],
+        profiles: [profile],
+        manifest: manifest,
+        requireVerdicts: false,
+      ).errors.where((error) => error.contains('traceTopologyEvidence')),
+      isEmpty,
+    );
+
+    final missingEvidenceManifest = _manifestFor(
+      scenarios: [cascadeScenario],
+      profiles: [profile],
+    );
+    final missingEvidenceTrace = _trace(
+      scenario: cascadeScenario,
+      profile: profile,
+      manifest: missingEvidenceManifest,
+      includeVerdict: false,
+      cascadeWake: EvalTraceCascadeWake(
+        cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+        wakeIndex: 0,
+        wakeCount: cascadeScenario.appState.taskLogEntries.length,
+      ),
+    );
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [missingEvidenceTrace],
+        scenarios: [cascadeScenario],
+        profiles: [profile],
+        manifest: missingEvidenceManifest,
+        requireVerdicts: false,
+      ).errors,
+      contains(
+        'manifest traceTopologyEvidence is required for cascade wake traces',
+      ),
+    );
+
+    const staleProfile = EvalProfile(
+      name: 'stale-cascade-profile',
+      isLocal: false,
+      modelClass: EvalModelClass.frontierFast,
+      modelId: 'stale-verifier-model',
+      tokenBudget: 10000,
+    );
+    final staleTopologyManifest = _manifestFor(
+      scenarios: [cascadeScenario],
+      profiles: [profile],
+      traceTopologyEvidence: _traceTopologyEvidenceFor(
+        [cascadeScenario],
+        profiles: const [staleProfile],
+      ),
+    );
+    final staleTopologyTraces = [
+      for (
+        var wakeIndex = 0;
+        wakeIndex < cascadeScenario.appState.taskLogEntries.length;
+        wakeIndex++
+      )
+        _trace(
+          scenario: cascadeScenario,
+          profile: profile,
+          manifest: staleTopologyManifest,
+          includeVerdict: false,
+          cascadeWake: EvalTraceCascadeWake(
+            cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+            wakeIndex: wakeIndex,
+            wakeCount: cascadeScenario.appState.taskLogEntries.length,
+          ),
+        ),
+    ];
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: staleTopologyTraces,
+        scenarios: [cascadeScenario],
+        profiles: [profile],
+        manifest: staleTopologyManifest,
+        requireVerdicts: false,
+      ).errors.any(
+        (error) => error.startsWith(
+          'manifest traceTopologyEvidence profileSetDigest is ',
+        ),
+      ),
+      isTrue,
+    );
+
+    final directTraceSubstitution = _trace(
+      scenario: cascadeScenario,
+      profile: profile,
+      manifest: manifest,
+      includeVerdict: false,
+    );
+    const cascadeTopologyMismatch =
+        'manifest traceTopologyEvidence declares cascade topology but run has '
+        'no cascade wake traces';
+    final missingCascadeWakeTrace =
+        'missing trace for '
+        '${cascadeScenario.id}::verifier-profile::trial-0::'
+        'cascade-task-log::wake-0-of-3';
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [directTraceSubstitution],
+        scenarios: [cascadeScenario],
+        profiles: [profile],
+        manifest: manifest,
+        requireVerdicts: false,
+      ).errors,
+      containsAll([
+        cascadeTopologyMismatch,
+        missingCascadeWakeTrace,
+        'unexpected trace for ${cascadeScenario.id}::verifier-profile::trial-0',
+      ]),
+    );
+  });
+
+  test('validates manifest promotion plan evidence', () {
+    const baselineProfile = EvalProfile(
+      name: 'baseline-verifier-profile',
+      isLocal: false,
+      modelClass: EvalModelClass.frontierFast,
+      modelId: 'baseline-verifier-model',
+      tokenBudget: 10000,
+    );
+    final profiles = [profile, baselineProfile];
+    final promotionPlan = EvalPromotionPlan(
+      planId: 'promotion-plan-test',
+      candidateProfileName: profile.name,
+      baselineProfileName: baselineProfile.name,
+      scenarioSetDigest: EvalProvenance.scenarioSetDigest([scenario]),
+      profileSetDigest: EvalProvenance.profileSetDigest(profiles),
+      policyDigest: EvalProvenance.digestText('promotion-policy'),
+    );
+    final manifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: profiles,
+      promotionPlan: promotionPlan,
+    );
+    final traces = [
+      _trace(scenario: scenario, profile: profile, manifest: manifest),
+      _trace(
+        scenario: scenario,
+        profile: baselineProfile,
+        manifest: manifest,
+      ),
+    ];
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: traces,
+        scenarios: [scenario],
+        profiles: profiles,
+        manifest: manifest,
+      ).errors.where((error) => error.contains('promotionPlanEvidence')),
+      isEmpty,
+    );
+
+    final evidence = manifest.promotionPlanEvidence!;
+    final tamperedSubjectManifest = _manifestFromJson({
+      ...manifest.toJson(includeManifestDigest: false),
+      'promotionPlanEvidence': {
+        ...evidence.toJson(),
+        'promotionPlanSubjectDigest': EvalProvenance.digestText(
+          'tampered-promotion-plan',
+        ),
+      },
+    });
+    final missingCandidateManifest = _manifestFromJson({
+      ...manifest.toJson(includeManifestDigest: false),
+      'promotionPlanEvidence': {
+        ...EvalProvenance.promotionPlanEvidence(
+          EvalPromotionPlan(
+            planId: promotionPlan.planId,
+            candidateProfileName: 'missing-candidate-profile',
+            baselineProfileName: baselineProfile.name,
+            scenarioSetDigest: promotionPlan.scenarioSetDigest,
+            profileSetDigest: promotionPlan.profileSetDigest,
+            policyDigest: promotionPlan.policyDigest,
+          ),
+        ).toJson(),
+      },
+    });
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [
+          _trace(
+            scenario: scenario,
+            profile: profile,
+            manifest: tamperedSubjectManifest,
+          ),
+          _trace(
+            scenario: scenario,
+            profile: baselineProfile,
+            manifest: tamperedSubjectManifest,
+          ),
+        ],
+        scenarios: [scenario],
+        profiles: profiles,
+        manifest: tamperedSubjectManifest,
+      ).errors.any(
+        (error) => error.contains(
+          'manifest promotionPlanEvidence promotionPlanSubjectDigest',
+        ),
+      ),
+      isTrue,
+    );
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [
+          _trace(
+            scenario: scenario,
+            profile: profile,
+            manifest: missingCandidateManifest,
+          ),
+          _trace(
+            scenario: scenario,
+            profile: baselineProfile,
+            manifest: missingCandidateManifest,
+          ),
+        ],
+        scenarios: [scenario],
+        profiles: profiles,
+        manifest: missingCandidateManifest,
+      ).errors,
+      contains(
+        'manifest promotionPlanEvidence candidateProfileName '
+        'missing-candidate-profile is missing from configured profiles',
+      ),
+    );
+  });
+
+  test('validates manifest pairwise readiness plan evidence', () {
+    final evidence = EvalPairwiseReadinessPlanEvidence(
+      planId: 'pairwise-plan-test',
+      baseReadinessPolicy: 'modelClassTuning',
+      scenarioSetDigest: EvalProvenance.scenarioSetDigest([scenario]),
+      profileSetDigest: EvalProvenance.profileSetDigest([profile]),
+      profileBindingSetDigest: EvalProvenance.profileBindingSetDigest([
+        evalProfileConfig(profile).toExecutionBinding(),
+      ]),
+      minBlindedPairwisePreferenceDecisions: 1,
+      comparisonCount: 1,
+      pairwiseReadinessPlanSubjectDigest: EvalProvenance.digestText(
+        'pairwise-plan-subject',
+      ),
+    );
+    final manifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      pairwiseReadinessPlanEvidence: evidence,
+    );
+    final trace = _trace(
+      scenario: scenario,
+      profile: profile,
+      manifest: manifest,
+    );
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [trace],
+        scenarios: [scenario],
+        profiles: [profile],
+        manifest: manifest,
+      ).errors.where(
+        (error) => error.contains('pairwiseReadinessPlanEvidence'),
+      ),
+      isEmpty,
+    );
+
+    final tamperedManifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      pairwiseReadinessPlanEvidence: EvalPairwiseReadinessPlanEvidence(
+        planId: evidence.planId,
+        baseReadinessPolicy: 'developmentSmoke',
+        scenarioSetDigest: EvalProvenance.digestText('other-scenarios'),
+        profileSetDigest: evidence.profileSetDigest,
+        profileBindingSetDigest: EvalProvenance.digestText('other-bindings'),
+        minBlindedPairwisePreferenceDecisions: 2,
+        comparisonCount: 1,
+        pairwiseReadinessPlanSubjectDigest:
+            evidence.pairwiseReadinessPlanSubjectDigest,
+      ),
+    );
+    const invalidBasePolicy =
+        'manifest pairwiseReadinessPlanEvidence baseReadinessPolicy is '
+        'developmentSmoke, expected modelClassTuning';
+    final invalidScenarioSetDigest =
+        'manifest pairwiseReadinessPlanEvidence scenarioSetDigest is '
+        '${EvalProvenance.digestText('other-scenarios')}, expected '
+        '${EvalProvenance.scenarioSetDigest([scenario])}';
+    const invalidComparisonCount =
+        'manifest pairwiseReadinessPlanEvidence '
+        'minBlindedPairwisePreferenceDecisions 2 exceeds '
+        'comparisonCount 1';
+
+    expect(
+      _verify(
+        runId: 'run-1',
+        traces: [
+          _trace(
+            scenario: scenario,
+            profile: profile,
+            manifest: tamperedManifest,
+          ),
+        ],
+        scenarios: [scenario],
+        profiles: [profile],
+        manifest: tamperedManifest,
+      ).errors,
+      containsAll([
+        invalidBasePolicy,
+        invalidScenarioSetDigest,
+        invalidComparisonCount,
+      ]),
+    );
+  });
+
   test('rejects manifest scenario and profile set drift', () {
     final manifest = _manifestFor(scenarios: [scenario], profiles: [profile]);
     final trace = _trace(
@@ -2559,6 +3233,11 @@ EvalRunManifest _manifestFor({
   String runId = 'run-1',
   String targetKind = 'test',
   EvalScenarioCatalogEvidence? scenarioCatalogEvidence,
+  EvalPromotionPlan? promotionPlan,
+  EvalPairwiseReadinessPlanEvidence? pairwiseReadinessPlanEvidence,
+  EvalTuningReadinessContractEvidence? tuningReadinessContractEvidence,
+  EvalTuningReadinessPolicyEvidence? tuningReadinessPolicyEvidence,
+  EvalTraceTopologyEvidence? traceTopologyEvidence,
   List<EvalProfileExecutionBinding>? profileExecutionBindings,
 }) {
   return EvalProvenance.captureRunManifest(
@@ -2571,7 +3250,32 @@ EvalRunManifest _manifestFor({
     createdAt: DateTime(2026, 6, 10, 12),
     command: 'verifier-test',
     environment: const <String, String>{},
+    promotionPlan: promotionPlan,
+    pairwiseReadinessPlanEvidence: pairwiseReadinessPlanEvidence,
+    tuningReadinessContractEvidence: tuningReadinessContractEvidence,
+    tuningReadinessPolicyEvidence: tuningReadinessPolicyEvidence,
+    traceTopologyEvidence: traceTopologyEvidence,
     profileExecutionBindings: profileExecutionBindings,
+  );
+}
+
+EvalTraceTopologyEvidence _traceTopologyEvidenceFor(
+  List<EvalScenario> scenarios, {
+  required List<EvalProfile> profiles,
+  List<EvalScenario>? cascadeScenarios,
+}) {
+  final declaredCascadeScenarios = cascadeScenarios ?? scenarios;
+  return EvalProvenance.taskLogCascadeTraceTopologyEvidence(
+    scenarioSetDigest: EvalProvenance.scenarioSetDigest(scenarios),
+    profileSetDigest: EvalProvenance.profileSetDigest(profiles),
+    agentDirectiveVariantSetDigest:
+        EvalProvenance.agentDirectiveVariantSetDigest(
+          const [EvalAgentDirectiveVariant()],
+        ),
+    cascadeWakeCountByScenarioId: {
+      for (final scenario in declaredCascadeScenarios)
+        scenario.id: scenario.appState.taskLogEntries.length,
+    },
   );
 }
 
@@ -2794,6 +3498,7 @@ EvalTrace _trace({
   List<EvalCheck>? level1Checks,
   EvalRunManifest? manifest,
   JudgeVerdict? verdict,
+  bool includeVerdict = true,
   EvalTraceCascadeWake? cascadeWake,
 }) {
   final traceOutput = output ?? _outputFor(profile);
@@ -2815,12 +3520,14 @@ EvalTrace _trace({
     output: traceOutput,
     level1Checks:
         level1Checks ?? runLevel1(scenario, traceOutput, profile: profile),
-    verdict: verdict ?? _verdict(judgePromptDigest: provenance.promptDigest),
+    verdict: includeVerdict
+        ? verdict ?? _verdict(judgePromptDigest: provenance.promptDigest)
+        : null,
   );
 }
 
 JudgeVerdict _verdict({
-  String traceDigest =
+  String? traceDigest =
       'sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
   int goalAttainment = 5,
   int quality = 5,
@@ -2828,6 +3535,7 @@ JudgeVerdict _verdict({
   bool pass = true,
   String? judgePromptDigest,
   JudgeProvenanceRecord? judge,
+  BlindedVerdictImportRecord? blindedImport,
 }) => JudgeVerdict(
   traceDigest: traceDigest,
   goalAttainment: goalAttainment,
@@ -2844,6 +3552,20 @@ JudgeVerdict _verdict({
         profileVisible: true,
         modelIdentityVisible: true,
       ),
+  blindedImport: blindedImport,
+);
+
+BlindedVerdictImportRecord _blindedVerdictImport({
+  required String sourceManifestDigest,
+  required String rawTraceDigest,
+  String blindedTraceId = 'blind-0001',
+}) => BlindedVerdictImportRecord(
+  blindedTraceId: blindedTraceId,
+  reviewPayloadDigest: EvalProvenance.digestText('review-payload'),
+  judgeManifestDigest: EvalProvenance.digestText('judge-manifest'),
+  privateKeyDigest: EvalProvenance.digestText('private-key'),
+  sourceManifestDigest: sourceManifestDigest,
+  rawTraceDigest: rawTraceDigest,
 );
 
 JudgeCalibrationReport _calibrationReport({
@@ -2868,6 +3590,7 @@ JudgeCalibrationReport _calibrationReport({
     scoreAgreementCount: evaluatedCount,
     capabilitySummaries: const [],
     modelClassSummaries: const [],
+    modelClassCapabilitySummaries: const [],
     promptVariantSummaries: const [],
     modelClassPromptVariantSummaries: const [],
     findings: const [],

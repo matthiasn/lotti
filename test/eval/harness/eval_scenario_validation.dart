@@ -59,12 +59,30 @@ List<EvalScenarioValidationIssue> validateEvalScenario(EvalScenario scenario) {
   for (final capabilityId in scenario.metadata.capabilityIds) {
     if (capabilityId.trim().isEmpty) {
       add('scenario has an empty capability id');
+    } else {
+      if (!_isSafeCapabilityId(capabilityId)) {
+        add('scenario capability id $capabilityId is not a safe selector');
+      }
+      final expectedAgentKind = _agentKindForCapabilityId(capabilityId);
+      if (expectedAgentKind != null &&
+          expectedAgentKind != scenario.agentKind) {
+        add(
+          'scenario capability id $capabilityId does not match '
+          '${scenario.agentKind.name}',
+        );
+      }
     }
   }
+  for (final duplicate in _duplicates(scenario.metadata.capabilityIds)) {
+    add('scenario has duplicate capability id $duplicate');
+  }
   if (scenario.metadata.isAdversarial &&
-      scenario.metadata.source != EvalScenarioSource.adversarial &&
+      scenario.metadata.source != EvalScenarioSource.adversarial) {
+    add('adversarial scenario must use adversarial source');
+  }
+  if (scenario.metadata.isAdversarial &&
       !scenario.metadata.tags.contains('adversarial')) {
-    add('adversarial scenario lacks adversarial source or tag');
+    add('adversarial scenario must use adversarial tag');
   }
   if (scenario.metadata.isAdversarial &&
       scenario.metadata.tags
@@ -74,6 +92,25 @@ List<EvalScenarioValidationIssue> validateEvalScenario(EvalScenario scenario) {
       'adversarial scenario lacks a default stress tag: '
       '${kDefaultAdversarialStressTags.join(', ')}',
     );
+  }
+  if (scenario.metadata.isAdversarial) {
+    final review = scenario.metadata.review;
+    if (review == null) {
+      add('adversarial scenario requires review provenance');
+    } else {
+      if (review.status != EvalScenarioReviewStatus.reviewed &&
+          review.status != EvalScenarioReviewStatus.adjudicated) {
+        add('adversarial scenario review must be reviewed or adjudicated');
+      }
+      if (review.sourceDigest == null) {
+        add('adversarial scenario review sourceDigest is required');
+      }
+      final hasSourceLabel = review.sourceLabel?.trim().isNotEmpty ?? false;
+      final hasGenerator = review.generator?.trim().isNotEmpty ?? false;
+      if (!hasSourceLabel && !hasGenerator) {
+        add('adversarial scenario review sourceLabel or generator is required');
+      }
+    }
   }
   if (!scenario.metadata.isAdversarial &&
       scenario.metadata.source == EvalScenarioSource.adversarial) {
@@ -309,6 +346,7 @@ List<EvalScenarioValidationIssue> validateEvalScenario(EvalScenario scenario) {
     taskIds: taskIds,
     captureIds: captureIds,
     categoryIds: categoryIds,
+    seededProposalSetIds: proposalSetsById.keys.toSet(),
   );
   _validateCascadeWakeExpectations(
     add,
@@ -317,10 +355,24 @@ List<EvalScenarioValidationIssue> validateEvalScenario(EvalScenario scenario) {
     taskIds: taskIds,
     captureIds: captureIds,
     categoryIds: categoryIds,
+    seededProposalSetIds: proposalSetsById.keys.toSet(),
     wakeCount: state.taskLogEntries.length,
   );
 
   return issues;
+}
+
+final _capabilityIdPattern = RegExp(
+  r'^[a-z][a-z0-9]*(\.[a-z][a-z0-9]*)+$',
+);
+
+bool _isSafeCapabilityId(String capabilityId) =>
+    _capabilityIdPattern.hasMatch(capabilityId);
+
+AgentKind? _agentKindForCapabilityId(String capabilityId) {
+  if (capabilityId.startsWith('task.')) return AgentKind.taskAgent;
+  if (capabilityId.startsWith('planner.')) return AgentKind.planningAgent;
+  return null;
 }
 
 void _validateScenarioReview(
@@ -522,6 +574,7 @@ void _validateCascadeWakeExpectations(
   required Set<String> taskIds,
   required Set<String> captureIds,
   required Set<String> categoryIds,
+  required Set<String> seededProposalSetIds,
   required int wakeCount,
 }) {
   if (wakes.isNotEmpty && wakeCount == 0) {
@@ -561,6 +614,7 @@ void _validateCascadeWakeExpectations(
       taskIds: taskIds,
       captureIds: captureIds,
       categoryIds: categoryIds,
+      seededProposalSetIds: seededProposalSetIds,
     );
   }
 }
@@ -572,6 +626,7 @@ void _validateDurableStateExpectations(
   required Set<String> taskIds,
   required Set<String> captureIds,
   required Set<String> categoryIds,
+  required Set<String> seededProposalSetIds,
 }) {
   for (final entry in {
     'proposalCount': expected.proposalCount,
@@ -592,6 +647,7 @@ void _validateDurableStateExpectations(
       matcher,
       taskIds,
       agentKind,
+      seededProposalSetIds,
     );
   }
   for (final group in expected.requiredProposalAnyOf) {
@@ -605,6 +661,7 @@ void _validateDurableStateExpectations(
         matcher,
         taskIds,
         agentKind,
+        seededProposalSetIds,
       );
     }
   }
@@ -622,11 +679,14 @@ void _validateDurableStateExpectations(
       count.matcher,
       taskIds,
       agentKind,
+      seededProposalSetIds,
     );
-    if (count.matcher.status == null && count.matcher.changeSetStatus == null) {
+    if (count.matcher.status == null &&
+        count.matcher.changeSetStatus == null &&
+        count.matcher.changeSetId == null) {
       add(
         'durableState.proposalCounts matcher must specify status or '
-        'changeSetStatus',
+        'changeSetStatus or changeSetId',
       );
     }
   }
@@ -637,6 +697,7 @@ void _validateDurableStateExpectations(
       matcher,
       taskIds,
       agentKind,
+      seededProposalSetIds,
     );
   }
 
@@ -777,7 +838,19 @@ void _validateProposalMatcher(
   ExpectedProposalState matcher,
   Set<String> taskIds,
   AgentKind agentKind,
+  Set<String> seededProposalSetIds,
 ) {
+  final changeSetId = matcher.changeSetId;
+  if (changeSetId != null && changeSetId.trim().isEmpty) {
+    add('durableState.$field has an empty changeSetId');
+  } else if (changeSetId != null &&
+      seededProposalSetIds.isNotEmpty &&
+      !seededProposalSetIds.contains(changeSetId)) {
+    add(
+      'durableState.$field references unknown seeded proposal set '
+      '$changeSetId',
+    );
+  }
   final targetId = matcher.targetId;
   if (targetId != null &&
       !_isKnownProposalTarget(agentKind, targetId, taskIds)) {

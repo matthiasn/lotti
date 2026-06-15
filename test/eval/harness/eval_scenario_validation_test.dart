@@ -206,7 +206,7 @@ void main() {
       messages,
       contains(
         'durableState.proposalCounts matcher must specify status or '
-        'changeSetStatus',
+        'changeSetStatus or changeSetId',
       ),
     );
     expect(
@@ -313,6 +313,7 @@ void main() {
             argsContain: {'title': 'Review notes'},
           ),
           ExpectedProposalState(toolName: ' '),
+          ExpectedProposalState(changeSetId: ' '),
         ],
         requiredProposalAnyOf: [
           ExpectedProposalStateAnyOf(
@@ -369,6 +370,10 @@ void main() {
     );
     expect(
       messages,
+      contains('durableState.requiredProposals has an empty changeSetId'),
+    );
+    expect(
+      messages,
       _containsMessage(
         'durableState.requiredProposalAnyOf argsContain key labelId is not '
         'valid for proposal toolName assign_task_label',
@@ -393,6 +398,105 @@ void main() {
       _containsMessage(
         'durableState.forbiddenProposals argsContain key name is not valid '
         'for proposal toolName add_checklist_item',
+      ),
+    );
+  });
+
+  test('validates proposal change-set id oracle references', () {
+    final validScenario = _taskScenarioWithExpectations(
+      const EvalExpectations(
+        durableState: ExpectedDurableState(
+          proposalCounts: [
+            ExpectedProposalCount(
+              matcher: ExpectedProposalState(
+                changeSetId: 'open-review-changelog',
+              ),
+              exactCount: 1,
+            ),
+          ],
+        ),
+      ),
+      proposalSets: const [
+        MockProposalSet(
+          id: 'open-review-changelog',
+          items: [
+            MockProposalItem(
+              toolName: 'add_checklist_item',
+              args: {'title': 'Review changelog'},
+              humanSummary: 'Add: "Review changelog"',
+            ),
+          ],
+        ),
+      ],
+    );
+
+    expect(validateEvalScenario(validScenario), isEmpty);
+
+    final invalidScenario = _taskScenarioWithExpectations(
+      const EvalExpectations(
+        durableState: ExpectedDurableState(
+          requiredProposals: [
+            ExpectedProposalState(changeSetId: 'fresh-duplicate'),
+          ],
+          requiredProposalAnyOf: [
+            ExpectedProposalStateAnyOf(
+              anyOf: [
+                ExpectedProposalState(changeSetId: 'fresh-duplicate'),
+              ],
+            ),
+          ],
+          proposalCounts: [
+            ExpectedProposalCount(
+              matcher: ExpectedProposalState(
+                changeSetId: 'fresh-duplicate',
+              ),
+              exactCount: 1,
+            ),
+          ],
+          forbiddenProposals: [
+            ExpectedProposalState(changeSetId: 'fresh-duplicate'),
+          ],
+        ),
+      ),
+      proposalSets: const [
+        MockProposalSet(
+          id: 'open-review-changelog',
+          items: [
+            MockProposalItem(
+              toolName: 'add_checklist_item',
+              args: {'title': 'Review changelog'},
+              humanSummary: 'Add: "Review changelog"',
+            ),
+          ],
+        ),
+      ],
+    );
+
+    final messages = validateEvalScenario(
+      invalidScenario,
+    ).map((issue) => issue.message).toList();
+
+    for (final field in const [
+      'requiredProposals',
+      'requiredProposalAnyOf',
+      'proposalCounts.matcher',
+      'forbiddenProposals',
+    ]) {
+      expect(
+        messages,
+        contains(
+          'durableState.$field references unknown seeded proposal set '
+          'fresh-duplicate',
+        ),
+      );
+    }
+    expect(
+      messages,
+      isNot(
+        contains(
+          'durableState.proposalCounts matcher must specify status or '
+          'changeSetStatus or changeSetId',
+        ),
       ),
     );
   });
@@ -880,6 +984,223 @@ void main() {
       ),
     );
   });
+
+  test('adversarial scenarios require canonical source and tag', () {
+    EvalScenario scenario({
+      required EvalScenarioSource source,
+      required Set<String> tags,
+    }) {
+      return EvalScenario(
+        id: 'partial_adversarial_metadata',
+        title: 'Partial adversarial metadata',
+        agentKind: AgentKind.taskAgent,
+        appState: MockedAppState(
+          now: DateTime(2026, 6, 10, 7),
+          categoryIds: const ['cat-work'],
+          tasks: const [
+            MockTask(
+              id: 'task-known',
+              title: 'Known task',
+              status: 'OPEN',
+              categoryId: 'cat-work',
+            ),
+          ],
+        ),
+        userInput: const UserInput(
+          transcript: 'Recover from stale state.',
+          triggerTokens: {'decided_task:task-known'},
+        ),
+        metadata: EvalScenarioMetadata(
+          capabilityIds: const ['task.reporting.toolrecovery'],
+          source: source,
+          isAdversarial: true,
+          tags: tags,
+        ),
+      );
+    }
+
+    final missingSourceMessages = validateEvalScenario(
+      scenario(
+        source: EvalScenarioSource.handAuthored,
+        tags: const {'adversarial', 'stale-state'},
+      ),
+    ).map((issue) => issue.message).toSet();
+    final missingTagMessages = validateEvalScenario(
+      scenario(
+        source: EvalScenarioSource.adversarial,
+        tags: const {'stale-state'},
+      ),
+    ).map((issue) => issue.message).toSet();
+
+    expect(
+      missingSourceMessages,
+      contains('adversarial scenario must use adversarial source'),
+    );
+    expect(
+      missingSourceMessages,
+      isNot(contains('adversarial scenario must use adversarial tag')),
+    );
+    expect(
+      missingTagMessages,
+      contains('adversarial scenario must use adversarial tag'),
+    );
+    expect(
+      missingTagMessages,
+      isNot(contains('adversarial scenario must use adversarial source')),
+    );
+  });
+
+  test('adversarial scenarios require digest-bound source provenance', () {
+    final base = EvalScenario(
+      id: 'adversarial_source_provenance',
+      title: 'Adversarial source provenance',
+      agentKind: AgentKind.taskAgent,
+      appState: MockedAppState(
+        now: DateTime(2026, 6, 10, 7),
+        categoryIds: const ['cat-work'],
+        tasks: const [
+          MockTask(
+            id: 'task-known',
+            title: 'Known task',
+            status: 'OPEN',
+            categoryId: 'cat-work',
+          ),
+        ],
+      ),
+      userInput: const UserInput(
+        transcript: 'Recover from stale state.',
+        triggerTokens: {'decided_task:task-known'},
+      ),
+      metadata: const EvalScenarioMetadata(
+        capabilityIds: ['task.reporting.toolrecovery'],
+        source: EvalScenarioSource.adversarial,
+        isAdversarial: true,
+        tags: {'adversarial', 'stale-state'},
+      ),
+    );
+
+    EvalScenario withReview(EvalScenarioReview review) {
+      final json = base.toJson();
+      json['metadata'] = <String, dynamic>{
+        ...(json['metadata'] as Map<String, dynamic>),
+        'review': review.toJson(),
+      };
+      return EvalScenario.fromJson(json);
+    }
+
+    EvalScenarioReview review({
+      EvalScenarioReviewStatus status = EvalScenarioReviewStatus.reviewed,
+      bool includeSourceDigest = true,
+      String? sourceDigest,
+      String? sourceLabel = 'public-adversarial-catalog',
+      String? generator = 'human-authored-adversarial-case',
+    }) {
+      return EvalScenarioReview(
+        status: status,
+        reviewer: 'human-reviewer',
+        reviewedAt: '2026-06-10T12:00:00.000Z',
+        subjectDigest: EvalProvenance.scenarioReviewSubjectDigest(base),
+        rationale: 'Reviewed adversarial source provenance.',
+        sourceDigest: includeSourceDigest
+            ? sourceDigest ?? EvalProvenance.digestText('source')
+            : null,
+        sourceLabel: sourceLabel,
+        generator: generator,
+      );
+    }
+
+    expect(validateEvalScenario(withReview(review())), isEmpty);
+
+    final missingReviewMessages = validateEvalScenario(
+      base,
+    ).map((issue) => issue.message).toSet();
+    final needsReviewMessages = validateEvalScenario(
+      withReview(review(status: EvalScenarioReviewStatus.needsReview)),
+    ).map((issue) => issue.message).toSet();
+    final missingDigestMessages = validateEvalScenario(
+      withReview(review(includeSourceDigest: false)),
+    ).map((issue) => issue.message).toSet();
+    final invalidDigestMessages = validateEvalScenario(
+      withReview(review(sourceDigest: 'sha256:not-real')),
+    ).map((issue) => issue.message).toSet();
+    final missingOriginMessages = validateEvalScenario(
+      withReview(review(sourceLabel: ' ', generator: null)),
+    ).map((issue) => issue.message).toSet();
+
+    expect(
+      missingReviewMessages,
+      contains('adversarial scenario requires review provenance'),
+    );
+    expect(
+      needsReviewMessages,
+      contains('adversarial scenario review must be reviewed or adjudicated'),
+    );
+    expect(
+      missingDigestMessages,
+      contains('adversarial scenario review sourceDigest is required'),
+    );
+    expect(
+      invalidDigestMessages,
+      contains('scenario review sourceDigest is not a sha256 digest'),
+    );
+    expect(
+      missingOriginMessages,
+      contains(
+        'adversarial scenario review sourceLabel or generator is required',
+      ),
+    );
+  });
+
+  test('validates capability selectors and governed agent prefixes', () {
+    final scenario = EvalScenario(
+      id: 'bad_capability_ids',
+      title: 'Bad capability ids',
+      agentKind: AgentKind.taskAgent,
+      appState: MockedAppState(
+        now: DateTime(2026, 6, 10, 7),
+        categoryIds: const ['cat-work'],
+        tasks: const [
+          MockTask(
+            id: 'task-known',
+            title: 'Known task',
+            status: 'OPEN',
+            categoryId: 'cat-work',
+          ),
+        ],
+      ),
+      userInput: const UserInput(
+        transcript: 'Check bad capability ids.',
+        triggerTokens: {'decided_task:task-known'},
+      ),
+      metadata: const EvalScenarioMetadata(
+        capabilityIds: [
+          'planner.cross.agent',
+          'task.duplicate',
+          'task.duplicate',
+          'unsafe value',
+        ],
+      ),
+    );
+
+    final messages = validateEvalScenario(
+      scenario,
+    ).map((issue) => issue.message).toSet();
+
+    expect(
+      messages,
+      contains(
+        'scenario capability id planner.cross.agent does not match taskAgent',
+      ),
+    );
+    expect(
+      messages,
+      contains('scenario has duplicate capability id task.duplicate'),
+    );
+    expect(
+      messages,
+      contains('scenario capability id unsafe value is not a safe selector'),
+    );
+  });
 }
 
 EvalScenario _taskScenarioWithDurableState(ExpectedDurableState durableState) =>
@@ -887,50 +1208,53 @@ EvalScenario _taskScenarioWithDurableState(ExpectedDurableState durableState) =>
       EvalExpectations(durableState: durableState),
     );
 
-EvalScenario _taskScenarioWithExpectations(EvalExpectations expectations) =>
-    EvalScenario(
-      id: 'task_proposal_oracle_schema',
-      title: 'Task proposal oracle schema',
-      agentKind: AgentKind.taskAgent,
-      appState: MockedAppState(
-        now: DateTime(2026, 6, 10, 7),
-        categoryIds: const ['cat-work'],
-        labels: const [
-          MockLabelDefinition(
-            id: 'lbl-release',
-            name: 'Release',
-            color: '#00AA00',
-          ),
-        ],
-        tasks: const [
-          MockTask(
-            id: 'task-known',
-            title: 'Known task',
-            status: 'OPEN',
-            categoryId: 'cat-work',
-            checklist: [
-              MockChecklistItem(id: 'ci-1', title: 'Old note'),
-              MockChecklistItem(id: 'ci-2', title: 'Move to follow-up'),
-            ],
-          ),
-        ],
-        taskLogEntries: const [
-          MockTaskLogEntry(
-            id: 'task-log-known',
-            taskId: 'task-known',
-            transcript: 'I created the pull request.',
-          ),
+EvalScenario _taskScenarioWithExpectations(
+  EvalExpectations expectations, {
+  List<MockProposalSet> proposalSets = const [],
+}) => EvalScenario(
+  id: 'task_proposal_oracle_schema',
+  title: 'Task proposal oracle schema',
+  agentKind: AgentKind.taskAgent,
+  appState: MockedAppState(
+    now: DateTime(2026, 6, 10, 7),
+    categoryIds: const ['cat-work'],
+    labels: const [
+      MockLabelDefinition(
+        id: 'lbl-release',
+        name: 'Release',
+        color: '#00AA00',
+      ),
+    ],
+    tasks: const [
+      MockTask(
+        id: 'task-known',
+        title: 'Known task',
+        status: 'OPEN',
+        categoryId: 'cat-work',
+        checklist: [
+          MockChecklistItem(id: 'ci-1', title: 'Old note'),
+          MockChecklistItem(id: 'ci-2', title: 'Move to follow-up'),
         ],
       ),
-      userInput: const UserInput(
-        transcript: 'Validate expected proposals.',
-        triggerTokens: {'decided_task:task-known'},
+    ],
+    taskLogEntries: const [
+      MockTaskLogEntry(
+        id: 'task-log-known',
+        taskId: 'task-known',
+        transcript: 'I created the pull request.',
       ),
-      metadata: const EvalScenarioMetadata(
-        capabilityIds: ['task.proposal.schema'],
-      ),
-      expectations: expectations,
-    );
+    ],
+    proposalSets: proposalSets,
+  ),
+  userInput: const UserInput(
+    transcript: 'Validate expected proposals.',
+    triggerTokens: {'decided_task:task-known'},
+  ),
+  metadata: const EvalScenarioMetadata(
+    capabilityIds: ['task.proposal.schema'],
+  ),
+  expectations: expectations,
+);
 
 EvalScenario _plannerScenarioWithDurableState(
   ExpectedDurableState durableState,

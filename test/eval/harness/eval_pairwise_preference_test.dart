@@ -62,6 +62,108 @@ void main() {
     );
   });
 
+  test('rejects malformed blinded pairwise import records', () {
+    final optionA = _ref(
+      profileName: 'candidate',
+      traceDigest: _digest('candidate'),
+    );
+    final optionB = _ref(
+      profileName: 'baseline',
+      traceDigest: _digest('baseline'),
+    );
+    final validImport = _blindedImport(optionA, optionB).toJson();
+
+    expect(
+      BlindedPairwisePreferenceImportRecord.fromJson(
+        validImport,
+      ).optionARawTraceDigest,
+      optionA.traceDigest,
+    );
+
+    for (final malformed in [
+      Map<String, dynamic>.of(validImport)..['kind'] = 'wrong-kind',
+      Map<String, dynamic>.of(validImport)..['blindedPairId'] = '  ',
+      Map<String, dynamic>.of(validImport)
+        ..['reviewPayloadDigest'] = 'not-a-digest',
+      Map<String, dynamic>.of(validImport)..['surprise'] = true,
+    ]) {
+      expect(
+        () => BlindedPairwisePreferenceImportRecord.fromJson(malformed),
+        throwsA(isA<FormatException>()),
+      );
+    }
+  });
+
+  test('rejects unknown pairwise vote fields', () {
+    final vote = _vote(
+      voteId: 'vote-unknown-field',
+      reviewerId: 'judge-a',
+      optionA: _ref(profileName: 'candidate', traceDigest: _digest('left')),
+      optionB: _ref(profileName: 'baseline', traceDigest: _digest('right')),
+    ).toJson()..['extraAuditClaim'] = true;
+
+    expect(
+      () => EvalPairwisePreferenceVote.fromJson(vote),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('unknown field(s): extraAuditClaim'),
+        ),
+      ),
+    );
+  });
+
+  test('rejects unknown nested pairwise trace ref fields', () {
+    final vote = _vote(
+      voteId: 'vote-unknown-trace-field',
+      reviewerId: 'judge-a',
+      optionA: _ref(profileName: 'candidate', traceDigest: _digest('left')),
+      optionB: _ref(profileName: 'baseline', traceDigest: _digest('right')),
+    ).toJson();
+    final optionA = Map<String, dynamic>.of(
+      vote['optionA'] as Map<String, dynamic>,
+    )..['traceDigestOverride'] = _digest('forged');
+    vote['optionA'] = optionA;
+
+    expect(
+      () => EvalPairwisePreferenceVote.fromJson(vote),
+      throwsA(
+        isA<FormatException>().having(
+          (error) => error.message,
+          'message',
+          contains('EvalPairwiseTraceRef has unknown field(s)'),
+        ),
+      ),
+    );
+  });
+
+  test('rejects malformed pairwise vote fields at parse time', () {
+    Map<String, dynamic> voteJson() => _vote(
+      voteId: 'vote-malformed-field',
+      reviewerId: 'judge-a',
+      optionA: _ref(profileName: 'candidate', traceDigest: _digest('left')),
+      optionB: _ref(profileName: 'baseline', traceDigest: _digest('right')),
+    ).toJson();
+
+    final malformedVotes = [
+      voteJson()..['voteId'] = '  ',
+      voteJson()..['reviewerId'] = '  ',
+      voteJson()..['reviewerModel'] = '  ',
+      voteJson()..['promptDigest'] = 'not-a-digest',
+      voteJson()..['calibrationSetVersion'] = '  ',
+      voteJson()..['rationale'] = '  ',
+      voteJson()..['issues'] = ['ok', 7],
+    ];
+
+    for (final malformed in malformedVotes) {
+      expect(
+        () => EvalPairwisePreferenceVote.fromJson(malformed),
+        throwsA(isA<FormatException>()),
+      );
+    }
+  });
+
   test(
     'summarizes a quorum winner without treating it as scalar promotion',
     () {
@@ -158,7 +260,7 @@ void main() {
       summary.preferredTrace?.agentDirectiveVariantName,
       'metadata-first-v2',
     );
-    expect(summary.status, EvalPairwisePreferenceStatus.optionAWins);
+    expect(summary.hasWinner, isTrue);
     expect(summary.validVoteCount, 3);
     expect(summary.optionAVoteCount, 3);
     expect(rendered, contains('promptVariant'));
@@ -387,6 +489,138 @@ void main() {
     expect(imported.invalidVoteCount, 0);
   });
 
+  test('invalidates reviewer model protocol mismatches', () {
+    final optionA = _ref(
+      profileName: 'candidate',
+      traceDigest: _digest('optionA'),
+    );
+    final optionB = _ref(
+      profileName: 'baseline',
+      traceDigest: _digest('optionB'),
+    );
+
+    final llmWithoutModel = _vote(
+      voteId: 'vote-missing-model',
+      reviewerId: 'judge-a',
+      optionA: optionA,
+      optionB: optionB,
+      reviewerModel: null,
+    );
+    final humanWithModel = _vote(
+      voteId: 'vote-human-model',
+      reviewerId: 'human-a',
+      optionA: optionA,
+      optionB: optionB,
+      reviewerKind: EvalPairwiseReviewerKind.human,
+    );
+
+    expect(
+      llmWithoutModel.validate(const EvalPairwisePreferencePolicy()),
+      contains('llmJudge reviewerModel is empty'),
+    );
+    expect(
+      humanWithModel.validate(const EvalPairwisePreferencePolicy()),
+      contains('human reviewerModel must be empty'),
+    );
+  });
+
+  test('marks blinded imports unverified outside readiness-plan gates', () {
+    final optionA = _ref(
+      profileName: 'candidate',
+      traceDigest: _digest('optionA'),
+    );
+    final optionB = _ref(
+      profileName: 'baseline',
+      traceDigest: _digest('optionB'),
+    );
+    final summary = EvalPairwisePreferenceReporter.summarize([
+      _vote(
+        voteId: 'vote-imported-diagnostic',
+        reviewerId: 'judge-a',
+        optionA: optionA,
+        optionB: optionB,
+        blindedImport: _blindedImport(optionA, optionB),
+      ),
+    ], policy: const EvalPairwisePreferencePolicy(minVotes: 1)).single;
+    final rendered = EvalPairwisePreferenceReporter.render([summary]);
+
+    expect(summary.hasWinner, isTrue);
+    expect(
+      summary.findings.join('\n'),
+      contains('not readiness-plan verified'),
+    );
+    expect(rendered, contains('not readiness-plan verified'));
+  });
+
+  test('invalidates forged blinded pairwise import provenance', () {
+    final optionA = _ref(
+      profileName: 'candidate',
+      traceDigest: _digest('optionA'),
+    );
+    final optionB = _ref(
+      profileName: 'baseline',
+      traceDigest: _digest('optionB'),
+    );
+    final vote = _vote(
+      voteId: 'vote-forged-import',
+      reviewerId: 'judge-a',
+      optionA: optionA,
+      optionB: optionB,
+      profileVisible: true,
+      modelIdentityVisible: true,
+      peerVotesVisible: true,
+      traceOrderRandomized: false,
+      blindedImport: BlindedPairwisePreferenceImportRecord(
+        blindedPairId: 'pair-0001',
+        reviewPayloadDigest: _digest('review-payload'),
+        judgeManifestDigest: 'not-a-digest',
+        privateKeyDigest: _digest('private-key'),
+        sourceManifestDigest: _digest('manifest'),
+        optionARawTraceDigest: _digest('stale-option-a'),
+        optionBRawTraceDigest: optionB.traceDigest,
+      ),
+    );
+
+    final failures = vote.validate(
+      const EvalPairwisePreferencePolicy(
+        minVotes: 1,
+        requireProfileBlind: true,
+        requireTraceOrderRandomized: true,
+        requireBlindedImport: true,
+      ),
+    );
+
+    expect(
+      failures,
+      contains('blindedImport.judgeManifestDigest is not a sha256 digest'),
+    );
+    expect(
+      failures,
+      contains(
+        'blindedImport.optionARawTraceDigest does not match option A '
+        'traceDigest',
+      ),
+    );
+    expect(
+      failures,
+      contains('blindedImport is present but profile identity was visible'),
+    );
+    expect(
+      failures,
+      contains(
+        'blindedImport is present but exact model identity was visible',
+      ),
+    );
+    expect(
+      failures,
+      contains('blindedImport is present but peer votes were visible'),
+    );
+    expect(
+      failures,
+      contains('blindedImport is present but trace order was not randomized'),
+    );
+  });
+
   test('invalidates incompatible pairwise trace refs', () {
     final optionA = _ref(
       profileName: 'candidate',
@@ -599,26 +833,44 @@ EvalPairwisePreferenceVote _vote({
   required EvalPairwiseTraceRef optionA,
   required EvalPairwiseTraceRef optionB,
   EvalPairwisePreferenceChoice choice = EvalPairwisePreferenceChoice.optionA,
+  EvalPairwiseReviewerKind reviewerKind = EvalPairwiseReviewerKind.llmJudge,
+  String? reviewerModel = 'claude-code-test',
   String? promptDigest,
   String calibrationSetVersion = 'pairwise-gold-v1',
+  bool profileVisible = false,
   bool modelIdentityVisible = false,
   bool peerVotesVisible = false,
   bool traceOrderRandomized = true,
+  BlindedPairwisePreferenceImportRecord? blindedImport,
 }) => EvalPairwisePreferenceVote(
   voteId: voteId,
   optionA: optionA,
   optionB: optionB,
   reviewerId: reviewerId,
-  reviewerKind: EvalPairwiseReviewerKind.llmJudge,
-  reviewerModel: 'claude-code-test',
+  reviewerKind: reviewerKind,
+  reviewerModel: reviewerModel,
   promptDigest: promptDigest ?? _digest('pairwise-prompt'),
   calibrationSetVersion: calibrationSetVersion,
-  profileVisible: false,
+  profileVisible: profileVisible,
   modelIdentityVisible: modelIdentityVisible,
   peerVotesVisible: peerVotesVisible,
   traceOrderRandomized: traceOrderRandomized,
   choice: choice,
   rationale: 'The selected trace is more faithful and concise.',
+  blindedImport: blindedImport,
+);
+
+BlindedPairwisePreferenceImportRecord _blindedImport(
+  EvalPairwiseTraceRef optionA,
+  EvalPairwiseTraceRef optionB,
+) => BlindedPairwisePreferenceImportRecord(
+  blindedPairId: 'pair-0001',
+  reviewPayloadDigest: _digest('review-payload'),
+  judgeManifestDigest: _digest('judge-manifest'),
+  privateKeyDigest: _digest('private-key'),
+  sourceManifestDigest: _digest('manifest'),
+  optionARawTraceDigest: optionA.traceDigest,
+  optionBRawTraceDigest: optionB.traceDigest,
 );
 
 String _digest(String value) => EvalProvenance.digestText(value);

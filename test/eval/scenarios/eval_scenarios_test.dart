@@ -9,7 +9,7 @@ void main() {
 
     expect(ids.toSet(), hasLength(ids.length));
     expect(planningEvalScenarios, hasLength(6));
-    expect(taskEvalScenarios, hasLength(10));
+    expect(taskEvalScenarios, hasLength(12));
     expect(
       allEvalScenarios.every(
         (scenario) => scenario.userInput.triggerTokens.isNotEmpty,
@@ -29,7 +29,7 @@ void main() {
           .where((scenario) => scenario.metadata.isAdversarial)
           .every(
             (scenario) =>
-                scenario.metadata.source == EvalScenarioSource.adversarial ||
+                scenario.metadata.source == EvalScenarioSource.adversarial &&
                 scenario.metadata.tags.contains('adversarial'),
           ),
       isTrue,
@@ -103,15 +103,14 @@ void main() {
     );
   });
 
-  test('synthetic adversarial scenarios require source provenance', () {
-    final syntheticAdversarial = allEvalScenarios.where(
-      (scenario) =>
-          scenario.metadata.isAdversarial &&
-          scenario.metadata.source == EvalScenarioSource.synthetic,
-    );
+  test('public adversarial scenarios require source provenance', () {
+    final adversarial = allEvalScenarios
+        .where((scenario) => scenario.metadata.isAdversarial)
+        .toList();
 
+    expect(adversarial, isNotEmpty);
     expect(
-      syntheticAdversarial.every((scenario) {
+      adversarial.every((scenario) {
         final review = scenario.metadata.review;
         final sourceDigest = review?.sourceDigest;
         return review != null &&
@@ -124,7 +123,7 @@ void main() {
       }),
       isTrue,
       reason:
-          'synthetic adversarial evidence needs review source provenance before '
+          'public adversarial evidence needs review source provenance before '
           'it can count toward tuning-readiness gates',
     );
   });

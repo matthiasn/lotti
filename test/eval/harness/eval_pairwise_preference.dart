@@ -56,6 +56,17 @@ class BlindedPairwisePreferenceImportRecord {
   factory BlindedPairwisePreferenceImportRecord.fromJson(
     Map<String, dynamic> json,
   ) {
+    _rejectUnknownFields(json, 'BlindedPairwisePreferenceImportRecord', {
+      'schemaVersion',
+      'kind',
+      'blindedPairId',
+      'reviewPayloadDigest',
+      'judgeManifestDigest',
+      'privateKeyDigest',
+      'sourceManifestDigest',
+      'optionARawTraceDigest',
+      'optionBRawTraceDigest',
+    });
     final rawVersion = json['schemaVersion'];
     if (rawVersion != schemaVersion) {
       throw FormatException(
@@ -63,18 +74,26 @@ class BlindedPairwisePreferenceImportRecord {
         '$rawVersion (expected $schemaVersion)',
       );
     }
+    final kind = _requiredNonEmptyString(json, 'kind');
+    if (kind != kindValue) {
+      throw FormatException(
+        'Unsupported BlindedPairwisePreferenceImportRecord kind "$kind" '
+        '(expected $kindValue)',
+      );
+    }
     return BlindedPairwisePreferenceImportRecord(
-      blindedPairId: json['blindedPairId'] as String,
-      reviewPayloadDigest: json['reviewPayloadDigest'] as String,
-      judgeManifestDigest: json['judgeManifestDigest'] as String,
-      privateKeyDigest: json['privateKeyDigest'] as String,
-      sourceManifestDigest: json['sourceManifestDigest'] as String,
-      optionARawTraceDigest: json['optionARawTraceDigest'] as String,
-      optionBRawTraceDigest: json['optionBRawTraceDigest'] as String,
+      blindedPairId: _requiredNonEmptyString(json, 'blindedPairId'),
+      reviewPayloadDigest: _requiredDigest(json, 'reviewPayloadDigest'),
+      judgeManifestDigest: _requiredDigest(json, 'judgeManifestDigest'),
+      privateKeyDigest: _requiredDigest(json, 'privateKeyDigest'),
+      sourceManifestDigest: _requiredDigest(json, 'sourceManifestDigest'),
+      optionARawTraceDigest: _requiredDigest(json, 'optionARawTraceDigest'),
+      optionBRawTraceDigest: _requiredDigest(json, 'optionBRawTraceDigest'),
     );
   }
 
   static const schemaVersion = 1;
+  static const kindValue = 'lotti.blindedPairwisePreferenceImport';
 
   final String blindedPairId;
   final String reviewPayloadDigest;
@@ -86,7 +105,7 @@ class BlindedPairwisePreferenceImportRecord {
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'schemaVersion': schemaVersion,
-    'kind': 'lotti.blindedPairwisePreferenceImport',
+    'kind': kindValue,
     'blindedPairId': blindedPairId,
     'reviewPayloadDigest': reviewPayloadDigest,
     'judgeManifestDigest': judgeManifestDigest,
@@ -133,28 +152,50 @@ class EvalPairwiseTraceRef {
     agentDirectiveVariantDigest: trace.provenance.agentDirectiveVariantDigest,
   );
 
-  factory EvalPairwiseTraceRef.fromJson(Map<String, dynamic> json) =>
-      EvalPairwiseTraceRef(
-        runId: json['runId'] as String,
-        scenarioId: json['scenarioId'] as String,
-        profileName: json['profileName'] as String,
-        agentDirectiveVariantName:
-            (json['agentDirectiveVariantName'] as String?) ?? 'default',
-        agentKind: AgentKind.fromName(json['agentKind'] as String),
-        modelClass: EvalModelClass.fromName(json['modelClass'] as String),
-        capabilityId: (json['capabilityId'] as String?) ?? '',
-        trialIndex: (json['trialIndex'] as num).toInt(),
-        cascadeWake: json['cascadeWake'] == null
-            ? null
-            : EvalTraceCascadeWake.fromJson(
-                json['cascadeWake'] as Map<String, dynamic>,
-              ),
-        traceDigest: json['traceDigest'] as String,
-        scenarioDigest: json['scenarioDigest'] as String,
-        profileDigest: json['profileDigest'] as String,
-        agentDirectiveVariantDigest:
-            (json['agentDirectiveVariantDigest'] as String?) ?? '',
-      );
+  factory EvalPairwiseTraceRef.fromJson(Map<String, dynamic> json) {
+    _rejectUnknownFields(json, 'EvalPairwiseTraceRef', {
+      'runId',
+      'scenarioId',
+      'profileName',
+      'agentDirectiveVariantName',
+      'agentKind',
+      'modelClass',
+      'capabilityId',
+      'trialIndex',
+      'cascadeWake',
+      'traceDigest',
+      'scenarioDigest',
+      'profileDigest',
+      'agentDirectiveVariantDigest',
+    });
+    return EvalPairwiseTraceRef(
+      runId: _requiredNonEmptyString(json, 'runId'),
+      scenarioId: _requiredNonEmptyString(json, 'scenarioId'),
+      profileName: _requiredNonEmptyString(json, 'profileName'),
+      agentDirectiveVariantName: _requiredNonEmptyString(
+        json,
+        'agentDirectiveVariantName',
+      ),
+      agentKind: AgentKind.fromName(_requiredNonEmptyString(json, 'agentKind')),
+      modelClass: EvalModelClass.fromName(
+        _requiredNonEmptyString(json, 'modelClass'),
+      ),
+      capabilityId: _requiredNonEmptyString(json, 'capabilityId'),
+      trialIndex: _requiredInt(json, 'trialIndex'),
+      cascadeWake: json['cascadeWake'] == null
+          ? null
+          : EvalTraceCascadeWake.fromJson(
+              _requiredObject(json, 'cascadeWake'),
+            ),
+      traceDigest: _requiredDigest(json, 'traceDigest'),
+      scenarioDigest: _requiredDigest(json, 'scenarioDigest'),
+      profileDigest: _requiredDigest(json, 'profileDigest'),
+      agentDirectiveVariantDigest: _requiredDigest(
+        json,
+        'agentDirectiveVariantDigest',
+      ),
+    );
+  }
 
   final String runId;
   final String scenarioId;
@@ -230,6 +271,25 @@ class EvalPairwisePreferenceVote {
   });
 
   factory EvalPairwisePreferenceVote.fromJson(Map<String, dynamic> json) {
+    _rejectUnknownFields(json, 'EvalPairwisePreferenceVote', {
+      'schemaVersion',
+      'voteId',
+      'optionA',
+      'optionB',
+      'reviewerId',
+      'reviewerKind',
+      'reviewerModel',
+      'promptDigest',
+      'calibrationSetVersion',
+      'profileVisible',
+      'modelIdentityVisible',
+      'peerVotesVisible',
+      'traceOrderRandomized',
+      'choice',
+      'rationale',
+      'blindedImport',
+      'issues',
+    });
     final schemaVersion = json['schemaVersion'];
     if (schemaVersion != EvalPairwisePreferenceVote.schemaVersion) {
       throw FormatException(
@@ -238,34 +298,37 @@ class EvalPairwisePreferenceVote {
       );
     }
     return EvalPairwisePreferenceVote(
-      voteId: json['voteId'] as String,
+      voteId: _requiredNonEmptyString(json, 'voteId'),
       optionA: EvalPairwiseTraceRef.fromJson(
-        json['optionA'] as Map<String, dynamic>,
+        _requiredObject(json, 'optionA'),
       ),
       optionB: EvalPairwiseTraceRef.fromJson(
-        json['optionB'] as Map<String, dynamic>,
+        _requiredObject(json, 'optionB'),
       ),
-      reviewerId: json['reviewerId'] as String,
+      reviewerId: _requiredNonEmptyString(json, 'reviewerId'),
       reviewerKind: EvalPairwiseReviewerKind.fromName(
-        json['reviewerKind'] as String,
+        _requiredNonEmptyString(json, 'reviewerKind'),
       ),
-      reviewerModel: json['reviewerModel'] as String?,
-      promptDigest: json['promptDigest'] as String,
-      calibrationSetVersion: json['calibrationSetVersion'] as String,
-      profileVisible: json['profileVisible'] as bool,
-      modelIdentityVisible: json['modelIdentityVisible'] as bool,
-      peerVotesVisible: json['peerVotesVisible'] as bool,
-      traceOrderRandomized: json['traceOrderRandomized'] as bool,
-      choice: EvalPairwisePreferenceChoice.fromName(json['choice'] as String),
-      rationale: json['rationale'] as String,
+      reviewerModel: _optionalNonEmptyString(json, 'reviewerModel'),
+      promptDigest: _requiredDigest(json, 'promptDigest'),
+      calibrationSetVersion: _requiredNonEmptyString(
+        json,
+        'calibrationSetVersion',
+      ),
+      profileVisible: _requiredBool(json, 'profileVisible'),
+      modelIdentityVisible: _requiredBool(json, 'modelIdentityVisible'),
+      peerVotesVisible: _requiredBool(json, 'peerVotesVisible'),
+      traceOrderRandomized: _requiredBool(json, 'traceOrderRandomized'),
+      choice: EvalPairwisePreferenceChoice.fromName(
+        _requiredNonEmptyString(json, 'choice'),
+      ),
+      rationale: _requiredNonEmptyString(json, 'rationale'),
       blindedImport: json['blindedImport'] == null
           ? null
           : BlindedPairwisePreferenceImportRecord.fromJson(
-              json['blindedImport'] as Map<String, dynamic>,
+              _requiredObject(json, 'blindedImport'),
             ),
-      issues: ((json['issues'] as List<dynamic>?) ?? const <dynamic>[])
-          .map((e) => e as String)
-          .toList(),
+      issues: _optionalStringList(json, 'issues'),
     );
   }
 
@@ -307,6 +370,17 @@ class EvalPairwisePreferenceVote {
       EvalPairwisePreferenceChoice.tie => EvalPairwisePreferenceChoice.tie,
     };
   }
+
+  String get reviewProtocolFingerprint => [
+    'kind=${reviewerKind.name}',
+    'model=${reviewerModel ?? ''}',
+    'prompt=$promptDigest',
+    'calibration=$calibrationSetVersion',
+    'profileVisible=$profileVisible',
+    'modelIdentityVisible=$modelIdentityVisible',
+    'peerVotesVisible=$peerVotesVisible',
+    'traceOrderRandomized=$traceOrderRandomized',
+  ].join('|');
 
   EvalPairwiseComparisonAxis get comparisonAxis {
     final profileDiffers = optionA.profileName != optionB.profileName;
@@ -437,6 +511,16 @@ class EvalPairwisePreferenceVote {
     if (policy.requireBlindedImport && blindedImport == null) {
       failures.add('missing blinded pairwise import provenance');
     }
+    if (reviewerKind == EvalPairwiseReviewerKind.llmJudge &&
+        (reviewerModel == null || reviewerModel!.trim().isEmpty)) {
+      failures.add('llmJudge reviewerModel is empty');
+    }
+    if (reviewerKind == EvalPairwiseReviewerKind.human &&
+        reviewerModel != null &&
+        reviewerModel!.trim().isNotEmpty) {
+      failures.add('human reviewerModel must be empty');
+    }
+    _validateBlindedImportRecord(failures, this);
     return failures;
   }
 }
@@ -452,6 +536,40 @@ class EvalPairwisePreferencePolicy {
     this.requireBlindedImport = false,
   });
 
+  factory EvalPairwisePreferencePolicy.fromJson(Map<String, dynamic> json) {
+    final unknown = json.keys.where(
+      (key) => !const {
+        'minVotes',
+        'quorumFraction',
+        'requireModelIdentityBlind',
+        'requireProfileBlind',
+        'requirePeerVoteBlind',
+        'requireTraceOrderRandomized',
+        'requireBlindedImport',
+      }.contains(key),
+    );
+    if (unknown.isNotEmpty) {
+      throw FormatException(
+        'EvalPairwisePreferencePolicy has unsupported field ${unknown.first}',
+      );
+    }
+    return EvalPairwisePreferencePolicy(
+      minVotes: _requiredInt(json, 'minVotes'),
+      quorumFraction: _requiredDouble(json, 'quorumFraction'),
+      requireModelIdentityBlind: _requiredBool(
+        json,
+        'requireModelIdentityBlind',
+      ),
+      requireProfileBlind: _requiredBool(json, 'requireProfileBlind'),
+      requirePeerVoteBlind: _requiredBool(json, 'requirePeerVoteBlind'),
+      requireTraceOrderRandomized: _requiredBool(
+        json,
+        'requireTraceOrderRandomized',
+      ),
+      requireBlindedImport: _requiredBool(json, 'requireBlindedImport'),
+    );
+  }
+
   final int minVotes;
   final double quorumFraction;
   final bool requireModelIdentityBlind;
@@ -459,6 +577,16 @@ class EvalPairwisePreferencePolicy {
   final bool requirePeerVoteBlind;
   final bool requireTraceOrderRandomized;
   final bool requireBlindedImport;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'minVotes': minVotes,
+    'quorumFraction': quorumFraction,
+    'requireModelIdentityBlind': requireModelIdentityBlind,
+    'requireProfileBlind': requireProfileBlind,
+    'requirePeerVoteBlind': requirePeerVoteBlind,
+    'requireTraceOrderRandomized': requireTraceOrderRandomized,
+    'requireBlindedImport': requireBlindedImport,
+  };
 
   List<String> validate() {
     final failures = <String>[];
@@ -626,6 +754,17 @@ abstract final class EvalPairwisePreferenceReporter {
       for (final vote in votes)
         if (!invalidVoteIds.contains(vote.voteId)) vote,
     ];
+    if (!policy.requireBlindedImport) {
+      final unverifiedImportCount = validVotes
+          .where((vote) => vote.blindedImport != null)
+          .length;
+      if (unverifiedImportCount > 0) {
+        findings.add(
+          'blinded import provenance present but not readiness-plan verified: '
+          '$unverifiedImportCount vote(s)',
+        );
+      }
+    }
     final optionACount = _choiceCount(
       validVotes,
       EvalPairwisePreferenceChoice.optionA,
@@ -736,6 +875,159 @@ void _requireDigest(List<String> failures, String field, String value) {
   }
 }
 
+void _validateBlindedImportRecord(
+  List<String> failures,
+  EvalPairwisePreferenceVote vote,
+) {
+  final provenance = vote.blindedImport;
+  if (provenance == null) return;
+  _requireNonEmpty(
+    failures,
+    'blindedImport.blindedPairId',
+    provenance.blindedPairId,
+  );
+  _requireDigest(
+    failures,
+    'blindedImport.reviewPayloadDigest',
+    provenance.reviewPayloadDigest,
+  );
+  _requireDigest(
+    failures,
+    'blindedImport.judgeManifestDigest',
+    provenance.judgeManifestDigest,
+  );
+  _requireDigest(
+    failures,
+    'blindedImport.privateKeyDigest',
+    provenance.privateKeyDigest,
+  );
+  _requireDigest(
+    failures,
+    'blindedImport.sourceManifestDigest',
+    provenance.sourceManifestDigest,
+  );
+  _requireDigest(
+    failures,
+    'blindedImport.optionARawTraceDigest',
+    provenance.optionARawTraceDigest,
+  );
+  _requireDigest(
+    failures,
+    'blindedImport.optionBRawTraceDigest',
+    provenance.optionBRawTraceDigest,
+  );
+  if (provenance.optionARawTraceDigest != vote.optionA.traceDigest) {
+    failures.add(
+      'blindedImport.optionARawTraceDigest does not match option A traceDigest',
+    );
+  }
+  if (provenance.optionBRawTraceDigest != vote.optionB.traceDigest) {
+    failures.add(
+      'blindedImport.optionBRawTraceDigest does not match option B traceDigest',
+    );
+  }
+  if (vote.profileVisible) {
+    failures.add('blindedImport is present but profile identity was visible');
+  }
+  if (vote.modelIdentityVisible) {
+    failures.add(
+      'blindedImport is present but exact model identity was visible',
+    );
+  }
+  if (vote.peerVotesVisible) {
+    failures.add('blindedImport is present but peer votes were visible');
+  }
+  if (!vote.traceOrderRandomized) {
+    failures.add('blindedImport is present but trace order was not randomized');
+  }
+}
+
+void _rejectUnknownFields(
+  Map<String, dynamic> json,
+  String typeName,
+  Set<String> allowed,
+) {
+  final unknown = json.keys.where((key) => !allowed.contains(key)).toList()
+    ..sort();
+  if (unknown.isNotEmpty) {
+    throw FormatException(
+      '$typeName has unknown field(s): ${unknown.join(', ')}',
+    );
+  }
+}
+
+String _requiredNonEmptyString(Map<String, dynamic> json, String field) {
+  final value = json[field];
+  if (value is! String || value.trim().isEmpty) {
+    throw FormatException('$field must be a non-empty string');
+  }
+  return value;
+}
+
+String? _optionalNonEmptyString(Map<String, dynamic> json, String field) {
+  final value = json[field];
+  if (value == null) return null;
+  if (value is! String || value.trim().isEmpty) {
+    throw FormatException('$field must be a non-empty string when present');
+  }
+  return value;
+}
+
+String _requiredDigest(Map<String, dynamic> json, String field) {
+  final value = _requiredNonEmptyString(json, field);
+  if (!EvalProvenance.isDigest(value)) {
+    throw FormatException('$field must be a sha256 digest');
+  }
+  return value;
+}
+
+Map<String, dynamic> _requiredObject(Map<String, dynamic> json, String field) {
+  final value = json[field];
+  if (value is! Map<String, dynamic>) {
+    throw FormatException('$field must be an object');
+  }
+  return value;
+}
+
+int _requiredInt(Map<String, dynamic> json, String field) {
+  final value = json[field];
+  if (value is! num || value % 1 != 0) {
+    throw FormatException('$field must be an integer');
+  }
+  return value.toInt();
+}
+
+double _requiredDouble(Map<String, dynamic> json, String field) {
+  final value = json[field];
+  if (value is num && value.isFinite) return value.toDouble();
+  throw FormatException('$field must be a finite number');
+}
+
+bool _requiredBool(Map<String, dynamic> json, String field) {
+  final value = json[field];
+  if (value is! bool) {
+    throw FormatException('$field must be a boolean');
+  }
+  return value;
+}
+
+List<String> _optionalStringList(Map<String, dynamic> json, String field) {
+  final value = json[field];
+  if (value == null) return const <String>[];
+  if (value is! List<dynamic>) {
+    throw FormatException('$field must be a list');
+  }
+  final issues = <String>[];
+  for (var index = 0; index < value.length; index++) {
+    final issue = value[index];
+    if (issue is! String) {
+      throw FormatException('$field[$index] must be a string');
+    }
+    issues.add(issue);
+  }
+  return issues;
+}
+
 String _clip(String value, int width) {
   if (value.length <= width) return value;
   if (width <= 1) return value.substring(0, width);
@@ -751,27 +1043,22 @@ String _optionLabel(
   EvalPairwiseComparisonAxis.invalid => ref.profileName,
 };
 
-String _reviewProtocolKey(EvalPairwisePreferenceVote vote) => [
-  vote.reviewerKind.name,
-  vote.reviewerModel ?? '',
-  vote.promptDigest,
-  vote.calibrationSetVersion,
-  vote.profileVisible,
-  vote.modelIdentityVisible,
-  vote.peerVotesVisible,
-  vote.traceOrderRandomized,
-].join('\n');
+String _reviewProtocolKey(EvalPairwisePreferenceVote vote) =>
+    vote.reviewProtocolFingerprint;
 
 List<String> _reviewProtocolLabels(
   Map<String, List<EvalPairwisePreferenceVote>> protocolKeys,
 ) => [
-  for (final votes in protocolKeys.values)
-    '${votes.first.reviewerKind.name}/'
-        '${votes.first.reviewerModel ?? 'unmodeled'}/'
-        '${votes.first.calibrationSetVersion}/'
-        '${_clip(votes.first.promptDigest, 18)}/'
-        'profileVisible=${votes.first.profileVisible}/'
-        'modelVisible=${votes.first.modelIdentityVisible}/'
-        'peerVisible=${votes.first.peerVotesVisible}/'
-        'randomized=${votes.first.traceOrderRandomized}',
+  for (final votes in protocolKeys.values) _reviewProtocolLabel(votes.first),
 ];
+
+String _reviewProtocolLabel(EvalPairwisePreferenceVote vote) => [
+  vote.reviewerKind.name,
+  vote.reviewerModel ?? 'unmodeled',
+  vote.calibrationSetVersion,
+  _clip(vote.promptDigest, 18),
+  'profileVisible=${vote.profileVisible}',
+  'modelVisible=${vote.modelIdentityVisible}',
+  'peerVisible=${vote.peerVotesVisible}',
+  'randomized=${vote.traceOrderRandomized}',
+].join('/');
