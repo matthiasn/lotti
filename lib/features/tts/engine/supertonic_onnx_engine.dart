@@ -27,8 +27,8 @@ typedef TempDirProvider = Future<Directory> Function();
 ///
 /// The loaded session and per-voice styles are cached so repeated playback
 /// reuses them. Synthesis writes a 44.1kHz WAV to a temp file the player
-/// opens. Gated to the Apple platforms (macOS + iOS), where `flutter_onnxruntime`
-/// is integrated and verified to link; other platforms fall back to the
+/// opens. Gated to the platforms where `flutter_onnxruntime` is integrated and
+/// verified to link (macOS, iOS, Linux); other platforms fall back to the
 /// unavailable engine.
 ///
 /// The session loader, voice-style loader, and temp-dir provider are injected
@@ -54,7 +54,8 @@ class SupertonicOnnxEngine implements TtsEngine {
   int _counter = 0;
 
   @override
-  bool get isSupported => platform.isMacOS || platform.isIOS;
+  bool get isSupported =>
+      platform.isMacOS || platform.isIOS || platform.isLinux;
 
   @override
   Future<File> synthesizeToFile({

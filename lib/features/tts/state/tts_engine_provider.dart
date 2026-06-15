@@ -33,12 +33,12 @@ class UnavailableTtsEngine implements TtsEngine {
   Future<void> dispose() async {}
 }
 
-/// Provides the on-device TTS engine — the Supertonic ONNX engine on the Apple
-/// platforms (macOS + iOS), the unavailable fallback elsewhere. Tests override
-/// this with a fake.
+/// Provides the on-device TTS engine — the Supertonic ONNX engine on the
+/// platforms where `flutter_onnxruntime` is integrated (macOS, iOS, Linux), the
+/// unavailable fallback elsewhere. Tests override this with a fake.
 @Riverpod(keepAlive: true)
 TtsEngine ttsEngine(Ref ref) {
-  if (!platform.isMacOS && !platform.isIOS) {
+  if (!platform.isMacOS && !platform.isIOS && !platform.isLinux) {
     return const UnavailableTtsEngine();
   }
   final engine = SupertonicOnnxEngine();

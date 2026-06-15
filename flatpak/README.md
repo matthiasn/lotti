@@ -40,6 +40,36 @@ direct-build/output/
 └── cargokit/                        # Cargokit patches
 ```
 
+### ONNX Runtime (on-device TTS)
+
+`flutter_onnxruntime` (vendored fork under `third_party/flutter_onnxruntime`)
+powers on-device TTS. Its Linux CMake otherwise **downloads** the ONNX Runtime
+binary at configure time, which fails in the offline Flathub build sandbox
+(`CMake Error … extraction directory doesn't exist`).
+
+This is handled directly in the manifest template
+(`com.matthiasn.lotti.flatpak-flutter.yml`), not via the `foreign_deps.json`
+overlay — that overlay targets pub.dev packages (objectbox, sqlite3), whereas
+this is a path-dependency fork we own:
+
+- An `onnxruntime` module vendors the official prebuilt runtime as declared
+  per-arch `archive` sources (fetched in the networked download phase) and
+  installs `lib/` + `include/` into `/app`.
+- The `lotti` module exports `ONNXRUNTIME_ROOT_DIR=/app` (and
+  `CMAKE_PREFIX_PATH=/app`); the fork's CMake seeds `ONNXRUNTIME_ROOT_DIR` from
+  that env (a `LOTTI FORK PATCH`) and finds the pre-provided runtime instead of
+  downloading.
+
+**When bumping the ONNX Runtime version** (must match what the fork's CMake
+expects — currently `1.22.0`): update both the URL and the `sha256` for each
+arch in the `onnxruntime` module. Get the hashes with:
+
+```bash
+for a in x64 aarch64; do
+  curl -sL "https://github.com/microsoft/onnxruntime/releases/download/v<VER>/onnxruntime-linux-$a-<VER>.tgz" | sha256sum
+done
+```
+
 ## Release Workflow
 
 ### Automated (primary path)

@@ -32,31 +32,42 @@ void main() {
   group('ttsEngine provider', () {
     late bool originalMac;
     late bool originalIos;
+    late bool originalLinux;
 
     setUp(() {
       originalMac = platform.isMacOS;
       originalIos = platform.isIOS;
+      originalLinux = platform.isLinux;
+      // Clean baseline so the host platform doesn't leak into assertions.
+      platform.isMacOS = false;
+      platform.isIOS = false;
+      platform.isLinux = false;
     });
     tearDown(() {
       platform.isMacOS = originalMac;
       platform.isIOS = originalIos;
+      platform.isLinux = originalLinux;
     });
 
-    test('falls back to the unavailable engine off the Apple platforms', () {
-      platform.isMacOS = false;
-      platform.isIOS = false;
+    test('falls back to the unavailable engine on unsupported platforms', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       expect(container.read(ttsEngineProvider), isA<UnavailableTtsEngine>());
     });
 
-    test('provides the Supertonic engine on the Apple platforms', () {
-      platform.isMacOS = true;
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    for (final entry in <String, void Function()>{
+      'macOS': () => platform.isMacOS = true,
+      'iOS': () => platform.isIOS = true,
+      'Linux': () => platform.isLinux = true,
+    }.entries) {
+      test('provides the Supertonic engine on ${entry.key}', () {
+        entry.value();
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      expect(container.read(ttsEngineProvider), isA<SupertonicOnnxEngine>());
-    });
+        expect(container.read(ttsEngineProvider), isA<SupertonicOnnxEngine>());
+      });
+    }
   });
 }

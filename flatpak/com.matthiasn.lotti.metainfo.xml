@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1025" date="2026-06-15">
+      <description>
+          <p>Experimental on-device text-to-speech is now available on Linux too: with the "Enable local AI summary playback" flag on, the AI summary card's play button reads a task's TL;DR aloud, synthesized locally with the Supertonic model — no cloud. Still off by default; the model (~400 MB) downloads once on first use.</p>
+      </description>
+    </release>
     <release version="0.9.1024" date="2026-06-15">
       <description>
           <p>Category selection is now one consistent picker across the app: assigning a category (entries, tasks, projects, habits, dashboards, time blocks) opens the same searchable sheet and applies on tap, and the habits and dashboards category filters use that same sheet with an Apply button instead of toggling on each tap.</p>
