@@ -70,20 +70,38 @@ class DesignSystemNavigationFrostedSurface extends StatelessWidget {
     required this.child,
     required this.borderRadius,
     this.padding = EdgeInsets.zero,
+    this.includeBottomBorder = true,
     super.key,
   });
 
   /// Width of the hairline border drawn around the surface.
-  /// `Container` stacks it onto [padding] on every side,
+  /// `Container` stacks it onto [padding] on each bordered side,
   /// so height math that depends on this surface (e.g. the bottom nav's
   /// occupied height) must account for it through this constant rather
-  /// than a magic number. [build] passes it to `Border.all` explicitly,
+  /// than a magic number. [build] passes it to the border explicitly,
   /// so the rendered width and the height math cannot drift apart.
   static const double borderWidth = 1;
 
   final Widget child;
   final BorderRadius borderRadius;
   final EdgeInsets padding;
+
+  /// Whether the hairline border is drawn along the bottom edge. The docked
+  /// bottom navigation bar sits flush against the screen edge, so a bottom
+  /// hairline renders as a stray light line below the bar — it sets this to
+  /// `false` to drop the bottom side (the rounded top and the two sides keep
+  /// theirs). Callers that omit it shed one [borderWidth] from their height
+  /// math accordingly.
+  final bool includeBottomBorder;
+
+  static BorderSide _hairline(DsTokens tokens) => BorderSide(
+    color: tokens.colors.decorative.level01.withValues(alpha: 0.4),
+    // Deliberately explicit even though it matches the default: [borderWidth]
+    // feeds the bottom nav's occupied-height math, and relying on the
+    // framework default would let the two silently drift apart.
+    // ignore: avoid_redundant_argument_values
+    width: borderWidth,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -104,15 +122,23 @@ class DesignSystemNavigationFrostedSurface extends StatelessWidget {
           padding: padding,
           decoration: BoxDecoration(
             color: frostedFill,
-            borderRadius: borderRadius,
-            border: Border.all(
-              color: tokens.colors.decorative.level01.withValues(alpha: 0.4),
-              // Deliberately explicit even though it matches the default:
-              // [borderWidth] feeds the bottom nav's occupied-height math,
-              // and relying on the framework default would let the two
-              // silently drift apart.
-              // ignore: avoid_redundant_argument_values
-              width: borderWidth,
+            // BoxDecoration asserts a borderRadius is only valid with a
+            // uniform border; the docked bar's bottom-less border is
+            // non-uniform, so the radius is dropped here and the rounded
+            // corners come from the enclosing ClipRRect (which clips the
+            // fill and the hairline together) instead.
+            borderRadius: includeBottomBorder ? borderRadius : null,
+            // Deliberately explicit even though [borderWidth] matches the
+            // framework default: it feeds the bottom nav's occupied-height
+            // math, and relying on the default would let the two silently
+            // drift apart. The docked bottom bar drops the bottom side
+            // (includeBottomBorder == false) so no stray hairline shows
+            // below it.
+            border: Border(
+              top: _hairline(tokens),
+              left: _hairline(tokens),
+              right: _hairline(tokens),
+              bottom: includeBottomBorder ? _hairline(tokens) : BorderSide.none,
             ),
             boxShadow: [
               BoxShadow(

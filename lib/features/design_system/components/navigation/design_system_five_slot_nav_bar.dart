@@ -97,15 +97,18 @@ class DesignSystemFiveSlotNavBar extends StatelessWidget {
 
   /// Total rendered height of the bar: content plus the frosted surface's
   /// vertical padding, its hairline border (which `Container` stacks onto
-  /// the padding on each side), and the absorbed bottom safe-area inset
-  /// (see [_bottomPadding]). Shared with the bottom-nav container's
-  /// occupied-height math so the numbers cannot drift apart.
+  /// the padding on each bordered side), and the absorbed bottom safe-area
+  /// inset (see [_bottomPadding]). The docked bar omits the bottom border
+  /// (`includeBottomBorder: false`), so only the top hairline contributes
+  /// here — a single [DesignSystemNavigationFrostedSurface.borderWidth], not
+  /// two. Shared with the bottom-nav container's occupied-height math so the
+  /// numbers cannot drift apart.
   static double barHeight(BuildContext context) {
     final tokens = context.designTokens;
     return contentHeight(context) +
         tokens.spacing.step2 +
         _bottomPadding(context) +
-        DesignSystemNavigationFrostedSurface.borderWidth * 2;
+        DesignSystemNavigationFrostedSurface.borderWidth;
   }
 
   /// Bottom padding of the frosted surface: [bottomInsetFraction] of the
@@ -184,6 +187,10 @@ class DesignSystemFiveSlotNavBar extends StatelessWidget {
       borderRadius: BorderRadius.vertical(
         top: Radius.circular(tokens.radii.sectionCards),
       ),
+      // Flush against the screen edge, so the bottom hairline would render
+      // as a stray light line below the bar — drop it. [barHeight] accounts
+      // for the single remaining (top) hairline.
+      includeBottomBorder: false,
       // The safe-area insets live inside the surface so the frosted fill
       // reaches the physical edges while the slot row stays clear of the
       // home indicator, notches, and landscape navigation buttons. The
