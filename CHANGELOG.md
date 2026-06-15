@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1025]
+### Added
+- Experimental on-device text-to-speech is now available on Linux too (in
+  addition to macOS and iOS): with the "Enable local AI summary playback" flag
+  on, the AI summary card's play button reads a task's TL;DR aloud — or the full
+  report when expanded — synthesized locally with the Supertonic model, no
+  cloud. Still off by default; the model (~400 MB) downloads once on first use.
+
 ## [0.9.1024]
 ### Changed
 - Category selection is now one consistent picker across the app. Assigning a

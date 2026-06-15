@@ -67,26 +67,39 @@ void main() {
   );
 
   group('isSupported', () {
-    test('is true on the Apple platforms and false elsewhere', () {
-      final engine = buildEngine();
-      final originalMac = platform.isMacOS;
-      final originalIos = platform.isIOS;
-      addTearDown(() {
-        platform.isMacOS = originalMac;
-        platform.isIOS = originalIos;
-      });
+    late bool originalMac;
+    late bool originalIos;
+    late bool originalLinux;
 
+    setUp(() {
+      originalMac = platform.isMacOS;
+      originalIos = platform.isIOS;
+      originalLinux = platform.isLinux;
+      // Clean baseline so the host platform doesn't leak into assertions.
       platform.isMacOS = false;
       platform.isIOS = false;
-      expect(engine.isSupported, isFalse);
-
-      platform.isMacOS = true;
-      expect(engine.isSupported, isTrue);
-
-      platform.isMacOS = false;
-      platform.isIOS = true;
-      expect(engine.isSupported, isTrue);
+      platform.isLinux = false;
     });
+    tearDown(() {
+      platform.isMacOS = originalMac;
+      platform.isIOS = originalIos;
+      platform.isLinux = originalLinux;
+    });
+
+    test('is false when no supported platform flag is set', () {
+      expect(buildEngine().isSupported, isFalse);
+    });
+
+    for (final entry in <String, void Function()>{
+      'macOS': () => platform.isMacOS = true,
+      'iOS': () => platform.isIOS = true,
+      'Linux': () => platform.isLinux = true,
+    }.entries) {
+      test('is true on ${entry.key}', () {
+        entry.value();
+        expect(buildEngine().isSupported, isTrue);
+      });
+    }
   });
 
   group('synthesizeToFile', () {

@@ -86,6 +86,28 @@ modules:
       - type: archive
         url: https://github.com/kupferlauncher/keybinder/releases/download/keybinder-3.0-v0.3.2/keybinder-3.0-0.3.2.tar.gz
         sha256: e6e3de4e1f3b201814a956ab8f16dfc8a262db1937ff1eee4d855365398c6020
+  # ONNX Runtime for on-device TTS (flutter_onnxruntime). The plugin's CMake
+  # otherwise downloads this binary at configure time, which fails in Flathub's
+  # offline build sandbox. Vendor the official prebuilt runtime as a declared
+  # source (fetched during the networked download phase) and install it into
+  # /app so the plugin links it via ONNXRUNTIME_ROOT_DIR / CMAKE_PREFIX_PATH.
+  - name: onnxruntime
+    buildsystem: simple
+    build-commands:
+      - install -d /app/lib /app/include
+      - cp -a lib/. /app/lib/
+      - cp -a include/. /app/include/
+    sources:
+      - type: archive
+        only-arches:
+          - x86_64
+        url: https://github.com/microsoft/onnxruntime/releases/download/v1.22.0/onnxruntime-linux-x64-1.22.0.tgz
+        sha256: 8344d55f93d5bc5021ce342db50f62079daf39aaafb5d311a451846228be49b3
+      - type: archive
+        only-arches:
+          - aarch64
+        url: https://github.com/microsoft/onnxruntime/releases/download/v1.22.0/onnxruntime-linux-aarch64-1.22.0.tgz
+        sha256: bb76395092d150b52c7092dc6b8f2fe4d80f0f3bf0416d2f269193e347e24702
   # NOTE: No separate flutter-sdk module - Flutter is included in lotti sources for flatpak-flutter
   - name: lotti
     buildsystem: simple
@@ -97,9 +119,16 @@ modules:
         CARGO_HOME: /run/build/lotti/cargo
         RUSTUP_HOME: /var/lib/rustup
         FLUTTER_SUPPRESS_ANALYTICS: "true"
+        # Resolve /app-installed deps (libmpv, onnxruntime, ...) and point
+        # flutter_onnxruntime's CMake at the vendored ONNX Runtime in /app so it
+        # links the pre-provided library instead of downloading one (the build
+        # runs offline). Set here in env, not as a standalone `export`
+        # build-command — each build-command runs in its own shell, so an export
+        # on its own line would not carry into the `flutter build` invocation.
+        CMAKE_PREFIX_PATH: /app
+        ONNXRUNTIME_ROOT_DIR: /app
     build-commands:
       - flutter pub get --offline
-      - export CMAKE_PREFIX_PATH=/app:$CMAKE_PREFIX_PATH
       - flutter build linux --release --no-pub --verbose
       - |
         arch="x64"

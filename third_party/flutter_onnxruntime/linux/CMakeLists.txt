@@ -27,10 +27,25 @@ if(USE_SYSTEM_ONNXRUNTIME)
 
   # If pkg-config didn't find it, try to find it manually
   if(NOT ONNXRUNTIME_FOUND)
-    # Specify custom paths where ONNX Runtime might be installed
-    set(ONNXRUNTIME_ROOT_DIR
-        ""
-        CACHE PATH "ONNX Runtime root directory")
+    # Specify custom paths where ONNX Runtime might be installed.
+    # LOTTI FORK PATCH: seed from the ONNXRUNTIME_ROOT_DIR environment variable
+    # so offline/sandboxed builds (e.g. Flathub) can point at a pre-provided
+    # runtime (lib/ + include/ under that prefix, such as /app) instead of
+    # falling through to the network download below. When the env var is set it
+    # wins via FORCE, so a stale empty cache entry from an earlier configure
+    # (CMake never overwrites a cached value without FORCE) cannot mask it on
+    # reconfigure. When unset, the cache defaults to empty without FORCE, which
+    # preserves the upstream system-search-then-download behaviour and still
+    # honours an explicit -DONNXRUNTIME_ROOT_DIR override.
+    if(NOT ONNXRUNTIME_ROOT_DIR AND NOT "$ENV{ONNXRUNTIME_ROOT_DIR}" STREQUAL "")
+      set(ONNXRUNTIME_ROOT_DIR
+          "$ENV{ONNXRUNTIME_ROOT_DIR}"
+          CACHE PATH "ONNX Runtime root directory" FORCE)
+    else()
+      set(ONNXRUNTIME_ROOT_DIR
+          "$ENV{ONNXRUNTIME_ROOT_DIR}"
+          CACHE PATH "ONNX Runtime root directory")
+    endif()
 
     # Look for the library
     find_library(

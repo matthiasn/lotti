@@ -34,12 +34,41 @@ the engine from any thread.
 
 Search the file for `LOTTI FORK PATCH` to find the exact changes. Only the
 **macOS** implementation is patched; iOS/Android/Linux/Windows are byte-for-byte
-upstream (iOS already offloads correctly via its working task queue, and TTS is
-macOS-only for now).
+upstream (iOS already offloads correctly via its working task queue).
+
+TTS now also targets **Linux**, but the Linux plugin is still upstream for
+threading and runs `runInference` synchronously on the GTK main thread (no
+background-task-queue API in the Linux desktop embedder to offload to). So Linux
+synthesis blocks the UI thread the same way macOS did before this patch —
+functional, but not yet smooth. Porting the `workQueue` offload to the Linux
+plugin (dispatch `runInference` to a `GTask`/worker thread, reply from the
+worker) is the analogous fix; see `lib/features/tts/README.md` → "Platform
+threading caveat".
+
+### Linux: offline-build runtime resolution
+
+**File:** `linux/CMakeLists.txt` (search for `LOTTI FORK PATCH`).
+
+Upstream's Linux CMake downloads the ONNX Runtime binary at configure time when
+no system copy is found. That fails in offline/sandboxed builds (Flathub), where
+the network is unavailable during the build. The patch seeds the
+`ONNXRUNTIME_ROOT_DIR` cache variable from the environment variable of the same
+name, so the build can point at a pre-provided runtime (`lib/` + `include/`
+under a prefix such as `/app`) and skip the download. Unset → empty → upstream
+system-search-then-download behaviour is preserved. The Flathub manifest sets
+`ONNXRUNTIME_ROOT_DIR=/app` and vendors the runtime there; see
+`flatpak/README.md` → "ONNX Runtime (on-device TTS)".
 
 ## Upgrading
 
 When bumping `flutter_onnxruntime`, re-vendor the new version and re-apply the
-two `LOTTI FORK PATCH` edits (the `workQueue` property + the `handle` →
-`handleLocked` split). Ideally this lands upstream once macOS gains task-queue
-support (or as an opt-in `DispatchQueue` fallback); drop the fork then.
+`LOTTI FORK PATCH` edits:
+
+- **macOS** (`FlutterOnnxruntimePlugin.swift`): the `workQueue` property + the
+  `handle` → `handleLocked` split. Ideally this lands upstream once macOS gains
+  task-queue support (or as an opt-in `DispatchQueue` fallback); drop it then.
+- **Linux** (`linux/CMakeLists.txt`): the `ONNXRUNTIME_ROOT_DIR` env seeding.
+
+If the bundled ONNX Runtime **version** changes, also update the pinned binary
+URL + per-arch `sha256` in the Flathub manifest's `onnxruntime` module
+(`flatpak/com.matthiasn.lotti.flatpak-flutter.yml`).
