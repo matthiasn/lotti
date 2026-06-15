@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 Future<void> showDueDatePicker({
@@ -110,30 +110,35 @@ class _DueDateStickyActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Expanded(
-            child: LottiSecondaryButton(
+          Flexible(
+            child: DesignSystemButton(
               label: context.messages.cancelButton,
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.large,
               onPressed: onCancel,
-              fullWidth: true,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: LottiSecondaryButton(
+          SizedBox(width: tokens.spacing.step3),
+          Flexible(
+            child: DesignSystemButton(
               label: context.messages.clearButton,
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.large,
               onPressed: onClear,
-              fullWidth: true,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: LottiPrimaryButton(
-              onPressed: onDone,
+          SizedBox(width: tokens.spacing.step3),
+          Flexible(
+            child: DesignSystemButton(
               label: context.messages.doneButton,
+              size: DesignSystemButtonSize.large,
+              onPressed: onDone,
             ),
           ),
         ],
