@@ -352,13 +352,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         ),
 
       // Projects (per-project drill-down from category pages). The create
-      // flow lives under `ProjectsLocation` so it doesn't get trapped in
-      // the Settings V2 panel registry, which has no `projects` entry.
-      // Explicitly exclude the reserved `create` slug so a stale
-      // `/settings/projects/create` deep link (the URL has been moved
-      // out of `pathPatterns`, but the `:projectId` pattern would still
-      // greedily match it) cannot render `ProjectDetailPage` against a
-      // non-id slug.
+      // flow runs in a modal launched from the Projects tab (no route of its
+      // own), so it never gets trapped in the Settings V2 panel registry,
+      // which has no `projects` entry. Explicitly exclude the reserved
+      // `create` slug so a stale `/settings/projects/create` deep link (the
+      // `:projectId` pattern would still greedily match it) cannot render
+      // `ProjectDetailPage` against a non-id slug.
       if (pathContains('projects') &&
           pathContainsKey('projectId') &&
           state.pathParameters['projectId'] != 'create')

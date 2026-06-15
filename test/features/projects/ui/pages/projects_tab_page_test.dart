@@ -15,9 +15,11 @@ import 'package:lotti/features/projects/state/project_detail_record_provider.dar
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
+import 'package:lotti/features/projects/ui/widgets/project_create_modal.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -164,6 +166,17 @@ void main() {
           () => mockNavService.desktopSelectedProjectId,
         ).thenReturn(ValueNotifier<String?>(null));
         getIt.registerSingleton<NavService>(mockNavService);
+
+        // The create modal launched from the FAB renders a CategoryField,
+        // which resolves the selected category name through the cache.
+        // Default to "no category" so the form builds.
+        final mockEntitiesCacheService = MockEntitiesCacheService();
+        when(
+          () => mockEntitiesCacheService.getCategoryById(any()),
+        ).thenReturn(null);
+        getIt.registerSingleton<EntitiesCacheService>(
+          mockEntitiesCacheService,
+        );
       },
     );
   });
@@ -267,24 +280,31 @@ void main() {
     );
   });
 
-  testWidgets('create button opens the project create route', (
+  testWidgets('create button opens the responsive create modal', (
     tester,
   ) async {
-    var navigatedPath = '';
-    beamToNamedOverride = (path) => navigatedPath = path;
+    // Guard against a regression to the old full-screen route: the FAB must
+    // open the modal in-place, not beam away.
+    var beamed = false;
+    beamToNamedOverride = (_) => beamed = true;
 
     await pumpPage(
       tester,
       groups: [buildWorkGroup()],
     );
 
-    await tester.tap(find.bySemanticsLabel('New Project'));
-    await tester.pump();
+    final messages = tester.element(find.byType(ProjectsTabPage)).messages;
 
-    expect(
-      navigatedPath,
-      '/projects/create',
-    );
+    await tester.tap(find.bySemanticsLabel('New Project'));
+    await tester.pumpAndSettle();
+
+    expect(beamed, isFalse);
+    // The modal renders the create form: its title bar, the title field
+    // label, and the action buttons.
+    expect(find.text(messages.projectCreateTitle), findsWidgets);
+    expect(find.byType(ProjectCreateForm), findsOneWidget);
+    expect(find.text(messages.cancelButton), findsOneWidget);
+    expect(find.text(messages.createButton), findsOneWidget);
   });
 
   testWidgets('opens the shared filter modal from the header icon', (
