@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/widgets/date_time/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 
@@ -136,10 +136,25 @@ void main() {
       expect(find.text('Now'), findsOneWidget);
       expect(find.text('Done'), findsOneWidget);
 
-      // Verify button types
-      expect(find.byType(LottiSecondaryButton), findsOneWidget);
-      expect(find.widgetWithText(OutlinedButton, 'Now'), findsOneWidget);
-      expect(find.byType(FilledButton), findsOneWidget);
+      // All three actions render as design-system buttons.
+      expect(find.byType(DesignSystemButton), findsNWidgets(3));
+
+      // Cancel and Now are secondary actions; Done is the primary CTA.
+      DesignSystemButton buttonWithText(String text) => tester.widget(
+        find.widgetWithText(DesignSystemButton, text),
+      );
+      expect(
+        buttonWithText('Cancel').variant,
+        DesignSystemButtonVariant.secondary,
+      );
+      expect(
+        buttonWithText('Now').variant,
+        DesignSystemButtonVariant.secondary,
+      );
+      expect(
+        buttonWithText('Done').variant,
+        DesignSystemButtonVariant.primary,
+      );
     });
 
     testWidgets('calls correct callbacks when buttons are tapped', (

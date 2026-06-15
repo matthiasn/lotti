@@ -1,9 +1,8 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 
 class DateTimeBottomSheet extends StatefulWidget {
   const DateTimeBottomSheet(
@@ -71,40 +70,35 @@ class DateTimeStickyActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Expanded(
-            child: LottiSecondaryButton(
+          Flexible(
+            child: DesignSystemButton(
               label: context.messages.cancelButton,
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.large,
               onPressed: onCancel,
-              fullWidth: true,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: OutlinedButton(
+          SizedBox(width: tokens.spacing.step3),
+          Flexible(
+            child: DesignSystemButton(
+              label: context.messages.journalDateNowButton,
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.large,
               onPressed: onNow,
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                side: BorderSide(
-                  color: context.colorScheme.primary.withValues(alpha: 0.5),
-                ),
-              ),
-              child: Text(
-                context.messages.journalDateNowButton,
-                style: TextStyle(
-                  color: context.colorScheme.primary,
-                ),
-              ),
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: LottiPrimaryButton(
-              onPressed: onDone,
+          SizedBox(width: tokens.spacing.step3),
+          Flexible(
+            child: DesignSystemButton(
               label: context.messages.doneButton,
+              size: DesignSystemButtonSize.large,
+              onPressed: onDone,
             ),
           ),
         ],

@@ -54,8 +54,10 @@ ModalUtils.showSinglePageModal<void>(
 `Future<bool> showConfirmationModal({required context, required message, ...})`
 in `confirmation_modal.dart` shows a single-page confirmation built on
 `ModalUtils.showSinglePageModal`. It renders an optional warning icon (when
-`isDestructive`), the message, and `cancel`/`confirm` buttons, returning `true`
-only when the confirm button is tapped.
+`isDestructive`), the message, and a `cancel`/`confirm` pair of
+`DesignSystemButton`s — a `secondary` cancel and a `danger` (or `primary`, when
+not destructive) confirm — returning `true` only when the confirm button is
+tapped.
 
 ```dart
 final ok = await showConfirmationModal(

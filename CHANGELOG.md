@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   report when expanded — synthesized locally with the Supertonic model, no
   cloud. Still off by default; the model (~400 MB) downloads once on first use.
 
+### Changed
+- The delete-confirmation dialog and the date/time picker now use the app's
+  unified button style, so their Cancel / confirm / Now / Done buttons match
+  the buttons used elsewhere in the app instead of carrying their own older
+  styling.
+
 ## [0.9.1024]
 ### Changed
 - Category selection is now one consistent picker across the app. Assigning a

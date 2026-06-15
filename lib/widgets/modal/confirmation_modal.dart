@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// shows a confirmation modal with customizable message and action labels.
@@ -46,29 +45,29 @@ Future<bool> showConfirmationModal({
 
           // Action Buttons
           Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              LottiSecondaryButton(
+              DesignSystemButton(
                 onPressed: () {
                   result = false;
                   Navigator.of(context).pop();
                 },
                 label: cancelLabel,
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
               ),
               const SizedBox(width: 12),
-              Expanded(
-                child: LottiPrimaryButton(
+              Flexible(
+                child: DesignSystemButton(
                   onPressed: () {
                     result = true;
                     Navigator.of(context).pop();
                   },
                   label: confirmLabel.toUpperCase(),
-                  isDestructive: isDestructive,
-                  style: FilledButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                  ),
+                  variant: isDestructive
+                      ? DesignSystemButtonVariant.danger
+                      : DesignSystemButtonVariant.primary,
+                  size: DesignSystemButtonSize.large,
                 ),
               ),
             ],

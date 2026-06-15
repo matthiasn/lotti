@@ -41,6 +41,7 @@
     <release version="0.9.1025" date="2026-06-15">
       <description>
           <p>Experimental on-device text-to-speech is now available on Linux too: with the "Enable local AI summary playback" flag on, the AI summary card's play button reads a task's TL;DR aloud, synthesized locally with the Supertonic model — no cloud. Still off by default; the model (~400 MB) downloads once on first use.</p>
+          <p>The delete-confirmation dialog and the date/time picker now use the app's unified button style, so their buttons match the rest of the app instead of carrying their own older styling.</p>
       </description>
     </release>
     <release version="0.9.1024" date="2026-06-15">

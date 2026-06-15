@@ -126,7 +126,9 @@ Bottom sheet for selecting date and time values with a user-friendly interface.
 Form field specifically designed for date and time input with validation.
 
 ### DateTimeStickyActionBar
-Sticky action bar for date/time related actions, stays visible during scrolling.
+Sticky action bar for the date/time picker modal, stays visible during
+scrolling. Renders trailing-aligned `DesignSystemButton`s: `secondary` Cancel
+and Now actions plus a `primary` Done.
 
 ## Event Widgets
 
