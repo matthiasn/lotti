@@ -406,9 +406,37 @@ If tests work with real time but fail with fake time:
 
 ## Design-Review Screenshots from Widget Tests
 
-Widget tests can produce real-looking PNGs for design review — see
+Two ways to turn a widget test into a real-looking PNG, depending on whether
+the capture is a one-off or a permanent fixture.
+
+### On-demand "show me X in the app" — `app-screenshots` skill + harness
+
+For quick previews (a modal on phone vs desktop, a UI change before review),
+use the reusable harness `test/test_utils/screenshot_harness.dart` via the
+`app-screenshots` skill. You write a **throwaway** `test/_scratch_capture_test.dart`
+that calls `captureInApp(...)`, run it with `flutter test --update-goldens`,
+view/share the PNGs (written to the gitignored `test/screenshots/`), then
+delete the throwaway test. The harness:
+
+- `loadAppFonts()` loads every bundled font (app families + Material/Cupertino
+  icon fonts + icon-font packages) from `FontManifest.json` via `rootBundle` —
+  no hardcoded SDK paths, no tofu icons. This works under
+  `flutter test --update-goldens`.
+- `screenshotTheme()` is the production `withOverrides` theme with `Inter`
+  applied to the Material text themes.
+- `captureInApp()` sizes `tester.view`, pumps the surface in the app shell,
+  runs an optional `interaction`, and captures `find.byType(MaterialApp)` (so
+  overlays/modals are included) via `matchesGoldenFile`.
+
+Because the capture test is ephemeral and run standalone, the process-wide
+`FontLoader` caveat below does not affect the committed suite — but **never
+commit a capture test or `test/screenshots/`** (both are gitignored anyway).
+
+### Committed per-feature harnesses
+
+When a feature wants a reproducible, checked-in capture harness — see
 `test/features/insights/ui/time_analysis_screenshots_test.dart` for the
-canonical harness. **Such harnesses must be opt-in** (env-gated, e.g.
+canonical example — **it must be opt-in** (env-gated, e.g.
 `LOTTI_SCREENSHOT_DIR`): `FontLoader` registers fonts process-wide with no
 unload, and under very_good's single-isolate optimizer that silently
 changes text metrics — and therefore intrinsic widths — for every test
