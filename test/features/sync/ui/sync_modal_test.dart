@@ -386,7 +386,7 @@ void main() {
 
     final confirmFinder = find.widgetWithText(
       DesignSystemButton,
-      messages.syncEntitiesConfirm.toUpperCase(),
+      messages.syncEntitiesConfirm,
     );
 
     var confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
