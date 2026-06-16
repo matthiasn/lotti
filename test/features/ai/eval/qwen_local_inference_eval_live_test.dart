@@ -18,19 +18,19 @@ void main() {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
+      const providerType = InferenceProviderType.omlx;
       final provider = AiConfigInferenceProvider(
         id: 'qwen-local-omlx',
         name: 'Local oMLX',
         baseUrl:
             Platform.environment['QWEN_EVAL_BASE_URL'] ??
             Platform.environment['OMLX_BASE_URL'] ??
-            ProviderConfig.defaultBaseUrls[InferenceProviderType
-                .genericOpenAi]!,
+            ProviderConfig.defaultBaseUrls[providerType]!,
         apiKey:
             Platform.environment['QWEN_EVAL_API_KEY'] ??
             Platform.environment['OMLX_API_KEY'] ??
             '',
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
+        inferenceProviderType: providerType,
         createdAt: DateTime(2026, 6, 16),
       );
       final profiles = _envList(
