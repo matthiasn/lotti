@@ -8,8 +8,14 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/flags/language_flag.dart';
 import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
+/// Invoked when a language is chosen in the picker; `null` signals clearing
+/// the current selection.
 typedef LanguageCallback = void Function(SupportedLanguage?);
 
+/// Modal body for picking a task language. Filters [SupportedLanguage] values
+/// by the live `searchQuery` (matching name, code, or localized name) and lists
+/// them sorted by localized name. Pins the currently selected language as a
+/// highlighted card at the top and appends a "clear" row when one is selected.
 class LanguageSelectionModalContent extends ConsumerWidget {
   const LanguageSelectionModalContent({
     required this.onLanguageSelected,
@@ -122,6 +128,8 @@ class LanguageSelectionModalContent extends ConsumerWidget {
     );
   }
 
+  /// Builds the modal's sticky search header — a `LottiSearchBar` that pushes
+  /// its text into `queryNotifier`, which the body listens to for filtering.
   static Widget buildHeader({
     required BuildContext context,
     required TextEditingController controller,

@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_palette.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Resolves semantic showcase color names (page, surface, border, text
+/// emphasis levels, accent, alert states) to the corresponding design tokens
+/// for the current context. Centralizes token lookups for the task showcase
+/// widgets.
 class TaskShowcasePalette {
   static Color page(BuildContext context) =>
       context.designTokens.colors.background.level01;

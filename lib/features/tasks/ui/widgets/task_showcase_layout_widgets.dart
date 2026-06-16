@@ -7,6 +7,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Bordered surface card for the showcase: wraps [child] in a rounded
+/// container with optional [title]/[trailing] header row and configurable
+/// [padding].
 class TaskShowcaseCard extends StatelessWidget {
   const TaskShowcaseCard({
     required this.child,
@@ -64,6 +67,8 @@ class TaskShowcaseCard extends StatelessWidget {
   }
 }
 
+/// Decorative gradient hero banner ([height] tall) with overlaid shapes and a
+/// painted "handshake bridge" motif; purely presentational showcase artwork.
 class TaskShowcaseHeroBanner extends StatelessWidget {
   const TaskShowcaseHeroBanner({
     this.height = 180,
@@ -241,6 +246,8 @@ class _TaskShowcaseBridgePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+/// Desktop showcase top bar: a bottom-bordered row with [title], a
+/// notifications icon, and an avatar.
 class TaskShowcaseDesktopTopBar extends StatelessWidget {
   const TaskShowcaseDesktopTopBar({
     required this.title,
@@ -284,6 +291,9 @@ class TaskShowcaseDesktopTopBar extends StatelessWidget {
   }
 }
 
+/// Frosted floating action bar for the desktop showcase: a horizontal row of
+/// quick-action affordances (timer, checklist, image, mic, …) with the
+/// design-system FAB overlaid at the trailing edge.
 class TaskShowcaseDesktopActionBar extends StatelessWidget {
   const TaskShowcaseDesktopActionBar({super.key});
 
@@ -424,6 +434,7 @@ class _TaskShowcaseRoundAction extends StatelessWidget {
   }
 }
 
+/// Circular frosted surface housing an avatar; the showcase's profile button.
 class TaskShowcaseProfileButton extends StatelessWidget {
   const TaskShowcaseProfileButton({super.key});
 
@@ -443,6 +454,8 @@ class TaskShowcaseProfileButton extends StatelessWidget {
   }
 }
 
+/// Static audio waveform visualization: one accent-colored bar per entry in
+/// [samples], with bar height scaled by the sample value.
 class TaskShowcaseWaveform extends StatelessWidget {
   const TaskShowcaseWaveform({
     required this.samples,

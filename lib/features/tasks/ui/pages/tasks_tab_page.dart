@@ -36,9 +36,20 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
+/// Signature for the create-task action invoked by the [TasksTabPage] FAB,
+/// receiving the current `WidgetRef` and the optionally-selected category id.
 typedef TasksTabCreateTaskCallback =
     Future<void> Function(WidgetRef ref, String? categoryId);
 
+/// Tasks list tab: a paginated, infinite-scroll list of tasks with a
+/// search/filter header and a create-task floating action button.
+///
+/// Watches `journalPageControllerProvider(true)` for the active filter state
+/// and feeds its paging controller into a [PagedSliverList] of
+/// [TaskBrowseListItem]s; active filters are surfaced as removable chips and
+/// pull-to-refresh swaps the page atomically. The FAB calls
+/// [onCreateTaskPressed] (or a default that creates a task and navigates to
+/// it) with the single selected category id, if any.
 class TasksTabPage extends ConsumerWidget {
   const TasksTabPage({
     super.key,

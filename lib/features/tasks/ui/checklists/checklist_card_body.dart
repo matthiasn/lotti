@@ -4,6 +4,10 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Expanded checklist card content: the filtered item rows followed by the
+/// add-item input. Renders an "all done" / "none done" empty-state message
+/// instead of the list when the active filter leaves nothing to show, and
+/// hands off all drag/drop to per-row `super_drag_and_drop` widgets.
 class Body extends StatelessWidget {
   const Body({
     required this.itemIds,

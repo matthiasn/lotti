@@ -4,6 +4,12 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
+/// A [Chip] showing the [task]'s status.
+///
+/// The chip's background colour comes from the status' `colorForBrightness`
+/// (resolved against the current theme brightness) and its text from the
+/// status' `localizedLabel`; the label colour flips to black or white based
+/// on the background's luminance.
 class TaskStatusWidget extends StatelessWidget {
   const TaskStatusWidget(
     this.task, {

@@ -7,6 +7,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 
+/// Inline summary of the active label filters above the task list.
+///
+/// Shows one removable chip per selected label (plus an "unassigned" chip for
+/// the empty id) with a header count and a clear-all button. Renders nothing
+/// when not in task view or when no labels are selected.
 class TaskLabelQuickFilter extends ConsumerWidget {
   const TaskLabelQuickFilter({super.key});
 

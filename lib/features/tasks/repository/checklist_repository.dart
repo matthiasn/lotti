@@ -14,11 +14,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'checklist_repository.g.dart';
 
+/// Keep-alive provider exposing the singleton [ChecklistRepository].
 @Riverpod(keepAlive: true)
 ChecklistRepository checklistRepository(Ref _) {
   return ChecklistRepository();
 }
 
+/// Persistence boundary for checklists and checklist items.
+///
+/// Owns the DB writes that the checklist controllers delegate to: creating
+/// checklists/items, updating their data, attaching items, and bulk-loading a
+/// task's items. All mutations go through [PersistenceLogic] (which stamps
+/// metadata and fans out sync), and failures are logged rather than thrown so
+/// the optimistic UI state in the controllers is not torn down.
 class ChecklistRepository {
   ChecklistRepository();
 
@@ -136,6 +144,12 @@ class ChecklistRepository {
     }
   }
 
+  /// Creates a standalone [ChecklistItem] linked back to [checklistId].
+  ///
+  /// Does *not* add the item to the parent checklist's `linkedChecklistItems`;
+  /// callers that need the bidirectional link should use [addItemToChecklist]
+  /// (or update the checklist themselves). [checkedBy] defaults to
+  /// [ChangeSource.user]. Returns the created item, or `null` on failure.
   Future<ChecklistItem?> createChecklistItem({
     required String checklistId,
     required String title,
@@ -171,6 +185,9 @@ class ChecklistRepository {
     }
   }
 
+  /// Replaces the [data] of the checklist [checklistId] and refreshes its
+  /// metadata. Returns `false` only when the entity does not exist; a
+  /// type-mismatch or write error is logged and still returns `true`.
   Future<bool> updateChecklist({
     required String checklistId,
     required ChecklistData data,
@@ -210,6 +227,10 @@ class ChecklistRepository {
     return true;
   }
 
+  /// Replaces the [data] of the checklist item [checklistItemId] and refreshes
+  /// its metadata. [taskId] is threaded through as the `linkedId` so the write
+  /// notification reaches the task's listeners. Same return semantics as
+  /// [updateChecklist].
   Future<bool> updateChecklistItem({
     required String checklistItemId,
     required ChecklistItemData data,
@@ -251,6 +272,11 @@ class ChecklistRepository {
     return true;
   }
 
+  /// Creates an item and links it into the checklist in one call.
+  ///
+  /// Unlike [createChecklistItem], this re-reads the checklist after creating
+  /// the item and appends the new id to `linkedChecklistItems`, keeping the
+  /// link bidirectional. Returns the created item, or `null` on any failure.
   Future<ChecklistItem?> addItemToChecklist({
     required String checklistId,
     required String title,
@@ -309,6 +335,12 @@ class ChecklistRepository {
     }
   }
 
+  /// Loads every non-deleted [ChecklistItem] belonging to [task], newest
+  /// first.
+  ///
+  /// Resolves the task's checklists, then their `linkedChecklistItems`, via two
+  /// indexed bulk-by-id lookups (see the inline note for the slow full-scan
+  /// shape this replaced). Returns `const []` when the task has no checklists.
   Future<List<ChecklistItem>> getChecklistItemsForTask({
     required Task task,
   }) async {

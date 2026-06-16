@@ -18,6 +18,12 @@ import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
+/// State for [ChecklistItemRow]. Manages inline title editing, the delayed
+/// hide/cross-fade when an item is checked off under the Open/Done filter
+/// (via `_holdTimer`), the undoable swipe-to-delete grace period (via
+/// `_deleteTimer`), and the pulsing animation overlaid when an AI completion
+/// suggestion targets this item. Tracks the item's last checked/archived
+/// state to decide visibility on data updates.
 class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     with SingleTickerProviderStateMixin {
   bool _isEditing = false;

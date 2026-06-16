@@ -8,6 +8,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Checklist card header row: the (tappable, inline-editable) title, the
+/// progress ring with "N/M done" label, an expand/collapse chevron, and an
+/// overflow menu (export/share/delete) shown only when an action is wired up.
+/// When expanded with items, an animated Open/Done/All filter strip drops in
+/// below the row.
 class Header extends StatelessWidget {
   const Header({
     required this.title,
@@ -154,6 +159,9 @@ class Header extends StatelessWidget {
 // Sorting mode header — drag handle + title + progress, no chevron/menu.
 // ─────────────────────────────────────────────────────────────────────────────
 
+/// Compact header shown while checklists are being reordered: a drag handle,
+/// the title, and the progress ring — no chevron or menu. When [reorderIndex]
+/// is set the handle becomes a `ReorderableDragStartListener` for that slot.
 class SortingHeader extends StatelessWidget {
   const SortingHeader({
     required this.title,

@@ -10,6 +10,10 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dar
 import 'package:lotti/features/tasks/widgetbook/task_list_detail_mock_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Desktop widgetbook showcase of the task list/detail experience: a fixed
+/// 1440x900 frame with the navigation sidebar, top bar, a [TaskListPane], and
+/// a [TaskDetailPane] for the selected task. State and interactions are driven
+/// by `taskListDetailShowcaseControllerProvider`.
 class TaskListDetailShowcase extends ConsumerWidget {
   const TaskListDetailShowcase({super.key});
 

@@ -15,6 +15,10 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Left pane of the task showcase: a search header, the active-filter chip
+/// row (when filters are applied), and either [TaskShowcaseEmptyResults] or a
+/// [TaskListSectionsList] of the visible sections. Search/filter/selection
+/// interactions are forwarded to the supplied callbacks.
 class TaskListPane extends StatelessWidget {
   const TaskListPane({
     required this.state,
@@ -73,6 +77,10 @@ class TaskListPane extends StatelessWidget {
   }
 }
 
+/// Flattens [TaskListSection]s into a scrollable list of [TaskBrowseListItem]s,
+/// computing each row's section-header, first/last-in-section flags and
+/// previous/next task ids. Owns a single hovered-task-id notifier shared across
+/// rows so only one row highlights at a time.
 class TaskListSectionsList extends StatefulWidget {
   const TaskListSectionsList({
     required this.sections,
@@ -144,6 +152,8 @@ class _TaskListSectionsListState extends State<TaskListSectionsList> {
   }
 }
 
+/// Maps a `TaskSortIds` filter id to the corresponding [TaskSortOption],
+/// defaulting to sorting by due date for any unrecognized id.
 TaskSortOption taskSortOptionFromSelectedSortId(String selectedSortId) {
   return switch (selectedSortId) {
     TaskSortIds.createdDateSort => TaskSortOption.byDate,
@@ -213,6 +223,10 @@ class _TaskShowcaseBrowseItem {
   final TaskBrowseEntry entry;
 }
 
+/// Renders a wrap of removable chips for each applied filter (status,
+/// priority, category, label) plus an optional "clear all" chip. When
+/// `onFilterChanged` is null, chips are non-removable and tapping any chip
+/// opens the filter modal via `onFilterPressed`.
 class TaskListActiveFilters extends StatelessWidget {
   const TaskListActiveFilters({
     required this.state,
@@ -394,6 +408,7 @@ class _TaskListSearchHeader extends StatelessWidget {
   }
 }
 
+/// Centered placeholder shown when no tasks match the current search/filters.
 class TaskShowcaseEmptyResults extends StatelessWidget {
   const TaskShowcaseEmptyResults({required this.message, super.key});
 

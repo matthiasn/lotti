@@ -11,6 +11,14 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
+/// Responsive entry point for the tasks feature.
+///
+/// On non-desktop layouts (per `isDesktopLayout`) it shows the full-width
+/// [TasksTabPage]. On desktop it renders a resizable split pane: the
+/// [TasksTabPage] list on the left (width driven by `paneWidthControllerProvider`
+/// and a [ResizableDivider]) and, on the right, the [TaskDetailsPage] for the
+/// task at the top of `NavService.desktopTaskDetailStack`, or a
+/// [DesktopDetailEmptyState] when nothing is selected.
 class TasksRootPage extends ConsumerWidget {
   const TasksRootPage({super.key});
 

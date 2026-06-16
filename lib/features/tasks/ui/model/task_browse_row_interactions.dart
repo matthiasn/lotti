@@ -1,5 +1,13 @@
 import 'package:lotti/features/design_system/components/lists/grouped_card_row_interactions.dart';
 
+/// Computes how a task row should visually merge with its neighbours in a
+/// grouped list, based on which of the three rows (this/previous/next) is
+/// selected or hovered.
+///
+/// A higher-priority row "absorbs" the gap to a lower-priority neighbour
+/// (top/bottom overlap), and a divider is drawn below only when both this row
+/// and the next are inactive. The trio's priorities come from
+/// [taskRowInteractionPriority].
 GroupedCardRowInteraction buildTaskBrowseRowInteraction({
   required String taskId,
   required String? previousTaskIdInSection,
@@ -48,6 +56,8 @@ GroupedCardRowInteraction buildTaskBrowseRowInteraction({
   );
 }
 
+/// Ranks a row's interaction state: `2` when selected, `1` when hovered,
+/// `0` otherwise. Selection outranks hover.
 int taskRowInteractionPriority({
   required String taskId,
   required String? selectedTaskId,

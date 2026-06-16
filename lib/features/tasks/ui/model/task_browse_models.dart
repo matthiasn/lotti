@@ -3,6 +3,10 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 
+/// The category of a section header in the browsable task list. Which kind a
+/// task falls into is determined by the active [TaskSortOption]: created-date
+/// buckets, due-date buckets (today/tomorrow/yesterday/dated/none), or
+/// priority buckets.
 enum TaskBrowseSectionKind {
   createdDate,
   dueDate,
@@ -13,6 +17,12 @@ enum TaskBrowseSectionKind {
   priority,
 }
 
+/// Identifies the section a task belongs to and produces a [stableKey] used to
+/// detect section boundaries and aggregate counts.
+///
+/// Constructed via the named factories (one per [TaskBrowseSectionKind]); the
+/// [date]/[priority] payload depends on the kind. Day-based keys are normalized
+/// to midnight so two tasks on the same calendar day share one section.
 class TaskBrowseSectionKey {
   const TaskBrowseSectionKey._({
     required this.kind,
@@ -65,6 +75,11 @@ class TaskBrowseSectionKey {
   };
 }
 
+/// A task paired with its rendering context in the browse list: which section
+/// it belongs to, whether a section header should precede it, and where it
+/// sits within the section (first/last, total count when known). The list
+/// builder uses these flags to draw grouped cards and section headers without
+/// re-deriving boundaries in the widget tree.
 class TaskBrowseEntry {
   const TaskBrowseEntry({
     required this.task,
@@ -83,6 +98,12 @@ class TaskBrowseEntry {
   final int? sectionCount;
 }
 
+/// Turns a flat, already-sorted [items] list into [TaskBrowseEntry]s annotated
+/// with section boundaries and per-section counts for [sortOption].
+///
+/// Non-task entities are dropped. Section headers are emitted at each boundary;
+/// the count is suppressed for the trailing section when [hasNextPage] is true,
+/// since that section may be incomplete and a wrong count would be misleading.
 List<TaskBrowseEntry> buildTaskBrowseEntries({
   required List<JournalEntity> items,
   required TaskSortOption sortOption,

@@ -5,6 +5,8 @@ import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_filter_modal.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Toolbar icon button that opens the task filter modal via
+/// `showTaskFilterModal` for the current journal page scope.
 class TaskFilterIcon extends ConsumerWidget {
   const TaskFilterIcon({super.key});
 

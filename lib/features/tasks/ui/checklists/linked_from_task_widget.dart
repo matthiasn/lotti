@@ -6,6 +6,9 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Lists the tasks that a checklist [item] is linked from, each rendered as a
+/// [ModernJournalCard] under a "linked from" label. Renders nothing when the
+/// checklist has no linked tasks.
 class LinkedFromTaskWidget extends ConsumerWidget {
   const LinkedFromTaskWidget(
     this.item, {

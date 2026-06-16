@@ -4,6 +4,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Static task title with a trailing edit pencil; the whole row is a button
+/// that fires [onTap] to open the editor. Renders the localized empty-title
+/// placeholder in italic medium-emphasis text when [title] is blank.
 class TitleReadOnly extends StatelessWidget {
   const TitleReadOnly({
     required this.title,
@@ -71,6 +74,10 @@ class TitleReadOnly extends StatelessWidget {
   }
 }
 
+/// Inline multiline title editor with commit/cancel icon buttons. Keyboard
+/// shortcuts: Escape cancels (fires [onCancel]); Cmd/Ctrl+Enter and Cmd/Ctrl+S
+/// commit (fire [onCommit]). A bare Enter inserts a newline rather than
+/// committing.
 class TitleEditor extends StatelessWidget {
   const TitleEditor({
     required this.controller,

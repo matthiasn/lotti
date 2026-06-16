@@ -21,6 +21,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/color.dart';
 
+/// Tappable grouped-card surface that wraps a task row's [child] content.
+/// Applies selection/hover fills, top/bottom overlap so adjacent rows in a
+/// section merge visually, and renders a divider below the row unless it is
+/// the last in its section. Drives the shared `hoveredTaskIdNotifier`.
 class TaskBrowseRowShell extends StatelessWidget {
   const TaskBrowseRowShell({
     required this.entry,
@@ -113,6 +117,11 @@ class TaskBrowseRowShell extends StatelessWidget {
   }
 }
 
+/// The inner layout of a task row: optional cover art, title, AI one-liner
+/// subtitle, a metadata wrap (priority, tracked duration, category chip), the
+/// trailing status pill, and a footer of created-date/due-date/vector-distance
+/// chips. Watches `taskLiveDataProvider` and `taskOneLinerProvider` (using
+/// `.value` to keep stale data during reloads) so the row updates in place.
 class TaskRowContent extends ConsumerWidget {
   const TaskRowContent({
     required this.task,
@@ -407,6 +416,10 @@ class _TrackedDurationMetaContent extends StatelessWidget {
   }
 }
 
+/// Renders a task-list section header title. Uses `titleOverride` when given,
+/// otherwise derives the label from the section key — for priority sections it
+/// shows the priority glyph plus its name, for date/due-date sections a
+/// localized date string.
 class SectionHeaderTitle extends StatelessWidget {
   const SectionHeaderTitle({
     required this.sectionKey,

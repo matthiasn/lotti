@@ -6,6 +6,9 @@ import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Lists the checklists that a checklist [item] is linked from, each rendered
+/// as a [ModernJournalCard] under a "linked from" label. Renders nothing when
+/// the item has no linked checklists.
 class LinkedFromChecklistWidget extends ConsumerWidget {
   const LinkedFromChecklistWidget(
     this.item, {

@@ -5,6 +5,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
+/// Opens a single-page modal with a Cupertino date wheel to set, change, or
+/// clear a task's due date. Defaults the wheel to [initialDate] (or now when
+/// null). Done invokes [onDueDateChanged] with the picked date only if the
+/// user scrolled the wheel or no date existed yet; Clear invokes it with null;
+/// Cancel closes without changes.
 Future<void> showDueDatePicker({
   required BuildContext context,
   required DateTime? initialDate,
