@@ -8,6 +8,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/provider/ai_provider_detail_page.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_cards.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -582,7 +583,7 @@ void main() {
         // from AiConfigDeleteService — guard the path with a robust matcher.
         final confirmButton = find.descendant(
           of: find.byType(Dialog),
-          matching: find.byType(FilledButton),
+          matching: find.byType(DesignSystemButton),
         );
         if (confirmButton.evaluate().isNotEmpty) {
           await tester.tap(confirmButton.first);

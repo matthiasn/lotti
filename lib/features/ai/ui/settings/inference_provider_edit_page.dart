@@ -27,6 +27,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_pre
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/mlx_audio_model_download_dialog.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -34,7 +35,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 
 part 'inference_provider_edit_form_builder.dart';
 

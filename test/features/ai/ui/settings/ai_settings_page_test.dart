@@ -21,6 +21,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -1089,7 +1090,7 @@ void main() {
         // a direct repository call.
         final filledButton = find.descendant(
           of: find.byType(Dialog),
-          matching: find.byType(FilledButton),
+          matching: find.byType(DesignSystemButton),
         );
         if (filledButton.evaluate().isNotEmpty) {
           await tester.tap(filledButton.first);

@@ -377,10 +377,12 @@ extension _InferenceProviderEditPageForm on _InferenceProviderEditPageState {
               textAlign: TextAlign.center,
             ),
             SizedBox(height: tokens.spacing.step6),
-            LottiSecondaryButton(
+            DesignSystemButton(
               label: messages.apiKeyEditGoBackButton,
               onPressed: () => popAiSettingsDetail(context),
-              icon: Icons.arrow_back_rounded,
+              leadingIcon: Icons.arrow_back_rounded,
+              variant: DesignSystemButtonVariant.secondary,
+              size: DesignSystemButtonSize.large,
             ),
           ],
         ),

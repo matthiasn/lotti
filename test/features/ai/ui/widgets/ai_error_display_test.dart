@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -220,7 +221,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(FilledButton), findsNothing);
+        expect(find.byType(DesignSystemButton), findsNothing);
       });
 
       testWidgets('hides retry button for invalid request errors', (
@@ -239,7 +240,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(FilledButton), findsNothing);
+        expect(find.byType(DesignSystemButton), findsNothing);
       });
 
       testWidgets('hides retry button when onRetry is null', (
@@ -252,7 +253,7 @@ void main() {
         );
         await tester.pump();
 
-        expect(find.byType(FilledButton), findsNothing);
+        expect(find.byType(DesignSystemButton), findsNothing);
       });
 
       testWidgets(
@@ -277,7 +278,7 @@ void main() {
               ),
             );
 
-            final retryButton = find.byType(FilledButton);
+            final retryButton = find.byType(DesignSystemButton);
             expect(retryButton, findsOneWidget, reason: '$type');
 
             await tester.ensureVisible(retryButton);
