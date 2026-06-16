@@ -11,7 +11,6 @@ import 'package:lotti/features/sync/ui/sync_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -293,12 +292,12 @@ void main() {
       };
 
       final confirmButtonFinder = find.widgetWithText(
-        LottiPrimaryButton,
+        DesignSystemButton,
         messages.syncEntitiesConfirm,
       );
 
       await tester.ensureVisible(confirmButtonFinder);
-      final confirmButton = tester.widget<LottiPrimaryButton>(
+      final confirmButton = tester.widget<DesignSystemButton>(
         confirmButtonFinder,
       );
       expect(confirmButton.onPressed, isNotNull);
@@ -386,11 +385,11 @@ void main() {
     await tester.pumpAndSettle();
 
     final confirmFinder = find.widgetWithText(
-      LottiPrimaryButton,
+      DesignSystemButton,
       messages.syncEntitiesConfirm.toUpperCase(),
     );
 
-    var confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+    var confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
     expect(confirmButton.onPressed, isNotNull);
 
     final checkboxFinder = find.byType(CheckboxListTile);
@@ -401,7 +400,7 @@ void main() {
       await tester.pump();
     }
 
-    confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+    confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
     expect(confirmButton.onPressed, isNull);
 
     // Re-enable by selecting the first option again.
@@ -409,7 +408,7 @@ void main() {
     final firstTile = tester.widget<CheckboxListTile>(checkboxFinder.first);
     firstTile.onChanged?.call(true);
     await tester.pump();
-    confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+    confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
     expect(confirmButton.onPressed, isNotNull);
   });
 
@@ -494,10 +493,10 @@ void main() {
       await tester.pumpAndSettle();
 
       final confirmButtonFinder = find.widgetWithText(
-        LottiPrimaryButton,
+        DesignSystemButton,
         messages.syncEntitiesConfirm,
       );
-      final confirmButton = tester.widget<LottiPrimaryButton>(
+      final confirmButton = tester.widget<DesignSystemButton>(
         confirmButtonFinder,
       );
       confirmButton.onPressed?.call();

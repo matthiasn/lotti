@@ -127,8 +127,9 @@ Form field specifically designed for date and time input with validation.
 
 ### DateTimeStickyActionBar
 Sticky action bar for the date/time picker modal, stays visible during
-scrolling. Renders trailing-aligned `DesignSystemButton`s: `secondary` Cancel
-and Now actions plus a `primary` Done.
+scrolling. Built on `DesignSystemModalActionBar` (the app-wide dominant-primary
+layout): `secondary` Cancel and Now actions keep their intrinsic width on the
+left and the `primary` Done flexes to fill the trailing width.
 
 ## Event Widgets
 

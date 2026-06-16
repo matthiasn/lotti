@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
@@ -249,11 +250,11 @@ void main() {
         final saveButton = find.text('SAVE');
         expect(saveButton, findsOneWidget);
 
-        // FilledButton with null onPressed renders as disabled.
-        final filledButtonWidget = tester.widget<FilledButton>(
+        // DesignSystemButton with null onPressed renders as disabled.
+        final filledButtonWidget = tester.widget<DesignSystemButton>(
           find.ancestor(
             of: saveButton,
-            matching: find.byType(FilledButton),
+            matching: find.byType(DesignSystemButton),
           ),
         );
         expect(
@@ -398,10 +399,10 @@ void main() {
         expect(find.text('Date & Time Range'), findsOneWidget);
         final saveButton = find.text('SAVE');
         expect(saveButton, findsOneWidget);
-        final btn = tester.widget<FilledButton>(
+        final btn = tester.widget<DesignSystemButton>(
           find.ancestor(
             of: saveButton,
-            matching: find.byType(FilledButton),
+            matching: find.byType(DesignSystemButton),
           ),
         );
         expect(
@@ -779,8 +780,11 @@ void main() {
         // dateToNotifier.value = now (changed) AND now > 2022 (valid).
         final saveButton = find.text('SAVE');
         expect(saveButton, findsOneWidget);
-        final filledBtn = tester.widget<FilledButton>(
-          find.ancestor(of: saveButton, matching: find.byType(FilledButton)),
+        final filledBtn = tester.widget<DesignSystemButton>(
+          find.ancestor(
+            of: saveButton,
+            matching: find.byType(DesignSystemButton),
+          ),
         );
         expect(
           filledBtn.onPressed,

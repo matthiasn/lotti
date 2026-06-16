@@ -480,6 +480,33 @@ void main() {
         throwsAssertionError,
       );
     });
+
+    testWidgets('fullWidth fills its bounded parent and centers the label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 400,
+            child: DesignSystemButton(
+              label: 'Wide',
+              fullWidth: true,
+              onPressed: _noop,
+            ),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+      await tester.pump();
+
+      // Without fullWidth the button would size to its (small) intrinsic
+      // width; with it, the button fills the 400px box and the label is
+      // centred rather than pinned to the leading edge.
+      expect(tester.getSize(find.byType(DesignSystemButton)).width, 400);
+      final buttonCenter = tester.getCenter(find.byType(DesignSystemButton)).dx;
+      final labelCenter = tester.getCenter(find.text('Wide')).dx;
+      expect((labelCenter - buttonCenter).abs(), lessThan(1));
+    });
   });
 }
 

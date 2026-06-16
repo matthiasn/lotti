@@ -34,6 +34,7 @@ class DesignSystemButton extends StatefulWidget {
     this.trailingIcon,
     this.semanticsLabel,
     this.forcedState,
+    this.fullWidth = false,
     super.key,
   }) : assert(
          label != '' || semanticsLabel != null,
@@ -48,6 +49,11 @@ class DesignSystemButton extends StatefulWidget {
   final IconData? trailingIcon;
   final String? semanticsLabel;
   final DesignSystemButtonVisualState? forcedState;
+
+  /// When true, the button expands to fill its parent's width (use inside an
+  /// [Expanded]/[SizedBox]) and its content is centered rather than left
+  /// aligned. Without it a stretched button left-aligns its label.
+  final bool fullWidth;
 
   @override
   State<DesignSystemButton> createState() => _DesignSystemButtonState();
@@ -120,12 +126,21 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
                   button: true,
                   label: widget.semanticsLabel,
                   enabled: enabled,
-                  child: _ButtonContent(
-                    label: widget.label,
-                    leadingIcon: widget.leadingIcon,
-                    trailingIcon: widget.trailingIcon,
-                    gap: sizeSpec.itemGap,
-                  ),
+                  child: widget.fullWidth
+                      ? Center(
+                          child: _ButtonContent(
+                            label: widget.label,
+                            leadingIcon: widget.leadingIcon,
+                            trailingIcon: widget.trailingIcon,
+                            gap: sizeSpec.itemGap,
+                          ),
+                        )
+                      : _ButtonContent(
+                          label: widget.label,
+                          leadingIcon: widget.leadingIcon,
+                          trailingIcon: widget.trailingIcon,
+                          gap: sizeSpec.itemGap,
+                        ),
                 ),
               ),
             ),

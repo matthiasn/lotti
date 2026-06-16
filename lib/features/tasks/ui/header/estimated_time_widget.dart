@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -92,29 +92,21 @@ class _EstimatedTimeStickyActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Padding(
+    return DesignSystemModalActionBar(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
-        children: [
-          Flexible(
-            child: DesignSystemButton(
-              label: context.messages.cancelButton,
-              variant: DesignSystemButtonVariant.secondary,
-              size: DesignSystemButtonSize.large,
-              onPressed: onCancel,
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          Flexible(
-            child: DesignSystemButton(
-              label: context.messages.doneButton,
-              size: DesignSystemButtonSize.large,
-              onPressed: onDone,
-            ),
-          ),
-        ],
+      secondary: [
+        DesignSystemButton(
+          label: context.messages.cancelButton,
+          variant: DesignSystemButtonVariant.secondary,
+          size: DesignSystemButtonSize.large,
+          onPressed: onCancel,
+        ),
+      ],
+      primary: DesignSystemButton(
+        label: context.messages.doneButton,
+        size: DesignSystemButtonSize.large,
+        fullWidth: true,
+        onPressed: onDone,
       ),
     );
   }

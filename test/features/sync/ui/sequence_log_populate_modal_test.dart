@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart';
 import 'package:lotti/features/sync/ui/sequence_log_populate_modal.dart';
@@ -12,10 +13,10 @@ import 'package:lotti/features/sync/ui/sequence_log_populate_progress.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 /// Test double for the populate controller. Records whether the modal's
 /// `operation` callback delegated to [populateSequenceLog] and lets a test
@@ -91,6 +92,7 @@ void main() {
     return ProviderScope(
       overrides: overrides,
       child: MaterialApp(
+        theme: resolveTestTheme(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: MediaQuery(
@@ -119,7 +121,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    final confirmButton = find.byType(LottiPrimaryButton);
+    final confirmButton = find.byWidgetPredicate(
+      (w) =>
+          w is DesignSystemButton &&
+          w.variant != DesignSystemButtonVariant.secondary,
+    );
     await tester.ensureVisible(confirmButton);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));

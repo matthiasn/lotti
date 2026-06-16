@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/sync_flow_section.dart';
@@ -227,36 +228,31 @@ class _VerificationModalState extends ConsumerState<VerificationModal> {
                     VerificationEmojisRow(emojis.take(4)),
                     VerificationEmojisRow(emojis.skip(4)),
                     const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: DesignSystemButton(
-                            key: const Key('matrix_cancel_verification'),
-                            onPressed: () async {
-                              await runner?.cancelVerification();
-                              pop();
-                            },
-                            label: context.messages.settingsMatrixCancel,
-                            variant: DesignSystemButtonVariant.danger,
-                            size: DesignSystemButtonSize.large,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: DesignSystemButton(
-                            onPressed: _awaitingOtherDevice
-                                ? null
-                                : () => _acceptEmojiVerification(runner),
-                            label: _awaitingOtherDevice
-                                ? context
-                                      .messages
-                                      .settingsMatrixContinueVerificationLabel
-                                : context.messages.settingsMatrixAccept,
-                            size: DesignSystemButtonSize.large,
-                          ),
+                    DesignSystemModalActionBar(
+                      secondary: [
+                        DesignSystemButton(
+                          key: const Key('matrix_cancel_verification'),
+                          onPressed: () async {
+                            await runner?.cancelVerification();
+                            pop();
+                          },
+                          label: context.messages.settingsMatrixCancel,
+                          variant: DesignSystemButtonVariant.danger,
+                          size: DesignSystemButtonSize.large,
                         ),
                       ],
+                      primary: DesignSystemButton(
+                        onPressed: _awaitingOtherDevice
+                            ? null
+                            : () => _acceptEmojiVerification(runner),
+                        label: _awaitingOtherDevice
+                            ? context
+                                  .messages
+                                  .settingsMatrixContinueVerificationLabel
+                            : context.messages.settingsMatrixAccept,
+                        size: DesignSystemButtonSize.large,
+                        fullWidth: true,
+                      ),
                     ),
                     const SizedBox(height: 20),
                   ],

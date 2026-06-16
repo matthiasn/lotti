@@ -2,9 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/state/purge_controller.dart';
 import 'package:lotti/features/sync/ui/purge_modal.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -62,9 +62,13 @@ void main() {
     await tester.tap(find.text('Open purge modal'));
     await tester.pumpAndSettle();
 
-    final confirmButtonFinder = find.byType(LottiPrimaryButton);
+    final confirmButtonFinder = find.byWidgetPredicate(
+      (w) =>
+          w is DesignSystemButton &&
+          w.variant != DesignSystemButtonVariant.secondary,
+    );
     expect(confirmButtonFinder, findsOneWidget);
-    final confirmButton = tester.widget<LottiPrimaryButton>(
+    final confirmButton = tester.widget<DesignSystemButton>(
       confirmButtonFinder,
     );
     confirmButton.onPressed?.call();

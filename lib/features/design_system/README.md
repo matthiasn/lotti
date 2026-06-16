@@ -178,6 +178,15 @@ Representative primitive-ish components:
 
 Representative composite or feature-shaped components:
 
+- modal / sheet action bar (`components/buttons/design_system_modal_action_bar.dart`)
+  — the app-wide "dominant primary" layout selected by a design panel:
+  secondary actions keep their intrinsic width on the leading edge and the
+  primary `DesignSystemButton` (passed with `fullWidth: true`, which fills the
+  width and centres its label instead of left-aligning) flexes to fill the
+  trailing width, set off from the last secondary by a larger gutter so a
+  destructive secondary is harder to fat-finger. Every modal/sheet action bar
+  (confirmation, confirmation-progress, date/time, task due-date and estimate
+  pickers, journal date range, sync device verification) consumes this one rule
 - task filters
 - task list items
 - navigation tab bar and the mobile bottom nav bar

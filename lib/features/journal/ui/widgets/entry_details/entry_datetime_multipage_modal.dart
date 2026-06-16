@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 enum DateTimeFieldType { from, to }
@@ -377,43 +377,33 @@ class _DateTimeRangeStickyActionBar extends ConsumerWidget {
             final changed =
                 dateFrom != entry.meta.dateFrom || dateTo != entry.meta.dateTo;
 
-            return Container(
+            return DesignSystemModalActionBar(
               padding: const EdgeInsets.all(20),
-              child: SizedBox(
-                height: 48,
-                child: LottiPrimaryButton(
-                  onPressed: valid && changed
-                      ? () async {
-                          try {
-                            await ref
-                                .read(provider.notifier)
-                                .updateFromTo(
-                                  dateFrom: dateFrom,
-                                  dateTo: dateTo,
-                                );
-                            if (context.mounted) {
-                              Navigator.of(context).pop();
-                            }
-                          } catch (e) {
-                            DevLogger.warning(
-                              name: 'EntryDateTimeMultiPageModal',
-                              message: 'Error updating date range: $e',
-                            );
+              primary: DesignSystemButton(
+                onPressed: valid && changed
+                    ? () async {
+                        try {
+                          await ref
+                              .read(provider.notifier)
+                              .updateFromTo(
+                                dateFrom: dateFrom,
+                                dateTo: dateTo,
+                              );
+                          if (context.mounted) {
+                            Navigator.of(context).pop();
                           }
+                        } catch (e) {
+                          DevLogger.warning(
+                            name: 'EntryDateTimeMultiPageModal',
+                            message: 'Error updating date range: $e',
+                          );
                         }
-                      : null,
-                  label: context.messages.journalDateSaveButton,
-                  icon: Icons.check_rounded,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: context.colorScheme.primary,
-                    foregroundColor: context.colorScheme.onPrimary,
-                    disabledBackgroundColor:
-                        context.colorScheme.surfaceContainerHighest,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
+                      }
+                    : null,
+                label: context.messages.journalDateSaveButton,
+                leadingIcon: Icons.check_rounded,
+                size: DesignSystemButtonSize.large,
+                fullWidth: true,
               ),
             );
           },
@@ -442,42 +432,27 @@ class _DateTimePickerStickyActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return DesignSystemModalActionBar(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: LottiSecondaryButton(
-              label: context.messages.cancelButton,
-              onPressed: onCancel,
-              fullWidth: true,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: LottiSecondaryButton(
-              label: context.messages.journalDateNowButton,
-              onPressed: onNow,
-              fullWidth: true,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: LottiPrimaryButton(
-              onPressed: onDone,
-              label: context.messages.doneButton,
-              style: FilledButton.styleFrom(
-                backgroundColor: context.colorScheme.primary,
-                foregroundColor: context.colorScheme.onPrimary,
-                disabledBackgroundColor:
-                    context.colorScheme.surfaceContainerHighest,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-        ],
+      secondary: [
+        DesignSystemButton(
+          label: context.messages.cancelButton,
+          variant: DesignSystemButtonVariant.secondary,
+          size: DesignSystemButtonSize.large,
+          onPressed: onCancel,
+        ),
+        DesignSystemButton(
+          label: context.messages.journalDateNowButton,
+          variant: DesignSystemButtonVariant.secondary,
+          size: DesignSystemButtonSize.large,
+          onPressed: onNow,
+        ),
+      ],
+      primary: DesignSystemButton(
+        label: context.messages.doneButton,
+        size: DesignSystemButtonSize.large,
+        fullWidth: true,
+        onPressed: onDone,
       ),
     );
   }
