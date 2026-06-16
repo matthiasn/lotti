@@ -9,6 +9,8 @@ import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_config_sliver.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 /// Hosts [slivers] inside the one MaterialApp + localization stack shared by
 /// every test in this file instead of rebuilding it ad hoc per group.
 Widget _buildSliverScaffold({
@@ -18,6 +20,7 @@ Widget _buildSliverScaffold({
   return ProviderScope(
     overrides: overrides,
     child: MaterialApp(
+      theme: resolveTestTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(

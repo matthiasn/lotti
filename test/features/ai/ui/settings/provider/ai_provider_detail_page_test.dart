@@ -578,17 +578,21 @@ void main() {
         await tester.tap(find.text('Remove provider'));
         await tester.pumpAndSettle();
 
-        // Delete service shows its own confirmation dialog. Tap through it
-        // by finding the dialog's destructive action. The button text comes
-        // from AiConfigDeleteService — guard the path with a robust matcher.
+        // Delete service shows its own confirmation dialog. The actions now
+        // hold two DesignSystemButtons (a tertiary Cancel and the danger
+        // confirm), so narrow to the destructive confirm by its variant to
+        // avoid tapping Cancel.
         final confirmButton = find.descendant(
           of: find.byType(Dialog),
-          matching: find.byType(DesignSystemButton),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is DesignSystemButton &&
+                widget.variant == DesignSystemButtonVariant.danger,
+          ),
         );
-        if (confirmButton.evaluate().isNotEmpty) {
-          await tester.tap(confirmButton.first);
-          await tester.pumpAndSettle();
-        }
+        expect(confirmButton, findsOneWidget);
+        await tester.tap(confirmButton);
+        await tester.pumpAndSettle();
 
         verify(
           () => mockRepository.deleteInferenceProviderWithModels(provider.id),

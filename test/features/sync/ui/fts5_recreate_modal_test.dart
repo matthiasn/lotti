@@ -5,6 +5,8 @@ import 'package:lotti/features/sync/state/fts5_controller.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
+import '../../../widget_test_utils.dart';
+
 class TestFts5Controller extends Fts5Controller {
   TestFts5Controller(this._initialState);
 
@@ -35,6 +37,7 @@ void main() {
           fts5ControllerProvider.overrideWith(() => testController),
         ],
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(
@@ -106,6 +109,7 @@ void main() {
           fts5ControllerProvider.overrideWith(() => testController),
         ],
         child: MaterialApp(
+          theme: resolveTestTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Builder(

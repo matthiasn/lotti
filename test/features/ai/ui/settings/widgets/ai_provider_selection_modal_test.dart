@@ -161,7 +161,7 @@ void main() {
 
       // DesignSystemButton wraps an ElevatedButton
       final continueButton = tester.widget<DesignSystemButton>(
-        find.byType(DesignSystemButton),
+        find.widgetWithText(DesignSystemButton, 'Continue'),
       );
       expect(continueButton.onPressed, isNull);
     });
@@ -178,7 +178,7 @@ void main() {
       await tester.pumpAndSettle();
 
       final continueButton = tester.widget<DesignSystemButton>(
-        find.byType(DesignSystemButton),
+        find.widgetWithText(DesignSystemButton, 'Continue'),
       );
       expect(continueButton.onPressed, isNotNull);
     });
