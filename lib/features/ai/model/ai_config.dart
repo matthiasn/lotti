@@ -5,6 +5,12 @@ import 'package:lotti/features/ai/state/consts.dart';
 part 'ai_config.freezed.dart';
 part 'ai_config.g.dart';
 
+/// The vendor / backend an [AiConfigInferenceProvider] talks to.
+///
+/// Drives request shaping (auth, base URL defaults, payload quirks), the
+/// provider picker chrome, and FTUE presets. Most entries are OpenAI-compatible
+/// cloud APIs; [ollama] and [mlxAudio] run locally on-device. The value is
+/// persisted as the enum name, so order can change freely but names must not.
 enum InferenceProviderType {
   alibaba,
   anthropic,
@@ -20,6 +26,11 @@ enum InferenceProviderType {
   whisper,
 }
 
+/// A kind of content a model can take as input or emit as output.
+///
+/// Stored on [AiConfigModel] as `inputModalities` / `outputModalities` and
+/// used to match models to skills (e.g. a transcription skill needs an
+/// audio-input, text-output model) and to render capability chips.
 enum Modality {
   text,
   audio,
@@ -188,6 +199,9 @@ sealed class AiConfig with _$AiConfig {
       _$AiConfigFromJson(json);
 }
 
+/// Discriminator for the [AiConfig] sealed union, one value per factory
+/// constructor. Used as the persisted row type and as the filter key when
+/// querying configs by kind (see `AiConfigRepository.getConfigsByType`).
 enum AiConfigType {
   inferenceProvider,
   prompt,

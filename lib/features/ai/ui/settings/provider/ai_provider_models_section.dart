@@ -9,6 +9,11 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Models section of the provider detail page.
+///
+/// Lists the provider's configured [models] (with MLX-audio download status
+/// where applicable), an "Add model" affordance ([onAddModel]), and forwards
+/// row taps to [onModelTap] to open the model edit page.
 class ModelsSection extends StatelessWidget {
   const ModelsSection({
     required this.provider,
@@ -78,6 +83,11 @@ class ModelsSection extends StatelessWidget {
   }
 }
 
+/// "Active profile" section of the provider detail page.
+///
+/// Renders the inference [profile] that currently relies on this provider's
+/// [models] as a tappable [AiProfileCard], so the user can jump from a provider
+/// to the profile wired to it. Tapping forwards to [onProfileTap].
 class ActiveProfileSection extends StatelessWidget {
   const ActiveProfileSection({
     required this.profile,

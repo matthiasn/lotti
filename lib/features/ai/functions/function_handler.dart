@@ -24,7 +24,12 @@ abstract class FunctionHandler {
   String createToolResponse(FunctionCallResult result);
 }
 
-/// Result of processing a function call
+/// Result of processing a single tool/function call.
+///
+/// [success] flags whether the action was applied; on failure [error] holds a
+/// human-readable reason and [data] carries error context, while on success
+/// [data] holds the parsed outcome. [arguments] is the raw JSON argument string
+/// the model emitted (kept verbatim for dedup and retry-prompt construction).
 class FunctionCallResult {
   const FunctionCallResult({
     required this.success,

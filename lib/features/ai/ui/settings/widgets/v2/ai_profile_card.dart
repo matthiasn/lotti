@@ -7,6 +7,16 @@ import 'package:lotti/features/design_system/components/badges/design_system_bad
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// 2-column grid card for the redesigned Profiles tab.
+///
+/// Renders the profile name, an optional ACTIVE badge (when [isActive]), the
+/// optional description, and one row per configured skill slot (thinking /
+/// image recognition / transcription / image generation). Each populated slot
+/// resolves its `providerModelId` to a display name via [modelLookup];
+/// unresolved ids render in the warning tone so dangling references stand out.
+/// Empty slots are omitted entirely. Tapping the card runs [onTap]; the
+/// trailing `⋯` exposes [menuActions]. See the ASCII layout sketch at the foot
+/// of `ai_model_card.dart`.
 class AiProfileCard extends StatelessWidget {
   const AiProfileCard({
     required this.profile,

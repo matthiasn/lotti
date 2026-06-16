@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Localized presentation helpers for [Modality] (text / audio / image).
 extension ModalityExtension on Modality {
+  /// Localized short name for this modality, e.g. shown on capability chips.
   String displayName(BuildContext context) {
     switch (this) {
       case Modality.text:
@@ -14,6 +16,8 @@ extension ModalityExtension on Modality {
     }
   }
 
+  /// Localized longer description of this modality, used in the modality
+  /// selection modal.
   String description(BuildContext context) {
     switch (this) {
       case Modality.text:

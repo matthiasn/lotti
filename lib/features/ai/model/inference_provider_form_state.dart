@@ -3,6 +3,8 @@ import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/utils/file_utils.dart';
 
+/// Validation failures surfaced by the inference-provider edit form. Mapped to
+/// user-facing copy by `ProviderFormErrorExtension.displayMessage`.
 enum ProviderFormError {
   tooShort,
   empty,
@@ -10,6 +12,8 @@ enum ProviderFormError {
 }
 
 // Input validation classes
+
+/// The provider's display name. Must be at least 3 characters.
 class ApiKeyName extends FormzInput<String, ProviderFormError> {
   const ApiKeyName.pure([super.value = '']) : super.pure();
   const ApiKeyName.dirty([super.value = '']) : super.dirty();
@@ -20,6 +24,10 @@ class ApiKeyName extends FormzInput<String, ProviderFormError> {
   }
 }
 
+/// The provider's API key. Required (non-empty) for cloud providers, but
+/// exempt for local providers in `ProviderConfig.noApiKeyRequired` (Ollama,
+/// FastWhisper, Whisper) — hence the [providerType] is carried alongside the
+/// value so the validator knows whether to enforce the requirement.
 class ApiKeyValue extends FormzInput<String, ProviderFormError> {
   const ApiKeyValue.pure([super.value = '', this.providerType]) : super.pure();
   const ApiKeyValue.dirty([super.value = '', this.providerType])
@@ -37,6 +45,7 @@ class ApiKeyValue extends FormzInput<String, ProviderFormError> {
   }
 }
 
+/// The provider's optional free-text description. Always valid.
 class DescriptionValue extends FormzInput<String, ProviderFormError> {
   const DescriptionValue.pure([super.value = '']) : super.pure();
   const DescriptionValue.dirty([super.value = '']) : super.dirty();
@@ -47,6 +56,8 @@ class DescriptionValue extends FormzInput<String, ProviderFormError> {
   }
 }
 
+/// The provider's API base URL. Optional (empty is valid); when set it must
+/// parse to an absolute http/https URI.
 class BaseUrl extends FormzInput<String, ProviderFormError> {
   const BaseUrl.pure([super.value = '']) : super.pure();
   const BaseUrl.dirty([super.value = '']) : super.dirty();
@@ -72,6 +83,12 @@ class BaseUrl extends FormzInput<String, ProviderFormError> {
   }
 }
 
+/// Formz-backed state for the inference-provider edit form.
+///
+/// Aggregates the four validated inputs plus submission flags and the selected
+/// [inferenceProviderType]. [lastUpdated] is bumped on every [copyWith] (even
+/// when no field value changes) so Riverpod always sees a new state object and
+/// rebuilds. Convert to the persisted entity with [toAiConfig].
 // Form state class
 class InferenceProviderFormState with FormzMixin {
   InferenceProviderFormState({
@@ -128,6 +145,8 @@ class InferenceProviderFormState with FormzMixin {
     description,
   ];
 
+  /// Materializes the form into an [AiConfigInferenceProvider]. Generates a
+  /// fresh UUID when [id] is null (new provider) and stamps `createdAt` to now.
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {
     return AiConfig.inferenceProvider(

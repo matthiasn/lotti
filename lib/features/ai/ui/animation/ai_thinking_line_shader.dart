@@ -4,6 +4,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 
+/// GLSL fragment-shader animation of flowing "thinking" lines.
+///
+/// Loads the fragment program (via [programLoader], defaulting to the bundled
+/// shader) and repaints it each frame with the configured [speed], [amplitude],
+/// [randomness], [pulse], and [lineCount]. If the shader fails to load it falls
+/// back to a CPU-painted approximation ([AiThinkingLineFallbackPainter]).
+/// [timeOverride] / [programLoader] exist for deterministic golden tests.
 class AiThinkingLineShader extends StatefulWidget {
   const AiThinkingLineShader({
     required this.width,
@@ -156,6 +163,8 @@ class _AiThinkingLineShaderState extends State<AiThinkingLineShader>
   }
 }
 
+/// Drives the loaded fragment [program] for [AiThinkingLineShader] — sets the
+/// shader uniforms from the animation params and paints it over the canvas.
 @visibleForTesting
 class AiThinkingLineShaderPainter extends CustomPainter {
   AiThinkingLineShaderPainter({
@@ -228,6 +237,8 @@ class AiThinkingLineShaderPainter extends CustomPainter {
   }
 }
 
+/// CPU-painted approximation of the thinking-line animation, used when the
+/// GLSL shader is unavailable (load failure or unsupported platform).
 @visibleForTesting
 class AiThinkingLineFallbackPainter extends CustomPainter {
   AiThinkingLineFallbackPainter({

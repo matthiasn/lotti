@@ -6,8 +6,12 @@ class ChecklistValidation {
   /// Maximum number of items allowed in a single batch
   static const int maxBatchSize = 20;
 
-  /// Validates and sanitizes a list of raw checklist items
-  /// Returns a list of validated items with title and isChecked status
+  /// Validates and sanitizes a list of raw (AI-supplied) checklist items.
+  ///
+  /// Each entry must be a map with a string `title`; entries that are empty,
+  /// over [maxTitleLength], or the wrong shape are silently dropped. Returns
+  /// the surviving items as `(title, isChecked)` records with trimmed titles
+  /// (`isChecked` is true only when the raw value is exactly `true`).
   static List<({String title, bool isChecked})> validateItems(
     List<dynamic> raw,
   ) {
@@ -33,7 +37,11 @@ class ChecklistValidation {
     return sanitized;
   }
 
-  /// Validates an item entry and returns an error message if it's invalid
+  /// Validates a single raw item entry, returning a model-facing error string
+  /// describing the problem, or null when the entry is valid. Unlike
+  /// [validateItems] (which silently drops bad rows), this produces the
+  /// corrective message sent back to the AI so it can retry with the right
+  /// shape.
   static String? validateItemEntry(dynamic entry) {
     if (entry is String) {
       return 'Each item must be an object with a title. Example: {"items": [{"title": "Buy milk"}] }';

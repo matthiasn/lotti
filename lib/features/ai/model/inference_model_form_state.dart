@@ -2,12 +2,16 @@ import 'package:formz/formz.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/utils/file_utils.dart';
 
+/// Validation failures surfaced by the inference-model edit form. Mapped to
+/// user-facing copy by `ModelFormErrorExtension.displayMessage`.
 enum ModelFormError {
   tooShort,
   invalidNumber,
 }
 
 // Input validation classes
+
+/// The model's display name. Must be at least 3 characters.
 class ModelName extends FormzInput<String, ModelFormError> {
   const ModelName.pure([super.value = '']) : super.pure();
   const ModelName.dirty([super.value = '']) : super.dirty();
@@ -18,6 +22,8 @@ class ModelName extends FormzInput<String, ModelFormError> {
   }
 }
 
+/// The provider-side model identifier sent on the wire (e.g.
+/// `gemini-2.5-flash`). Must be at least 3 characters.
 class ProviderModelId extends FormzInput<String, ModelFormError> {
   const ProviderModelId.pure([super.value = '']) : super.pure();
   const ProviderModelId.dirty([super.value = '']) : super.dirty();
@@ -28,6 +34,7 @@ class ProviderModelId extends FormzInput<String, ModelFormError> {
   }
 }
 
+/// The model's optional free-text description. Always valid.
 class ModelDescription extends FormzInput<String, String> {
   const ModelDescription.pure([super.value = '']) : super.pure();
   const ModelDescription.dirty([super.value = '']) : super.dirty();
@@ -38,6 +45,8 @@ class ModelDescription extends FormzInput<String, String> {
   }
 }
 
+/// Optional cap on completion tokens, entered as text. Empty is valid; any
+/// non-empty value must parse to a positive integer.
 class MaxCompletionTokens extends FormzInput<String, ModelFormError> {
   const MaxCompletionTokens.pure([super.value = '']) : super.pure();
   const MaxCompletionTokens.dirty([super.value = '']) : super.dirty();
@@ -51,6 +60,12 @@ class MaxCompletionTokens extends FormzInput<String, ModelFormError> {
   }
 }
 
+/// Formz-backed state for the inference-model edit form.
+///
+/// Holds the validated text inputs plus the model's capability flags
+/// (modalities, reasoning, function-calling, Gemini thinking mode) and the
+/// owning [inferenceProviderId]. Convert to the persisted entity with
+/// [toAiConfig].
 // Form state class
 class InferenceModelFormState with FormzMixin {
   InferenceModelFormState({
@@ -116,6 +131,9 @@ class InferenceModelFormState with FormzMixin {
     maxCompletionTokens,
   ];
 
+  /// Materializes the form into an [AiConfigModel]. Generates a fresh UUID when
+  /// [id] is null (new model), stamps `createdAt` to now, and parses
+  /// [maxCompletionTokens] to an int (null when left blank).
   // Convert form state to AiConfig model
   AiConfig toAiConfig() {
     return AiConfig.model(

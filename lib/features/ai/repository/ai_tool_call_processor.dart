@@ -42,7 +42,8 @@ class AiToolCallProcessor {
   /// Resolves the repository-owned (test-injectable) auto-checklist service.
   final AutoChecklistService Function() autoChecklistServiceResolver;
 
-  AutoChecklistService get autoChecklistService => autoChecklistServiceResolver();
+  AutoChecklistService get autoChecklistService =>
+      autoChecklistServiceResolver();
 
   Future<bool> process({
     required List<ChatCompletionMessageToolCall> toolCalls,

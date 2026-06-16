@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Presentation helpers for [InferenceProviderType] — localized labels, the
+/// settings icon, and provider-specific request quirks.
 extension InferenceProviderTypeExtension on InferenceProviderType {
+  /// Localized human-readable name for this provider (e.g. "OpenAI",
+  /// "Gemini"). Requires a [BuildContext] to reach the l10n messages.
   String displayName(BuildContext context) {
     switch (this) {
       case InferenceProviderType.alibaba:
@@ -32,6 +36,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
     }
   }
 
+  /// Localized one-line description of this provider, shown under the name in
+  /// the provider picker / setup flows.
   String description(BuildContext context) {
     switch (this) {
       case InferenceProviderType.alibaba:
@@ -61,6 +67,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
     }
   }
 
+  /// Material icon used to represent this provider in legacy settings rows.
+  /// (The v2 cards use `aiProviderIcon` from `ai_provider_visual.dart`.)
   IconData get icon {
     switch (this) {
       case InferenceProviderType.alibaba:

@@ -9,7 +9,13 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/selection/selection_modal_base.dart';
 
-/// A slot picker field that shows the selected model and opens a picker modal.
+/// One skill-slot row in the profile form: shows the model currently assigned
+/// to the slot ([modelId]) and opens a searchable picker on tap.
+///
+/// The picker is restricted to models matching [filter] (e.g. "audio in / text
+/// out" for the transcription slot). When [required] is true an empty slot is
+/// flagged. Selecting a model — or clearing it — reports back via
+/// [onModelSelected] (null clears the slot).
 class ModelSlotField extends ConsumerWidget {
   const ModelSlotField({
     required this.label,

@@ -8,9 +8,16 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Entry point for the "generate embeddings" maintenance flow.
+///
+/// Lets the user pick which categories to (re)embed, then runs the backfill
+/// through `embeddingBackfillControllerProvider` while showing live progress.
 class EmbeddingBackfillModal {
   const EmbeddingBackfillModal._();
 
+  /// Opens the confirmation + progress modal. Confirm stays disabled until at
+  /// least one category is selected; on confirm it backfills the selected
+  /// categories and keeps the sheet open to show progress until completion.
   static Future<void> show(BuildContext context) async {
     final container = ProviderScope.containerOf(context);
     final selectedIdsNotifier = ValueNotifier<Set<String>>({});

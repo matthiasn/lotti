@@ -7,6 +7,12 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Connection-details section of the provider detail page.
+///
+/// Shows the provider's base URL and a masked API key (via [maskApiKey]) as
+/// read-only rows, with an Edit action ([onEdit]) that opens the provider edit
+/// form. Rows that don't apply to the provider type (e.g. base URL for a
+/// provider that doesn't use one) are omitted.
 class ConnectionSection extends StatelessWidget {
   const ConnectionSection({
     required this.provider,

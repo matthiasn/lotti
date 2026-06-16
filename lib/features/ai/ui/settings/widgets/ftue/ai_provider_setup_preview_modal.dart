@@ -14,6 +14,19 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 
 export 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_preview_models.dart';
 
+/// FTUE "Review what Lotti will add" sheet shown after a provider connects.
+///
+/// Lets the user preview and opt out of the per-provider preset before it is
+/// applied: a connected banner, the profile that will be seeded, the
+/// tickable [NewModelsSection], an optional read-only [AlreadyAddedSection],
+/// and the test category footer. Returns an
+/// [AiProviderSetupPreviewResult] carrying `confirmed` plus the set of
+/// `providerModelId`s the user unticked (Accept & finish), or
+/// [AiProviderSetupPreviewResult.cancelled] on Customize / dismiss.
+///
+/// Prefer the [show] static entry point — it resolves the preset, filters
+/// out already-configured models, and short-circuits (returning a confirmed
+/// empty result) when there is nothing left to review.
 class AiProviderSetupPreviewModal extends StatefulWidget {
   const AiProviderSetupPreviewModal({
     required this.providerType,

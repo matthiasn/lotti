@@ -9,6 +9,15 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Single-row card for the redesigned Models tab.
+///
+/// Shows the provider-tinted icon tile, the model name + monospace
+/// `providerModelId`, and a wrapping row of capability chips (reasoning /
+/// modality labels). For [InferenceProviderType.mlxAudio] models it also
+/// renders a download-status badge and an install / open-progress action.
+/// Tapping the card runs [onTap]; the trailing `⋯` exposes [menuActions]
+/// (hidden when empty). See the ASCII layout sketch at the foot of
+/// `ai_provider_card.dart`.
 class AiModelCard extends StatelessWidget {
   const AiModelCard({
     required this.model,

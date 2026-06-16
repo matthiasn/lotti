@@ -4,6 +4,12 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Sticky glass footer for the AI Settings edit forms.
+///
+/// Shows a status line on the left — "no changes", a fix-errors hint, or
+/// nothing — and Cancel / Save buttons on the right. Save is only enabled when
+/// the form is both [isDirty] and [isFormValid] (and not [isLoading]); an
+/// unchanged or invalid form keeps it disabled.
 class FormBottomBar extends StatelessWidget {
   const FormBottomBar({
     required this.onSave,

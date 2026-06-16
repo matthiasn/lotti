@@ -54,6 +54,8 @@ class MlxAudioChannel {
     );
   }
 
+  /// Broadcast stream of model download/install progress from the native side.
+  /// Empty on unsupported platforms.
   Stream<MlxAudioModelDownloadProgress> get downloadProgressStream {
     if (!_isPlatformSupported) {
       return const Stream<MlxAudioModelDownloadProgress>.empty();
@@ -64,6 +66,9 @@ class MlxAudioChannel {
     });
   }
 
+  /// Broadcast stream of live transcription events (partial/final transcripts,
+  /// errors) emitted during [startRealtimeTranscription]. Empty on unsupported
+  /// platforms.
   Stream<MlxAudioRealtimeEvent> get realtimeTranscriptionEvents {
     if (!_isPlatformSupported) {
       return const Stream<MlxAudioRealtimeEvent>.empty();
@@ -74,6 +79,9 @@ class MlxAudioChannel {
     });
   }
 
+  /// Queries the install/download status of [modelId]. Returns an `unsupported`
+  /// result off-macOS and a `failed` result if the native call errors (it never
+  /// throws, unlike the action methods below).
   Future<MlxAudioModelDownloadProgress> getModelStatus(String modelId) async {
     if (!_isPlatformSupported) {
       return MlxAudioModelDownloadProgress.unsupported(modelId);
@@ -99,6 +107,8 @@ class MlxAudioChannel {
     }
   }
 
+  /// Starts a download/install of [modelId]; progress arrives on
+  /// [downloadProgressStream]. Throws on unsupported platforms.
   Future<void> installModel(String modelId) async {
     if (!_isPlatformSupported) {
       throw _unsupportedPlatformException();
@@ -109,6 +119,10 @@ class MlxAudioChannel {
     );
   }
 
+  /// Transcribes the audio file at [filePath] with [modelId]. Optional
+  /// [speechDictionaryTerms] bias recognition toward domain words; [language]
+  /// pins the language; [enableSpeakerDiarization] requests speaker labels.
+  /// Throws on unsupported platforms.
   Future<MlxAudioTranscriptionResult> transcribeFile({
     required String filePath,
     required String modelId,
@@ -132,6 +146,8 @@ class MlxAudioChannel {
     return MlxAudioTranscriptionResult.fromMap(result ?? const {});
   }
 
+  /// Like [transcribeFile] but takes the audio inline as base64 instead of a
+  /// file path. Throws on unsupported platforms.
   Future<MlxAudioTranscriptionResult> transcribeBase64Audio({
     required String audioBase64,
     required String modelId,
@@ -155,6 +171,8 @@ class MlxAudioChannel {
     return MlxAudioTranscriptionResult.fromMap(result ?? const {});
   }
 
+  /// Synthesizes [text] to speech with the TTS [modelId] and plays it natively.
+  /// Throws on unsupported platforms.
   Future<void> speakText({
     required String text,
     required String modelId,
@@ -173,6 +191,7 @@ class MlxAudioChannel {
     );
   }
 
+  /// Stops any in-progress speech playback. No-op on unsupported platforms.
   Future<void> stopSpeaking() async {
     if (!_isPlatformSupported) {
       return;
@@ -180,6 +199,10 @@ class MlxAudioChannel {
     await _methodChannel.invokeMethod<void>('stopSpeaking');
   }
 
+  /// Opens a streaming transcription session for [modelId]; feed audio via
+  /// [appendRealtimePcm] and read results from [realtimeTranscriptionEvents].
+  /// [delayPreset] tunes the partial-result latency/accuracy trade-off
+  /// (e.g. 'subtitle'). Throws on unsupported platforms.
   Future<void> startRealtimeTranscription({
     required String modelId,
     String? language,
@@ -198,6 +221,8 @@ class MlxAudioChannel {
     );
   }
 
+  /// Feeds a chunk of 16-bit PCM audio into the active realtime session.
+  /// No-op on unsupported platforms.
   Future<void> appendRealtimePcm(Uint8List pcm16) async {
     if (!_isPlatformSupported) {
       return;
@@ -208,6 +233,8 @@ class MlxAudioChannel {
     );
   }
 
+  /// Ends the realtime session and flushes the final transcript (delivered via
+  /// [realtimeTranscriptionEvents]). No-op on unsupported platforms.
   Future<void> stopRealtimeTranscription() async {
     if (!_isPlatformSupported) {
       return;
@@ -215,6 +242,8 @@ class MlxAudioChannel {
     await _methodChannel.invokeMethod<void>('stopRealtimeTranscription');
   }
 
+  /// Aborts the realtime session immediately, discarding pending audio. No-op
+  /// on unsupported platforms.
   Future<void> cancelRealtimeTranscription() async {
     if (!_isPlatformSupported) {
       return;
