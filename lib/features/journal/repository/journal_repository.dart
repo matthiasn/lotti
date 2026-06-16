@@ -19,6 +19,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'journal_repository.g.dart';
 
+/// App-facing facade for journal entity reads, writes, links, and deletes.
+///
+/// A thin coordination layer over the `getIt`-resolved `JournalDb`,
+/// `PersistenceLogic`, and sync services (it is a facade, not DI-wired — deps
+/// are looked up via `getIt`, not injected). Owns single- and bulk-ID loads,
+/// entity create/update, entry-link writes (under a vector-clock scope), and
+/// cascading cleanup such as clearing cover-art references on image delete.
 class JournalRepository {
   JournalRepository();
 

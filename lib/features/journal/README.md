@@ -30,6 +30,10 @@ lib/features/journal/
 │   ├── mixins/
 │   ├── pages/
 │   └── widgets/
+│       ├── create/         # entry-creation affordances
+│       ├── editor/         # rich-text editor widgets
+│       ├── entry_details/  # detail body + header/ subtree
+│       └── list_cards/     # journal list row cards
 ├── util/
 └── utils/
 ```

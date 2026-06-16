@@ -38,6 +38,14 @@ part 'entry_controller.g.dart';
 @visibleForTesting
 Duration stopRecordingDelay = const Duration(milliseconds: 100);
 
+/// The detail-side controller for a single journal entry, keyed by entry id.
+///
+/// Owns the entry's load/draft/save lifecycle (the two-state `EntryState`
+/// machine), editor focus/toolbar state, and the entity mutations exposed to
+/// the detail UI — status/priority, cover art, language, and text copy. Saves
+/// follow the dual-write path (persist the entity, then propagate metadata such
+/// as category to linked entries). See the feature README for the full
+/// save/refresh flow.
 @riverpod
 class EntryController extends _$EntryController {
   void focusNodeListener() {
