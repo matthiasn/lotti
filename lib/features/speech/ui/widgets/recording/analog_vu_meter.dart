@@ -21,7 +21,7 @@ class AnalogVuMeter extends StatefulWidget {
   /// Current instantaneous dBFS level (used for clipping detection)
   final double dBFS;
 
-  /// Width of the meter widget (height will be size * 0.5)
+  /// Width of the meter widget (height is size * 0.4)
   final double size;
 
   /// Color scheme for theming the meter

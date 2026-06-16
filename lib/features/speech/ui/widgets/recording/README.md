@@ -158,7 +158,9 @@ The VU meter uses RMS (Root Mean Square) calculation to display average signal l
 
 5. **Rolling Average Window:**
    - Fixed: 300ms (15 samples at 20ms intervals), set by the
-     `defaultVuWindowMs` constant in `recorder_controller.dart`
+     `defaultVuWindowMs` constant in `state/vu_meter.dart`. The RMS math itself
+     lives in the standalone `VuMeter` class there; `recorder_controller.dart`
+     only constructs `VuMeter(windowSamples: defaultVuWindowMs ~/ intervalMs)`
    - Provides smooth, stable meter movement
    - Reduces nervousness from transient peaks
 

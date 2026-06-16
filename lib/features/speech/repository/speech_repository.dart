@@ -8,6 +8,13 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+/// Static persistence helpers for audio journal entries — a thin namespace over
+/// [PersistenceLogic].
+///
+/// [createAudioEntry] persists a recorded `AudioNote` as a `JournalAudio` entry
+/// (optionally linked to another entry and category-scoped), [updateLanguage]
+/// sets the detected/selected transcription language on an entry, and
+/// [removeAudioTranscript] drops a transcript from an existing entry.
 class SpeechRepository {
   static Future<JournalAudio?> createAudioEntry(
     AudioNote audioNote, {
