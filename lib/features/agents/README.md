@@ -47,8 +47,8 @@ Startup does this:
     wakes and a prompt prefix cache can restore it instead of re-prefilling
 - Task agents *define* a read-only `get_related_task_details` tool for
   on-demand drill-down into a sibling task in the same parent project, but it
-  is **currently disabled** (`enabled: false` in `task_agent_tool_definitions`,
-  the only such tool). `_buildToolDefinitions` filters out disabled tools, so it
+  is **currently disabled** (`enabled: false` in
+  `tools/task_planning_tool_definitions.dart`, the only such tool in `tools/`). `_buildToolDefinitions` filters out disabled tools, so it
   is never advertised to the model, and `allowedRelatedTaskIds` is never wired
   (it defaults to the empty set), so even a hallucinated call is rejected. No
   related-task directory section is injected into the wake prompt today, so the
@@ -242,6 +242,10 @@ Persisted agent-side entities include:
   recency-wins projection over the entries (no separate Head entity). Carries
   optional immutable author-time `tags` (set once at origin, surfaced as chips
   in the "What I've learned" panel).
+- Daily OS capture-pipeline variants: `CaptureEntity`, `ParsedItemEntity`,
+  `DayPlanEntity`, and `DaySummaryEntity` (the persisted spine of the
+  `daily_os_next` capture → parse → plan → summary flow). `AgentUnknownEntity`
+  is the forward-compat fallback for variants an older client cannot decode.
 
 Persisted links include:
 
@@ -255,6 +259,11 @@ Persisted links include:
 - `template_assignment`
 - `improver_target`
 - `soul_assignment`
+- Daily OS capture/plan links: `toolEffect`, `captureToParsedItem`,
+  `parsedItemToTask`, `captureToPlan`
+- attention-negotiation links: `attentionRequestEvidence`,
+  `attentionAwardRequest`, `attentionAwardPlan`
+- `basic` — the generic fallback link type
 
 The journal database is read on demand during wakes. The agents feature does
 not mirror full task or project state into `agent.sqlite`; it persists the
@@ -837,10 +846,18 @@ external source URLs; internal task links belong inline in the report body.
 
 ### Tool Policy
 
-Task agents have four immediate local tools:
+Task agents short-circuit four tools **locally** in `TaskAgentStrategy` — they
+are handled inline and never reach `AgentToolExecutor`:
 
 - `update_report`
 - `record_observations`
+- `get_related_task_details` *(handler exists, but the tool is `enabled: false`,
+  so the model never actually calls it — see above)*
+- `retract_suggestions`
+
+Two further tools run immediately but are routed through `AgentToolExecutor` →
+`TaskToolDispatcher` rather than short-circuited locally:
+
 - `request_attention` *(writes an evidence-backed `AttentionRequestEntity`
   into the synced agent log; it does not mutate the task or calendar directly)*
 - `resolve_attention_request` *(writes an auditable
@@ -1117,7 +1134,8 @@ feedback signal.
 2. validates the assigned template is a project-agent template
 3. creates the agent identity and state
 4. sets `slots.activeProjectId`
-5. schedules the first digest for the next local 06:00
+5. schedules the first digest for tomorrow's local 06:00 (`nextLocalDayAtTime`
+   always rolls forward a full day, even if today's 06:00 has not yet passed)
 6. creates `agent_project` and `template_assignment` links
 7. registers a direct project-edit subscription
 8. enqueues a creation wake

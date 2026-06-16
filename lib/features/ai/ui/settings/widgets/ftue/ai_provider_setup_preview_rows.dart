@@ -8,6 +8,12 @@ import 'package:lotti/features/design_system/components/checkboxes/design_system
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// The ticked "New models" section of the setup-preview modal.
+///
+/// Renders one checkbox row per proposed [KnownModel]. A row is ticked when
+/// its `providerModelId` is NOT in [excluded]; toggling a box calls [onToggle]
+/// with the id and the new value so the modal can maintain the excluded set.
+/// All rows start ticked.
 class NewModelsSection extends StatelessWidget {
   const NewModelsSection({
     required this.models,
@@ -115,6 +121,13 @@ class _ModelRow extends StatelessWidget {
   }
 }
 
+/// The read-only "Already added" section of the setup-preview modal.
+///
+/// Lists preset models the provider already owns (resolved from the saved
+/// [AiConfigModel] rows) with a check-circle marker and capability chips, but
+/// no checkboxes — these can't be re-added, they're shown so the user
+/// understands the preset overlaps their existing setup. Hidden by the modal
+/// when [models] is empty.
 class AlreadyAddedSection extends StatelessWidget {
   const AlreadyAddedSection({required this.models, super.key});
 
@@ -312,6 +325,8 @@ class _ChipRow extends StatelessWidget {
 // in release the workflow falls back to the empty-preset path in
 // `show()`, which skips the modal cleanly instead of crashing.
 
+/// FTUE preset for Gemini: the "Gemini Flash" profile plus the Flash, Pro,
+/// and image models. Null when the canonical lookup fails (see note above).
 AiProviderSetupPreviewPreset? geminiPreset() {
   final known = getFtueKnownModels();
   assert(known != null, 'Gemini FTUE known-model lookup returned null');
@@ -324,6 +339,8 @@ AiProviderSetupPreviewPreset? geminiPreset() {
   );
 }
 
+/// FTUE preset for OpenAI: the "OpenAI" profile plus the flash, reasoning,
+/// audio, and image models. Null when the canonical lookup fails.
 AiProviderSetupPreviewPreset? openAiPreset() {
   final known = getOpenAiFtueKnownModels();
   assert(known != null, 'OpenAI FTUE known-model lookup returned null');
@@ -341,6 +358,8 @@ AiProviderSetupPreviewPreset? openAiPreset() {
   );
 }
 
+/// FTUE preset for Mistral: the EU-hosted "Mistral (EU)" profile plus the
+/// flash, reasoning, and audio models. Null when the canonical lookup fails.
 AiProviderSetupPreviewPreset? mistralPreset() {
   final known = getMistralFtueKnownModels();
   assert(known != null, 'Mistral FTUE known-model lookup returned null');
@@ -353,6 +372,8 @@ AiProviderSetupPreviewPreset? mistralPreset() {
   );
 }
 
+/// FTUE preset for Alibaba Cloud (Qwen): the "Chinese AI Profile" plus the
+/// flash, reasoning, vision, audio, and image models. Null on lookup failure.
 AiProviderSetupPreviewPreset? alibabaPreset() {
   final known = getAlibabaFtueKnownModels();
   assert(known != null, 'Alibaba FTUE known-model lookup returned null');
@@ -371,6 +392,8 @@ AiProviderSetupPreviewPreset? alibabaPreset() {
   );
 }
 
+/// FTUE preset for Anthropic: the "Anthropic Claude" profile plus the
+/// reasoning and flash models. Null when the canonical lookup fails.
 AiProviderSetupPreviewPreset? anthropicPreset() {
   final known = getAnthropicFtueKnownModels();
   assert(known != null, 'Anthropic FTUE known-model lookup returned null');
@@ -383,6 +406,8 @@ AiProviderSetupPreviewPreset? anthropicPreset() {
   );
 }
 
+/// FTUE preset for Ollama: the "Local (Ollama)" profile with an empty model
+/// list. Non-nullable — Ollama has no canonical lookup to fail.
 AiProviderSetupPreviewPreset ollamaPreset() {
   // Ollama serves locally-pulled models. No preset model list — the
   // caller short-circuits via `skipsPreviewFor` and goes straight to

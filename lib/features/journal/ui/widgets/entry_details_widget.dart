@@ -35,6 +35,18 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/events/event_form.dart';
 
+/// Renders a single journal entry of any type, watching
+/// [entryControllerProvider] for `itemId` and choosing a layout based on the
+/// resolved entity.
+///
+/// This is the outer shell: it hides deleted/AI-suppressed entries, renders a
+/// task as a [ModernJournalCard] when `showTaskDetails` is false (so a linked
+/// task collapses to a compact card), and otherwise wraps
+/// [EntryDetailsContent] in a [TaskDetailSectionCard]. It also paints the two
+/// mutually exclusive border decorations: a persistent [TimerBorder] for the
+/// actively-recording entry (`isActiveTimer`) and a temporary [PulsingBorder]
+/// in the entry's category color for scroll-to highlights (`isHighlighted`).
+/// Per-type body rendering lives in [EntryDetailsContent].
 class EntryDetailsWidget extends ConsumerWidget {
   const EntryDetailsWidget({
     required this.itemId,
@@ -184,6 +196,19 @@ class EntryDetailsWidget extends ConsumerWidget {
   }
 }
 
+/// Builds the body of an entry detail card: header, optional editor, the
+/// type-specific detail section, and footer.
+///
+/// The `switch (item)` here is the per-type dispatcher — each [JournalEntity]
+/// subtype maps to its summary/player widget (audio player, health/workout/
+/// survey/measurement summaries, event form, AI response, checklist, rating,
+/// etc.), and `shouldHideEditor` suppresses the rich-text editor for types
+/// that render their own content instead of free text.
+///
+/// When shown inside a parent's linked-entries list (`linkedFrom != null`)
+/// and the entry is image/audio/text, the body becomes collapsible and the
+/// header drives an animated expand/collapse plus a best-effort auto-scroll so
+/// a newly expanded card is brought into view.
 class EntryDetailsContent extends ConsumerWidget {
   const EntryDetailsContent(
     this.itemId, {

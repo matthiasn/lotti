@@ -5,6 +5,10 @@ import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 
+/// Returns the persisted [MatrixConfig], preferring the one already cached on
+/// [session]. On a cache miss it reads and decodes the config JSON from
+/// [storage] (the keychain) and memoises it back onto the session. `null` when
+/// no config has been provisioned.
 Future<MatrixConfig?> loadMatrixConfig({
   required MatrixSessionManager session,
   required SecureStorage storage,
@@ -21,6 +25,8 @@ Future<MatrixConfig?> loadMatrixConfig({
   return session.matrixConfig;
 }
 
+/// Persists [config] to [storage] and caches it on [session] for the rest of
+/// the process lifetime.
 Future<void> setMatrixConfig(
   MatrixConfig config, {
   required MatrixSessionManager session,
@@ -33,6 +39,8 @@ Future<void> setMatrixConfig(
   );
 }
 
+/// Clears the Matrix config from [storage] and [session], then logs the
+/// session out of the homeserver. Used when disconnecting/unprovisioning sync.
 Future<void> deleteMatrixConfig({
   required MatrixSessionManager session,
   required SecureStorage storage,

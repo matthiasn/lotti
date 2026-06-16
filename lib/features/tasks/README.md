@@ -347,6 +347,13 @@ flowchart TD
   Ctl --> Create["Create new checklist item from drop payload"]
 ```
 
+When a user renames a checklist item, `ChecklistItemController.updateTitle`
+fires a fire-and-forget `correctionCaptureService.captureCorrection(...)` with
+the before/after title and the item's category, and the rename surfaces an undo
+affordance (`CorrectionUndoSnackbar`). That before→after pair becomes
+category-scoped AI guidance — see the [`checklist`](../checklist/README.md)
+feature, which owns the capture/undo logic.
+
 ### Checklist sorting state machine
 
 This one is real. `ChecklistsSortingController` owns a small but explicit state machine:

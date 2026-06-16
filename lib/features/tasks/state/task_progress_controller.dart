@@ -12,6 +12,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'task_progress_controller.g.dart';
 
+/// Live time-spent / estimate state for a single task, keyed by task `id`.
+///
+/// On build it loads the task's progress via [TaskProgressRepository] and then
+/// keeps it fresh from two sources:
+/// - [UpdateNotifications]: re-fetches when any subscribed entity (the task or
+///   one of its linked entries) changes.
+/// - [TimeService]: while a timer is running *for this task*, the 1Hz ticker
+///   updates the live entity's range in-memory so the displayed total grows
+///   smoothly without a DB round-trip.
+///
+/// [_fetch] deliberately preserves that live range across re-fetches because
+/// the persisted `dateTo` of a running timer is stale; see the inline comment
+/// there for why clobbering it caused the recorded time to blip back to zero.
 @riverpod
 class TaskProgressController extends _$TaskProgressController {
   final _timeRanges = <String, TimeRange>{};
@@ -21,6 +34,9 @@ class TaskProgressController extends _$TaskProgressController {
   StreamSubscription<JournalEntity?>? _timeServiceSubscription;
   final TimeService _timeService = getIt<TimeService>();
 
+  /// Wires the two live-update sources (DB change notifications and the time
+  /// service ticker). Called once at the end of [build]; subscriptions are
+  /// torn down via `ref.onDispose`.
   void listen() {
     _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((
       affectedIds,

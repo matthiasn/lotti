@@ -3,6 +3,9 @@ import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/message_bubble.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/typing_indicator.dart';
 
+/// Scrollable message list for the chat. Renders an empty-state prompt when
+/// there are no messages, otherwise a [MessageBubble] per message, appending a
+/// [TypingIndicator] as a trailing item while [showTypingIndicator] is set.
 class MessagesArea extends StatelessWidget {
   const MessagesArea({
     required this.messages,

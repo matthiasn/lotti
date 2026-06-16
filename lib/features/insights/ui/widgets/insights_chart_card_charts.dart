@@ -23,6 +23,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 int elapsedBucketCount(InsightsChartData data) =>
     _firstFutureBucket(data, epochDay(clock.now()));
 
+/// Per-bucket stacked bar chart: one bar per time bucket, each split into the
+/// category series of [chartData] (colors/labels via [resolver]). Only elapsed
+/// buckets are plotted and today's in-progress bucket is marked.
 class StackedBarChart extends StatelessWidget {
   const StackedBarChart({
     required this.chartData,
@@ -235,6 +238,11 @@ class StackedBarChart extends StatelessWidget {
   }
 }
 
+/// Cumulative running-total area chart: draws the pre-stacked category series
+/// of [chartData] as filled areas across the elapsed buckets (colors/labels via
+/// [resolver]). Used for the cumulative chart mode; the card falls back to
+/// [StackedBarChart] when fewer than two buckets have elapsed
+/// (see [elapsedBucketCount]).
 class StackedAreaChart extends StatelessWidget {
   const StackedAreaChart({
     required this.chartData,
@@ -409,6 +417,9 @@ class StackedAreaChart extends StatelessWidget {
   }
 }
 
+/// Legend for a stacked chart: a saturated swatch + label per entry in
+/// [seriesKeys] (resolved via [resolver]), plus a "+N" rollup chip disclosing
+/// the [rolledUpCount] smaller series that were collapsed into "other".
 class ChartLegend extends StatelessWidget {
   const ChartLegend({
     required this.seriesKeys,
@@ -471,6 +482,8 @@ class ChartLegend extends StatelessWidget {
   }
 }
 
+/// Placeholder shown in a chart card when there is no data to plot, rendering
+/// [message] centered in low-emphasis body text.
 class EmptyChart extends StatelessWidget {
   const EmptyChart({required this.message, super.key});
 

@@ -12,8 +12,15 @@ class HeroBanner extends StatelessWidget {
     super.key,
   });
 
+  /// Network URL of the banner image; falls back to [_BannerFallback] when
+  /// null or when the image fails to load.
   final String? imageUrl;
+
+  /// Version string shown in the badge (rendered as `v$version`).
   final String version;
+
+  /// Whether this is the newest release; when true the badge shows a gold
+  /// "NEW" pill.
   final bool isLatest;
 
   @override

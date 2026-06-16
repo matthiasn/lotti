@@ -1,9 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Rounded-square leading glyph shared by every settings list row.
+///
+/// A [containerSize]-wide tinted tile (the interactive-enabled token at
+/// [_kBackgroundAlpha]) wrapping a centered [icon]. The static helpers
+/// ([dividerIndent], [trailingChevron]) keep the row chrome — divider
+/// alignment and the navigable-row chevron — consistent across the many
+/// settings lists that compose `DesignSystemListItem` themselves.
 class SettingsIcon extends StatelessWidget {
   const SettingsIcon({required this.icon, super.key});
 
+  /// Outer side length of the tinted icon tile.
   static const containerSize = 36.0;
   static const _iconSize = 20.0;
 

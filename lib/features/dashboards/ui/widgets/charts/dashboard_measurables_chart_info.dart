@@ -8,6 +8,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
+/// Header for a measurable chart card: the measurable's display name as title,
+/// a subtitle chosen by a fixed precedence (unit → description → humanized
+/// aggregation, else none), and — when `enableCreate` — an add button that
+/// opens the measurement capture modal for this measurable.
 class MeasurablesChartInfoWidget extends StatelessWidget {
   const MeasurablesChartInfoWidget(
     this.measurableDataType, {

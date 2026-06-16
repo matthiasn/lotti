@@ -6,6 +6,11 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Collapsible disclosure for a model's hidden reasoning ([thinking]).
+///
+/// Collapsed by default; the toggle is keyboard-accessible (Enter/Space) and
+/// announces expanded/collapsed state via [Semantics]. Expanded, it renders the
+/// reasoning as markdown with a copy-to-clipboard action.
 class ThinkingDisclosure extends StatefulWidget {
   const ThinkingDisclosure({
     required this.thinking,

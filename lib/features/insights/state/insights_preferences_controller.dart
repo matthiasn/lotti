@@ -55,6 +55,9 @@ class InsightsPreferencesController extends Notifier<InsightsPreferences> {
     state = InsightsPreferences(focusCategoryIds: _decode(raw));
   }
 
+  /// Adds [categoryId] to the focus set if absent, removes it if present, then
+  /// persists the new set. Sets the `_edited` flag so a still-in-flight initial
+  /// [_load] never clobbers this user edit.
   void toggleFocusCategory(String categoryId) {
     _edited = true;
     final next = {...state.focusCategoryIds};

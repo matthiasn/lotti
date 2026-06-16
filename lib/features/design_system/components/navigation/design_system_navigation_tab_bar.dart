@@ -3,6 +3,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// One entry in [DesignSystemNavigationTabBar]: a [label], an [icon] (with an
+/// optional [activeIcon] swapped in when [active]), and a tap callback.
 class DesignSystemNavigationTabBarItem {
   const DesignSystemNavigationTabBarItem({
     required this.label,
@@ -65,6 +67,12 @@ class DesignSystemNavigationTabBar extends StatelessWidget {
   }
 }
 
+/// Reusable frosted-glass container behind navigation chrome.
+///
+/// Clips [child] to [borderRadius], applies a backdrop blur, a
+/// brightness-aware translucent fill, a hairline border of [borderWidth], and
+/// a soft drop shadow. Used by the pill tab bar and any surface that needs the
+/// same blurred treatment.
 class DesignSystemNavigationFrostedSurface extends StatelessWidget {
   const DesignSystemNavigationFrostedSurface({
     required this.child,

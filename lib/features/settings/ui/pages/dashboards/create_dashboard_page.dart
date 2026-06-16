@@ -3,6 +3,10 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
 import 'package:lotti/utils/file_utils.dart';
 
+/// Entry point for creating a dashboard.
+///
+/// Seeds a blank [DashboardDefinition] (fresh uuid, empty items, active)
+/// and opens [DashboardDefinitionPage] in create mode.
 class CreateDashboardPage extends StatelessWidget {
   CreateDashboardPage({
     super.key,

@@ -24,6 +24,10 @@ final _thinkBlockPattern = RegExp(
   caseSensitive: false,
 );
 
+/// Removes `<think>`/`<thinking>` reasoning blocks from assistant [content]
+/// before it is stored in conversation history (see [_thinkBlockPattern]).
+/// Returns null when the input is null or nothing meaningful remains after
+/// stripping and trimming.
 @visibleForTesting
 String? stripThinkBlocks(String? content) {
   if (content == null) return null;

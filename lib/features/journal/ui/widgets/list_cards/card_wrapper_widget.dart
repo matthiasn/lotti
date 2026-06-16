@@ -6,6 +6,14 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
+/// Per-row dispatcher for the journal/task list: picks the right card for the
+/// entity type — [ModernJournalImageCard] for images, [AnimatedModernTaskCard]
+/// for tasks, [ModernJournalCard] otherwise — and wraps it in a
+/// [RepaintBoundary] so scroll repaints stay isolated per row.
+///
+/// When `vectorDistance` is set (vector-search results), a color-coded distance
+/// badge is overlaid in the corner (greener = closer; see
+/// [colorForVectorDistance]).
 class CardWrapperWidget extends ConsumerWidget {
   const CardWrapperWidget({
     required this.item,

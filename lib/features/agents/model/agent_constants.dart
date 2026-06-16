@@ -9,6 +9,12 @@ abstract final class AgentKinds {
   static const dayAgent = 'day_agent';
 }
 
+/// `linkType` discriminators on `AgentLink` rows.
+///
+/// Every edge the agent layer persists between two entities carries one of
+/// these so queries can fan out a single subject to just the related rows it
+/// needs (e.g. the `message_prev` chain that orders a conversation, or
+/// `tool_effect` linking a tool call to the journal entity it mutated).
 abstract final class AgentLinkTypes {
   static const basic = 'basic';
   static const agentState = 'agent_state';
@@ -29,6 +35,13 @@ abstract final class AgentLinkTypes {
   static const soulAssignment = 'soul_assignment';
 }
 
+/// `entityType` discriminators on the agent domain's append-only entity rows.
+///
+/// Agent state, messages, reports, scheduled wakes, templates, and soul
+/// documents all share one storage table and are told apart by these tags.
+/// The `*Head` variants mark the current-version pointer for the versioned
+/// document families (reports, templates, souls); their non-head siblings are
+/// the individual immutable versions.
 abstract final class AgentEntityTypes {
   static const capture = 'day_capture';
   static const parsedItem = 'parsed_capture_item';
@@ -53,15 +66,25 @@ abstract final class AgentEntityTypes {
   static const soulDocumentHead = 'soulDocumentHead';
 }
 
+/// `scope` values for `AgentReport` rows. `current` marks the live report a
+/// detail page renders, as opposed to any archived/historical scope.
 abstract final class AgentReportScopes {
   static const current = 'current';
 }
 
+/// `author` attribution stamped on entities a non-task agent produces.
+///
+/// Distinguishes machine-authored content — the evolution agent's outputs vs.
+/// `system`-generated bookkeeping — so the UI and prompts can label provenance.
 abstract final class AgentAuthors {
   static const evolutionAgent = 'evolution_agent';
   static const system = 'system';
 }
 
+/// Fixed schedule constants for recurring agent work.
+///
+/// [projectDailyDigestHour] is the local hour-of-day (24h) the project agent's
+/// daily digest wake is scheduled for.
 abstract final class AgentSchedules {
   static const projectDailyDigestHour = 6;
 }
@@ -74,6 +97,9 @@ String? formatIsoDate(DateTime? date) {
       '${date.day.toString().padLeft(2, '0')}';
 }
 
+/// Deterministic id for the recap entity summarizing an evolution session,
+/// one per session. The fixed mapping lets readers look up a session's recap
+/// without an extra link query.
 String evolutionSessionRecapId(String sessionId) =>
     'evolution-session-recap-$sessionId';
 

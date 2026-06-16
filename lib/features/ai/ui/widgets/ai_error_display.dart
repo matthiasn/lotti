@@ -4,7 +4,11 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// A widget that displays AI inference errors in a user-friendly way
+/// A widget that displays an [InferenceError] in a user-friendly way.
+///
+/// Translates the error's type into a title, explanation, and (where relevant)
+/// a remediation suggestion, and surfaces a retry affordance that invokes
+/// [onRetry] when provided. Used inside the AI progress/error modals.
 class AiErrorDisplay extends StatefulWidget {
   const AiErrorDisplay({
     required this.error,

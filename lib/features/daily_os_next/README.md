@@ -625,6 +625,11 @@ stateDiagram-v2
 - Future Daily OS Next agenda and shutdown tools should be added under this
   feature without importing `features/daily_os` (commit/uncommit already ship —
   see the `DayAgentPlanService` notes above).
+- **Shutdown is still mock-backed.** `ShutdownController` and every Shutdown
+  method (`surfaceShutdownData`, `generateTomorrowNote`, `recordReflection`,
+  `recordCarryoverDecision`) route through `MockDayAgent` — the entire Shutdown
+  data path is scripted/unimplemented today, unlike Capture/Reconcile/Draft
+  which run on the real `DayAgentWorkflow`.
 
 The planner identity's lifecycle (ADR 0022) — one durable mind, many day
 workspaces, with legacy day agents archived on first flip:

@@ -1,3 +1,4 @@
+/// A named swatch (CSS hex) offered in the label color picker.
 class LabelColorPreset {
   const LabelColorPreset({
     required this.name,
@@ -8,6 +9,10 @@ class LabelColorPreset {
   final String hex;
 }
 
+/// Curated palette shown as custom swatches in the label editor.
+///
+/// The first entry is the default color for newly created labels and the
+/// baseline that dirty-tracking compares against in the label editor.
 const List<LabelColorPreset> labelColorPresets = [
   LabelColorPreset(name: 'Ocean Blue', hex: '#0066CC'),
   LabelColorPreset(name: 'Emerald', hex: '#1B998B'),

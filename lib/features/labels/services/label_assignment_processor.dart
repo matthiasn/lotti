@@ -11,6 +11,13 @@ import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+/// Outcome of a single [LabelAssignmentProcessor.processAssignment] run.
+///
+/// Partitions the proposed IDs into three buckets: [assigned] (persisted),
+/// [invalid] (unknown or soft-deleted definitions), and [skipped] — each a
+/// `{id, reason}` map where reason is one of `out_of_scope`, `suppressed`,
+/// `already_assigned`, `over_cap`, or `duplicate`. [toStructuredJson] renders
+/// this for return to the model.
 class LabelAssignmentResult {
   LabelAssignmentResult({
     required this.assigned,
@@ -53,6 +60,15 @@ class LabelAssignmentResult {
   });
 }
 
+/// Applies an AI/agent label proposal to a task with defense-in-depth guards.
+///
+/// The pipeline normalizes and dedupes proposed IDs, no-ops when the task
+/// already has >= 3 labels, caps the set at [kMaxLabelsPerAssignment], skips
+/// already-assigned IDs, and validates each remaining ID via [LabelValidator]
+/// (must exist, not be deleted, be in category scope, and not be suppressed for
+/// the task). Survivors are persisted add-only through
+/// [LabelsRepository.addLabels]; the outcome is summarized via
+/// [LabelAssignmentResult.toStructuredJson] for return to the model.
 class LabelAssignmentProcessor {
   LabelAssignmentProcessor({
     JournalDb? db,
@@ -69,6 +85,12 @@ class LabelAssignmentProcessor {
   final LabelValidator _validator;
   final JournalDb? _db;
 
+  /// Runs the guarded assignment pipeline for [taskId] over [proposedIds],
+  /// returning which IDs were assigned, invalid, or skipped (with reasons).
+  ///
+  /// [existingIds] are the task's current labels (feeds the `>= 3` no-op gate);
+  /// pass [categoryId] to avoid a redundant DB lookup. The remaining parameters
+  /// are parser telemetry forwarded into structured logs, not control flow.
   Future<LabelAssignmentResult> processAssignment({
     required String taskId,
     required List<String> proposedIds,

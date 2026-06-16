@@ -6,6 +6,11 @@ import 'package:lotti/features/tasks/ui/widgets/task_browse_list_item_rows.dart'
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// A single row in the browseable task list. Renders an optional section
+/// header (with task count) for the first entry of a section, then the task
+/// card via [TaskBrowseRowShell] + [TaskRowContent], applying grouped-card
+/// borders and radii based on the entry's first/last-in-section flags. When a
+/// `hoveredTaskIdNotifier` is supplied the card tracks hover state.
 class TaskBrowseListItem extends StatelessWidget {
   const TaskBrowseListItem({
     required this.entry,

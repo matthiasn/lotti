@@ -13,6 +13,15 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'linked_entries_controller.g.dart';
 
+/// Loads and live-updates the outgoing [EntryLink]s from entry `id` (the links
+/// to the entries shown in its linked-entries list).
+///
+/// Subscribes to [UpdateNotifications] and re-fetches whenever the source
+/// entry or any currently-linked target changes (`watchedIds`), so the list
+/// stays current as links are added/removed and target entries are edited.
+/// Visibility of hidden links is driven by [IncludeHiddenController] for the
+/// same id. Result is cached for `entryCacheDuration`. Also exposes
+/// [removeLink]/[updateLink] write helpers that delegate to the repository.
 @riverpod
 class LinkedEntriesController extends _$LinkedEntriesController {
   StreamSubscription<Set<String>>? _updateSubscription;
@@ -79,6 +88,8 @@ class LinkedEntriesController extends _$LinkedEntriesController {
   }
 }
 
+/// Per-entry toggle controlling whether hidden links are included when
+/// [LinkedEntriesController] fetches the linked-entries list. Defaults to off.
 @riverpod
 class IncludeHiddenController extends _$IncludeHiddenController {
   @override
@@ -93,6 +104,10 @@ class IncludeHiddenController extends _$IncludeHiddenController {
   bool get includeHidden => state;
 }
 
+/// Per-entry toggle controlling whether [AiResponseEntry] entries are shown in
+/// the linked-entries list (passed through to the entry detail widget as
+/// `showAiEntry`). Defaults to off so AI responses stay collapsed under their
+/// source entry unless the user opts in.
 @riverpod
 class IncludeAiEntriesController extends _$IncludeAiEntriesController {
   @override
@@ -208,6 +223,10 @@ List<EntryLink> sortedLinkedEntries(Ref ref, String id) {
   return sorted;
 }
 
+/// Resolves the `toId` of the most recently *created* outgoing link from
+/// entry `id` (by `EntryLink.createdAt`), or null when `id` is null or has no
+/// links. Used by the duration widget to decide which linked timer entry shows
+/// the record button.
 @riverpod
 class NewestLinkedIdController extends _$NewestLinkedIdController {
   @override

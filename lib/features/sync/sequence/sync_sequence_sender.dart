@@ -72,6 +72,9 @@ class SyncSequenceSender {
     }
   }
 
+  /// Records a sent entry link in the sequence log (as
+  /// [SyncSequencePayloadType.entryLink]) so peers can detect and backfill it
+  /// if missed. Convenience wrapper over `recordSentEntry`.
   Future<void> recordSentEntryLink({
     required String linkId,
     required VectorClock vectorClock,

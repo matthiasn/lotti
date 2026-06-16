@@ -19,6 +19,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 const _kTaskMobileScreenWidth = 402.0;
 const _kTaskMobileScreenGap = 32.0;
 
+/// Mobile widgetbook showcase of the task list/detail experience. Above a
+/// width threshold it renders the list and detail screens side by side;
+/// otherwise it shows the list screen and swaps to a full-screen detail
+/// (with a back button) once a task is opened. Backed by
+/// `taskListDetailShowcaseControllerProvider`.
 class TaskMobileListDetailShowcase extends ConsumerStatefulWidget {
   const TaskMobileListDetailShowcase({super.key});
 

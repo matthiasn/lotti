@@ -7,6 +7,13 @@ import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:research_package/research_package.dart';
 
+/// Presents [task] in a themed single-page modal and forwards the submitted
+/// result to [resultCallback].
+///
+/// Survey-agnostic: it only runs an `RPOrderedTask` and reports the result;
+/// the scoring and persistence live entirely in the callback (see
+/// [createResultCallback]). The three `run*` helpers below are the public
+/// entry points other features (today `dashboards`) call.
 Future<void> runSurvey({
   required RPOrderedTask task,
   required ThemeData themeData,
@@ -35,6 +42,8 @@ Future<void> runSurvey({
   );
 }
 
+/// Runs the Chalder Fatigue Scale (CFQ-11), persisting the result linked to
+/// [linkedId] when submitted. See [runSurvey].
 void runCfq11({
   required BuildContext context,
   required ThemeData themeData,
@@ -52,6 +61,8 @@ void runCfq11({
   );
 }
 
+/// Runs the General Health Questionnaire (GHQ-12), persisting the result linked
+/// to [linkedId] when submitted. See [runSurvey].
 void runGhq12({
   required BuildContext context,
   required ThemeData themeData,
@@ -69,6 +80,8 @@ void runGhq12({
   );
 }
 
+/// Runs the Positive and Negative Affect Schedule (PANAS), persisting the
+/// result linked to [linkedId] when submitted. See [runSurvey].
 void runPanas({
   required BuildContext context,
   required ThemeData themeData,

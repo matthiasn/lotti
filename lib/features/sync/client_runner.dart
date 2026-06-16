@@ -36,6 +36,8 @@ class ClientRunner<T> {
     _controller.add(event);
   }
 
+  /// Closes the request stream, ending the FIFO loop. Already-enqueued
+  /// requests still drain; new [enqueueRequest] calls after this throw.
   void close() {
     _controller.close();
   }

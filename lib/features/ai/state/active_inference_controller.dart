@@ -6,6 +6,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'active_inference_controller.g.dart';
 
+/// Live state for one in-flight inference run.
+///
+/// Identifies the run ([entityId], [promptId], [aiResponseType], plus the
+/// [linkedEntityId] when a primary/linked pair is processed together) and owns
+/// a broadcast [progressStreamController] that streams incremental progress
+/// text to the UI. Holders MUST call [dispose] to close the stream;
+/// [copyWith] deliberately reuses the same controller so the stream survives
+/// state updates.
 class ActiveInferenceData {
   ActiveInferenceData({
     required this.entityId,
@@ -48,6 +56,11 @@ class ActiveInferenceData {
   }
 }
 
+/// Tracks the active inference (if any) for a single (entityId, responseType)
+/// pair. State is null when idle and an [ActiveInferenceData] while a run is in
+/// flight. The provider is kept alive briefly after disposal
+/// ([inferenceStateCacheDuration]) and disposes the current data's progress
+/// stream on teardown.
 @riverpod
 class ActiveInferenceController extends _$ActiveInferenceController {
   // Track current data to dispose in onDispose without accessing state
@@ -68,6 +81,8 @@ class ActiveInferenceController extends _$ActiveInferenceController {
     return null;
   }
 
+  /// Begins tracking a new run, disposing any prior data first so a stale
+  /// progress stream can't leak. Sets state to a fresh [ActiveInferenceData].
   void startInference({
     required String promptId,
     String? linkedEntityId,
@@ -84,6 +99,8 @@ class ActiveInferenceController extends _$ActiveInferenceController {
     state = _currentData;
   }
 
+  /// Pushes [progress] onto the run's progress stream and mirrors it into
+  /// `progressText` so late subscribers / rebuilds see the latest value.
   void updateProgress(String progress) {
     if (_currentData != null) {
       _currentData!.updateProgress(progress);
@@ -92,6 +109,7 @@ class ActiveInferenceController extends _$ActiveInferenceController {
     }
   }
 
+  /// Ends the run, closing the progress stream and resetting state to null.
   void clearInference() {
     _currentData?.dispose();
     _currentData = null;
@@ -99,6 +117,12 @@ class ActiveInferenceController extends _$ActiveInferenceController {
   }
 }
 
+/// Resolves the active inference for an entity regardless of response type.
+///
+/// Scans every [AiResponseType]'s [ActiveInferenceController] and returns the
+/// first in-flight run, or null if the entity is idle. Because the unified
+/// controller registers active inference for BOTH the primary and linked
+/// entity, this also reports runs that were started against a linked entity.
 @riverpod
 class ActiveInferenceByEntity extends _$ActiveInferenceByEntity {
   @override

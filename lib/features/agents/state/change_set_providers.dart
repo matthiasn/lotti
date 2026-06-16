@@ -92,6 +92,11 @@ projectPendingChangeSetsProvider = FutureProvider.autoDispose
       return deduplicateChangeSets(sets);
     });
 
+/// Service that persists the project agent's "next steps" recommendations as
+/// durable [ProjectRecommendationEntity] rows once the user confirms them.
+///
+/// Falls back to a bare [UpdateNotifications] in tests where one isn't
+/// registered, so the service can always notify the project detail page.
 final projectRecommendationServiceProvider =
     Provider<ProjectRecommendationService>(
       (ref) {

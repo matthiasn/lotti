@@ -1,6 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 
+/// Output of [buildSelectorLabelList]: the filtered/sorted [items] to render
+/// plus [availableIds], the ids that belong to the task's category. The UI
+/// uses [availableIds] to flag assigned-but-out-of-category labels.
 class LabelListBuildResult {
   const LabelListBuildResult({
     required this.items,
@@ -11,6 +14,9 @@ class LabelListBuildResult {
   final Set<String> availableIds;
 }
 
+/// Merges the category's [available] labels with the already-[assignedDefs]
+/// ones, de-duplicating by id. When both lists contain the same id the
+/// assigned definition wins, so a renamed/edited assignment is preserved.
 List<LabelDefinition> buildUnionLabels(
   List<LabelDefinition> available,
   List<LabelDefinition> assignedDefs,
@@ -22,6 +28,9 @@ List<LabelDefinition> buildUnionLabels(
   return byId.values.toList();
 }
 
+/// Builds the subtitle line for a label row, combining an "Out of category"
+/// note (when [outOfCategory]) with the label's description. Returns `null`
+/// when neither is present, so the row can omit the subtitle entirely.
 String? buildLabelSubtitleText(
   LabelDefinition label, {
   required bool outOfCategory,
@@ -34,6 +43,9 @@ String? buildLabelSubtitleText(
   return null;
 }
 
+/// Produces the label list for the label-selector UI: the union of [available]
+/// and [assignedDefs], filtered by [searchLower] (matched against name and
+/// description) and sorted A–Z by name regardless of selection state.
 LabelListBuildResult buildSelectorLabelList({
   required List<LabelDefinition> available,
   required List<LabelDefinition> assignedDefs,

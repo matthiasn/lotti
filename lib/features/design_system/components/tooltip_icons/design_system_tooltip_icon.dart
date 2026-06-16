@@ -3,6 +3,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 const _kIconSize = 16.0;
 
+/// The design-system's help glyph — a small token-colored icon that reveals
+/// [message] in a tooltip on hover/long-press.
+///
+/// Defaults to a rounded help-outline [icon] and exposes itself as a labelled
+/// button to semantics ([semanticsLabel], falling back to [message]).
 class DesignSystemTooltipIcon extends StatelessWidget {
   const DesignSystemTooltipIcon({
     required this.message,

@@ -23,6 +23,15 @@ enum DesignSystemButtonVisualState {
   pressed,
 }
 
+/// The design-system's primary button — the app-wide replacement for ad-hoc
+/// buttons.
+///
+/// Renders one of [DesignSystemButtonVariant] (primary/secondary/…) at a
+/// [DesignSystemButtonSize], optionally with leading/trailing icons, and
+/// resolves all colors/spacing/typography from design tokens. A `null`
+/// [onPressed] is the disabled state; [forcedState] pins a visual state for
+/// widgetbook/tests; [fullWidth] stretches it to the parent width. Asserts that
+/// an icon-only button still supplies a [semanticsLabel].
 class DesignSystemButton extends StatefulWidget {
   const DesignSystemButton({
     required this.label,

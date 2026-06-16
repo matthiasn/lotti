@@ -107,6 +107,8 @@ class InboundQueueEntry {
   }
 }
 
+/// Lightweight depth snapshot emitted on the queue's depth-change stream so UI
+/// and back-pressure logic can react without re-querying the database.
 class QueueDepthSignal {
   const QueueDepthSignal({
     required this.total,
@@ -128,6 +130,9 @@ class QueueDepthSignal {
   final int abandoned;
 }
 
+/// Fuller queue snapshot than [QueueDepthSignal]: alongside active depth it
+/// carries the `applied`/`abandoned`/`retrying` ledger counts for diagnostics
+/// and the Sync Settings UI.
 class QueueStats {
   const QueueStats({
     required this.total,

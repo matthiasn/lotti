@@ -14,6 +14,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+/// Provides the singleton [ChatRepository] with its inference, task-summary,
+/// config, and system-message collaborators wired in.
 final Provider<ChatRepository> chatRepositoryProvider = Provider((ref) {
   return ChatRepository(
     cloudInferenceRepository: ref.read(cloudInferenceRepositoryProvider),

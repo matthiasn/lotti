@@ -35,7 +35,12 @@ class DayAgentToolResult {
   final String output;
 }
 
-/// Conversation strategy for the Daily OS day agent foundation.
+/// Drives one day-agent wake's tool-call loop. Routes `record_observations`
+/// to local accumulation, forwards state-mutating tools to
+/// [executeToolHandler], rejects unknown/invalid calls, and persists every
+/// thought/action/tool-result message via [syncService]. Tracks whether the
+/// wake produced its required artifact (`draft_day_plan` /
+/// `parse_capture_to_items`) so the workflow can detect degenerate runs.
 class DayAgentStrategy extends ConversationStrategy {
   /// Creates a strategy for one day-agent wake.
   DayAgentStrategy({

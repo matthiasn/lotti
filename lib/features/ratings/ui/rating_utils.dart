@@ -1,8 +1,10 @@
-/// Maps a normalized value to the closest option label.
+/// Maps a normalized [value] to its matching option label.
 ///
 /// When [values] is provided, uses the actual stored values for matching.
 /// Otherwise falls back to assuming evenly spaced values across 0.0-1.0
 /// (e.g. 3 options → 0.0, 0.5, 1.0) for old data without stored values.
+/// Matching uses a 0.01 tolerance; when nothing matches it returns the value
+/// as a rounded percentage string (e.g. "35%") so callers always get text.
 String findOptionLabel(
   double value,
   List<String> labels, {

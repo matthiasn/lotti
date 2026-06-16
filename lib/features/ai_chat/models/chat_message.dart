@@ -7,6 +7,13 @@ part 'chat_message.g.dart';
 // Reuse single UUID instance for efficiency
 const _uuid = Uuid();
 
+/// A single chat turn (user, assistant, or system).
+///
+/// [isStreaming] marks an assistant bubble that is still receiving deltas;
+/// `ChatSessionController` flips it false once the segment is finalized.
+/// Thinking/reasoning content is stored inline in [content] (wrapped in
+/// `<thinking>` markers) and split out for display by `thinking_parser.dart`.
+/// The named factories assign a fresh UUID and `DateTime.now()` timestamp.
 @freezed
 abstract class ChatMessage with _$ChatMessage {
   const factory ChatMessage({
@@ -45,6 +52,8 @@ abstract class ChatMessage with _$ChatMessage {
   );
 }
 
+/// Author of a [ChatMessage]. `system` messages are the injected prompt and are
+/// filtered out of conversation history sent back to the provider.
 enum ChatMessageRole {
   user,
   assistant,

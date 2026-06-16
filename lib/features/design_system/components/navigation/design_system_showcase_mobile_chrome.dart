@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// A fixed-size phone-frame mockup used to present designs in the showcase /
+/// widgetbook.
+///
+/// Wraps [child] in a rounded bezel with a brightness-aware frame color,
+/// border, and shadow over an optional [backgroundColor] surface. Purely
+/// decorative chrome — it does not lay out real navigation.
 class DesignSystemShowcaseMobileShell extends StatelessWidget {
   const DesignSystemShowcaseMobileShell({
     required this.child,
@@ -57,6 +63,8 @@ class DesignSystemShowcaseMobileShell extends StatelessWidget {
   }
 }
 
+/// Mock iOS-style status bar for showcase phone frames — a fixed "9:41" clock
+/// and signal/wifi/battery glyphs tinted by [foregroundColor].
 class DesignSystemShowcaseMobileStatusBar extends StatelessWidget {
   const DesignSystemShowcaseMobileStatusBar({
     this.foregroundColor,
@@ -95,6 +103,8 @@ class DesignSystemShowcaseMobileStatusBar extends StatelessWidget {
   }
 }
 
+/// Mock iOS-style home-indicator pill for showcase phone frames, tinted by
+/// [foregroundColor].
 class DesignSystemShowcaseMobileHomeIndicator extends StatelessWidget {
   const DesignSystemShowcaseMobileHomeIndicator({
     this.foregroundColor,

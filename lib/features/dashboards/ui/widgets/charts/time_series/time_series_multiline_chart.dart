@@ -8,6 +8,11 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Multi-series line chart over a date range. Unlike the single-line chart this
+/// takes already-built fl_chart [lineBarsData] (the caller styles each series —
+/// e.g. `surveyLines`) plus an explicit `minVal`/`maxVal` spanning all series,
+/// from which it derives one shared "nice" value axis so every line is on the
+/// same scale. The x range is fixed to `[rangeStart, rangeEnd]`.
 class TimeSeriesMultiLineChart extends StatelessWidget {
   const TimeSeriesMultiLineChart({
     required this.lineBarsData,

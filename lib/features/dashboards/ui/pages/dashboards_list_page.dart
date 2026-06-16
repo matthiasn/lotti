@@ -16,6 +16,14 @@ import 'package:lotti/services/nav_service.dart';
 /// Extra scroll space so the last card clears the bottom navigation bar.
 const double _kBottomListClearance = 120;
 
+/// The Insights tab entry point: the scrollable list of dashboards
+/// ([DashboardsList]) with a category filter in the header.
+///
+/// On mobile this is the whole screen. On desktop it becomes a resizable
+/// master/detail layout — the list on the left, and on the right the
+/// [DashboardPage] for the currently selected dashboard (tracked via
+/// `NavService.desktopSelectedDashboardId`) or an empty-state prompt when none
+/// is selected.
 class DashboardsListPage extends ConsumerStatefulWidget {
   const DashboardsListPage({super.key});
 

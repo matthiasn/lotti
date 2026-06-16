@@ -150,6 +150,9 @@ class EnergyBand {
   final String label;
 }
 
+/// The energy tier of an [EnergyBand], selecting its tint behind the Day
+/// timeline. `secondWind` is the late-day recovery window the agent can place
+/// after a low stretch.
 enum EnergyLevel {
   high,
   low,

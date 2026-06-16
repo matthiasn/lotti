@@ -11,6 +11,11 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 typedef DesignSystemFilterOptionAppearanceResolver =
     DesignSystemFilterSelectionOptionAppearance? Function(String optionId);
 
+/// Per-option visual overrides supplied to a filter selection modal.
+///
+/// Lets the caller decorate an individual option by its id (resolved via a
+/// [DesignSystemFilterOptionAppearanceResolver]) with a leading [icon], a
+/// [foregroundColor], and an [enabled] flag that greys out and disables the row.
 @immutable
 class DesignSystemFilterSelectionOptionAppearance {
   const DesignSystemFilterSelectionOptionAppearance({

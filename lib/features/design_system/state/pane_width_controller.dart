@@ -73,6 +73,13 @@ class PaneWidths {
   );
 }
 
+/// Keep-alive Riverpod notifier owning the resizable sidebar and list-pane
+/// widths and the sidebar's collapsed flag.
+///
+/// Loads persisted, clamped widths from `SettingsDb` on build, applies drag
+/// deltas, and debounces writes back to disk. Once the user adjusts a width,
+/// a late-arriving persisted load is ignored so it cannot clobber the live
+/// value.
 @Riverpod(keepAlive: true)
 class PaneWidthController extends _$PaneWidthController {
   bool _userAdjusted = false;
@@ -138,6 +145,9 @@ class PaneWidthController extends _$PaneWidthController {
     return parsed.clamp(minValue, maxValue);
   }
 
+  /// Applies a drag [delta] to the sidebar width, clamped to
+  /// [minSidebarWidth]..[maxSidebarWidth], and debounces persistence. Ignored
+  /// while the sidebar is collapsed.
   void updateSidebarWidth(double delta) {
     // Ignore drag deltas while collapsed — dragging is disabled in that mode
     // to prevent intermediate widths that would clip labels, and collapse
@@ -152,6 +162,8 @@ class PaneWidthController extends _$PaneWidthController {
     _debounceSidebarPersist();
   }
 
+  /// Applies a drag [delta] to the list-pane width, clamped to
+  /// [minListPaneWidth]..[maxListPaneWidth], and debounces persistence.
   void updateListPaneWidth(double delta) {
     _userAdjusted = true;
     final newWidth = (state.listPaneWidth + delta).clamp(
@@ -193,6 +205,7 @@ class PaneWidthController extends _$PaneWidthController {
     _persistCollapseFlag();
   }
 
+  /// Toggles between the collapsed and expanded sidebar layouts.
   void toggleSidebarCollapsed() {
     if (state.sidebarCollapsed) {
       expandSidebar();
@@ -239,6 +252,8 @@ class PaneWidthController extends _$PaneWidthController {
     }
   }
 
+  /// Resets all widths and the collapsed flag to their defaults, cancels any
+  /// pending debounced writes, and persists the defaults.
   void resetToDefaults() {
     _userAdjusted = true;
     _sidebarDebounce?.cancel();

@@ -2,7 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// A styled text field component that matches the AI Settings design language
+/// A styled text field component that matches the AI Settings design language.
+///
+/// Wraps a [TextFormField] with the gradient/border focus + error chrome used
+/// throughout AI Settings. Validation is run eagerly (in `initState`, on every
+/// `onChanged`, and when [validator], [controller] text, or [initialValue]
+/// change) and the error message is rendered inline below the field — the
+/// widget does not rely on an enclosing [Form] to surface errors.
+///
+/// Value source is mutually exclusive: pass a [controller] for a controlled
+/// field, OR an [initialValue] for an uncontrolled one. When both are set the
+/// [controller] wins and [initialValue] is ignored (the underlying
+/// [TextFormField] is given a null `initialValue`, which it requires when a
+/// controller is present).
+///
+/// When [obscureText] is `true` the field is forced to a single line
+/// regardless of [maxLines] (multi-line obscured input is not supported by
+/// Flutter). [focusNode] is optional; when omitted the widget creates and
+/// disposes its own, and only the externally supplied node is left for the
+/// caller to dispose.
 class AiTextField extends StatefulWidget {
   const AiTextField({
     required this.label,

@@ -15,7 +15,10 @@ class TtsModelSelector extends StatelessWidget {
     super.key,
   });
 
+  /// Currently selected model id; the matching row shows the accent check.
   final String modelId;
+
+  /// Called with the tapped model's id.
   final ValueChanged<String> onChanged;
 
   /// The selectable models. Defaults to the shipped catalog; injectable so

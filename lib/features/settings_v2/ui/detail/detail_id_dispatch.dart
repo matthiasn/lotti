@@ -36,10 +36,23 @@ class DetailIdDispatch extends StatelessWidget {
     super.key,
   });
 
+  /// Key under which the entity id is exposed in the route's
+  /// `pathParameters` (e.g. `categoryId`, `habitId`). The same key is
+  /// declared on the matching pattern in `settings_location.dart`.
   final String idParamKey;
+
+  /// Builds the list body for the bare branch URL (no id, no
+  /// `/create` suffix).
   final Widget Function(BuildContext context) list;
+
+  /// Builds the create body when the URL ends with `/create`. Gets the
+  /// full route so it can read query parameters (e.g. a prefilled
+  /// label name).
   final Widget Function(BuildContext context, DesktopSettingsRoute? route)
   create;
+
+  /// Builds the detail body when [idParamKey] resolves to a non-empty
+  /// id (and not the literal `create`). Receives that id.
   final Widget Function(BuildContext context, String id) detail;
 
   /// Test-only override for the route source. Production callers leave

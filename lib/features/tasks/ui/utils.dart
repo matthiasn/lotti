@@ -18,6 +18,12 @@ IconData taskIconFromStatusString(String status) =>
       String() => Icons.help_outline,
     };
 
+/// Returns the theme-aware accent [Color] for [status].
+///
+/// Normalizes [status] via [normalizeTaskStatusString], then maps each status
+/// to a colour from the shared task palette, choosing the lighter or darker
+/// variant based on [brightness] (light when `Brightness.light`). Unknown
+/// statuses fall back to the grey "open" colour.
 Color taskColorFromStatusString(String status, {Brightness? brightness}) {
   final isLight = brightness == Brightness.light;
   return switch (normalizeTaskStatusString(status)) {
@@ -32,6 +38,10 @@ Color taskColorFromStatusString(String status, {Brightness? brightness}) {
   };
 }
 
+/// Returns the localized display label for [status].
+///
+/// Normalizes [status] via [normalizeTaskStatusString] and looks up the
+/// matching `context.messages` string; unknown statuses yield `'-'`.
 String taskLabelFromStatusString(
   String status,
   BuildContext context,
@@ -46,6 +56,11 @@ String taskLabelFromStatusString(
   String() => '-',
 };
 
+/// Canonicalizes a raw [status] string for matching.
+///
+/// Trims whitespace, upper-cases, and replaces underscores with spaces, then
+/// folds a few aliases: `OPENING`/`OPENED` to `OPEN` and `INPROGRESS` to
+/// `IN PROGRESS`. Any other value is returned in its trimmed/upper-cased form.
 String normalizeTaskStatusString(String status) {
   final normalized = status.trim().toUpperCase().replaceAll('_', ' ');
   return switch (normalized) {

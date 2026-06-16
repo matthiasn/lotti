@@ -64,6 +64,14 @@ class ToastAction {
   final String? semanticsLabel;
 }
 
+/// The design-system's toast — a transient notification card tinted by
+/// [DesignSystemToastTone] (success/warning/error).
+///
+/// Shows a [title] over an optional [description], with an optional trailing
+/// [ToastAction] button and a dismiss control wired to [onDismiss]. When
+/// [countdownDuration] is set it paints a draining tone-colored progress strip
+/// (from [initialCountdownProgress]) along the top edge, used for undoable
+/// transient actions.
 class DesignSystemToast extends StatefulWidget {
   const DesignSystemToast({
     required this.tone,

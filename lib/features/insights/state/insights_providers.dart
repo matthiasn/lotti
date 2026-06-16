@@ -22,6 +22,18 @@ final insightsRepositoryProvider = Provider<InsightsRepository>(
   name: 'insightsRepositoryProvider',
 );
 
+/// Throttle for notification-driven window refetches.
+///
+/// Active typing fires a notification batch every ~100ms; without a
+/// throttle every batch re-runs the full window query (~35-130ms at
+/// 10k-50k entries — measured). Trailing-edge, mirroring the Daily OS
+/// time-history throttle, so the last change in a burst always lands.
+/// Overridable in tests (set to `null` for immediate refetches).
+final insightsRefetchThrottleProvider = Provider<Duration?>(
+  (ref) => const Duration(seconds: 5),
+  name: 'insightsRefetchThrottleProvider',
+);
+
 /// Bucketized time data for the window starting at the given epoch day.
 ///
 /// Architecture decisions (each from the adversarial design review):
@@ -39,18 +51,6 @@ final insightsRepositoryProvider = Provider<InsightsRepository>(
 /// - **Deep value equality** on [InsightsDayBuckets] means a refetch with
 ///   unchanged data emits an equal value and dependents don't rebuild —
 ///   background refreshes never flash the UI.
-/// Throttle for notification-driven window refetches.
-///
-/// Active typing fires a notification batch every ~100ms; without a
-/// throttle every batch re-runs the full window query (~35-130ms at
-/// 10k-50k entries — measured). Trailing-edge, mirroring the Daily OS
-/// time-history throttle, so the last change in a burst always lands.
-/// Overridable in tests (set to `null` for immediate refetches).
-final insightsRefetchThrottleProvider = Provider<Duration?>(
-  (ref) => const Duration(seconds: 5),
-  name: 'insightsRefetchThrottleProvider',
-);
-
 final insightsBucketsProvider = StreamProvider.autoDispose
     .family<InsightsDayBuckets, InsightsWindow>(
       (ref, window) {
@@ -166,19 +166,18 @@ class InsightsRangeController extends Notifier<InsightsPeriodSelection> {
     range: periodToDate(InsightsPeriodUnit.month, clock.now()),
   );
 
-  /// The period immediately before the current selection (one whole unit
-  /// earlier) — `null` unless comparison is on. Derived purely from the
-  /// already-aligned `state.range` via [shiftPeriod] (week shifts the bounds
-  /// directly), so it never re-snaps and stays in step with the current
-  /// range even if the device-region first weekday resolves after the range
-  /// was built. (The page used to re-derive this with a hardcoded Monday
-  /// default, which misaligned the comparison for Sunday/Saturday regions.)
   /// Comparison baseline for the current selection — `null` unless compare is
   /// on. The current range is first clipped to its elapsed slice
   /// ([elapsedPortion]) so an in-progress period compares like-for-like: the
   /// current week-to-date against the same elapsed days of last week, never a
   /// single day against a complete prior week. [previousPeriod] then truncates
   /// the previous period to that same elapsed day count.
+  ///
+  /// Derived purely from the already-aligned `state.range` (week shifts the
+  /// bounds directly), so it never re-snaps and stays in step with the current
+  /// range even if the device-region first weekday resolves after the range was
+  /// built. (The page used to re-derive this with a hardcoded Monday default,
+  /// which misaligned the comparison for Sunday/Saturday regions.)
   InsightsRange? get previousComparisonRange => state.compareEnabled
       ? previousPeriod(
           elapsedPortion(state.range, clock.now()),

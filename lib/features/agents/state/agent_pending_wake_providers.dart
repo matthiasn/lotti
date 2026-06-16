@@ -11,6 +11,16 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 
+/// All upcoming (not-yet-run) wakes across every live agent, sorted by due
+/// time, for the pending-wakes screen.
+///
+/// Merges three sources into one [PendingWakeRecord] timeline:
+///  * each agent's self-requested `nextWakeAt` ([PendingWakeType.pending]);
+///  * each agent's state-level `scheduledWakeAt` ([PendingWakeType.scheduled]);
+///  * workspace-scoped `ScheduledWakeEntity` rows (planner day pre-warms,
+///    ADR 0022) whose subject is the workspace id rather than a linked entry.
+///
+/// Re-runs on the shared agent update stream, and skips deleted agents.
 final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
   ref,
 ) async {
@@ -298,6 +308,13 @@ Future<OngoingWakeRecord> _resolveOngoingRecord(
   );
 }
 
+/// Rolling 24-hour histogram of wake runs, one [HourlyWakeActivity] bucket per
+/// local hour (oldest first), for the sidebar activity sparkline.
+///
+/// Buckets every wake run in the last 24 hours by its local creation hour and
+/// also breaks each bucket's count down by run `reason`. Always emits exactly
+/// 24 buckets — empty hours contribute a zero-count bucket so the chart keeps a
+/// fixed width. Re-runs on the shared agent update stream.
 final hourlyWakeActivityProvider = FutureProvider<List<HourlyWakeActivity>>((
   ref,
 ) async {

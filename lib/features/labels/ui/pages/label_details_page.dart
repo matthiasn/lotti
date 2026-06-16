@@ -21,6 +21,16 @@ import 'package:lotti/widgets/settings/settings_form_action_bar.dart';
 import 'package:lotti/widgets/settings/settings_form_section.dart';
 import 'package:lotti/widgets/settings/settings_switch_row.dart';
 
+/// Full-page label editor on the Settings detail surface, in create or edit
+/// mode.
+///
+/// Edit mode (with [labelId]) streams the label via
+/// [LabelsRepository.watchLabel] and shows a loader until it arrives; create
+/// mode (with optional [initialName] prefill) skips the stream. Both drive a
+/// [LabelEditorController] for name, description, color, privacy, and
+/// applicable categories. Save/delete navigate back to the list via
+/// `beamToNamed` rather than popping (the V2 desktop detail pane is inline).
+/// This is the routed counterpart to the modal `LabelEditorSheet`.
 class LabelDetailsPage extends ConsumerStatefulWidget {
   const LabelDetailsPage({
     this.labelId,

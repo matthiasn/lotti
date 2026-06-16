@@ -108,6 +108,9 @@ class BridgeCoordinator {
   /// the walk is done.
   void Function()? onBridgeCompleted;
 
+  /// Subscribes to the client's `onSync` stream so each Matrix sync triggers a
+  /// forward-walk bridge pass. Idempotent — a second call while already running
+  /// is a no-op.
   void start() {
     _stopped = false;
     _sub ??= _client.onSync.stream.listen(
@@ -123,6 +126,9 @@ class BridgeCoordinator {
     );
   }
 
+  /// Cancels the `onSync` subscription, clears pending rerun/retry state, and
+  /// awaits any in-flight bridge so no enqueue/capture lands on a disposed
+  /// queue after shutdown is considered complete.
   Future<void> stop() async {
     _stopped = true;
     _pendingRerun = false;

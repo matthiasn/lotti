@@ -6,6 +6,9 @@ import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
+/// Widgetbook folder showcasing the settings list look — a static overview
+/// page of the top-level settings rows ([SettingsIcon] + chevron) so the
+/// row styling can be reviewed in isolation.
 WidgetbookFolder buildSettingsWidgetbookFolder() {
   return WidgetbookFolder(
     name: 'Settings',

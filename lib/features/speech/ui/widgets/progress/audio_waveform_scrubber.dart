@@ -27,12 +27,25 @@ class AudioWaveformScrubber extends StatefulWidget {
     super.key,
   });
 
+  /// Per-bar normalized amplitudes (`0..1`); length determines the bar count.
   final List<double> amplitudes;
+
+  /// Current playback position; bars left of it render as "played".
   final Duration progress;
+
+  /// Buffered position; bars between [progress] and this render as buffered.
   final Duration buffered;
+
+  /// Total track length; a zero value disables seeking and ratio rendering.
   final Duration total;
+
+  /// Called with the seek target when the user taps or drags (throttled).
   final ValueChanged<Duration> onSeek;
+
+  /// Whether tap/drag scrubbing is enabled (typically only the active clip).
   final bool enabled;
+
+  /// Compact layout flag for tighter bar spacing and height.
   final bool compact;
 
   @override

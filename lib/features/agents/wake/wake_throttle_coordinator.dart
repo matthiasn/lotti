@@ -50,6 +50,9 @@ class WakeThrottleCoordinator {
     }
   }
 
+  /// Whether [agentId] is still inside its cooldown window. Evicts the
+  /// deadline as a side effect once it has elapsed, so a stale entry never
+  /// keeps reporting `true`.
   bool isThrottled(String agentId) {
     final deadline = _throttleDeadlines[agentId];
     if (deadline == null) return false;
@@ -58,6 +61,8 @@ class WakeThrottleCoordinator {
     return false;
   }
 
+  /// The active cooldown deadline for [agentId], or `null` if it isn't
+  /// throttled. Backs the UI countdown timer.
   DateTime? deadlineFor(String agentId) => _throttleDeadlines[agentId];
 
   /// Fix A: Schedule the deferred drain timer BEFORE persisting to DB.
@@ -108,12 +113,18 @@ class WakeThrottleCoordinator {
     }
   }
 
+  /// Restores an in-memory deadline (and its drain timer) from a persisted
+  /// `nextWakeAt` at startup, without re-persisting it. A deadline already in
+  /// the past is ignored so a stale timestamp doesn't fire a drain immediately.
   void setDeadlineFromHydration(String agentId, DateTime deadline) {
     if (deadline.isBefore(clock.now())) return;
     _throttleDeadlines[agentId] = deadline;
     _scheduleDeferredDrain(agentId, deadline);
   }
 
+  /// Cancels [agentId]'s cooldown: drops the in-memory deadline, cancels the
+  /// deferred drain timer, and clears the persisted `nextWakeAt`. Used when a
+  /// wake is forced (e.g. manual re-analysis) and the countdown is moot.
   void clearThrottle(String agentId) {
     _throttleDeadlines.remove(agentId);
     _deferredDrainTimers[agentId]?.cancel();
@@ -125,6 +136,8 @@ class WakeThrottleCoordinator {
     unawaited(_clearPersistedThrottle(agentId));
   }
 
+  /// Cancels all outstanding deferred-drain timers. Call on teardown so
+  /// pending timers don't fire after the coordinator is gone.
   void dispose() {
     for (final timer in _deferredDrainTimers.values) {
       timer.cancel();

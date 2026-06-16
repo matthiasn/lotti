@@ -35,6 +35,9 @@ final cfq11InstructionStep = RPInstructionStep(
       'community settings." J Psychosom Res 69(1): 17-22.',
 );
 
+/// The full CFQ-11 questionnaire: instructions, 11 single-choice items (each
+/// scored 0–3 via [cfq11AnswerFormat]), then a completion step. Passed to
+/// `runCfq11`.
 final cfq11SurveyTask = RPOrderedTask(
   identifier: 'cfq11SurveyTask',
   steps: [
@@ -98,6 +101,8 @@ final cfq11SurveyTask = RPOrderedTask(
   ],
 );
 
+/// Score bucket for CFQ-11: a single `CFQ11` total summing all 11 item answers
+/// (Likert 0–3, range 0–33). Consumed by `calculateScores`.
 Map<String, Set<String>> cfq11ScoreDefinitions = {
   'CFQ11': {
     'cfq11Step1',

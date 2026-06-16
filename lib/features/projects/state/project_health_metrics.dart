@@ -22,6 +22,9 @@ extension ProjectHealthBandSeverity on ProjectHealthBand {
   };
 }
 
+/// The user-facing health summary parsed from a project-agent report: the
+/// [band], a free-text [rationale], and an optional model [confidence] in
+/// `[0, 1]`.
 @immutable
 class ProjectHealthMetrics {
   const ProjectHealthMetrics({

@@ -1,6 +1,9 @@
 import 'dart:convert';
 
-/// Result of parsing an assign_task_labels function call.
+/// Parsed output of an `assign_task_labels` tool call.
+///
+/// Carries the chosen IDs plus telemetry the assignment processor forwards into
+/// structured logs.
 class LabelCallParseResult {
   const LabelCallParseResult({
     required this.selectedIds,
@@ -10,10 +13,21 @@ class LabelCallParseResult {
     this.totalCandidates = 0,
   });
 
+  /// Up to 3 label IDs to assign, ranked by confidence (ties keep input order).
   final List<String> selectedIds;
+
+  /// Count of low-confidence candidates that were filtered out.
   final int droppedLow;
+
+  /// `true` when the deprecated `labelIds` shape was parsed instead of the
+  /// structured `labels` array.
   final bool legacyUsed;
-  final Map<String, int> confidenceBreakdown; // keys: very_high/high/medium/low
+
+  /// Candidate counts per confidence bucket
+  /// (keys: `very_high`/`high`/`medium`/`low`).
+  final Map<String, int> confidenceBreakdown;
+
+  /// Total candidates seen before ranking/capping.
   final int totalCandidates;
 }
 

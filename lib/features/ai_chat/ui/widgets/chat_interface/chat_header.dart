@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/assistant_settings_sheet.dart';
 
+/// Header bar of `ChatInterface`: title plus actions for assistant settings
+/// (model + reasoning toggle), starting a new chat, and clearing the current
+/// one. Stateless over callbacks supplied by the interface.
 class ChatHeader extends ConsumerWidget {
   const ChatHeader({
     required this.sessionTitle,

@@ -8,6 +8,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'audio_waveform_provider.g.dart';
 
+/// Identity key for a waveform computation: which [audio] and how many
+/// amplitude buckets to render.
+///
+/// Equality and [hashCode] are deliberately based only on the audio file
+/// identity (entry id + file + directory) and [bucketCount], not the full
+/// [JournalAudio]. That keeps the [audioWaveform] provider from recomputing
+/// when unrelated entry metadata (e.g. edits to linked tasks) changes while the
+/// same underlying file is being visualized.
 @immutable
 class AudioWaveformRequest {
   const AudioWaveformRequest({
@@ -15,7 +23,10 @@ class AudioWaveformRequest {
     required this.bucketCount,
   });
 
+  /// The audio entry whose waveform is requested.
   final JournalAudio audio;
+
+  /// Number of amplitude bars the painter expects (drives downsampling).
   final int bucketCount;
 
   @override
@@ -39,6 +50,15 @@ class AudioWaveformRequest {
   );
 }
 
+/// Resolves the waveform data for a [AudioWaveformRequest] via
+/// [AudioWaveformService] (disk cache + extraction), returning `null` when the
+/// source file is missing or extraction fails.
+///
+/// Extraction is comparatively expensive, so the result is pinned with a
+/// 15-minute keep-alive: the provider stays cached while a player card is
+/// repeatedly scrolled in/out of view, then auto-releases so long sessions
+/// don't accumulate amplitude lists for every clip ever shown. The keep-alive
+/// link is closed early on dispose by cancelling the timer.
 @riverpod
 Future<AudioWaveformData?> audioWaveform(
   Ref ref,

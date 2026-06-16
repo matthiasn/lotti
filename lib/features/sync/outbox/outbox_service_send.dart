@@ -220,6 +220,14 @@ mixin _OutboxSend on _OutboxServiceBase {
     return false;
   }
 
+  /// Single runner-callback entry point that drains the outbox.
+  ///
+  /// Short-circuits when Matrix sync is disabled or the session is logged out
+  /// (notifying not-logged-in gate listeners when pending work is stranded),
+  /// and honours the backoff gate set by failed sends. On a clear
+  /// path it drains via [_drainOutbox], waits a short settle window so bursty
+  /// enqueues coalesce into the next bundle, then drains once more. Never
+  /// throws: any failure is logged and converted into a 15s backoff.
   Future<void> sendNext() async {
     try {
       final enableMatrix = await _journalDb.getConfigFlag(
@@ -334,6 +342,11 @@ mixin _OutboxSend on _OutboxServiceBase {
     }
   }
 
+  /// Schedules a [sendNext] pass on the [ClientRunner] queue after [delay],
+  /// clamped forward to respect the current backoff gate (see
+  /// [computeEnqueueDelay]). The actual enqueue is fire-and-forget; a disposal
+  /// in the interim cancels it. This is the single funnel every trigger
+  /// (enqueue, connectivity regain, watchdog, retry backoff) routes through.
   Future<void> enqueueNextSendRequest({
     Duration delay = const Duration(milliseconds: 1),
   }) async {

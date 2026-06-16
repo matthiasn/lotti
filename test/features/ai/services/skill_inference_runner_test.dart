@@ -559,6 +559,46 @@ void main() {
     await File('${imageDir.path}/test.jpg').writeAsBytes([0x01]);
   }
 
+  group('debugPrepareImageData — image read + path-containment guard', () {
+    test('returns base64 bytes for a file inside the documents dir', () async {
+      await createStubImageFile();
+      final result = await runner.debugPrepareImageData(makeImageEntity());
+      expect(result, [
+        base64Encode([0x01]),
+      ]);
+    });
+
+    test('returns [] when the image file does not exist', () async {
+      final result = await runner.debugPrepareImageData(
+        makeImageEntity(imageFile: 'does-not-exist.jpg'),
+      );
+      expect(result, isEmpty);
+    });
+
+    test(
+      'returns [] when the resolved path escapes the documents dir',
+      () async {
+        // A real file in a sibling temp dir, reached from the documents dir via
+        // a `..` traversal segment — the containment guard must reject it.
+        final escapeDir = Directory.systemTemp.createTempSync('skill_escape_');
+        addTearDown(() {
+          if (escapeDir.existsSync()) escapeDir.deleteSync(recursive: true);
+        });
+        await File('${escapeDir.path}/escape.jpg').writeAsBytes([0x02]);
+        final sep = Platform.pathSeparator;
+        final escapeName = escapeDir.path.split(sep).last;
+
+        final result = await runner.debugPrepareImageData(
+          makeImageEntity(
+            imageDirectory: '$sep..$sep$escapeName$sep',
+            imageFile: 'escape.jpg',
+          ),
+        );
+        expect(result, isEmpty);
+      },
+    );
+  });
+
   group('SkillInferenceRunner', () {
     group('runTranscription', () {
       test(

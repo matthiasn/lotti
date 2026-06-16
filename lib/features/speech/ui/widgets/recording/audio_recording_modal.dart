@@ -12,7 +12,16 @@ import 'package:lotti/ui/app_fonts.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
 
+/// Entry point for the full-screen audio recording sheet.
 class AudioRecordingModal {
+  /// Presents the recording modal as a single-page Wolt sheet.
+  ///
+  /// Before showing, it flips the controller's `modalVisible` flag (so the
+  /// floating recording indicator hides while the sheet is up) and seeds the
+  /// optional [categoryId]; [linkedId] ties any recording to a parent entry.
+  /// `modalVisible` is always cleared again once the sheet is dismissed — by
+  /// the stop button, back gesture, or tapping outside. [useRootNavigator]
+  /// selects which navigator hosts the sheet.
   static Future<void> show(
     BuildContext context, {
     String? linkedId,
@@ -49,6 +58,14 @@ class AudioRecordingModal {
   }
 }
 
+/// Body of the recording sheet: the analog VU meter, elapsed-time readout,
+/// optional live transcript, a standard/realtime mode toggle, the
+/// record/stop(/cancel) controls, and the automatic-prompt checkboxes.
+///
+/// Drives [AudioRecorderController] — `record`/`recordRealtime` to start and
+/// `stop`/`stopRealtime`/`cancelRealtime` to finish — and switches between the
+/// standard file-recording and realtime PCM-streaming flows based on the local
+/// mode toggle (only offered when realtime transcription is available).
 class AudioRecordingModalContent extends ConsumerStatefulWidget {
   const AudioRecordingModalContent({
     super.key,
@@ -56,7 +73,10 @@ class AudioRecordingModalContent extends ConsumerStatefulWidget {
     this.categoryId,
   });
 
+  /// Optional parent entry id to link any created audio entry to.
   final String? linkedId;
+
+  /// Optional category id scoping the recording and prompt options.
   final String? categoryId;
 
   @override

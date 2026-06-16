@@ -8,8 +8,18 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Reports the picked category, or `null` when the category is cleared.
 typedef CategoryCallback = void Function(CategoryDefinition?);
 
+/// A read-only, tappable form field that shows the currently assigned category
+/// (icon + name) and opens [showCategoryPicker] on tap.
+///
+/// Used by habit and other definition forms. [categoryId] is the current
+/// assignment (resolved through [EntitiesCacheService] for the leading icon and
+/// label); [onSave] fires with the picked category, or `null` when the user
+/// clears it — either via the picker's "none" row or the inline clear (X)
+/// button. Dismissing the picker reports nothing. This widget does not persist;
+/// the host form decides what to do with the callback.
 class CategoryField extends StatelessWidget {
   const CategoryField({
     required this.categoryId,

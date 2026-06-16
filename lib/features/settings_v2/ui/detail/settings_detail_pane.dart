@@ -19,11 +19,10 @@ const Duration kSettingsDetailPaneSwap = Duration(milliseconds: 180);
 /// Dispatches the right-hand detail surface of Settings V2 based on
 /// the current `settingsTreePathProvider` state:
 ///
-/// - Empty path → [EmptyRoot] with the disable-V2 escape hatch.
+/// - Empty path → [EmptyRoot] placeholder.
 /// - Path ends on a branch → [CategoryEmpty] hint.
 /// - Path ends on a leaf → [LeafPanel] with its registered panel,
-///   falling back to `DefaultPanel` (also with escape hatch) when
-///   no panel is registered.
+///   falling back to `DefaultPanel` when no panel is registered.
 ///
 /// Consumes the shared tree + index published by [SettingsTreeScope]
 /// when present (the production path), and falls back to building a

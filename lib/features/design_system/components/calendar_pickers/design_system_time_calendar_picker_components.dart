@@ -102,6 +102,12 @@ class _MonthCalendarCard extends StatelessWidget {
   }
 }
 
+/// The frosted-glass surface shared by the time-calendar month card and the
+/// month-selection dialog.
+///
+/// Applies the [TimeCalendarPalette]'s blurred translucent fill, rounded
+/// corners, and drop shadow at the dimensions from [TimeCalendarGeometry],
+/// then pads and renders [child].
 class CalendarMaterialCard extends StatelessWidget {
   const CalendarMaterialCard({
     required this.palette,
@@ -154,6 +160,8 @@ class CalendarMaterialCard extends StatelessWidget {
   }
 }
 
+/// Header row for the time-calendar card: the month/year [label] (optionally
+/// tappable with a disclosure chevron) plus previous/next paging icon buttons.
 class MonthHeader extends StatelessWidget {
   const MonthHeader({
     required this.palette,
@@ -347,6 +355,8 @@ class _CalendarDayButton extends StatelessWidget {
   }
 }
 
+/// A single month cell in the month-selection grid, accenting its [label]
+/// when [selected].
 class MonthButton extends StatelessWidget {
   const MonthButton({
     required this.palette,
@@ -387,6 +397,12 @@ class MonthButton extends StatelessWidget {
   }
 }
 
+/// Resolved color set for the time calendar in a given
+/// [DesignSystemTimeCalendarPickerMode].
+///
+/// Built via [TimeCalendarPalette.fromMode], it maps the light/dark token sets
+/// to the surface fill, blur sigma, shadow, emphasis text colors, and accent
+/// used across the card's sub-components.
 class TimeCalendarPalette {
   const TimeCalendarPalette({
     required this.mode,

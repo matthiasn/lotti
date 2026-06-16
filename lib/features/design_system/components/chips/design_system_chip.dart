@@ -10,6 +10,14 @@ enum DesignSystemChipVisualState {
   activated,
 }
 
+/// The design-system's interactive chip — a rounded, tappable token with an
+/// optional leading glyph and removable affordance.
+///
+/// Shows [label] with either a [leadingIcon] or an [avatar] (not both), and an
+/// optional trailing remove "x" when [showRemove] is set. Tracks
+/// hover/pressed/activated visuals from design tokens; [forcedState] pins a
+/// [DesignSystemChipVisualState] for widgetbook/tests, and a `null` [onPressed]
+/// disables it. Requires a visible [label] or a [semanticsLabel].
 class DesignSystemChip extends StatefulWidget {
   const DesignSystemChip({
     required this.label,

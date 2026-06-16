@@ -95,6 +95,11 @@ class SyncSequenceCache {
     _hostActivityCache[hostId] = now;
   }
 
+  /// Read-through accessor for a host's last-seen time. Evicts the host's
+  /// cache slots first if the per-host TTL window has expired, then serves from
+  /// cache or falls back to the DB (caching the result and refreshing the
+  /// window). Callers of [getCachedLastCounterForHost] invoke this first so the
+  /// per-host expiry is enforced once per read.
   Future<DateTime?> getCachedHostLastSeen(String hostId) async {
     if (_isHostCacheExpired(hostId, clock.now())) {
       _evictHost(hostId);
@@ -108,6 +113,11 @@ class SyncSequenceCache {
     return result;
   }
 
+  /// Read-through accessor for a host's contiguous-from-1 resolved counter
+  /// watermark, backed by the expensive `getLastCounterForHost` CTE. Assumes
+  /// [getCachedHostLastSeen] already ran the per-host expiry check for the same
+  /// host this read, so it serves from cache or fills from the DB without
+  /// re-checking the window.
   Future<int?> getCachedLastCounterForHost(String hostId) async {
     // Per-host expiry is enforced by [getCachedHostLastSeen], which every
     // caller of this helper invokes first for the same hostId (see

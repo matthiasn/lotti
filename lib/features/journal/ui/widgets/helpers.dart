@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Plain-text label with the app's tabular-figure style, clamped to `maxLines`.
+/// Used by the health/workout/measurement summaries to render their formatted
+/// value lines.
 class EntryTextWidget extends StatelessWidget {
   const EntryTextWidget(
     this.text, {

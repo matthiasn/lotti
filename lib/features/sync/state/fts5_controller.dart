@@ -6,6 +6,8 @@ final fts5ControllerProvider = NotifierProvider<Fts5Controller, Fts5State>(
   Fts5Controller.new,
 );
 
+/// UI state for the FTS5 full-text index rebuild: rebuild [progress] (0–1),
+/// the [isRecreating] flag, and the last [error] if the rebuild failed.
 class Fts5State {
   const Fts5State({
     this.progress = 0,
@@ -31,6 +33,8 @@ class Fts5State {
   }
 }
 
+/// Drives a full rebuild of the FTS5 search index via [Maintenance], surfacing
+/// progress and errors as [Fts5State] for the maintenance UI.
 class Fts5Controller extends Notifier<Fts5State> {
   late final Maintenance _maintenance;
 
@@ -40,6 +44,8 @@ class Fts5Controller extends Notifier<Fts5State> {
     return const Fts5State();
   }
 
+  /// Rebuilds the FTS5 index, streaming progress into [state] and capturing any
+  /// failure into [Fts5State.error]. Resets [Fts5State.isRecreating] when done.
   Future<void> recreateFts5() async {
     state = state.copyWith(isRecreating: true, progress: 0, clearError: true);
 

@@ -44,7 +44,11 @@ enum BudgetProgressStatus {
   overBudget,
 }
 
-/// Computed progress for a category's time budget (derived from blocks).
+/// Per-category budget row shown in the budget list: planned time (summed from
+/// that category's planned blocks), recorded time (the de-overlapped sum of its
+/// contributing entries), the resulting [status], and the tasks worked
+/// on/completed/due for the day. A row with [hasNoBudgetWarning] is synthetic —
+/// the category has due tasks or recorded time but zero planned minutes.
 class TimeBudgetProgress {
   const TimeBudgetProgress({
     required this.categoryId,

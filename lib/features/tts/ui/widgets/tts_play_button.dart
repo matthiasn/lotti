@@ -28,7 +28,11 @@ class TtsPlayButton extends StatelessWidget {
   });
 
   final TtsButtonMode mode;
+
+  /// Invoked on tap while [mode] is [TtsButtonMode.idle].
   final VoidCallback onPlay;
+
+  /// Invoked on tap while preparing or playing; a preparing-tap cancels.
   final VoidCallback onStop;
 
   /// Playback progress in `[0, 1]` while [mode] is playing; ignored otherwise.

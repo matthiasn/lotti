@@ -1,10 +1,19 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 
+/// How a not-yet-run wake came to be scheduled.
+///
+/// [pending] is a wake the agent itself requested for a future time (its
+/// `AgentState.nextWakeAt`); [scheduled] is a system/planner pre-warm fixed to
+/// a clock time (`scheduledWakeAt` or a workspace-scoped `ScheduledWakeEntity`).
 enum PendingWakeType {
   pending,
   scheduled,
 }
 
+/// A single upcoming wake to render in the pending-wakes list: the agent, its
+/// current state, why it is due ([type]), and when ([dueAt]). Built by
+/// `pendingWakeRecordsProvider` by merging state-derived and workspace-scoped
+/// scheduled wakes into one timeline-sorted view.
 class PendingWakeRecord {
   const PendingWakeRecord({
     required this.agent,

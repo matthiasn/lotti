@@ -42,6 +42,12 @@ class ProjectTasksPanel extends StatelessWidget {
   }
 }
 
+/// Sliver form of [ProjectTasksPanel] for use inside a `CustomScrollView`.
+///
+/// Renders the same header (task count + total estimated duration) and
+/// [TaskSummaryRow] list as a [DecoratedSliver] with manual dividers, so the
+/// project detail body can scroll the task list as part of the outer scroll
+/// view rather than nesting a second scrollable.
 class ProjectTasksSliverPanel extends StatelessWidget {
   const ProjectTasksSliverPanel({
     required this.record,

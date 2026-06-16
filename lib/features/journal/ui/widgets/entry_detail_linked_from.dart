@@ -7,6 +7,13 @@ import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Renders the "Linked from" section: the entries that link *to* `item`
+/// (incoming links), watched via [linkedFromEntriesControllerProvider].
+///
+/// Projects are always filtered out (a project links many tasks but is not
+/// useful context here), and tasks are dropped too when `hideTaskEntries` is
+/// set. Images render as [ModernJournalImageCard]; everything else as a
+/// [ModernJournalCard]. The section hides entirely when nothing remains.
 class LinkedFromEntriesWidget extends ConsumerWidget {
   const LinkedFromEntriesWidget(
     this.item, {

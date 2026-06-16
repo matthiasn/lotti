@@ -5,7 +5,11 @@ import 'package:lotti/features/ai_chat/ui/controllers/chat_session_controller.da
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/widgets/selection/unified_toggle.dart';
 
-// Simple model selector sheet reused from header behavior
+/// Settings sheet for the chat session: pick the inference model (from
+/// `eligibleChatModelsForCategoryProvider`) and toggle Gemini reasoning
+/// visibility. Both controls are disabled while a response is streaming. Guards
+/// against a previously selected model no longer being eligible by falling back
+/// to no selection.
 class AssistantSettingsSheet extends ConsumerWidget {
   const AssistantSettingsSheet({required this.categoryId, super.key});
   final String categoryId;

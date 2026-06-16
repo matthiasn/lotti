@@ -4,7 +4,12 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
-/// Represents a time slot in the daily timeline.
+/// One positioned segment on the daily timeline, either planned or actual.
+///
+/// Sealed so the two concrete cases ([PlannedTimeSlot], [ActualTimeSlot]) can
+/// be exhaustively switched on. Carries a start/end time and an optional
+/// resolved [categoryId] (for actual slots this is the category resolved
+/// through the linked parent, not necessarily the raw entry's own category).
 sealed class TimelineSlot {
   const TimelineSlot({
     required this.startTime,
@@ -18,6 +23,8 @@ sealed class TimelineSlot {
 
   Duration get duration => endTime.difference(startTime);
 
+  /// Resolves [categoryId] to its [CategoryDefinition] via the in-memory
+  /// [EntitiesCacheService]; null when uncategorised or the id is unknown.
   CategoryDefinition? get category {
     final id = categoryId;
     if (id == null) return null;
@@ -53,7 +60,11 @@ class ActualTimeSlot extends TimelineSlot {
   final JournalEntity? linkedFrom;
 }
 
-/// Combined timeline data for plan vs actual view.
+/// The fully-resolved input the timeline widget paints for one day: the
+/// planned blocks ([plannedSlots]) drawn in the plan lane and the recorded
+/// entries ([actualSlots]) drawn in the actual lane, both pre-sorted by start
+/// time, plus the [dayStartHour]/[dayEndHour] bounds computed by
+/// `calculateDayStartHour`/`calculateDayEndHour` that frame the visible axis.
 class DailyTimelineData {
   const DailyTimelineData({
     required this.date,

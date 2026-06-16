@@ -4,6 +4,16 @@ import 'package:clock/clock.dart';
 
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 
+/// Turns the raw activity stream from [UserActivityService] into a binary
+/// "is it safe to run background work right now?" gate.
+///
+/// [canProcess] is `true` once no activity has happened for [idleThreshold]
+/// (default 1s) and `false` while the user is actively interacting; each
+/// activity event flips it to `false` and restarts the idle timer. Background
+/// callers `await` [waitUntilIdle] so chatty/heavy work (sync send, inbound
+/// apply) yields to live user input. The initial state is computed from
+/// `lastActivity`, and `clock.now()` is used throughout so `fakeAsync` /
+/// `withClock` fully control the idle computation in tests.
 class UserActivityGate {
   UserActivityGate({
     required this._activityService,
@@ -33,8 +43,15 @@ class UserActivityGate {
 
   bool get canProcess => _canProcess;
 
+  /// Broadcasts every transition of [canProcess]. `.distinct()` collapses
+  /// repeated emissions of the same value, so listeners only see actual
+  /// idle <-> busy flips, not every internal `add`.
   Stream<bool> get canProcessStream => _controller.stream.distinct();
 
+  /// Resolves as soon as the gate is idle: returns immediately when
+  /// [canProcess] is already `true`, otherwise awaits the next `true` on
+  /// [canProcessStream]. Background callers `await` this before chatty/heavy
+  /// work so it yields to live user input.
   Future<void> waitUntilIdle() async {
     if (_canProcess) {
       return;

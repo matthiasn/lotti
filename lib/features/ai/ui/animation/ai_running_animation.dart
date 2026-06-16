@@ -14,6 +14,11 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:siri_wave/siri_wave.dart';
 
+/// Bare iOS-9-style Siri waveform sized to [height].
+///
+/// The visual primitive only — it carries no inference state. Wrap it in
+/// [AiRunningAnimationWrapper] to gate it on a running entry, or use
+/// [AiRunningDecoderBars] for the shader-based variant.
 class AiRunningAnimation extends ConsumerStatefulWidget {
   const AiRunningAnimation({
     required this.height,
@@ -41,6 +46,11 @@ class _AIRunningAnimationState extends ConsumerState<AiRunningAnimation> {
   }
 }
 
+/// [AiRunningAnimation] gated on whether inference is running for an entry.
+///
+/// Watches the inference-running signal for [entryId] / [responseTypes] and
+/// renders nothing when idle. When [isInteractive] is true, tapping the
+/// waveform opens the AI progress view for that entry.
 class AiRunningAnimationWrapper extends ConsumerWidget {
   const AiRunningAnimationWrapper({
     required this.entryId,
@@ -89,6 +99,13 @@ class AiRunningAnimationWrapper extends ConsumerWidget {
   }
 }
 
+/// The shader-based "AI is thinking" decoder bars, gated per entry.
+///
+/// Watches the inference-running signal for [entryId] / [responseTypes] and
+/// drives [AiThinkingShaderPresence] (which owns the fade/scale-in, exit, and
+/// collapse-to-zero envelope). When [isInteractive] is true the bars become a
+/// labelled button that opens the AI progress view. The `default*` statics
+/// expose the shared shader defaults so other surfaces can match this look.
 class AiRunningDecoderBars extends ConsumerWidget {
   const AiRunningDecoderBars({
     required this.entryId,
@@ -382,6 +399,11 @@ Future<void> _handleAiActivityTap({
   );
 }
 
+/// [AiRunningAnimationWrapper] wrapped in a glass card.
+///
+/// Same per-entry gating as [AiRunningAnimationWrapper] (renders nothing when
+/// idle), but presents the waveform inside a frosted-glass container for
+/// surfaces that need a self-contained card rather than an inline indicator.
 class AiRunningAnimationWrapperCard extends ConsumerWidget {
   const AiRunningAnimationWrapperCard({
     required this.entryId,

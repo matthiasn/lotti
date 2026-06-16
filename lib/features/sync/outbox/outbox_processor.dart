@@ -9,10 +9,17 @@ import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+/// Transport seam for the outbox: turns a queued [SyncMessage] into an actual
+/// send (over Matrix in production). Returns `true` on confirmed delivery and
+/// `false` on a recoverable failure, which the [OutboxProcessor] treats as a
+/// retry signal. Implementations must not throw for ordinary send failures.
 abstract class OutboxMessageSender {
   Future<bool> send(SyncMessage message);
 }
 
+/// Outcome of a single [OutboxProcessor.processQueue] pass: either [none]
+/// (nothing left to do) or a [OutboxProcessingResult.schedule] carrying the
+/// delay before the next pass should run.
 class OutboxProcessingResult {
   const OutboxProcessingResult._({this.nextDelay});
 
@@ -26,6 +33,20 @@ class OutboxProcessingResult {
   bool get shouldSchedule => nextDelay != null;
 }
 
+/// Drains one claimed batch of outbox rows per [processQueue] call and reports
+/// back, via [OutboxProcessingResult], whether another pass should be scheduled
+/// and after how long.
+///
+/// This is the per-pass engine behind the outbox runner: it claims rows
+/// (atomically, so concurrent merges cannot overwrite an already-sending row),
+/// sends them through the injected [OutboxMessageSender] under a [sendTimeout],
+/// and translates the outcome into row state via [OutboxRepository] —
+/// `markSent` on success, `markRetry` (which flips to `error` once `retries`
+/// crosses the repository's `maxRetries`) on failure. A single-row claim sends
+/// the row verbatim; a multi-row claim is packed into a `SyncMessage.outboxBundle`
+/// so consecutive text rows ride one Matrix event (media attachments always
+/// travel alone). [maxRetriesForDiagnostics] only controls log verbosity and the
+/// fast-path "cap reached" scheduling, not the actual retry ceiling.
 class OutboxProcessor {
   OutboxProcessor({
     required this._repository,
@@ -65,6 +86,12 @@ class OutboxProcessor {
   String? _lastFailedSubject;
   int _lastFailedRepeats = 0;
 
+  /// Claims and processes the next batch (single send or bundle), returning
+  /// [OutboxProcessingResult.none] when the queue is empty or fully drained, or
+  /// [OutboxProcessingResult.schedule] with the delay before the next pass
+  /// (`Duration.zero` to drain immediately, [retryDelay]/[errorDelay] to back
+  /// off after a failure). Never throws: send failures and post-send exceptions
+  /// are caught and converted into retry scheduling.
   Future<OutboxProcessingResult> processQueue() async {
     // Atomic claim (pending → sending). Closes the merge-send race: while
     // we are sending, the row's status is `sending`, so in-flight merges'

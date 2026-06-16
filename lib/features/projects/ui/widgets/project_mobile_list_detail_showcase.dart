@@ -16,6 +16,13 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 const _kMobileScreenWidth = 402.0;
 const _kMobileScreenGap = 32.0;
 
+/// Widgetbook/showcase harness that previews the project list/detail flow at a
+/// fixed mobile screen width.
+///
+/// Frames the list and detail screens in design-system mobile chrome and toggles
+/// between them in compact mode (list → detail on selection, back to list),
+/// driven by the mock `projectListDetailShowcaseControllerProvider`. This is a
+/// design preview only; it does not touch real project data or navigation.
 class ProjectMobileListDetailShowcase extends ConsumerStatefulWidget {
   const ProjectMobileListDetailShowcase({super.key});
 

@@ -9,6 +9,15 @@ enum DesignSystemTextInputSize {
   medium,
 }
 
+/// The design-system's single-line text field — a token-styled input with
+/// label, helper/error text, and optional leading/trailing icons.
+///
+/// Sized by [DesignSystemTextInputSize] (small/medium). Drives an external
+/// [controller] or owns an internal one, reports edits via [onChanged]/
+/// [onSubmitted], and tracks focus/hover styling. Supports [obscureText],
+/// [autofocus], [textCapitalization], a tappable [trailingIcon] via
+/// [onTrailingIconTap], and an [errorText] that switches the field to its error
+/// state. [enabled] toggles interactivity.
 class DesignSystemTextInput extends StatefulWidget {
   const DesignSystemTextInput({
     this.controller,

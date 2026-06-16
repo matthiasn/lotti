@@ -5,6 +5,10 @@ import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart'
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Category-filter button for the dashboards list. The icon reflects whether a
+/// filter is active; tapping opens a multi-select category picker seeded with
+/// the current selection and, on apply, commits the chosen ids to
+/// [selectedCategoryIdsProvider] (which the dashboards list reads).
 class DashboardsFilter extends ConsumerWidget {
   const DashboardsFilter({super.key});
 

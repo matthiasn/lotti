@@ -7,6 +7,12 @@ import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 
+/// Bottom-sheet body for the AI chat assistant.
+///
+/// The assistant requires exactly one selected category for context: when zero
+/// or multiple categories are selected it shows a "select a single category"
+/// placeholder instead of [ChatInterface]. Wraps the panel in an ambient
+/// accent-border pulse while the session is streaming.
 class ChatModalPage extends ConsumerWidget {
   const ChatModalPage({super.key});
 

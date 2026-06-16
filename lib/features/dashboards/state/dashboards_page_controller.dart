@@ -21,16 +21,20 @@ final StreamProvider<List<DashboardDefinition>> dashboardsProvider =
       );
     });
 
-/// Stateful provider for selected category IDs used for filtering dashboards.
+/// Holds the set of category IDs the dashboards list is filtered by. Empty set
+/// means "no filter" (show all). Driven by the category filter button; consumed
+/// by [filteredSortedDashboardsProvider].
 final selectedCategoryIdsProvider =
     NotifierProvider.autoDispose<SelectedCategoryIds, Set<String>>(
       SelectedCategoryIds.new,
     );
 
+/// Mutable selection of category IDs used to filter the dashboards list.
 class SelectedCategoryIds extends Notifier<Set<String>> {
   @override
   Set<String> build() => {};
 
+  /// Adds [categoryId] to the selection if absent, removes it if present.
   void toggle(String categoryId) {
     if (state.contains(categoryId)) {
       state = {...state}..remove(categoryId);

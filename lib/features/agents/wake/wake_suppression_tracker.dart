@@ -26,19 +26,28 @@ class WakeSuppressionTracker {
   final _recentlyMutatedEntries = <String, MutationRecord>{};
   final _preRegisteredSuppression = <String, MutationRecord>{};
 
+  /// Drops both suppression layers for [agentId] (e.g. on agent teardown).
   void clearAgent(String agentId) {
     clearConfirmed(agentId);
     clearPreRegistered(agentId);
   }
 
+  /// Drops the confirmed (post-execution, TTL'd) suppression for [agentId].
   void clearConfirmed(String agentId) {
     _recentlyMutatedEntries.remove(agentId);
   }
 
+  /// Drops the pre-registered (pre-execution) suppression for [agentId];
+  /// called once a wake finishes and its conservative guess is no longer
+  /// needed.
   void clearPreRegistered(String agentId) {
     _preRegisteredSuppression.remove(agentId);
   }
 
+  /// Records, before a wake executes, the entity IDs it is expected to mutate
+  /// so notifications arriving mid-execution are suppressed. A conservative
+  /// over-approximation with no TTL — it must be cleared explicitly via
+  /// [clearPreRegistered]. No-ops on an empty set.
   void preRegisterSuppression(String agentId, Set<String> entityIds) {
     if (entityIds.isEmpty) return;
     _preRegisteredSuppression[agentId] = MutationRecord(
@@ -47,6 +56,8 @@ class WakeSuppressionTracker {
     );
   }
 
+  /// Records, after a wake completes, the exact entities it mutated (with a
+  /// [suppressionTtl] window) so the agent doesn't re-wake on its own writes.
   void recordMutatedEntities(
     String agentId,
     Map<String, VectorClock> entries,
@@ -57,6 +68,10 @@ class WakeSuppressionTracker {
     );
   }
 
+  /// Whether a notification for [matchedTokens] should be suppressed by the
+  /// confirmed layer: true only when every matched token is in [agentId]'s
+  /// recently-mutated set and that record is still within [suppressionTtl].
+  /// Expired records are evicted on read.
   bool isSuppressed(String agentId, Set<String> matchedTokens) {
     final record = _recentlyMutatedEntries[agentId];
     if (record == null || record.entityIds.isEmpty) return false;
@@ -70,6 +85,9 @@ class WakeSuppressionTracker {
     return matchedTokens.every(record.entityIds.contains);
   }
 
+  /// Whether [matchedTokens] should be suppressed by the pre-registered layer:
+  /// true when every matched token was declared via [preRegisterSuppression]
+  /// for [agentId]. Has no TTL — relies on [clearPreRegistered] after the wake.
   bool isPreRegisteredSuppressed(String agentId, Set<String> matchedTokens) {
     final record = _preRegisteredSuppression[agentId];
     if (record == null || record.entityIds.isEmpty) return false;

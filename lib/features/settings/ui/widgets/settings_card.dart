@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Tappable settings row built on a `Material` + `ListTile`.
+///
+/// A thin, legacy-styled card still used by the theme picker sheet and the
+/// measurables editor's aggregation list. New settings surfaces should
+/// prefer the design-system `DesignSystemListItem`; this widget keeps the
+/// older `settingsCardTextStyle` look for the screens that haven't migrated.
 class SettingsCard extends StatelessWidget {
   const SettingsCard({
     required this.onTap,

@@ -13,10 +13,14 @@ class SessionEndedController extends _$SessionEndedController {
   @override
   Set<String> build() => {};
 
+  /// Marks [entryId] as having a just-ended session, surfacing the pulsating
+  /// rate button for that entry.
   void markSessionEnded(String entryId) {
     state = {...state, entryId};
   }
 
+  /// Removes [entryId] from the just-ended set (e.g. after a rating is saved
+  /// or a new recording starts), hiding the rate button. No-op if absent.
   void clearSessionEnded(String entryId) {
     if (!state.contains(entryId)) return;
     state = {...state}..remove(entryId);

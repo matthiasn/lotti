@@ -24,6 +24,13 @@ import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 class LabelSelectionModalUtils {
   LabelSelectionModalUtils._();
 
+  /// Opens the modal label picker for [entryId], seeded with [initialLabelIds]
+  /// and scoped to [categoryId].
+  ///
+  /// The picker offers category-scoped (plus already-assigned) labels and an
+  /// inline "create label" affordance. Selections are staged in a local
+  /// [ValueNotifier] and only committed via [LabelsRepository.setLabels] when
+  /// the apply footer is tapped; the staged set is always disposed.
   static Future<void> openLabelSelector({
     required BuildContext context,
     required String entryId,

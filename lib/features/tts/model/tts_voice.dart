@@ -21,6 +21,8 @@ class TtsVoice {
   /// voice-style asset (`assets/tts/voice_styles/F1.json`).
   final String id;
 
+  /// Female/male grouping used only to label and tab the picker; it does not
+  /// affect synthesis, which is driven entirely by the voice-style JSON.
   final TtsVoiceGender gender;
 
   /// Asset file name for this voice's style JSON.

@@ -24,6 +24,15 @@ final labelsRepositoryProvider = Provider<LabelsRepository>((ref) {
   );
 });
 
+/// Write boundary for the labels feature.
+///
+/// Owns label-definition CRUD (with category-scope normalization and
+/// soft-delete), visibility-aware definition streams, usage counts from the
+/// `labeled` lookup table, and assignment writes on entry metadata
+/// ([addLabels] / [removeLabel] / [setLabels]). For tasks, assignment writes
+/// also maintain the per-task AI suppression set (`aiSuppressedLabelIds`) so
+/// rejected suggestions are not re-proposed. See the feature README for the
+/// suppression coupling rules.
 class LabelsRepository {
   LabelsRepository(
     this._persistenceLogic,
@@ -40,6 +49,9 @@ class LabelsRepository {
   final UpdateNotifications _updateNotifications;
   final _uuid = const Uuid();
 
+  /// Streams all label definitions, re-fetching on label or private-toggle
+  /// changes. Note: this is unfiltered; private filtering happens upstream in
+  /// `labelsStreamProvider`.
   Stream<List<LabelDefinition>> watchLabels() {
     return notificationDrivenStream(
       notifications: _updateNotifications,
@@ -48,6 +60,8 @@ class LabelsRepository {
     );
   }
 
+  /// Streams a single label by [id], emitting `null` if it does not exist, and
+  /// re-fetching on label or private-toggle changes.
   Stream<LabelDefinition?> watchLabel(String id) {
     return notificationDrivenItemStream(
       notifications: _updateNotifications,
@@ -56,6 +70,8 @@ class LabelsRepository {
     );
   }
 
+  /// One-shot fetch of all label definitions (used for duplicate-name checks
+  /// and tuple resolution).
   Future<List<LabelDefinition>> getAllLabels() {
     return _journalDb.getAllLabelDefinitions();
   }
@@ -76,6 +92,11 @@ class LabelsRepository {
     return _journalDb.getLabelUsageCounts();
   }
 
+  /// Creates and persists a new label with a generated UUID.
+  ///
+  /// Trims [name]/[description] and normalizes [applicableCategoryIds] (drops
+  /// unknown categories, dedupes, sorts by name); an empty result is stored as
+  /// `null`, making the label global. Returns the created definition.
   Future<LabelDefinition> createLabel({
     required String name,
     required String color,
@@ -106,6 +127,13 @@ class LabelsRepository {
     return label;
   }
 
+  /// Updates [label] with any provided fields and persists the result.
+  ///
+  /// Each optional parameter is patch-semantics: `null` keeps the existing
+  /// value. [description] additionally treats `''` as "clear" (stored as
+  /// `null`). [applicableCategoryIds] when non-null is normalized and replaces
+  /// the scope; an empty/normalized-empty list clears it (label becomes
+  /// global). Bumps `updatedAt`. Returns the updated definition.
   Future<LabelDefinition> updateLabel(
     LabelDefinition label, {
     String? name,
@@ -158,6 +186,9 @@ class LabelsRepository {
     );
   }
 
+  /// Soft-deletes the label by stamping `deletedAt`/`updatedAt`; the row is
+  /// retained for sync. No-ops if the label is missing, and swallows+logs
+  /// errors rather than throwing.
   Future<void> deleteLabel(String id) async {
     try {
       final existing = await _journalDb.getLabelDefinitionById(id);
@@ -244,6 +275,13 @@ class LabelsRepository {
     }
   }
 
+  /// Adds [addedLabelIds] to an entry's metadata (union, no removals).
+  ///
+  /// For tasks, manually adding a label also unsuppresses it (removes it from
+  /// `aiSuppressedLabelIds`), reversing a prior rejection. Returns `true` on
+  /// success, `false` if the entry is missing or on error (logged), or `true`
+  /// for an empty input. This is the persist path used by the assignment
+  /// processor.
   Future<bool?> addLabels({
     required String journalEntityId,
     required List<String> addedLabelIds,
@@ -294,6 +332,11 @@ class LabelsRepository {
     }
   }
 
+  /// Removes a single [labelId] from an entry's metadata.
+  ///
+  /// For tasks, removal is treated as a rejection: [labelId] is added to
+  /// `aiSuppressedLabelIds` so the agent will not re-propose it. Returns
+  /// `true` on success, `false` if the entry is missing or on error (logged).
   Future<bool?> removeLabel({
     required String journalEntityId,
     required String labelId,
@@ -340,6 +383,15 @@ class LabelsRepository {
     }
   }
 
+  /// Replaces an entry's full label set with [labelIds] (the manual editor's
+  /// commit path).
+  ///
+  /// Dedupes, drops unknown/soft-deleted IDs (cache-first, DB fallback), and
+  /// sorts by label name. For tasks, diffs against the previous set: removed
+  /// labels are suppressed and (re-)added labels are unsuppressed in one update.
+  /// Falls back to an override write if the first attempt loses to a concurrent
+  /// vector clock — safe here because the `labeled` table merges. Returns the
+  /// write result; `false` if the entry is missing or on error (logged).
   Future<bool?> setLabels({
     required String journalEntityId,
     required List<String> labelIds,
@@ -447,6 +499,8 @@ Set<String>? _mergeSuppressed({
   return next.isEmpty ? null : next;
 }
 
+/// Returns a copy of [metadata] with [addedLabelIds] unioned into its
+/// `labelIds`, preserving existing order and skipping IDs already present.
 Metadata addLabelsToMeta(
   Metadata metadata,
   List<String> addedLabelIds,
@@ -463,6 +517,8 @@ Metadata addLabelsToMeta(
   return metadata.copyWith(labelIds: next);
 }
 
+/// Returns a copy of [metadata] without [labelId], collapsing an empty result
+/// to `null` so entries with no labels carry no `labelIds` field.
 Metadata removeLabelFromMeta(
   Metadata metadata,
   String labelId,

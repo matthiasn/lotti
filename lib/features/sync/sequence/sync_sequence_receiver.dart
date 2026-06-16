@@ -40,6 +40,11 @@ class SyncSequenceReceiver {
   final SyncSequenceMissingNotifier _missingNotifier;
   final SyncSequenceTracer _tracer;
 
+  /// Returns the single-node vector clock `{myHost: counter}` of the last copy
+  /// of [entryId] this device sent, or null if we never sent it (or have no
+  /// host id). Served from the last-sent LRU cache when warm, falling back to
+  /// the DB. Used to attach our own clock when re-sending an entry so peers can
+  /// place it in sequence.
   Future<VectorClock?> getLastSentVectorClockForEntry(String entryId) async {
     final myHost = await _vectorClockService.getHost();
     if (myHost == null) return null;

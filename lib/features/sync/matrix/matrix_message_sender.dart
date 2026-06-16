@@ -372,6 +372,12 @@ class MatrixMessageSender {
   }) => _payloadSender.sendNotificationPayload(room: room, message: message);
 }
 
+/// The room state a [MatrixMessageSender] needs to dispatch a message: the
+/// resolved sync [syncRoomId]/[syncRoom] and the current [unverifiedDevices].
+///
+/// Passed per-send so the sender does not reach back into mutable service state
+/// mid-flight. [unverifiedDevices] lets the sender decide whether encrypted
+/// delivery is safe to attempt against the current device set.
 class MatrixMessageContext {
   const MatrixMessageContext({
     required this.syncRoomId,

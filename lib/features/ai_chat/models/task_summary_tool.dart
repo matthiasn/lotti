@@ -4,7 +4,12 @@ import 'package:openai_dart/openai_dart.dart';
 part 'task_summary_tool.freezed.dart';
 part 'task_summary_tool.g.dart';
 
-/// Tool definition for retrieving task summaries
+/// The `get_task_summaries` function-calling tool exposed to the model.
+///
+/// [toolDefinition] is the OpenAI-format schema advertised to the provider;
+/// when the model emits a matching tool call, `ChatMessageProcessor` decodes the
+/// arguments into a [TaskSummaryRequest] and dispatches to `TaskSummaryRepository`.
+/// The schema requires both dates as local `YYYY-MM-DD` strings (no time/tz).
 class TaskSummaryTool {
   static const String name = 'get_task_summaries';
 
@@ -41,6 +46,8 @@ class TaskSummaryTool {
   );
 }
 
+/// Decoded arguments of a `get_task_summaries` tool call. [startDate]/[endDate]
+/// are local `YYYY-MM-DD` strings; [limit] is capped to 100 by the repository.
 @freezed
 abstract class TaskSummaryRequest with _$TaskSummaryRequest {
   const factory TaskSummaryRequest({
@@ -53,6 +60,8 @@ abstract class TaskSummaryRequest with _$TaskSummaryRequest {
       _$TaskSummaryRequestFromJson(json);
 }
 
+/// One task summary returned to the model as tool output: identity, AI
+/// [summary] (or a fallback string when none exists), [taskDate], and [status].
 @freezed
 abstract class TaskSummaryResult with _$TaskSummaryResult {
   const factory TaskSummaryResult({

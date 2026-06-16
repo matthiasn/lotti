@@ -7,6 +7,13 @@ enum DesignSystemCircularProgressSize {
   large,
 }
 
+/// The design-system's determinate ring progress indicator.
+///
+/// Fills an arc proportional to [value] (clamped to 0–1) at one of
+/// [DesignSystemCircularProgressSize], with optional [center] content inside the
+/// ring. [progressColor]/[trackColor] override the token defaults; an
+/// accessible [semanticsLabel] and [semanticsValue] (defaulting to a percentage)
+/// are exposed via [Semantics].
 class DesignSystemCircularProgress extends StatelessWidget {
   const DesignSystemCircularProgress({
     required this.value,

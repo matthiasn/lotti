@@ -16,6 +16,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Header for a generic health chart card: the configured health type's display
+/// name as title and its unit as subtitle (falling back to the raw health-type
+/// key when unconfigured).
 class HealthChartInfoWidget extends StatelessWidget {
   const HealthChartInfoWidget(
     this.chartConfig, {
@@ -36,6 +39,15 @@ class HealthChartInfoWidget extends StatelessWidget {
   }
 }
 
+/// Dispatcher for a health item, choosing the right renderer for its type:
+/// blood pressure → [DashboardHealthBpChart], weight-vs-BMI →
+/// [DashboardHealthBmiChart], and everything else → a generic line or bar
+/// [DashboardChart] (bar when the type's config says so, e.g. steps/sleep).
+///
+/// For the generic path it watches [HealthObservationsController] for the
+/// already-aggregated points, wraps them in a stale-aware [DashboardChart], and
+/// colours bars by value threshold via [_healthBarColor]. Despite the
+/// `Chart` suffix this widget mostly routes rather than draws.
 class DashboardHealthChart extends ConsumerWidget {
   const DashboardHealthChart({
     required this.chartConfig,

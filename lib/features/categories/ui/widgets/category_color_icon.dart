@@ -4,6 +4,9 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 
+/// A small rounded-square swatch filled with [color] (corner radius `size/4`).
+/// The raw building block behind [CategoryColorIcon] and reused wherever a
+/// bare color chip is needed.
 class ColorIcon extends StatelessWidget {
   const ColorIcon(
     this.color, {
@@ -27,6 +30,11 @@ class ColorIcon extends StatelessWidget {
   }
 }
 
+/// A [ColorIcon] that resolves its fill from a category id.
+///
+/// Looks [categoryId] up in [EntitiesCacheService] and draws the category's
+/// color. A null/unresolved id falls back to a faint outline swatch. Unlike
+/// `CategoryIconCompact` this shows only the color, with no glyph or letter.
 class CategoryColorIcon extends StatelessWidget {
   const CategoryColorIcon(
     this.categoryId, {

@@ -24,7 +24,10 @@ class TtsVoiceSelector extends StatefulWidget {
     super.key,
   });
 
+  /// Currently selected voice id; also seeds the gender tab.
   final String voiceId;
+
+  /// Called with the tapped voice's id.
   final ValueChanged<String> onChanged;
 
   /// Localized display label for [voice], e.g. "Female 1".

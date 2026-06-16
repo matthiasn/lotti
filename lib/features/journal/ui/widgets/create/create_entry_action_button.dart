@@ -5,6 +5,11 @@ import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_mod
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
+/// Floating action button that opens the create-entry menu ([CreateEntryModal]).
+///
+/// `linkedFromId` and `categoryId` are forwarded to the modal so anything
+/// created from a task/entry detail page is linked to and categorized like its
+/// host; both are null on the standalone journal list.
 class FloatingAddActionButton extends ConsumerWidget {
   const FloatingAddActionButton({
     this.linkedFromId,

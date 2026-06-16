@@ -6,6 +6,12 @@ enum DesignSystemDividerOrientation {
   vertical,
 }
 
+/// The design-system's separator line — a 1px rule in the decorative token
+/// color.
+///
+/// [orientation] selects a horizontal or vertical rule; horizontal dividers may
+/// carry an inline centered [label] (vertical ones may not, asserted). [length]
+/// overrides the default extent along the rule's axis.
 class DesignSystemDivider extends StatelessWidget {
   const DesignSystemDivider({
     this.orientation = DesignSystemDividerOrientation.horizontal,

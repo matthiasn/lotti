@@ -4,6 +4,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/cards/modern_status_chip.dart';
 
+/// Renders a project's health band as a colored [ModernStatusChip], optionally
+/// followed by the agent's rationale text.
+///
+/// Set [showReason] to `false` for compact contexts where only the band chip
+/// should appear. Visual attributes come from [projectHealthBandAttributes].
 class ProjectHealthIndicator extends StatelessWidget {
   const ProjectHealthIndicator({
     required this.metrics,
@@ -44,6 +49,11 @@ class ProjectHealthIndicator extends StatelessWidget {
   }
 }
 
+/// Maps a [ProjectHealthBand] to its display triple of (label, color, icon).
+///
+/// Colors are brightness-aware (darker variants in light mode for contrast).
+/// Shared by [ProjectHealthIndicator] and the `ProjectHealthBandTag` pill so the
+/// band reads identically across surfaces.
 (String, Color, IconData) projectHealthBandAttributes(
   BuildContext context,
   ProjectHealthBand band,

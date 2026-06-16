@@ -10,6 +10,13 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
+/// Scrollable body of the provider detail page.
+///
+/// Lays out the provider header strip (icon, name, status pill), the
+/// [ConnectionSection], the [ModelsSection], an optional [ActiveProfileSection]
+/// when a profile uses this provider, and a danger-zone delete action. Wires
+/// the page-level callbacks ([onAddModel], [onEdit], etc.) down to the
+/// individual sections.
 class DetailBody extends StatelessWidget {
   const DetailBody({
     required this.provider,
@@ -285,6 +292,9 @@ class _DangerZoneSection extends StatelessWidget {
   }
 }
 
+/// Titled section wrapper used throughout the provider detail page: a header
+/// row ([title] on the left, optional [trailing] action on the right) above the
+/// section [child].
 class Section extends StatelessWidget {
   const Section({
     required this.title,
@@ -325,6 +335,8 @@ class Section extends StatelessWidget {
   }
 }
 
+/// Placeholder card shown inside a [Section] when it has no content (e.g. a
+/// provider with no models yet), rendering a centered [message].
 class EmptySectionCard extends StatelessWidget {
   const EmptySectionCard({required this.message, super.key});
 

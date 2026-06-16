@@ -29,6 +29,11 @@ class MatrixStreamProcessor {
     return map;
   }
 
+  /// Folds one DB-apply outcome into the metrics counters: bumps `dbApplied`
+  /// when the write landed, or classifies the skip (conflict, missing base,
+  /// vector-clock-ignored, entry-link no-op) into the matching dropped-by-type
+  /// and `lastIgnored` diagnostics. Best-effort — never throws into the apply
+  /// path.
   void reportDbApplyDiagnostics(SyncApplyDiagnostics diag) {
     try {
       final applied = diag.applied;

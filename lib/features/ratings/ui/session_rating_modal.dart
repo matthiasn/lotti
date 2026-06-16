@@ -31,6 +31,11 @@ class RatingModal extends ConsumerStatefulWidget {
   final String targetId;
   final String catalogId;
 
+  /// Presents the rating modal as a bottom sheet for [targetId].
+  ///
+  /// [catalogId] selects the question set; [onDismissed] fires when the sheet
+  /// closes, whether saved or skipped. Used by `RatingSummary`'s edit button
+  /// and the pulsating rate button.
   static Future<void> show(
     BuildContext context,
     String targetId, {
@@ -72,6 +77,9 @@ class _RatingModalState extends ConsumerState<RatingModal> {
     super.dispose();
   }
 
+  /// Seeds [_answers] and the note field from an existing rating the first
+  /// time it loads. Guarded by [_didPrePopulate] so user edits are never
+  /// overwritten when the watched provider re-emits.
   void _prePopulate(JournalEntity? existing) {
     if (_didPrePopulate || existing is! RatingEntry) return;
     _didPrePopulate = true;
@@ -88,6 +96,11 @@ class _RatingModalState extends ConsumerState<RatingModal> {
     return catalog.every((q) => _answers[q.key] != null);
   }
 
+  /// Builds [RatingDimension]s from the catalog and current [_answers]
+  /// (capturing question text, description, and option labels/values for
+  /// later label resolution), persists them via the controller, then pops on
+  /// success or shows an error toast. No-ops if the catalog is unknown or
+  /// not every question is answered.
   Future<void> _submit() async {
     final messages = context.messages;
     final catalog = ratingCatalogRegistry[widget.catalogId]?.call(messages);

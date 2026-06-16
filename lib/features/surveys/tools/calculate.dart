@@ -4,6 +4,13 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:research_package/model.dart';
 
+/// Aggregates a completed [taskResult] into one integer per score bucket.
+///
+/// Data-driven and survey-agnostic: for each entry in [scoreDefinitions]
+/// (bucket name -> set of question IDs) it reads each question's stored answer
+/// (`stepResult.results['answer']`), extracts the numeric choice value
+/// (`RPImageChoice.value`, or the first `RPChoice.value`), and sums them.
+/// Missing or unanswered questions contribute 0.
 Map<String, int> calculateScores({
   required Map<String, Set<String>> scoreDefinitions,
   required RPTaskResult taskResult,
@@ -36,6 +43,12 @@ Map<String, int> calculateScores({
   return calculatedScores;
 }
 
+/// Builds the `onSubmit` callback handed to the survey runner.
+///
+/// The returned closure calculates the bucket scores via [calculateScores] and
+/// persists them as a `JournalEntity.survey` through
+/// [PersistenceLogic.createSurveyEntry], optionally linking it to [linkedId].
+/// This is the only place the surveys feature writes data.
 void Function(RPTaskResult) createResultCallback({
   required Map<String, Set<String>> scoreDefinitions,
   required BuildContext context,

@@ -73,6 +73,12 @@ lib/features/ai/ui/settings/
 │   ├── config_empty_state.dart             # Legacy empty state (unused by page)
 │   ├── dismiss_background.dart             # Legacy swipe-to-delete background
 │   ├── dismissible_config_card.dart        # Legacy dismissible card wrapper
+│   ├── ftue/                               # Live add-provider modal flow
+│   │   ├── ai_pick_provider_modal.dart         # Step 1: choose a provider
+│   │   ├── ai_provider_setup_preview_modal.dart # Step 2: preview rows/models
+│   │   ├── ai_provider_setup_preview_rows.dart
+│   │   ├── ai_provider_setup_preview_models.dart
+│   │   └── ai_provider_setup_result_modal.dart # Step 3: result
 │   └── v2/                                 # Live card chrome
 │       ├── ai_settings_header_bar.dart     # Search row
 │       ├── ai_settings_tab_bar.dart        # Providers/Models/Profiles tabs

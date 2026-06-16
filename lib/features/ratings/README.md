@@ -130,7 +130,8 @@ sequenceDiagram
 - New rating IDs are derived from `['rating', targetId, catalogId]`, which keeps the identity deterministic at the repository layer.
 - A new rating also creates an `EntryLink.rating` from the rating entry to the target entry.
 - Link creation is best-effort consistent: if the rating entity is persisted but link creation fails, the repository soft-deletes the orphaned rating entry instead of leaving dangling data behind.
-- Sync outbox enqueueing is intentionally non-transactional with local persistence. A sync enqueue failure is logged, but it does not roll back the local link that already succeeded.
+- The link write runs inside a `VectorClockService.withVcScope`, reserving a counter that is committed only when `upsertEntryLink` actually changes a row; on a no-op upsert the scope releases and broadcasts an unresolvable hint so peers skip the gap without a backfill round-trip. On success it records the link in `SyncSequenceLogService` (best-effort) and notifies `UpdateNotifications`. See [`sync`](../sync/README.md) for the underlying machinery.
+- Sync outbox enqueueing is intentionally non-transactional with local persistence. A sync enqueue failure is logged, but it does not roll back the local link that already succeeded (the reserved counter is already on disk).
 
 ## UI Flow
 

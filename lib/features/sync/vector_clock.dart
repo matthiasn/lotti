@@ -5,11 +5,16 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:equatable/equatable.dart';
 
+/// Thrown by [VectorClock.compare] when either operand contains a negative
+/// counter (an invalid clock).
 class VclockException implements Exception {
   @override
   String toString() => 'Invalid vector clock inputs';
 }
 
+/// Result of [VectorClock.compare]: whether clock A dominates B
+/// ([a_gt_b]), B dominates A ([b_gt_a]), they are identical ([equal]), or
+/// neither strictly dominates ([concurrent] — the conflict case).
 enum VclockStatus {
   equal,
   concurrent,
@@ -17,6 +22,15 @@ enum VclockStatus {
   b_gt_a,
 }
 
+/// A CRDT vector clock: a map from node id to a monotonically increasing
+/// per-node counter, used to establish causal order between sync entries
+/// across devices without a global clock.
+///
+/// One key exists per host that has ever written the entry; the value is that
+/// host's offset at write time. Two clocks are causally ordered when one
+/// dominates the other component-wise (see [compare]); when neither does, the
+/// edits are concurrent and surface as a conflict. [merge] takes the
+/// per-node maximum to fold two clocks into one.
 class VectorClock extends Equatable {
   const VectorClock(this.vclock);
 
@@ -25,15 +39,15 @@ class VectorClock extends Equatable {
 
   final Map<String, int> vclock;
 
-  // Compares two vector clocks. A and B are maps with node id strings as keys
-  // and an integer as value, which is the offset on the node associated with
-  // persisting the particular entry. See examples in the tests.
-
-  // Will return VclockStatus.a_gt_b if clock A dominates B, VclockStatus.b_gt_a
-  // in the opposite case, VclockStatus.equal if they are the same, and
-  // VclockStatus.concurrent if no strict order could be determined.
-
-  // Throws an exception when input is invalid.
+  /// Establishes the causal relationship between [vc1] and [vc2].
+  ///
+  /// Returns [VclockStatus.a_gt_b] when every component of [vc1] is >= [vc2]
+  /// and at least one is strictly greater (A dominates B), [VclockStatus.b_gt_a]
+  /// in the opposite case, [VclockStatus.equal] when the clocks are identical,
+  /// and [VclockStatus.concurrent] when some components favour each side — the
+  /// signal that the two versions diverged and must be conflict-resolved.
+  /// Missing node keys are treated as counter 0. Throws [VclockException] if
+  /// either operand is invalid (contains a negative counter).
   static VclockStatus compare(VectorClock vc1, VectorClock vc2) {
     final comparisons = <VclockStatus>{};
     final nodeIds = <String>{};
@@ -80,6 +94,9 @@ class VectorClock extends Equatable {
     return VclockStatus.concurrent;
   }
 
+  /// Folds two (possibly null) clocks into one by taking the per-node maximum
+  /// across the union of their keys — the CRDT join. A null operand
+  /// contributes nothing; merging two nulls yields an empty clock.
   // ignore: prefer_constructors_over_static_methods
   static VectorClock merge(VectorClock? vc1, VectorClock? vc2) {
     final merged = <String, int>{};

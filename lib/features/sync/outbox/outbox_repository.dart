@@ -4,7 +4,19 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 
+/// Persistence boundary for the outbound sync queue.
+///
+/// The outbox is a Drift-backed table of pending sync messages, each with a
+/// `status` (pending → sending → sent/error), a `priority`, and a `retries`
+/// counter. This interface exposes only the operations the `OutboxProcessor`
+/// needs — atomic claim (single or batched), status transitions, the
+/// has-more peek, and retention pruning — so the processor can be tested
+/// against an in-memory fake. See [claim]/[claimNextBatch] for the locking
+/// model that protects against the merge-send race.
 abstract class OutboxRepository {
+  /// Oldest [limit] rows in `(priority, createdAt)` order without claiming
+  /// them. Read-only peek used by diagnostics and the UI monitor; the send
+  /// path uses [claim]/[claimNextBatch] instead so rows are leased atomically.
   Future<List<OutboxItem>> fetchPending({int limit = 10});
 
   /// Atomically claim the next eligible outbox row and transition it from
@@ -40,12 +52,19 @@ abstract class OutboxRepository {
   /// drain pass after a successful send.
   Future<bool> hasMorePending();
 
+  /// Flip a single row to `sent` after a confirmed delivery. Sent rows are
+  /// retained until pruned by [pruneSentOutboxItems] so the monitor can show
+  /// recent history.
   Future<void> markSent(OutboxItem item);
 
   /// Mark every row in [items] as sent in a single transaction.
   /// Used after a bundle send succeeds.
   Future<void> markSentBatch(List<OutboxItem> items);
 
+  /// Increment [item]'s `retries` and return it to `pending` so the next drain
+  /// re-claims it — unless the incremented count reaches the implementation's
+  /// `maxRetries`, in which case the row flips to `error` and is no longer
+  /// claimed (head-of-queue advances past it).
   Future<void> markRetry(OutboxItem item);
 
   /// Apply [markRetry] semantics to every row in [items] in a single
@@ -84,6 +103,14 @@ abstract class OutboxRepository {
   });
 }
 
+/// Drift-backed [OutboxRepository] over [SyncDatabase].
+///
+/// Delegates claiming and pruning to the database's own atomic statements
+/// (`claimNextOutboxItem`, `claimNextOutboxBatch`, the chunked prune) and maps
+/// the `retries`/`maxRetries` threshold to the `pending` vs `error` status on
+/// every retry. Pulses the optional [SyncActivitySignaler] on each successful
+/// `markSent`/`markSentBatch` so the UI's TX activity indicator reflects real
+/// outbound traffic.
 class DatabaseOutboxRepository implements OutboxRepository {
   DatabaseOutboxRepository(
     this._database, {

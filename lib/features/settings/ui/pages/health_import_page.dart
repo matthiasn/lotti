@@ -7,6 +7,12 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 
+/// Manual health-data import screen.
+///
+/// Offers a from/to date range (defaulting to the last week through
+/// tomorrow) and one button per data family — activity, sleep, heart rate,
+/// blood pressure, body measurements, workouts — each delegating to
+/// `HealthImport` to pull the corresponding samples for the chosen range.
 class HealthImportPage extends StatefulWidget {
   const HealthImportPage({super.key});
 

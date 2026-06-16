@@ -43,6 +43,14 @@ export 'package:lotti/features/agents/state/template_query_providers.dart';
 
 part 'agent_providers.g.dart';
 
+/// Builds the `onPersistedStateChanged` callback shared by the agent services
+/// and managers.
+///
+/// When an agent mutates its persisted state, the returned callback fires a
+/// UI-only [UpdateNotifications] ping (the agent's own id plus the shared
+/// [agentNotification] topic) so watching providers — e.g.
+/// `agentUpdateStreamProvider`, the pending-wakes list — refresh without
+/// kicking off another sync round-trip.
 void Function(String) persistedStateChangedNotifier(
   UpdateNotifications notifications,
 ) {

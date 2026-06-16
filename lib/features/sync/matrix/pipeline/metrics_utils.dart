@@ -1,5 +1,7 @@
 // Metrics snapshot helpers for the sync pipeline
 
+/// Pure helpers that flatten the pipeline's counters into the flat
+/// `Map<String, int>` snapshot the Stats UI and diagnostics logs consume.
 class MetricsUtils {
   const MetricsUtils._();
 

@@ -5,6 +5,13 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_time_calendar_picker.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Stateful wrapper that makes [DesignSystemTimeCalendarPicker] interactive.
+///
+/// Owns the selected date and visible month, handles day selection, prev/next
+/// month paging, and presents the month/year picker as a modal dialog. Honors
+/// `DesignSystemTimeCalendarPickerMode` (light/dark) and the non-dialog
+/// `DesignSystemTimeCalendarPickerPresentation` variants; the month-dialog
+/// presentation is rejected here in favor of the standalone picker.
 class DesignSystemInteractiveTimeCalendarPicker extends StatefulWidget {
   const DesignSystemInteractiveTimeCalendarPicker({
     required this.mode,
@@ -143,6 +150,12 @@ class _DesignSystemInteractiveTimeCalendarPickerState
   }
 }
 
+/// The month-grid card shown inside the month/year selection dialog.
+///
+/// Displays a year header with prev/next paging and a 3x4 grid of month
+/// buttons, highlighting [selectedMonth] when the visible year matches, and
+/// reports the chosen month through `onMonthPressed`. Styled per the
+/// [DesignSystemTimeCalendarPickerMode].
 class MonthSelectionDialogCard extends StatefulWidget {
   const MonthSelectionDialogCard({
     required this.mode,

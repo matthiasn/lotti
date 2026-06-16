@@ -7,6 +7,13 @@ enum DesignSystemCaptionIconPosition {
   top,
 }
 
+/// The design-system's caption card — a titled, descriptive callout panel,
+/// typically used for informational/empty-state blurbs.
+///
+/// Renders [title] over [description] on a token-styled surface, optionally
+/// with an [icon] placed by [DesignSystemCaptionIconPosition] (left/top/none)
+/// and tinted by [iconColor], plus optional [primaryAction]/[secondaryAction]
+/// widgets. Asserts an icon is supplied whenever [iconPosition] is not `none`.
 class DesignSystemCaption extends StatelessWidget {
   const DesignSystemCaption({
     required this.title,

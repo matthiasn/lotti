@@ -11,8 +11,12 @@ import 'package:meta/meta.dart';
 /// Record type for completion controller parameters.
 typedef ChecklistCompletionParams = ({String id, String? taskId});
 
+/// Aggregate counts for a checklist: how many active items are checked
+/// (`completedCount`) out of how many total (`totalCount`).
 typedef ChecklistCompletionState = ({int completedCount, int totalCount});
 
+/// Provider for the per-checklist completion counts. Family key is the
+/// `(id, taskId)` of the checklist; auto-disposes when no widget watches it.
 final checklistCompletionControllerProvider = AsyncNotifierProvider.autoDispose
     .family<
       ChecklistCompletionController,
@@ -22,6 +26,13 @@ final checklistCompletionControllerProvider = AsyncNotifierProvider.autoDispose
       ChecklistCompletionController.new,
     );
 
+/// Derives a checklist's checked/total counts by composing the lower-level
+/// controllers rather than reading the DB directly.
+///
+/// It listens to the parent [ChecklistController] (for the set of linked item
+/// ids) and to each [ChecklistItemController] in that set (for checked/archive
+/// state), recomputing on any change. Only *active* items — neither deleted
+/// nor archived — are counted (see [aggregateCompletion]).
 class ChecklistCompletionController
     extends AsyncNotifier<ChecklistCompletionState> {
   ChecklistCompletionController(this.params);
@@ -106,6 +117,8 @@ class ChecklistCompletionController
   }
 }
 
+/// Provider for the checklist's completion *rate* (0.0–1.0). Family key is the
+/// checklist's `(id, taskId)`.
 final checklistCompletionRateControllerProvider = AsyncNotifierProvider
     .autoDispose
     .family<
@@ -116,6 +129,9 @@ final checklistCompletionRateControllerProvider = AsyncNotifierProvider
       ChecklistCompletionRateController.new,
     );
 
+/// Maps the counts from [ChecklistCompletionController] to a fraction in
+/// `[0, 1]` (`completed / total`), used to drive the progress ring. An empty
+/// checklist reports `0.0`.
 class ChecklistCompletionRateController extends AsyncNotifier<double> {
   ChecklistCompletionRateController(this.params);
 

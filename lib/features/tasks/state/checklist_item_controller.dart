@@ -25,6 +25,11 @@ final checklistItemControllerProvider = AsyncNotifierProvider.autoDispose
       ChecklistItemController.new,
     );
 
+/// Runtime controller for a single checklist item (keyed by item id).
+///
+/// Owns the item's checked/title/archive state. Note the side effect in
+/// [updateTitle]: it fires a fire-and-forget correction capture (before→after
+/// title + category) so user rewordings become category-scoped AI guidance.
 class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
   ChecklistItemController(this.params);
 
@@ -75,6 +80,7 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
     }
   }
 
+  /// Soft-deletes the item and clears the state; returns the delete result.
   Future<bool> delete() async {
     final res = await ref
         .read(journalRepositoryProvider)
@@ -83,8 +89,11 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
     return res;
   }
 
+  /// Marks the item archived — it is hidden from active checklist counts but
+  /// not deleted. Reversed by [unarchive].
   void archive() => _setArchived(isArchived: true);
 
+  /// Restores an archived item back into the active checklist.
   void unarchive() => _setArchived(isArchived: false);
 
   void _setArchived({required bool isArchived}) {
@@ -105,6 +114,9 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
     }
   }
 
+  /// Toggles the item's checked state, stamping [ChangeSource.user] and the
+  /// current time (via [clockProvider]) as the audit trail, then persists and
+  /// optimistically publishes the new state.
   void updateChecked({required bool checked}) {
     final current = state.value;
     final data = current?.data;
@@ -128,6 +140,10 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
     }
   }
 
+  /// Renames the item and, as a side effect, fires a fire-and-forget
+  /// correction capture (before→after title, scoped to the item's category) so
+  /// user rewordings feed back into category-scoped AI suggestion guidance.
+  /// No-op when the item is unloaded or [title] is null.
   void updateTitle(String? title) {
     final current = state.value;
     final data = current?.data;
@@ -163,6 +179,10 @@ class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
     }
   }
 
+  /// Re-points the item's `linkedChecklists` from [fromChecklistId] to
+  /// [linkedChecklistId] when a drag moves it between checklists. Updates only
+  /// this item's back-links; the two `ChecklistController`s own their own
+  /// linked-item lists.
   Future<void> moveToChecklist({
     required String linkedChecklistId,
     required String fromChecklistId,

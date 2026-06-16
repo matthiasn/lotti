@@ -8,6 +8,15 @@ String _formatClock(VectorClock? clock) => clock?.vclock.toString() ?? 'null';
 String _formatClocks(List<VectorClock>? clocks) =>
     clocks?.map((vc) => vc.vclock).toList().toString() ?? 'null';
 
+/// Emits a single structured `sync` log line recording a vector-clock
+/// mutation, so clock reassignments (adopting the DB/JSON clock, ensuring the
+/// current clock is covered, etc.) leave an auditable trail.
+///
+/// [action] is the verb (e.g. `assign`), [reason] the trigger (e.g.
+/// `json_mismatch`), and [previous]/[assigned]/[coveredVectorClocks] the before
+/// and after state. [extras] appends arbitrary `key=value` pairs (null values
+/// are dropped). Call sites pass a [subDomain] (e.g. `send.adoptJson`) so the
+/// lines can be filtered per pipeline stage.
 void logVectorClockAssignment(
   DomainLogger loggingService, {
   required String subDomain,

@@ -4,12 +4,25 @@ import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Signature for a callback receiving an optional string value, used by
+/// [TitleTextField] for its save handler.
 typedef StringCallback = void Function(String?);
 
+/// [Intent] bound to the keyboard save shortcuts (Cmd/Ctrl+S and Enter) in
+/// [TitleTextField]; invoking it triggers the field's save action.
 class SaveIntent extends Intent {
   const SaveIntent();
 }
 
+/// Single/multi-line text field for editing a title (e.g. a task or checklist
+/// item), with inline save/cancel affordances and keyboard shortcuts.
+///
+/// Calls [onSave] with the current text on tapping the save icon or pressing
+/// Cmd/Ctrl+S or Enter (see [SaveIntent]); a save/discard icon appears once
+/// the text differs from [initialValue]. Optional behaviours include
+/// [clearOnSave], [resetToInitialValue] on cancel, and [keepFocusOnSave]
+/// which re-asserts focus and re-shows the keyboard so the user can keep
+/// typing. Picks up external [initialValue] changes via `didUpdateWidget`.
 class TitleTextField extends StatefulWidget {
   const TitleTextField({
     required this.onSave,

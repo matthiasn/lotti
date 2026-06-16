@@ -13,6 +13,13 @@ const _uuid = Uuid();
 // top-level functions so the class and the other parts call them
 // unqualified.
 
+/// Validates and parses one model-emitted block into a [PlannedBlock],
+/// throwing [DayAgentCaptureException] on any contract violation: an
+/// out-of-allowlist category, `end` not after `start`, a block outside the
+/// plan day, a drafted today AI/manual block starting before
+/// [earliestDraftStart], an AI block missing its `reason`, or a `taskId` not
+/// in [decidedTaskIds]/[allowedExistingTaskIds]. Defaults `type` to `ai` and
+/// `state` to `drafted`, and mints a block id when none is supplied.
 PlannedBlock parsePlannedBlock({
   required Object? raw,
   required DateTime day,
@@ -93,6 +100,10 @@ PlannedBlock parsePlannedBlock({
   );
 }
 
+/// Validates and parses one model-emitted energy band into a
+/// [DayAgentEnergyBand], throwing [DayAgentCaptureException] when `end` is not
+/// after `start`, the band falls outside the plan day, or `level` is not one
+/// of `high`/`low`/`secondWind`.
 DayAgentEnergyBand parseEnergyBand({
   required Object? raw,
   required DateTime day,
@@ -132,6 +143,9 @@ DayAgentEnergyBand parseEnergyBand({
   );
 }
 
+/// The distinct tasks referenced by [blocks], in first-seen order, as
+/// [PinnedTaskRef]s — the persisted record of which tasks the plan pins to the
+/// day.
 List<PinnedTaskRef> pinnedTasksFor(List<PlannedBlock> blocks) {
   final seen = <String>{};
   final out = <PinnedTaskRef>[];
@@ -149,12 +163,17 @@ List<PinnedTaskRef> pinnedTasksFor(List<PlannedBlock> blocks) {
   return out;
 }
 
+/// Total scheduled minutes across [blocks], excluding dropped blocks — the
+/// figure compared against the day's capacity.
 int scheduledMinutesFor(List<PlannedBlock> blocks) {
   return blocks
       .where((block) => block.state != PlannedBlockState.dropped)
       .fold<int>(0, (sum, block) => sum + block.duration.inMinutes);
 }
 
+/// Serializes a persisted [DayPlanEntity] into the JSON tool-result shape
+/// returned to the model (plan/day ids, capacity vs. scheduled minutes, and
+/// each block + energy band).
 Map<String, Object?> planJson(DayPlanEntity plan) => {
   'planId': plan.id,
   'dayId': plan.dayId,
@@ -265,6 +284,8 @@ DateTime? dateFromDayId(String dayId) {
   return DateTime.tryParse(dayId.substring(prefix.length));
 }
 
+/// Strips the `day_agent_plan:` prefix from a plan entity id to recover its
+/// bare `dayId`, returning the input unchanged when the prefix is absent.
 String dayIdFromPlanEntityId(String planEntityId) {
   const prefix = 'day_agent_plan:';
   if (planEntityId.startsWith(prefix)) {
@@ -273,6 +294,9 @@ String dayIdFromPlanEntityId(String planEntityId) {
   return planEntityId;
 }
 
+/// Resolves a model-supplied `itemIndices` selection into a sorted, unique
+/// index list. A null selection means "all items"; any out-of-range index
+/// throws [DayAgentCaptureException].
 List<int> selectIndices({
   required List<int>? itemIndices,
   required int itemCount,

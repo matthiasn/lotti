@@ -7,6 +7,14 @@ enum DesignSystemProgressBarStyle {
   chunky,
 }
 
+/// The design-system's determinate linear progress bar.
+///
+/// Fills a horizontal track proportional to [value] in one of
+/// [DesignSystemProgressBarStyle] (`defaultStyle` thin or `chunky` thick),
+/// optionally captioned with a [label], [progressText], and a [trailingIcon].
+/// [labelColor]/[progressColor]/[fillColor]/[trackColor] override the token
+/// defaults. Requires a visible [label] or a [semanticsLabel], and exposes
+/// [semanticsValue] via [Semantics].
 class DesignSystemProgressBar extends StatelessWidget {
   const DesignSystemProgressBar({
     required this.value,

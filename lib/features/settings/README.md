@@ -283,6 +283,7 @@ input, not landing-page logic:
 - `enableHabits` / `enableDashboards` add or drop those leaves inside the
   `definitions` branch — the Definitions branch itself is unconditional because
   Categories, Labels, and Measurables are always present
+- `enableAiSummaryTtsFlag` adds the `speech` leaf
 - the AI, Agents, Theming, and Advanced branches are always shown
 
 The new menu does not carry the old per-tile decorations (the Agents pending
@@ -548,6 +549,9 @@ This is the route shape that currently matters in practice:
 - `/settings`
 - `/settings/ai`
 - `/settings/ai/profiles`
+- `/settings/ai/provider/:providerId`
+- `/settings/ai/model/:modelId`
+- `/settings/ai/profile/:profileId`
 - `/settings/agents/...`
 - `/settings/categories/...`
 - `/settings/projects/...`
@@ -563,6 +567,7 @@ This is the route shape that currently matters in practice:
 - `/settings/sync/backfill`
 - `/settings/definitions`
 - `/settings/theming`
+- `/settings/speech` (gated by `enableAiSummaryTtsFlag`)
 - `/settings/flags`
 - `/settings/health_import`
 - `/settings/advanced`
@@ -570,6 +575,7 @@ This is the route shape that currently matters in practice:
 - `/settings/advanced/about`
 - `/settings/advanced/conflicts/...`
 - `/settings/advanced/maintenance`
+- `/settings/maintenance` (legacy alias)
 
 The notable oddball is `/settings/projects/...`: there is no top-level Settings tile for projects, but the project **detail** route (`/settings/projects/:projectId`) still lives under the settings namespace because category and project management meet there. The project **create** flow does not — creation runs in a modal launched from the Projects tab FAB (`showProjectCreateModal`), with no route of its own. `SettingsLocation` still explicitly excludes the reserved `create` slug so a stale `/settings/projects/create` deep link cannot render a detail page against a non-id slug.
 

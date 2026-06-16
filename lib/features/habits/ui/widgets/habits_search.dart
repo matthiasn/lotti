@@ -4,6 +4,14 @@ import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/search/lotti_search_bar.dart';
 
+/// Search bar for filtering the habits list by name/description.
+///
+/// Two-way binds a [TextEditingController] to the controller's search string
+/// (via [HabitsController.setSearchString]): typing pushes the query into
+/// state, and an external change to the state string (e.g. a clear
+/// triggered elsewhere) is mirrored back into the field with the cursor moved
+/// to the end. Seeds the field with the current search string on init so the
+/// query survives toggling the bar closed and open.
 class HabitsSearchWidget extends ConsumerStatefulWidget {
   const HabitsSearchWidget({super.key});
 

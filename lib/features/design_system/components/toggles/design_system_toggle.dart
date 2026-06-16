@@ -13,6 +13,15 @@ enum DesignSystemToggleVisualState {
   pressed,
 }
 
+/// The design-system's switch toggle — an on/off control with an optional
+/// inline label and help tooltip.
+///
+/// [value] is the on/off state and [onChanged] reports flips. Sized by
+/// [DesignSystemToggleSize] (small/default), it tracks hover/pressed/focus
+/// visuals and [forcedState] pins a [DesignSystemToggleVisualState] for
+/// widgetbook/tests. Set [tooltipIcon]/[tooltipMessage] to append a help glyph,
+/// and [enabled] to toggle interactivity. Requires a visible [label] or a
+/// [semanticsLabel].
 class DesignSystemToggle extends StatefulWidget {
   const DesignSystemToggle({
     required this.value,

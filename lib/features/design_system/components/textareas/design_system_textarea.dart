@@ -7,6 +7,14 @@ enum DesignSystemTextareaSize {
   medium,
 }
 
+/// The design-system's multi-line text area — a token-styled, auto-growing
+/// input with label, helper/error text, and an optional character counter.
+///
+/// Sized by [DesignSystemTextareaSize] (small/medium). Drives an external
+/// [controller] or owns an internal one, grows between [minLines] and [maxLines],
+/// and reports edits via [onChanged]. Set [maxLength] (with [showCounter]) to
+/// surface a counter, supply [errorText] to switch to the error state, and use
+/// [enabled] to toggle interactivity.
 class DesignSystemTextarea extends StatefulWidget {
   const DesignSystemTextarea({
     this.controller,

@@ -143,6 +143,8 @@ class AgendaItem {
   }
 }
 
+/// Status of an [AgendaItem], driving its row treatment on the Agenda view
+/// (e.g. an overdue badge or a struck-through done row).
 enum AgendaItemState {
   open,
   inProgress,

@@ -9,6 +9,12 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 
+/// Category filter section for the task filter modal.
+///
+/// Renders selectable chips for favorite and currently-selected categories
+/// plus "unassigned" and "all" options; the trailing `...` chip expands the
+/// list to show every category. Toggling a chip updates the active journal
+/// page controller's `selectedCategoryIds`.
 class TaskCategoryFilter extends ConsumerStatefulWidget {
   const TaskCategoryFilter({super.key});
 

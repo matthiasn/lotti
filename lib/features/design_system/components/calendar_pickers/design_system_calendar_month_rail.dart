@@ -3,6 +3,8 @@ import 'package:lotti/features/design_system/components/calendar_pickers/design_
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
+/// One year group in the month rail: a [yearLabel] divider followed by its
+/// month [items].
 @immutable
 class DesignSystemCalendarMonthRailSection {
   const DesignSystemCalendarMonthRailSection({
@@ -14,6 +16,8 @@ class DesignSystemCalendarMonthRailSection {
   final List<DesignSystemCalendarMonthRailItem> items;
 }
 
+/// A single tappable month entry in the rail. [selected] highlights the
+/// current month; a null [onPressed] renders it disabled/dimmed.
 @immutable
 class DesignSystemCalendarMonthRailItem {
   const DesignSystemCalendarMonthRailItem({
@@ -31,6 +35,11 @@ class DesignSystemCalendarMonthRailItem {
   final String? semanticsLabel;
 }
 
+/// The scrollable left rail of the design-system calendar picker, listing
+/// months grouped by year.
+///
+/// Renders each [DesignSystemCalendarMonthRailSection] as a year divider plus
+/// a column of hoverable, selectable month buttons.
 class CalendarMonthRail extends StatelessWidget {
   const CalendarMonthRail({
     required this.monthSections,

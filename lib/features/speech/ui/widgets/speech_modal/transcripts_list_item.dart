@@ -6,6 +6,12 @@ import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Expandable row for a single [AudioTranscript].
+///
+/// The collapsed header shows the created date, optional processing time,
+/// detected language, and model; expanding reveals the selectable transcript
+/// text. A reveal toggle exposes a delete action that removes this transcript
+/// from the entry via [SpeechRepository.removeAudioTranscript].
 class TranscriptListItem extends StatefulWidget {
   const TranscriptListItem(
     this.transcript, {
@@ -13,7 +19,10 @@ class TranscriptListItem extends StatefulWidget {
     super.key,
   });
 
+  /// Id of the audio entry this transcript belongs to (used for deletion).
   final String entryId;
+
+  /// The transcript rendered by this row.
   final AudioTranscript transcript;
 
   @override
@@ -143,6 +152,8 @@ class _TranscriptListItemState extends State<TranscriptListItem> {
   }
 }
 
+/// Formats a [Duration] as `<minutes>m<seconds>s` (e.g. `02m07s`), used for the
+/// transcript processing-time badge. Both fields are zero-padded to two digits.
 String formatMmSs(Duration dur) {
   return '${padLeft(dur.inMinutes)}m${padLeft(dur.inSeconds.remainder(60))}s';
 }

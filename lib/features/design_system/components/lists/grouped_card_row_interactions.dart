@@ -1,3 +1,10 @@
+/// The resolved seam geometry for a single row in a grouped card stack.
+///
+/// [topOverlap]/[bottomOverlap] are the pixel amounts a row's background bleeds
+/// into its neighbour to hide the seam between connected cards, and
+/// [showDividerBelow] requests a thin divider in place of an overlap (used
+/// between two equal-priority rows). Computed by
+/// [buildGroupedCardRowInteractions].
 class GroupedCardRowInteraction {
   const GroupedCardRowInteraction({
     this.topOverlap = 0,
@@ -10,6 +17,13 @@ class GroupedCardRowInteraction {
   final bool showDividerBelow;
 }
 
+/// Computes per-row [GroupedCardRowInteraction]s for a stack of grouped cards.
+///
+/// Given each row's grouping [priorities] and which adjacent rows are
+/// [connectedBelow] (one entry per edge), it decides where a seam-hiding
+/// [overlap] is applied — biasing the overlap onto the lower-priority row — and
+/// where two equal zero-priority rows get a divider instead. Returns one
+/// interaction per row, in order.
 List<GroupedCardRowInteraction> buildGroupedCardRowInteractions({
   required List<int> priorities,
   required List<bool> connectedBelow,

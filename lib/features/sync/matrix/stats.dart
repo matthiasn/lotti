@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
 
+/// Snapshot of Matrix message traffic for the Stats UI: total [sentCount] and
+/// a per-message-type tally in [messageCounts]. Value-equal by structural
+/// (unordered) comparison of the counts map.
 @immutable
 class MatrixStats {
   const MatrixStats({

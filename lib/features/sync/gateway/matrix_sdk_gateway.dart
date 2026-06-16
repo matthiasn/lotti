@@ -6,6 +6,15 @@ import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 
+/// Production [MatrixSyncGateway] backed by the `matrix` SDK [Client].
+///
+/// Thin adapter: each method delegates to the SDK and adds only the
+/// sync-specific glue — stamping created/joined rooms with the
+/// `m.lotti.sync_room` and encryption state events, surfacing only invites
+/// addressed to this client (`state_key == userID`) on [invites], and
+/// registering every event id it sends in the [SentEventRegistry] so the
+/// inbound pipeline can recognise and skip its own echoes. Owns the [Client]
+/// lifecycle and disposes it in [dispose].
 class MatrixSdkGateway implements MatrixSyncGateway {
   /// Creates a new [MatrixSdkGateway].
   ///

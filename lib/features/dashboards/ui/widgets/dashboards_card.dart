@@ -6,6 +6,10 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/services/nav_service.dart';
 
+/// A single row in the dashboards list: the dashboard's category icon, name,
+/// optional description, and a chevron. Tapping beams to
+/// `/dashboards/<id>`. `showDivider` draws the inter-row separator (omitted on
+/// the last row).
 class DashboardCard extends StatelessWidget {
   const DashboardCard({
     required this.dashboard,

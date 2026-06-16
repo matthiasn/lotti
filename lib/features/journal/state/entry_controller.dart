@@ -38,6 +38,14 @@ part 'entry_controller.g.dart';
 @visibleForTesting
 Duration stopRecordingDelay = const Duration(milliseconds: 100);
 
+/// The detail-side controller for a single journal entry, keyed by entry id.
+///
+/// Owns the entry's load/draft/save lifecycle (the two-state `EntryState`
+/// machine), editor focus/toolbar state, and the entity mutations exposed to
+/// the detail UI — status/priority, cover art, language, and text copy. Saves
+/// follow the dual-write path (persist the entity, then propagate metadata such
+/// as category to linked entries). See the feature README for the full
+/// save/refresh flow.
 @riverpod
 class EntryController extends _$EntryController {
   void focusNodeListener() {
@@ -181,6 +189,9 @@ class EntryController extends _$EntryController {
         );
   }
 
+  /// Sets this entry's category and propagates it to every entry linked from
+  /// this one, so a task and its linked timer/audio/image entries stay in the
+  /// same category. Pass null to clear the category.
   Future<bool> updateCategoryId(String? categoryId) async {
     final res = await ref
         .read(journalRepositoryProvider)
@@ -202,6 +213,15 @@ class EntryController extends _$EntryController {
     return _journalDb.journalEntityById(id);
   }
 
+  /// Persists the current draft for this entry, branching on entity type:
+  /// tasks save through `updateTask` (title/estimate/due plus editor text),
+  /// events read their title/status from the form-builder state, and all other
+  /// types save the editor text — stamping `dateTo` to now when this entry is
+  /// the running timer. Regardless of type it then drops focus, hides the
+  /// toolbar, clears the dirty flag, and notifies the editor-state service.
+  ///
+  /// When `stopRecording` is true the running time service is stopped after
+  /// [stopRecordingDelay] (used by the timer stop button).
   Future<void> save({
     Duration? estimate,
     String? title,
@@ -315,6 +335,10 @@ class EntryController extends _$EntryController {
     await HapticFeedback.heavyImpact();
   }
 
+  /// Sets the task's transcription language to `languageCode` and marks the
+  /// source as `ChangeSource.user`, so the explicit choice overrides any
+  /// category/default-derived language. No-ops only when the same code is
+  /// already set *and* already user-sourced.
   Future<void> updateTaskLanguage(String? languageCode) async {
     final entry = state.value?.entry;
     if (entry is! Task) return;
@@ -456,6 +480,11 @@ class EntryController extends _$EntryController {
     }
   }
 
+  /// (Re)builds the Quill editor [controller] from the best available source:
+  /// an unsaved draft from the editor-state service, else the saved
+  /// `entryText.quill`, else markdown converted to a Quill delta. Disposes the
+  /// previous controller and wires a change listener that saves temp drafts and
+  /// marks the entry dirty on every edit.
   void setController() {
     final entry = state.value?.entry;
 
@@ -525,6 +554,9 @@ class EntryController extends _$EntryController {
     await ref.read(appClipboardProvider).writePlainText(md);
   }
 
+  /// Persists a reordered checklist list for a task, dropping any ids that no
+  /// longer resolve to a non-deleted entry so stale references are pruned on
+  /// save.
   Future<void> updateChecklistOrder(List<String> checklistIds) async {
     final task = state.value?.entry;
 

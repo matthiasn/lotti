@@ -5,6 +5,8 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Showcase card displaying the AI-generated task summary on a dark accented
+/// surface, with a title row and a "read more" pill above the summary text.
 class AiSummaryCard extends StatelessWidget {
   const AiSummaryCard({required this.summary, super.key});
 
@@ -72,6 +74,8 @@ class AiSummaryCard extends StatelessWidget {
   }
 }
 
+/// Showcase card rendering the task description text under a "Description"
+/// header with collapse and overflow-menu icons in the trailing slot.
 class DescriptionCard extends StatelessWidget {
   const DescriptionCard({required this.description, super.key});
 
@@ -106,6 +110,8 @@ class DescriptionCard extends StatelessWidget {
   }
 }
 
+/// Showcase card listing the record's time-tracker entries, with the total
+/// tracked duration shown in the header. Entries are separated by dividers.
 class TimeTrackerCard extends StatelessWidget {
   const TimeTrackerCard({required this.record, super.key});
 
@@ -234,6 +240,9 @@ class _TimeEntryTile extends StatelessWidget {
   }
 }
 
+/// Showcase card listing the record's checklist items with checkbox glyphs,
+/// a completed/total count in the header, open/all filter pills, and an
+/// "add item" affordance at the bottom.
 class ChecklistCard extends StatelessWidget {
   const ChecklistCard({required this.record, super.key});
 
@@ -341,6 +350,9 @@ class ChecklistCard extends StatelessWidget {
   }
 }
 
+/// Showcase card listing the task's audio recordings — each tile shows title,
+/// duration, a play button, waveform, and transcript preview — with the
+/// recording count in the header. Entries are separated by dividers.
 class AudioCard extends StatelessWidget {
   const AudioCard({required this.entries, super.key});
 

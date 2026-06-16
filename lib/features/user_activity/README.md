@@ -71,6 +71,7 @@ stateDiagram-v2
 
 Real behavior from the implementation:
 
+- the idle threshold defaults to 1 second (`idleThreshold`)
 - the gate computes its initial state from `lastActivity`
 - each activity event flips `canProcess` to `false`
 - each activity event resets the idle timer

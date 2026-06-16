@@ -14,18 +14,27 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/measurable_utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
-// Record types for multi-param providers
+// Record types keying the measurable provider families below. Each provider
+// is parameterised by the record so distinct (data type / range / aggregation)
+// combinations get independent, separately cached family members.
+
+/// Keys [aggregationTypeControllerProvider]: the measurable plus the optional
+/// dashboard-level aggregation override.
 typedef AggregationTypeParams = ({
   String measurableDataTypeId,
   AggregationType? dashboardDefinedAggregationType,
 });
 
+/// Keys [measurableChartDataControllerProvider]: the measurable and the date
+/// window to load.
 typedef MeasurableChartDataParams = ({
   String measurableDataTypeId,
   DateTime rangeStart,
   DateTime rangeEnd,
 });
 
+/// Keys [measurableObservationsControllerProvider]: the measurable, the date
+/// window, and the optional dashboard-level aggregation override.
 typedef MeasurableObservationsParams = ({
   String measurableDataTypeId,
   DateTime rangeStart,
@@ -33,12 +42,16 @@ typedef MeasurableObservationsParams = ({
   AggregationType? dashboardDefinedAggregationType,
 });
 
-// MeasurableDataTypeController - single param
+/// Resolves the [MeasurableDataType] definition for an id, preferring the
+/// in-memory [EntitiesCacheService] and falling back to the database. Cached
+/// for `dashboardCacheDuration`.
 final measurableDataTypeControllerProvider = AsyncNotifierProvider.autoDispose
     .family<MeasurableDataTypeController, MeasurableDataType?, String>(
       MeasurableDataTypeController.new,
     );
 
+/// Loads one measurable's definition (cache-first, DB fallback). See
+/// [measurableDataTypeControllerProvider].
 class MeasurableDataTypeController extends AsyncNotifier<MeasurableDataType?> {
   MeasurableDataTypeController(this._id);
 
@@ -59,12 +72,16 @@ class MeasurableDataTypeController extends AsyncNotifier<MeasurableDataType?> {
   }
 }
 
-// AggregationTypeController - two params
+/// Resolves the effective [AggregationType] for a measurable chart. See
+/// [AggregationTypeController] for the precedence rule.
 final aggregationTypeControllerProvider = AsyncNotifierProvider.autoDispose
     .family<AggregationTypeController, AggregationType, AggregationTypeParams>(
       AggregationTypeController.new,
     );
 
+/// Computes the aggregation a measurable chart should use, with precedence:
+/// the dashboard's explicit override → the measurable type's own default →
+/// `AggregationType.dailySum`. Rebuilds if the measurable definition changes.
 class AggregationTypeController extends AsyncNotifier<AggregationType> {
   AggregationTypeController(this._params);
 
@@ -89,7 +106,8 @@ class AggregationTypeController extends AsyncNotifier<AggregationType> {
   }
 }
 
-// MeasurableChartDataController - three params
+/// Loads the raw measurement entities for one measurable within a date range
+/// and keeps them live. See [MeasurableChartDataController].
 final measurableChartDataControllerProvider = AsyncNotifierProvider.autoDispose
     .family<
       MeasurableChartDataController,
@@ -99,6 +117,10 @@ final measurableChartDataControllerProvider = AsyncNotifierProvider.autoDispose
       MeasurableChartDataController.new,
     );
 
+/// Fetches the unaggregated measurement entities for one measurable in a date
+/// window. Caches for `dashboardCacheDuration` and re-fetches when an
+/// [UpdateNotifications] event names this measurable id (only pushing new state
+/// when still mounted and the rows actually changed).
 class MeasurableChartDataController extends AsyncNotifier<List<JournalEntity>> {
   MeasurableChartDataController(this._params);
 
@@ -142,7 +164,8 @@ class MeasurableChartDataController extends AsyncNotifier<List<JournalEntity>> {
   }
 }
 
-// MeasurableObservationsController - four params
+/// Chart-ready observations for one measurable, the source the measurable chart
+/// widget renders. See [MeasurableObservationsController].
 final measurableObservationsControllerProvider = AsyncNotifierProvider
     .autoDispose
     .family<
@@ -153,6 +176,18 @@ final measurableObservationsControllerProvider = AsyncNotifierProvider
       MeasurableObservationsController.new,
     );
 
+/// Produces the chart points for a measurable: watches
+/// [measurableChartDataControllerProvider] for raw measurements and
+/// [aggregationTypeControllerProvider] for the effective aggregation, then
+/// applies the matching reducer (none / dailySum / dailyMax / dailyAvg /
+/// hourlySum).
+///
+/// Returns an empty list when there are no measurements in range, so the chart
+/// shows its "No data" state. This is deliberate: the day/hour-bucketed
+/// reducers prefill a zero bucket for every slot, so a non-empty result is
+/// never empty and the chart would otherwise render a flat run of zero bars. A
+/// genuinely all-zero but non-empty series (e.g. abstinence tracking) still
+/// renders as bars.
 class MeasurableObservationsController
     extends AsyncNotifier<List<Observation>> {
   MeasurableObservationsController(this._params);
@@ -218,13 +253,17 @@ class MeasurableObservationsController
   }
 }
 
-// MeasurableSuggestionsController - single param
+/// Quick-add value suggestions for a measurable. See
+/// [MeasurableSuggestionsController].
 final measurableSuggestionsControllerProvider = AsyncNotifierProvider
     .autoDispose
     .family<MeasurableSuggestionsController, List<num>?, String>(
       MeasurableSuggestionsController.new,
     );
 
+/// Ranks a measurable's most frequently logged values over the last ~90 days
+/// and returns up to five, powering the quick-add chips in the measurement
+/// capture flow.
 class MeasurableSuggestionsController extends AsyncNotifier<List<num>?> {
   MeasurableSuggestionsController(this._measurableDataTypeId);
 

@@ -1,5 +1,10 @@
 import 'dart:core';
 
+/// How a health series is plotted on a dashboard.
+///
+/// [bpChart] and [bmiChart] are special composite renderers (blood pressure's
+/// systolic/diastolic pair, weight-vs-BMI) dispatched by health-type key, not
+/// generic line/bar charts. See the dispatch in `DashboardHealthChart.build`.
 enum HealthChartType {
   lineChart,
   barChart,
@@ -7,6 +12,15 @@ enum HealthChartType {
   bmiChart,
 }
 
+/// How raw per-sample health quantities are reduced before plotting.
+///
+/// - [none]: one observation per sample (with `%`-types scaled ×100).
+/// - [dailySum]: total per calendar day.
+/// - [dailyMax]: highest sample per day (used for cumulative metrics whose
+///   value already resets daily, e.g. step/distance counters).
+/// - [dailyTimeSum]: daily sum then converted minutes→hours (sleep stages).
+///
+/// Consumed by `aggregateByType` in `health_data.dart`.
 enum HealthAggregationType {
   none,
   dailySum,
@@ -14,6 +28,10 @@ enum HealthAggregationType {
   dailyTimeSum,
 }
 
+/// Static presentation rules for one supported health data type: its display
+/// name, chart kind, aggregation, unit, and optional value-threshold colour
+/// map. The key in [healthTypes] is the storage `healthType` string (a
+/// `HealthDataType.*` enum name, or a synthetic key like `BLOOD_PRESSURE`).
 class HealthTypeConfig {
   HealthTypeConfig({
     required this.displayName,
@@ -32,6 +50,15 @@ class HealthTypeConfig {
   final Map<num, String>? colorByValue;
 }
 
+/// Registry of every health type a dashboard can chart, keyed by storage
+/// `healthType` string. Lookups (`healthTypes[chartConfig.healthType]`) drive
+/// chart-type dispatch, axis units, aggregation, and threshold colouring; an
+/// unknown key falls back to a plain line chart with no aggregation.
+///
+/// `colorByValue` (currently only Steps) maps ascending value thresholds to hex
+/// colours; the dashboard bar renderer reads only the *keys* and maps the
+/// reached tier onto the design-system alert palette (top→success,
+/// bottom→error, middle→warning) — the hex values themselves are legacy.
 Map<String, HealthTypeConfig> healthTypes = {
   'HealthDataType.WEIGHT': HealthTypeConfig(
     displayName: 'Weight',

@@ -52,7 +52,7 @@ Two read paths matter here:
 ```text
 lib/features/categories/
 ├── domain/
-│   └── category_icon.dart            # part: category_icon_data.dart, category_icon_names.dart
+│   └── category_icon.dart            # re-exports category_icon_data.dart, category_icon_names.dart
 ├── repository/
 │   └── categories_repository.dart
 ├── state/
@@ -70,13 +70,14 @@ lib/features/categories/
         ├── category_correction_examples.dart
         ├── category_create_modal.dart
         ├── category_field.dart
+        ├── category_icon_chip.dart
         ├── category_icon_compact.dart
         ├── category_icon_display.dart
         ├── category_icon_picker.dart
         ├── category_language_dropdown.dart
         ├── category_name_field.dart
+        ├── category_picker_sheet.dart
         ├── category_selection_icon_button.dart
-        ├── category_selection_modal_content.dart
         ├── category_speech_dictionary.dart
         ├── category_switch_tiles.dart
         └── category_type_card.dart
@@ -109,11 +110,7 @@ The fields with verified runtime consumers are:
 
 - `watchCategories()` and `watchCategory()` rebuild on `categoriesNotification` and `privateToggleNotification`
 - `getCategoryById()` reads from `EntitiesCacheService`, not directly from the database
-- `createCategory()` creates a `CategoryDefinition` with:
-  - `private: false`
-  - `active: true`
-  - `favorite: null`
-  - `isAvailableForDayPlan: null` (not available for day planning until opted in)
+- `createCategory()` creates a `CategoryDefinition` with `private: false` and `active: true`, optionally taking `icon`, `defaultProfileId`, and `defaultTemplateId`. Everything else (including `favorite` and `isAvailableForDayPlan`) is left unset and so defaults to `null` — a new category is not favorited and is not available for day planning until opted in.
 - `deleteCategory()` is a soft delete that sets `deletedAt` and `updatedAt`
 - `getTaskCountsByCategory()` is a batch query used by the list UI
 

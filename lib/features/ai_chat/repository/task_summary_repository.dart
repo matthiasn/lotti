@@ -12,6 +12,9 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'task_summary_repository.g.dart';
 
+/// Provides the [TaskSummaryRepository], wiring in the journal DB and a
+/// [TaskSummaryResolver] backed by the agent database when one is registered
+/// (the resolver prefers agent reports, falling back to legacy summaries).
 @riverpod
 TaskSummaryRepository taskSummaryRepository(Ref ref) {
   return TaskSummaryRepository(
@@ -24,6 +27,8 @@ TaskSummaryRepository taskSummaryRepository(Ref ref) {
   );
 }
 
+/// Resolves AI task summaries for a category and local date range, the data
+/// source behind the `get_task_summaries` chat tool.
 class TaskSummaryRepository {
   TaskSummaryRepository({
     required this.journalDb,
@@ -33,6 +38,16 @@ class TaskSummaryRepository {
   final JournalDb journalDb;
   final TaskSummaryResolver taskSummaryResolver;
 
+  /// Returns task summaries for [categoryId] whose linked work entries fall in
+  /// the requested local date range.
+  ///
+  /// Date strings must be strict `YYYY-MM-DD` (throws [FormatException] on bad
+  /// format, impossible calendar dates, or end-before-start); they are
+  /// interpreted as local start/end-of-day and converted to UTC for querying.
+  /// The pipeline is: work entries in range → tasks that link to them →
+  /// resolved summaries (agent report, then legacy fallback), sorted newest
+  /// first and capped at [TaskSummaryRequest.limit] (clamped to 1..100). Bulk
+  /// queries avoid per-task fan-out.
   Future<List<TaskSummaryResult>> getTaskSummaries({
     required String categoryId,
     required TaskSummaryRequest request,

@@ -1,5 +1,7 @@
 import 'package:lotti/services/domain_logging.dart';
 
+/// Coarse classification of a sync failure, used to pick a user-facing
+/// message and to group errors in diagnostics.
 enum SyncErrorType {
   database,
   network,
@@ -7,6 +9,12 @@ enum SyncErrorType {
   unknown,
 }
 
+/// A sync failure paired with a user-friendly [message] and its [type].
+///
+/// Retains the [originalError]/[stackTrace] for diagnostics while exposing a
+/// localised-intent message via [toString]. Build instances through
+/// [SyncError.fromException], which classifies the error and logs the raw
+/// detail before discarding it from the UI surface.
 class SyncError {
   SyncError({
     required this.type,
@@ -15,6 +23,9 @@ class SyncError {
     this.stackTrace,
   });
 
+  /// Classifies [error] into a [SyncErrorType] (by inspecting its string form),
+  /// logs the full error + [stackTrace] via [loggingService], and returns a
+  /// [SyncError] carrying a user-friendly message for that type.
   factory SyncError.fromException(
     Object error,
     StackTrace? stackTrace,

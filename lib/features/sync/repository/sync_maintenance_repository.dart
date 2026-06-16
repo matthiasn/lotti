@@ -376,6 +376,9 @@ class SyncMaintenanceRepository {
     );
   }
 
+  /// Computes the per-step entity totals for the given [steps] concurrently, so
+  /// the re-sync UI can render "processed / total" before the run starts.
+  /// Returns an empty map for an empty input.
   Future<Map<SyncStep, int>> fetchTotalsForSteps(Set<SyncStep> steps) async {
     if (steps.isEmpty) {
       return const {};

@@ -21,6 +21,13 @@ class SyncSequenceGapMaterializer {
   final SyncSequenceCache _cache;
   final SyncSequenceTracer _tracer;
 
+  /// Inserts `missing`-status sequence-log rows for every counter in
+  /// `[startCounter, endCounter]` that the DB does not already have, so the
+  /// backfill machinery can later request them. Processes the range in
+  /// [SyncTuning.gapMaterializationChunkSize] chunks (querying existing
+  /// counters per chunk) to bound memory on huge jumps, and traces an
+  /// extreme-gap warning past [SyncTuning.extremeGapWarningSize]. Returns the
+  /// number of rows inserted.
   Future<int> materializeLargeGap({
     required String hostId,
     required int startCounter,
@@ -79,6 +86,9 @@ class SyncSequenceGapMaterializer {
     return insertedCount;
   }
 
+  /// Returns the covered clocks excluding the one equal to [current] — the
+  /// "back-coverage" set. A message's own clock is tracked separately, so only
+  /// the older clocks it folds in are marked received from here.
   List<VectorClock> filterCoveredVectorClocks(
     List<VectorClock>? coveredVectorClocks,
     VectorClock current,

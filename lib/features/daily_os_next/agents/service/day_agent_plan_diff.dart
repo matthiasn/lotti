@@ -13,6 +13,11 @@ const _uuid = Uuid();
 // Plan-diff machinery: change parsing, validation, application, and the
 // snapshot/change model types.
 
+/// Validates and parses one model-emitted plan-diff change into a
+/// [PlanDiffChange], enforcing the per-action contract: `moved` needs an
+/// existing `blockId` plus `from` and `to`; `added` needs a fully specified
+/// `to` (start/end/title/categoryId); `dropped` needs an existing `blockId`
+/// and `from`. Throws [DayAgentCaptureException] on any violation.
 PlanDiffChange parsePlanDiffChange({
   required Object? raw,
   required DayPlanEntity plan,
@@ -98,6 +103,9 @@ PlanDiffChange parsePlanDiffChange({
   );
 }
 
+/// Parses an optional `from`/`to` block snapshot off a diff change, validating
+/// that any provided start/end are parseable, in-day, and ordered, and that any
+/// `type` is a known [PlannedBlockType]. Returns `null` when [raw] is absent.
 PlanBlockSnapshot? optionalBlockSnapshot(
   Object? raw,
   String label,
@@ -141,6 +149,8 @@ PlanBlockSnapshot? optionalBlockSnapshot(
   );
 }
 
+/// Throws [DayAgentCaptureException] (tagged with [label]) when [time] falls
+/// outside the local calendar day of [planDate].
 void assertWithinDay(
   DateTime time,
   DateTime planDate,
@@ -155,6 +165,9 @@ void assertWithinDay(
   }
 }
 
+/// Renders a one-line human summary of [change] (e.g.
+/// `Move "Deep work" from 09:00–10:30 to 14:00–15:30`), falling back to the
+/// live block in [blockById] for any field the change omits.
 String formatPlanChangeSummary(
   PlanDiffChange change,
   Map<String, PlannedBlock> blockById,
@@ -320,6 +333,12 @@ void validateApplicablePlanDiffBatch(
   }
 }
 
+/// Applies one validated change [item] to [blocks], returning a new list:
+/// `move_block` patches the matching block in place, `add_block` appends a
+/// fresh block with [addedBlockState], and `drop_block` removes the target.
+/// Expects [validateApplicablePlanDiffBatch] to have run first; the inner
+/// guards exist only to convert an accidental bypass into a clean
+/// [DayAgentCaptureException].
 List<PlannedBlock> applyPlanDiffItem(
   ChangeItem item,
   List<PlannedBlock> blocks, {
@@ -387,6 +406,9 @@ List<PlannedBlock> applyPlanDiffItem(
   return out;
 }
 
+/// The state a newly added block takes when its diff is accepted: `committed`
+/// if the plan is already agreed/committed, otherwise `drafted` — so an
+/// accepted addition inherits the surrounding plan's commitment level.
 PlannedBlockState stateForAcceptedAddedBlock(
   DayPlanStatus planStatus,
 ) {
@@ -409,8 +431,14 @@ PlannedBlockType? _argType(Map<String, dynamic> args) {
   return parseEnumByName(PlannedBlockType.values, raw);
 }
 
+/// The kind of edit a [PlanDiffChange] represents, each mapping to a
+/// `move_block` / `add_block` / `drop_block` tool call.
 enum PlanDiffAction { moved, added, dropped }
 
+/// One parsed entry of a proposed plan diff: a single [action] on a block,
+/// with the model's [reason], the target [blockId] (for moves/drops), and the
+/// `from`/`to` snapshots. [toArgs] flattens it back into the change-item arg
+/// map persisted on the `ChangeSetEntity`.
 class PlanDiffChange {
   const PlanDiffChange({
     required this.action,
@@ -467,6 +495,9 @@ class PlanDiffChange {
   }
 }
 
+/// A partial before/after snapshot of a block inside a [PlanDiffChange]. Every
+/// field is optional: a `move` may carry only the timestamps it changes, while
+/// an `add` populates the full block. Used to compute and render the diff.
 class PlanBlockSnapshot {
   const PlanBlockSnapshot({
     this.start,

@@ -612,6 +612,9 @@ const Set<String> _overviewNotificationTokens = {
   privateToggleNotification,
 };
 
+/// Kept-alive provider for the singleton [ProjectRepository], wired to the
+/// app's database, caches, persistence, and update-notification services from
+/// `getIt`. Every project provider in this feature reads through here.
 @Riverpod(keepAlive: true)
 ProjectRepository projectRepository(Ref ref) {
   return ProjectRepository(

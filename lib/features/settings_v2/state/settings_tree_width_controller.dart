@@ -178,6 +178,10 @@ class SettingsTreeNavWidth extends Notifier<double> {
   }
 }
 
+/// Current width of the desktop tree-nav column, clamped to
+/// `[minSettingsTreeNavWidth, maxSettingsTreeNavWidth]` and persisted
+/// (debounced) under [settingsTreeNavWidthKey]. See
+/// [SettingsTreeNavWidth].
 final settingsTreeNavWidthProvider =
     NotifierProvider<SettingsTreeNavWidth, double>(
       SettingsTreeNavWidth.new,

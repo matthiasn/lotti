@@ -28,6 +28,15 @@ abstract final class TaskPriorityFilterIds {
   static const p3 = 'p3';
 }
 
+/// Derived, immutable state for the task list/detail showcase, combining raw
+/// [data] with the live [searchQuery], [selectedTaskId], and [filterState].
+///
+/// The expensive derivations are computed lazily and memoized: [visibleTasks]
+/// applies the search + status/category/label/priority filters and sorts by
+/// section then the active sort option; [visibleSections] groups those into
+/// section headers; [selectedTask] resolves the selection (falling back to the
+/// first visible task). Producing a new state means constructing a new instance
+/// (via [copyWith]); the `late final` fields recompute on first access.
 class TaskListDetailState {
   TaskListDetailState({
     required this.data,

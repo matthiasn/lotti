@@ -81,6 +81,8 @@ class PendingDecryptionPen {
     });
   }
 
+  /// Cancels the periodic sweep timer and awaits any in-flight sweep so no
+  /// flush lands after shutdown is considered complete.
   Future<void> stop() async {
     _timer?.cancel();
     _timer = null;
@@ -220,6 +222,9 @@ class PendingDecryptionPen {
   }
 }
 
+/// Tally of one pen flush: how many held events decrypted and were [enqueued],
+/// how many were [stillEncrypted] (kept for a later sweep), and how many were
+/// [dropped] (e.g. evicted past the pen's capacity).
 class PenFlushOutcome {
   const PenFlushOutcome({
     required this.enqueued,

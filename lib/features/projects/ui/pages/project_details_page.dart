@@ -18,6 +18,21 @@ import 'package:lotti/widgets/modal/index.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 
+/// Read-first project detail surface rendered in the desktop right pane and as
+/// the mobile `/projects/<id>` route.
+///
+/// Drives [ProjectMobileDetailContent] from the composed
+/// [projectDetailRecordProvider] (health, agent report, linked tasks), using
+/// `skipLoadingOnReload: true` so a background refresh keeps the last rendered
+/// data instead of flashing a spinner. The initial spinner only shows while the
+/// [ProjectDetailController] is loading with no project yet.
+///
+/// Edits here are immediate-save inline pickers — category, target date, and
+/// status each open a sheet/picker, mutate [ProjectDetailController], and call
+/// `saveChanges()` right away (no explicit Save button). When the project has a
+/// project agent it also exposes "refresh report" / "cancel scheduled wake"
+/// actions wired to the project-agent service. Contrast with the form-style
+/// `ProjectDetailPage`.
 class ProjectDetailsPage extends ConsumerWidget {
   const ProjectDetailsPage({
     required this.projectId,

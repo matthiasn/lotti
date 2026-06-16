@@ -36,8 +36,10 @@ part 'category_details_form_sections.dart';
 /// - Basic settings (name, color, icon)
 /// - Options (favorite, private, active, day planning)
 /// - Default language selection
-/// - Allowed AI models/prompts
-/// - Automatic prompt configuration
+/// - Default AI profile and template (`defaultProfileId` / `defaultTemplateId`)
+///
+/// Note: there is no per-category allowed-models/prompts or automatic-prompt
+/// configuration in the current model — see the feature README.
 ///
 /// Both create and edit mode render inside the shared
 /// [SettingsDetailScaffold] (header with back affordance, Cmd/Ctrl+S,

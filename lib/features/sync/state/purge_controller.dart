@@ -10,6 +10,8 @@ final purgeControllerProvider = NotifierProvider<PurgeController, PurgeState>(
   PurgeController.new,
 );
 
+/// UI state for the "purge deleted entries" maintenance action: purge
+/// [progress] (0–1), the [isPurging] flag, and the last [error] on failure.
 class PurgeState {
   const PurgeState({
     this.progress = 0,
@@ -35,6 +37,8 @@ class PurgeState {
   }
 }
 
+/// Drives the permanent removal of soft-deleted journal rows from the local DB,
+/// streaming progress into [PurgeState] for the maintenance UI.
 class PurgeController extends Notifier<PurgeState> {
   PurgeController();
 
@@ -46,6 +50,8 @@ class PurgeController extends Notifier<PurgeState> {
     return const PurgeState();
   }
 
+  /// Purges all soft-deleted rows, updating [PurgeState.progress] as the DB
+  /// reports it and capturing any failure into [PurgeState.error].
   Future<void> purgeDeleted() async {
     state = state.copyWith(isPurging: true, progress: 0, clearError: true);
 

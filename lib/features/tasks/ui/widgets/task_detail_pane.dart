@@ -11,6 +11,9 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dar
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
+/// Desktop task-detail pane: a scrollable [TaskShowcaseDetailContent] with a
+/// pinned desktop action bar overlaid at the bottom. `showLeadingBorder` draws
+/// the divider between the list pane and this detail pane.
 class TaskDetailPane extends StatelessWidget {
   const TaskDetailPane({
     required this.record,
@@ -47,6 +50,10 @@ class TaskDetailPane extends StatelessWidget {
   }
 }
 
+/// The full task-detail body: hero banner, header (title, priority, category,
+/// labels, status), the jump-to-section pills, and the stacked detail cards.
+/// Adapts between a wide two-column layout and a `compact` single-column
+/// mobile layout (with a back header) based on `compact` and available width.
 class TaskShowcaseDetailContent extends StatelessWidget {
   const TaskShowcaseDetailContent({
     required this.record,

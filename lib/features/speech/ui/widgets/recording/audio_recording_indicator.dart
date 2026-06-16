@@ -11,6 +11,7 @@ import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_orb.d
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Fixed layout dimensions for the [AudioRecordingIndicator] chip.
 class AudioRecordingIndicatorConstants {
   const AudioRecordingIndicatorConstants._();
 
@@ -24,6 +25,13 @@ class AudioRecordingIndicatorConstants {
   );
 }
 
+/// Floating chip shown while a recording is in progress but its modal is
+/// closed, surfacing the live [AudioRecordingOrb] and elapsed time.
+///
+/// Renders nothing unless the recorder is actively recording with the modal
+/// hidden. Tapping it reopens [AudioRecordingModal] for the in-flight session,
+/// reusing the linked entry and its category. The whole build is wrapped in a
+/// guard that degrades to an empty widget if audio/MediaKit wiring fails.
 class AudioRecordingIndicator extends ConsumerWidget {
   const AudioRecordingIndicator({super.key});
 

@@ -6,6 +6,11 @@ import 'package:lotti/features/projects/ui/widgets/project_list_shared.dart';
 const _desktopContentMaxWidth = 760.0;
 const _horizontalContentPadding = 16.0;
 
+/// Sliver that renders the grouped project overview as a vertical stack of
+/// [ProjectGroupSection]s, one per category group, with spacing between them.
+///
+/// Each group is width-constrained by [ProjectsOverviewContentWidth], and
+/// [selectedProjectId] highlights the active row in the desktop split view.
 class ProjectsOverviewSliverList extends StatelessWidget {
   const ProjectsOverviewSliverList({
     required this.groups,
@@ -45,6 +50,9 @@ class ProjectsOverviewSliverList extends StatelessWidget {
   }
 }
 
+/// Centers [child] and caps its width on wide (desktop-breakpoint) screens so
+/// the overview content stays readable, while letting it span full width on
+/// narrow ones. Also applies the standard horizontal content padding.
 class ProjectsOverviewContentWidth extends StatelessWidget {
   const ProjectsOverviewContentWidth({
     required this.child,

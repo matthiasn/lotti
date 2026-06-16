@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// The design-system's desktop page header — a fixed-height ([desktopHeight])
+/// top bar on the level-01 background.
+///
+/// Lays out an optional [leading] widget, the [title], and optional
+/// [breadcrumbs] on the left, with a right-aligned cluster of a [primaryAction],
+/// [trailingActions], and a [trailingAvatar]. All spacing/typography resolve
+/// from design tokens.
 class DesignSystemHeader extends StatelessWidget {
   const DesignSystemHeader({
     required this.title,

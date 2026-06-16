@@ -6,6 +6,8 @@ import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/utils/color.dart';
 
+/// Showcase chip rendering a category as a `CategoryTag`, with [colorHex]
+/// parsed into the tag's tint color.
 class TaskShowcaseCategoryChip extends StatelessWidget {
   const TaskShowcaseCategoryChip({
     required this.label,
@@ -29,6 +31,9 @@ class TaskShowcaseCategoryChip extends StatelessWidget {
   }
 }
 
+/// Showcase pill for a task label: a tinted, rounded chip in [color]. When
+/// [outlined] is true the fill is transparent and only the border carries the
+/// color.
 class TaskShowcaseLabelChip extends StatelessWidget {
   const TaskShowcaseLabelChip({
     required this.label,
@@ -66,6 +71,8 @@ class TaskShowcaseLabelChip extends StatelessWidget {
   }
 }
 
+/// Showcase metadata chip: a bordered surface pill pairing [icon] with [label]
+/// in muted text (e.g. due date, estimate).
 class TaskShowcaseMetaChip extends StatelessWidget {
   const TaskShowcaseMetaChip({
     required this.icon,
@@ -111,6 +118,7 @@ class TaskShowcaseMetaChip extends StatelessWidget {
   }
 }
 
+/// Renders the SVG priority glyph for [priority], sized to [size].
 class TaskShowcasePriorityGlyph extends StatelessWidget {
   const TaskShowcasePriorityGlyph({
     required this.priority,
@@ -138,6 +146,8 @@ class TaskShowcasePriorityGlyph extends StatelessWidget {
   }
 }
 
+/// Renders the SVG status glyph for [status], tinted from the palette to match
+/// the status (e.g. info for in-progress, error for blocked), sized to [size].
 class TaskShowcaseStatusGlyph extends StatelessWidget {
   const TaskShowcaseStatusGlyph({
     required this.status,
@@ -176,6 +186,9 @@ class TaskShowcaseStatusGlyph extends StatelessWidget {
   }
 }
 
+/// Status glyph followed by the localized status name. When [expanded] it
+/// renders as a tappable-looking filled pill with a trailing unfold chevron;
+/// otherwise it is a compact glyph-plus-caption row.
 class TaskShowcaseStatusLabel extends StatelessWidget {
   const TaskShowcaseStatusLabel({
     required this.status,
@@ -233,6 +246,9 @@ class TaskShowcaseStatusLabel extends StatelessWidget {
   }
 }
 
+/// Rounded section/segment pill pairing [icon] with [label]. When [active] it
+/// uses the accent fill with dark foreground; otherwise a subtle fill with
+/// muted text.
 class TaskShowcaseSectionPill extends StatelessWidget {
   const TaskShowcaseSectionPill({
     required this.icon,

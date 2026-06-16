@@ -89,8 +89,8 @@ class DraftingState {
 /// and `draftDayPlan` in parallel. Learning cards are awaited so the
 /// right column has content from the first frame; the draft is
 /// awaited lazily and flips [DraftingPhase.ready] when it arrives.
-/// The previous "scripted reasoning lines streaming on a 900 ms
-/// cadence" theatre is gone — the wait is now an honest skeleton.
+/// The controller only tracks phase — it drives no scripted "reasoning
+/// lines" cadence; the wait screen's presentation is owned by the UI.
 class DraftingController extends AsyncNotifier<DraftingState> {
   DraftingController(this.params);
 

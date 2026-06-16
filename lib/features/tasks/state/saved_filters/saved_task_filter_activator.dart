@@ -16,6 +16,9 @@ class SavedTaskFilterActivator {
 
   final JournalPageController _controller;
 
+  /// Pushes every persisted clause of [saved] onto the tasks page in one
+  /// batch update, refreshing the list once. The current search query is left
+  /// untouched.
   Future<void> activate(SavedTaskFilter saved) {
     final f = saved.filter;
     return _controller.applyBatchFilterUpdate(

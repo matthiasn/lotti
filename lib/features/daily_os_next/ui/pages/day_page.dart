@@ -369,6 +369,9 @@ class _DayFooter extends StatelessWidget {
   }
 }
 
+/// The day footer's action row for a committed plan: refine / commit /
+/// shutdown buttons. [expand] switches between the wide side-by-side layout
+/// and a stacked layout on narrow widths.
 class _DayFooterActions extends StatelessWidget {
   const _DayFooterActions({
     required this.draft,

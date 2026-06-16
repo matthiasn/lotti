@@ -18,6 +18,16 @@ import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
+/// One row in the habits list: the habit's name plus a horizontal strip of
+/// daily completion squares for `[rangeStart, rangeEnd]`.
+///
+/// Watches [HabitCompletionController] keyed by `(habitId, rangeStart,
+/// rangeEnd)` and colours each day's square via `habitCompletionColor`. The
+/// last loaded results are retained (stale-while-revalidate) so changing the
+/// time span doesn't blink the card empty while the new range-keyed provider
+/// loads. Tapping a square or the trailing check button opens the completion
+/// dialog (`HabitDialog`) for that day; the card dims and strikes through its
+/// title once today's entry is a success or skip.
 class HabitCompletionCard extends ConsumerStatefulWidget {
   const HabitCompletionCard({
     required this.habitId,
@@ -62,6 +72,13 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
     }
   }
 
+  /// Opens the completion dialog for this habit in a bottom sheet.
+  ///
+  /// [dateString] back-dates the completion to a tapped history square; when
+  /// omitted it defaults to today. The habit's linked dashboard is only
+  /// embedded (and the sheet given a solid background) when
+  /// [HabitCompletionCard.showLinkedDashboard] is set and the habit actually
+  /// has a `dashboardId`; otherwise the form floats on a transparent sheet.
   void onTapAdd({String? dateString}) {
     final height = MediaQuery.of(context).size.height;
     final maxHeight = height * 0.8;

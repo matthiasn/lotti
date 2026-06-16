@@ -11,6 +11,16 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/app_bar/journal_sliver_appbar.dart';
 
+/// The infinitely-scrolling journal feed (the non-tasks list, `showTasks ==
+/// false`).
+///
+/// Drives [journalPageControllerProvider] and overrides
+/// [journalPageScopeProvider] to `false` for the subtree, so descendant
+/// widgets (app bar, filters) resolve the journal-scoped controller without
+/// threading the flag manually. The body wires the controller's paging
+/// controller into `infinite_scroll_pagination`, rendering each page item
+/// through [CardWrapperWidget] (optionally with a vector-search distance
+/// badge), and exposes pull-to-refresh via `refreshQuery`.
 class InfiniteJournalPage extends ConsumerWidget {
   const InfiniteJournalPage({super.key});
 

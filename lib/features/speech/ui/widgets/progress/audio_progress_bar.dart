@@ -18,6 +18,10 @@ String formatAudioDuration(Duration duration) {
   return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
 }
 
+/// The resolved palette for the audio progress/waveform UI: the unfilled
+/// [track], the [buffered] overlay, the filled [progress], the scrub [thumb],
+/// and an optional [glow] behind the thumb. Shared by both the bar and the
+/// waveform scrubber so they stay visually consistent.
 class AudioProgressColors {
   const AudioProgressColors({
     required this.track,
@@ -27,13 +31,29 @@ class AudioProgressColors {
     required this.glow,
   });
 
+  /// Color of the unplayed remainder of the track.
   final Color track;
+
+  /// Color of the buffered-but-unplayed overlay.
   final Color buffered;
+
+  /// Color of the played/filled portion.
   final Color progress;
+
+  /// Color of the draggable scrub thumb.
   final Color thumb;
+
+  /// Soft glow drawn behind the thumb (transparent in dark mode).
   final Color glow;
 }
 
+/// Builds the [AudioProgressColors] palette from the current [theme],
+/// preferring design-system [DsTokens] (interactive/decorative colors) and
+/// falling back to `colorScheme` when tokens are absent.
+///
+/// The thumb is nudged for contrast — lightened in dark mode, darkened for
+/// very-bright primaries (e.g. yellow) — and the glow is suppressed in dark
+/// mode where it would muddy the track.
 AudioProgressColors resolveAudioProgressColors(
   ThemeData theme, {
   DsTokens? tokens,
@@ -99,12 +119,25 @@ class AudioProgressBar extends StatefulWidget {
     super.key,
   });
 
+  /// Current playback position, used to size the filled portion.
   final Duration progress;
+
+  /// Buffered position, used to size the buffered overlay.
   final Duration buffered;
+
+  /// Total track length; a zero value disables seeking and ratios.
   final Duration total;
+
+  /// Called with the seek target on tap/drag (throttled during drags).
   final ValueChanged<Duration> onSeek;
+
+  /// Whether tap/drag scrubbing is enabled.
   final bool enabled;
+
+  /// Compact layout flag for a thinner track and smaller thumb.
   final bool compact;
+
+  /// Accessibility label for the timeline; defaults to "Audio timeline".
   final String? semanticLabel;
 
   @override

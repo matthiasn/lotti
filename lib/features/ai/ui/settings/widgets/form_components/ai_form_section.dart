@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// A styled form section component that matches the AI Settings design language
+/// A styled form section component that matches the AI Settings design
+/// language.
+///
+/// Renders a gradient header (optional leading [icon] tile, [title], and
+/// optional [description]) above a left-padded column of [children]. Purely
+/// presentational — it groups related form fields visually and carries no
+/// state or validation of its own.
 class AiFormSection extends StatelessWidget {
   const AiFormSection({
     required this.title,

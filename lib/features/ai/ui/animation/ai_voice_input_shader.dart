@@ -4,6 +4,13 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/ui/animation/ai_state_shader_animation.dart';
 
+/// GLSL fragment-shader visualization of live microphone input.
+///
+/// Reacts to the current voice level [dbfs] (clamped at [dbfsFloor]),
+/// modulating line density and intensity so the visual swells with speech.
+/// Falls back to a CPU-painted approximation ([AiVoiceInputFallbackPainter])
+/// when the shader can't load. [timeOverride] / [programLoader] support
+/// deterministic golden tests.
 class AiVoiceInputShader extends StatefulWidget {
   const AiVoiceInputShader({
     required this.dbfs,
@@ -152,6 +159,8 @@ class _AiVoiceInputShaderState extends State<AiVoiceInputShader>
   }
 }
 
+/// Drives the loaded fragment [program] for [AiVoiceInputShader] — maps the
+/// voice level and animation params to shader uniforms and paints them.
 class AiVoiceInputShaderPainter extends CustomPainter {
   AiVoiceInputShaderPainter({
     required this.program,
@@ -219,6 +228,8 @@ class AiVoiceInputShaderPainter extends CustomPainter {
   }
 }
 
+/// CPU-painted approximation of the voice visualization, used when the GLSL
+/// shader is unavailable (load failure or unsupported platform).
 @visibleForTesting
 class AiVoiceInputFallbackPainter extends CustomPainter {
   AiVoiceInputFallbackPainter({

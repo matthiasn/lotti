@@ -9,6 +9,14 @@ enum DesignSystemSearchSize {
   medium,
 }
 
+/// The design-system's search field — a token-styled input with a leading
+/// search glyph and a clear affordance.
+///
+/// Sized by [DesignSystemSearchSize] (small/medium). Drives an external
+/// [controller] (or seeds an internal one from [initialText], not both) and an
+/// optional [focusNode]. Reports edits via [onChanged]/[onSubmitted], the search
+/// glyph tap via [onSearchPressed], and the clear-button tap via [onClear].
+/// [enabled] toggles interactivity; [semanticsLabel] labels the field.
 class DesignSystemSearch extends StatefulWidget {
   const DesignSystemSearch({
     required this.hintText,

@@ -3,6 +3,10 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/settings/ui/pages/measurables/measurable_details_page.dart';
 import 'package:lotti/utils/file_utils.dart';
 
+/// Entry point for creating a measurable data type.
+///
+/// Seeds a blank [MeasurableDataType] (fresh uuid, empty name/unit) and
+/// opens [MeasurableDetailsPage] in create mode.
 class CreateMeasurablePage extends StatelessWidget {
   CreateMeasurablePage({super.key});
 

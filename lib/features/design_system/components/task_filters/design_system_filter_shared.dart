@@ -28,6 +28,13 @@ String stripTrailingColon(String value) {
       : value;
 }
 
+/// The resolved color set for the task-filter sheet and its selection modals.
+///
+/// Bundles every surface/text/pill/accent/priority color the filter UI needs in
+/// one place. Build it from the active design tokens via
+/// [DesignSystemFilterPalette.fromTokens], which derives a light or dark variant
+/// from the current background luminance (mixing in a few sheet-specific values
+/// that have no exported token yet).
 @immutable
 class DesignSystemFilterPalette {
   const DesignSystemFilterPalette({
@@ -150,6 +157,12 @@ class DesignSystemFilterPalette {
   final Color glassFooterOverlayEnd;
 }
 
+/// A pill-shaped action button used inside the task-filter sheet footer (e.g.
+/// "Clear all" / "Apply").
+///
+/// Styled from a [DesignSystemFilterPalette]; [highlighted] switches it to the
+/// accent fill, an optional [counter] shows an applied-filter badge, and taps
+/// fire [onTap].
 class DesignSystemFilterActionButton extends StatelessWidget {
   const DesignSystemFilterActionButton({
     required this.label,

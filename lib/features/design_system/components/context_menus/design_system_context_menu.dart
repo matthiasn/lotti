@@ -10,6 +10,10 @@ const _kShadowOffsetY = 2.0;
 @visibleForTesting
 const kSmallItemHeight = 36.0;
 
+/// One row in a [DesignSystemContextMenu].
+///
+/// Carries the [label], an optional leading [icon], a tap [onTap] callback, and
+/// an [isDestructive] flag that renders the row in the danger tone.
 class DesignSystemContextMenuItem {
   const DesignSystemContextMenuItem({
     required this.label,
@@ -29,6 +33,12 @@ enum DesignSystemContextMenuSize {
   medium,
 }
 
+/// The design-system's context/popover menu — a token-styled card listing
+/// tappable [DesignSystemContextMenuItem]s.
+///
+/// Sized by [DesignSystemContextMenuSize] (small/medium row height) and [width]
+/// (default 320px); once items exceed the visible cap the body scrolls within a
+/// bounded height. [semanticsLabel] labels the menu container.
 class DesignSystemContextMenu extends StatelessWidget {
   const DesignSystemContextMenu({
     required this.items,

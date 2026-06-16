@@ -15,6 +15,21 @@ import 'package:record/record.dart' as record;
 
 export 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_state.dart';
 
+/// Drives the chat-input voice recorder across both the batch
+/// (record-to-file then transcribe) and realtime (streaming WebSocket) paths,
+/// exposing a single [ChatRecorderState] to the UI.
+///
+/// Race model: every recording session captures a monotonically increasing
+/// `_operationId` (see [start]/[startRealtime]). Async callbacks (amplitude
+/// ticks, transcription deltas, the safety timer) only mutate state while their
+/// captured id still equals `_operationId`. [cancel] bumps the id to orphan any
+/// in-flight work, so a stale callback from an aborted session can never write
+/// over the next one. Every state mutation also checks `ref.mounted` because
+/// the provider is `autoDispose`.
+///
+/// Constructor parameters are injection seams for tests (recorder factory,
+/// clock, temp-dir provider, transcription services); production reads the real
+/// services from Riverpod in [build].
 class ChatRecorderController extends Notifier<ChatRecorderState> {
   ChatRecorderController({
     record.AudioRecorder Function()? recorderFactory,
@@ -122,6 +137,12 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   static const int _cleanupTimeoutSeconds = 2;
   static const int _fileDeleteTimeoutSeconds = 2;
 
+  /// Begins a batch recording: checks mic permission, records to a temp `.m4a`
+  /// file, streams throttled amplitude into [ChatRecorderState.amplitudeHistory],
+  /// and arms a [ChatRecorderConfig.maxSeconds] safety timer that auto-calls
+  /// [stopAndTranscribe]. No-op unless idle; sets a `concurrentOperation` error
+  /// if a start is already in flight. On any failure the partial recording is
+  /// cleaned up.
   Future<void> start() async {
     if (!ref.mounted) return;
     if (_isStarting) {
@@ -238,6 +259,11 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     }
   }
 
+  /// Stops the batch recording and transcribes the captured file, streaming
+  /// progress into [ChatRecorderState.partialTranscript] and landing the final
+  /// text in [ChatRecorderState.transcript]. Always cleans up the recorder and
+  /// temp file via `_cleanupInternal`, even on failure. No-op if no recording
+  /// is active.
   Future<void> stopAndTranscribe() async {
     if (!ref.mounted) return;
     if (_recorder == null) return;
@@ -362,11 +388,6 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     }
   }
 
-  /// Starts a real-time transcription session using the Mistral WebSocket API.
-  ///
-  /// The recorder streams PCM audio to the service, which forwards it to the
-  /// WebSocket. Transcription deltas update `partialTranscript` live.
-
   void _onAppPaused() {
     if (state.status == ChatRecorderStatus.realtimeRecording) {
       unawaited(stopRealtime());
@@ -410,7 +431,8 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     return buffer.toString();
   }
 
-  // Normalize dBFS history to 0.05..1.0 range for UI
+  /// Maps the raw dBFS [ChatRecorderState.amplitudeHistory] to the 0.05..1.0
+  /// bar heights the waveform widget expects. See `chat_amplitude_history.dart`.
   List<double> getNormalizedAmplitudeHistory() =>
       normalizeAmplitudeHistory(state.amplitudeHistory);
 
@@ -493,6 +515,10 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
     // Keep amplitude history so UI shows a bit of trailing bars until next start
   }
 
+  /// Clears a consumed [ChatRecorderState.transcript] / [ChatRecorderState.error]
+  /// while keeping the current status, amplitude history, and mode. Called by
+  /// `InputArea` after it has read a finished transcript so the same value is
+  /// not re-consumed on the next rebuild.
   void clearResult() {
     if (!ref.mounted) return;
     if (state.transcript != null || state.error != null) {
@@ -508,6 +534,13 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   // Realtime (streaming) transcription
   // ---------------------------------------------------------------
 
+  /// Begins a realtime transcription session: streams 16kHz mono PCM to
+  /// [RealtimeTranscriptionService], which forwards it over the WebSocket and
+  /// emits live deltas. Each delta is appended to
+  /// [ChatRecorderState.partialTranscript]; amplitude readings come from the
+  /// service's `amplitudeStream`. Arms the same [ChatRecorderConfig.maxSeconds]
+  /// safety timer (auto-calling [stopRealtime]) and is also stopped
+  /// automatically when the app is backgrounded. No-op unless idle.
   Future<void> startRealtime() async {
     if (!ref.mounted) return;
     if (_isStarting) {
@@ -709,6 +742,9 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
   }
 }
 
+/// App-wide recorder for the chat input mic. `autoDispose` so the recorder,
+/// subscriptions, and temp files are torn down when the chat modal closes (see
+/// the `ref.onDispose` chain in [ChatRecorderController.build]).
 final chatRecorderControllerProvider =
     NotifierProvider.autoDispose<ChatRecorderController, ChatRecorderState>(
       ChatRecorderController.new,

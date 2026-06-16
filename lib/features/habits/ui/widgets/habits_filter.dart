@@ -9,6 +9,14 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 import 'package:pie_chart/pie_chart.dart';
 
+/// Category filter button for the habits tab.
+///
+/// The icon is a ring [PieChart] whose slices are the categories of the
+/// currently-due habits (`state.openNow`), one count per category coloured by
+/// the category's own colour — giving an at-a-glance breakdown of what's open.
+/// When nothing is due it falls back to a "filter off" icon. Tapping opens the
+/// multi-category picker and commits the chosen set via
+/// [HabitsController.setSelectedCategoryIds] (only when the selection changed).
 class HabitsFilter extends ConsumerWidget {
   const HabitsFilter({super.key});
 

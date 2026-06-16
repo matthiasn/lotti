@@ -97,10 +97,20 @@ class PendingCorrection {
 
   /// Unique ID for this pending correction instance.
   final int id;
+
+  /// Normalized original title before the user's edit.
   final String before;
+
+  /// Normalized title after the user's edit.
   final String after;
+
+  /// ID of the category the corrected checklist item belongs to.
   final String categoryId;
+
+  /// Display name of [categoryId], shown in the undo snackbar.
   final String categoryName;
+
+  /// Wall-clock time the correction was captured; anchors [remainingTime].
   final DateTime createdAt;
 
   /// Returns the remaining time until the correction is saved.

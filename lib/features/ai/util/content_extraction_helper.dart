@@ -2,7 +2,13 @@ import 'package:openai_dart/openai_dart.dart';
 
 /// Helper utilities for extracting text content from OpenAI message types
 class ContentExtractionHelper {
-  /// Extracts text from ChatCompletionUserMessageContent
+  /// Flattens a user message's content into a plain string.
+  ///
+  /// Handles both shapes the openai_dart union can take: a bare string is
+  /// returned as-is, while a list of content parts has its `text` parts
+  /// concatenated (empty/whitespace-only parts are dropped, but surviving
+  /// parts keep their original, untrimmed text). Falls back to `toString()`
+  /// for any other value.
   static String extractTextFromUserContent(
     ChatCompletionUserMessageContent content,
   ) {

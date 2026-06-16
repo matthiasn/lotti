@@ -5,6 +5,10 @@ import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart'
 import 'package:lotti/features/dashboards/ui/widgets/dashboards_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Sliver list of dashboards (filtered by the active category selection and
+/// sorted by name via [filteredSortedDashboardsProvider]), rendered as
+/// [DashboardCard] rows inside one rounded, bordered card. Collapses to nothing
+/// when the filtered list is empty.
 class DashboardsList extends ConsumerWidget {
   const DashboardsList({super.key});
 

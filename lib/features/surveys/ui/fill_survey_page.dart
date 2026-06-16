@@ -5,6 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:research_package/research_package.dart';
 
+/// Hosts a `research_package` `RPUITask` inside a constrained modal box.
+///
+/// On submit it invokes [resultCallback] (scoring + persistence). On cancel it
+/// only logs the partial result via `DevLogger` — cancelled surveys are never
+/// persisted, so only submitted surveys become journal data. Adapted from
+/// research.package's `linear_survey_page` example.
 class SurveyWidget extends StatelessWidget {
   const SurveyWidget(this.task, this.resultCallback, {super.key});
 

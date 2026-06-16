@@ -24,6 +24,16 @@ import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/dev_logger.dart';
 
+/// Full-screen detail view for a single task identified by [taskId].
+///
+/// Renders a [CustomScrollView] with a sliver app bar, the [TaskForm]
+/// (header, AI summary, linked tasks, checklists), and the task's linked
+/// entries below. A sticky [TaskActionBar] sits in the `bottomNavigationBar`
+/// slot; `extendBody` lets its glass blur read the scrolling body and a
+/// trailing [SliverPadding] reserves the bar's height so the last entry can
+/// scroll clear of it. Listens to the task focus controller to auto-scroll
+/// to a target entry or the AI suggestions, and accepts dropped media via
+/// [DropTarget] to link and (optionally) analyze it.
 class TaskDetailsPage extends ConsumerStatefulWidget {
   const TaskDetailsPage({
     required this.taskId,

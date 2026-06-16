@@ -8,6 +8,11 @@ export 'package:lotti/features/design_system/components/calendar_pickers/design_
 export 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_day_cell.dart';
 export 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_month_rail.dart';
 
+/// Token-derived sizing for the design-system calendar picker (rail width,
+/// control height, rail-button and date-card dimensions).
+///
+/// Build it once per layout via [CalendarPickerGeometry.fromTokens] so the
+/// rail, header, and date cards stay dimensionally consistent.
 @immutable
 class CalendarPickerGeometry {
   const CalendarPickerGeometry({
@@ -38,6 +43,12 @@ class CalendarPickerGeometry {
   final double dateCardHeight;
 }
 
+/// The full design-system calendar picker: a year/month rail beside a month
+/// grid with weekday headers and a "today" shortcut.
+///
+/// A purely presentational widget — it lays out the supplied [monthSections]
+/// and [weeks] (each a row of [DesignSystemCalendarDayCellData]) and surfaces
+/// taps through the cells' callbacks rather than owning any selection state.
 class DesignSystemCalendarPicker extends StatelessWidget {
   const DesignSystemCalendarPicker({
     required this.monthSections,

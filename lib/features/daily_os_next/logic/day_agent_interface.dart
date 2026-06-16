@@ -3,9 +3,10 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 /// Surface the UI calls into to interact with the day-level agent.
 ///
 /// One-to-one with the §E tool inventory in
-/// `docs/implementation_plans/2026-05-25_day_agent_layer.md`. Only the
-/// Capture + Reconcile tools are exposed for now; the rest land when
-/// the real `DayAgentWorkflow` ships in a later session.
+/// `docs/implementation_plans/2026-05-25_day_agent_layer.md`. The capture,
+/// reconcile, plan draft/refine, knowledge, and week-context tools are backed
+/// by the real `DayAgentWorkflow` (`RealDayAgent`); the Shutdown surface is
+/// still served by the scripted `MockDayAgent` fallback until its tools ship.
 ///
 /// Implementations are kept side-effect-free where possible. The
 /// canonical "mock" implementation (`MockDayAgent`) returns scripted

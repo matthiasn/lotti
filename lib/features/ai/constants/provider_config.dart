@@ -95,6 +95,7 @@ class ProviderConfig {
   }
 }
 
+/// Connectivity check for a saved provider row.
 extension AiConfigInferenceProviderUsability on AiConfigInferenceProvider {
   /// Whether this provider is usable for inference.
   ///

@@ -3,6 +3,14 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Blurred sticky footer for the What's New modal.
+///
+/// Renders, left to right: a "Skip" button (hidden on the last page), a
+/// "newer" chevron, centered [_IndicatorDots] showing the current position,
+/// an "older" chevron, and a "Done" button (shown only on the last page).
+/// Chevrons fade out at the start/end of the release list; both Skip and
+/// Done invoke [onMarkAllSeen] (which closes the modal and marks releases
+/// as seen), while the chevrons drive in-modal page changes via [onNavigate].
 class NavigationFooter extends StatelessWidget {
   const NavigationFooter({
     required this.totalReleases,
@@ -13,10 +21,21 @@ class NavigationFooter extends StatelessWidget {
     super.key,
   });
 
+  /// Number of release pages, used to size the indicator dots and decide
+  /// when the "older" chevron and "Done" button become visible.
   final int totalReleases;
+
+  /// Zero-based index of the currently visible release (0 == newest).
   final int currentRelease;
+
+  /// Theme colors used for the surface, borders, arrows, and dots.
   final ColorScheme colorScheme;
+
+  /// Called with the target page index when a navigation chevron is tapped.
   final ValueChanged<int> onNavigate;
+
+  /// Called by the Skip/Done buttons to dismiss the modal and mark releases
+  /// as seen.
   final VoidCallback onMarkAllSeen;
 
   @override

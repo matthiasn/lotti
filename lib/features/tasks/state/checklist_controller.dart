@@ -24,6 +24,12 @@ final checklistControllerProvider = AsyncNotifierProvider.autoDispose
       ChecklistController.new,
     );
 
+/// Runtime controller for a single checklist entity (keyed by checklist id).
+///
+/// Loads the checklist, subscribes to it and all linked checklist-item IDs, and
+/// owns the structural mutations: title/order updates, dropping existing or new
+/// items in, moving items across checklists, unlink/relink, and deleting the
+/// checklist (removing its id from the parent task when possible).
 class ChecklistController extends AsyncNotifier<Checklist?> {
   ChecklistController(this.params);
 
@@ -89,6 +95,11 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     }
   }
 
+  /// Soft-deletes the checklist and detaches it from its parent task.
+  ///
+  /// Removing the id from `task.data.checklistIds` is best-effort: a failure is
+  /// logged but does not roll back the delete (see the inline rationale).
+  /// Returns `false` only when the underlying entity delete itself fails.
   Future<bool> delete() async {
     final res = await ref
         .read(journalRepositoryProvider)
@@ -132,12 +143,14 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     return true;
   }
 
+  /// Renames the checklist; a null title is persisted as the empty string.
   Future<void> updateTitle(String? title) => updateChecklist(
     (checklist) => checklist.copyWith(
       data: checklist.data.copyWith(title: title ?? ''),
     ),
   );
 
+  /// Persists a new ordering of the checklist's linked item ids (drag-reorder).
   Future<void> updateItemOrder(List<String> linkedChecklistItems) =>
       updateChecklist(
         (checklist) => checklist.copyWith(
@@ -292,6 +305,11 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     await updateItemOrder(items);
   }
 
+  /// Handles dropping a *new* (not yet persisted) item onto this checklist.
+  ///
+  /// [localData] carries the dragged title/status; the item is created via
+  /// [createChecklistItem] and appended to this checklist's linked items. A
+  /// no-op when the payload is empty or has no title.
   Future<void> dropChecklistNewItem(
     Object? localData, {
     String? categoryId,
@@ -343,6 +361,9 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     },
   );
 
+  /// Removes [checklistItemId] from this checklist's linked items without
+  /// deleting the item entity (it may be moving to another checklist).
+  /// Reversible via [relinkItem].
   Future<void> unlinkItem(String checklistItemId) => updateChecklist(
     (checklist) => checklist.copyWith(
       data: checklist.data.copyWith(
@@ -353,6 +374,9 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     ),
   );
 
+  /// Applies [updateFn] to the current checklist, persists the result, and
+  /// optimistically publishes it as the new state. No-op when the checklist
+  /// has not loaded yet. The single mutation funnel used by the helpers above.
   Future<void> updateChecklist(Checklist Function(Checklist) updateFn) async {
     final current = state.value;
     final data = current?.data;
@@ -368,6 +392,9 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
     }
   }
 
+  /// Creates a new item under this checklist and appends it to the linked
+  /// items list. Returns the created item's id, or `null` when the checklist
+  /// is not loaded or [title] is null.
   Future<String?> createChecklistItem(
     String? title, {
     required String? categoryId,

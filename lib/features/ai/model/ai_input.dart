@@ -3,6 +3,12 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 part 'ai_input.freezed.dart';
 part 'ai_input.g.dart';
 
+/// Distilled, JSON-serializable snapshot of a task injected into AI prompts.
+///
+/// Built from the live task entity and embedded in the prompt as the task
+/// context the model reasons over (checklist items, time logs, due date, etc.).
+/// Durations are pre-formatted strings, not raw values, so the model sees them
+/// verbatim.
 @freezed
 abstract class AiInputTaskObject with _$AiInputTaskObject {
   const factory AiInputTaskObject({
@@ -22,6 +28,11 @@ abstract class AiInputTaskObject with _$AiInputTaskObject {
       _$AiInputTaskObjectFromJson(json);
 }
 
+/// A single checklist item inside an [AiInputTaskObject].
+///
+/// Doubles as the shape the model emits when proposing checklist changes, so
+/// the function handlers can round-trip suggestions back into real checklist
+/// items.
 @freezed
 abstract class AiActionItem with _$AiActionItem {
   const factory AiActionItem({
@@ -39,6 +50,9 @@ abstract class AiActionItem with _$AiActionItem {
       _$AiActionItemFromJson(json);
 }
 
+/// A single journal/log entry attached to a task, as seen by the model inside
+/// an [AiInputTaskObject]. Carries the pre-formatted logged duration plus any
+/// audio transcript so the prompt can reference past activity.
 @freezed
 abstract class AiInputLogEntryObject with _$AiInputLogEntryObject {
   const factory AiInputLogEntryObject({
@@ -54,6 +68,8 @@ abstract class AiInputLogEntryObject with _$AiInputLogEntryObject {
       _$AiInputLogEntryObjectFromJson(json);
 }
 
+/// Wrapper around a list of [AiActionItem]s, used as the structured-output
+/// schema when the model returns a full set of suggested checklist items.
 @freezed
 abstract class AiInputActionItemsList with _$AiInputActionItemsList {
   const factory AiInputActionItemsList({

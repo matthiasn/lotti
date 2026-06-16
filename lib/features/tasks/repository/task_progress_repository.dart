@@ -10,11 +10,25 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'task_progress_repository.g.dart';
 
+/// Keep-alive provider exposing the singleton [TaskProgressRepository].
+///
+/// Kept alive so the per-microtask batching state (pending ids, in-flight
+/// futures) is shared across every `TaskProgressController` instance instead
+/// of being rebuilt per task.
 @Riverpod(keepAlive: true)
 TaskProgressRepository taskProgressRepository(Ref ref) {
   return TaskProgressRepository();
 }
 
+/// Computes a task's recorded time-spent and time-estimate from the DB.
+///
+/// The expensive part is reading estimates and linked time spans, so
+/// [getTaskProgressData] does not query per task: it registers the id, lets
+/// concurrent callers within the same event loop pile up, and flushes them in
+/// a single microtask via two bulk queries (`getTaskEstimatesByIds` /
+/// `getBulkLinkedTimeSpans`). Identical in-flight requests for the same id
+/// share one [Future] (request coalescing). Time-spent is the *union* of all
+/// counting ranges so overlapping entries are not double-counted.
 class TaskProgressRepository {
   final Map<String, Future<(Duration?, Map<String, TimeRange>)?>>
   _inFlightProgressData = {};
@@ -57,6 +71,14 @@ class TaskProgressRepository {
     );
   }
 
+  /// Returns `(estimate, timeRangesByEntityId)` for the task [id], or `null`
+  /// when the task has no estimate row (treated as "not a known task").
+  ///
+  /// Coalesces concurrent requests for the same [id] onto one [Future] and
+  /// defers the actual DB read to the next microtask, where it is bundled with
+  /// every other id requested in the same turn (see
+  /// [_flushPendingTaskProgressBatch]). The returned map keys time ranges by
+  /// the linked entity id; callers union them via [getTaskProgress].
   Future<(Duration?, Map<String, TimeRange>)?> getTaskProgressData({
     required String id,
   }) async {
@@ -89,6 +111,9 @@ class TaskProgressRepository {
     return future;
   }
 
+  /// Folds the per-entity [timeRanges] from [getTaskProgressData] into a
+  /// [TaskProgressState] by taking the union duration of all ranges as the
+  /// recorded progress; a missing [estimate] becomes [Duration.zero].
   TaskProgressState getTaskProgress({
     required Map<String, TimeRange> timeRanges,
     Duration? estimate,

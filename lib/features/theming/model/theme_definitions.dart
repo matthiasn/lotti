@@ -1,7 +1,15 @@
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:flutter/material.dart';
 
-/// Light mode surface overrides - forces white backgrounds instead of grey
+/// Hard-coded light-mode surface colors that replace the grey surfaces a
+/// `FlexScheme` would otherwise derive.
+///
+/// `withOverrides` in `lib/themes/theme_overrides.dart` copies these into the
+/// light `ColorScheme` (and scaffold/canvas/card backgrounds) so the app shows
+/// clean white surfaces regardless of which theme the user selected. The
+/// values form a tonal ramp from pure white ([surface]) to the most elevated
+/// container ([surfaceContainerHighest]); dark mode keeps the scheme-derived
+/// surfaces and ignores these.
 class LightModeSurfaces {
   LightModeSurfaces._();
 
@@ -13,7 +21,13 @@ class LightModeSurfaces {
   static const Color surfaceContainerHighest = Color(0xFFE8E8E8);
 }
 
-/// Available FlexScheme themes for selection.
+/// Maps the user-facing theme name to the underlying `FlexScheme` used to
+/// build its `ThemeData`.
+///
+/// Keys are the display labels shown in the theme picker and the values stored
+/// in settings; `ThemingController._buildTheme` looks the selected name up here
+/// and falls back to [FlexScheme.greyLaw] for an unknown or null name. Adding a
+/// theme is just a new entry here.
 final Map<String, FlexScheme> themes = {
   'Material': FlexScheme.material,
   'Material High Contrast': FlexScheme.materialHc,
@@ -38,12 +52,20 @@ final Map<String, FlexScheme> themes = {
   'Money': FlexScheme.money,
 };
 
-/// All available theme names.
+/// The display names of all selectable themes, in [themes] insertion order.
+///
+/// Used to populate the theme picker.
 List<String> get allThemeNames => themes.keys.toList();
 
-/// Check if a theme name is valid.
+/// Whether `themeName` is a known key in [themes].
+///
+/// `ThemingController.setLightTheme`/`setDarkTheme` gate on this so an unknown
+/// name (e.g. from a stale synced setting) is ignored rather than applied.
 bool isValidThemeName(String? themeName) =>
     themeName != null && themes.containsKey(themeName);
 
-/// Default theme name used when no theme is configured.
+/// Theme name applied when no preference is stored or a stored name is invalid.
+///
+/// Used as the initial state in `ThemingController.build` and as the fallback
+/// when loading or syncing settings.
 const String defaultThemeName = 'Grey Law';

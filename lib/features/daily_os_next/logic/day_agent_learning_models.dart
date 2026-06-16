@@ -12,6 +12,8 @@ class LearningBullet {
   final LearningBulletTone tone;
 }
 
+/// Tone of a [LearningBullet], selecting its accent (neutral, encouraging,
+/// or cautionary) in the learning card.
 enum LearningBulletTone {
   info,
   positive,

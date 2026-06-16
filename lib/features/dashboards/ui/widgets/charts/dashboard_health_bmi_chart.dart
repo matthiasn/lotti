@@ -15,6 +15,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Header for the BMI/weight chart card. Titled "Weight" (the card actually
+/// plots weight, despite the configured BMI type's misleading display name) and
+/// shows the in-range min–max weight as a trailing readout.
 class BmiChartInfoWidget extends ConsumerWidget {
   const BmiChartInfoWidget({
     required this.minInRange,
@@ -48,6 +51,11 @@ class BmiChartInfoWidget extends ConsumerWidget {
   }
 }
 
+/// "Weight vs. Body Mass Index" chart card. Despite the name and the
+/// `BODY_MASS_INDEX` config key, it plots the **weight** series (a tall line
+/// chart), not BMI: it always watches `HealthDataType.WEIGHT` observations and
+/// surfaces the in-range min/max weight in its header. `chartConfig` carries the
+/// item identity but does not change which series is read.
 class DashboardHealthBmiChart extends ConsumerWidget {
   const DashboardHealthBmiChart({
     required this.chartConfig,

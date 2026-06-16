@@ -53,10 +53,10 @@ lib/features/labels/
 
 Important label-adjacent files outside this folder:
 
-- `lib/features/tasks/ui/labels/label_selection_modal_content.dart`
+- `lib/features/tasks/ui/labels/label_ui_utils.dart` (task-side label UI helpers)
 - `lib/features/tasks/ui/header/desktop_task_header_meta.dart`
 - `lib/features/agents/tools/task_label_handler.dart`
-- `lib/features/ai/repository/unified_ai_tool_call_processor.dart` (the `UnifiedAiToolCallProcessor` extension, `part of unified_ai_inference_repository.dart`)
+- `lib/features/ai/repository/unified_ai_inference_repository.dart` (the `assign_task_labels` branch is handled inline inside `processToolCalls`)
 
 ## Runtime Architecture
 
@@ -260,7 +260,7 @@ Assignment UI is reusable and not task-exclusive, even though tasks are the most
 
 The main pieces are:
 
-- `EntryLabelsDisplay` for showing assigned chips on generic entry surfaces
+- `EntryLabelsDisplay` for showing assigned chips on generic entry surfaces; with `showHeader`/`showEditButton` it also renders a "Labels" header and an edit button that opens the selector
 - `LabelSelectionModalUtils.openLabelSelector` opens the unified picker (`EntityPickerSheet`, the same one categories use) as a Wolt sheet, scoped to the entry's category but unioned with already-assigned labels
 - `EntityPickerSheet` (`lib/widgets/picker/`) renders the rows; the apply footer commits via `LabelsRepository.setLabels`
 - `DesktopTaskHeader` in `features/tasks` for the task-specific "Add Label" / assigned-label surface — assigned labels render as filled `DsPill` chips (`DsPillVariant.filled`) with a leading color dot and the same long-press description dialog; the "Add Label" placeholder chip opens the selector when no labels are assigned
@@ -332,16 +332,16 @@ flowchart LR
 There are two practical entry points:
 
 - `TaskLabelHandler` builds label context for agent prompts and can process structured task-tool arguments directly
-- `UnifiedAiInferenceRepository` (specifically its `UnifiedAiToolCallProcessor` part-file extension, via `processToolCalls` → `processToolCallsImpl`) parses tool-call arguments during inference execution and delegates the real decision to `LabelAssignmentProcessor`
+- `UnifiedAiInferenceRepository.processToolCalls` parses tool-call arguments during inference execution; the `assign_task_labels` branch (handled inline, not a separate extension) delegates the real decision to `LabelAssignmentProcessor`
 
 ### Guardrails
 
 The AI path is intentionally add-only and defensive:
 
-- if a task already has 3 or more labels, the task-side handler and processor no-op
+- if a task already has 3 or more labels, the task-side handler and processor no-op (`existingIds.length >= 3`)
 - low-confidence labels are dropped during parsing
-- the parser currently forwards at most 3 candidate IDs, ordered by confidence
-- the processor still dedupes, rejects already-assigned IDs, and applies its own per-call cap as a second guard
+- the parser (`parseLabelCallArgs`) forwards at most the top 3 candidate IDs, ordered by confidence (very_high > high > medium)
+- the processor independently dedupes, rejects already-assigned IDs, and caps the deduped set at `kMaxLabelsPerAssignment` (currently 5) as a second guard — so even a caller that bypasses the parser stays bounded
 - labels must exist, must not be deleted, must be in category scope, and must not be suppressed for that task
 
 The current prompt context builder also includes:

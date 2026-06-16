@@ -6,6 +6,13 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:multi_select_flutter/multi_select_flutter.dart';
 
+/// Dropdown-style "add charts" entry used in the dashboard editor.
+///
+/// Renders a bordered, labeled row that opens a searchable multi-select
+/// modal over [multiSelectItems]; when the user confirms a non-empty
+/// selection, [onConfirm] receives the chosen values so the editor can
+/// append the corresponding chart items. Parameterized over `T` so one
+/// widget serves habits, measurables, health, survey, and workout pickers.
 class ChartMultiSelect<T> extends StatelessWidget {
   const ChartMultiSelect({
     required this.multiSelectItems,

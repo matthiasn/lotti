@@ -62,7 +62,8 @@ At runtime, the sync feature owns:
 | Area | Role |
 | --- | --- |
 | `outbox/` | Persist pending payloads in `sync_db`, merge superseded work, enrich sequence metadata, and drive send retries |
-| `matrix/` | Session management, room discovery/persistence, message sending, read markers, verification, and high-level lifecycle |
+| `matrix/` | Session management, room discovery/persistence, message sending, read markers, verification, and high-level lifecycle. `MatrixPayloadSender` owns the actual wire encoding (gzip, manifest, VC reconcile, size cap); `MatrixMessageSender` delegates to it |
+| `gateway/` | `MatrixSyncGateway` interface + `MatrixSdkGateway` impl wrapping the Matrix SDK `Client` (used by the actor path and session management) |
 | `matrix/pipeline/` | Attachment ingestion + index, metrics aggregation, and the `sync.limited` Phase-0 diagnostic listener |
 | `queue/` | Persistent inbound queue, per-room worker, `onSync` bridge for catch-up, and pending-decryption holding pen |
 | `sequence/` | Record `(hostId, counter)` coverage, detect gaps, and track reserved/burn-pending/burned/missing/requested/backfilled/deleted/unresolvable states |
@@ -71,6 +72,7 @@ At runtime, the sync feature owns:
 | `actor/` | Separate isolate-based sync implementation; present in the repo, but not wired by the default bootstrap path above |
 | `services/sync_node_capability_probe.dart` + `sync_node_profile_broadcaster.dart` | Detect local AI capabilities (macOS → mlxAudio, 300 ms HTTP probe to `127.0.0.1:11434` → ollamaLlm) and publish the local node's profile over Matrix |
 | `repository/sync_node_profile_repository.dart` | Persist this device's self profile + the directory of peer profiles received over sync (both in `SettingsDb`) |
+| `repository/sync_maintenance_repository.dart` | Back the maintenance UI: purge and re-sync operations over local sync state |
 | `services/synced_audio_inference_listener.dart` + `synced_audio_inference_dispatcher.dart` | Subscribe to sync-only `UpdateNotifications.syncUpdateStream` and run MLX transcription + wake nudge for inbound audio whose pinned profile resolves to this device |
 
 ## Message Model
@@ -533,14 +535,14 @@ order is priority first, then `createdAt`, then `id`; user-visible journal
 entities and entry links therefore drain ahead of older normal-priority agent
 or backfill rows while the per-priority order stays stable.
 
-`MatrixMessageSender._sendOutboxBundlePayload` builds the on-the-wire form:
+`MatrixPayloadSender.sendOutboxBundlePayload` builds the on-the-wire form (all wire encoding — gzip, manifest, VC reconcile, size cap — lives in `MatrixPayloadSender`; `MatrixMessageSender` delegates to it):
 
 1. Bulk-load every `SyncJournalEntity` child's `JournalEntity` from
    `JournalDb.journalEntityMapForIds` in a single `WHERE id IN (…)` query —
    the database is the system of record, so the sender never reads
    per-child JSON files from disk.
 2. Reconcile each child envelope's `vectorClock` against the DB version
-   (same logic as the per-row `_sendJournalEntityPayload` reconcile block,
+   (same logic as the per-row `sendJournalEntityPayload` reconcile block,
    just aggregated over the bundle).
 3. Emit a single manifest of records:
    `{version: 1, entries: [{envelope: <SyncMessage>, payload: <JournalEntity?>}]}`.
@@ -586,7 +588,7 @@ The receiver has no outbox rows to re-queue, so a dropped manifest simply
 surfaces its missing children via the per-(host, counter) backfill path.
 
 The post-gzip size cap (`SyncTuning.outboxBundleMaxBytes`, 8 MiB) is a
-**send-side** guard: `MatrixMessageSender._sendOutboxBundlePayload` returns
+**send-side** guard: `MatrixPayloadSender.sendOutboxBundlePayload` returns
 `null` when the gzipped manifest exceeds it, and that null return is what
 triggers `OutboxRepository.markRetryBatch` to re-queue every row for the
 next pass. Outbox rows stay pending until they are acknowledged as sent, so
@@ -725,7 +727,7 @@ by the encoding.
 Receivers decode this header unconditionally. On the send side, gzip
 compression is applied unconditionally to any attachment whose `relativePath`
 ends in `.json` (the only gate is `relativePath.toLowerCase().endsWith('.json')`
-in `MatrixMessageSender`); media files are sent verbatim since they are already
+in `MatrixPayloadSender`); media files are sent verbatim since they are already
 compressed and would not benefit. For a `.json` attachment the uploaded file
 name gains a `.gz` suffix and the event content includes the
 `com.lotti.encoding: gzip` header; for other files bytes are sent verbatim with

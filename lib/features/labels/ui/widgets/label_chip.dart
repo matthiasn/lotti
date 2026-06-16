@@ -3,6 +3,11 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 
+/// Compact, read-only chip for a single [LabelDefinition].
+///
+/// Linear-style: a neutral surface with a small dot tinted by the label color
+/// and the name (ellipsized on overflow). The tooltip and accessibility label
+/// expose the description when present, otherwise the name.
 class LabelChip extends StatelessWidget {
   const LabelChip({
     required this.label,

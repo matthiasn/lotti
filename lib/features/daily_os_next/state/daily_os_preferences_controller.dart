@@ -14,6 +14,9 @@ const dailyOsTimelineGesturesLearnedSettingsKey =
 const dailyOsDayFooterHintRetiredSettingsKey =
     'DAILY_OS_DAY_FOOTER_HINT_RETIRED';
 
+/// User-scoped Daily OS settings, persisted in [SettingsDb]: the greeting
+/// name, the set of category ids excluded from the day flow, and one-shot
+/// coachmark flags. Immutable; mutated through [DailyOsPreferencesController].
 @immutable
 class DailyOsPreferences {
   DailyOsPreferences({
@@ -60,6 +63,11 @@ class DailyOsPreferences {
   }
 }
 
+/// Loads [DailyOsPreferences] from [SettingsDb] on build and writes each
+/// mutation straight back. The `_userNameEdited`/`_categoriesEdited` guards
+/// ensure an in-flight async load never clobbers a value the user has already
+/// changed in this session; coachmark flags need no guard because they only
+/// ever flip false→true.
 class DailyOsPreferencesController extends Notifier<DailyOsPreferences> {
   bool _userNameEdited = false;
   bool _categoriesEdited = false;

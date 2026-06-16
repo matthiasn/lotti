@@ -3,6 +3,10 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Maps the design-system typography/color tokens onto Quill's [DefaultStyles]
+/// so editor and read-only viewers render headings, body text, lists, and
+/// inline/block code consistent with the rest of the app. Shared by the live
+/// editor and both text-viewer widgets.
 DefaultStyles customEditorStyles({
   required ThemeData themeData,
   required DsTokens tokens,

@@ -8,6 +8,12 @@ import 'package:lotti/features/journal/ui/widgets/editor/editor_styles.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/embed_builders.dart';
 
+/// Read-only renderer for an entry's rich text: builds a scrollable Quill
+/// editor in `readOnly` mode (capped at `maxHeight`) from the entry's stored
+/// Quill JSON, falling back to markdown/plain text when no delta is present.
+///
+/// Use `TextViewerWidgetNonScrollable` instead for list cards, where a fixed
+/// height with a fade-out is wanted rather than internal scrolling.
 class TextViewerWidget extends StatefulWidget {
   const TextViewerWidget({
     required this.entryText,

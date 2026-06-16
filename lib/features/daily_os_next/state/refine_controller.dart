@@ -37,6 +37,11 @@ enum RefineProblem {
   proposalFailed,
 }
 
+/// Immutable snapshot the Refine screen renders: the current [phase], the
+/// captured [transcript], the plan being refined ([currentPlan]), the pending
+/// agent-proposed [diff] and the user's per-change [decisions], plus any
+/// non-fatal [problem] to surface. Use the `clear*` flags on [copyWith] to
+/// drop nullable fields rather than carrying stale values forward.
 @immutable
 class RefineState {
   const RefineState({

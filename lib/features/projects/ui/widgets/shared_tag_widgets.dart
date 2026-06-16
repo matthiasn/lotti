@@ -58,6 +58,8 @@ class CategoryTag extends StatelessWidget {
   }
 }
 
+/// Compact meta-tag pill showing a project's health [band] (icon + label) in
+/// the band's accent color, for the detail header's meta-tag row.
 class ProjectHealthBandTag extends StatelessWidget {
   const ProjectHealthBandTag({
     required this.band,

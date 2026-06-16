@@ -23,6 +23,18 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 
+/// Full-screen detail view for a single journal entry, keyed by `itemId`.
+///
+/// Composes the scrollable detail stack: the primary [EntryDetailsWidget],
+/// the entry's outgoing links via [LinkedEntriesWithTimer], incoming links via
+/// [LinkedFromEntriesWidget], and checklist/task back-references. Acts as a
+/// [DropTarget] so dropped media is imported and linked to this entry.
+///
+/// Uses [HighlightScrollMixin] to scroll-to and briefly highlight a target
+/// entry: it listens to [journalFocusControllerProvider] for focus intents
+/// (e.g. navigation from the calendar or a freshly created timer) and resolves
+/// each linked entry's [GlobalKey] through `_getEntryKey`. Scroll offset is
+/// also forwarded to the task app bar controller and the user-activity service.
 class EntryDetailsPage extends ConsumerStatefulWidget {
   const EntryDetailsPage({
     required this.itemId,

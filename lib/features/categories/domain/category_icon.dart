@@ -272,8 +272,20 @@ extension CategoryIconExtension on CategoryIcon {
   /// Human-readable display name for the icon
   String get displayName => categoryIconDisplayNames[this]!;
 
-  /// Returns a suggested icon based on category name
-  /// Returns null if [categoryName] is null, empty, or no match is found
+  /// Best-effort guess of a [CategoryIcon] for a free-text category name,
+  /// used to pre-select an icon when the user creates a category.
+  ///
+  /// Matching runs from most to least precise, returning the first hit:
+  /// 1. exact enum name, then exact display name (case-insensitive);
+  /// 2. word-level match against display-name words — an exact word match, or
+  ///    a prefix match where the shorter word is at least 4 chars and covers
+  ///    at least 60% of the longer (so "Read"/"Reading" matches, "Re" does
+  ///    not);
+  /// 3. a hand-curated keyword table (e.g. "gym"->fitness, "todo"->checklist),
+  ///    matched on whole words via `\b` boundaries so "run" doesn't fire on
+  ///    "prune".
+  ///
+  /// Returns `null` for a null/blank [categoryName] or when nothing matches.
   static CategoryIcon? suggestFromName(String? categoryName) {
     if (categoryName == null || categoryName.trim().isEmpty) {
       return null;

@@ -8,6 +8,16 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_activity_filter_bar.dart';
 
+/// Renders the outgoing linked-entries list for `item` (the entries this
+/// task/entry links to), in the order from [sortedLinkedEntriesProvider].
+///
+/// Above the list sits the [LinkedEntriesActivityFilterBar] (Timer/Audio/
+/// Images pills + sort). Each link is rendered through [_FilteredEntryDetails],
+/// which applies the active pill set and the flagged-only toggle per row, and
+/// each row carries an optional caller-provided [GlobalKey] (for scroll-to),
+/// highlight, and active-timer flags. When `hideTaskEntries` is set the list
+/// collapses entirely if it would contain only tasks (they appear in the
+/// dedicated Linked Tasks section instead).
 class LinkedEntriesWidget extends ConsumerWidget {
   const LinkedEntriesWidget(
     this.item, {

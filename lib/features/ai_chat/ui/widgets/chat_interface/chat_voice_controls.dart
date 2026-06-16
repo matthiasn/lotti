@@ -5,6 +5,8 @@ import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.d
 import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Batch-recording controls shown in `InputArea` while capturing audio: live
+/// waveform plus cancel (discard) and stop (transcribe) buttons. Esc cancels.
 class ChatVoiceControls extends ConsumerWidget {
   const ChatVoiceControls({
     required this.onCancel,

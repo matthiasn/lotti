@@ -148,6 +148,11 @@ class _NotificationBellState extends ConsumerState<NotificationBell> {
   }
 }
 
+/// Small numeric badge overlaid on the bell icon, capped at `9+`.
+///
+/// Rendered only when [NotificationBell] has at least one unseen alert. It is
+/// wrapped in an `IgnorePointer` by the caller so the whole 36x36 icon stays a
+/// single tap target.
 class _UnseenBadge extends StatelessWidget {
   const _UnseenBadge({required this.count});
 
@@ -188,12 +193,20 @@ class _UnseenBadge extends StatelessWidget {
   }
 }
 
+/// Body of the bell popover: a title, then the live inbox list.
+///
+/// Watches [inboxNotificationsProvider] and renders one [_InboxRow] per entry,
+/// falling back to [_InboxEmptyState] when the list is empty or errored and to
+/// a spinner while the first fetch is in flight. Each row is keyed by entry id
+/// so incremental stream updates preserve widget state across reorders.
 class _InboxPanel extends ConsumerWidget {
   const _InboxPanel({
     required this.onDismiss,
     required this.onSelectTask,
   });
 
+  /// Closes the popover. Passed down so a row can dismiss the menu after its
+  /// own action completes.
   final VoidCallback onDismiss;
 
   /// Called when the user taps a row whose `linkedEntityId` is non-null.
@@ -276,6 +289,8 @@ class _InboxPanel extends ConsumerWidget {
   }
 }
 
+/// Centered placeholder shown inside the popover when the inbox has no rows or
+/// the stream errored. [text] carries the appropriate localized message.
 class _InboxEmptyState extends StatelessWidget {
   const _InboxEmptyState({required this.text});
 
@@ -300,6 +315,14 @@ class _InboxEmptyState extends StatelessWidget {
   }
 }
 
+/// A single inbox entry: title, optional body, and a dismiss button.
+///
+/// Tapping a row whose `linkedEntityId` is set opens the linked task (via
+/// [onSelectTask]) and marks the row seen; rows with no link are inert. A tap
+/// on the close icon or a long-press retracts the row — for a
+/// `TaskSuggestionNotification` that retracts every open suggestion for the
+/// task, otherwise just this row. The inbox stream then removes the row, so
+/// the popover stays open for dismissing several in a row.
 class _InboxRow extends StatelessWidget {
   const _InboxRow({
     required this.entity,

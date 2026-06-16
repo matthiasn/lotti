@@ -1,6 +1,11 @@
 import 'dart:math';
 import 'dart:typed_data';
 
+/// Amplitude measurements for one PCM 16-bit audio chunk.
+///
+/// [dbfs] is the RMS level in decibels relative to full scale (0 = loudest,
+/// the floor for silence). [peakSample] / [rmsSample] are in raw int16 units
+/// (0–32767). Used to drive the live mic visualizers and silence detection.
 class Pcm16AmplitudeStats {
   const Pcm16AmplitudeStats({
     required this.dbfs,
@@ -34,6 +39,10 @@ double computeDbfsFromPcm16(Uint8List pcmBytes, {double floorDbfs = -80}) {
 
 /// Measures RMS and peak information from a PCM 16-bit signed little-endian
 /// audio chunk.
+///
+/// Each sample is 2 bytes; a trailing odd byte is ignored. The reported
+/// [Pcm16AmplitudeStats.dbfs] is clamped to `[floorDbfs, 0]`, and empty or
+/// fully-silent input yields [floorDbfs].
 Pcm16AmplitudeStats measurePcm16Amplitude(
   Uint8List pcmBytes, {
   double floorDbfs = -80,

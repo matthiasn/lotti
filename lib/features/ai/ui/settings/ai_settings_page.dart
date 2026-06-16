@@ -89,7 +89,7 @@ class AiSettingsBody extends StatelessWidget {
 /// 4. AiSettingsTabBar — Providers / Models / Profiles with counters
 ///    baked into each label.
 /// 5. Active tab body:
-///    - Zero providers: AiSettingsNoProvidersCard with four compact
+///    - Zero providers: AiSettingsNoProvidersCard with six compact
 ///      provider chips inside a single wrapper card.
 ///    - Providers tab: 2-column responsive grid of AiProviderCard.
 ///    - Models tab: single-column list of AiModelCard.
@@ -322,7 +322,7 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
   }
 
   /// Opens the provider edit page preselected to [type] — used by the
-  /// four quick-add chips inside the empty-state "No providers yet"
+  /// six quick-add chips inside the empty-state "No providers yet"
   /// card. The form's existing save handler still runs the FTUE flow.
   Future<void> _handleQuickAddChip(InferenceProviderType type) async {
     await _navigationService.navigateToCreateProvider(

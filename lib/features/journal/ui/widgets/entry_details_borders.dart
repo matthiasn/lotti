@@ -57,6 +57,13 @@ class _GlowBorderPainter extends CustomPainter {
   }
 }
 
+/// A rounded-rectangle border that pulses (fades 0.4↔1.0) for a fixed number
+/// of loops after `startDelay`, then fades to zero and stops.
+///
+/// Used as the temporary scroll-to highlight around an entry card (in the
+/// entry's category color). Edges are device-pixel-aligned for crisp corners
+/// and the whole thing is wrapped in a [RepaintBoundary]. Contrast with
+/// [TimerBorder], the persistent border for the actively-recording entry.
 class PulsingBorder extends StatefulWidget {
   const PulsingBorder({
     required this.color,
@@ -161,6 +168,10 @@ class _PulsingBorderState extends State<PulsingBorder>
   }
 }
 
+/// A static rounded-rectangle stroke painted around the entry card that is
+/// actively recording a timer. Unlike [PulsingBorder] it does not animate — it
+/// stays drawn (in the error color) for as long as the entry is the running
+/// timer.
 class TimerBorder extends StatelessWidget {
   const TimerBorder({
     required this.color,

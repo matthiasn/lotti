@@ -14,6 +14,17 @@ enum DesignSystemListItemVisualState {
   pressed,
 }
 
+/// The design-system's list row — a token-styled, tappable item with leading/
+/// trailing slots and an optional divider.
+///
+/// Renders a [title] (or custom [titleContent]) over a [subtitle] (or rich
+/// [subtitleSpans], capped by [subtitleMaxLines]), at one of
+/// [DesignSystemListItemSize]. Slots [leading]/[leadingExtra] and [trailing]/
+/// [trailingExtra] flank the content. Tracks hover/pressed/[activated]/
+/// [selected] backgrounds (overridable per state) and reports interaction via
+/// [onTap]/[onHoverChanged]; [forcedState] pins a
+/// [DesignSystemListItemVisualState] for widgetbook/tests. An optional bottom
+/// divider is configurable via [showDivider]/[dividerIndent]/[dividerColor].
 class DesignSystemListItem extends StatefulWidget {
   const DesignSystemListItem({
     this.title,

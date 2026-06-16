@@ -14,6 +14,17 @@ import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_help
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
+/// The scrollable body of the read-first project detail surface (used on
+/// mobile and in the desktop right pane).
+///
+/// Lays out, top to bottom: a header (title + status pill + category/target-date
+/// meta tags that double as edit affordances when their `on*Tap` callbacks are
+/// supplied), the [HealthPanel], the agent [ExpandableReportSection] (with
+/// refresh / cancel-scheduled-wake controls and a live countdown), and the
+/// [ProjectTasksSliverPanel]. The optional `on*Tap` callbacks let the host page
+/// open pickers and trigger immediate saves; with them omitted it renders as a
+/// pure read-only showcase. [currentTime] feeds the report's relative "updated
+/// X ago" label.
 class ProjectMobileDetailContent extends StatefulWidget {
   const ProjectMobileDetailContent({
     required this.record,

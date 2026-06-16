@@ -4,12 +4,18 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'inference_status_controller.g.dart';
 
+/// Coarse lifecycle state of an inference run, surfaced to the UI.
 enum InferenceStatus {
   idle,
   running,
   error,
 }
 
+/// Holds the [InferenceStatus] for a single (id, responseType) pair.
+///
+/// Defaults to [InferenceStatus.idle] and is briefly kept alive after disposal
+/// ([inferenceStateCacheDuration]) so a status set just before teardown isn't
+/// lost. Updated via [setStatus] by the inference runners.
 @riverpod
 class InferenceStatusController extends _$InferenceStatusController {
   @override
@@ -27,6 +33,10 @@ class InferenceStatusController extends _$InferenceStatusController {
   }
 }
 
+/// True when ANY of [responseTypes] is currently running for [id].
+///
+/// Aggregates the per-type [InferenceStatusController]s so a widget can show a
+/// single "AI is working" indicator without subscribing to each type itself.
 @riverpod
 class InferenceRunningController extends _$InferenceRunningController {
   @override

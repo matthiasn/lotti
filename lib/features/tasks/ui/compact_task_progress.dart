@@ -7,6 +7,14 @@ import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 
+/// Compact horizontal progress indicator for the task identified by [taskId].
+///
+/// Watches `taskProgressControllerProvider` and renders a fixed 50px-wide
+/// [LinearProgressIndicator] (logged time over estimate, clamped to 100%),
+/// optionally preceded by `HH:MM / HH:MM` time text per [showTimeText]
+/// (defaulting to desktop-only). The bar and text turn to the error colour
+/// when logged time exceeds the estimate. Renders nothing when there is no
+/// progress state or the estimate is zero.
 class CompactTaskProgress extends ConsumerWidget {
   const CompactTaskProgress({
     required this.taskId,

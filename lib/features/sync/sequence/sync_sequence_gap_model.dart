@@ -4,6 +4,12 @@ import 'package:lotti/database/sync_db.dart';
 
 typedef _GapRange = ({String hostId, int startCounter, int endCounter});
 
+/// Collects detected sequence gaps as compact `(hostId, start..end)` ranges
+/// and exposes them, lazily, as a flat per-counter list.
+///
+/// Storing ranges instead of individual counters keeps memory bounded even for
+/// a pathological jump of millions of counters; [toGapList] returns a lazy view
+/// that expands ranges to `(hostId, counter)` pairs only as they are iterated.
 class GapAccumulator {
   final List<_GapRange> _ranges = [];
   int _count = 0;

@@ -35,101 +35,6 @@ void main() {
     applicableCategoryIds: applicableCategoryIds,
   );
 
-  group('validate', () {
-    test(
-      'validates labels: valid vs invalid and deleted treated as invalid',
-      () async {
-        when(
-          () => mockDb.getLabelDefinitionById('valid'),
-        ).thenAnswer((_) async => makeLabel('valid'));
-        when(
-          () => mockDb.getLabelDefinitionById('deleted'),
-        ).thenAnswer((_) async => makeLabel('deleted', deleted: true));
-        when(
-          () => mockDb.getLabelDefinitionById('missing'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDb.getLabelDefinitionById(''),
-        ).thenAnswer((_) async => null);
-
-        final validator = LabelValidator(db: mockDb);
-        final res = await validator.validate([
-          'valid',
-          'deleted',
-          'missing',
-          '',
-        ]);
-
-        expect(res.valid, equals(['valid']));
-        expect(res.invalid, containsAll(['deleted', 'missing', '']));
-      },
-    );
-
-    test('handles concurrent validation requests reliably', () async {
-      when(() => mockDb.getLabelDefinitionById(any())).thenAnswer((
-        invocation,
-      ) async {
-        final id = invocation.positionalArguments.first as String;
-        return makeLabel(id);
-      });
-
-      final validator = LabelValidator(db: mockDb);
-      final futures = List.generate(
-        8,
-        (i) => validator.validate(['label-$i']),
-      );
-
-      final results = await Future.wait(futures);
-      expect(results.length, 8);
-      for (final r in results) {
-        expect(r.valid.length, 1);
-        expect(r.invalid, isEmpty);
-      }
-    });
-  });
-
-  group('validateForCategory', () {
-    test('validates global vs scoped-to-category correctly', () async {
-      when(
-        () => mockDb.getLabelDefinitionById('global'),
-      ).thenAnswer((_) async => makeLabel('global'));
-      when(
-        () => mockDb.getLabelDefinitionById('scoped'),
-      ).thenAnswer(
-        (_) async => makeLabel('scoped', applicableCategoryIds: ['cat1']),
-      );
-      when(
-        () => mockDb.getLabelDefinitionById('deleted'),
-      ).thenAnswer((_) async => makeLabel('deleted', deleted: true));
-      when(
-        () => mockDb.getLabelDefinitionById('unknown'),
-      ).thenAnswer((_) async => null);
-
-      final validator = LabelValidator(db: mockDb);
-
-      final resCat1 = await validator.validateForCategory([
-        'global',
-        'scoped',
-      ], categoryId: 'cat1');
-      expect(resCat1.valid, ['global', 'scoped']);
-      expect(resCat1.invalid, isEmpty);
-
-      final resCat2 = await validator.validateForCategory([
-        'global',
-        'scoped',
-      ], categoryId: 'cat2');
-      expect(resCat2.valid, ['global']);
-      expect(resCat2.invalid, ['scoped']);
-
-      final resDeleted = await validator.validateForCategory([
-        'deleted',
-        'unknown',
-      ], categoryId: 'cat1');
-      expect(resDeleted.valid, isEmpty);
-      expect(resDeleted.invalid, ['deleted', 'unknown']);
-    });
-  });
-
   group('validateForTask', () {
     test('separates suppressed from invalid/valid', () async {
       when(
@@ -193,25 +98,6 @@ void main() {
     });
 
     final validator = LabelValidator(db: mockDb);
-
-    final basic = await validator.validate(scenario.requestedIds);
-    expect(basic.valid, scenario.expectedBasicValid, reason: '$scenario');
-    expect(basic.invalid, scenario.expectedBasicInvalid, reason: '$scenario');
-
-    final category = await validator.validateForCategory(
-      scenario.requestedIds,
-      categoryId: scenario.categoryId,
-    );
-    expect(
-      category.valid,
-      scenario.expectedCategoryValid,
-      reason: '$scenario',
-    );
-    expect(
-      category.invalid,
-      scenario.expectedCategoryInvalid,
-      reason: '$scenario',
-    );
 
     final task = await validator.validateForTask(
       scenario.requestedIds,
@@ -324,17 +210,6 @@ class _GeneratedLabelValidationScenario {
     );
   }
 
-  List<String> get expectedBasicValid => requestedIds.where(_isActive).toList();
-
-  List<String> get expectedBasicInvalid =>
-      requestedIds.where((id) => !_isActive(id)).toList();
-
-  List<String> get expectedCategoryValid =>
-      requestedIds.where(_isActiveInCategory).toList();
-
-  List<String> get expectedCategoryInvalid =>
-      requestedIds.where((id) => !_isActiveInCategory(id)).toList();
-
   List<String> get expectedTaskValid => requestedIds
       .where((id) => _isActiveInCategory(id) && !suppressedIds.contains(id))
       .toList();
@@ -345,11 +220,6 @@ class _GeneratedLabelValidationScenario {
   List<String> get expectedTaskSuppressed => requestedIds
       .where((id) => _isActiveInCategory(id) && suppressedIds.contains(id))
       .toList();
-
-  bool _isActive(String id) {
-    final def = definitionFor(id);
-    return def != null && def.deletedAt == null;
-  }
 
   bool _isActiveInCategory(String id) {
     final def = definitionFor(id);
