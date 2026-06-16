@@ -35,12 +35,19 @@ Android), and a TL;DR exists.
 
 ```
 features/tts/
-  engine/                      pure, ONNX-independent core (no Flutter deps beyond services)
-    text_preprocessing.dart    NFKD/Hangul/Latin normalization + language tags
-    text_chunker.dart          sentence-aware chunking (KO/JA-aware max length)
-    wav_writer.dart            encodeWavBytes (16-bit mono PCM) + file writer
-    unicode_processor.dart     code-point -> token-id tokenizer + padding mask
+  engine/                      synthesis core (mix of pure + native-ONNX modules)
+    text_preprocessing.dart    NFKD/Hangul/Latin normalization + language tags (pure, unit-tested)
+    text_chunker.dart          sentence-aware chunking (KO/JA-aware max length) (pure)
+    wav_writer.dart            encodeWavBytes (16-bit mono PCM) + file writer (pure)
+    unicode_processor.dart     code-point -> token-id tokenizer + padding mask (pure)
+    ort_tensor_utils.dart      flatten/safeCast helpers (pure, tested) + OrtValue tensor builders (native)
+    voice_style_loader.dart    loads a VoiceStyle (style_ttl/style_dp tensors) from bundled-asset/disk JSON
     tts_engine.dart            TtsEngine interface (synthesize boundary)
+    supertonic_tts_session.dart  ONNX pipeline (native, on-device only): four OrtSessions
+                                 (duration predictor, text encoder, vector estimator, vocoder), the
+                                 per-chunk denoising loop, and explicit native-buffer lifecycle
+    supertonic_onnx_engine.dart  TtsEngine impl: caches session + per-voice styles, runs 8 denoising
+                                 steps, writes a 44.1kHz WAV temp file, applies the platform gate
   model/                       immutable value types + catalogs
     tts_voice.dart             10 Supertonic voices (F1-F5 / M1-M5), default female
     tts_model_option.dart      model catalog (Supertone/supertonic-3)
@@ -52,13 +59,17 @@ features/tts/
     tts_model_repository.dart      first-run Hugging Face download boundary
     tts_engine_provider.dart       engine provider (+ Unavailable fallback)
     tts_playback_controller.dart   orchestrates ensure-model -> synthesize -> play
-  ui/widgets/
-    tts_play_button.dart       focal 44pt play/stop control (filled-accent
+  ui/
+    speech_settings_page.dart  mobile/legacy SliverBoxAdapterPage wrapper -> SpeechSettingsBody
+    speech_settings_body.dart  headerless Voice/Model/Reading-speed settings body, shared by the
+                               mobile page and the desktop Settings-v2 detail panel
+    widgets/
+      tts_play_button.dart     focal 44pt play/stop control (filled-accent
                                circle; play/stop by shape+label, progress arc)
-    tts_voice_selector.dart    Female|Male DsSegmentedToggle switching which
+      tts_voice_selector.dart  Female|Male DsSegmentedToggle switching which
                                gender's five numbered voices are listed
-    tts_model_selector.dart    model rows ("Recommended" badge only with >1)
-    tts_speed_selector.dart    0.5x-2x playback-speed picker
+      tts_model_selector.dart  model rows ("Recommended" badge only with >1)
+      tts_speed_selector.dart  0.5x-2x playback-speed picker
 ```
 
 The **AI-card header** integration lives in the agents feature
