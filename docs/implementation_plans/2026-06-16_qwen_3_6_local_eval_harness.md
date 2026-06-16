@@ -235,6 +235,31 @@ Fresh live summary:
 | `qwen36-a35b-a3b-mlx4` | 5/5 | 1914 ms | 5/5 | 5/5 |
 | `qwen36-a35b-a3b-mlx8` | 5/5 | 2339 ms | 5/5 | 5/5 |
 
+## Local Prompt Cache Follow-Up
+
+After the oMLX profile work, the next local-inference gains came from reducing
+prompt churn rather than changing the model:
+
+- open proposal details now render once, in `## Open Proposal Guard`, instead
+  of once in `## Proposal Ledger` and again in the guard;
+- linked task-agent report rows omit `latestTaskAgentReportCreatedAt`, keeping
+  the useful one-liner/TL;DR while removing a low-value volatile ISO timestamp;
+- task and project trigger-token lists are sorted before prompt rendering.
+
+Manual live oMLX microbenchmark on `Qwen3.6-35B-A3B-4bit` used a stable
+4k-token cached prefix, identical one-token streamed replies, and five measured
+current-vs-optimized prompt pairs after one warmup pair:
+
+| Prompt shape | Prompt chars | Input tokens | Cached tokens | Median latency |
+| --- | ---: | ---: | ---: | ---: |
+| Current duplicated/volatile shape | 14,992 | 4,769 | 4,096 | 548 ms |
+| Optimized shape | 13,207 | 4,103 | 4,096 | 92 ms |
+
+Measured delta: 1,785 fewer prompt characters (11.9%), 666 fewer input tokens
+(14.0%), and 456 ms lower median cached latency (83.2%) for this local oMLX
+prompt shape. The latency measurement is a microbenchmark, not an end-to-end
+agent SLA; the token reduction is the stable contract change.
+
 ## Analyzer Issue And Fix
 
 The analyzer initially failed with analysis server exit code `-9`, then macOS

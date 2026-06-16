@@ -500,10 +500,12 @@ order is in the next section.
   When no report resolves, the row omits the summary fields, so "no report" is
   indistinguishable from "no work" (`task_agent_context_builder.dart:297-330`);
   `createdAt` is emitted but the scaffold gives no instruction to weigh it.
-  **Mitigation:** add a **static** `summaryStatus: 'none'` absence marker and a
-  **static** scaffold sentence telling the model `latestTaskAgentReportCreatedAt`
-  indicates age. **Explicitly reject** any `'stale'` flag derived from
-  `createdAt`-vs-now — it would flip prefix bytes every wake (Invariant 1).
+  **Mitigation:** add a **static** `summaryStatus: 'none'` absence marker so the
+  model can distinguish "no report yet" from "no work happened". A later
+  cache-stability pass deliberately removed `latestTaskAgentReportCreatedAt`
+  from the prompt shape: the timestamp changed whenever a linked report was
+  republished, spent local inference tokens, and gave weaker models one more
+  volatile field to over-weight.
 
 ### E. Planner-pattern transfer
 

@@ -439,11 +439,12 @@ can refer back to the exact source:
   (inline events via `decisionEventsFromLedger` — no payload row; their
   content derives from the synced ChangeSet/ChangeDecision entities),
   positioned at resolution time so the narrative reads *user said X → agent
-  proposed Y → user rejected it*. The `## Proposal Ledger` section then
-  carries only the OPEN proposals (current state: fingerprints for
-  `retract_suggestions`, same-wake dedup). Inline fallback prompts still use
-  the full legacy ledger shape because they do not have a trusted event-log
-  replacement;
+  proposed Y → user rejected it*. The `## Open Proposal Guard` section carries
+  the OPEN proposals once (current state: fingerprints for
+  `retract_suggestions`, same-wake dedup). Inline fallback prompts still render
+  the legacy `## Proposal Ledger` for resolved history because they do not have
+  a trusted event-log replacement, but open proposal details remain in the guard
+  so the prompt does not duplicate them;
 - a **retraction** appends `(id: e1, retraction) no longer appears in the
   current task context`. It documents the current absence without stripping
   earlier captured reality or invalidating summaries; a later capture can
@@ -1032,17 +1033,18 @@ sequenceDiagram
 
 ### Proposal Ledger and Agent-Autonomous Retraction
 
-Every task-agent wake is shown a **proposal ledger** — a single
-status-sorted view of every `ChangeItem` the agent has ever produced for
-the current task, assembled by `AgentRepository.getProposalLedger`. The
-ledger replaces the earlier split between "pending proposals" and "recent
-user decisions" with one unified section the agent reasons about.
+Every task-agent wake receives the task's **proposal ledger** from
+`AgentRepository.getProposalLedger`. In compacted-log wakes, resolved verdicts
+are already decision-tagged task-log events and the prompt renders open
+proposal details only in `## Open Proposal Guard`. Legacy fallback wakes still
+render `## Proposal Ledger` for resolved history; open proposal details stay in
+the guard so the LLM sees one current-state list.
 
 Each ledger entry carries a stable fingerprint (`toolName + args`). Open
 entries are rendered in the `AiSummaryCard` UI for the user to
 confirm or reject; resolved entries (user verdicts and agent retractions)
-are kept in the LLM prompt within a bounded window so the agent learns
-from its own history.
+are kept in the compacted task log or, on legacy fallback prompts, in the
+bounded ledger window so the agent learns from its own history.
 
 When an open proposal is no longer relevant the agent calls
 `retract_suggestions` with one or more `{fingerprint, reason}` entries.

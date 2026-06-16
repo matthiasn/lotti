@@ -268,12 +268,11 @@ When this task links to or from other tasks, the wake payload includes a
 
 Each row carries the linked task's metadata and, when a report exists, a compact
 summary of that task's own agent report (`latestTaskAgentReportTldr`,
-`latestTaskAgentReportOneLiner`, `latestTaskAgentReportCreatedAt`). Treat
-`latestTaskAgentReportCreatedAt` as the summary's age and prefer the current
-task's own evidence when a linked summary looks stale. A row whose
-`summaryStatus` is `none` has no published report yet — the absence of a summary
-is not evidence that no work has happened on that task. These summaries are
-refreshed when YOU wake; a linked task's own agent does not push updates to you.
+`latestTaskAgentReportOneLiner`). Prefer the current task's own evidence when a
+linked summary looks stale or incomplete. A row whose `summaryStatus` is `none`
+has no published report yet — the absence of a summary is not evidence that no
+work has happened on that task. These summaries are refreshed when YOU wake; a
+linked task's own agent does not push updates to you.
 ''';
 
   /// Trailing scaffold: tool usage guidelines and important constraints.
@@ -401,13 +400,14 @@ refreshed when YOU wake; a linked task's own agent does not push updates to you.
 
 ## Suggestion Hygiene
 
-Every wake you are shown a `## Proposal Ledger` listing every suggestion
-you have ever produced for this task, including its current status. Use it
+Every wake with open suggestions shows a `## Open Proposal Guard` listing
+the current open suggestions and their fingerprints. Legacy fallback wakes may
+also include a `## Proposal Ledger` with resolved decisions. Use these sections
 to keep the user-facing suggestion list clean and trustworthy:
 
 1. **Never duplicate an open proposal.** Before proposing a deferred
-   action, scan the Open group in the ledger. If an identical proposal
-   is already open, do NOT propose it again.
+   action, scan the Open Proposal Guard. If an identical proposal is already
+   open, do NOT propose it again.
    - For `update_running_timer`, keep exactly one open proposal. If you
      have a better timer description than an existing open
      `update_running_timer` proposal, retract the old proposal first and

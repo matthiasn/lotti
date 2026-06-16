@@ -20,8 +20,8 @@ and remain resilient when linked context/report resolution fails.
 3. Remove `latestSummary` from all linked-task rows before prompt submission.
 4. Inject task-agent report fields when available:
    - `taskAgentId`
-   - `latestTaskAgentReport`
-   - `latestTaskAgentReportCreatedAt`
+   - `latestTaskAgentReportOneLiner`
+   - `latestTaskAgentReportTldr`
 5. In `TaskAgentWorkflow._resolveLatestTaskAgentReport`, resolve linked task
    agent by `agent_task` links sorted with:
    - primary: `createdAt` descending
@@ -46,7 +46,7 @@ sequenceDiagram
     W->>AR: "getLatestReport(link.fromId, current)"
     AR-->>W: "report or null"
   end
-  W->>W: "inject taskAgentId + latestTaskAgentReport fields"
+  W->>W: "inject taskAgentId + compact report fields"
   W-->>W: "linked JSON for wake prompt"
 ```
 
@@ -57,13 +57,16 @@ flowchart LR
   A["linked_from[] row"] --> C["remove latestSummary"]
   B["linked_to[] row"] --> C
   C --> D["add taskAgentId (if report found)"]
-  D --> E["add latestTaskAgentReport (if report found)"]
-  E --> F["add latestTaskAgentReportCreatedAt (if report found)"]
+  D --> E["add latestTaskAgentReportOneLiner (if report found)"]
+  E --> F["add latestTaskAgentReportTldr (if report found)"]
 ```
 
 ## Consequences
 
 - Task-agent prompts no longer rely on task summaries.
+- Linked-task report rows omit per-report timestamps so dependent wakes keep a
+  more stable prompt suffix and avoid spending local inference budget on
+  low-value volatile fields.
 - Linked-task report selection is deterministic under equal link timestamps.
 - Linked-task context failures cannot abort wake setup.
 

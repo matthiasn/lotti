@@ -221,14 +221,14 @@ void main() {
       expect(result.text.substring(logStart!, logEnd), log);
     });
 
-    test('renders linked tasks, previous report and trigger tokens', () {
+    test('renders linked tasks, previous report and sorted trigger tokens', () {
       final result = builder.buildUserMessage(
         projectEntity: projectEntity(),
         lastReport: makeTestReport(content: 'Prior body.'),
         observations: const [],
         observationPayloads: const {},
         linkedTasksContext: '{"linked_tasks": []}',
-        triggerTokens: const {'tok-1', 'tok-2'},
+        triggerTokens: const {'tok-2', 'tok-1'},
       );
 
       expect(result.text, contains('## Linked Tasks'));
@@ -384,6 +384,7 @@ void main() {
       expect(row['taskAgentId'], 'agent-9');
       expect(row['latestTaskAgentReportOneLiner'], 'Halfway there.');
       expect(row['latestTaskAgentReportTldr'], 'Login done.');
+      expect(row.containsKey('latestTaskAgentReportCreatedAt'), isFalse);
     });
 
     test(
