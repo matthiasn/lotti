@@ -107,7 +107,13 @@ sequenceDiagram
 
 Theme changes are synced via `SyncMessage.themingSelection`.
 
+Enqueuing is debounced by 250 ms (`EasyDebounce`) and is skipped entirely while the controller is applying a synced change (`_isApplyingSyncedChanges`). The debounce coalesces rapid toggles into a single outbox message; the skip prevents theme ping-pong between devices. The enqueue is also a no-op when `OutboxService` is not registered, so theming works before sync is configured.
+
 Theming therefore behaves like a user preference with cross-device propagation, not like a purely local UI tweak. That is the right choice for an app where users generally expect "my chosen theme" to follow them.
+
+## Co-located Providers
+
+`theming_controller.dart` also hosts `enableTooltipsProvider`, a small stream provider that watches the `enableTooltipFlag` config flag from `JournalDb`. It is unrelated to theme construction but lives here because both are app-shell-level UI preferences consumed by the `MaterialApp`/widget tree. Treat it as a sibling of the theming state, not part of it.
 
 ## Relationship to Other Features
 
