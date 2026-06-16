@@ -26,7 +26,6 @@ flowchart TD
   Seen --> Content["Fetch content.md for unseen releases"]
   Content --> Parser["Resolve markdown and asset URLs"]
   Parser --> State["WhatsNewState"]
-  State --> Indicator["WhatsNewIndicator (defined, not currently mounted)"]
   State --> Modal["WhatsNewModal"]
 ```
 
@@ -195,10 +194,6 @@ Important behaviors:
 - if loading fails, the feature degrades to empty state rather than persisting half-baked state
 
 ## UI Composition
-
-### `WhatsNewIndicator`
-
-`WhatsNewIndicator` is a small pulsing dot that watches `whatsNewControllerProvider` and disappears entirely when there is nothing unseen. **It is not currently mounted anywhere** — the only references are its own definition and test. The Settings row (above) is the live manual entry point; the indicator remains as ready-to-wire UI.
 
 ### `WhatsNewModal`
 
