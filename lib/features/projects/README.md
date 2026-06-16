@@ -66,11 +66,13 @@ lib/features/projects/
 │   ├── project_providers.dart
 │   ├── project_detail_controller.dart
 │   ├── project_detail_record_provider.dart
-│   └── project_health_metrics.dart
+│   ├── project_health_metrics.dart
+│   └── project_one_liner_provider.dart   # AI one-liner subtitle for overview rows
 ├── ui/
 │   ├── pages/
 │   ├── model/
 │   └── widgets/
+│       └── showcase/                      # widgetbook palette + status helpers
 └── widgetbook/
 ```
 
