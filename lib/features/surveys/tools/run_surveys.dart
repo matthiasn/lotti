@@ -42,6 +42,8 @@ Future<void> runSurvey({
   );
 }
 
+/// Runs the Chalder Fatigue Scale (CFQ-11), persisting the result linked to
+/// [linkedId] when submitted. See [runSurvey].
 void runCfq11({
   required BuildContext context,
   required ThemeData themeData,
@@ -59,6 +61,8 @@ void runCfq11({
   );
 }
 
+/// Runs the General Health Questionnaire (GHQ-12), persisting the result linked
+/// to [linkedId] when submitted. See [runSurvey].
 void runGhq12({
   required BuildContext context,
   required ThemeData themeData,
@@ -76,6 +80,8 @@ void runGhq12({
   );
 }
 
+/// Runs the Positive and Negative Affect Schedule (PANAS), persisting the
+/// result linked to [linkedId] when submitted. See [runSurvey].
 void runPanas({
   required BuildContext context,
   required ThemeData themeData,

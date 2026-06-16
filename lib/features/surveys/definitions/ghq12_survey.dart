@@ -185,6 +185,8 @@ RPCompletionStep ghq12CompletionStep = RPCompletionStep(
   text: 'Thank you for filling out the GHQ12!',
 );
 
+/// The full GHQ-12 questionnaire: instructions, the 12 single-choice items
+/// (each scored 0–3), then a completion step. Passed to `runGhq12`.
 RPOrderedTask ghq12SurveyTask = RPOrderedTask(
   identifier: 'ghq12SurveyTask',
   steps: [
@@ -205,6 +207,8 @@ RPOrderedTask ghq12SurveyTask = RPOrderedTask(
   ],
 );
 
+/// Score bucket for GHQ-12: a single `GHQ12` total summing all 12 item answers
+/// (Likert 0–3, range 0–36). Consumed by `calculateScores`.
 Map<String, Set<String>> ghq12ScoreDefinitions = {
   'GHQ12': {
     ghq12Step1.identifier,

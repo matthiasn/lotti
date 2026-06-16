@@ -35,6 +35,9 @@ final panasCompletionStep = RPCompletionStep(
   text: 'Thank you for filling out the PANAS!',
 );
 
+/// The full PANAS questionnaire: instructions, 20 single-choice mood items
+/// (each scored 1–5 via [panasAnswerFormat]), then a completion step. Passed to
+/// `runPanas`.
 final panasSurveyTask = RPOrderedTask(
   identifier: 'panasSurveyTask',
   steps: [
@@ -143,6 +146,9 @@ final panasSurveyTask = RPOrderedTask(
   ],
 );
 
+/// Score buckets for PANAS: two totals, `Positive Affect Score` (10 items) and
+/// `Negative Affect Score` (the other 10), each summing Likert 1–5 answers
+/// (range 10–50 per bucket). Consumed by `calculateScores`.
 Map<String, Set<String>> panasScoreDefinitions = {
   'Positive Affect Score': {
     'panasQuestion1',
