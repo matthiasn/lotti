@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:lotti/features/tts/engine/supertonic_onnx_engine.dart';
 import 'package:lotti/features/tts/engine/tts_engine.dart';
-import 'package:lotti/utils/platform.dart' as platform;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'tts_engine_provider.g.dart';
@@ -34,14 +33,12 @@ class UnavailableTtsEngine implements TtsEngine {
 }
 
 /// Provides the on-device TTS engine — the Supertonic ONNX engine on the
-/// platforms where `flutter_onnxruntime` is integrated (macOS, iOS, Linux), the
+/// platforms where `flutter_onnxruntime` is integrated
+/// ([SupertonicOnnxEngine.isPlatformSupported]: macOS, iOS, Linux, Android), the
 /// unavailable fallback elsewhere. Tests override this with a fake.
 @Riverpod(keepAlive: true)
 TtsEngine ttsEngine(Ref ref) {
-  if (!platform.isMacOS &&
-      !platform.isIOS &&
-      !platform.isLinux &&
-      !platform.isAndroid) {
+  if (!SupertonicOnnxEngine.isPlatformSupported) {
     return const UnavailableTtsEngine();
   }
   final engine = SupertonicOnnxEngine();

@@ -91,6 +91,7 @@ void main() {
     });
 
     test('is false when no supported platform flag is set', () {
+      expect(SupertonicOnnxEngine.isPlatformSupported, isFalse);
       expect(buildEngine().isSupported, isFalse);
     });
 
@@ -102,6 +103,7 @@ void main() {
     }.entries) {
       test('is true on ${entry.key}', () {
         entry.value();
+        expect(SupertonicOnnxEngine.isPlatformSupported, isTrue);
         expect(buildEngine().isSupported, isTrue);
       });
     }

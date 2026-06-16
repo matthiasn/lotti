@@ -53,12 +53,17 @@ class SupertonicOnnxEngine implements TtsEngine {
   final Map<String, VoiceStyle> _voiceCache = <String, VoiceStyle>{};
   int _counter = 0;
 
-  @override
-  bool get isSupported =>
+  /// Platforms where `flutter_onnxruntime` is integrated and the Supertonic
+  /// engine can run. Single source of truth for TTS platform support — the
+  /// `ttsEngine` provider gates on this too, so the list lives in one place.
+  static bool get isPlatformSupported =>
       platform.isMacOS ||
       platform.isIOS ||
       platform.isLinux ||
       platform.isAndroid;
+
+  @override
+  bool get isSupported => isPlatformSupported;
 
   @override
   Future<File> synthesizeToFile({
