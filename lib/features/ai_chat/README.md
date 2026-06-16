@@ -50,8 +50,9 @@ lib/features/ai_chat/
 │   └── system_message_service.dart        # System prompt construction
 ├── ui/
 │   ├── controllers/
+│   │   ├── chat_amplitude_history.dart       # Pure waveform/amplitude helpers (batch + realtime)
 │   │   ├── chat_recorder_controller.dart    # Audio recording state machine
-│   │   ├── chat_recorder_state.dart          # Recorder state/enum (part of controller)
+│   │   ├── chat_recorder_state.dart          # Recorder state/enum/config (standalone file)
 │   │   ├── chat_session_controller.dart     # Active conversation state
 │   │   ├── chat_sessions_controller.dart    # Session list management
 │   │   ├── chat_stream_parser.dart          # Stream content/reasoning separator
@@ -214,9 +215,12 @@ to separate:
 - hidden reasoning blocks
 
 Separately, the chat UI widgets (`message_bubble.dart`, `streaming_content.dart`)
-use `thinking_parser.dart` (`ThinkingUtils`) at display time to hide or strip
-reasoning blocks from rendered/copied output. The controller itself does not
-reference `thinking_parser.dart`.
+use `thinking_parser.dart` (`splitThinkingSegments` / `ThinkingUtils`) at display
+time. `message_bubble.dart` splits the message into ordered segments and renders
+each reasoning segment inline as its own collapsible `ThinkingDisclosure`,
+interleaved with the visible markdown; the copy action strips reasoning entirely
+via `ThinkingUtils.stripThinking`. The controller itself does not reference
+`thinking_parser.dart`.
 
 Behavior that matters:
 

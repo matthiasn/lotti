@@ -5,10 +5,10 @@ Reasoning Behavior
 - Supported markers: <think>…</think>, <thinking>…</thinking>, [think]…[/think],
   [thinking]…[/thinking], and fenced code blocks with language "think" or
   "thinking" (```think / ```thinking).
-- UI model: thinking is NEVER rendered inline. The chat UI exposes a single
-  collapsible disclosure per assistant message. When multiple thinking blocks
-  are present, they are concatenated (in order) and separated by a Markdown
-  horizontal rule (---) for readability.
+- UI model: `message_bubble.dart` calls `splitThinkingSegments` and renders each
+  thinking segment inline as its own collapsible `ThinkingDisclosure`,
+  interleaved (in order) with the visible markdown segments. (Earlier versions
+  consolidated all thinking into one disclosure; the current UI is per-segment.)
 - Streaming/open‑ended: if a close token has not arrived yet (e.g., mid‑stream),
   everything after the opening token is treated as thinking until the close
   appears in a later chunk. This keeps the disclosure consistent during
