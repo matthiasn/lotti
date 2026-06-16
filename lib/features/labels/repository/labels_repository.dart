@@ -24,6 +24,15 @@ final labelsRepositoryProvider = Provider<LabelsRepository>((ref) {
   );
 });
 
+/// Write boundary for the labels feature.
+///
+/// Owns label-definition CRUD (with category-scope normalization and
+/// soft-delete), visibility-aware definition streams, usage counts from the
+/// `labeled` lookup table, and assignment writes on entry metadata
+/// ([addLabels] / [removeLabel] / [setLabels]). For tasks, assignment writes
+/// also maintain the per-task AI suppression set (`aiSuppressedLabelIds`) so
+/// rejected suggestions are not re-proposed. See the feature README for the
+/// suppression coupling rules.
 class LabelsRepository {
   LabelsRepository(
     this._persistenceLogic,
