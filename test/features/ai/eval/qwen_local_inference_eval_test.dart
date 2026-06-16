@@ -34,6 +34,31 @@ void main() {
     );
   });
 
+  test('default eval scenarios validate core task-field arguments', () {
+    expect(
+      defaultQwenLocalEvalScenarios.map((scenario) => scenario.id),
+      equals([
+        'task_title_tool_call',
+        'task_status_tool_call',
+        'task_estimate_tool_call',
+        'task_due_date_tool_call',
+        'task_priority_tool_call',
+      ]),
+    );
+    expect(
+      defaultQwenLocalEvalScenarios
+          .map((scenario) => scenario.expectedArgumentsSubset)
+          .toList(),
+      equals([
+        {'title': 'Submit expense report'},
+        {'status': 'IN PROGRESS'},
+        {'minutes': 150},
+        {'dueDate': '2026-07-04'},
+        {'priority': 'P1'},
+      ]),
+    );
+  });
+
   test(
     'runner records provenance, latency, usage, and matching tool calls',
     () async {
@@ -63,7 +88,13 @@ void main() {
       );
       expect(
         repository.requests.single.toolNames,
-        equals([TaskAgentToolNames.setTaskTitle]),
+        equals([
+          TaskAgentToolNames.setTaskTitle,
+          TaskAgentToolNames.setTaskStatus,
+          TaskAgentToolNames.updateTaskEstimate,
+          TaskAgentToolNames.updateTaskDueDate,
+          TaskAgentToolNames.updateTaskPriority,
+        ]),
       );
 
       final result = report.results.single;
@@ -79,11 +110,14 @@ void main() {
       expect(result.outputTokens, 11);
       expect(result.toolCalls.single.name, TaskAgentToolNames.setTaskTitle);
       expect(result.toolCalls.single.hasJsonObjectArguments, isTrue);
+      expect(result.matchedExpectedArguments, isTrue);
 
       final summary = report.summaries.single;
       expect(summary.passedScenarios, 1);
       expect(summary.toolCallScenarioCount, 1);
       expect(summary.matchedToolCallScenarios, 1);
+      expect(summary.argumentScenarioCount, 1);
+      expect(summary.matchedArgumentScenarios, 1);
       expect(summary.failureCounts, isEmpty);
     },
   );
@@ -132,6 +166,35 @@ void main() {
       report.results.single.failureCategory,
       QwenLocalEvalFailureCategory.invalidToolArguments,
     );
+  });
+
+  test('runner classifies mismatched expected argument values', () async {
+    final repository = _FakeInferenceRepository([
+      _toolCall(
+        name: TaskAgentToolNames.setTaskTitle,
+        argumentsJson: '{"title":"Submit reimbursement"}',
+      ),
+    ]);
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultQwenLocalEvalScenarios.first],
+    );
+
+    final result = report.results.single;
+    expect(
+      result.failureCategory,
+      QwenLocalEvalFailureCategory.argumentMismatch,
+    );
+    expect(result.matchedExpectedTool, isTrue);
+    expect(result.matchedExpectedArguments, isFalse);
+    expect(report.summaries.single.failureCounts, {
+      QwenLocalEvalFailureCategory.argumentMismatch: 1,
+    });
   });
 
   test('runner accumulates streamed tool-call argument chunks', () async {
@@ -254,7 +317,9 @@ void main() {
       isNot(containsPair('apiKey', provider.apiKey)),
     );
     expect(report.toPrettyJson(), contains('"failureCategory": "none"'));
+    expect(report.toPrettyJson(), contains('"matchedExpectedArguments": true'));
     expect(report.toMarkdown(), contains('| qwen-test |'));
+    expect(report.toMarkdown(), contains('| Arg match |'));
     expect(report.toMarkdown(), isNot(contains('Task id task-2')));
   });
 }

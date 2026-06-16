@@ -7,6 +7,14 @@ const qwen36A35bA3bMlx8BitModelId = 'Qwen3.6-35B-A3B-MLX-8bit';
 
 const qwenLocalEvalKind = 'lotti.qwenLocalInferenceEvalReport';
 
+const List<String> _coreTaskFieldToolNames = [
+  TaskAgentToolNames.setTaskTitle,
+  TaskAgentToolNames.setTaskStatus,
+  TaskAgentToolNames.updateTaskEstimate,
+  TaskAgentToolNames.updateTaskDueDate,
+  TaskAgentToolNames.updateTaskPriority,
+];
+
 const defaultQwenLocalEvalProfiles = [
   QwenLocalEvalProfile(
     name: 'qwen36-a35b-a3b-turboquant-mlx4',
@@ -31,16 +39,45 @@ const defaultQwenLocalEvalScenarios = [
     userPrompt:
         'Task id task-1 is currently titled "Inbox item". Rename it to '
         '"Submit expense report".',
-    exposedToolNames: [TaskAgentToolNames.setTaskTitle],
+    exposedToolNames: _coreTaskFieldToolNames,
     expectedToolName: TaskAgentToolNames.setTaskTitle,
+    expectedArgumentsSubset: {'title': 'Submit expense report'},
   ),
   QwenLocalEvalScenario(
     id: 'task_status_tool_call',
     userPrompt:
         'Task id task-2 is open. The user says work has started. Move the '
         'task to IN PROGRESS.',
-    exposedToolNames: [TaskAgentToolNames.setTaskStatus],
+    exposedToolNames: _coreTaskFieldToolNames,
     expectedToolName: TaskAgentToolNames.setTaskStatus,
+    expectedArgumentsSubset: {'status': 'IN PROGRESS'},
+  ),
+  QwenLocalEvalScenario(
+    id: 'task_estimate_tool_call',
+    userPrompt:
+        'Task id task-3 needs about two and a half hours of focused work. '
+        'Set the remaining estimate accordingly.',
+    exposedToolNames: _coreTaskFieldToolNames,
+    expectedToolName: TaskAgentToolNames.updateTaskEstimate,
+    expectedArgumentsSubset: {'minutes': 150},
+  ),
+  QwenLocalEvalScenario(
+    id: 'task_due_date_tool_call',
+    userPrompt:
+        'Task id task-4 must be finished by July 4, 2026. Update the due '
+        'date to that exact day.',
+    exposedToolNames: _coreTaskFieldToolNames,
+    expectedToolName: TaskAgentToolNames.updateTaskDueDate,
+    expectedArgumentsSubset: {'dueDate': '2026-07-04'},
+  ),
+  QwenLocalEvalScenario(
+    id: 'task_priority_tool_call',
+    userPrompt:
+        'Task id task-5 is urgent and should be handled as P1. Update the '
+        'task priority.',
+    exposedToolNames: _coreTaskFieldToolNames,
+    expectedToolName: TaskAgentToolNames.updateTaskPriority,
+    expectedArgumentsSubset: {'priority': 'P1'},
   ),
 ];
 
@@ -70,6 +107,7 @@ class QwenLocalEvalScenario {
     required this.userPrompt,
     required this.exposedToolNames,
     this.expectedToolName,
+    this.expectedArgumentsSubset = const {},
     this.systemPrompt = _defaultSystemPrompt,
   });
 
@@ -83,14 +121,18 @@ class QwenLocalEvalScenario {
   final String userPrompt;
   final List<String> exposedToolNames;
   final String? expectedToolName;
+  final Map<String, Object?> expectedArgumentsSubset;
 
   bool get expectsToolCall => expectedToolName != null;
+
+  bool get expectsArguments => expectedArgumentsSubset.isNotEmpty;
 
   Map<String, Object?> toJson() {
     return {
       'id': id,
       'exposedToolNames': exposedToolNames,
       'expectedToolName': expectedToolName,
+      'expectedArgumentKeys': expectedArgumentsSubset.keys.toList(),
     };
   }
 }

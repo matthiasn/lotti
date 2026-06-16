@@ -192,6 +192,14 @@ QwenLocalEvalFailureCategory _classifyResult({
     if (matchingCalls.any((call) => !call.hasJsonObjectArguments)) {
       return QwenLocalEvalFailureCategory.invalidToolArguments;
     }
+    if (scenario.expectsArguments &&
+        !matchingCalls.any(
+          (call) => call.containsExpectedArguments(
+            scenario.expectedArgumentsSubset,
+          ),
+        )) {
+      return QwenLocalEvalFailureCategory.argumentMismatch;
+    }
   }
 
   if (contentLength == 0 && toolCalls.isEmpty) {

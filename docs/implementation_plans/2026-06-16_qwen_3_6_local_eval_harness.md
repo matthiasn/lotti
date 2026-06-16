@@ -14,17 +14,18 @@ developer tool that answers:
 - Which installed local Qwen 3.6 oMLX model handles task-agent tool calls?
 - How long does each model take on a small, representative scenario set?
 - Which failures happen: transport, missing tool call, wrong tool, invalid
-  arguments, empty response, or scenario pass?
+  arguments, argument mismatch, empty response, or scenario pass?
 
 ## Branch And Current State
 
 - Branch: `test/agent_eval_framework`
-- Status: MVP implemented, staged, and extended with runner edge-case tests.
-- Current staged code diff: 10 files, 1452 insertions, 11 deletions.
+- Status: MVP implemented and committed; follow-up strict argument/tool-selection
+  eval changes are implemented and verified.
+- Current follow-up diff: 6 files, 240 insertions, 31 deletions.
 - New production modules are intentionally small:
-  - `lib/features/ai/eval/qwen_local_eval_config.dart` — 135 lines
-  - `lib/features/ai/eval/qwen_local_eval_report.dart` — 264 lines
-  - `lib/features/ai/eval/qwen_local_inference_eval.dart` — 231 lines
+  - `lib/features/ai/eval/qwen_local_eval_config.dart` — 177 lines
+  - `lib/features/ai/eval/qwen_local_eval_report.dart` — 334 lines
+  - `lib/features/ai/eval/qwen_local_inference_eval.dart` — 239 lines
 
 ## Files Added Or Changed
 
@@ -37,16 +38,18 @@ developer tool that answers:
   - Added a short developer-tool note for the Qwen local eval wrapper.
 - `lib/features/ai/eval/qwen_local_eval_config.dart`
   - Defines default Qwen profiles, scenario definitions, profile parsing, and
-    scenario selection.
+    scenario selection. The default scenarios expose the five competing core
+    task-field tools together.
 - `lib/features/ai/eval/qwen_local_eval_report.dart`
-  - Defines case results, profile summaries, JSON output, and Markdown output.
+  - Defines case results, profile summaries, JSON output, and Markdown output,
+    including tool-name and argument-value match rates.
 - `lib/features/ai/eval/qwen_local_inference_eval.dart`
   - Runs the profile/scenario matrix through `InferenceRepositoryInterface`,
     using the real task-agent tool definitions from `AgentToolRegistry`.
 - `test/features/ai/eval/qwen_local_inference_eval_test.dart`
   - Focused unit tests for profiles, provenance, tool calls, failure categories,
-    streamed tool-call argument chunks, request failures, and compact report
-    shape.
+    streamed tool-call argument chunks, wrong argument values, request failures,
+    and compact report shape.
 - `test/features/ai/eval/qwen_local_inference_eval_live_test.dart`
   - Manual live oMLX test, skipped unless `LOTTI_QWEN_EVAL_LIVE=1`.
 - `tool/qwen_local_inference_eval.sh`
@@ -66,14 +69,33 @@ Current local oMLX discovery found all three under `/Users/mn/.omlx/models`.
 
 ## Default Scenarios
 
-The MVP intentionally uses a tiny task-agent tool-call scenario set:
+The MVP uses a compact task-agent tool-call scenario set. Each scenario exposes
+the same five competing core task-field tools:
+
+- `set_task_title`
+- `set_task_status`
+- `update_task_estimate`
+- `update_task_due_date`
+- `update_task_priority`
+
+The scenarios validate both the selected tool and a small expected argument
+subset:
 
 - `task_title_tool_call`
-  - Exposes `set_task_title`
   - Expects `set_task_title`
+  - Expects `title = "Submit expense report"`
 - `task_status_tool_call`
-  - Exposes `set_task_status`
   - Expects `set_task_status`
+  - Expects `status = "IN PROGRESS"`
+- `task_estimate_tool_call`
+  - Expects `update_task_estimate`
+  - Expects `minutes = 150`
+- `task_due_date_tool_call`
+  - Expects `update_task_due_date`
+  - Expects `dueDate = "2026-07-04"`
+- `task_priority_tool_call`
+  - Expects `update_task_priority`
+  - Expects `priority = "P1"`
 
 The prompt text is not written to the report. The report captures scenario IDs,
 tool names, model/provider provenance, latency, token counts when available, and
@@ -137,7 +159,7 @@ fvm flutter test \
 Result:
 
 ```text
-+9 ~1: All tests passed!
++11 ~1: All tests passed!
 ```
 
 Targeted analyzer:
@@ -166,7 +188,7 @@ make analyze
 Result:
 
 ```text
-No issues found! (ran in 46.5s)
+No issues found! (ran in 24.7s)
 ```
 
 Whitespace check:
@@ -194,16 +216,16 @@ Result:
 Fresh Markdown report:
 
 ```text
-/private/tmp/lotti-qwen-local-eval.md
+/private/tmp/lotti-qwen-local-eval-competing-tools.md
 ```
 
 Fresh live summary:
 
-| Profile | Pass | Avg latency | Tool match |
-| --- | ---: | ---: | ---: |
-| `qwen36-a35b-a3b-turboquant-mlx4` | 2/2 | 8903 ms | 2/2 |
-| `qwen36-a35b-a3b-mlx4` | 2/2 | 2184 ms | 2/2 |
-| `qwen36-a35b-a3b-mlx8` | 2/2 | 3784 ms | 2/2 |
+| Profile | Pass | Avg latency | Tool match | Arg match |
+| --- | ---: | ---: | ---: | ---: |
+| `qwen36-a35b-a3b-turboquant-mlx4` | 5/5 | 4169 ms | 5/5 | 5/5 |
+| `qwen36-a35b-a3b-mlx4` | 5/5 | 1914 ms | 5/5 | 5/5 |
+| `qwen36-a35b-a3b-mlx8` | 5/5 | 2339 ms | 5/5 | 5/5 |
 
 ## Analyzer Issue And Fix
 

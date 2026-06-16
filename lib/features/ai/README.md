@@ -216,8 +216,10 @@ tuning helper for Qwen task-agent function-calling checks. It reuses
 `CloudInferenceWrapper` and the real task-agent tool definitions, runs a
 selected profile/scenario matrix, and writes a compact JSON or Markdown report
 containing provider/model provenance, latency, token counts, tool-call names, and
-a failure category. It does not write prompts, full responses, API keys, release
-gates, attestations, or decision ledgers. The built-in comparison targets
+a failure category. The default scenarios expose the competing core task-field
+tools together and validate both the selected tool and expected argument values.
+It does not write prompts, full responses, API keys, release gates,
+attestations, or decision ledgers. The built-in comparison targets
 `Qwen3.6-35B-A3B-TurboQuant-MLX-4bit`, `Qwen3.6-35B-A3B-4bit`, and
 `Qwen3.6-35B-A3B-MLX-8bit`; set `QWEN_EVAL_BASE_URL` or `OMLX_BASE_URL` when
 oMLX is not exposed at the local OpenAI-compatible default.
