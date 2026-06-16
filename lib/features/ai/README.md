@@ -209,6 +209,19 @@ variant (`GeminiThinkingConfig.isGemini3(model)`); it defaults to `low` unless a
 per-invocation thinking mode is passed. Non-Gemini transcription providers (and
 non-Gemini-3 Gemini models) leave reasoning effort unset.
 
+## Developer Eval Tool
+
+`tool/qwen_local_inference_eval.sh` is a narrow local oMLX/OpenAI-compatible
+tuning helper for Qwen task-agent function-calling checks. It reuses
+`CloudInferenceWrapper` and the real task-agent tool definitions, runs a
+selected profile/scenario matrix, and writes a compact JSON or Markdown report
+containing provider/model provenance, latency, token counts, tool-call names, and
+a failure category. It does not write prompts, full responses, API keys, release
+gates, attestations, or decision ledgers. The built-in comparison targets
+`Qwen3.6-35B-A3B-TurboQuant-MLX-4bit`, `Qwen3.6-35B-A3B-4bit`, and
+`Qwen3.6-35B-A3B-MLX-8bit`; set `QWEN_EVAL_BASE_URL` or `OMLX_BASE_URL` when
+oMLX is not exposed at the local OpenAI-compatible default.
+
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
 prefers Mistral's non-realtime Voxtral transcription model over MLX Qwen when
 both are configured, then falls back to MLX Qwen, Gemini Flash, or the first

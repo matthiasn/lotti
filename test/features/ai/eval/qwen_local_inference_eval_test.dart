@@ -1,0 +1,399 @@
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/ai/eval/qwen_local_inference_eval.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/gemini_tool_call.dart';
+import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:openai_dart/openai_dart.dart';
+
+void main() {
+  const profile = QwenLocalEvalProfile(
+    name: 'qwen-test',
+    providerModelId: qwen36A35bA3bTurboQuantMlx4BitModelId,
+    modelClass: 'qwen36-a35b-a3b-omlx',
+  );
+  final provider = AiConfigInferenceProvider(
+    id: 'provider-omlx',
+    baseUrl: 'http://localhost:8002/v1',
+    apiKey: '',
+    name: 'oMLX',
+    createdAt: DateTime(2026, 6, 16),
+    inferenceProviderType: InferenceProviderType.genericOpenAi,
+  );
+
+  test('default eval profiles target all installed oMLX Qwen models', () {
+    expect(
+      defaultQwenLocalEvalProfiles.map((profile) => profile.providerModelId),
+      equals([
+        qwen36A35bA3bTurboQuantMlx4BitModelId,
+        qwen36A35bA3bMlx4BitModelId,
+        qwen36A35bA3bMlx8BitModelId,
+      ]),
+    );
+  });
+
+  test(
+    'runner records provenance, latency, usage, and matching tool calls',
+    () async {
+      final repository = _FakeInferenceRepository([
+        _content('I will update the title.'),
+        _toolCall(
+          name: TaskAgentToolNames.setTaskTitle,
+          argumentsJson: '{"title":"Submit expense report"}',
+        ),
+        _usage(inputTokens: 42, outputTokens: 11),
+      ]);
+      final scenario = defaultQwenLocalEvalScenarios.first;
+      final runner = QwenLocalInferenceEvalRunner(
+        provider: provider,
+        repository: repository,
+      );
+
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: [scenario],
+      );
+
+      expect(repository.requests, hasLength(1));
+      expect(
+        repository.requests.single.model,
+        qwen36A35bA3bTurboQuantMlx4BitModelId,
+      );
+      expect(
+        repository.requests.single.toolNames,
+        equals([TaskAgentToolNames.setTaskTitle]),
+      );
+
+      final result = report.results.single;
+      expect(result.passed, isTrue);
+      expect(result.provider.baseUrl, provider.baseUrl);
+      expect(
+        result.profile.providerModelId,
+        qwen36A35bA3bTurboQuantMlx4BitModelId,
+      );
+      expect(result.latencyMs, greaterThanOrEqualTo(0));
+      expect(result.contentLength, greaterThan(0));
+      expect(result.inputTokens, 42);
+      expect(result.outputTokens, 11);
+      expect(result.toolCalls.single.name, TaskAgentToolNames.setTaskTitle);
+      expect(result.toolCalls.single.hasJsonObjectArguments, isTrue);
+
+      final summary = report.summaries.single;
+      expect(summary.passedScenarios, 1);
+      expect(summary.toolCallScenarioCount, 1);
+      expect(summary.matchedToolCallScenarios, 1);
+      expect(summary.failureCounts, isEmpty);
+    },
+  );
+
+  test('runner classifies missing expected tool calls', () async {
+    final repository = _FakeInferenceRepository([_content('Done.')]);
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultQwenLocalEvalScenarios.first],
+    );
+
+    final result = report.results.single;
+    expect(result.passed, isFalse);
+    expect(
+      result.failureCategory,
+      QwenLocalEvalFailureCategory.missingToolCall,
+    );
+    expect(report.summaries.single.failureCounts, {
+      QwenLocalEvalFailureCategory.missingToolCall: 1,
+    });
+  });
+
+  test('runner classifies invalid arguments on the expected tool', () async {
+    final repository = _FakeInferenceRepository([
+      _toolCall(
+        name: TaskAgentToolNames.setTaskTitle,
+        argumentsJson: 'not-json',
+      ),
+    ]);
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultQwenLocalEvalScenarios.first],
+    );
+
+    expect(
+      report.results.single.failureCategory,
+      QwenLocalEvalFailureCategory.invalidToolArguments,
+    );
+  });
+
+  test('runner accumulates streamed tool-call argument chunks', () async {
+    final repository = _FakeInferenceRepository([
+      _toolCallChunk(
+        id: 'call-1',
+        name: TaskAgentToolNames.setTaskTitle,
+        argumentsJson: '{"title":',
+      ),
+      _toolCallChunk(argumentsJson: '"Submit expense report"}'),
+    ]);
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultQwenLocalEvalScenarios.first],
+    );
+
+    final toolCall = report.results.single.toolCalls.single;
+    expect(toolCall.name, TaskAgentToolNames.setTaskTitle);
+    expect(toolCall.argumentsJson, '{"title":"Submit expense report"}');
+    expect(report.results.single.passed, isTrue);
+  });
+
+  test('runner classifies a different tool as wrong tool call', () async {
+    final repository = _FakeInferenceRepository([
+      _toolCall(
+        name: TaskAgentToolNames.setTaskStatus,
+        argumentsJson: '{"status":"IN PROGRESS"}',
+      ),
+    ]);
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultQwenLocalEvalScenarios.first],
+    );
+
+    expect(
+      report.results.single.failureCategory,
+      QwenLocalEvalFailureCategory.wrongToolCall,
+    );
+  });
+
+  test(
+    'runner classifies empty no-tool scenarios as empty responses',
+    () async {
+      const scenario = QwenLocalEvalScenario(
+        id: 'plain_response',
+        userPrompt: 'Answer with a short acknowledgement.',
+        exposedToolNames: [],
+      );
+      final repository = _FakeInferenceRepository(const []);
+      final runner = QwenLocalInferenceEvalRunner(
+        provider: provider,
+        repository: repository,
+      );
+
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: const [scenario],
+      );
+
+      expect(
+        report.results.single.failureCategory,
+        QwenLocalEvalFailureCategory.emptyResponse,
+      );
+    },
+  );
+
+  test('runner records request failures without leaking long errors', () async {
+    final repository = _FakeInferenceRepository(
+      const [],
+      error: StateError(
+        'oMLX request failed ${List.filled(260, 'x').join()}',
+      ),
+    );
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultQwenLocalEvalScenarios.first],
+    );
+
+    final result = report.results.single;
+    expect(result.failureCategory, QwenLocalEvalFailureCategory.requestFailed);
+    expect(result.errorMessage, contains('oMLX request failed'));
+    expect(result.errorMessage!.length, lessThanOrEqualTo(243));
+  });
+
+  test('report JSON and Markdown stay compact and identity-focused', () async {
+    final repository = _FakeInferenceRepository([
+      _toolCall(
+        name: TaskAgentToolNames.setTaskStatus,
+        argumentsJson: '{"status":"IN PROGRESS"}',
+      ),
+    ]);
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultQwenLocalEvalScenarios[1]],
+    );
+
+    expect(report.toJson(), containsPair('kind', qwenLocalEvalKind));
+    expect(
+      report.toJson()['provider'],
+      isNot(containsPair('apiKey', provider.apiKey)),
+    );
+    expect(report.toPrettyJson(), contains('"failureCategory": "none"'));
+    expect(report.toMarkdown(), contains('| qwen-test |'));
+    expect(report.toMarkdown(), isNot(contains('Task id task-2')));
+  });
+}
+
+class _RecordedRequest {
+  const _RecordedRequest({
+    required this.model,
+    required this.toolNames,
+  });
+
+  final String model;
+  final List<String> toolNames;
+}
+
+class _FakeInferenceRepository extends InferenceRepositoryInterface {
+  _FakeInferenceRepository(this.responses, {this.error});
+
+  final List<CreateChatCompletionStreamResponse> responses;
+  final Object? error;
+  final requests = <_RecordedRequest>[];
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
+  }) {
+    requests.add(
+      _RecordedRequest(
+        model: model,
+        toolNames: tools?.map((tool) => tool.function.name).toList() ?? [],
+      ),
+    );
+    final error = this.error;
+    if (error != null) {
+      return Stream<CreateChatCompletionStreamResponse>.error(error);
+    }
+    return Stream.fromIterable(responses);
+  }
+}
+
+CreateChatCompletionStreamResponse _content(String text) {
+  return CreateChatCompletionStreamResponse(
+    id: 'content',
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        delta: ChatCompletionStreamResponseDelta(content: text),
+        index: 0,
+      ),
+    ],
+    object: 'chat.completion.chunk',
+    created: 0,
+  );
+}
+
+CreateChatCompletionStreamResponse _toolCall({
+  required String name,
+  required String argumentsJson,
+}) {
+  return CreateChatCompletionStreamResponse(
+    id: 'tool',
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        delta: ChatCompletionStreamResponseDelta.fromJson({
+          'tool_calls': [
+            {
+              'index': 0,
+              'id': 'call-1',
+              'type': 'function',
+              'function': {
+                'name': name,
+                'arguments': argumentsJson,
+              },
+            },
+          ],
+        }),
+        index: 0,
+      ),
+    ],
+    object: 'chat.completion.chunk',
+    created: 0,
+  );
+}
+
+CreateChatCompletionStreamResponse _toolCallChunk({
+  required String argumentsJson,
+  String? id,
+  String? name,
+}) {
+  final function = <String, Object?>{
+    'arguments': argumentsJson,
+  };
+  if (name != null) {
+    function['name'] = name;
+  }
+  final toolCall = <String, Object?>{
+    'index': 0,
+    'type': 'function',
+    'function': function,
+  };
+  if (id != null) {
+    toolCall['id'] = id;
+  }
+
+  return CreateChatCompletionStreamResponse(
+    id: 'tool',
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        delta: ChatCompletionStreamResponseDelta.fromJson({
+          'tool_calls': [toolCall],
+        }),
+        index: 0,
+      ),
+    ],
+    object: 'chat.completion.chunk',
+    created: 0,
+  );
+}
+
+CreateChatCompletionStreamResponse _usage({
+  required int inputTokens,
+  required int outputTokens,
+}) {
+  return CreateChatCompletionStreamResponse(
+    id: 'usage',
+    choices: const [],
+    object: 'chat.completion.chunk',
+    created: 0,
+    usage: CompletionUsage(
+      promptTokens: inputTokens,
+      completionTokens: outputTokens,
+      totalTokens: inputTokens + outputTokens,
+    ),
+  );
+}

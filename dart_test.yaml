@@ -6,3 +6,7 @@ tags:
       Slow performance/benchmark tests (e.g. large-dataset inserts under a long
       @Timeout). Can be kept out of the fast default lane via
       `--exclude-tags performance` and run on a dedicated CI step.
+  eval-live:
+    description: >-
+      Manual local-inference evals that call a local model server and write
+      report artifacts. They are skipped unless explicitly enabled.
