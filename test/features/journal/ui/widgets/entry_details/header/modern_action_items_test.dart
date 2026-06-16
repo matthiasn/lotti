@@ -68,6 +68,7 @@ Widget _buildWithRoute({
   return ProviderScope(
     overrides: overrides,
     child: MaterialApp(
+      theme: resolveTestTheme(),
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
