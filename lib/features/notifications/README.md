@@ -19,6 +19,15 @@ flowchart LR
 
 ## Runtime Shape
 
+- The whole feature is gated by the `enableSyncedAlertsFlag` config flag.
+  `create`, state mutations, and OS scheduling are no-ops while it is off;
+  `NotificationScheduler.reconcile` cancels any already-scheduled OS alerts when
+  the flag is turned off so stale alerts cannot still fire.
+- Two deterministic-ID kinds exist today: `taskSuggestion` (agent proposals) and
+  `taskOverdue`. Both derive their row id from the linked task
+  (`uuid v5` of `["<kind>", linkedTaskId]`), so re-creating a row for the same
+  task lands on the existing row and keeps the vector clock advancing instead of
+  resetting to an empty clock.
 - `NotificationEntity` is a Freezed union in
   `lib/classes/notification_entity.dart`.
 - `NotificationMeta` stores the synced row identity, scheduled delivery time,
@@ -99,6 +108,12 @@ flowchart LR
 `scheduleNotificationAt`, which preserves the full date. Due rows use
 `showNotificationNow`; they do not reuse the legacy `scheduleNotification`
 method because that method intentionally schedules for "today at HH:mm:ss".
+
+A row is only schedulable while it is `Live`: once `seenAt`, `actedOnAt`, or
+`deletedAt` is set, `schedule` cancels the OS-level alert instead of (re)posting
+it. `reconcile` re-derives the OS alert set from the database — rescheduling due
+and upcoming rows, or cancelling everything when the feature flag is off — and is
+the path that keeps OS alerts consistent with synced state across app restarts.
 
 OS notification IDs are derived from the notification UUID with stable
 FNV-1a-32 masked to 31 bits, so cancellation survives app restarts.
