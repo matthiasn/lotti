@@ -107,6 +107,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
             label: 'Start',
             variant: DesignSystemButtonVariant.secondary,
             size: DesignSystemButtonSize.large,
+            fullWidth: true,
             onPressed: _canStart && dateFrom != null && dateTo != null
                 ? () {
                     ref
