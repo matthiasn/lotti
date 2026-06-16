@@ -21,6 +21,20 @@ import 'package:lotti/widgets/form/form_widgets.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
+/// Full-screen, form-style project editor used on the settings/category route
+/// (e.g. `/settings/categories/<id>`) and any push-navigation entry point.
+///
+/// Edits go through [ProjectDetailController]: the status picker, title field,
+/// and target-date field mutate the controller's pending project, and the
+/// bottom bar's Save button persists them (also bound to Cmd/Ctrl+S). On a
+/// successful save it shows a success toast and navigates back.
+///
+/// When [categoryId] is non-null the page came from a category screen, so back
+/// navigation beams to that category instead of a plain `pop`, and [PopScope]
+/// is locked (`canPop: false`) to route the gesture through the same handler.
+///
+/// This is the desktop/settings editor; the read-first mobile/desktop detail
+/// surface is `ProjectDetailsPage`.
 class ProjectDetailPage extends ConsumerStatefulWidget {
   const ProjectDetailPage({
     required this.projectId,

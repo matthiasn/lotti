@@ -45,6 +45,19 @@ final projectDetailControllerProvider = NotifierProvider.autoDispose
       ProjectDetailController.new,
     );
 
+/// Edit controller for a single project, keyed by project id.
+///
+/// Holds two snapshots — `_originalProject` (last persisted baseline) and
+/// `_pendingProject` (in-flight edits) — and exposes `update*` mutators that
+/// only touch the pending copy; [ProjectDetailState.hasChanges] is recomputed
+/// by diffing them. [saveChanges] persists the pending project (rejecting an
+/// empty title and appending the previous status to history when status
+/// changed), then promotes it to the new baseline.
+///
+/// It subscribes to the repository update stream and reloads on changes to this
+/// project, but a reload preserves unsaved edits: the baseline refreshes only
+/// when there are no pending changes, so a concurrent sync never clobbers what
+/// the user is typing.
 class ProjectDetailController extends Notifier<ProjectDetailState> {
   ProjectDetailController(this._projectId);
 

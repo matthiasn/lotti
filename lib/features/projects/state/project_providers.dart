@@ -73,6 +73,13 @@ final projectsFilterControllerProvider =
       ProjectsFilterController.new,
     );
 
+/// Holds the live Projects-tab filter ([ProjectsFilter]) and exposes targeted
+/// mutators for the status/category chips, the search field, and the filter
+/// sheet.
+///
+/// The provider is kept alive (not auto-disposed) so filter selections survive
+/// navigation away from and back to the tab. [visibleProjectGroupsProvider]
+/// re-applies this state to the raw overview snapshot whenever it changes.
 class ProjectsFilterController extends Notifier<ProjectsFilter> {
   @override
   ProjectsFilter build() => const ProjectsFilter();
@@ -91,6 +98,9 @@ class ProjectsFilterController extends Notifier<ProjectsFilter> {
     state = state.copyWith(selectedCategoryIds: categoryIds);
   }
 
+  /// Updates the search text and derives the [ProjectsSearchMode]: an empty
+  /// (whitespace-only) query disables text matching, otherwise it switches to
+  /// in-memory `localText` substring matching.
   void setTextQuery(String textQuery) {
     final normalizedQuery = textQuery.trim();
     state = state.copyWith(

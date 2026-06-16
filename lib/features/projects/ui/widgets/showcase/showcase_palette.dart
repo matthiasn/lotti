@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Named, theme-aware color accessors for the projects showcase/detail UI.
+///
+/// Each method resolves a design-system token off `context.designTokens`,
+/// giving these widgets a small semantic vocabulary (page, surface, border,
+/// high/medium/low text, accent fills) instead of referencing raw token paths
+/// at every call site.
 class ShowcasePalette {
   static Color page(BuildContext context) =>
       context.designTokens.colors.background.level01;

@@ -24,6 +24,20 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
+/// Top-level Projects tab.
+///
+/// On desktop it renders a resizable two-pane layout: a list scaffold on the
+/// left (width driven by [paneWidthControllerProvider] via a [ResizableDivider])
+/// and, on the right, [ProjectDetailsPage] for the project currently selected in
+/// `NavService.desktopSelectedProjectId`, falling back to an empty-state. On
+/// mobile it shows only the list scaffold; tapping a project beams to
+/// `/projects/<id>`.
+///
+/// The list scaffold watches [visibleProjectGroupsProvider] (the raw
+/// [projectsOverviewProvider] snapshot with [projectsFilterControllerProvider]
+/// applied), wires the search/filter header into that filter controller, and
+/// offers a create-project FAB. Scrolling pings [UserActivityService] to keep
+/// the session active.
 class ProjectsTabPage extends ConsumerStatefulWidget {
   const ProjectsTabPage({super.key});
 

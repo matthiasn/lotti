@@ -7,6 +7,15 @@ import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/model/projects_filter_sheet_state.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 
+/// Opens the Projects-tab filter modal (status + category selection) on top of
+/// the shared design-system filter sheet.
+///
+/// Seeds the sheet from [initialFilter] via `buildProjectsFilterSheetState`,
+/// renders status options with their per-status icon/color, and on apply maps
+/// the edited sheet state back through `projectsFilterFromSheetState` and hands
+/// the result to [onApplied] (typically assigned to
+/// `projectsFilterControllerProvider`). Label/project sections are intentionally
+/// unused here.
 Future<void> showProjectsFilterModal({
   required BuildContext context,
   required ProjectsFilter initialFilter,

@@ -5,6 +5,14 @@ import 'package:lotti/features/design_system/components/task_filters/design_syst
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Adapts a [ProjectsFilter] into the design-system filter-sheet model so the
+/// Projects tab can reuse the shared task-filter modal.
+///
+/// Builds the fixed six status options (keyed by [ProjectStatusFilterIds]) and
+/// one option per category, then pre-selects each field by intersecting the
+/// filter's stored IDs with the options actually present — dropping any stale
+/// selections for categories that no longer exist. The inverse is
+/// [projectsFilterFromSheetState].
 DesignSystemTaskFilterState buildProjectsFilterSheetState(
   BuildContext context, {
   required ProjectsFilter filter,
@@ -64,6 +72,11 @@ DesignSystemTaskFilterState buildProjectsFilterSheetState(
   );
 }
 
+/// Folds the filter sheet's edited selections back onto [baseFilter],
+/// overwriting only the status and category IDs.
+///
+/// The text query and search mode are preserved from [baseFilter] because the
+/// filter sheet does not own them. Inverse of [buildProjectsFilterSheetState].
 ProjectsFilter projectsFilterFromSheetState(
   DesignSystemTaskFilterState sheetState, {
   required ProjectsFilter baseFilter,

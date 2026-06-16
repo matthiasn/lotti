@@ -5,6 +5,13 @@ import 'package:lotti/features/projects/ui/widgets/projects_header.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 
+/// Scrollable projects overview: an optional [ProjectsHeader] above a grouped,
+/// scrollable project list (or a [NoResultsPane] when [groups] is empty).
+///
+/// Renders [groups] through a [ProjectsOverviewSliverList] inside a
+/// design-system scrollbar. Accepts an external [scrollController] (else manages
+/// its own, swapping cleanly when one is provided later). Set [renderHeader] to
+/// `false` to omit the built-in header when the host supplies its own.
 class ProjectsOverviewContent extends StatefulWidget {
   const ProjectsOverviewContent({
     required this.title,

@@ -7,6 +7,17 @@ import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dar
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
 
+/// Collapsible "AI report" block: an always-visible TLDR with an optional
+/// expandable remainder, plus trailing report controls.
+///
+/// [body] is the short summary and [fullContent] the complete markdown report;
+/// `_parseContent` splits them into a `tldr` and an `additional` section
+/// (stripping a leading H1 project title and reconciling an explicit TLDR with
+/// the parsed one). The chevron and expand affordance appear only when there is
+/// additional content. The header may also show a "updated X ago"
+/// [trailingLabel], a live wake countdown when [nextWakeAt] is set, a cancel-×
+/// (see [onCancelScheduledWake]), and a refresh button / spinner driven by
+/// [onRefresh] and [isRefreshing].
 class ExpandableReportSection extends StatefulWidget {
   const ExpandableReportSection({
     required this.title,
@@ -355,6 +366,8 @@ class _ReportCountdownPillState extends State<_ReportCountdownPill>
   }
 }
 
+/// Small rounded pill that displays a pre-formatted countdown string (see
+/// [formatCountdown]); the live ticking is owned by the caller.
 class ShowcaseCountdownPill extends StatelessWidget {
   const ShowcaseCountdownPill({
     required this.countdownText,

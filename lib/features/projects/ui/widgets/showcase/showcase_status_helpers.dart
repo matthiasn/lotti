@@ -3,6 +3,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Localized label for a [ProjectStatus], for the showcase/detail surfaces.
 String showcaseProjectStatusLabel(
   BuildContext context,
   ProjectStatus status,
@@ -15,6 +16,7 @@ String showcaseProjectStatusLabel(
   ProjectOpen() => context.messages.projectStatusOpen,
 };
 
+/// Glyph for a [ProjectStatus] used by the showcase status pills/labels.
 IconData showcaseProjectStatusIcon(ProjectStatus status) => switch (status) {
   ProjectActive() => Icons.play_arrow_rounded,
   ProjectMonitoring() => Icons.visibility_outlined,
@@ -24,6 +26,7 @@ IconData showcaseProjectStatusIcon(ProjectStatus status) => switch (status) {
   ProjectOpen() => Icons.radio_button_unchecked_rounded,
 };
 
+/// Accent color for a [ProjectStatus], drawn from [ShowcasePalette].
 Color showcaseProjectStatusColor(
   BuildContext context,
   ProjectStatus status,
@@ -36,6 +39,8 @@ Color showcaseProjectStatusColor(
   ProjectOpen() => ShowcasePalette.infoBlue(context),
 };
 
+/// Formats a [Duration] compactly for task/estimate chips: `Xh Ym` when there
+/// are whole hours, otherwise `Xm Ys` / `Xm` / `Xs` down to seconds.
 String showcaseFormatDuration(Duration duration) {
   final hours = duration.inHours;
   final minutes = duration.inMinutes.remainder(60);

@@ -6,6 +6,11 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 export 'package:lotti/features/projects/ui/widgets/expandable_report_section.dart';
 export 'package:lotti/features/projects/ui/widgets/shared_tag_widgets.dart';
 
+/// Bordered card that lays out a [header] above an item list, inserting a
+/// divider after the header and between each item built by [itemBuilder].
+///
+/// The non-sliver counterpart of `ProjectTasksSliverPanel`; used where the
+/// panel fits in a regular `Column` rather than a `CustomScrollView`.
 class ShowcasePanel extends StatelessWidget {
   const ShowcasePanel({
     required this.header,

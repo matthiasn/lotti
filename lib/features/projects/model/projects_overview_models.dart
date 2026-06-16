@@ -173,6 +173,11 @@ class ProjectTaskRollupData {
   int get completionPercent => (completionRatio * 100).round();
 }
 
+/// One project as displayed in an overview list row: the project entity, its
+/// resolved category, and aggregated task counts.
+///
+/// [searchableText] is the haystack used by the Projects-tab local text filter
+/// (title + entry plain text + category name).
 @immutable
 class ProjectListItemData {
   const ProjectListItemData({
@@ -200,6 +205,9 @@ class ProjectListItemData {
   ].where((segment) => segment.trim().isNotEmpty).join(' ');
 }
 
+/// A category header plus the projects under it, the unit the overview list
+/// renders as a section. A `null` [categoryId]/[category] is the
+/// unassigned/uncategorised bucket.
 @immutable
 class ProjectCategoryGroup {
   const ProjectCategoryGroup({
@@ -225,6 +233,8 @@ class ProjectCategoryGroup {
   }
 }
 
+/// The full set of category groups for the overview, as produced by the
+/// repository rollup before any [ProjectsFilter] is applied.
 @immutable
 class ProjectsOverviewSnapshot {
   const ProjectsOverviewSnapshot({
@@ -241,6 +251,14 @@ class ProjectsOverviewSnapshot {
   bool get isEmpty => totalProjectCount == 0;
 }
 
+/// Applies [filter] to a loaded [overview], returning only the matching groups.
+///
+/// Filtering is layered: groups are first kept by selected category (empty =
+/// all), then each surviving group's projects are kept by selected status
+/// (empty = all) and, when the search mode is `localText` with a non-empty
+/// query, by a case-insensitive substring match against
+/// [ProjectListItemData.searchableText]. Groups left with no projects are
+/// dropped. This is the pure model behind `visibleProjectGroupsProvider`.
 List<ProjectCategoryGroup> applyProjectsFilter(
   ProjectsOverviewSnapshot overview,
   ProjectsFilter filter,

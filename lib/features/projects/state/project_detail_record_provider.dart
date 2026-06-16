@@ -16,6 +16,15 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:meta/meta.dart';
 
+/// Composes the read-model ([ProjectRecord]) that `ProjectDetailsPage` renders.
+///
+/// Joins the editable project from [projectDetailControllerProvider] with the
+/// category, the latest project-agent report/state (health band, AI summary,
+/// recommendations, next scheduled wake), and the linked tasks — sorted by
+/// [_compareTasks] and decorated with their per-task one-liners and a rolled-up
+/// estimate total. Returns `null` when the project no longer exists. Because it
+/// watches the controller, edits and background DB notifications recompute the
+/// record automatically.
 final projectDetailRecordProvider = FutureProvider.autoDispose
     .family<ProjectRecord?, String>((
       ref,
@@ -183,6 +192,9 @@ int healthScoreFromMetrics(ProjectHealthMetrics? metrics) {
   return (base + adjustment).clamp(0, 100);
 }
 
+/// Injectable "current time" source for the detail UI (relative "updated X ago"
+/// labels and countdowns). Defaults to `clock.now`; override in tests for
+/// deterministic timestamps.
 final projectDetailNowProvider = Provider<DateTime Function()>(
   (_) => clock.now,
 );

@@ -4,6 +4,13 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Title-plus-search header for projects overview surfaces.
+///
+/// Renders the [title] (responsive heading size, optionally centered) with an
+/// optional [titleTrailing] action, above a design-system search field whose
+/// `on*` callbacks bubble query changes to the caller. [searchTrailing] adds an
+/// action (e.g. a filter button) beside the search box. The live Projects tab
+/// renders its own tab-section header instead and suppresses this one.
 class ProjectsHeader extends StatelessWidget {
   const ProjectsHeader({
     required this.title,
