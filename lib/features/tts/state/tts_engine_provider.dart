@@ -38,7 +38,10 @@ class UnavailableTtsEngine implements TtsEngine {
 /// unavailable fallback elsewhere. Tests override this with a fake.
 @Riverpod(keepAlive: true)
 TtsEngine ttsEngine(Ref ref) {
-  if (!platform.isMacOS && !platform.isIOS && !platform.isLinux) {
+  if (!platform.isMacOS &&
+      !platform.isIOS &&
+      !platform.isLinux &&
+      !platform.isAndroid) {
     return const UnavailableTtsEngine();
   }
   final engine = SupertonicOnnxEngine();
