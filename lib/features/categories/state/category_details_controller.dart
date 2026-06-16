@@ -10,6 +10,12 @@ import 'package:lotti/features/categories/repository/categories_repository.dart'
 
 part 'category_details_controller.freezed.dart';
 
+/// View state for the category details/edit form.
+///
+/// [hasChanges] gates the Save button and reflects whether the in-flight edits
+/// differ from the loaded category. [isLoading] is true until the first value
+/// arrives from the watch stream; [isSaving] guards a write in flight.
+/// [errorMessage] holds a load/save/validation failure for the UI to surface.
 @freezed
 abstract class CategoryDetailsState with _$CategoryDetailsState {
   const factory CategoryDetailsState({
@@ -28,11 +34,26 @@ abstract class CategoryDetailsState with _$CategoryDetailsState {
   );
 }
 
+/// Per-category-id details controller, family-keyed by category id and
+/// auto-disposed when the details page is no longer mounted.
 final categoryDetailsControllerProvider = NotifierProvider.autoDispose
     .family<CategoryDetailsController, CategoryDetailsState, String>(
       CategoryDetailsController.new,
     );
 
+/// Drives the category details/edit form.
+///
+/// Holds two snapshots: `_originalCategory` (the last loaded/saved baseline)
+/// and `_pendingCategory` (the working copy with the user's edits). Field
+/// edits only mutate `_pendingCategory` and recompute [CategoryDetailsState]
+/// `hasChanges`; nothing is persisted until [saveChanges].
+///
+/// The controller subscribes to [CategoryRepository.watchCategory], so it also
+/// receives background updates (e.g. correction examples captured by the AI
+/// pipeline while the user has the form open). While the user has unsaved
+/// edits (`hasChanges`), the displayed category stays the pending copy so a
+/// background update never clobbers in-progress input; [saveChanges] then
+/// reconciles the two so neither side's changes are lost.
 class CategoryDetailsController extends Notifier<CategoryDetailsState> {
   CategoryDetailsController(this._categoryId);
 
@@ -135,6 +156,11 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
         !originalSet.containsAll(currentSet);
   }
 
+  /// Applies the supplied scalar/flag edits to the pending category and
+  /// recomputes [CategoryDetailsState] `hasChanges`. Every argument is
+  /// optional; `null` means "leave unchanged" (the current pending value is
+  /// retained), so there is no way to clear a value to `null` through this
+  /// method. Does not persist — call [saveChanges] for that.
   void updateFormField({
     String? name,
     String? color,
@@ -197,6 +223,20 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     );
   }
 
+  /// Persists the pending edits, reconciling correction examples against the
+  /// latest DB copy to avoid data loss in either direction.
+  ///
+  /// No-op when there is nothing to save. Rejects an empty name with an
+  /// `errorMessage` instead of writing.
+  ///
+  /// Correction examples are special: the AI pipeline can append new examples
+  /// to the same category in the background while the form is open. So before
+  /// writing, this re-reads the latest examples from the DB and starts from
+  /// those (keeping background additions), then removes only the examples the
+  /// user explicitly deleted in the UI (the set difference of original minus
+  /// pending). All other fields are taken verbatim from the pending copy. On
+  /// success the baseline (`_originalCategory`) is advanced and `hasChanges`
+  /// clears; on failure an `errorMessage` is set and the edits remain pending.
   Future<void> saveChanges() async {
     if (_pendingCategory == null || !state.hasChanges) return;
 
@@ -250,6 +290,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     }
   }
 
+  /// Replaces the pending speech-dictionary terms (empty list stored as
+  /// `null`). Not persisted until [saveChanges].
   void updateSpeechDictionary(List<String> terms) {
     _updatePendingCategory(
       (c) => c.copyWith(speechDictionary: terms.isEmpty ? null : terms),
@@ -279,6 +321,9 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     );
   }
 
+  /// Soft-deletes this category via the repository (see
+  /// [CategoryRepository.deleteCategory]). Sets an `errorMessage` on failure;
+  /// the caller is responsible for navigating away on success.
   Future<void> deleteCategory() async {
     state = state.copyWith(isSaving: true, errorMessage: null);
 

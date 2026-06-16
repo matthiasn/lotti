@@ -7,6 +7,13 @@ import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart'
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// An icon button that shows a journal [entry]'s current category and opens
+/// the single-select picker to reassign it.
+///
+/// The button glyph is the entry's [CategoryIconCompact]; tapping opens
+/// [showCategoryPicker]. A pick (or an explicit clear, mapped to `null`)
+/// persists immediately through `entryControllerProvider.updateCategoryId`;
+/// dismissing the picker leaves the assignment unchanged.
 class CategorySelectionIconButton extends ConsumerWidget {
   const CategorySelectionIconButton({
     required this.entry,
