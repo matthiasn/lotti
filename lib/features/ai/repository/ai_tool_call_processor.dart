@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
@@ -18,7 +17,7 @@ import 'package:lotti/features/labels/services/label_assignment_processor.dart';
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -195,7 +194,7 @@ class AiToolCallProcessor {
                 );
 
                 // Refresh the task to get the updated checklistIds
-                final journalDb = getIt<JournalDb>();
+                final journalDb = ref.read(journalDbProvider);
                 final updatedEntity = await journalDb.journalEntityById(
                   currentTask.id,
                 );

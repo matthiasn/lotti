@@ -85,6 +85,11 @@ class SkillInferenceRunner {
   static String debugFormatSpeechDictionaryText(List<String> terms) =>
       _formatSpeechDictionaryText(terms);
 
+  /// Test seam for [_prepareImageData] — image read + path-containment guard.
+  @visibleForTesting
+  Future<List<String>> debugPrepareImageData(JournalImage image) =>
+      _prepareImageData(image);
+
   /// Formats pre-fetched speech dictionary terms into a prompt fragment.
   static String _formatSpeechDictionaryText(List<String> terms) {
     if (terms.isEmpty) return '';
