@@ -29,6 +29,9 @@ class InsightsCategoryResolver {
   /// render a raw UUID.
   final String deletedLabel;
 
+  /// Display label for a series/table key: [uncategorizedLabel] for `null`,
+  /// [otherLabel] for the rollup sentinel, the category name otherwise, and
+  /// [deletedLabel] when the id has no live definition (never a raw UUID).
   String labelFor(String? key) {
     if (key == null) return uncategorizedLabel;
     if (key == kInsightsOtherCategoryKey) return otherLabel;
