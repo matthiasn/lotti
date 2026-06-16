@@ -8,6 +8,12 @@ part 'chat_session.g.dart';
 // Reuse single UUID instance for efficiency
 const _uuid = Uuid();
 
+/// A persisted chat conversation: ordered [messages] plus metadata.
+///
+/// Scoped to a [categoryId] (the AI assistant needs a single-category context).
+/// The selected model id is stashed in [metadata] under `selectedModelId` by
+/// `ChatSessionUiModel.toDomain`, not as a first-class field. Stored in-memory
+/// by `ChatRepository` today (persistence is pending).
 @freezed
 abstract class ChatSession with _$ChatSession {
   // explicitToJson so nested ChatMessage objects serialize deeply — without

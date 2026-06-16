@@ -11,6 +11,14 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Renders one [ChatMessage] as a chat bubble (user-aligned right, assistant
+/// left).
+///
+/// Assistant content is split via `splitThinkingSegments` so reasoning renders
+/// inline as collapsible [ThinkingDisclosure]s interleaved with markdown.
+/// Thinking-only assistant messages hide their timestamp; assistant bubbles
+/// with visible content show a corner copy action that strips thinking so only
+/// the answer is copied.
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     required this.message,

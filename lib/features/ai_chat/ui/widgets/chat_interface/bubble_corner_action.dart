@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+/// Small circular icon button that floats over a message bubble's corner
+/// (e.g. the copy affordance on assistant bubbles).
 class BubbleCornerAction extends StatelessWidget {
   const BubbleCornerAction({
     required this.tooltip,

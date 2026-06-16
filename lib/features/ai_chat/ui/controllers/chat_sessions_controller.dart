@@ -9,6 +9,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'chat_sessions_controller.g.dart';
 
+/// Manages the list of chat sessions for one category: the recent-sessions
+/// list, the current session, search, and deletion. Keyed by `categoryId`.
+///
+/// Distinct from `ChatSessionController`, which owns the live message stream of
+/// a single open session; this controller is the session browser/manager. All
+/// repository errors are logged and surfaced via `ChatStateUiModel.error`
+/// (except recent-session loads, which fail silently).
 @riverpod
 class ChatSessionsController extends _$ChatSessionsController {
   final DomainLogger _loggingService = getIt<DomainLogger>();
@@ -178,7 +185,9 @@ class ChatSessionsController extends _$ChatSessionsController {
     }
   }
 
-  /// Get session statistics
+  /// Aggregate counts over the loaded recent sessions, keyed by
+  /// `totalSessions`, `totalMessages`, `activeSessionsCount` (sessions with at
+  /// least one message), and `averageMessagesPerSession` (integer division).
   Map<String, int> getSessionStats() {
     final sessions = state.recentSessions;
     final totalSessions = sessions.length;

@@ -489,6 +489,9 @@ class RealtimeTranscriptionService {
 bool _isMlxRealtimeModel(String providerModelId) =>
     isMlxAudioQwenAsrModelId(providerModelId);
 
+/// Provides the long-lived [RealtimeTranscriptionService]. Not `autoDispose`:
+/// the service is a singleton whose audio buffer is reused across sessions (it
+/// deliberately never closes its amplitude stream — see [RealtimeAudioBuffer]).
 final Provider<RealtimeTranscriptionService>
 realtimeTranscriptionServiceProvider = Provider<RealtimeTranscriptionService>((
   ref,

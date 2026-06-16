@@ -3,6 +3,12 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
 
+/// Renders the body of an assistant bubble while it is still streaming.
+///
+/// Shows a "Thinking..." spinner until the first content arrives, then splits
+/// the partial content with `splitThinkingSegments` so in-progress reasoning
+/// appears as [ThinkingDisclosure]s alongside the live markdown answer. Falls
+/// back to rendering raw content if segmentation throws.
 class StreamingContent extends StatelessWidget {
   const StreamingContent({
     required this.content,

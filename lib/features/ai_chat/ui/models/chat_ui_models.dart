@@ -60,6 +60,10 @@ class ChatSessionUiModel {
   final String? error;
   final String? streamingMessageId;
 
+  /// Nullable fields ([selectedModelId], [error], [streamingMessageId]) use a
+  /// `const Object()` sentinel default so callers can distinguish "leave
+  /// unchanged" (omit) from "clear to null" (pass `null` explicitly) — a plain
+  /// `String?` default could not express the latter.
   ChatSessionUiModel copyWith({
     String? id,
     String? title,

@@ -4,6 +4,12 @@ import 'package:lotti/features/ai_chat/ui/pages/chat_modal_page.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
+/// App-bar button that opens the AI chat assistant in a bottom-sheet modal.
+///
+/// Reuses the parent `ProviderScope` container (via `UncontrolledProviderScope`)
+/// so the modal shares journal/category state, then overrides
+/// `journalPageScopeProvider` so the chat sees the same tasks/journal scope the
+/// user is currently viewing.
 class AiChatIcon extends ConsumerWidget {
   const AiChatIcon({super.key});
 

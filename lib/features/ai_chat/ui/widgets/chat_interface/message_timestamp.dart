@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+/// Renders a message's send time as a muted `HH:mm` label, aligned toward the
+/// bubble's side.
 class MessageTimestamp extends StatelessWidget {
   const MessageTimestamp({
     required this.timestamp,

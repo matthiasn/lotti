@@ -9,6 +9,16 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 export 'package:lotti/features/ai_chat/ui/widgets/chat_interface/chat_voice_controls.dart';
 
+/// Chat composer: text field plus voice controls.
+///
+/// Swaps its body based on `ChatRecorderState.status` — text field when idle,
+/// waveform + stop/cancel while recording, live-transcript view in realtime
+/// mode, and a progress view during batch transcription. Listens to the
+/// recorder via `listenManual`: a finished transcript is auto-sent when the
+/// session can send, otherwise dropped into the text field for editing, then
+/// cleared so it is not re-consumed. The trailing button cycles through
+/// send / settings / mic (with a batch-vs-realtime toggle when realtime is
+/// available).
 class InputArea extends ConsumerStatefulWidget {
   const InputArea({
     required this.controller,

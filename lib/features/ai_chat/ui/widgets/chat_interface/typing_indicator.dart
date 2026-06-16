@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// Three animated dots shown while the assistant is preparing a response.
 class TypingIndicator extends StatefulWidget {
   const TypingIndicator({
     required this.isUser,

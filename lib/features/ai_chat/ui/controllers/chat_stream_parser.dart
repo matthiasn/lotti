@@ -5,11 +5,14 @@ abstract class ChatStreamEvent {
   const ChatStreamEvent();
 }
 
+/// Visible answer text to append to the current streaming assistant bubble.
 class VisibleAppend extends ChatStreamEvent {
   const VisibleAppend(this.text);
   final String text;
 }
 
+/// A completed thinking/reasoning block, emitted as a discrete (already
+/// closed) segment rather than streamed character-by-character.
 class ThinkingFinal extends ChatStreamEvent {
   const ThinkingFinal(this.text);
   final String text;
@@ -24,6 +27,13 @@ class ChatStreamParser {
   final StringBuffer _thinkingBuffer = StringBuffer();
   bool _pendingSoftBreak = false;
 
+  /// Feeds one raw provider chunk and returns the events it completed.
+  ///
+  /// Stateful across calls: a partial open/close marker split across chunk
+  /// boundaries is carried forward, and an unterminated thinking block stays
+  /// open until a later chunk closes it (or [finish] flushes it). Visible text
+  /// outside thinking is emitted as [VisibleAppend]; closed thinking blocks as
+  /// [ThinkingFinal].
   List<ChatStreamEvent> processChunk(String rawChunk) {
     // Merge any carried partial opener from previous chunk
     var chunk = _pendingOpenTagTail + rawChunk;

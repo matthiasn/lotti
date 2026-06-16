@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+/// Dismissible error banner shown above the input area with retry and close
+/// actions, wired to the session controller's retry/clear-error handlers.
 class ErrorBanner extends StatelessWidget {
   const ErrorBanner({
     required this.error,
