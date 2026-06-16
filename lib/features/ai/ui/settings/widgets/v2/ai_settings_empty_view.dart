@@ -100,7 +100,7 @@ class AiSettingsFtueBanner extends StatelessWidget {
 /// │      Add one to unlock transcription, image recognition,      │
 /// │            image generation, and semantic search.             │
 /// │                                                               │
-/// │ [ 🟢 Gemini ] [ 🟠 OpenAI ] [ 🔵 Anthropic ] [ 🟧 Alibaba ] [ 🟣 Ollama ] │
+/// │ [Gemini] [OpenAI] [Anthropic] [Alibaba] [mlxAudio] [Ollama] │
 /// └──────────────────────────────────────────────────────────────┘
 /// ```
 ///

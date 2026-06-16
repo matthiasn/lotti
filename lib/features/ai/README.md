@@ -427,6 +427,8 @@ flowchart LR
 
 `CloudInferenceRepository` is the central router despite its name; it also handles local providers such as Ollama, Whisper, Voxtral, and MLX Audio.
 
+It is now a thin **facade**: every public method delegates to one of two collaborators that hold the actual branches — `CloudInferenceGenerate` (text + image) and `CloudInferenceGenerateMore` (audio, multi-turn, image generation, model install/cleanup) — both sharing a single `CloudInferenceRequestHelpers`. The mockable surface and all call sites are unchanged, so the routing table below still reflects the behavior regardless of which collaborator owns each branch.
+
 | Operation | Dedicated branches | Fallback |
 | --- | --- | --- |
 | `generate()` | Ollama, Gemini, Mistral | OpenAI-compatible chat streaming |
