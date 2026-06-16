@@ -1715,6 +1715,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderOllamaName => 'Ollama';
 
   @override
+  String get aiProviderOmlxDescription =>
+      'Lokale OpenAI-kompatible oMLX-Inferenz für MLX-Modelle';
+
+  @override
+  String get aiProviderOmlxName => 'oMLX (lokal)';
+
+  @override
   String get aiProviderOpenAiDescription => 'OpenAIs GPT-Modelle';
 
   @override
@@ -1760,6 +1767,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get aiProviderTaglineOllama => 'Läuft lokal · keine Cloud-Aufrufe';
+
+  @override
+  String get aiProviderTaglineOmlx => 'Lokale MLX-Inferenz · OpenAI-kompatibel';
 
   @override
   String get aiProviderTaglineOpenAi => 'GPT-Familie · Vision + Reasoning';
@@ -7483,6 +7493,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsSyncNodeProfileCapabilityOllamaLlm => 'Ollama LLM';
+
+  @override
+  String get settingsSyncNodeProfileCapabilityOmlxLlm => 'oMLX LLM';
 
   @override
   String get settingsSyncNodeProfileCapabilityVoxtral => 'Voxtral (lokal)';

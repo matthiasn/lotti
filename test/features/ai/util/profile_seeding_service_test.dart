@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -221,9 +222,12 @@ void main() {
           .first;
 
       expect(powerProfile.desktopOnly, isTrue);
-      expect(powerProfile.name, 'Local Power (Ollama)');
-      expect(powerProfile.thinkingModelId, 'qwen3.6:35b-a3b-coding-nvfp4');
-      expect(powerProfile.imageRecognitionModelId, 'qwen3.5:27b');
+      expect(powerProfile.name, 'Local Power (oMLX)');
+      expect(powerProfile.thinkingModelId, omlxRecommendedMultimodalModelId);
+      expect(
+        powerProfile.imageRecognitionModelId,
+        omlxRecommendedMultimodalModelId,
+      );
       expect(powerProfile.isDefault, isFalse);
     });
 

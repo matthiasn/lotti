@@ -38,8 +38,7 @@ void main() {
   group('AiSettingsNoProvidersCard', () {
     testWidgets(
       'renders the No-providers title + subtitle + a chip for each of the '
-      'five first-class providers '
-      '(Gemini / OpenAI / Anthropic / Alibaba / Ollama)',
+      'local-first provider shortcuts',
       (tester) async {
         await tester.pumpWidget(
           makeTestableWidget(
@@ -56,6 +55,8 @@ void main() {
         expect(find.text('OpenAI'), findsOneWidget);
         expect(find.text('Anthropic Claude'), findsOneWidget);
         expect(find.text('Alibaba Cloud (Qwen)'), findsOneWidget);
+        expect(find.text('MLX Audio (local)'), findsOneWidget);
+        expect(find.text('oMLX (local)'), findsOneWidget);
         expect(find.text('Ollama'), findsOneWidget);
       },
     );
@@ -79,11 +80,14 @@ void main() {
 
         await tester.tap(find.text('Ollama'));
         await tester.pump();
+        await tester.tap(find.text('oMLX (local)'));
+        await tester.pump();
         expect(
           tapped,
           equals([
             InferenceProviderType.anthropic,
             InferenceProviderType.ollama,
+            InferenceProviderType.omlx,
           ]),
         );
       },

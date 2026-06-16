@@ -321,13 +321,14 @@ void main() {
   );
 
   testWidgets(
-    'renders the full capability palette including voxtral and whisper',
+    'renders the full capability palette including oMLX, voxtral, and whisper',
     (tester) async {
       await tester.pumpWidget(
         harness(
           self: _self(
             capabilities: const [
               NodeCapability.mlxAudio,
+              NodeCapability.omlxLlm,
               NodeCapability.ollamaLlm,
               NodeCapability.voxtral,
               NodeCapability.whisper,
@@ -337,6 +338,7 @@ void main() {
             _self(
               capabilities: const [
                 NodeCapability.mlxAudio,
+                NodeCapability.omlxLlm,
                 NodeCapability.ollamaLlm,
                 NodeCapability.voxtral,
                 NodeCapability.whisper,
@@ -348,8 +350,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(Chip), findsNWidgets(4));
+      expect(find.byType(Chip), findsNWidgets(5));
       expect(find.text('MLX Audio (local)'), findsOneWidget);
+      expect(find.text('oMLX LLM'), findsOneWidget);
       expect(find.text('Ollama LLM'), findsOneWidget);
       expect(find.text('Voxtral (local)'), findsOneWidget);
       expect(find.text('Whisper (local)'), findsOneWidget);

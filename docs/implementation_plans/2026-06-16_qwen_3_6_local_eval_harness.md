@@ -66,6 +66,9 @@ The built-in profile matrix targets the installed oMLX model IDs:
 - `Qwen3.6-35B-A3B-MLX-8bit`
 
 Current local oMLX discovery found all three under `/Users/mn/.omlx/models`.
+`Qwen3.6-35B-A3B` is treated as multimodal in the app catalog: the oMLX known
+model rows include both text and image input modalities, and the Local Power
+seed uses the same recommended 4-bit row for thinking and image recognition.
 
 ## Default Scenarios
 
@@ -106,6 +109,11 @@ failure category.
 The runtime provider is the oMLX OpenAI-compatible server. The expected local
 base URL for the current machine is `http://127.0.0.1:8003/v1`. Do not point
 this harness at an Ollama endpoint.
+
+The app now has a first-class `InferenceProviderType.omlx` provider with the
+same default base URL and an OpenAI-compatible connection probe. It is separate
+from `genericOpenAi` so local oMLX models can be prepopulated and local-only
+profile gating can classify them correctly.
 
 Default live wrapper:
 

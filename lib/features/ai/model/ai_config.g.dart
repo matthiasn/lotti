@@ -48,6 +48,7 @@ const _$InferenceProviderTypeEnumMap = {
   InferenceProviderType.mistral: 'mistral',
   InferenceProviderType.mlxAudio: 'mlxAudio',
   InferenceProviderType.nebiusAiStudio: 'nebiusAiStudio',
+  InferenceProviderType.omlx: 'omlx',
   InferenceProviderType.openAi: 'openAi',
   InferenceProviderType.openRouter: 'openRouter',
   InferenceProviderType.ollama: 'ollama',

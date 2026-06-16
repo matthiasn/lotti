@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:meta/meta.dart';
 
 /// Well-known IDs for default inference profiles (idempotent seeding).
@@ -322,9 +323,9 @@ class ProfileSeedingService {
     ),
     AiConfigInferenceProfile(
       id: profileLocalPowerId,
-      name: 'Local Power (Ollama)',
-      thinkingModelId: 'qwen3.6:35b-a3b-coding-nvfp4',
-      imageRecognitionModelId: 'qwen3.5:27b',
+      name: 'Local Power (oMLX)',
+      thinkingModelId: omlxRecommendedMultimodalModelId,
+      imageRecognitionModelId: omlxRecommendedMultimodalModelId,
       desktopOnly: true,
       createdAt: DateTime(2026),
     ),

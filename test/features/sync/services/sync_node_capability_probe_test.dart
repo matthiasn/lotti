@@ -12,6 +12,8 @@ void main() {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
             true,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
       );
 
       final profile = await probe(hostId: 'h1', now: now);
@@ -23,11 +25,39 @@ void main() {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
             false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
       );
 
       final profile = await probe(hostId: 'h1', now: now);
 
       expect(profile.capabilities, isNot(contains(NodeCapability.ollamaLlm)));
+    });
+
+    test('claims omlxLlm when the oMLX probe succeeds', () async {
+      final probe = makeDefaultSyncNodeCapabilityProbe(
+        ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            true,
+      );
+
+      final profile = await probe(hostId: 'h1', now: now);
+
+      expect(profile.capabilities, contains(NodeCapability.omlxLlm));
+    });
+
+    test('does NOT claim omlxLlm when the oMLX probe fails', () async {
+      final probe = makeDefaultSyncNodeCapabilityProbe(
+        ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+      );
+
+      final profile = await probe(hostId: 'h1', now: now);
+
+      expect(profile.capabilities, isNot(contains(NodeCapability.omlxLlm)));
     });
 
     test(
@@ -36,6 +66,8 @@ void main() {
         final probe = makeDefaultSyncNodeCapabilityProbe(
           ollamaProbe:
               ({Duration timeout = const Duration(seconds: 1)}) async => false,
+          omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+              false,
         );
 
         final profile = await probe(hostId: 'h1', now: now);
@@ -60,6 +92,8 @@ void main() {
         final probe = makeDefaultSyncNodeCapabilityProbe(
           ollamaProbe:
               ({Duration timeout = const Duration(seconds: 1)}) async => true,
+          omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+              true,
         );
 
         final profile = await probe(hostId: 'h1', now: now);
@@ -77,6 +111,8 @@ void main() {
         final probe = makeDefaultSyncNodeCapabilityProbe(
           ollamaProbe:
               ({Duration timeout = const Duration(seconds: 1)}) async => true,
+          omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+              true,
         );
 
         final first = await probe(hostId: 'h1', now: now);
@@ -90,6 +126,8 @@ void main() {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
             false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
       );
 
       final profile = await probe(hostId: 'h1', now: now);
@@ -100,6 +138,8 @@ void main() {
     test('keeps user-supplied displayName over the probe default', () async {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
             false,
       );
 
@@ -115,6 +155,8 @@ void main() {
     test('forwards a supplied appVersion onto the profile', () async {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
             false,
       );
 

@@ -83,6 +83,47 @@ const List<KnownModel> mlxAudioModels = [
   ),
 ];
 
+/// oMLX models served through the local OpenAI-compatible API.
+///
+/// Qwen3.6-35B-A3B is multimodal: the base model includes a vision encoder, so
+/// these local MLX variants are cataloged for both thinking and image
+/// recognition slots.
+const List<KnownModel> omlxModels = [
+  KnownModel(
+    providerModelId: omlxQwen36A35bA3b4BitModelId,
+    name: 'Qwen 3.6 35B-A3B (oMLX 4-bit)',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Recommended local oMLX model for thinking, coding, tool use, and '
+        'image recognition. 35B total parameters with about 3B active.',
+  ),
+  KnownModel(
+    providerModelId: omlxQwen36A35bA3bTurboQuantMlx4BitModelId,
+    name: 'Qwen 3.6 35B-A3B TurboQuant (oMLX 4-bit)',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'TurboQuant 4-bit MLX conversion for local oMLX serving. Useful as a '
+        'speed and memory comparison against the recommended 4-bit model.',
+  ),
+  KnownModel(
+    providerModelId: omlxQwen36A35bA3bMlx8BitModelId,
+    name: 'Qwen 3.6 35B-A3B (oMLX 8-bit)',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Higher-precision MLX conversion for oMLX. Keep this explicit when '
+        'comparing quality and memory use against the 4-bit variants.',
+  ),
+];
+
 /// Alibaba Cloud models - Qwen family via DashScope (OpenAI-compatible)
 ///
 /// These models run on Alibaba Cloud's DashScope API, which is fully
@@ -271,8 +312,7 @@ const List<KnownModel> ollamaModels = [
         '17GB download, ~22GB RAM. 256K context. '
         'Best local model for higher-end devices (22GB+ RAM).',
   ),
-  // Qwen 3.6 — MoE reasoning/coding model, text-only. Pair with
-  // Qwen 3.5 27B for image recognition in the Local Power profile.
+  // Qwen 3.6 — MoE reasoning/coding model.
   KnownModel(
     providerModelId: 'qwen3.6:35b-a3b-coding-nvfp4',
     name: 'Qwen 3.6 35B-A3B Coding (NVFP4)',

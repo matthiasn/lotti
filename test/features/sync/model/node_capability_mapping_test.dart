@@ -1,6 +1,7 @@
 // Verifies the explicit NodeCapability ↔ InferenceProviderType mapping.
-// Replaces the deprecated assumption that "names mirror" — they don't (ollama
-// vs ollamaLlm) — so the mapping must be table-driven and exhaustive.
+// Replaces the deprecated assumption that "names mirror" — they don't
+// (ollama vs ollamaLlm, omlx vs omlxLlm) — so the mapping must be table-driven
+// and exhaustive.
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -18,6 +19,10 @@ void main() {
       expect(
         NodeCapability.mlxAudio.providerType,
         InferenceProviderType.mlxAudio,
+      );
+      expect(
+        NodeCapability.omlxLlm.providerType,
+        InferenceProviderType.omlx,
       );
       expect(
         NodeCapability.ollamaLlm.providerType,
@@ -50,6 +55,10 @@ void main() {
       expect(
         nodeCapabilityFromProviderType(InferenceProviderType.mlxAudio),
         NodeCapability.mlxAudio,
+      );
+      expect(
+        nodeCapabilityFromProviderType(InferenceProviderType.omlx),
+        NodeCapability.omlxLlm,
       );
       expect(
         nodeCapabilityFromProviderType(InferenceProviderType.ollama),
@@ -130,6 +139,7 @@ void main() {
           // null-returning case."
           const localTypes = {
             InferenceProviderType.mlxAudio,
+            InferenceProviderType.omlx,
             InferenceProviderType.ollama,
             InferenceProviderType.voxtral,
             InferenceProviderType.whisper,

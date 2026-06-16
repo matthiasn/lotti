@@ -98,6 +98,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   once settled and respects the system "reduce motion" setting.
 
 ## [0.9.1027]
+### Added
+- AI settings now include oMLX as a first-class local OpenAI-compatible
+  provider. The Local Power profile now defaults to Qwen 3.6 35B-A3B 4-bit via
+  oMLX for both reasoning and image recognition, matching the local MLX eval
+  path instead of the slower Ollama route. Sync-node capability detection also
+  advertises reachable local oMLX instances for profile pinning.
+
 ### Changed
 - The logbook (journal list) was redesigned to match the rest of the app. Every
   entry now uses one consistent card layout: a type icon on the left — its tile

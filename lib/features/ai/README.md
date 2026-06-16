@@ -222,7 +222,10 @@ It does not write prompts, full responses, API keys, release gates,
 attestations, or decision ledgers. The built-in comparison targets
 `Qwen3.6-35B-A3B-TurboQuant-MLX-4bit`, `Qwen3.6-35B-A3B-4bit`, and
 `Qwen3.6-35B-A3B-MLX-8bit`; set `QWEN_EVAL_BASE_URL` or `OMLX_BASE_URL` when
-oMLX is not exposed at the local OpenAI-compatible default.
+oMLX is not exposed at the local OpenAI-compatible default. The corresponding
+app provider type is `InferenceProviderType.omlx`, with default base URL
+`http://127.0.0.1:8003/v1`; its known Qwen3.6 rows are text+image models, so
+the same local model can back thinking and image-recognition slots.
 
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
 prefers Mistral's non-realtime Voxtral transcription model over MLX Qwen when
@@ -608,15 +611,16 @@ Grounded implementation notes:
 - `Chinese AI Profile`
 - `Anthropic Claude`
 - `Local (Ollama)`
-- `Local Power (Ollama)`
+- `Local Power (oMLX)`
 - `Local Gemma 4 (Ollama)`
 - `Local Gemma 4 Power (Ollama)`
 
 Operational details from the seeded definitions:
 
-- the four local (Ollama) profiles are `desktopOnly`
+- the four local profiles are `desktopOnly`
 - `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
-- `Local Power (Ollama)` and `Local Gemma 4 Power (Ollama)` currently ship with no default skill assignments
+- `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for both thinking and image recognition
+- `Local Power (oMLX)` and `Local Gemma 4 Power (Ollama)` currently ship with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 

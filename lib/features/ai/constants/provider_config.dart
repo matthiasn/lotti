@@ -5,8 +5,11 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 /// This class provides default configurations for various AI inference providers,
 /// including base URLs, display names, and API key requirements.
 ///
-/// Security Note: Local providers (Ollama, Whisper) use localhost URLs and don't
-/// require API keys, making them suitable for privacy-focused applications.
+/// Security Note: Local keyless providers (Ollama, Whisper, Voxtral, MLX
+/// Audio) use localhost/embedded runtimes and don't require API keys, making
+/// them suitable for privacy-focused applications. Local OpenAI-compatible
+/// providers such as oMLX may still require an API key depending on the server
+/// configuration.
 class ProviderConfig {
   const ProviderConfig._();
 
@@ -23,6 +26,7 @@ class ProviderConfig {
     InferenceProviderType.mistral: 'https://api.mistral.ai/v1',
     InferenceProviderType.mlxAudio: '',
     InferenceProviderType.nebiusAiStudio: 'https://api.studio.nebius.com/v1',
+    InferenceProviderType.omlx: 'http://127.0.0.1:8003/v1',
     InferenceProviderType.ollama: 'http://localhost:11434',
     InferenceProviderType.openAi: 'https://api.openai.com/v1',
     InferenceProviderType.anthropic: 'https://api.anthropic.com/v1',
@@ -41,6 +45,7 @@ class ProviderConfig {
     InferenceProviderType.mistral: 'Mistral',
     InferenceProviderType.mlxAudio: 'MLX Audio (local)',
     InferenceProviderType.nebiusAiStudio: 'Nebius AI Studio',
+    InferenceProviderType.omlx: 'oMLX (local)',
     InferenceProviderType.ollama: 'Ollama (local)',
     InferenceProviderType.openAi: 'OpenAI',
     InferenceProviderType.anthropic: 'Anthropic',
