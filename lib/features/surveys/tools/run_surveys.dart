@@ -7,6 +7,13 @@ import 'package:lotti/features/surveys/ui/fill_survey_page.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:research_package/research_package.dart';
 
+/// Presents [task] in a themed single-page modal and forwards the submitted
+/// result to [resultCallback].
+///
+/// Survey-agnostic: it only runs an `RPOrderedTask` and reports the result;
+/// the scoring and persistence live entirely in the callback (see
+/// [createResultCallback]). The three `run*` helpers below are the public
+/// entry points other features (today `dashboards`) call.
 Future<void> runSurvey({
   required RPOrderedTask task,
   required ThemeData themeData,
