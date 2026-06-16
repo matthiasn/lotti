@@ -23,6 +23,12 @@ class SyncSequenceBackfillResponder {
   final SyncSequenceCache _cache;
   final SyncSequenceTracer _tracer;
 
+  /// Applies the outcome of a peer's answer to one of our backfill requests for
+  /// `(hostId, counter)`. A [deleted] response marks the counter as
+  /// permanently gone (skipped if we have meanwhile received/backfilled it), an
+  /// [unresolvable] response retires it, and otherwise the response confirms a
+  /// payload we should now expect via the normal receive path. Keeps the
+  /// sequence-log status in step so the row stops being re-requested.
   Future<void> handleBackfillResponse({
     required String hostId,
     required int counter,

@@ -42,6 +42,10 @@ Stream<SyncNodeProfile?> localSyncNodeSelf(Ref ref) async* {
   }
 }
 
+/// Provides the [SyncedAudioInferenceDispatcher] that decides whether this node
+/// should run AI inference on audio that arrived via sync. `keepAlive` so it
+/// shares the listener's lifetime; wires it to the journal DB, vector-clock
+/// service, profile resolvers, and the inference/wake machinery.
 @Riverpod(keepAlive: true)
 SyncedAudioInferenceDispatcher syncedAudioInferenceDispatcher(Ref ref) {
   return SyncedAudioInferenceDispatcher(

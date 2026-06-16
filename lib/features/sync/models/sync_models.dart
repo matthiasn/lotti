@@ -1,3 +1,9 @@
+/// Ordered phases of a full re-sync run, as surfaced in the sync settings UI.
+///
+/// Each entity-type step (measurables…agentLinks) re-enqueues that category's
+/// rows to the outbox; the two `backfill…Clocks` steps repair missing vector
+/// clocks on agent rows before they are re-sent. [complete] is the terminal
+/// marker.
 enum SyncStep {
   measurables,
   labels,
@@ -12,6 +18,7 @@ enum SyncStep {
   complete,
 }
 
+/// Per-step progress counters (`processed`/`total`) for the re-sync UI.
 class StepProgress {
   const StepProgress({
     required this.processed,
@@ -32,6 +39,10 @@ class StepProgress {
   }
 }
 
+/// Immutable snapshot of a re-sync run: whether it is active, overall
+/// [progress] percent, the [currentStep], any [error], the per-step counters,
+/// and which [selectedSteps] the user opted into. Note [copyWith] intentionally
+/// clears [error] when not supplied so a fresh state never carries a stale one.
 class SyncState {
   const SyncState({
     this.isSyncing = false,

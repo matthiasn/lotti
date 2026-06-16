@@ -1,3 +1,8 @@
+/// Typed snapshot of the sync pipeline's observability counters — processing
+/// tallies, DB-apply outcomes, signal-driven ingestion stats, latency, and the
+/// inbound-queue ledger. Round-trips through a flat `Map<String, int>` via
+/// [SyncMetrics.fromMap]/[toMap] so it can be carried across the metrics
+/// snapshot boundary and rendered in the Matrix Stats UI.
 class SyncMetrics {
   const SyncMetrics({
     required this.processed,

@@ -8,6 +8,9 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
   // Agent entity/link enqueue + sent-record bookkeeping
   // ---------------------------------------------------------------------------
 
+  /// Enqueues an agent entity by writing its payload to disk and routing
+  /// through [enqueueAgentPayload]. Skips (logs and returns `false`) when the
+  /// message carries no entity.
   Future<bool> enqueueAgentEntity({
     required SyncAgentEntity msg,
     required OutboxCompanion commonFields,
@@ -36,6 +39,9 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
     );
   }
 
+  /// Enqueues an agent link by writing its payload to disk and routing through
+  /// [enqueueAgentPayload]. Skips (logs and returns `false`) when the message
+  /// carries no link.
   Future<bool> enqueueAgentLink({
     required SyncAgentLink msg,
     required OutboxCompanion commonFields,
@@ -330,6 +336,9 @@ extension OutboxEnqueueAgent on OutboxEnqueueWriter {
     }
   }
 
+  /// Records a sent notification in the sequence log so peers can detect and
+  /// backfill it if missed. No-op when no sequence-log service is wired;
+  /// failures are logged and swallowed (the send itself still succeeds).
   Future<void> recordNotificationSent({
     required String entryId,
     required VectorClock vectorClock,

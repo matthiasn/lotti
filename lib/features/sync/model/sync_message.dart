@@ -11,6 +11,9 @@ import 'package:lotti/features/sync/vector_clock.dart';
 part 'sync_message.freezed.dart';
 part 'sync_message.g.dart';
 
+/// Whether a journal entity sync payload is the entry's first appearance
+/// ([initial]) or a later revision ([update]). [initial] forces attachments to
+/// be (re)sent; [update] sends them only when the resend flag is set.
 enum SyncEntryStatus { initial, update }
 
 /// A single entry in a batched backfill request.
@@ -28,6 +31,17 @@ abstract class BackfillRequestEntry with _$BackfillRequestEntry {
       _$BackfillRequestEntryFromJson(json);
 }
 
+/// The sealed envelope for every message that crosses the wire between
+/// devices.
+///
+/// One variant per payload kind — journal entities, entry links, agent
+/// entities/links, AI config, entity definitions, config flags, theming,
+/// notifications and their state updates, sync-node profiles, backfill
+/// request/response, and the dequeue-time `outboxBundle` that packs several of
+/// the above into one Matrix event. The outbox enqueues these, the
+/// `OutboxProcessor` sends them, and the inbound pipeline pattern-matches on
+/// the variant to apply each one. Serialised to/from JSON via the generated
+/// `fromJson`/`toJson`.
 @freezed
 sealed class SyncMessage with _$SyncMessage {
   const factory SyncMessage.journalEntity({

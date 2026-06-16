@@ -4,6 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'matrix_unverified_provider.g.dart';
 
+/// Exposes the current set of unverified Matrix devices for the
+/// device-verification UI, sourced from `MatrixService.getUnverifiedDevices`.
 @riverpod
 class MatrixUnverifiedController extends _$MatrixUnverifiedController {
   @override

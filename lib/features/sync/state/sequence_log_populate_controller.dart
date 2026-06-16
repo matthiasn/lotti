@@ -9,6 +9,10 @@ final sequenceLogPopulateControllerProvider =
       SequenceLogPopulateController.new,
     );
 
+/// UI state for the one-shot maintenance action that back-fills the sequence
+/// log from existing data: overall [progress], per-source populated counts
+/// (journal/links/agent entities/agent links), the active [phase], and any
+/// [error]. The `populated*Count` fields fill in as each phase completes.
 class SequenceLogPopulateState {
   const SequenceLogPopulateState({
     this.progress = 0,
@@ -65,6 +69,8 @@ class SequenceLogPopulateState {
   }
 }
 
+/// Ordered phases of a sequence-log back-fill run, in the order the controller
+/// processes each data source.
 enum SequenceLogPopulatePhase {
   idle,
   populatingJournal,
@@ -74,12 +80,18 @@ enum SequenceLogPopulatePhase {
   done,
 }
 
+/// Back-fills the sequence log from already-persisted journal entries, entry
+/// links, and agent entities/links, exposing per-phase progress as
+/// [SequenceLogPopulateState] for the maintenance UI.
 class SequenceLogPopulateController extends Notifier<SequenceLogPopulateState> {
   @override
   SequenceLogPopulateState build() {
     return const SequenceLogPopulateState();
   }
 
+  /// Runs the back-fill across all sources in [SequenceLogPopulatePhase] order,
+  /// updating [state] after each phase and recording any failure into
+  /// [SequenceLogPopulateState.error].
   Future<void> populateSequenceLog() async {
     state = state.copyWith(
       isRunning: true,

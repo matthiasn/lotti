@@ -281,6 +281,9 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
     _domainLogger?.log(LogDomain.sync, message, subDomain: subDomain);
   }
 
+  /// Persists [entity]'s JSON payload under the documents directory and
+  /// enqueues a `SyncMessage.notification` referencing it. Skips enqueue (and
+  /// logs) if the derived payload path escapes the documents root.
   Future<void> enqueueNotification(
     NotificationEntity entity, {
     String? originatingHostId,
@@ -307,6 +310,9 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
     );
   }
 
+  /// Enqueues a `SyncMessage.notificationStateUpdate` carrying the changed
+  /// seen/acted/deleted timestamps for notification [id]. No payload file is
+  /// written — the state fields ride inline in the envelope.
   Future<void> enqueueNotificationStateUpdate({
     required String id,
     required VectorClock vectorClock,
@@ -339,6 +345,12 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
     return fullPath;
   }
 
+  /// Central enqueue path: prepares [syncMessage] (stamps originating host,
+  /// folds covered vector clocks, attaches links), serialises it, computes its
+  /// send priority, and writes a `pending` outbox row via the type-specific
+  /// enqueue writer — then nudges the send pipeline. Throws if handed a
+  /// `SyncOutboxBundle`, which is assembled at dequeue time and must never be
+  /// enqueued directly.
   Future<void> enqueueMessage(SyncMessage syncMessage) async {
     // Hoisted out of the outer try so the invariant breach surfaces to the
     // caller as a real exception instead of being swallowed and logged as a
@@ -487,6 +499,9 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   @override
   final Duration _postDrainSettle;
 
+  /// Tears the service down: marks it disposed (so in-flight callbacks
+  /// short-circuit), closes the runner, cancels every subscription/timer, and
+  /// disposes the activity gate if this service owns it. Idempotent in effect.
   Future<void> dispose() async {
     _isDisposed = true;
     _clientRunner.close();
@@ -507,6 +522,9 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   UserActivityGate getActivityGateForTest() => _activityGate;
 }
 
+/// Production [OutboxMessageSender] that delivers a queued [SyncMessage] over
+/// Matrix by delegating to [MatrixService.sendMatrixMsg]. The boolean it
+/// returns is the processor's retry signal.
 class MatrixOutboxMessageSender implements OutboxMessageSender {
   MatrixOutboxMessageSender(this._matrixService);
 

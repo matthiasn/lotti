@@ -9,11 +9,15 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'matrix_stats_provider.g.dart';
 
+/// Streams live message-count [MatrixStats] from the Matrix service for the
+/// stats UI.
 @riverpod
 Stream<MatrixStats> matrixStatsStream(Ref ref) {
   return ref.watch(matrixServiceProvider).messageCountsController.stream;
 }
 
+/// Exposes the latest [MatrixStats], seeded from the service's current counts
+/// and then kept live by [matrixStatsStream].
 @riverpod
 class MatrixStatsController extends _$MatrixStatsController {
   MatrixService get _matrixService => ref.read(matrixServiceProvider);

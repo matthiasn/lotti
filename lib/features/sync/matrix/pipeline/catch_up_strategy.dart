@@ -32,6 +32,15 @@ typedef BackfillFn =
 /// `missingMarkerFallbackLimit` parameter.
 const defaultMissingMarkerFallbackLimit = 1000;
 
+/// Outcome of a catch-up event collection pass.
+///
+/// Named constructors encode the three terminal shapes: `complete` (the marker
+/// was found and all events up to it were collected), `timestampAnchored` (the
+/// marker event id was gone but the stored timestamp bounded the slice), and
+/// `incomplete` (neither anchor resolved within the visible tail, so paging
+/// must continue). [events] is empty for the incomplete case; the diagnostic
+/// fields ([snapshotSize], [visibleTailCount], [fallbackLimit],
+/// [reachedTimestampBoundary]) explain why.
 class CatchUpCollection {
   const CatchUpCollection._({
     required this.events,
@@ -367,6 +376,10 @@ class CatchUpStrategy {
     now: now,
   );
 
+  /// True when [event] sorts strictly after the anchor (timestamp, then event
+  /// id as the deterministic tie-breaker). A null [anchorTs] means there is no
+  /// anchor, so every event counts as after it. Mirrors
+  /// [TimelineEventOrdering.isNewer] for the forward-walk direction.
   static bool isStrictlyAfter(
     Event event, {
     required num? anchorTs,
@@ -411,6 +424,10 @@ abstract class BootstrapSink {
   int? get lastAcceptedCount => null;
 }
 
+/// Per-page progress handed to a [BootstrapSink.onPage] call during a
+/// bootstrap history walk: the 0-based [pageIndex], the running
+/// [totalEventsSoFar], the [oldestTimestampSoFar] reached, whether the server
+/// still has older pages ([serverHasMore]), and wall-clock [elapsed].
 class BootstrapPageInfo {
   const BootstrapPageInfo({
     required this.pageIndex,
@@ -427,6 +444,9 @@ class BootstrapPageInfo {
   final Duration elapsed;
 }
 
+/// Summary of a completed bootstrap history walk: how many [totalPages] and
+/// [totalEvents] were paged, the [oldestTimestampReached], and the
+/// [BootstrapStopReason] that ended paging.
 class BootstrapResult {
   const BootstrapResult({
     required this.totalPages,

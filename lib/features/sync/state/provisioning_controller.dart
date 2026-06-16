@@ -13,6 +13,11 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'provisioning_controller.freezed.dart';
 part 'provisioning_controller.g.dart';
 
+/// State machine for consuming a sync provisioning/handover bundle on a new
+/// device: from [ProvisioningState.initial] through decode, login, room-join,
+/// and (for `provisioned` bundles) password rotation to [ProvisioningState.done],
+/// or [ProvisioningState.error]. [ProvisioningState.ready] carries a freshly
+/// minted handover string for chaining a further device.
 @freezed
 sealed class ProvisioningState with _$ProvisioningState {
   const factory ProvisioningState.initial() = _Initial;

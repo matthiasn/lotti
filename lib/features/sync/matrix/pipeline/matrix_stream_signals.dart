@@ -28,6 +28,10 @@ class MatrixStreamSignalBinder {
   // with the gap since the previous sync for the current sync room.
   DateTime? _lastSyncAt;
 
+  /// Subscribes to `onSync` and logs a `sync.limited` diagnostic whenever the
+  /// SDK reports a truncated timeline for the current room — the signal that
+  /// events before the limited boundary were dropped and the bridge/catch-up
+  /// path must recover them. Re-entrant: cancels any prior subscription first.
   Future<void> start() async {
     await _syncSub?.cancel();
     _syncSub = null;

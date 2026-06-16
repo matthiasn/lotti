@@ -108,6 +108,11 @@ class BackfillStatsState {
 /// the timer on `onHide` and re-arms it on `onShow`.
 const Duration _autoRefreshInterval = Duration(seconds: 30);
 
+/// Backs the Backfill Settings page: loads and auto-refreshes [BackfillStats]
+/// (throttled, foreground-only — see [_autoRefreshInterval]) and exposes the
+/// manual operations (full backfill, re-request, reset/retire of stuck and
+/// unresolvable entries), reflecting each as in-progress/last-count flags on
+/// [BackfillStatsState].
 @riverpod
 class BackfillStatsController extends _$BackfillStatsController {
   Timer? _autoRefreshTimer;

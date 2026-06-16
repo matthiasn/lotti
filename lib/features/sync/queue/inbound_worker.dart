@@ -110,6 +110,9 @@ class InboundWorker {
 
   bool get isRunning => _running;
 
+  /// Starts the drain loop in the background. Idempotent: a call while already
+  /// running is a no-op. The returned future completes once the loop is
+  /// scheduled, not when draining finishes.
   Future<void> start() async {
     if (_running) return;
     _running = true;
@@ -118,6 +121,8 @@ class InboundWorker {
     unawaited(_loop());
   }
 
+  /// Signals the drain loop to stop and awaits its graceful exit, so callers
+  /// can be sure no further apply work runs after this resolves.
   Future<void> stop() async {
     if (!_running) return;
     _running = false;

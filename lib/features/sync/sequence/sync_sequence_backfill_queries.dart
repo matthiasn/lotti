@@ -27,6 +27,11 @@ class SyncSequenceBackfillQueries {
   final SyncSequenceReceiver _receiver;
   final SyncSequenceTracer _tracer;
 
+  /// Retires `requested` rows that have hit the request-count cap to
+  /// `unresolvable`, so a counter no peer can satisfy stops being re-requested
+  /// forever and stops blocking the watermark. Only rows past the [grace]
+  /// window since their last request are eligible. Clears the watermark caches
+  /// when anything was retired and returns the count.
   Future<int> retireExhaustedRequestedEntries({
     int maxRequestCount = 10,
     Duration grace = const Duration(minutes: 5),
@@ -313,6 +318,10 @@ class SyncSequenceBackfillQueries {
     return populated;
   }
 
+  /// Records the receipt of an entry link in the sequence log (delegating to
+  /// the receiver's generic `recordReceivedEntry` as
+  /// [SyncSequencePayloadType.entryLink]) and returns any `(hostId, counter)`
+  /// gaps newly detected by ingesting this link's clock and covered clocks.
   Future<List<({String hostId, int counter})>> recordReceivedEntryLink({
     required String linkId,
     required VectorClock vectorClock,

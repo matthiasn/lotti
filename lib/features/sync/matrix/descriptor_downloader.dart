@@ -8,6 +8,8 @@ import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
+/// The accepted descriptor JSON and its decoded byte length, returned by
+/// [DescriptorDownloader.download].
 class DescriptorDownloadResult {
   const DescriptorDownloadResult({
     required this.json,
@@ -18,6 +20,16 @@ class DescriptorDownloadResult {
   final int bytesLength;
 }
 
+/// Downloads a journal entity's JSON descriptor from a Matrix file event and
+/// guarantees the bytes match (or causally cover) the vector clock the timeline
+/// signalled — defending against the SDK serving a stale cached attachment.
+///
+/// Each attempt downloads, decodes, and runs the [VectorClockValidator]; on a
+/// stale/empty result it purges the SDK's media cache (notifying [onCachePurge])
+/// and retries, up to [maxDescriptorDownloadAttempts]. Once that budget is
+/// spent — or the validator trips its circuit breaker — it throws a
+/// [FileSystemException] so the caller's retry/backoff path takes over instead
+/// of applying out-of-date content.
 class DescriptorDownloader {
   DescriptorDownloader({
     required DomainLogger loggingService,
@@ -31,6 +43,10 @@ class DescriptorDownloader {
   final VectorClockValidator _validator;
   void Function()? onCachePurge;
 
+  /// Downloads and validates the descriptor for [jsonPath], retrying after a
+  /// cache purge while the bytes remain stale. Returns the accepted JSON, or
+  /// throws [FileSystemException] when the bytes stay stale/empty/missing a
+  /// vector clock after all attempts.
   Future<DescriptorDownloadResult> download({
     required Event descriptorEvent,
     required VectorClock incomingVectorClock,

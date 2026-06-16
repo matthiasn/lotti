@@ -62,6 +62,12 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'id=${msg.id}',
   );
 
+  /// Enqueues a config-flag change, coalescing with an already-pending row for
+  /// the same flag when one exists: the existing row's message is updated in
+  /// place (keeping the higher priority) so only the latest value ships.
+  /// Returns `true` when it merged into an existing row, `false` when it
+  /// inserted a fresh one. The in-place update only matches `status=pending`,
+  /// so a row already being sent falls through to a new insert.
   Future<bool> enqueueConfigFlag({
     required SyncConfigFlag msg,
     required OutboxCompanion commonFields,
@@ -118,6 +124,11 @@ extension OutboxEnqueueSimple on OutboxEnqueueWriter {
         'mode=${msg.themeMode}',
   );
 
+  /// Enqueues a notification message: validates the payload path stays within
+  /// the documents root, folds the message's own clock into
+  /// `coveredVectorClocks`, sizes the row including the on-disk attachment, and
+  /// records the send in the sequence log. Skips (logs and returns `false`)
+  /// when the payload path is unsafe.
   Future<bool> enqueueNotification({
     required SyncNotification msg,
     required OutboxCompanion commonFields,
