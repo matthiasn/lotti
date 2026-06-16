@@ -96,9 +96,12 @@ The save delay is currently `kCorrectionSaveDelay = 5 seconds`.
 `CorrectionCaptureService` deliberately ignores:
 
 - missing category IDs
-- changes that normalize to the same text
-- trivial edits
-- duplicates already stored on the category
+- changes that normalize to the same text (after `normalizeWhitespace`)
+- trivial edits — today the only trivial-change rule is narrow: case-only edits
+  to texts shorter than 3 characters (`_isMeaningfulCorrection`). Everything else
+  is treated as meaningful.
+- duplicates already stored on the category (`before`/`after` pair), re-checked
+  at save time in case another correction landed during the delay
 
 That filtering matters because otherwise the feature would happily learn from noise and gradually turn category correction examples into a landfill of whitespace tweaks and accidental taps.
 
