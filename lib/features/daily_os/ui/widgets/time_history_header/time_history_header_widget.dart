@@ -22,9 +22,17 @@ part 'time_history_header_skeleton.dart';
 class TimeHistoryHeader extends ConsumerStatefulWidget {
   const TimeHistoryHeader({super.key});
 
+  /// Height of the sticky month-label row at the top.
   static const double monthLabelHeight = 16;
+
+  /// Height of the combined day-selector strip plus the stream chart stacked
+  /// behind it.
   static const double daySelectorWithChartHeight = 90;
+
+  /// Height of the bottom row holding the full date, day label, and actions.
   static const double dateLabelRowHeight = 26;
+
+  /// Total fixed header height; the parent reserves exactly this much space.
   static const double headerHeight =
       monthLabelHeight + daySelectorWithChartHeight + dateLabelRowHeight;
 

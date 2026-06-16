@@ -26,7 +26,10 @@ abstract class DayPlanRepository {
   /// Returns the saved plan with updated metadata (e.g., new vector clock).
   Future<DayPlanEntry> save(DayPlanEntry plan);
 
-  /// Gets all day plans within a date range.
+  /// Gets every day plan whose plan date falls within `[rangeStart, rangeEnd)`,
+  /// in a single query. Unlike [getDayPlan] this is a direct range read with no
+  /// per-date coalescing, used for bulk loads rather than the per-date provider
+  /// fan-out.
   Future<List<DayPlanEntry>> getDayPlansInRange({
     required DateTime rangeStart,
     required DateTime rangeEnd,
@@ -59,6 +62,10 @@ class DayPlanRepositoryImpl implements DayPlanRepository {
   Set<String>? _pendingIds;
   Completer<Map<String, DayPlanEntry>>? _pendingBatch;
 
+  /// Reads one day's plan, coalescing every call made within the same
+  /// synchronous sweep into a single `getDayPlansByIds` round-trip. See the
+  /// `_pendingIds`/`_pendingBatch` fields for the batching protocol; callers
+  /// just await the returned future and receive their own date's row (or null).
   @override
   Future<DayPlanEntry?> getDayPlan(DateTime date) {
     final id = dayPlanId(date);

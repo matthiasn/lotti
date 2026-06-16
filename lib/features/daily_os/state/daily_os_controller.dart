@@ -13,14 +13,23 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'daily_os_controller.g.dart';
 
-/// UI section of the Daily OS view.
+/// The three stacked sections that make up the Daily OS scroll view, in
+/// render order. Used by [DailyOsController.toggleSection] to drive the
+/// single expanded-section accordion behaviour.
 enum DailyOsSection {
   timeline,
   budgets,
   summary,
 }
 
-/// Combined state for the Daily OS view.
+/// Immutable snapshot of everything the Daily OS page renders for one day.
+///
+/// The data-bearing fields ([dayPlan], [budgetProgress], [timelineData]) are
+/// projected from [DailyOsData] (the unified controller); the rest are
+/// view-only flags ([expandedSection], [isEditingPlan], [highlightedCategoryId],
+/// [expandedFoldRegions]) mutated locally by [DailyOsController] without a
+/// refetch. The `is*`/`total*`/`overBudgetCount` getters derive convenience
+/// values from those, defaulting safely when [dayPlan] is null.
 class DailyOsState {
   const DailyOsState({
     required this.selectedDate,
@@ -102,7 +111,10 @@ class DailyOsState {
   }
 }
 
-/// Provides the selected date for the Daily OS view.
+/// Holds the date the page is currently viewing, always normalised to local
+/// midnight. This is the keep-it-simple selection that every section watches;
+/// changing it re-keys [unifiedDailyOsDataControllerProvider] and reloads the
+/// whole view for the new day.
 @riverpod
 class DailyOsSelectedDate extends _$DailyOsSelectedDate {
   @override
@@ -110,18 +122,23 @@ class DailyOsSelectedDate extends _$DailyOsSelectedDate {
     return DateTime.now().dayAtMidnight;
   }
 
+  /// Selects [date], snapping to its local midnight so downstream day-keyed
+  /// providers compare cleanly.
   void selectDate(DateTime date) {
     state = date.dayAtMidnight;
   }
 
+  /// Jumps the selection to today's local midnight.
   void goToToday() {
     state = DateTime.now().dayAtMidnight;
   }
 
+  /// Moves the selection one calendar day earlier.
   void goToPreviousDay() {
     state = state.subtract(const Duration(days: 1));
   }
 
+  /// Moves the selection one calendar day later.
   void goToNextDay() {
     state = state.add(const Duration(days: 1));
   }
