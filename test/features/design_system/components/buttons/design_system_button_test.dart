@@ -230,9 +230,8 @@ void main() {
       });
     }
 
-    testWidgets('applies token-driven disabled opacity to danger buttons', (
-      tester,
-    ) async {
+    testWidgets('renders a disabled button as a neutral pill without the brand '
+        'hue', (tester) async {
       const buttonKey = Key('danger-disabled');
 
       await tester.pumpWidget(
@@ -249,19 +248,36 @@ void main() {
         ),
       );
 
-      final opacity = tester.widget<Opacity>(
-        find.descendant(
-          of: find.byKey(buttonKey),
-          matching: find.byType(Opacity),
-        ),
-      );
       final ink = tester.widget<Ink>(
         find.descendant(of: find.byKey(buttonKey), matching: find.byType(Ink)),
       );
       final decoration = ink.decoration! as ShapeDecoration;
 
-      expect(opacity.opacity, dsTokensLight.colors.text.lowEmphasis.a);
-      expect(decoration.color, dsTokensLight.colors.alert.error.defaultColor);
+      // No Opacity overlay anymore: the disabled state is baked into the colors.
+      expect(
+        find.descendant(
+          of: find.byKey(buttonKey),
+          matching: find.byType(Opacity),
+        ),
+        findsNothing,
+      );
+      // A disabled (even danger) button drops its brand hue and renders a flat
+      // neutral pill so it reads as inert, not as a dimmer alert button.
+      expect(decoration.color, dsTokensLight.colors.surface.enabled);
+      expect(
+        decoration.color,
+        isNot(dsTokensLight.colors.alert.error.defaultColor),
+      );
+      // Its content uses the low-emphasis text token (muted, not actionable).
+      final iconTheme = tester.widget<IconTheme>(
+        find
+            .descendant(
+              of: find.byKey(buttonKey),
+              matching: find.byType(IconTheme),
+            )
+            .last,
+      );
+      expect(iconTheme.data.color, dsTokensLight.colors.text.lowEmphasis);
       expect(
         tester
             .widget<InkWell>(
@@ -479,6 +495,33 @@ void main() {
         ),
         throwsAssertionError,
       );
+    });
+
+    testWidgets('fullWidth fills its bounded parent and centers the label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 400,
+            child: DesignSystemButton(
+              label: 'Wide',
+              fullWidth: true,
+              onPressed: _noop,
+            ),
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+      await tester.pump();
+
+      // Without fullWidth the button would size to its (small) intrinsic
+      // width; with it, the button fills the 400px box and the label is
+      // centred rather than pinned to the leading edge.
+      expect(tester.getSize(find.byType(DesignSystemButton)).width, 400);
+      final buttonCenter = tester.getCenter(find.byType(DesignSystemButton)).dx;
+      final labelCenter = tester.getCenter(find.text('Wide')).dx;
+      expect((labelCenter - buttonCenter).abs(), lessThan(1));
     });
   });
 }

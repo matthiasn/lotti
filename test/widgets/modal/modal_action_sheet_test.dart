@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/widgets/modal/modal_action_sheet.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 
@@ -47,16 +46,11 @@ Future<List<T?>> _openSheet<T>(
   return result;
 }
 
-/// Resolves the foreground color the [LottiTertiaryButton] with [label]
-/// renders with by reading the underlying [TextButton]'s resolved style.
-Color? _foregroundColorOf(WidgetTester tester, String label) {
-  final button = tester.widget<TextButton>(
-    find.ancestor(
-      of: find.text(label),
-      matching: find.byType(TextButton),
-    ),
+/// Resolves the [DesignSystemButton] rendering [label].
+DesignSystemButton _buttonWithLabel(WidgetTester tester, String label) {
+  return tester.widget<DesignSystemButton>(
+    find.widgetWithText(DesignSystemButton, label),
   );
-  return button.style?.foregroundColor?.resolve(<WidgetState>{});
 }
 
 void main() {
@@ -82,7 +76,7 @@ void main() {
 
       expect(find.text('Only Title'), findsOneWidget);
       // No message text rendered; only the title and the single action button.
-      expect(find.byType(LottiTertiaryButton), findsOneWidget);
+      expect(find.byType(DesignSystemButton), findsOneWidget);
     });
 
     testWidgets('tapping an action pops with its key and dismisses the sheet', (
@@ -108,39 +102,28 @@ void main() {
       expect(find.text('Pick one'), findsNothing);
     });
 
-    testWidgets('destructive action renders with error color, normal with '
-        'primary', (tester) async {
-      late ColorScheme scheme;
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          Builder(
-            builder: (context) {
-              scheme = context.colorScheme;
-              return ElevatedButton(
-                onPressed: () => showModalActionSheet<String>(
-                  context: context,
-                  actions: const [
-                    ModalSheetAction(label: 'Keep', key: 'keep'),
-                    ModalSheetAction(
-                      label: 'Delete',
-                      key: 'delete',
-                      isDestructiveAction: true,
-                    ),
-                  ],
-                ),
-                child: const Text('open'),
-              );
-            },
+    testWidgets('destructive action renders with the dangerTertiary variant, '
+        'normal with tertiary', (tester) async {
+      await _openSheet<String>(
+        tester,
+        actions: const [
+          ModalSheetAction(label: 'Keep', key: 'keep'),
+          ModalSheetAction(
+            label: 'Delete',
+            key: 'delete',
+            isDestructiveAction: true,
           ),
-        ),
+        ],
       );
 
-      await tester.tap(find.text('open'));
-      await tester.pumpAndSettle();
-
-      expect(_foregroundColorOf(tester, 'Delete'), scheme.error);
-      expect(_foregroundColorOf(tester, 'Keep'), scheme.primary);
+      expect(
+        _buttonWithLabel(tester, 'Delete').variant,
+        DesignSystemButtonVariant.dangerTertiary,
+      );
+      expect(
+        _buttonWithLabel(tester, 'Keep').variant,
+        DesignSystemButtonVariant.tertiary,
+      );
     });
 
     testWidgets('cancel button dismisses the sheet and returns null', (
@@ -175,7 +158,7 @@ void main() {
 
       expect(find.text('OnlyAction'), findsOneWidget);
       // Only the single action button is present, no cancel button.
-      expect(find.byType(LottiTertiaryButton), findsOneWidget);
+      expect(find.byType(DesignSystemButton), findsOneWidget);
     });
   });
 }

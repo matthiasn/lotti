@@ -183,6 +183,37 @@ A few detail-level behaviors are worth calling out because they are easy to miss
 - when an external update arrives and the entry is not dirty, the editor controller is rebuilt from the saved value
 - when the entry is dirty, the controller keeps the user's unsaved editor state instead of bluntly resetting it
 
+### Start/End Date-Time Editor
+
+[`entry_datetime_multipage_modal.dart`](ui/widgets/entry_details/entry_datetime_multipage_modal.dart) edits an entry's `dateFrom`/`dateTo` and commits them via `EntryController.updateFromTo`. It is a single-page modal: one **Date** wheel over **paired Start/End time wheels**, so the date is entered once and stamped onto both timestamps rather than picked twice.
+
+The editable model is the pure, testable [`EntryDateTimeRange`](ui/widgets/entry_details/entry_datetime_range.dart) — a `startDate` (day only) + `startTime` + `endTime` + an optional `endDateOverride` — from which `dateFrom`/`dateTo` are *derived* (they can never desync). The pinned glass bar shows a live duration (`formatRangeDuration`, multi-day aware) and disables Save until the range both changed and is valid.
+
+`EntryDateTimeRange.fromBounds` decides which mode an existing entry opens in:
+
+```mermaid
+stateDiagram-v2
+    [*] --> SharedDate: end day == start day
+    [*] --> SharedDate: end day == start+1 AND end clock < start clock (plain overnight)
+    [*] --> DifferentDates: otherwise (multi-day, or exact-24h same-clock next day)
+
+    SharedDate --> SharedDate: spin date / times
+    note right of SharedDate
+      one Date wheel + two time wheels.
+      end clock < start clock auto-rolls
+      dateTo to the next day and shows a
+      teal "+1 day" chip (overnightAuto).
+    end note
+
+    SharedDate --> DifferentDates: toggle "Ends on another day" ON\n(freeze endDateOverride = current end day)
+    DifferentDates --> SharedDate: toggle OFF\n(clear endDateOverride; end collapses onto start date)
+    note right of DifferentDates
+      reveals a second End date wheel;
+      dateTo decomposes independently.
+      Save is gated on dateTo >= dateFrom.
+    end note
+```
+
 ## Browse Surface
 
 [`infinite_journal_page.dart`](ui/pages/infinite_journal_page.dart) is the journal-tab browse page. It is hardcoded to `journalPageControllerProvider(false)` (`showTasks=false`) and is wired only into the journal route. The tasks tab has its own page widget, `TasksTabPage` in the tasks feature (`lib/features/tasks/ui/pages/tasks_tab_page.dart`), which watches `journalPageControllerProvider(true)`. What is shared between the two tabs is the controller (`JournalPageController`, keyed by `showTasks`), not the page widget.

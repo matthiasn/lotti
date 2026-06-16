@@ -4,6 +4,8 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
@@ -13,7 +15,6 @@ import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.d
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:matrix/encryption.dart';
 
 class IncomingVerificationModal extends ConsumerStatefulWidget {
@@ -140,9 +141,10 @@ class _IncomingVerificationModalState
                   ),
                   const SizedBox(height: 20),
                   if (!isDone && emojis == null)
-                    LottiPrimaryButton(
+                    DesignSystemButton(
                       onPressed: runner?.acceptVerification,
                       label: context.messages.settingsMatrixVerifyLabel,
+                      size: DesignSystemButtonSize.large,
                     ),
                   if (!isDone && emojis != null) ...[
                     if (_awaitingOtherDevice)
@@ -163,34 +165,31 @@ class _IncomingVerificationModalState
                     VerificationEmojisRow(emojis.take(4)),
                     VerificationEmojisRow(emojis.skip(4)),
                     const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: LottiPrimaryButton(
-                            key: const Key('matrix_cancel_verification'),
-                            onPressed: () async {
-                              await runner?.cancelVerification();
-                              closeModal();
-                            },
-                            label: context.messages.settingsMatrixCancel,
-                            isDestructive: true,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: LottiPrimaryButton(
-                            onPressed: _awaitingOtherDevice
-                                ? null
-                                : () => _acceptEmojiVerification(runner),
-                            label: _awaitingOtherDevice
-                                ? context
-                                      .messages
-                                      .settingsMatrixContinueVerificationLabel
-                                : context.messages.settingsMatrixAccept,
-                          ),
+                    DesignSystemModalActionBar(
+                      secondary: [
+                        DesignSystemButton(
+                          key: const Key('matrix_cancel_verification'),
+                          onPressed: () async {
+                            await runner?.cancelVerification();
+                            closeModal();
+                          },
+                          label: context.messages.settingsMatrixCancel,
+                          variant: DesignSystemButtonVariant.danger,
+                          size: DesignSystemButtonSize.large,
                         ),
                       ],
+                      primary: DesignSystemButton(
+                        onPressed: _awaitingOtherDevice
+                            ? null
+                            : () => _acceptEmojiVerification(runner),
+                        label: _awaitingOtherDevice
+                            ? context
+                                  .messages
+                                  .settingsMatrixContinueVerificationLabel
+                            : context.messages.settingsMatrixAccept,
+                        size: DesignSystemButtonSize.large,
+                        fullWidth: true,
+                      ),
                     ),
                     const SizedBox(height: 20),
                   ],
@@ -211,7 +210,7 @@ class _IncomingVerificationModalState
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        LottiPrimaryButton(
+                        DesignSystemButton(
                           onPressed: () {
                             unawaited(refreshUnverifiedDevices());
                             runner?.stopTimer();
@@ -220,6 +219,7 @@ class _IncomingVerificationModalState
                           label: context
                               .messages
                               .settingsMatrixVerificationSuccessConfirm,
+                          size: DesignSystemButtonSize.large,
                         ),
                       ],
                     ),

@@ -5,9 +5,10 @@ import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/utils/platform.dart' as platform;
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 const _localizationsDelegates = <LocalizationsDelegate<dynamic>>[
   AppLocalizations.delegate,
@@ -22,6 +23,7 @@ MaterialApp _appWithModal({
   required VoidCallback onDismiss,
 }) {
   return MaterialApp(
+    theme: DesignSystemTheme.light(),
     localizationsDelegates: _localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: Scaffold(
@@ -35,6 +37,7 @@ MaterialApp _appWithModal({
 
 MaterialApp _appWithOpenButton(WidgetBuilder buttonBuilder) {
   return MaterialApp(
+    theme: DesignSystemTheme.light(),
     localizationsDelegates: _localizationsDelegates,
     supportedLocales: AppLocalizations.supportedLocales,
     home: Builder(builder: buttonBuilder),
@@ -156,9 +159,9 @@ void main() {
         _appWithModal(onProviderSelected: (_) {}, onDismiss: () {}),
       );
 
-      // LottiPrimaryButton wraps an ElevatedButton
-      final continueButton = tester.widget<LottiPrimaryButton>(
-        find.byType(LottiPrimaryButton),
+      // DesignSystemButton wraps an ElevatedButton
+      final continueButton = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Continue'),
       );
       expect(continueButton.onPressed, isNull);
     });
@@ -174,8 +177,8 @@ void main() {
       await tester.tap(find.text('Google Gemini'));
       await tester.pumpAndSettle();
 
-      final continueButton = tester.widget<LottiPrimaryButton>(
-        find.byType(LottiPrimaryButton),
+      final continueButton = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Continue'),
       );
       expect(continueButton.onPressed, isNotNull);
     });

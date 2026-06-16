@@ -1,12 +1,12 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ConfirmationProgressModal {
@@ -92,45 +92,38 @@ class ConfirmationProgressModal {
                   const SizedBox(height: ModalTheme.spacing24),
                 ],
                 const SizedBox(height: AppTheme.spacingLarge),
-                Row(
-                  children: [
-                    SizedBox(
-                      height: ModalTheme.buttonHeight,
-                      child: LottiSecondaryButton(
-                        label: context.messages.cancelButton,
-                        onPressed: () {
-                          confirmed = false;
-                          Navigator.of(modalSheetContext).pop();
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: AppTheme.spacingLarge),
-                    Expanded(
-                      child: SizedBox(
-                        height: ModalTheme.buttonHeight,
-                        child: confirmEnabledListenable != null
-                            ? ListenableBuilder(
-                                listenable: confirmEnabledListenable,
-                                builder: (context, _) {
-                                  return _buildConfirmButton(
-                                    modalSheetContext,
-                                    isConfirmEnabled,
-                                    onConfirm,
-                                    confirmLabel,
-                                    isDestructive,
-                                  );
-                                },
-                              )
-                            : _buildConfirmButton(
-                                modalSheetContext,
-                                isConfirmEnabled,
-                                onConfirm,
-                                confirmLabel,
-                                isDestructive,
-                              ),
-                      ),
+                DesignSystemModalActionBar(
+                  secondary: [
+                    DesignSystemButton(
+                      label: context.messages.cancelButton,
+                      variant: DesignSystemButtonVariant.secondary,
+                      size: DesignSystemButtonSize.large,
+                      onPressed: () {
+                        confirmed = false;
+                        Navigator.of(modalSheetContext).pop();
+                      },
                     ),
                   ],
+                  primary: confirmEnabledListenable != null
+                      ? ListenableBuilder(
+                          listenable: confirmEnabledListenable,
+                          builder: (context, _) {
+                            return _buildConfirmButton(
+                              modalSheetContext,
+                              isConfirmEnabled,
+                              onConfirm,
+                              confirmLabel,
+                              isDestructive,
+                            );
+                          },
+                        )
+                      : _buildConfirmButton(
+                          modalSheetContext,
+                          isConfirmEnabled,
+                          onConfirm,
+                          confirmLabel,
+                          isDestructive,
+                        ),
                 ),
               ],
             ),
@@ -170,7 +163,7 @@ class ConfirmationProgressModal {
     }
   }
 
-  static LottiPrimaryButton _buildConfirmButton(
+  static DesignSystemButton _buildConfirmButton(
     BuildContext context,
     bool Function()? isConfirmEnabled,
     Future<void> Function() onConfirm,
@@ -178,11 +171,15 @@ class ConfirmationProgressModal {
     bool isDestructive,
   ) {
     final enabled = isConfirmEnabled?.call() ?? true;
-    return LottiPrimaryButton(
+    return DesignSystemButton(
       onPressed: enabled ? onConfirm : null,
       label: confirmLabel.toUpperCase(),
-      icon: Icons.check_circle_rounded,
-      isDestructive: isDestructive,
+      leadingIcon: Icons.check_circle_rounded,
+      variant: isDestructive
+          ? DesignSystemButtonVariant.danger
+          : DesignSystemButtonVariant.primary,
+      size: DesignSystemButtonSize.large,
+      fullWidth: true,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
@@ -10,7 +11,6 @@ import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal_sheet.d
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:matrix/matrix.dart';
 
 class DeviceCard extends ConsumerWidget {
@@ -81,7 +81,8 @@ class DeviceCard extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 10),
-          LottiPrimaryButton(
+          DesignSystemButton(
+            size: DesignSystemButtonSize.large,
             onPressed: () async {
               final lock = ref.read(
                 matrixVerificationModalLockProvider.notifier,

@@ -5,8 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_widget.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
@@ -185,7 +185,7 @@ void main() {
         ),
       );
 
-      expect(find.byType(LottiPrimaryButton), findsOneWidget);
+      expect(find.byType(DesignSystemButton), findsOneWidget);
       expect(find.text('Continue'), findsOneWidget);
     });
 
@@ -245,8 +245,8 @@ void main() {
       );
 
       // Find button and verify it is disabled
-      final continueButton = tester.widget<LottiPrimaryButton>(
-        find.byType(LottiPrimaryButton),
+      final continueButton = tester.widget<DesignSystemButton>(
+        find.byType(DesignSystemButton),
       );
 
       expect(continueButton.onPressed, isNull);
@@ -740,7 +740,7 @@ void main() {
         expect(find.byType(GridView), findsOneWidget);
         expect(find.text('Select Reference Images'), findsOneWidget);
         expect(find.text('1/$kMaxReferenceImages'), findsOneWidget);
-        expect(find.byType(LottiPrimaryButton), findsOneWidget);
+        expect(find.byType(DesignSystemButton), findsOneWidget);
       },
     );
 

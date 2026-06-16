@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/journal/state/save_button_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 class SaveButton extends ConsumerWidget {
   const SaveButton({
@@ -21,13 +21,14 @@ class SaveButton extends ConsumerWidget {
       curve: Curves.easeInOutQuint,
       opacity: unsaved ? 1 : 0,
       duration: const Duration(milliseconds: 500),
-      child: LottiTertiaryButton(
+      child: DesignSystemButton(
+        label: context.messages.saveLabel,
         onPressed: () {
           ref.read(provider.notifier).save();
           FocusManager.instance.primaryFocus?.unfocus();
         },
-        isDestructive: true,
-        label: context.messages.saveLabel,
+        variant: DesignSystemButtonVariant.dangerTertiary,
+        size: DesignSystemButtonSize.large,
       ),
     );
   }

@@ -1736,6 +1736,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSelectContinue => 'Continuați';
+
+  @override
+  String get aiProviderSelectDontShowAgain => 'Nu mai afișați';
+
+  @override
   String get aiProviderSetupOptionGeminiDescription =>
       'Modele multimodale cu transcriere audio. Necesită cheie API.';
 
@@ -5333,10 +5339,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalDateInvalid => 'Dată invalidă';
 
   @override
+  String get journalDateLabel => 'Dată';
+
+  @override
   String get journalDateNowButton => 'acum';
 
   @override
   String get journalDateSaveButton => 'SALVEAZĂ';
+
+  @override
+  String get journalDateTimeRangeTitle => 'Dată și oră';
 
   @override
   String get journalDateToLabel => 'Până la:';
@@ -5352,7 +5364,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Vrei să ștergi această intrare în jurnal?';
 
   @override
-  String get journalDurationLabel => 'Durată:';
+  String get journalDurationLabel => 'Durată';
+
+  @override
+  String get journalEndDateLabel => 'Dată de sfârșit';
+
+  @override
+  String get journalEndsAnotherDayHint => 'Alegeți o dată de sfârșit separată';
+
+  @override
+  String get journalEndsAnotherDayLabel => 'Se termină în altă zi';
+
+  @override
+  String get journalEndTimeLabel => 'Oră de sfârșit';
 
   @override
   String get journalFavoriteTooltip => 'Favorit';
@@ -5404,6 +5428,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalLinkToHint => 'Legătură la';
 
   @override
+  String journalOvernightNextDay(String date) {
+    return 'Se termină $date (ziua următoare)';
+  }
+
+  @override
   String get journalPrivateTooltip => 'Privat';
 
   @override
@@ -5417,6 +5446,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalShowMapHint => 'Arată harta';
+
+  @override
+  String get journalStartDateLabel => 'Dată de început';
+
+  @override
+  String get journalStartTimeLabel => 'Oră de început';
+
+  @override
+  String get journalTodayButton => 'Azi';
 
   @override
   String get journalToggleFlaggedTitle => 'Marcate';
@@ -5692,6 +5730,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Selectați cel puțin un tip de entitate';
+
+  @override
+  String get maintenanceReSyncStart => 'Porniți';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -6931,13 +6972,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsHabitsTitle => 'Obiceiuri';
 
   @override
+  String get settingsHealthImportActivity => 'Importați datele de activitate';
+
+  @override
+  String get settingsHealthImportBloodPressure =>
+      'Importați datele de tensiune arterială';
+
+  @override
+  String get settingsHealthImportBodyMeasurement =>
+      'Importați datele de măsurători corporale';
+
+  @override
   String get settingsHealthImportFromDate => 'Început';
+
+  @override
+  String get settingsHealthImportHeartRate => 'Importați datele de puls';
+
+  @override
+  String get settingsHealthImportSleep => 'Importați datele de somn';
 
   @override
   String get settingsHealthImportTitle => 'Health Import';
 
   @override
   String get settingsHealthImportToDate => 'Sfârșit';
+
+  @override
+  String get settingsHealthImportWorkout => 'Importați datele de antrenament';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Adaugă categorie';

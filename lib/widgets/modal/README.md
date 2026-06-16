@@ -54,8 +54,10 @@ ModalUtils.showSinglePageModal<void>(
 `Future<bool> showConfirmationModal({required context, required message, ...})`
 in `confirmation_modal.dart` shows a single-page confirmation built on
 `ModalUtils.showSinglePageModal`. It renders an optional warning icon (when
-`isDestructive`), the message, and `cancel`/`confirm` buttons, returning `true`
-only when the confirm button is tapped.
+`isDestructive`), the message, and a `cancel`/`confirm` pair of
+`DesignSystemButton`s — a `secondary` cancel and a `danger` (or `primary`, when
+not destructive) confirm — returning `true` only when the confirm button is
+tapped.
 
 ```dart
 final ok = await showConfirmationModal(
@@ -69,9 +71,9 @@ final ok = await showConfirmationModal(
 ### showModalActionSheet / ModalSheetAction
 
 `Future<T?> showModalActionSheet<T>({required context, ...})` in
-`modal_action_sheet.dart` shows a bottom sheet of `LottiTertiaryButton` actions
-plus an optional title, message, and cancel button. Each action is a
-`ModalSheetAction<T>` (`label`, optional `key`, optional `icon`,
+`modal_action_sheet.dart` shows a bottom sheet of `tertiary`/`dangerTertiary`
+`DesignSystemButton` actions plus an optional title, message, and cancel button.
+Each action is a `ModalSheetAction<T>` (`label`, optional `key`, optional `icon`,
 `isDestructiveAction`); the sheet pops with the tapped action's `key`.
 
 ```dart

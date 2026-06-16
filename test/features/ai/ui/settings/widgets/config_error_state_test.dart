@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -62,7 +62,7 @@ void main() {
       );
 
       expect(find.text('RETRY'), findsNothing);
-      expect(find.byType(LottiPrimaryButton), findsNothing);
+      expect(find.byType(DesignSystemButton), findsNothing);
     });
 
     testWidgets('displays error icon with correct size and color', (
@@ -136,7 +136,7 @@ void main() {
       expect(errorText.textAlign, TextAlign.center);
     });
 
-    testWidgets('retry button is properly styled as LottiPrimaryButton', (
+    testWidgets('retry button is properly styled as DesignSystemButton', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -146,9 +146,9 @@ void main() {
         ),
       );
 
-      // Find LottiPrimaryButton
+      // Find DesignSystemButton
       final primaryButton = find.byWidgetPredicate(
-        (widget) => widget is LottiPrimaryButton,
+        (widget) => widget is DesignSystemButton,
       );
       expect(primaryButton, findsOneWidget);
 

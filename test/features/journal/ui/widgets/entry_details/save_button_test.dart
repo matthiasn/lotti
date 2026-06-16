@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/journal/state/save_button_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -77,7 +77,7 @@ void main() {
     ) async {
       final controller = await pumpButton(tester, unsaved: true);
 
-      await tester.tap(find.byType(LottiTertiaryButton));
+      await tester.tap(find.byType(DesignSystemButton));
       await tester.pump();
 
       expect(controller.saveCount, 1);

@@ -1,11 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:intersperse/intersperse.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
-import 'package:lotti/widgets/misc/buttons.dart';
 
 class HealthImportPage extends StatefulWidget {
   const HealthImportPage({super.key});
@@ -57,17 +57,19 @@ class _HealthImportPageState extends State<HealthImportPage> {
             ),
             const SizedBox(height: 20),
             ...<Widget>[
-              RoundedButton(
-                'Import Activity Data',
+              DesignSystemButton(
+                label: context.messages.settingsHealthImportActivity,
                 onPressed: () {
                   _healthImport.getActivityHealthData(
                     dateFrom: _dateFrom,
                     dateTo: _dateTo,
                   );
                 },
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
               ),
-              RoundedButton(
-                'Import Sleep Data',
+              DesignSystemButton(
+                label: context.messages.settingsHealthImportSleep,
                 onPressed: () {
                   _healthImport.fetchHealthData(
                     dateFrom: _dateFrom,
@@ -75,9 +77,11 @@ class _HealthImportPageState extends State<HealthImportPage> {
                     types: sleepTypes,
                   );
                 },
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
               ),
-              RoundedButton(
-                'Import Heart Rate Data',
+              DesignSystemButton(
+                label: context.messages.settingsHealthImportHeartRate,
                 onPressed: () {
                   _healthImport.fetchHealthData(
                     dateFrom: _dateFrom,
@@ -85,9 +89,11 @@ class _HealthImportPageState extends State<HealthImportPage> {
                     types: heartRateTypes,
                   );
                 },
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
               ),
-              RoundedButton(
-                'Import Blood Pressure Data',
+              DesignSystemButton(
+                label: context.messages.settingsHealthImportBloodPressure,
                 onPressed: () {
                   _healthImport.fetchHealthData(
                     dateFrom: _dateFrom,
@@ -95,9 +101,11 @@ class _HealthImportPageState extends State<HealthImportPage> {
                     types: bpTypes,
                   );
                 },
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
               ),
-              RoundedButton(
-                'Import Body Measurement Data',
+              DesignSystemButton(
+                label: context.messages.settingsHealthImportBodyMeasurement,
                 onPressed: () {
                   _healthImport.fetchHealthData(
                     dateFrom: _dateFrom,
@@ -105,15 +113,19 @@ class _HealthImportPageState extends State<HealthImportPage> {
                     types: bodyMeasurementTypes,
                   );
                 },
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
               ),
-              RoundedButton(
-                'Import Workout Data',
+              DesignSystemButton(
+                label: context.messages.settingsHealthImportWorkout,
                 onPressed: () {
                   _healthImport.getWorkoutsHealthData(
                     dateFrom: _dateFrom,
                     dateTo: _dateTo,
                   );
                 },
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
               ),
             ].intersperse(const SizedBox(height: 5)),
           ],

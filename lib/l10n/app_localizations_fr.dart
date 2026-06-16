@@ -1735,6 +1735,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSelectContinue => 'Continuer';
+
+  @override
+  String get aiProviderSelectDontShowAgain => 'Ne plus afficher';
+
+  @override
   String get aiProviderSetupOptionGeminiDescription =>
       'Modèles multimodaux avec transcription audio. Nécessite une clé API.';
 
@@ -5332,10 +5338,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalDateInvalid => 'Plage de dates invalide';
 
   @override
+  String get journalDateLabel => 'Date';
+
+  @override
   String get journalDateNowButton => 'maintenant';
 
   @override
   String get journalDateSaveButton => 'ENREGISTRER';
+
+  @override
+  String get journalDateTimeRangeTitle => 'Date et heure';
 
   @override
   String get journalDateToLabel => 'Date de fin :';
@@ -5351,7 +5363,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Veux-tu vraiment supprimer cette entrée ?';
 
   @override
-  String get journalDurationLabel => 'Durée :';
+  String get journalDurationLabel => 'Durée';
+
+  @override
+  String get journalEndDateLabel => 'Date de fin';
+
+  @override
+  String get journalEndsAnotherDayHint => 'Choisis une date de fin distincte';
+
+  @override
+  String get journalEndsAnotherDayLabel => 'Se termine un autre jour';
+
+  @override
+  String get journalEndTimeLabel => 'Heure de fin';
 
   @override
   String get journalFavoriteTooltip => 'Préféré';
@@ -5403,6 +5427,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalLinkToHint => 'Lié à';
 
   @override
+  String journalOvernightNextDay(String date) {
+    return 'Fin $date (jour suivant)';
+  }
+
+  @override
   String get journalPrivateTooltip => 'Privé';
 
   @override
@@ -5416,6 +5445,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get journalShowMapHint => 'Afficher la carte';
+
+  @override
+  String get journalStartDateLabel => 'Date de début';
+
+  @override
+  String get journalStartTimeLabel => 'Heure de début';
+
+  @override
+  String get journalTodayButton => 'Aujourd\'hui';
 
   @override
   String get journalToggleFlaggedTitle => 'Signalé';
@@ -5695,6 +5733,9 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Sélectionne au moins un type d\'entité';
+
+  @override
+  String get maintenanceReSyncStart => 'Démarrer';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -6946,13 +6987,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsHabitsTitle => 'Habitudes';
 
   @override
+  String get settingsHealthImportActivity => 'Importer les données d\'activité';
+
+  @override
+  String get settingsHealthImportBloodPressure =>
+      'Importer les données de tension artérielle';
+
+  @override
+  String get settingsHealthImportBodyMeasurement => 'Importer les mensurations';
+
+  @override
   String get settingsHealthImportFromDate => 'Début';
+
+  @override
+  String get settingsHealthImportHeartRate =>
+      'Importer les données de fréquence cardiaque';
+
+  @override
+  String get settingsHealthImportSleep => 'Importer les données de sommeil';
 
   @override
   String get settingsHealthImportTitle => 'Health Import';
 
   @override
   String get settingsHealthImportToDate => 'Fin';
+
+  @override
+  String get settingsHealthImportWorkout =>
+      'Importer les données d\'entraînement';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Ajouter une catégorie';

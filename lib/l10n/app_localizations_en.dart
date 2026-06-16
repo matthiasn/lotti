@@ -1704,6 +1704,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSelectContinue => 'Continue';
+
+  @override
+  String get aiProviderSelectDontShowAgain => 'Don\'t Show Again';
+
+  @override
   String get aiProviderSetupOptionGeminiDescription =>
       'Multimodal models with audio transcription. Requires API key.';
 
@@ -5225,10 +5231,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalDateInvalid => 'Invalid Date Range';
 
   @override
+  String get journalDateLabel => 'Date';
+
+  @override
   String get journalDateNowButton => 'Now';
 
   @override
   String get journalDateSaveButton => 'SAVE';
+
+  @override
+  String get journalDateTimeRangeTitle => 'Date & Time';
 
   @override
   String get journalDateToLabel => 'Date to:';
@@ -5244,7 +5256,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Do you want to delete this journal entry?';
 
   @override
-  String get journalDurationLabel => 'Duration:';
+  String get journalDurationLabel => 'Duration';
+
+  @override
+  String get journalEndDateLabel => 'End date';
+
+  @override
+  String get journalEndsAnotherDayHint => 'Pick a separate end date';
+
+  @override
+  String get journalEndsAnotherDayLabel => 'Ends on another day';
+
+  @override
+  String get journalEndTimeLabel => 'End time';
 
   @override
   String get journalFavoriteTooltip => 'starred only';
@@ -5295,6 +5319,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalLinkToHint => 'Link to';
 
   @override
+  String journalOvernightNextDay(String date) {
+    return 'Ends $date (next day)';
+  }
+
+  @override
   String get journalPrivateTooltip => 'private only';
 
   @override
@@ -5308,6 +5337,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get journalShowMapHint => 'Show map';
+
+  @override
+  String get journalStartDateLabel => 'Start date';
+
+  @override
+  String get journalStartTimeLabel => 'Start time';
+
+  @override
+  String get journalTodayButton => 'Today';
 
   @override
   String get journalToggleFlaggedTitle => 'Flagged';
@@ -5564,6 +5602,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Select at least one entity type';
+
+  @override
+  String get maintenanceReSyncStart => 'Start';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -6766,13 +6807,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsHabitsTitle => 'Habits';
 
   @override
+  String get settingsHealthImportActivity => 'Import Activity Data';
+
+  @override
+  String get settingsHealthImportBloodPressure => 'Import Blood Pressure Data';
+
+  @override
+  String get settingsHealthImportBodyMeasurement =>
+      'Import Body Measurement Data';
+
+  @override
   String get settingsHealthImportFromDate => 'Start';
+
+  @override
+  String get settingsHealthImportHeartRate => 'Import Heart Rate Data';
+
+  @override
+  String get settingsHealthImportSleep => 'Import Sleep Data';
 
   @override
   String get settingsHealthImportTitle => 'Health Import';
 
   @override
   String get settingsHealthImportToDate => 'End';
+
+  @override
+  String get settingsHealthImportWorkout => 'Import Workout Data';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Add category';
@@ -8241,7 +8301,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
       'Do you want to delete this journal entry?';
 
   @override
-  String get journalDurationLabel => 'Duration:';
+  String get journalDurationLabel => 'Duration';
 
   @override
   String get journalFavoriteTooltip => 'starred only';

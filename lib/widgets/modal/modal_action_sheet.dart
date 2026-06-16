@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/modal/modal_sheet_action.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -55,21 +55,26 @@ Future<T?> showModalActionSheet<T>({
                       horizontal: 16,
                       vertical: 8,
                     ),
-                    child: LottiTertiaryButton(
+                    child: DesignSystemButton(
                       label: action.label,
                       onPressed: pop,
-                      icon: action.icon,
+                      leadingIcon: action.icon,
+                      variant: action.isDestructiveAction
+                          ? DesignSystemButtonVariant.dangerTertiary
+                          : DesignSystemButtonVariant.tertiary,
+                      size: DesignSystemButtonSize.large,
                       fullWidth: true,
-                      isDestructive: action.isDestructiveAction,
                     ),
                   );
                 }),
                 if (cancelLabel != null)
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                    child: LottiTertiaryButton(
+                    child: DesignSystemButton(
                       label: cancelLabel,
                       onPressed: () => Navigator.pop(context),
+                      variant: DesignSystemButtonVariant.tertiary,
+                      size: DesignSystemButtonSize.large,
                       fullWidth: true,
                     ),
                   ),

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
@@ -17,6 +17,7 @@ Future<void> _pumpModalHost(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
+      theme: resolveTestTheme(),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       home: MediaQuery(
@@ -247,17 +248,17 @@ void main() {
       await tester.pumpAndSettle();
 
       final confirmFinder = find.widgetWithText(
-        LottiPrimaryButton,
+        DesignSystemButton,
         'CONFIRM',
       );
 
-      var confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      var confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
       expect(confirmButton.onPressed, isNull);
 
       enabledNotifier.value = true;
       await tester.pump();
 
-      confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
       expect(confirmButton.onPressed, isNotNull);
 
       await tester.tap(find.text('CONFIRM'));
@@ -340,17 +341,17 @@ void main() {
       // Find the confirm button and verify it uses error color
       final confirmButtonFinder = find.ancestor(
         of: find.text('DELETE'),
-        matching: find.byType(LottiPrimaryButton),
+        matching: find.byType(DesignSystemButton),
       );
-      final confirmButton = tester.widget<LottiPrimaryButton>(
+      final confirmButton = tester.widget<DesignSystemButton>(
         confirmButtonFinder,
       );
       Theme.of(tester.element(confirmButtonFinder));
 
       // Verify the button uses error styling for destructive operations
       expect(
-        confirmButton.isDestructive,
-        isTrue,
+        confirmButton.variant,
+        DesignSystemButtonVariant.danger,
       );
     });
 
@@ -382,17 +383,17 @@ void main() {
       // Find the confirm button and verify it uses primary color
       final confirmButtonFinder = find.ancestor(
         of: find.text('CONTINUE'),
-        matching: find.byType(LottiPrimaryButton),
+        matching: find.byType(DesignSystemButton),
       );
-      final confirmButton = tester.widget<LottiPrimaryButton>(
+      final confirmButton = tester.widget<DesignSystemButton>(
         confirmButtonFinder,
       );
       Theme.of(tester.element(confirmButtonFinder));
 
       // Verify the button uses primary styling for non-destructive operations
       expect(
-        confirmButton.isDestructive,
-        isFalse,
+        confirmButton.variant,
+        DesignSystemButtonVariant.primary,
       );
     });
 

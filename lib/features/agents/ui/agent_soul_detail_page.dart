@@ -7,14 +7,12 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_info_tab.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/form/lotti_text_field.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
@@ -205,38 +203,45 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
           ? FormBottomBar(
               rightButtons: widget.isCreateMode
                   ? [
-                      LottiSecondaryButton(
+                      DesignSystemButton(
                         onPressed: () => navigateBackFromAgent(context),
                         label: context.messages.cancelButton,
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: DesignSystemButtonSize.large,
                       ),
-                      LottiPrimaryButton(
+                      DesignSystemButton(
                         onPressed: saveEnabled
                             ? () => _handleSave(context)
                             : null,
                         label: context.messages.createButton,
+                        size: DesignSystemButtonSize.large,
                       ),
                     ]
                   : _isDirty
                   ? [
-                      LottiSecondaryButton(
+                      DesignSystemButton(
                         onPressed: () => navigateBackFromAgent(context),
                         label: context.messages.cancelButton,
+                        variant: DesignSystemButtonVariant.secondary,
+                        size: DesignSystemButtonSize.large,
                       ),
-                      LottiPrimaryButton(
+                      DesignSystemButton(
                         onPressed: saveEnabled
                             ? () => _handleSave(context)
                             : null,
                         label: context.messages.agentTemplateSaveNewVersion,
+                        size: DesignSystemButtonSize.large,
                       ),
                     ]
                   : [
-                      LottiPrimaryButton(
+                      DesignSystemButton(
                         onPressed: () => beamToNamed(
                           '/settings/agents/souls/'
                           '${widget.soulId}/review',
                         ),
                         label: context.messages.agentSoulReviewTitle,
-                        icon: Icons.rate_review,
+                        leadingIcon: Icons.rate_review,
+                        size: DesignSystemButtonSize.large,
                       ),
                     ],
             )
@@ -426,11 +431,13 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
         title: Text(dialogContext.messages.agentSoulDeleteConfirmTitle),
         content: Text(dialogContext.messages.agentSoulDeleteConfirmBody),
         actions: [
-          LottiTertiaryButton(
+          DesignSystemButton(
             onPressed: () => Navigator.pop(dialogContext),
             label: dialogContext.messages.cancelButton,
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.large,
           ),
-          LottiTertiaryButton(
+          DesignSystemButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
               try {
@@ -454,7 +461,8 @@ class _AgentSoulDetailPageState extends ConsumerState<AgentSoulDetailPage>
               }
             },
             label: dialogContext.messages.deleteButton,
-            isDestructive: true,
+            variant: DesignSystemButtonVariant.dangerTertiary,
+            size: DesignSystemButtonSize.large,
           ),
         ],
       ),

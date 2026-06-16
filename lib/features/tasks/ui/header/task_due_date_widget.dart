@@ -1,8 +1,8 @@
 import 'package:flutter/cupertino.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 Future<void> showDueDatePicker({
@@ -110,33 +110,28 @@ class _DueDateStickyActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return DesignSystemModalActionBar(
+      glass: true,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: LottiSecondaryButton(
-              label: context.messages.cancelButton,
-              onPressed: onCancel,
-              fullWidth: true,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: LottiSecondaryButton(
-              label: context.messages.clearButton,
-              onPressed: onClear,
-              fullWidth: true,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: LottiPrimaryButton(
-              onPressed: onDone,
-              label: context.messages.doneButton,
-            ),
-          ),
-        ],
+      secondary: [
+        DesignSystemButton(
+          label: context.messages.cancelButton,
+          variant: DesignSystemButtonVariant.secondary,
+          size: DesignSystemButtonSize.large,
+          onPressed: onCancel,
+        ),
+        DesignSystemButton(
+          label: context.messages.clearButton,
+          variant: DesignSystemButtonVariant.secondary,
+          size: DesignSystemButtonSize.large,
+          onPressed: onClear,
+        ),
+      ],
+      primary: DesignSystemButton(
+        label: context.messages.doneButton,
+        size: DesignSystemButtonSize.large,
+        fullWidth: true,
+        onPressed: onDone,
       ),
     );
   }

@@ -60,16 +60,13 @@ App bar that accepts a custom widget as its title, providing more flexibility th
 
 ## Button Widgets
 
-Located in `/lib/widgets/buttons/`
-
-### LottiPrimaryButton
-Primary action button with Lotti's design system styling. Used for main actions.
-
-### LottiSecondaryButton
-Secondary (outlined) button with Lotti's design system styling. Used for secondary actions.
-
-### LottiTertiaryButton
-Tertiary (text) button with Lotti's design system styling. Used for text-only buttons with minimal styling, typically for secondary actions or links.
+All buttons come from the design system: `DesignSystemButton`
+(`lib/features/design_system/components/buttons/design_system_button.dart`),
+laid out in modal/sheet action bars by `DesignSystemModalActionBar`. The former
+`LottiPrimaryButton` / `LottiSecondaryButton` / `LottiTertiaryButton` wrappers
+(and the `RoundedButton` wrapper) have been removed — use `DesignSystemButton`
+with the appropriate `variant` (`primary` / `secondary` / `tertiary` /
+`danger` / `dangerSecondary` / `dangerTertiary`) and `size`.
 
 ## Card Widgets
 
@@ -126,7 +123,10 @@ Bottom sheet for selecting date and time values with a user-friendly interface.
 Form field specifically designed for date and time input with validation.
 
 ### DateTimeStickyActionBar
-Sticky action bar for date/time related actions, stays visible during scrolling.
+Sticky action bar for the date/time picker modal, stays visible during
+scrolling. Built on `DesignSystemModalActionBar` (the app-wide dominant-primary
+layout): `secondary` Cancel and Now actions keep their intrinsic width on the
+left and the `primary` Done flexes to fill the trailing width.
 
 ## Event Widgets
 
@@ -170,9 +170,6 @@ Widget showing the count of flagged items with appropriate styling.
 
 ### MapWidget
 Interactive map display widget for location-based features.
-
-### RoundedButton
-Thin wrapper around `LottiSecondaryButton` exposing a label-plus-`onPressed` API.
 
 ### ZoomWrapper
 Applies a `TextScaler` to its subtree based on a `scale` value (returns the child unchanged when `scale` is 1.0).
@@ -370,9 +367,9 @@ Animated checkbox with label, optional subtitle, proper touch targets, and disab
 
 ## Usage Guidelines
 
-1. **Import widgets** using their relative path:
+1. **Import widgets** using their package path:
    ```dart
-   import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+   import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
    ```
 
 2. **Maintain consistency** by using these widgets instead of creating similar ones.

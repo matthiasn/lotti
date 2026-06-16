@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/ai/state/embedding_backfill_controller.dart';
 import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -139,12 +139,12 @@ void main() {
       await tester.pumpAndSettle();
 
       final confirmFinder = find.widgetWithText(
-        LottiPrimaryButton,
+        DesignSystemButton,
         'YES, GENERATE',
       );
 
       // Before selecting a category, confirm button should be disabled
-      var confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      var confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
       expect(confirmButton.onPressed, isNull);
 
       // Tap a category to select it
@@ -152,7 +152,7 @@ void main() {
       await tester.pump();
 
       // Now the confirm button should be enabled
-      confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
       expect(confirmButton.onPressed, isNotNull);
     });
 
@@ -165,10 +165,10 @@ void main() {
 
       // Initially disabled
       final confirmFinder = find.widgetWithText(
-        LottiPrimaryButton,
+        DesignSystemButton,
         'YES, GENERATE',
       );
-      var confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      var confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
       expect(confirmButton.onPressed, isNull);
 
       // Tap "Select All"
@@ -176,7 +176,7 @@ void main() {
       await tester.pump();
 
       // Confirm should now be enabled
-      confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
       expect(confirmButton.onPressed, isNotNull);
 
       // Button should now say "Deselect All"
@@ -187,7 +187,7 @@ void main() {
       await tester.pump();
 
       // Confirm should be disabled again
-      confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
+      confirmButton = tester.widget<DesignSystemButton>(confirmFinder);
       expect(confirmButton.onPressed, isNull);
 
       // Button should say "Select All" again

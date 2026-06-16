@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:matrix/matrix.dart';
@@ -57,13 +57,15 @@ class _StatusActionBar extends ConsumerWidget {
             const Spacer(),
             const SizedBox(width: 8),
             Flexible(
-              child: LottiSecondaryButton(
+              child: DesignSystemButton(
                 onPressed: () {
                   // Keep notifier state predictable for future multi-step flows.
                   pageIndexNotifier.value = 0;
                   Navigator.of(context).pop();
                 },
                 label: context.messages.tasksLabelsDialogClose,
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
               ),
             ),
           ],
@@ -107,7 +109,9 @@ class ProvisionedStatusWidget extends ConsumerWidget {
             const _HandoverQrSection(),
           ],
           const SizedBox(height: 16),
-          LottiSecondaryButton(
+          DesignSystemButton(
+            variant: DesignSystemButtonVariant.secondary,
+            size: DesignSystemButtonSize.large,
             onPressed: () async {
               final confirmed = await showDialog<bool>(
                 context: context,
@@ -253,9 +257,11 @@ class _HandoverQrSectionState extends ConsumerState<_HandoverQrSection> {
       }
 
       if (_loadAttempted) {
-        return LottiSecondaryButton(
+        return DesignSystemButton(
           onPressed: _generate,
           label: messages.provisionedSyncShowQr,
+          variant: DesignSystemButtonVariant.secondary,
+          size: DesignSystemButtonSize.large,
         );
       }
 

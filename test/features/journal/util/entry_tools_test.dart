@@ -102,6 +102,93 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
+  // formatRangeDuration
+  // ---------------------------------------------------------------------------
+
+  group('formatRangeDuration — worked examples', () {
+    test('non-positive spans render as 0m', () {
+      expect(formatRangeDuration(Duration.zero), '0m');
+      expect(formatRangeDuration(const Duration(minutes: -5)), '0m');
+    });
+
+    test('sub-hour spans show only minutes', () {
+      expect(formatRangeDuration(const Duration(minutes: 45)), '45m');
+    });
+
+    test('whole hours omit the minute component', () {
+      expect(formatRangeDuration(const Duration(hours: 1)), '1h');
+    });
+
+    test('hours and minutes combine', () {
+      expect(
+        formatRangeDuration(const Duration(hours: 1, minutes: 30)),
+        '1h 30m',
+      );
+    });
+
+    test('multi-day spans roll whole days into a d component', () {
+      expect(
+        formatRangeDuration(const Duration(days: 2, hours: 2)),
+        '2d 2h',
+      );
+      expect(formatRangeDuration(const Duration(days: 1)), '1d');
+      expect(
+        formatRangeDuration(const Duration(days: 1, minutes: 5)),
+        '1d 5m',
+      );
+      // 25h normalizes to 1d 1h.
+      expect(formatRangeDuration(const Duration(hours: 25)), '1d 1h');
+    });
+
+    test('seconds are dropped', () {
+      expect(
+        formatRangeDuration(const Duration(hours: 1, minutes: 30, seconds: 45)),
+        '1h 30m',
+      );
+    });
+  });
+
+  group('formatRangeDuration — properties', () {
+    int parseMinutes(String s) {
+      if (s == '0m') return 0;
+      var total = 0;
+      for (final part in s.split(' ')) {
+        final n = int.parse(part.substring(0, part.length - 1));
+        switch (part[part.length - 1]) {
+          case 'd':
+            total += n * 1440;
+          case 'h':
+            total += n * 60;
+          case 'm':
+            total += n;
+        }
+      }
+      return total;
+    }
+
+    glados.Glados(
+      glados.any.intInRange(0, 900000).map((s) => Duration(seconds: s)),
+      glados.ExploreConfig(numRuns: 200),
+    ).test('round-trips to the input truncated to whole minutes', (d) {
+      final parsed = parseMinutes(formatRangeDuration(d));
+      expect(parsed, d.inMinutes);
+    }, tags: 'glados');
+
+    glados.Glados(
+      glados.any.intInRange(60, 900000).map((s) => Duration(seconds: s)),
+      glados.ExploreConfig(numRuns: 200),
+    ).test('emits no zero-valued components and keeps h<24, m<60', (d) {
+      final out = formatRangeDuration(d);
+      for (final part in out.split(' ')) {
+        final n = int.parse(part.substring(0, part.length - 1));
+        expect(n, greaterThan(0), reason: 'no zero components in "$out"');
+        if (part.endsWith('h')) expect(n, lessThan(24));
+        if (part.endsWith('m')) expect(n, lessThan(60));
+      }
+    }, tags: 'glados');
+  });
+
+  // ---------------------------------------------------------------------------
   // fromNullableBool
   // ---------------------------------------------------------------------------
 

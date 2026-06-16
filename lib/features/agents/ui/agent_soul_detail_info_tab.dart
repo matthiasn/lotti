@@ -7,12 +7,11 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_history_card.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Info tab: version history + assigned templates + delete action.
 class InfoTabContent extends ConsumerWidget {
@@ -169,11 +168,14 @@ class _VersionTile extends ConsumerWidget {
           dialogContext.messages.agentSoulRollbackConfirm(version.version),
         ),
         actions: [
-          LottiTertiaryButton(
-            onPressed: () => Navigator.pop(dialogContext),
+          DesignSystemButton(
             label: dialogContext.messages.cancelButton,
+            onPressed: () => Navigator.pop(dialogContext),
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.large,
           ),
-          LottiPrimaryButton(
+          DesignSystemButton(
+            label: dialogContext.messages.agentSoulRollbackAction,
             onPressed: () async {
               Navigator.pop(dialogContext);
               try {
@@ -196,7 +198,7 @@ class _VersionTile extends ConsumerWidget {
                 );
               }
             },
-            label: dialogContext.messages.agentSoulRollbackAction,
+            size: DesignSystemButtonSize.large,
           ),
         ],
       ),

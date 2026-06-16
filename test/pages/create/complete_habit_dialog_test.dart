@@ -79,7 +79,7 @@ void main() {
                 ),
                 child: HabitDialog(
                   habitId: habitFlossing.id,
-                  themeData: ThemeData(),
+                  themeData: resolveTestTheme(),
                   showLinkedDashboard: showLinkedDashboard,
                 ),
               ),
@@ -319,7 +319,7 @@ void main() {
                   child: HabitDialog(
                     habitId: habitFlossing.id,
                     dateString: pastDate,
-                    themeData: ThemeData(),
+                    themeData: resolveTestTheme(),
                   ),
                 ),
               ),
@@ -409,7 +409,7 @@ void main() {
                   child: HabitDialog(
                     habitId: habitFlossing.id,
                     dateString: '2024-01-15',
-                    themeData: ThemeData(),
+                    themeData: resolveTestTheme(),
                   ),
                 ),
               ),
@@ -493,7 +493,7 @@ void main() {
             child: Material(
               child: HabitDialog(
                 habitId: habitFlossing.id,
-                themeData: ThemeData(),
+                themeData: resolveTestTheme(),
               ),
             ),
           ),

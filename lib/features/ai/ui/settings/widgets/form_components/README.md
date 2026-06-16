@@ -77,27 +77,34 @@ UnifiedAiToggleField(
 
 ### Button Components
 
-For buttons, use the standardized Lotti button components:
+For buttons, use the design-system `DesignSystemButton` with the appropriate
+`variant`:
 
-- **`LottiPrimaryButton`**: For primary actions (save, create, etc.)
-- **`LottiSecondaryButton`**: For secondary actions (cancel, back, etc.)
-- **`LottiTertiaryButton`**: For text-only buttons (dismiss, etc.)
+- **`variant: primary`**: For primary actions (save, create, etc.)
+- **`variant: secondary`**: For secondary actions (cancel, back, etc.)
+- **`variant: tertiary`**: For text-only buttons (dismiss, etc.)
+
+For a modal/sheet action row, prefer `DesignSystemModalActionBar`, which keeps
+the secondary actions compact and flexes the primary to fill the trailing width.
 
 **Usage:**
 ```dart
-Row(
-  children: [
-    LottiTertiaryButton(
+DesignSystemModalActionBar(
+  secondary: [
+    DesignSystemButton(
       label: 'Cancel',
       onPressed: onCancel,
-    ),
-    const SizedBox(width: 12),
-    LottiPrimaryButton(
-      label: 'Save',
-      onPressed: onSave,
-      icon: Icons.save_rounded,
+      variant: DesignSystemButtonVariant.tertiary,
+      size: DesignSystemButtonSize.large,
     ),
   ],
+  primary: DesignSystemButton(
+    label: 'Save',
+    onPressed: onSave,
+    leadingIcon: Icons.save_rounded,
+    size: DesignSystemButtonSize.large,
+    fullWidth: true,
+  ),
 )
 ```
 
@@ -140,22 +147,21 @@ Column(
     ),
     const SizedBox(height: 40),
     // Action buttons at bottom
-    Row(
-      children: [
-        Expanded(
-          child: LottiTertiaryButton(
-            label: 'Cancel',
-            onPressed: onCancel,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: LottiPrimaryButton(
-            label: 'Save',
-            onPressed: onSave,
-          ),
+    DesignSystemModalActionBar(
+      secondary: [
+        DesignSystemButton(
+          label: 'Cancel',
+          onPressed: onCancel,
+          variant: DesignSystemButtonVariant.tertiary,
+          size: DesignSystemButtonSize.large,
         ),
       ],
+      primary: DesignSystemButton(
+        label: 'Save',
+        onPressed: onSave,
+        size: DesignSystemButtonSize.large,
+        fullWidth: true,
+      ),
     ),
   ],
 )

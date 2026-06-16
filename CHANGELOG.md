@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1026]
 ### Changed
+- Editing an entry's start and end time is simpler: you set the date once and
+  the start/end times separately, instead of picking the full date on both
+  pickers. One date wheel sits above paired start/end time wheels, with a live
+  duration. If the end time is earlier than the start, it automatically rolls to
+  the next day and shows a "+1 day" badge — so logging something past midnight
+  needs no extra steps. For entries that span different days, an "Ends on another
+  day" toggle reveals a separate end date.
 - Creating a project now opens a compact overlay — a bottom sheet on phones, a
   centered dialog on desktop — instead of taking over the whole screen. The
   fields are unchanged (title, category, target date); Cancel/Create sit inside
@@ -15,6 +22,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "PROHIBITED_CONTENT") instead of a generic "Failed to generate image" — so
   it's clear the block is the AI provider's content policy, not Lotti, and you
   can reword the request and try again.
+- Every button across the app now uses one unified style, and modal action bars
+  share one layout where the confirming action is the wide, dominant button and
+  the cancel/secondary actions stay compact beside it. Disabled buttons now
+  clearly read as inactive — a flat, greyed-out pill — instead of a faded
+  version of their active colour. This covers every previously divergent
+  surface, including the delete-confirmation dialog, the date/time and task
+  due-date/estimate pickers, the journal entry date-range editor, the Matrix
+  sync screens (setup, bundle import, device verification, and the maintenance
+  modals), the AI settings screens (error/retry states, provider setup, and
+  delete dialogs), health import, the agent editors, and habit completion.
 
 ## [0.9.1025]
 ### Added

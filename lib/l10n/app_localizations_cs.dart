@@ -1724,6 +1724,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSelectContinue => 'Pokračovat';
+
+  @override
+  String get aiProviderSelectDontShowAgain => 'Příště nezobrazovat';
+
+  @override
   String get aiProviderSetupOptionGeminiDescription =>
       'Multimodální modely s přepisem zvuku. Vyžaduje API klíč.';
 
@@ -5287,10 +5293,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalDateInvalid => 'Neplatné časové rozmezí';
 
   @override
+  String get journalDateLabel => 'Datum';
+
+  @override
   String get journalDateNowButton => 'Nyní';
 
   @override
   String get journalDateSaveButton => 'ULOŽIT';
+
+  @override
+  String get journalDateTimeRangeTitle => 'Datum a čas';
 
   @override
   String get journalDateToLabel => 'Datum do:';
@@ -5306,7 +5318,19 @@ class AppLocalizationsCs extends AppLocalizations {
       'Opravdu chcete smazat tento deníkový záznam?';
 
   @override
-  String get journalDurationLabel => 'Doba trvání:';
+  String get journalDurationLabel => 'Doba trvání';
+
+  @override
+  String get journalEndDateLabel => 'Datum konce';
+
+  @override
+  String get journalEndsAnotherDayHint => 'Vyber samostatné datum konce';
+
+  @override
+  String get journalEndsAnotherDayLabel => 'Končí jiný den';
+
+  @override
+  String get journalEndTimeLabel => 'Čas konce';
 
   @override
   String get journalFavoriteTooltip => 'pouze oblíbené';
@@ -5358,6 +5382,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalLinkToHint => 'Odkaz na';
 
   @override
+  String journalOvernightNextDay(String date) {
+    return 'Končí $date (další den)';
+  }
+
+  @override
   String get journalPrivateTooltip => 'pouze soukromé';
 
   @override
@@ -5371,6 +5400,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get journalShowMapHint => 'Zobrazit mapu';
+
+  @override
+  String get journalStartDateLabel => 'Datum začátku';
+
+  @override
+  String get journalStartTimeLabel => 'Čas začátku';
+
+  @override
+  String get journalTodayButton => 'Dnes';
 
   @override
   String get journalToggleFlaggedTitle => 'Označené';
@@ -5653,6 +5691,9 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Vyber alespoň jeden typ entity';
+
+  @override
+  String get maintenanceReSyncStart => 'Spustit';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -6887,13 +6928,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsHabitsTitle => 'Návyky';
 
   @override
+  String get settingsHealthImportActivity => 'Importovat data aktivity';
+
+  @override
+  String get settingsHealthImportBloodPressure =>
+      'Importovat data krevního tlaku';
+
+  @override
+  String get settingsHealthImportBodyMeasurement =>
+      'Importovat data tělesných měr';
+
+  @override
   String get settingsHealthImportFromDate => 'Začátek';
+
+  @override
+  String get settingsHealthImportHeartRate =>
+      'Importovat data tepové frekvence';
+
+  @override
+  String get settingsHealthImportSleep => 'Importovat data spánku';
 
   @override
   String get settingsHealthImportTitle => 'Import zdraví';
 
   @override
   String get settingsHealthImportToDate => 'Konec';
+
+  @override
+  String get settingsHealthImportWorkout => 'Importovat data tréninků';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Přidat kategorii';

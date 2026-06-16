@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/get_it.dart';
@@ -10,8 +11,6 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Undo window for the delete toast. Matches the checklist row's delete
 /// pattern so the destructive-undoable feedback feels uniform across the
@@ -284,15 +283,18 @@ class AiConfigDeleteService {
               ],
             ),
             actions: [
-              LottiTertiaryButton(
+              DesignSystemButton(
                 onPressed: () => Navigator.of(context).pop(false),
                 label: context.messages.cancelButton,
+                variant: DesignSystemButtonVariant.tertiary,
+                size: DesignSystemButtonSize.large,
               ),
-              LottiPrimaryButton(
+              DesignSystemButton(
                 onPressed: () => Navigator.of(context).pop(true),
                 label: context.messages.deleteButton,
-                icon: Icons.delete_forever_outlined,
-                isDestructive: true,
+                leadingIcon: Icons.delete_forever_outlined,
+                variant: DesignSystemButtonVariant.danger,
+                size: DesignSystemButtonSize.large,
               ),
             ],
           ),

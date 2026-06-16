@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
 enum DesignSystemButtonVariant {
   primary,
@@ -34,6 +33,7 @@ class DesignSystemButton extends StatefulWidget {
     this.trailingIcon,
     this.semanticsLabel,
     this.forcedState,
+    this.fullWidth = false,
     super.key,
   }) : assert(
          label != '' || semanticsLabel != null,
@@ -48,6 +48,11 @@ class DesignSystemButton extends StatefulWidget {
   final IconData? trailingIcon;
   final String? semanticsLabel;
   final DesignSystemButtonVisualState? forcedState;
+
+  /// When true, the button expands to fill its parent's width (use inside an
+  /// [Expanded]/[SizedBox]) and its content is centered rather than left
+  /// aligned. Without it a stretched button left-aligns its label.
+  final bool fullWidth;
 
   @override
   State<DesignSystemButton> createState() => _DesignSystemButtonState();
@@ -81,6 +86,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
       tokens: tokens,
       variant: widget.variant,
       visualState: visualState,
+      enabled: enabled,
     );
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(sizeSpec.cornerRadius),
@@ -120,12 +126,21 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
                   button: true,
                   label: widget.semanticsLabel,
                   enabled: enabled,
-                  child: _ButtonContent(
-                    label: widget.label,
-                    leadingIcon: widget.leadingIcon,
-                    trailingIcon: widget.trailingIcon,
-                    gap: sizeSpec.itemGap,
-                  ),
+                  child: widget.fullWidth
+                      ? Center(
+                          child: _ButtonContent(
+                            label: widget.label,
+                            leadingIcon: widget.leadingIcon,
+                            trailingIcon: widget.trailingIcon,
+                            gap: sizeSpec.itemGap,
+                          ),
+                        )
+                      : _ButtonContent(
+                          label: widget.label,
+                          leadingIcon: widget.leadingIcon,
+                          trailingIcon: widget.trailingIcon,
+                          gap: sizeSpec.itemGap,
+                        ),
                 ),
               ),
             ),
@@ -134,10 +149,7 @@ class _DesignSystemButtonState extends State<DesignSystemButton> {
       ),
     );
 
-    return button.withDisabledOpacity(
-      enabled: enabled,
-      disabledOpacity: tokens.colors.text.lowEmphasis.a,
-    );
+    return button;
   }
 
   DesignSystemButtonVisualState _resolveVisualState(bool enabled) {
@@ -277,7 +289,28 @@ class _ButtonVariantSpec {
     required DsTokens tokens,
     required DesignSystemButtonVariant variant,
     required DesignSystemButtonVisualState visualState,
+    required bool enabled,
   }) {
+    // A disabled button must read as inert, not as a dimmer brand button: drop
+    // the brand hue entirely and render a flat, low-emphasis neutral. Filled
+    // variants keep a faint neutral pill so they still read as a (disabled)
+    // button; text-only (tertiary) variants stay fill-less. The label uses the
+    // low-emphasis text token so it is clearly muted rather than actionable.
+    if (!enabled) {
+      final isFilled = switch (variant) {
+        DesignSystemButtonVariant.primary ||
+        DesignSystemButtonVariant.secondary ||
+        DesignSystemButtonVariant.danger ||
+        DesignSystemButtonVariant.dangerSecondary => true,
+        DesignSystemButtonVariant.tertiary ||
+        DesignSystemButtonVariant.dangerTertiary => false,
+      };
+      return _ButtonVariantSpec(
+        foregroundColor: tokens.colors.text.lowEmphasis,
+        backgroundColor: isFilled ? tokens.colors.surface.enabled : null,
+      );
+    }
+
     final surfaceColor = switch (visualState) {
       DesignSystemButtonVisualState.idle => tokens.colors.surface.enabled,
       DesignSystemButtonVisualState.hover => tokens.colors.surface.hover,

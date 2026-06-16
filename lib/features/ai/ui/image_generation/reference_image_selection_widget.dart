@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 /// Widget for selecting reference images to guide cover art generation.
 ///
@@ -75,9 +75,10 @@ class _ReferenceImageSelectionWidgetState
                 ),
               ),
               const SizedBox(height: 16),
-              LottiPrimaryButton(
+              DesignSystemButton(
                 label: context.messages.referenceImageSkip,
                 onPressed: widget.onSkip,
+                size: DesignSystemButtonSize.large,
               ),
             ],
           ),
@@ -185,13 +186,14 @@ class _ReferenceImageSelectionWidgetState
           // Action button — always pinned at the bottom
           Padding(
             padding: const EdgeInsets.all(16),
-            child: LottiPrimaryButton(
+            child: DesignSystemButton(
               label: state.selectionCount > 0
                   ? context.messages.referenceImageContinueWithCount(
                       state.selectionCount,
                     )
                   : context.messages.referenceImageContinue,
-              icon: Icons.arrow_forward_rounded,
+              leadingIcon: Icons.arrow_forward_rounded,
+              size: DesignSystemButtonSize.large,
               onPressed: state.isProcessing
                   ? null
                   : () async {

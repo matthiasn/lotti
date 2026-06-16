@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -44,8 +43,8 @@ void main() {
       // Save button should be disabled
       final saveButton = find.byWidgetPredicate(
         (widget) =>
-            widget is LottiPrimaryButton &&
-            widget.icon == Icons.save_rounded &&
+            widget is DesignSystemButton &&
+            widget.leadingIcon == Icons.save_rounded &&
             widget.onPressed == null,
       );
       expect(saveButton, findsOneWidget);
@@ -69,7 +68,7 @@ void main() {
       // Save button should be disabled
       final saveButton = find.byWidgetPredicate(
         (widget) =>
-            widget is LottiPrimaryButton &&
+            widget is DesignSystemButton &&
             widget.label == 'Save' &&
             widget.onPressed == null,
       );
@@ -100,7 +99,7 @@ void main() {
       // Save button should be enabled
       final saveButton = find.byWidgetPredicate(
         (widget) =>
-            widget is LottiPrimaryButton &&
+            widget is DesignSystemButton &&
             widget.label == 'Save' &&
             widget.onPressed != null,
       );
@@ -112,7 +111,7 @@ void main() {
 
       // Test cancel button tap
       final cancelButton = find.byWidgetPredicate(
-        (widget) => widget is LottiTertiaryButton && widget.label == 'Cancel',
+        (widget) => widget is DesignSystemButton && widget.label == 'Cancel',
       );
       await tester.tap(cancelButton);
       expect(cancelCalled, isTrue);
@@ -134,7 +133,7 @@ void main() {
       // Save button should show loading state (disabled when loading)
       final saveButton = find.byWidgetPredicate(
         (widget) =>
-            widget is LottiPrimaryButton &&
+            widget is DesignSystemButton &&
             widget.label == 'Save' &&
             widget.onPressed == null,
       );
@@ -186,12 +185,13 @@ void main() {
       // but onPressed should be null
       final saveButton = find.byWidgetPredicate(
         (widget) =>
-            widget is LottiPrimaryButton && widget.icon == Icons.save_rounded,
+            widget is DesignSystemButton &&
+            widget.leadingIcon == Icons.save_rounded,
       );
       expect(saveButton, findsOneWidget);
 
       // Verify the button's onPressed is null
-      final button = tester.widget<LottiPrimaryButton>(saveButton);
+      final button = tester.widget<DesignSystemButton>(saveButton);
       expect(button.onPressed, isNull);
     });
   });

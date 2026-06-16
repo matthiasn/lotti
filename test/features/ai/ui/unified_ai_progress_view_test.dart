@@ -339,12 +339,13 @@ void main() {
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const MaterialApp(
-              localizationsDelegates: [
+            child: MaterialApp(
+              theme: resolveTestTheme(),
+              localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
               ],
-              home: Scaffold(
+              home: const Scaffold(
                 body: UnifiedAiProgressContent(
                   entityId: testEntityId,
                   promptId: testPromptId,
@@ -411,12 +412,13 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            localizationsDelegates: [
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
             ],
-            home: Scaffold(
+            home: const Scaffold(
               body: UnifiedAiProgressContent(
                 entityId: 'test-entity',
                 promptId: 'test-prompt-1',
@@ -557,12 +559,13 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            localizationsDelegates: [
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
             ],
-            home: Scaffold(
+            home: const Scaffold(
               body: UnifiedAiProgressContent(
                 entityId: 'test-entity',
                 promptId: 'test-prompt-1',
@@ -604,12 +607,13 @@ void main() {
       await tester.pumpWidget(
         UncontrolledProviderScope(
           container: container,
-          child: const MaterialApp(
-            localizationsDelegates: [
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: const [
               AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
             ],
-            home: Scaffold(
+            home: const Scaffold(
               body: UnifiedAiProgressContent(
                 entityId: 'test-entity',
                 promptId: 'test-prompt-1',
@@ -624,8 +628,9 @@ void main() {
 
       // Remove the widget to trigger dispose
       await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
+        MaterialApp(
+          theme: resolveTestTheme(),
+          home: const Scaffold(
             body: SizedBox(),
           ),
         ),
@@ -1183,12 +1188,13 @@ Generate a widget that renders a login form.''',
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const MaterialApp(
-              localizationsDelegates: [
+            child: MaterialApp(
+              theme: resolveTestTheme(),
+              localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
               ],
-              home: Scaffold(
+              home: const Scaffold(
                 body: UnifiedAiProgressContent(
                   entityId: entityId,
                   promptId: promptId,
@@ -1248,12 +1254,13 @@ Generate a widget that renders a login form.''',
         await tester.pumpWidget(
           UncontrolledProviderScope(
             container: container,
-            child: const MaterialApp(
-              localizationsDelegates: [
+            child: MaterialApp(
+              theme: resolveTestTheme(),
+              localizationsDelegates: const [
                 AppLocalizations.delegate,
                 GlobalMaterialLocalizations.delegate,
               ],
-              home: Scaffold(
+              home: const Scaffold(
                 body: UnifiedAiProgressContent(
                   entityId: entityId,
                   promptId: promptId,

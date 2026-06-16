@@ -19,6 +19,7 @@ import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/soul_selector.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -198,10 +199,10 @@ void main() {
       final createButton = find.text(context.messages.createButton);
       expect(createButton, findsOneWidget);
 
-      final button = tester.widget<FilledButton>(
+      final button = tester.widget<DesignSystemButton>(
         find.ancestor(
           of: createButton,
-          matching: find.byType(FilledButton),
+          matching: find.byType(DesignSystemButton),
         ),
       );
       expect(button.onPressed, isNull);

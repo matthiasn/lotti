@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/settings/ui/confirmation_progress_modal.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 class SyncModal extends ConsumerWidget {
   const SyncModal({super.key});
@@ -112,20 +112,17 @@ class SyncModal extends ConsumerWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    child: LottiPrimaryButton(
-                      label: context.messages.doneButton.toUpperCase(),
-                      onPressed: () {
-                        if (context.mounted) {
-                          container
-                              .read(syncControllerProvider.notifier)
-                              .reset();
-                          Navigator.of(context).pop();
-                        }
-                      },
-                      icon: Icons.check_circle_rounded,
-                    ),
+                  DesignSystemButton(
+                    label: context.messages.doneButton.toUpperCase(),
+                    size: DesignSystemButtonSize.large,
+                    fullWidth: true,
+                    onPressed: () {
+                      if (context.mounted) {
+                        container.read(syncControllerProvider.notifier).reset();
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    leadingIcon: Icons.check_circle_rounded,
                   ),
                 ] else
                   Row(

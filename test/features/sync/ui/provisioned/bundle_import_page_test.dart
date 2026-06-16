@@ -5,11 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -277,9 +277,9 @@ void main() {
 
       // With empty text field, the import button's onPressed should be null
       final context = tester.element(find.byType(BundleImportWidget));
-      final importButton = tester.widget<LottiPrimaryButton>(
+      final importButton = tester.widget<DesignSystemButton>(
         find.widgetWithText(
-          LottiPrimaryButton,
+          DesignSystemButton,
           context.messages.provisionedSyncImportButton,
         ),
       );
@@ -304,9 +304,9 @@ void main() {
 
       // Button should now be enabled (onPressed != null)
       final context = tester.element(find.byType(BundleImportWidget));
-      final importButton = tester.widget<LottiPrimaryButton>(
+      final importButton = tester.widget<DesignSystemButton>(
         find.widgetWithText(
-          LottiPrimaryButton,
+          DesignSystemButton,
           context.messages.provisionedSyncImportButton,
         ),
       );

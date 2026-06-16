@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 /// A reusable error state widget for configuration lists
 ///
@@ -82,10 +82,11 @@ class ConfigErrorState extends StatelessWidget {
   }
 
   Widget _buildRetryButton() {
-    return LottiPrimaryButton(
+    return DesignSystemButton(
       onPressed: onRetry,
-      icon: Icons.refresh,
+      leadingIcon: Icons.refresh,
       label: 'RETRY',
+      size: DesignSystemButtonSize.large,
     );
   }
 }

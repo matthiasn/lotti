@@ -21,6 +21,7 @@ import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_header_bar.
 import 'package:lotti/features/ai/ui/settings/widgets/v2/ai_settings_tab_bar.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -1083,18 +1084,22 @@ void main() {
         await tester.tap(find.text('Delete'));
         await tester.pumpAndSettle();
 
-        // The delete service opens its own confirmation dialog. Find it
-        // and tap the destructive primary action. The dialog may not
-        // render in this harness — assert against either the dialog or
-        // a direct repository call.
-        final filledButton = find.descendant(
+        // The delete service opens its own confirmation AlertDialog with
+        // two DesignSystemButton actions: Cancel (tertiary) and the
+        // destructive Delete (danger). Narrow the finder to the danger
+        // variant so we tap the confirm action — not Cancel, which would
+        // pop `false` and skip the cascade-delete call entirely.
+        final confirmButton = find.descendant(
           of: find.byType(Dialog),
-          matching: find.byType(FilledButton),
+          matching: find.byWidgetPredicate(
+            (w) =>
+                w is DesignSystemButton &&
+                w.variant == DesignSystemButtonVariant.danger,
+          ),
         );
-        if (filledButton.evaluate().isNotEmpty) {
-          await tester.tap(filledButton.first);
-          await tester.pumpAndSettle();
-        }
+        expect(confirmButton, findsOneWidget);
+        await tester.tap(confirmButton);
+        await tester.pumpAndSettle();
 
         verify(
           () => mockRepository.deleteInferenceProviderWithModels(provider.id),
