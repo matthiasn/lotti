@@ -24,7 +24,9 @@ const _kTimerScrollPollInterval = Duration(milliseconds: 100);
 const _kTimerScrollMaxAttempts = 30;
 const _kTimerScrollInitialDelay = Duration(milliseconds: 200);
 
-/// Modern version of create event item
+/// Create-menu item that creates an event linked to `linkedFromId`. Renders
+/// only when the `enableEvents` config flag is on; otherwise it collapses to
+/// an empty box. On success, navigates to the new event's detail page.
 class CreateEventItem extends ConsumerWidget {
   const CreateEventItem(
     this.linkedFromId, {
@@ -72,7 +74,8 @@ class CreateEventItem extends ConsumerWidget {
   }
 }
 
-/// Modern version of create task item
+/// Create-menu item that creates a task linked to `linkedFromId`, kicks off
+/// auto-assignment of a category agent, and navigates to the new task.
 class CreateTaskItem extends ConsumerWidget {
   const CreateTaskItem(
     this.linkedFromId, {
@@ -135,7 +138,8 @@ class CreateChecklistItem extends ConsumerWidget {
   }
 }
 
-/// Modern version of create audio item
+/// Create-menu item that opens the audio recording modal for a new audio
+/// entry linked to `linkedFromId`.
 class CreateAudioItem extends ConsumerWidget {
   const CreateAudioItem(
     this.linkedFromId, {
@@ -165,7 +169,11 @@ class CreateAudioItem extends ConsumerWidget {
   }
 }
 
-/// Modern version of create timer item
+/// Create-menu item that starts a new timer entry linked to `linkedFromId`.
+///
+/// After creation it polls the parent's linked-entries list and, once the new
+/// timer appears, publishes a focus intent to auto-scroll to it — fire-and-
+/// forget so navigation is never blocked (see `_waitForTimerAndScroll`).
 class CreateTimerItem extends ConsumerWidget {
   const CreateTimerItem(
     this.linkedFromId, {
@@ -213,7 +221,7 @@ class CreateTimerItem extends ConsumerWidget {
   }
 }
 
-/// Modern version of create text item
+/// Create-menu item that creates an empty text entry linked to `linkedFromId`.
 class CreateTextItem extends ConsumerWidget {
   const CreateTextItem(
     this.linkedFromId, {
@@ -244,7 +252,9 @@ class CreateTextItem extends ConsumerWidget {
   }
 }
 
-/// Modern version of import image item
+/// Create-menu item that imports image(s) from the gallery/file picker as
+/// entries linked to `linkedFromId`, passing each through the automatic image
+/// analysis trigger. Only listed on macOS and mobile (see the menu list).
 class ImportImageItem extends ConsumerWidget {
   const ImportImageItem(
     this.linkedFromId, {
@@ -275,7 +285,9 @@ class ImportImageItem extends ConsumerWidget {
   }
 }
 
-/// Modern version of create screenshot item
+/// Create-menu item that captures a screenshot as an entry linked to
+/// `linkedFromId` and runs the automatic image analysis trigger on it. Only
+/// listed on the desktop platforms that support capture (macOS, Linux).
 class CreateScreenshotItem extends ConsumerWidget {
   const CreateScreenshotItem(
     this.linkedFromId, {
@@ -305,7 +317,9 @@ class CreateScreenshotItem extends ConsumerWidget {
   }
 }
 
-/// Modern version of paste image item
+/// Create-menu item that pastes image(s) from the clipboard as entries linked
+/// to `linkedFromId`. Watches [ImagePasteController] and self-hides whenever
+/// the clipboard holds no pasteable PNG/JPEG image.
 class PasteImageItem extends ConsumerWidget {
   const PasteImageItem(
     this.linkedFromId, {

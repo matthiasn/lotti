@@ -5,6 +5,9 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_cha
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Detail-view summary for a quantitative (health) entry: an optional health
+/// chart plus the formatted `type: value unit` line. Pass `showChart: false`
+/// for the compact list-card variant.
 class HealthSummary extends StatelessWidget {
   const HealthSummary(
     this.qe, {

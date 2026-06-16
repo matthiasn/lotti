@@ -8,6 +8,14 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/index.dart';
 
+/// Bottom-sheet menu of "create entry" actions (event, task, audio, timer,
+/// text, image import/screenshot/paste, and — on a task host — checklist).
+///
+/// `linkedFromId`/`categoryId` are threaded into each action so created
+/// entities are linked to and categorized like the host. Individual items
+/// self-hide when not applicable (platform gating, no clipboard image, or a
+/// host that is not a task), and [_CreateEntryMenuList] inserts dividers only
+/// between the items that actually render.
 class CreateEntryModal {
   static Future<void> show({
     required BuildContext context,

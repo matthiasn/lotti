@@ -46,6 +46,16 @@ enum TaskSortOption {
 }
 
 /// Immutable state for the journal page controller.
+/// Immutable view-model for the journal/tasks page, exposed by
+/// `JournalPageController`.
+///
+/// Bundles everything the page UI reads: the search query/mode, the active
+/// display filters and per-facet selections (categories, projects, labels,
+/// priorities, task statuses, entry types), sort and card-display toggles, the
+/// live [PagingController] that feeds the infinite list, and vector-search
+/// telemetry (in-flight flag, elapsed, result count, per-id distances). The
+/// `pagingController` is excluded from JSON. The persisted subset lives in
+/// [TasksFilter].
 @freezed
 abstract class JournalPageState with _$JournalPageState {
   const factory JournalPageState({

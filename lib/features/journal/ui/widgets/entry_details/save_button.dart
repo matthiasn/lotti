@@ -4,6 +4,11 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/journal/state/save_button_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Save action for an entry, shown in the app bar and the linked-entry footer.
+///
+/// Watches [SaveButtonController] (which reflects the entry's dirty state) and
+/// fades itself in only when there are unsaved changes; pressing it saves the
+/// entry through the controller and drops keyboard focus.
 class SaveButton extends ConsumerWidget {
   const SaveButton({
     required this.entryId,

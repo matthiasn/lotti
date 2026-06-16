@@ -8,10 +8,15 @@ import 'package:lotti/themes/theme.dart';
 
 NumberFormat nf = NumberFormat('###.##');
 
+/// The span between an entry's `dateFrom` and `dateTo` (e.g. a timer's elapsed
+/// time).
 Duration entryDuration(JournalEntity journalEntity) {
   return journalEntity.meta.dateTo.difference(journalEntity.meta.dateFrom);
 }
 
+/// Formats a duration as zero-padded `H:MM:SS`, dropping sub-second precision;
+/// returns an empty string for null. See [formatRangeDuration] for the
+/// day-aware, seconds-less variant used by the date-time editor.
 String formatDuration(Duration? duration) {
   if (duration == null) {
     return '';
@@ -48,6 +53,8 @@ String formatRangeDuration(Duration duration) {
   return parts.isEmpty ? '0m' : parts.join(' ');
 }
 
+/// Treats a nullable flag (e.g. `meta.private`/`meta.starred`) as false when
+/// unset.
 // ignore: avoid_positional_boolean_parameters
 bool fromNullableBool(bool? value) {
   if (value != null) {
@@ -63,7 +70,10 @@ DateFormat dfShort = DateFormat('yyyy-MM-dd');
 DateFormat dfYmd = DateFormat('yyyy-MM-dd');
 DateFormat hhMmFormat = DateFormat('HH:mm');
 
+/// Strips the `HealthDataType.` enum prefix for display.
 String formatType(String s) => s.replaceAll('HealthDataType.', '');
+
+/// Strips the `HealthDataUnit.` enum prefix for display.
 String formatUnit(String s) => s.replaceAll('HealthDataUnit.', '');
 
 class InfoText extends StatelessWidget {
@@ -86,6 +96,8 @@ class InfoText extends StatelessWidget {
   }
 }
 
+/// Renders a quantitative (health) entry as `type: value unit`, handling both
+/// cumulative and discrete data shapes.
 String entryTextForQuant(QuantitativeEntry qe) {
   final qd = qe.data;
   return switch (qd) {
@@ -96,6 +108,8 @@ String entryTextForQuant(QuantitativeEntry qe) {
   };
 }
 
+/// Multi-line workout summary (type, energy in kcal, duration in minutes);
+/// omit the leading type line by passing `includeTitle: false`.
 String entryTextForWorkout(
   WorkoutData data, {
   bool includeTitle = true,
@@ -109,6 +123,8 @@ String entryTextForWorkout(
       'duration: ${duration.inMinutes} minutes';
 }
 
+/// Renders a measurement as `name: value unit` using the measurable type's
+/// display name and unit.
 String entryTextForMeasurable(
   MeasurementData data,
   MeasurableDataType dataType,

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
+/// Pinned sliver app bar for the entry detail page: a back button and the
+/// entry's [SaveButton] (which fades in only when there are unsaved changes).
 class JournalSliverAppBar extends ConsumerWidget {
   const JournalSliverAppBar({
     required this.entryId,

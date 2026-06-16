@@ -9,6 +9,12 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'linked_from_entries_controller.g.dart';
 
+/// Loads and live-updates the entries that link *to* entry `id` (incoming
+/// links, the "linked from" set), resolved to full [JournalEntity]s.
+///
+/// Mirrors `LinkedEntriesController` but for the reverse direction: subscribes
+/// to [UpdateNotifications] and re-fetches when the source or any linking
+/// entity changes, caching for `entryCacheDuration`.
 @riverpod
 class LinkedFromEntriesController extends _$LinkedFromEntriesController {
   StreamSubscription<Set<String>>? _updateSubscription;

@@ -16,6 +16,14 @@ import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
 
+/// The header row above an entry's body in the detail view: category icon,
+/// date/time editor, AI menu, and the overflow action menu (flag, star,
+/// private, delete, etc.).
+///
+/// Renders one of two layouts. When the entry is collapsible (an image/audio/
+/// text entry shown inside a parent's linked-entries list, `isCollapsible`),
+/// the header gains a tap-to-toggle affordance wired to `onToggleCollapse`.
+/// Otherwise it renders the standard full header.
 class EntryDetailHeader extends ConsumerStatefulWidget {
   const EntryDetailHeader({
     required this.entryId,

@@ -6,6 +6,9 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
 
+/// Footer below an entry's body: the timer/[DurationWidget] for text entries,
+/// an inline [SaveButton] when shown inside a parent's linked-entries list, and
+/// — when the entry's map is toggled on — a map of its geolocation.
 class EntryDetailFooter extends ConsumerWidget {
   const EntryDetailFooter({
     required this.entryId,

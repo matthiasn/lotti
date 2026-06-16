@@ -6,6 +6,9 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 
+/// Detail-view summary for a measurement entry: the entry's note text (if any)
+/// plus the formatted `name: value unit` line. Renders nothing when the
+/// measurement's data type is no longer in the cache.
 class MeasurementSummary extends StatelessWidget {
   const MeasurementSummary(
     this.measurementEntry, {

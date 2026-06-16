@@ -16,6 +16,14 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Shows an entry's elapsed time and the timer controls in the detail footer.
+///
+/// Subscribes to the [TimeService] stream so the duration ticks live while
+/// recording. It surfaces a record button (for the newest linked timer-capable
+/// entry, or a standalone entry), a stop button while recording, and — after a
+/// recording of at least a minute ends — a pulsating "rate" button driven by
+/// `sessionEndedControllerProvider`. Tapping the duration opens the
+/// start/end date-time editor.
 class DurationWidget extends ConsumerStatefulWidget {
   const DurationWidget({
     required this.item,

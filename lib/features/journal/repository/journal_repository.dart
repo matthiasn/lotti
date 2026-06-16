@@ -50,6 +50,7 @@ class JournalRepository {
     }
   }
 
+  /// Loads a single entity by id, or null if it does not exist.
   Future<JournalEntity?> getJournalEntityById(String id) async {
     return getIt<JournalDb>().journalEntityById(id);
   }
@@ -65,6 +66,10 @@ class JournalRepository {
     return getIt<JournalDb>().getJournalEntitiesForIdsUnordered(idSet);
   }
 
+  /// Updates only the `categoryId` on a single entity's metadata (pass null to
+  /// clear it). Returns true even on a missing entity or a logged failure; only
+  /// a not-found entity returns false. Callers that need cascading propagation
+  /// to linked entries do that themselves (see `EntryController.updateCategoryId`).
   Future<bool> updateCategoryId(
     String journalEntityId, {
     required String? categoryId,
@@ -100,6 +105,12 @@ class JournalRepository {
     return true;
   }
 
+  /// Soft-deletes an entity by stamping `deletedAt` on its metadata.
+  ///
+  /// Also handles side effects: when deleting an image used as task cover art
+  /// the references are cleared first, the running timer is stopped if it is
+  /// this entry, and the app badge is refreshed. Returns false only when the
+  /// entity does not exist.
   Future<bool> deleteJournalEntity(
     String journalEntityId,
   ) async {
@@ -147,6 +158,8 @@ class JournalRepository {
     return true;
   }
 
+  /// Persists `updated` (including its metadata) through `PersistenceLogic`.
+  /// Returns false on a logged failure.
   Future<bool> updateJournalEntity(JournalEntity updated) async {
     try {
       return await getIt<PersistenceLogic>().updateJournalEntity(
@@ -164,6 +177,9 @@ class JournalRepository {
     }
   }
 
+  /// Updates an entity's `dateFrom`/`dateTo` and, if it is the running timer,
+  /// pushes the new range into the time service so the live duration stays in
+  /// sync. Returns false only when the entity does not exist.
   Future<bool> updateJournalEntityDate(
     String journalEntityId, {
     required DateTime dateFrom,
@@ -201,6 +217,9 @@ class JournalRepository {
     return true;
   }
 
+  /// Creates a new text journal entry from `entryText`, optionally linked to
+  /// `linkedId` and tagged with `categoryId`. Returns the created entity, or
+  /// null on a logged failure.
   static Future<JournalEntity?> createTextEntry(
     EntryText entryText, {
     required DateTime started,
@@ -283,6 +302,13 @@ class JournalRepository {
     return null;
   }
 
+  /// Upserts an entry link, but only when a meaningful field actually changed
+  /// (see [debugHasChange]) — an unchanged link returns false on a fast path
+  /// without reserving a vector clock.
+  ///
+  /// A real change runs inside a vector-clock scope so the bump, the local
+  /// notification, and the outbox sync message stay consistent; the VC is only
+  /// committed when the upsert wrote a row. Returns true when a row was written.
   Future<bool> updateLink(EntryLink link) async {
     final journalDb = getIt<JournalDb>();
     final existing = await journalDb.entryLinkById(link.id);
@@ -352,6 +378,8 @@ class JournalRepository {
         existingCollapsed != incomingCollapsed;
   }
 
+  /// Deletes the link from `fromId` to `toId` and notifies both endpoints so
+  /// their linked-entries lists refresh.
   Future<int> removeLink({
     required String fromId,
     required String toId,
@@ -361,6 +389,9 @@ class JournalRepository {
     return res;
   }
 
+  /// Returns the entities that link *to* `linkedTo` (incoming / "linked from"
+  /// direction). Contrast with [getLinkedEntities], which returns the outgoing
+  /// targets.
   Future<List<JournalEntity>> getLinkedToEntities({
     required String linkedTo,
   }) async {
@@ -369,6 +400,8 @@ class JournalRepository {
     return items.map(fromDbEntity).toList();
   }
 
+  /// Returns the entities that `linkedTo` links *to* (outgoing direction).
+  /// Contrast with [getLinkedToEntities], which returns the incoming sources.
   Future<List<JournalEntity>> getLinkedEntities({
     required String linkedTo,
   }) async {
@@ -384,6 +417,10 @@ class JournalRepository {
     return linkedEntities.whereType<JournalImage>().toList();
   }
 
+  /// Returns the outgoing [EntryLink]s from `linkedFrom`, deduplicated by
+  /// target id and ordered by the target entity's (editable) `dateFrom`
+  /// descending — so re-dating a linked entry reorders the list. Hidden links
+  /// are excluded unless `includeHidden` is set.
   Future<List<EntryLink>> getLinksFromId(
     String linkedFrom, {
     bool includeHidden = false,

@@ -78,6 +78,13 @@ bool showDictionaryResultToast(
   return true;
 }
 
+/// Rich-text editor for a journal entry's body, backed by the Quill controller
+/// and focus node owned by [EntryController] (keyed by `entryId`).
+///
+/// The toolbar and surrounding card chrome appear only while the entry is
+/// focused/being edited (`shouldShowEditorToolBar`); otherwise it renders as
+/// flat transparent text. Adds an "Add to Dictionary" context-menu action that
+/// pushes the selected term into the entry category's speech dictionary.
 class EditorWidget extends ConsumerStatefulWidget {
   const EditorWidget({
     required this.entryId,

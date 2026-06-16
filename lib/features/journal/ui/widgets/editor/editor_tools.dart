@@ -7,14 +7,20 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill/quill_delta.dart';
 import 'package:lotti/classes/entry_text.dart';
 
+/// The current document of `controller` as a Quill [Delta].
 Delta deltaFromController(QuillController controller) {
   return controller.document.toDelta();
 }
 
+/// Serializes a Quill [Delta] to its JSON string form (the format persisted in
+/// `EntryText.quill`).
 String quillJsonFromDelta(Delta delta) {
   return jsonEncode(delta.toJson());
 }
 
+/// Snapshots a Quill `controller` into an [EntryText] holding all three
+/// representations the app stores: plain text, markdown, and the Quill JSON
+/// delta. This is the canonical editor → persistence conversion.
 EntryText entryTextFromController(QuillController controller) {
   final delta = deltaFromController(controller);
   final json = quillJsonFromDelta(delta);
@@ -27,6 +33,9 @@ EntryText entryTextFromController(QuillController controller) {
   );
 }
 
+/// Builds a [QuillController] from a serialized Quill JSON document, restoring
+/// `selection` when given. Returns a blank controller for null or empty
+/// (`'[]'`) input. Shared by the live editor and the read-only text viewers.
 QuillController makeController({
   String? serializedQuill,
   TextSelection? selection,

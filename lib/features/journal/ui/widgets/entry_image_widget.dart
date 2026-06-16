@@ -9,6 +9,12 @@ import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:photo_view/photo_view.dart';
 
+/// Inline image for a [JournalImage] entry in the detail view.
+///
+/// Decodes the file through a [ResizeImage] sized to the viewport (so large
+/// photos are downsampled to the displayed resolution), tapping opens a
+/// full-screen, zoomable hero view ([HeroPhotoViewRouteWrapper]). A decode
+/// error evicts the exact cache key and renders nothing.
 class EntryImageWidget extends ConsumerWidget {
   const EntryImageWidget(this.journalImage, {super.key});
 

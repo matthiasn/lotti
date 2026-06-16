@@ -7,6 +7,9 @@ import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Detail-view summary for a workout entry: optional per-metric charts for the
+/// workout type plus the formatted energy/duration text. Pass `showChart:
+/// false` for the compact list-card variant.
 class WorkoutSummary extends StatelessWidget {
   const WorkoutSummary(
     this.workoutEntry, {

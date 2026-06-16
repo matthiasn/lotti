@@ -10,6 +10,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
 
+/// Detail-view summary for a habit-completion entry. Resolves the habit
+/// definition via a notification-driven stream so it live-updates when the
+/// habit or privacy settings change, and renders the completion color icon
+/// and/or the habit text per the `showIcon`/`showText` flags.
 class HabitSummary extends StatelessWidget {
   HabitSummary(
     this.habitCompletion, {

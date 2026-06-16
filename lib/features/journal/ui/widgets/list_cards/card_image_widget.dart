@@ -5,6 +5,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
 import 'package:lotti/utils/image_utils.dart';
 
+/// Thumbnail for a [JournalImage] inside a list card.
+///
+/// Loads the image file at a fixed `height` and uses [FileWatcherMixin] so the
+/// thumbnail refreshes if the underlying file changes on disk (e.g. after a
+/// sync/import).
 class CardImageWidget extends StatefulWidget {
   const CardImageWidget({
     required this.journalImage,

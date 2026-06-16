@@ -6,6 +6,9 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_cha
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Detail-view summary for a survey entry: the survey's calculated scores and,
+/// when `showChart` is set, the corresponding survey chart for the entry's
+/// survey type.
 class SurveySummary extends StatelessWidget {
   const SurveySummary(
     this.surveyEntry, {
