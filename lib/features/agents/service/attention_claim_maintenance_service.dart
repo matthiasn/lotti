@@ -88,6 +88,11 @@ class AttentionClaimMaintenanceService {
   }
 }
 
+/// Outcome of a [AttentionClaimMaintenanceService.settleTerminalTaskClaims]
+/// pass: how many of the task's own active claims were [inspectedClaims], how
+/// many were closed ([settledClaims]), and the terminal [status] the task's
+/// status projected to (`null` when the task isn't in a terminal state and no
+/// settling was attempted).
 class AttentionClaimMaintenanceResult {
   const AttentionClaimMaintenanceResult({
     this.inspectedClaims = 0,

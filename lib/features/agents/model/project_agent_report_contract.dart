@@ -25,6 +25,9 @@ abstract final class ProjectAgentReportToolArgs {
   ];
 }
 
+/// Keys under which the project agent's health verdict is persisted as
+/// provenance on the report, so the UI can attribute the band/rationale to the
+/// agent run that produced them rather than reparsing the markdown.
 abstract final class ProjectAgentReportProvenanceKeys {
   static const healthBand = 'project_health_band';
   static const healthRationale = 'project_health_rationale';

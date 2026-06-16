@@ -8,6 +8,13 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
+/// Persists a project agent's confirmed "next steps" as durable
+/// [ProjectRecommendationEntity] rows on the project detail page.
+///
+/// Invoked from the project change-set confirmation flow once the user accepts
+/// a `recommend_next_steps` proposal: it supersedes the project's existing
+/// active recommendations and writes the newly confirmed steps in one
+/// transaction, then pings [UpdateNotifications] so the UI refreshes.
 class ProjectRecommendationService {
   ProjectRecommendationService({
     required this._syncService,

@@ -71,6 +71,10 @@ class ToolExecutionResult {
   final String? denialReason;
 }
 
+/// The per-agent-kind tool-dispatch callback the executor wraps: given a
+/// [toolName], its `args`, and the target entity id, runs the tool and returns
+/// its [ToolExecutionResult]. Each agent kind supplies its own dispatcher (e.g.
+/// `TaskToolDispatcher.dispatch`, `ProjectToolDispatcher.dispatch`).
 typedef AgentToolDispatch =
     Future<ToolExecutionResult> Function(
       String toolName,

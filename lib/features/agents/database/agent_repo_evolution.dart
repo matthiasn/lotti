@@ -26,6 +26,9 @@ class AgentRepoEvolution {
   final AgentRepoCore _core;
   final AgentProposalLedger _ledger;
 
+  /// Agent states whose self-scheduled `scheduledWakeAt` is at or before [now],
+  /// i.e. the state-level scheduled wakes the manager should enqueue. For the
+  /// separate workspace-scoped wake records see [getPendingScheduledWakeRecords].
   Future<List<AgentStateEntity>> getDueScheduledAgentStates(
     DateTime now,
   ) async {

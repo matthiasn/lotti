@@ -27,6 +27,10 @@ class TimeEntryUpdateHandler {
 
   static const _sub = 'TimeEntryUpdateHandler';
 
+  /// Applies the agent's edits (`summary`, `startTime`, `endTime`) to the
+  /// existing completed time entry identified by `entryId` in [args], scoped
+  /// to [sourceTaskId]. Returns a failed [ToolExecutionResult] when the entry
+  /// id is missing, the entry isn't found, or the new time range is invalid.
   Future<ToolExecutionResult> handle(
     String sourceTaskId,
     Map<String, dynamic> args,

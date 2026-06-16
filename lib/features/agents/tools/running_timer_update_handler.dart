@@ -6,6 +6,9 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
 
+/// `errorMessage` constants for the running-timer update tool, used so the
+/// orchestrator and tests can match failures by a stable string rather than
+/// the human-readable `output` shown to the model.
 abstract final class RunningTimerUpdateFailure {
   static const invalidSummary = 'Missing, empty, or too-long summary';
   static const invalidTimerId = 'Missing or invalid timerId';
@@ -40,6 +43,11 @@ class RunningTimerUpdateHandler {
 
   static const _sub = 'RunningTimerUpdateHandler';
 
+  /// Replaces the running timer's entry text with the agent's `summary`,
+  /// guarding [sourceTaskId] / `timerId` consistency so a stale proposal can
+  /// never edit a timer that has stopped or now belongs to a different task.
+  /// Returns a failed [ToolExecutionResult] (carrying a
+  /// [RunningTimerUpdateFailure] code) when any guard fails.
   Future<ToolExecutionResult> handle(
     String sourceTaskId,
     Map<String, dynamic> args,
