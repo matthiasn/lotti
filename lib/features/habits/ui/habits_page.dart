@@ -16,6 +16,16 @@ import 'package:lotti/widgets/app_bar/sliver_title_bar.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 
+/// Top-level habits tab: a [CustomScrollView] driven by [HabitsController].
+///
+/// Renders the pinned chart/app-bar header followed by the three habit
+/// buckets — "open now", "pending later" and "completed" — each as a list of
+/// [HabitCompletionCard]s. The visible buckets depend on the active
+/// [HabitDisplayFilter]: a single bucket for `openNow`/`pendingLater`/
+/// `completed`, or all three (with section headers) for `all`. When search is
+/// active each bucket is additionally filtered by name/description substring
+/// match against `state.searchString`. Scroll activity is reported to the
+/// `UserActivityService` to keep the app's activity tracking awake.
 class HabitsTabPage extends ConsumerStatefulWidget {
   const HabitsTabPage({super.key});
 

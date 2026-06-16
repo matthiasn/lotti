@@ -15,8 +15,19 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'habits_controller.g.dart';
 
-/// Notifier managing the complete habits page state.
-/// Marked as keepAlive since habits state should persist across navigation.
+/// Owns the whole [HabitsState] for the habits tab.
+///
+/// Subscribes to three sources and recomputes derived state whenever any
+/// fires: the repository's habit-definition stream, the update stream filtered
+/// for `habitCompletionNotification`, and the nav-index stream (to refresh the
+/// time-sensitive due/later split when the tab is re-entered). The heavy lift
+/// is [_determineHabitSuccessByDays], which buckets completions into the
+/// per-day maps, splits open habits into due-now vs. pending-later via
+/// `showHabit`, applies the category filter, counts streaks and recomputes the
+/// chart's [HabitsState.minY].
+///
+/// Marked `keepAlive` so the (relatively expensive) state survives navigating
+/// away from and back to the tab.
 @Riverpod(keepAlive: true)
 class HabitsController extends _$HabitsController {
   StreamSubscription<List<HabitDefinition>>? _definitionsSubscription;
@@ -341,7 +352,12 @@ class HabitsController extends _$HabitsController {
     _determineHabitSuccessByDays();
   }
 
-  /// Sets the selected day for info display in the chart.
+  /// Selects [ymd] as the day whose success/skipped/failed breakdown the chart
+  /// popover shows, recomputing the three percentages via [dayPercentages].
+  ///
+  /// Schedules a debounced self-call with an empty `ymd` 15 seconds later so
+  /// the popover auto-dismisses; a fresh tap restarts the timer. Passing `''`
+  /// (the debounce callback's own argument) clears the selection.
   void setInfoYmd(String ymd) {
     final newState = state.copyWith(selectedInfoYmd: ymd);
     final percentages = dayPercentages(newState);

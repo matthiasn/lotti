@@ -7,6 +7,13 @@ import 'package:lotti/features/habits/ui/widgets/status_segmented_control.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 
+/// Pinned header of the habits tab.
+///
+/// Lays out the [HabitStatusSegmentedControl] (open/later/done/all filter),
+/// the [HabitsFilter] category picker, search and time-span toggles, and a
+/// zero-based toggle that only appears once the chart has enough headroom
+/// (`state.minY > 20`) for non-zero-based scaling to be meaningful. Below the
+/// controls it pins the [HabitCompletionRateChart].
 class HabitsSliverAppBar extends ConsumerWidget {
   const HabitsSliverAppBar({
     super.key,

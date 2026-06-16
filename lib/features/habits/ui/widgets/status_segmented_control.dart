@@ -3,6 +3,11 @@ import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/segmented_button.dart';
 
+/// Segmented control selecting which habit bucket the tab shows.
+///
+/// Renders one segment per [HabitDisplayFilter] value — open now, pending
+/// later, completed, all — and reports the chosen value through
+/// [onValueChanged] (wired to `HabitsController.setDisplayFilter`).
 class HabitStatusSegmentedControl extends StatelessWidget {
   const HabitStatusSegmentedControl({
     required this.filter,
