@@ -3,12 +3,18 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:uuid/uuid.dart';
 
+/// Raised when a day-agent tool call fails (bad arguments, unknown tool, or a
+/// failed side effect). Carries a human-readable [message] surfaced back to the
+/// model as the tool result so it can recover.
 class DayAgentToolException implements Exception {
   const DayAgentToolException(this.message);
 
   final String message;
 }
 
+/// Raised when a drafting wake completes without ever persisting a
+/// `draft_day_plan` tool call, even after the forced single retry. Signals a
+/// degenerate model run rather than a recoverable per-tool error.
 class MissingDraftDayPlanException implements Exception {
   const MissingDraftDayPlanException();
 
@@ -18,6 +24,8 @@ class MissingDraftDayPlanException implements Exception {
   }
 }
 
+/// Raised when a capture wake completes without ever persisting a
+/// `parse_capture_to_items` tool call, even after the forced single retry.
 class MissingCaptureParseException implements Exception {
   const MissingCaptureParseException();
 
@@ -28,6 +36,9 @@ class MissingCaptureParseException implements Exception {
   }
 }
 
+/// The resolved agent template for a wake: its definition, the pinned version
+/// whose prompt/tooling will run, and the optional Soul personality document
+/// version layered on top.
 class TemplateContext {
   const TemplateContext({
     required this.template,
@@ -40,6 +51,9 @@ class TemplateContext {
   final SoulDocumentVersionEntity? soulVersion;
 }
 
+/// Inputs for a capture wake: the raw [CaptureEntity] (transcript + audio ref)
+/// and the task corpus the model can match against. [toJson] renders the
+/// JSON block injected into the prompt.
 class CaptureContext {
   const CaptureContext({
     required this.capture,
@@ -58,6 +72,10 @@ class CaptureContext {
   };
 }
 
+/// Inputs for a drafting wake: any existing [baselinePlan] to revise plus the
+/// tasks and parsed capture items the user already decided to include
+/// (`decidedTasks` / `decidedCaptureItems`). [toJson] serializes the whole
+/// baseline plan (blocks + energy bands) and decisions into the prompt block.
 class DraftingContext {
   const DraftingContext({
     this.baselinePlan,
@@ -122,6 +140,9 @@ class DraftingContext {
   }
 }
 
+/// Inputs for a refine wake: the existing [baselinePlan] the spoken request
+/// reshapes. [toJson] serializes that plan (blocks + energy bands) as the
+/// reference the model proposes a diff against.
 class RefineContext {
   const RefineContext({this.baselinePlan});
 
@@ -179,6 +200,9 @@ const workflowUuid = Uuid();
 
 const _maxRecentObservationCount = 20;
 
+/// Renders a resolved memory link as a `wire:id` prompt token, annotating
+/// dangling (`(not found)`) and superseded (`→ liveId`) links so the model
+/// sees the link's current health.
 String formatLink(ResolvedMemoryLink link) {
   final wire = link.link.relation.wire;
   final id = link.link.entryId;
@@ -187,6 +211,9 @@ String formatLink(ResolvedMemoryLink link) {
   return '$wire:$id';
 }
 
+/// Appends the Soul document's personality sections (voice directive, and any
+/// non-empty tone bounds, coaching style, and anti-sycophancy policy) to the
+/// prompt [buf] as Markdown headings.
 void appendSoulPersonality(
   StringBuffer buf,
   SoulDocumentVersionEntity soul,
@@ -223,6 +250,9 @@ void appendSoulPersonality(
   }
 }
 
+/// The most recent observations to replay into a wake, sorted oldest-first by
+/// `createdAt` (id-tiebroken for stability) and capped to the last 20 so the
+/// prompt stays bounded.
 List<AgentMessageEntity> recentObservations(
   List<AgentMessageEntity> observations,
 ) {
@@ -238,6 +268,9 @@ List<AgentMessageEntity> recentObservations(
   return sorted.sublist(sorted.length - _maxRecentObservationCount);
 }
 
+/// The agent's scheduled wake time if it is still in the future relative to
+/// [now]; `null` when there is none or it has already elapsed (so a past
+/// self-scheduled wake isn't re-surfaced as pending).
 DateTime? remainingScheduledWakeAt(
   AgentStateEntity state,
   DateTime now,
@@ -249,12 +282,16 @@ DateTime? remainingScheduledWakeAt(
   return null;
 }
 
+/// Parses the calendar date out of a `dayplan-<iso-date>` day id, or `null`
+/// when [dayId] is not in that form.
 DateTime? dateFromDayId(String dayId) {
   const prefix = 'dayplan-';
   if (!dayId.startsWith(prefix)) return null;
   return DateTime.tryParse(dayId.substring(prefix.length));
 }
 
+/// Extracts the `text` field from a message payload, falling back to
+/// `(no content)` when the payload is absent or carries no text.
 String extractPayloadText(AgentMessagePayloadEntity? payload) {
   if (payload == null) return '(no content)';
   final text = payload.content['text'];
@@ -262,6 +299,10 @@ String extractPayloadText(AgentMessagePayloadEntity? payload) {
   return '(no content)';
 }
 
+/// Updates the per-day self-scheduled-wake counter map: sets [wakeCountKey] to
+/// [nextCount] and garbage-collects only stale prior-date wake counters. Every
+/// counter sharing today's date suffix is preserved so interleaved multi-day
+/// planning never resets another day's wake cap.
 Map<String, int> nextToolCounterByKey(
   Map<String, int> current,
   String wakeCountKey,
@@ -280,6 +321,8 @@ Map<String, int> nextToolCounterByKey(
   };
 }
 
+/// Builds the counter key `day_agent_set_next_wake:<dayId>:<today>` that scopes
+/// the self-scheduled-wake cap to one planned day on one calendar date.
 String scheduledWakeCountKey(DateTime now, String dayId) {
   return 'day_agent_set_next_wake:$dayId:'
       '${now.toIso8601String().substring(0, 10)}';

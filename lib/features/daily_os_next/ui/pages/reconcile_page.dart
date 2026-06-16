@@ -150,6 +150,10 @@ class _ReconcileBody extends ConsumerWidget {
   }
 }
 
+/// Left column of Reconcile: the items the parse wake heard in the capture,
+/// each shown as a [ParsedCard] with a break-link affordance. While the wake
+/// is still running and no items have landed it shows the thinking shader so
+/// the empty column reads as "working", not "nothing found".
 class _HeardColumn extends ConsumerWidget {
   const _HeardColumn({required this.params, required this.items});
 
@@ -209,6 +213,10 @@ class _HeardColumn extends ConsumerWidget {
   }
 }
 
+/// Right column of Reconcile: the pending corpus items (overdue, in-progress,
+/// recurring) surfaced for triage, each a [PendingCard] whose taps record a
+/// [TriageAction] on the controller. Closes with the default-behavior hint
+/// explaining what happens to items left undecided.
 class _DecideColumn extends ConsumerWidget {
   const _DecideColumn({required this.params, required this.items});
 

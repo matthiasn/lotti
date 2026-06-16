@@ -226,6 +226,10 @@ class _RecapRow extends StatelessWidget {
   }
 }
 
+/// The commit screen's capacity ring: the [CapacityDonut] over a one-line
+/// planned-vs-capacity note. Uses the same block-derived minute total as the
+/// agenda stat strip so the recap can never disagree with the surface that
+/// led here.
 class _CapacityRecap extends StatelessWidget {
   const _CapacityRecap({required this.draft});
 
@@ -273,6 +277,9 @@ class _CapacityRecap extends StatelessWidget {
   }
 }
 
+/// The final lock-in control on the commit screen: an eyebrow/title/explainer
+/// lead-in over the hold-to-confirm pad that fires [onConfirmed] once the user
+/// completes the deliberate sign-off gesture.
 class _SignOffPad extends StatelessWidget {
   const _SignOffPad({required this.onConfirmed});
 

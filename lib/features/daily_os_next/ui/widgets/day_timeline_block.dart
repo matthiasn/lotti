@@ -14,6 +14,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 
+/// Positions a [DayBlock] absolutely within the timeline stack. Converts the
+/// block's start/end through the [foldingState] (which collapses idle gaps) to
+/// pixel offsets, then carves a small inter-block gap out of tall enough blocks
+/// so adjacent blocks read as distinct without overlapping.
 class BlockPosition extends StatelessWidget {
   const BlockPosition({
     required this.block,

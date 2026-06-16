@@ -166,6 +166,8 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
+/// Evening-review section listing what got done today — each [CompletedItem]
+/// as a [_CompletedRow] with its tracked duration.
 class _CompletedSection extends StatelessWidget {
   const _CompletedSection({required this.items});
 
@@ -248,6 +250,9 @@ class _CompletedRow extends StatelessWidget {
   }
 }
 
+/// Evening-review section listing unfinished work — each [CarryoverItem] as a
+/// [_CarryoverRow] whose action applies a [CarryoverAction] (move to tomorrow,
+/// drop, etc.) through the shutdown controller.
 class _CarryoverSection extends ConsumerWidget {
   const _CarryoverSection({required this.forDate, required this.data});
 

@@ -18,6 +18,9 @@ const _fallbackActualCategory = DayAgentCategory(
   colorHex: '8E8E8E',
 );
 
+/// Emits whenever recorded ("actual") time entries change, so the actual-time
+/// blocks for the day can be recomputed. Bridges the global update-notification
+/// stream into Riverpod, dropping empty batches via [actualTimelineUpdateBatches].
 // ignore: specify_nonobvious_property_types
 final dailyOsActualTimeUpdateProvider = StreamProvider.autoDispose<Set<String>>(
   (ref) {
@@ -32,6 +35,11 @@ Stream<Set<String>> actualTimelineUpdateBatches(Stream<Set<String>> updates) {
   return updates.where((affectedIds) => affectedIds.isNotEmpty);
 }
 
+/// The recorded ("actual") [TimeBlock]s for a given local day, projected from
+/// journal entries that overlap that day. Re-runs whenever
+/// [dailyOsActualTimeUpdateProvider] signals a change; the heavy lifting
+/// (tombstone/zero-length filtering, linked-from resolution) lives in
+/// [actualTimeBlocksForEntries] via the shared `resolveTimeEntries` core.
 // ignore: specify_nonobvious_property_types
 final dailyOsActualTimeBlocksProvider = FutureProvider.autoDispose
     .family<List<TimeBlock>, DateTime>((ref, date) async {

@@ -45,6 +45,10 @@ final reconcileControllerProvider = AsyncNotifierProvider.autoDispose
       ReconcileController.new,
     );
 
+/// Family key for [ReconcileController]: which capture to reconcile against
+/// which local day. [dayDate] is normalized to local midnight so two params
+/// for the same calendar day share one controller instance regardless of the
+/// time-of-day passed in.
 @immutable
 class ReconcileParams {
   ReconcileParams({
