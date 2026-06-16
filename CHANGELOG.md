@@ -10,15 +10,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   centered dialog on desktop — instead of taking over the whole screen. The
   fields are unchanged (title, category, target date); Cancel/Create sit inside
   the overlay, and the new project shows up in the list as soon as you save.
-- Buttons across the app are moving to one unified style, and modal action bars
-  now share one layout where the confirming action is the wide, dominant button
-  and the cancel/secondary actions stay compact beside it. Surfaces converted so
-  far: the delete-confirmation dialog, the date/time picker, a task's due-date
-  and estimate pickers, the journal entry date-range editor, the Matrix sync
-  screens (setup, bundle import, device verification, and the sync maintenance
-  modals), and the AI settings screens (error/retry states, provider setup, and
-  delete dialogs). Their buttons now match the rest of the app instead of
-  carrying their own older styling.
+- Every button across the app now uses one unified style, and modal action bars
+  share one layout where the confirming action is the wide, dominant button and
+  the cancel/secondary actions stay compact beside it. Disabled buttons now
+  clearly read as inactive — a flat, greyed-out pill — instead of a faded
+  version of their active colour. This covers every previously divergent
+  surface, including the delete-confirmation dialog, the date/time and task
+  due-date/estimate pickers, the journal entry date-range editor, the Matrix
+  sync screens (setup, bundle import, device verification, and the maintenance
+  modals), the AI settings screens (error/retry states, provider setup, and
+  delete dialogs), health import, the agent editors, and habit completion.
 
 ## [0.9.1025]
 ### Added
