@@ -27,9 +27,19 @@ class SettingsTreeScope extends InheritedWidget {
     super.key,
   });
 
+  /// The flag-gated root nodes published to descendants. Consumed by
+  /// the tree view; identity is stable until a flag or label change
+  /// forces a rebuild.
   final List<SettingsNode> tree;
+
+  /// `O(1)` lookup index over [tree], shared so the detail pane and
+  /// crumbs resolve ids against the exact same snapshot the tree view
+  /// renders.
   final SettingsTreeIndex index;
 
+  /// The nearest enclosing scope, or `null` when none is mounted —
+  /// the signal that lets consumers fall back to a local tree build in
+  /// isolation tests.
   static SettingsTreeScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<SettingsTreeScope>();
 

@@ -70,7 +70,13 @@ class AiPanelDispatch extends StatelessWidget {
 class AiPanelSelection {
   const AiPanelSelection({required this.modeKey, required this.child});
 
+  /// Stable `AnimatedSwitcher` key for this selection. Distinct per
+  /// surface kind and per detail id (e.g. `provider:<id>:fix`,
+  /// `model:<id>`, `list`) so swapping between two detail pages
+  /// cross-fades instead of reusing the previous element.
   final String modeKey;
+
+  /// The resolved page to render in the AI panel slot.
   final Widget child;
 }
 

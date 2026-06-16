@@ -83,6 +83,9 @@ class SettingsTreePath extends Notifier<List<String>> {
   }
 }
 
+/// Single source of truth for Settings V2 selection: the root → focus
+/// list of node ids. Every surface (tree view, detail pane, crumbs,
+/// URL sync) derives its state from this. See [SettingsTreePath].
 final settingsTreePathProvider =
     NotifierProvider<SettingsTreePath, List<String>>(
       SettingsTreePath.new,
