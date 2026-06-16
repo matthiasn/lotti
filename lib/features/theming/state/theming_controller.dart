@@ -41,7 +41,12 @@ List<String>? _getEmojiFontFallback() {
   return _emojiFontFallback;
 }
 
-/// Immutable state representing the current theming configuration.
+/// Immutable snapshot of the current theming configuration.
+///
+/// Holds both the pre-built [ThemeData] handed to `MaterialApp` and the
+/// selected scheme names persisted in settings. The names and the [ThemeData]
+/// are kept in sync by [ThemingController]: whenever a name changes the
+/// matching theme is rebuilt via `_buildTheme`.
 @immutable
 class ThemingState {
   const ThemingState({
@@ -52,10 +57,19 @@ class ThemingState {
     this.themeMode = ThemeMode.system,
   });
 
+  /// Built dark [ThemeData] for [darkThemeName]; passed to `MaterialApp.darkTheme`.
   final ThemeData? darkTheme;
+
+  /// Built light [ThemeData] for [lightThemeName]; passed to `MaterialApp.theme`.
   final ThemeData? lightTheme;
+
+  /// Selected dark scheme name; a key in `themes` (defaults to `defaultThemeName`).
   final String? darkThemeName;
+
+  /// Selected light scheme name; a key in `themes` (defaults to `defaultThemeName`).
   final String? lightThemeName;
+
+  /// Whether to use the light, dark, or system-driven theme.
   final ThemeMode themeMode;
 
   ThemingState copyWith({
@@ -231,7 +245,11 @@ class ThemingController extends _$ThemingController {
     );
   }
 
-  /// Sets the light theme to the specified theme name.
+  /// Selects `themeName` as the light theme.
+  ///
+  /// Rebuilds [ThemingState.lightTheme], persists the name to settings, and
+  /// enqueues a debounced sync message so other devices pick it up. Unknown
+  /// names (not in `themes`) are ignored.
   void setLightTheme(String themeName) {
     if (!isValidThemeName(themeName)) return;
 
@@ -244,7 +262,11 @@ class ThemingController extends _$ThemingController {
     _enqueueSyncMessage();
   }
 
-  /// Sets the dark theme to the specified theme name.
+  /// Selects `themeName` as the dark theme.
+  ///
+  /// Rebuilds [ThemingState.darkTheme], persists the name to settings, and
+  /// enqueues a debounced sync message so other devices pick it up. Unknown
+  /// names (not in `themes`) are ignored.
   void setDarkTheme(String themeName) {
     if (!isValidThemeName(themeName)) return;
 
@@ -257,7 +279,11 @@ class ThemingController extends _$ThemingController {
     _enqueueSyncMessage();
   }
 
-  /// Called when the theme mode selection changes.
+  /// Updates [ThemingState.themeMode] from a segmented-button selection.
+  ///
+  /// Takes the first entry of `modes` (the picker is single-select), persists
+  /// it to settings, and enqueues a debounced sync message. `modes` must be
+  /// non-empty.
   void onThemeSelectionChanged(Set<ThemeMode> modes) {
     final themeMode = modes.first;
 
