@@ -24,7 +24,11 @@ AudioRecorderRepository audioRecorderRepository(Ref ref) {
   return repository;
 }
 
-/// Constants for audio recording configuration
+/// Recording configuration constants shared by [AudioRecorderRepository].
+///
+/// Holds the on-disk layout (`/audio/<day>/` grouping, file-name timestamp
+/// format) and the per-method [LogDomain.speech] sub-domain strings used so
+/// log lines can be filtered by operation.
 class AudioRecorderConstants {
   const AudioRecorderConstants._();
 
@@ -133,6 +137,13 @@ class AudioRecorderRepository {
     }
   }
 
+  /// Begins recording to a freshly created, day-grouped m4a file.
+  ///
+  /// Builds the per-day directory and timestamped path, starts the `record`
+  /// package at 48 kHz with auto-gain, and returns the [AudioNote] describing
+  /// the file (with a zero placeholder duration — the caller fills in the real
+  /// duration from elapsed [amplitudeStream] progress when stopping). Returns
+  /// `null` and logs if starting fails (e.g. missing permission).
   Future<AudioNote?> startRecording() async {
     try {
       final created = DateTime.now();
@@ -193,6 +204,8 @@ class AudioRecorderRepository {
     }
   }
 
+  /// Stops the active recording, finalizing the m4a file on disk.
+  /// Swallows and logs any error so a stop never throws to the caller.
   Future<void> stopRecording() async {
     try {
       await _audioRecorder.stop();
@@ -206,6 +219,8 @@ class AudioRecorderRepository {
     }
   }
 
+  /// Pauses the active recording; the file can be resumed via
+  /// [resumeRecording]. Swallows and logs any error.
   Future<void> pauseRecording() async {
     try {
       await _audioRecorder.pause();

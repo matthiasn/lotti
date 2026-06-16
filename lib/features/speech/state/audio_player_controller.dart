@@ -14,7 +14,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'audio_player_controller.g.dart';
 
-/// Constants for audio player configuration
+/// Tunable timings for [AudioPlayerController] playback handling.
 class AudioPlayerConstants {
   const AudioPlayerConstants._();
 

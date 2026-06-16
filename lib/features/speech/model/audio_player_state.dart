@@ -1,8 +1,20 @@
 import 'package:flutter/foundation.dart';
 import 'package:lotti/classes/journal_entities.dart';
 
-/// Playback status for the audio player
-enum AudioPlayerStatus { initializing, playing, paused, stopped }
+/// Playback status for the audio player.
+enum AudioPlayerStatus {
+  /// Initial status before any media is opened (also the default state).
+  initializing,
+
+  /// Audio is actively playing.
+  playing,
+
+  /// Playback is paused; [AudioPlayerState.pausedAt] holds the resume point.
+  paused,
+
+  /// Playback has stopped (e.g. completed) and progress sits at the end.
+  stopped,
+}
 
 /// Sentinel value to distinguish between "not provided" and "explicitly null"
 const Object _undefined = Object();
@@ -21,13 +33,28 @@ class AudioPlayerState {
     this.audioNote,
   });
 
+  /// Current playback status.
   final AudioPlayerStatus status;
+
+  /// Full length of the loaded media, synced from the player once opened.
   final Duration totalDuration;
+
+  /// Current playback position, driven by the player's position stream.
   final Duration progress;
+
+  /// Position captured when pausing, used to resume from the right spot.
   final Duration pausedAt;
+
+  /// Playback rate multiplier (1.0 = normal speed).
   final double speed;
+
+  /// Whether the transcripts list section is expanded in the UI.
   final bool showTranscriptsList;
+
+  /// How much of the media has buffered, clamped to [totalDuration].
   final Duration buffered;
+
+  /// The audio entry currently loaded, or `null` when none is selected.
   final JournalAudio? audioNote;
 
   /// Creates a copy of this state with the given fields replaced.

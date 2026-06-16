@@ -16,6 +16,14 @@ import 'package:lotti/services/domain_logging.dart';
 /// sets the detected/selected transcription language on an entry, and
 /// [removeAudioTranscript] drops a transcript from an existing entry.
 class SpeechRepository {
+  /// Persists [audioNote] as a `JournalAudio` entry.
+  ///
+  /// Derives the entry's `dateFrom`/`dateTo` from the note's creation time and
+  /// duration, stamps it with import-flag metadata (with a deterministic UUIDv5
+  /// keyed on the encoded audio data), and stores it via [PersistenceLogic].
+  /// When [linkedId] is given the new entry is linked to that parent (e.g. a
+  /// task); [categoryId] scopes it to a category. Returns the created entry, or
+  /// `null` if persistence fails.
   static Future<JournalAudio?> createAudioEntry(
     AudioNote audioNote, {
     String? linkedId,
@@ -60,6 +68,12 @@ class SpeechRepository {
     return null;
   }
 
+  /// Sets the transcription [language] on the audio entry with
+  /// [journalEntityId].
+  ///
+  /// Looks the entry up, and only mutates it when it is a `JournalAudio`
+  /// (logging otherwise). The language is the user/auto-detected code used by
+  /// downstream transcription; a no-op for non-audio entries.
   static Future<void> updateLanguage({
     required String journalEntityId,
     required String language,
@@ -97,6 +111,12 @@ class SpeechRepository {
     }
   }
 
+  /// Removes [transcript] from the audio entry with [journalEntityId].
+  ///
+  /// Matches the transcript to drop by its `created` timestamp and rewrites the
+  /// entry's transcript list without it. Returns `false` only when the entry
+  /// does not exist; otherwise returns `true` (including the no-op case where
+  /// the entry is not a `JournalAudio`, which is logged).
   static Future<bool> removeAudioTranscript({
     required String journalEntityId,
     required AudioTranscript transcript,

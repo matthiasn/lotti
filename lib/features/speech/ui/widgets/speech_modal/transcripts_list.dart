@@ -4,12 +4,17 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
 
+/// Renders one [TranscriptListItem] per transcript stored on an audio entry.
+///
+/// Watches the entry via `entryControllerProvider` and renders nothing for
+/// non-audio entries or entries without transcripts.
 class TranscriptsList extends ConsumerWidget {
   const TranscriptsList({
     required this.entryId,
     super.key,
   });
 
+  /// Id of the `JournalAudio` entry whose transcripts are listed.
   final String entryId;
 
   @override

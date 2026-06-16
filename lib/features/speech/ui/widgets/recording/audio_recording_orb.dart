@@ -3,12 +3,21 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Animation timings for [AudioRecordingOrb].
 class AudioRecordingOrbConstants {
   const AudioRecordingOrbConstants._();
 
+  /// Period of one breathing pulse of the orb while recording is active.
   static const Duration pulseDuration = Duration(milliseconds: 1400);
 }
 
+/// Display-ready signal level derived from a raw dBFS sample.
+///
+/// [normalized] is a `0..1` value mapped from the dBFS reading and biased
+/// toward the normal speech range (see `fromDbfs`) so the orb visibly reacts at
+/// small sidebar sizes instead of only near clipping; [isClipping] flags when
+/// the instantaneous level is hot enough to switch the orb to its warning
+/// color.
 @immutable
 class AudioRecordingSignalLevel {
   const AudioRecordingSignalLevel({
@@ -16,6 +25,10 @@ class AudioRecordingSignalLevel {
     required this.isClipping,
   });
 
+  /// Maps an instantaneous [dBFS] reading onto the `[-64, 0]` dBFS display
+  /// window, applies the response curve, and flags clipping above -3 dBFS.
+  /// Non-finite input (e.g. silence reported as `-inf`) collapses to a quiet,
+  /// non-clipping level.
   factory AudioRecordingSignalLevel.fromDbfs(double dBFS) {
     if (!dBFS.isFinite) {
       return const AudioRecordingSignalLevel(
@@ -43,7 +56,10 @@ class AudioRecordingSignalLevel {
   static const double _ceilingDbfs = 0;
   static const double _responseCurve = 0.9;
 
+  /// Signal level in `0..1`, biased toward the speech range for visibility.
   final double normalized;
+
+  /// Whether the instantaneous level is hot enough to be treated as clipping.
   final bool isClipping;
 
   @override
@@ -58,6 +74,13 @@ class AudioRecordingSignalLevel {
   int get hashCode => Object.hash(normalized, isClipping);
 }
 
+/// Compact live recording indicator: a pulsing, signal-reactive orb painted
+/// from the current microphone level.
+///
+/// Feeds [dBFS] through [AudioRecordingSignalLevel.fromDbfs] each frame and
+/// drives a continuous breathing pulse via [AudioRecordingOrbPainter]. The
+/// pulse only runs while [active]; when inactive it is stopped and reset so the
+/// orb sits still. [size] defaults to a design-token step when omitted.
 class AudioRecordingOrb extends StatefulWidget {
   const AudioRecordingOrb({
     required this.dBFS,
@@ -66,8 +89,13 @@ class AudioRecordingOrb extends StatefulWidget {
     super.key,
   });
 
+  /// Instantaneous microphone level in dBFS, mapped to the orb's intensity.
   final double dBFS;
+
+  /// Side length of the square orb; falls back to a design-token step.
   final double? size;
+
+  /// Whether the breathing pulse animates (false freezes the orb).
   final bool active;
 
   @override
@@ -140,6 +168,12 @@ class _AudioRecordingOrbState extends State<AudioRecordingOrb>
   }
 }
 
+/// Paints the recording orb as four stacked circles — an outer glow, an
+/// expanding wave ring, a solid ring, and a gradient core — whose radii and
+/// alphas are modulated by both the normalized [signalLevel] and the breathing
+/// [phase] (`0..1` of the pulse cycle). Switches from [baseColor] to
+/// [clippingColor] when the signal is clipping; [highlightColor] seeds the
+/// core's radial gradient.
 class AudioRecordingOrbPainter extends CustomPainter {
   const AudioRecordingOrbPainter({
     required this.signalLevel,

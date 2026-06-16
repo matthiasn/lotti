@@ -4,6 +4,15 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:lotti/ui/app_fonts.dart';
 
+/// Paints the skeuomorphic analog VU meter: a labeled arc scale (with a red
+/// over-0-dB zone), the swinging needle, a held peak tick, the center pivot,
+/// and a clip LED.
+///
+/// Works in a fixed 350x140 internal coordinate space scaled to the canvas, so
+/// the geometry stays consistent at any `AnalogVuMeter` size. All three driving
+/// inputs are normalized `0..1` positions along the arc: [value] is the needle,
+/// [peakValue] the held peak, and [clipValue] the clip-LED glow intensity.
+/// [isDarkMode]/[colorScheme] theme the strokes and labels.
 class VuMeterPainter extends CustomPainter {
   VuMeterPainter({
     required this.value,
@@ -13,10 +22,19 @@ class VuMeterPainter extends CustomPainter {
     required this.colorScheme,
   });
 
+  /// Normalized needle position (`0..1`) along the arc.
   final double value;
+
+  /// Normalized held-peak position (`0..1`); a tick is drawn when > 0.
   final double peakValue;
+
+  /// Clip-LED glow intensity (`0..1`); the LED lights when > 0.
   final double clipValue;
+
+  /// Whether to use the dark-mode color treatment.
   final bool isDarkMode;
+
+  /// Theme colors used for the scale, needle, and labels.
   final ColorScheme colorScheme;
 
   // Needle sweeps from about 200 degrees (lower left) to 340 degrees (lower right)
