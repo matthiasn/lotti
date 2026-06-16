@@ -41,13 +41,12 @@ flowchart TD
   Overview --> Filters["ProjectsFilterController"]
   Filters --> Tab["Projects tab UI"]
 
-  Agent["Project agent"] --> Health["Health metrics provider"]
-  Agent --> Summary["Project agent summary provider"]
-  Agent --> Recos["Project recommendations provider"]
-  Health --> Snapshot["ProjectHealthSnapshot"]
-  Summary --> Snapshot
-  Recos --> Snapshot
-  Snapshot --> Detail["Project detail UI"]
+  Agent["Project agent"] --> Health["projectHealthMetricsProvider"]
+  Agent --> Summary["projectAgentSummaryProvider"]
+  Agent --> Recos["projectRecommendationsProvider"]
+  Health --> Detail["Project detail UI (health panel / indicator)"]
+  Summary --> Detail
+  Recos --> Detail
 ```
 
 Projects are therefore both:
@@ -268,16 +267,16 @@ The detail pages pull from a few separate inputs:
   action, optional cancel action, and a countdown label formatted as `m:ss`
   below one hour or `h:mm:ss` once an hour cell is needed
 
+The detail UI consumes the three health providers directly — there is no
+aggregator object; each surface watches the provider(s) it needs.
+
 ```mermaid
 flowchart LR
-  Project["ProjectEntry"] --> Snapshot["ProjectHealthSnapshot"]
   Report["Latest project-agent report"] --> Metrics["projectHealthMetricsFromReport"]
-  Metrics --> Snapshot
-  Summary["ProjectAgentSummaryState"] --> Snapshot
-  Recos["ProjectRecommendationEntity list"] --> Snapshot
-  Snapshot --> Header["Health chip / header"]
-  Snapshot --> Panel["Health panel"]
-  Snapshot --> Detail["Detail page sections"]
+  Metrics --> HealthProv["projectHealthMetricsProvider"]
+  Summary["projectAgentSummaryProvider"] --> UI
+  Recos["projectRecommendationsProvider"] --> UI
+  HealthProv --> UI["Health chip / header, panel, detail sections"]
 ```
 
 This is why project health is agent-authored rather than locally guessed. If

@@ -1,108 +1,14 @@
 // ignore_for_file: specify_nonobvious_property_types
 
-import 'dart:async';
-
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:lotti/services/db_notification.dart';
-
-/// Sort options for category-scoped project health overviews.
-enum ProjectHealthOverviewSort {
-  worstBandFirst,
-  bestBandFirst,
-  title,
-}
-
-/// Aggregated project-health state for a single project.
-@immutable
-class ProjectHealthSnapshot {
-  const ProjectHealthSnapshot({
-    required this.projectId,
-    required this.metrics,
-    required this.summary,
-    required this.recommendations,
-  });
-
-  final String projectId;
-  final ProjectHealthMetrics? metrics;
-  final ProjectAgentSummaryState? summary;
-  final List<ProjectRecommendationEntity> recommendations;
-
-  ProjectHealthBand? get healthBand => metrics?.band;
-  bool get isSummaryOutdated => summary?.isSummaryOutdated ?? false;
-  DateTime? get scheduledWakeAt => summary?.scheduledWakeAt;
-}
-
-/// Category list entry that pairs a project with its aggregated health state.
-@immutable
-class ProjectHealthOverviewEntry {
-  const ProjectHealthOverviewEntry({
-    required this.project,
-    required this.snapshot,
-  });
-
-  final ProjectEntry project;
-  final ProjectHealthSnapshot snapshot;
-
-  ProjectHealthBand? get healthBand => snapshot.healthBand;
-}
-
-/// Filters and sorts project health overview entries for dashboard surfaces.
-List<ProjectHealthOverviewEntry> queryProjectHealthOverviewEntries(
-  Iterable<ProjectHealthOverviewEntry> entries, {
-  Set<ProjectHealthBand> includedBands = const {},
-  ProjectHealthOverviewSort sort = ProjectHealthOverviewSort.worstBandFirst,
-  bool includeWithoutHealth = true,
-}) {
-  final filtered = entries.where((entry) {
-    final band = entry.healthBand;
-    if (band == null) {
-      return includeWithoutHealth;
-    }
-    return includedBands.isEmpty || includedBands.contains(band);
-  }).toList();
-
-  int tieBreak(
-    ProjectHealthOverviewEntry left,
-    ProjectHealthOverviewEntry right,
-  ) {
-    final titleOrder = left.project.data.title.toLowerCase().compareTo(
-      right.project.data.title.toLowerCase(),
-    );
-    if (titleOrder != 0) return titleOrder;
-    return left.project.meta.id.compareTo(right.project.meta.id);
-  }
-
-  filtered.sort((left, right) {
-    final order = switch (sort) {
-      ProjectHealthOverviewSort.worstBandFirst => compareProjectHealthBands(
-        left.healthBand,
-        right.healthBand,
-      ),
-      ProjectHealthOverviewSort.bestBandFirst => compareProjectHealthBands(
-        left.healthBand,
-        right.healthBand,
-        worstFirst: false,
-      ),
-      ProjectHealthOverviewSort.title =>
-        left.project.data.title.toLowerCase().compareTo(
-          right.project.data.title.toLowerCase(),
-        ),
-    };
-
-    return order == 0 ? tieBreak(left, right) : order;
-  });
-
-  return filtered;
-}
 
 /// Provider that fetches projects for a category and auto-rebuilds on changes.
 final projectsForCategoryProvider = FutureProvider.autoDispose
@@ -118,7 +24,8 @@ final projectsForCategoryProvider = FutureProvider.autoDispose
       return repository.getProjectsForCategory(categoryId);
     });
 
-/// Provider that returns the latest agent-authored health snapshot.
+/// Provider that returns the latest agent-authored health metrics for a
+/// project, parsed from its most recent project-agent report.
 final projectHealthMetricsProvider = FutureProvider.autoDispose
     .family<ProjectHealthMetrics?, String>((
       ref,
@@ -143,24 +50,6 @@ final projectHealthMetricsProvider = FutureProvider.autoDispose
       if (report == null) return null;
 
       return projectHealthMetricsFromReport(report);
-    });
-
-/// Provider that aggregates the project health band, stale state, and active
-/// recommendations for a single project.
-final projectHealthSnapshotProvider = FutureProvider.autoDispose
-    .family<ProjectHealthSnapshot, String>((ref, projectId) async {
-      final (metrics, summary, recommendations) = await (
-        ref.watch(projectHealthMetricsProvider(projectId).future),
-        ref.watch(projectAgentSummaryProvider(projectId).future),
-        ref.watch(projectRecommendationsProvider(projectId).future),
-      ).wait;
-
-      return ProjectHealthSnapshot(
-        projectId: projectId,
-        metrics: metrics,
-        summary: summary,
-        recommendations: recommendations,
-      );
     });
 
 /// Provider that fetches the project a task belongs to.
