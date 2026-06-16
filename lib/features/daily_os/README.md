@@ -26,6 +26,14 @@ At runtime, the feature owns:
 
 It is not just a page. It is a planning-and-feedback layer built on top of tasks, entries, ratings, and categories.
 
+> **Runtime status:** `daily_os` is the original day-operations page and is being
+> superseded by the `daily_os_next` feature. The calendar tab root
+> (`CalendarRoot` in `lib/beamer/locations/calendar_location.dart`) watches the
+> `dailyOsNextEnabledFlag` config flag and renders `DailyOsNextRoot` when it is
+> on, falling back to `DailyOsPage` (this feature) when it is off. Treat this
+> README as documentation of the current legacy/default path; see
+> [`daily_os_next`](../daily_os_next/README.md) for the successor.
+
 ## Directory Shape
 
 ```text
@@ -244,11 +252,16 @@ Those two small pieces are why the page can cross-highlight the same category be
 
 It:
 
-- loads a roughly 60-day rolling window around today
+- loads an initial ~60-day window centered on today: 30 days back
+  (`_initialPastDays`) plus 30 days forward (`_initialFutureDays`)
 - aggregates daily time spent by category
 - computes stacked heights for rendering
-- supports incremental backward loading in 14-day chunks
-- refreshes on relevant entry notifications with a throttled stream
+- supports incremental backward loading in 14-day chunks (`_loadMoreDays`); it
+  only ever extends the past edge — the window is not "rolling" and never drops
+  its leading days
+- refreshes on `{textEntryNotification, audioNotification, taskNotification}`
+  via a 5-second trailing-throttled stream (skipped while a backward load is in
+  flight)
 
 This is a good example of the feature doing real derived-data work rather than just painting raw rows from the database.
 
