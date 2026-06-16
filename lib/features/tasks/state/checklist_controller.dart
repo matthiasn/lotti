@@ -24,6 +24,12 @@ final checklistControllerProvider = AsyncNotifierProvider.autoDispose
       ChecklistController.new,
     );
 
+/// Runtime controller for a single checklist entity (keyed by checklist id).
+///
+/// Loads the checklist, subscribes to it and all linked checklist-item IDs, and
+/// owns the structural mutations: title/order updates, dropping existing or new
+/// items in, moving items across checklists, unlink/relink, and deleting the
+/// checklist (removing its id from the parent task when possible).
 class ChecklistController extends AsyncNotifier<Checklist?> {
   ChecklistController(this.params);
 

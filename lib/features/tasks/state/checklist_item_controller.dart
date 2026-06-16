@@ -25,6 +25,11 @@ final checklistItemControllerProvider = AsyncNotifierProvider.autoDispose
       ChecklistItemController.new,
     );
 
+/// Runtime controller for a single checklist item (keyed by item id).
+///
+/// Owns the item's checked/title/archive state. Note the side effect in
+/// [updateTitle]: it fires a fire-and-forget correction capture (before→after
+/// title + category) so user rewordings become category-scoped AI guidance.
 class ChecklistItemController extends AsyncNotifier<ChecklistItem?> {
   ChecklistItemController(this.params);
 
