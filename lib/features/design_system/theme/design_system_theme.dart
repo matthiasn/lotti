@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Builds the app's Material [ThemeData] from the design-system tokens.
+///
+/// Maps the light/dark `DsTokens` onto a Material 3 `ColorScheme` and
+/// `TextTheme`, and registers the active `DsTokens` as a theme extension so
+/// widgets can resolve raw tokens via `context.designTokens`. Use the
+/// [light] and [dark] factories rather than constructing it directly.
 class DesignSystemTheme {
   const DesignSystemTheme._();
 
+  /// The light-mode theme derived from `dsTokensLight`.
   static ThemeData light() => _build(dsTokensLight, Brightness.light);
 
+  /// The dark-mode theme derived from `dsTokensDark`.
   static ThemeData dark() => _build(dsTokensDark, Brightness.dark);
 
   static ThemeData _build(DsTokens tokens, Brightness brightness) {

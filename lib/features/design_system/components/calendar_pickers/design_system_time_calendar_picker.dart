@@ -12,12 +12,21 @@ part 'design_system_time_calendar_picker_components.dart';
 
 enum DesignSystemTimeCalendarPickerMode { light, dark }
 
+/// How the time calendar is rendered: full-size month card ([regular]),
+/// scaled-down fixed-size card ([compact]), or the month/year selection grid
+/// ([monthDialog]).
 enum DesignSystemTimeCalendarPickerPresentation {
   regular,
   compact,
   monthDialog,
 }
 
+/// Token-derived sizing for the standalone time calendar picker — card
+/// metrics, header/icon dimensions, day-cell and month-button geometry, and
+/// dialog padding.
+///
+/// Build it via [TimeCalendarGeometry.fromTokens] so every sub-component of
+/// the card shares one consistent set of measurements.
 @immutable
 class TimeCalendarGeometry {
   const TimeCalendarGeometry({
@@ -121,6 +130,13 @@ class TimeCalendarGeometry {
   final double monthButtonRadius;
 }
 
+/// Presentational frosted-glass time calendar card.
+///
+/// Renders the given [visibleMonth], [selectedDate], and [currentDate] in one
+/// of the [DesignSystemTimeCalendarPickerPresentation] layouts and a light or
+/// dark [DesignSystemTimeCalendarPickerMode]. Holds no state — paging and
+/// selection are surfaced through the optional callbacks; wrap it in
+/// `DesignSystemInteractiveTimeCalendarPicker` for self-managing behavior.
 class DesignSystemTimeCalendarPicker extends StatelessWidget {
   const DesignSystemTimeCalendarPicker({
     required this.mode,

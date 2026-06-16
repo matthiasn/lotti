@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// Presence/availability of the avatar's subject, mapped to the ring color
+/// (neutral / success / warning / error).
 enum DesignSystemAvatarStatus {
   enabled,
   connected,
@@ -8,6 +10,8 @@ enum DesignSystemAvatarStatus {
   busy,
 }
 
+/// Rendered diameter of the avatar; the numeric suffix is the size in logical
+/// pixels (e.g. `m32` = 32px, `jumbo96` = 96px).
 enum DesignSystemAvatarSize {
   xs20,
   s24,
@@ -19,6 +23,13 @@ enum DesignSystemAvatarSize {
   jumbo96,
 }
 
+/// The design-system's circular avatar — a token-sized round image with a
+/// status ring.
+///
+/// Displays [image] cover-fitted in a circle at one of [DesignSystemAvatarSize]
+/// and draws a border whose color encodes [DesignSystemAvatarStatus]
+/// (enabled/connected/away/busy). Exposes [semanticsLabel] as an image label;
+/// all dimensions and ring colors come from design tokens.
 class DesignSystemAvatar extends StatelessWidget {
   const DesignSystemAvatar({
     required this.image,

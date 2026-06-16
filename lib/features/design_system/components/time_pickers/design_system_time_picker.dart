@@ -6,6 +6,13 @@ enum DesignSystemTimeFormat {
   twentyFourHour,
 }
 
+/// The design-system's wheel-style time picker — scrollable hour/minute (and
+/// AM/PM) columns.
+///
+/// Seeds its columns from [initialTime] (or the current time) and reports each
+/// change via [onTimeChanged] as a [TimeOfDay]. [format] selects
+/// [DesignSystemTimeFormat] (12-hour with an AM/PM wheel or 24-hour);
+/// [semanticsLabel] labels the picker.
 class DesignSystemTimePicker extends StatefulWidget {
   const DesignSystemTimePicker({
     required this.onTimeChanged,

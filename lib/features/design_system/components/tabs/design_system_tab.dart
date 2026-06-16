@@ -20,6 +20,14 @@ enum DesignSystemTabShape {
   rectangular,
 }
 
+/// The design-system's tab — a single selectable segment for a tab strip.
+///
+/// [selected] marks the active tab and [onPressed] reports taps (a `null`
+/// callback disables it). Sized by [DesignSystemTabSize] and styled by
+/// [DesignSystemTabShape] (`standalone` pill vs. `rectangular` strip segment),
+/// it can show a [label], a [counter] badge, and leading/trailing icons. Tracks
+/// hover/pressed visuals; [forcedState] pins a [DesignSystemTabVisualState] for
+/// widgetbook/tests. Requires a visible [label] or a [semanticsLabel].
 class DesignSystemTab extends StatefulWidget {
   const DesignSystemTab({
     required this.selected,
@@ -38,6 +46,9 @@ class DesignSystemTab extends StatefulWidget {
          'Provide either a visible label or a semanticsLabel.',
        );
 
+  /// Measures the intrinsic width a tab with the given content would occupy,
+  /// so callers laying out a fixed strip can size segments without building
+  /// them. Mirrors the content metrics this tab uses internally when rendering.
   static double preferredWidth(
     BuildContext context, {
     required String label,

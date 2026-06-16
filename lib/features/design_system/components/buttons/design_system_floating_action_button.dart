@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+/// The design-system's floating action button — a circular icon button sized
+/// from typography/spacing tokens.
+///
+/// Shows [icon] (defaults to a rounded plus) and tracks hover/pressed state,
+/// resolving its background from the interactive token set. A `null`
+/// [onPressed] is the disabled state. [semanticLabel] is required since the
+/// button is icon-only.
 class DesignSystemFloatingActionButton extends StatefulWidget {
   const DesignSystemFloatingActionButton({
     required this.semanticLabel,

@@ -8,6 +8,13 @@ enum DesignSystemCalendarDateCardVisualState {
   hover,
 }
 
+/// A compact two-line date card (weekday over day number) used by the
+/// horizontal date strip of the design-system calendar pickers.
+///
+/// Renders a [DesignSystemCalendarDateCardVisualState] (idle/hover) and a
+/// distinct selected treatment, derives all colors and geometry from design
+/// tokens via [CalendarPickerGeometry], and dims itself when [onPressed] is
+/// null. Pass [forcedState] to pin a visual state for showcases/tests.
 class DesignSystemCalendarDateCard extends StatefulWidget {
   const DesignSystemCalendarDateCard({
     required this.weekdayLabel,

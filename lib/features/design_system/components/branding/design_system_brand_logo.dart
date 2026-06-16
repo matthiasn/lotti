@@ -3,6 +3,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 enum DesignSystemBrandLogoVariant { automatic, light, dark }
 
+/// The Lotti brand wordmark — an SVG logo rendered at a fixed aspect ratio.
+///
+/// Sized by [height] (width follows the brand aspect ratio) and themed by
+/// [variant]: `automatic` picks the light or dark asset from the current
+/// [Theme] brightness, while `light`/`dark` force a specific asset.
 class DesignSystemBrandLogo extends StatelessWidget {
   const DesignSystemBrandLogo({
     this.height = 32,

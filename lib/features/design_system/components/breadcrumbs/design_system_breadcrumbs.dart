@@ -7,6 +7,12 @@ enum DesignSystemBreadcrumbVisualState {
   pressed,
 }
 
+/// One segment in a [DesignSystemBreadcrumbs] trail.
+///
+/// Carries the [label], whether it is the [selected] (current) crumb, whether
+/// it is [enabled]/tappable via [onPressed], and whether a trailing chevron
+/// separator is shown ([showChevron]). [forcedState] pins a
+/// [DesignSystemBreadcrumbVisualState] for widgetbook/tests.
 class DesignSystemBreadcrumbItem {
   const DesignSystemBreadcrumbItem({
     required this.label,
@@ -27,6 +33,11 @@ class DesignSystemBreadcrumbItem {
   final DesignSystemBreadcrumbVisualState? forcedState;
 }
 
+/// The design-system's breadcrumb trail — a horizontal row of tappable
+/// [DesignSystemBreadcrumbItem]s separated by chevrons.
+///
+/// Lays out [items] left to right; requires at least one item. Each crumb
+/// resolves its hover/pressed styling and chevron from design tokens.
 class DesignSystemBreadcrumbs extends StatelessWidget {
   DesignSystemBreadcrumbs({
     required this.items,

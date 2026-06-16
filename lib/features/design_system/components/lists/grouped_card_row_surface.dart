@@ -1,5 +1,14 @@
 import 'package:flutter/material.dart';
 
+/// The tappable, hover-aware background surface for one row in a grouped card
+/// stack.
+///
+/// Paints a [selectedColor]/[hoverColor] fill behind [child], reports taps via
+/// [onTap] and hover via [onHoverChanged], and exposes the row as `selected` to
+/// semantics. The background can bleed past the content using [topOverlap]/
+/// [bottomOverlap] (to hide seams between connected cards) and be inset/rounded
+/// via [backgroundTopInset]/[backgroundBottomInset]/[backgroundBorderRadius];
+/// [rowKey]/[backgroundKey] expose the row and its background for testing.
 class GroupedCardRowSurface extends StatefulWidget {
   const GroupedCardRowSurface({
     required this.selected,

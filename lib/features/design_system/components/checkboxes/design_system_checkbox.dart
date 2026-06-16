@@ -8,6 +8,14 @@ enum DesignSystemCheckboxVisualState {
   pressed,
 }
 
+/// The design-system's checkbox — a tri-state box with an optional inline
+/// label.
+///
+/// [value] is `true`/`false`/`null` (the indeterminate state); [onChanged]
+/// reports taps and a `null` callback disables it. Tracks hover/pressed/focus
+/// visuals from design tokens, and [forcedState] pins a
+/// [DesignSystemCheckboxVisualState] for widgetbook/tests. Requires either a
+/// visible [label] or a [semanticsLabel].
 class DesignSystemCheckbox extends StatefulWidget {
   const DesignSystemCheckbox({
     required this.value,

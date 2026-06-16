@@ -12,6 +12,13 @@ enum DesignSystemSpinnerStyle {
   track,
 }
 
+/// The design-system's circular loading spinner — a continuously rotating
+/// arc resolving its color from the interactive design token.
+///
+/// Renders one of [DesignSystemSpinnerStyle] (`plain` arc only, or `track`
+/// with a faint full-circle backdrop) at a given [DesignSystemSpinner.size]
+/// and [DesignSystemSpinner.strokeWidth], wrapped in [Semantics] with an
+/// optional `semanticsLabel`.
 class DesignSystemSpinner extends StatefulWidget {
   const DesignSystemSpinner({
     this.style = DesignSystemSpinnerStyle.track,
@@ -131,6 +138,14 @@ enum DesignSystemSkeletonAnimation {
   pulse,
 }
 
+/// The design-system's placeholder skeleton — an animated rectangle used as
+/// a loading shimmer in place of not-yet-loaded content.
+///
+/// Sized by [DesignSystemSkeleton.width]/[DesignSystemSkeleton.height] with
+/// an optional `borderRadius` (defaults to the `xs` radius token), and
+/// animated via one of [DesignSystemSkeletonAnimation] (`wave` shimmer sweep
+/// or `pulse` fade). Colors derive from the high-emphasis text token at low
+/// alpha; an optional `semanticsLabel` is exposed via [Semantics].
 class DesignSystemSkeleton extends StatefulWidget {
   const DesignSystemSkeleton({
     this.width = double.infinity,

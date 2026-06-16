@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/utils/disabled_overlay.dart';
 
+/// Category of a calendar day cell, driving its color treatment.
 enum DesignSystemCalendarDayCellType {
   activeMonth,
   today,
   selected,
 }
 
+/// Position of a selected cell within a contiguous selection range, used to
+/// draw the connecting bar between days (none for a [standalone] single day).
 enum DesignSystemCalendarDayCellSelectionPosition {
   start,
   middle,
@@ -20,6 +23,11 @@ enum DesignSystemCalendarDayCellVisualState {
   hover,
 }
 
+/// Immutable description of a single day cell rendered by [CalendarDayCell].
+///
+/// Carries the day [label], its [type] and [selectionPosition], an optional
+/// [onPressed] (null renders the cell disabled/dimmed), plus accessibility and
+/// showcase hooks ([semanticsLabel], [forcedState]).
 @immutable
 class DesignSystemCalendarDayCellData {
   const DesignSystemCalendarDayCellData({
@@ -41,6 +49,11 @@ class DesignSystemCalendarDayCellData {
   final DesignSystemCalendarDayCellVisualState? forcedState;
 }
 
+/// A single token-styled day cell in the design-system month grid.
+///
+/// Renders the day number with the background, label, and selection-range
+/// connector implied by its [DesignSystemCalendarDayCellData], tracking
+/// hover state and dimming when the cell is disabled.
 class CalendarDayCell extends StatefulWidget {
   const CalendarDayCell({
     required this.data,

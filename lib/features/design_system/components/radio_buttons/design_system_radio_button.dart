@@ -12,6 +12,15 @@ enum DesignSystemRadioButtonVisualState {
   hover,
 }
 
+/// The design-system's radio button — a single-choice control with an optional
+/// inline label and help tooltip.
+///
+/// [selected] is the chosen state and [onPressed] reports taps (a `null`
+/// callback disables it). Sized by [DesignSystemRadioButtonSize] (default/large),
+/// it tracks hover visuals and [forcedState] pins a
+/// [DesignSystemRadioButtonVisualState] for widgetbook/tests. Set
+/// [showTooltipIcon] to append a help glyph showing [tooltipMessage]. Requires a
+/// visible [label] or a [semanticsLabel].
 class DesignSystemRadioButton extends StatefulWidget {
   const DesignSystemRadioButton({
     required this.selected,

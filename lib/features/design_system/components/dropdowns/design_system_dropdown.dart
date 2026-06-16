@@ -12,6 +12,11 @@ enum DesignSystemDropdownType {
   multiselect,
 }
 
+/// One selectable entry in a [DesignSystemDropdown].
+///
+/// Identified by [id] and shown with [label]; [selected] reflects its current
+/// state. In multiselect mode the chosen item surfaces as a chip whose text is
+/// [chipLabel] when set, otherwise the [label] (see [resolvedChipLabel]).
 class DesignSystemDropdownItem {
   const DesignSystemDropdownItem({
     required this.id,
@@ -28,6 +33,14 @@ class DesignSystemDropdownItem {
   String get resolvedChipLabel => chipLabel ?? label;
 }
 
+/// The design-system's dropdown — an expandable field that reveals a panel of
+/// [DesignSystemDropdownItem]s.
+///
+/// [type] switches between a single-choice `dropdownList` and a `multiselect`
+/// that surfaces removable chips. Expansion is reported via [onExpandedChanged]
+/// (seeded by [initiallyExpanded]); item taps and chip removals fire
+/// [onItemPressed]/[onChipRemoved]. [enabled] toggles interactivity and
+/// requires a visible [label] or a [semanticsLabel].
 class DesignSystemDropdown extends StatefulWidget {
   const DesignSystemDropdown({
     required this.label,

@@ -50,6 +50,11 @@ class DesignSystemBackControl extends StatelessWidget {
   }
 }
 
+/// Top bar for a mobile detail screen: a leading [DesignSystemBackControl] and
+/// a trailing slot defaulting to an overflow (more) icon.
+///
+/// Both the back label/icon and the default trailing icon are tinted with
+/// [foregroundColor]; pass [trailing] to override the default action.
 class DesignSystemShowcaseMobileDetailHeader extends StatelessWidget {
   const DesignSystemShowcaseMobileDetailHeader({
     required this.foregroundColor,

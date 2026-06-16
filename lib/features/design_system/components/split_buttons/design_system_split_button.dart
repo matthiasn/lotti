@@ -9,6 +9,14 @@ enum DesignSystemSplitButtonSize {
   defaultSize,
 }
 
+/// The design-system's split button — a primary action fused to a dropdown
+/// chevron in one token-styled control.
+///
+/// Tapping the main segment fires [onPressed]; tapping the chevron fires
+/// [onDropdownPressed], with [isDropdownOpen] reflecting the menu state.
+/// Sized by [DesignSystemSplitButtonSize] (small/compact/default) and toggled by
+/// [enabled]. Requires a visible [label] or a [mainSemanticsLabel]; the chevron
+/// gets [dropdownSemanticsLabel] (defaulting to a localized label).
 class DesignSystemSplitButton extends StatelessWidget {
   const DesignSystemSplitButton({
     required this.label,

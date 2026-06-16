@@ -18,6 +18,8 @@ enum DesignSystemTaskFilterSection {
   project,
 }
 
+/// Optional decorative glyph a filter option renders — currently the four
+/// task-priority badges (P0–P3) or `none`.
 enum DesignSystemTaskFilterGlyph {
   none,
   priorityP0,
@@ -26,6 +28,12 @@ enum DesignSystemTaskFilterGlyph {
   priorityP3,
 }
 
+/// One selectable choice within a filter section (a status, category, label,
+/// priority, etc.).
+///
+/// Identified by [id] and shown with [label]; an optional [glyph]
+/// ([DesignSystemTaskFilterGlyph], e.g. a priority badge) plus optional [icon]/
+/// [iconColor] decorate the chip. JSON-serializable for sheet persistence.
 @immutable
 class DesignSystemTaskFilterOption {
   const DesignSystemTaskFilterOption({
@@ -63,6 +71,12 @@ class DesignSystemTaskFilterOption {
   };
 }
 
+/// The immutable state of one multi-select filter field (status, category,
+/// label, or project).
+///
+/// Holds the field [label], its available [options], and the [selectedIds].
+/// Exposes [selectedOptions] and immutable update helpers ([copyWith],
+/// [removeSelection], [clear]); JSON-serializable for sheet persistence.
 @immutable
 class DesignSystemTaskFilterFieldState {
   const DesignSystemTaskFilterFieldState({
@@ -164,6 +178,18 @@ class DesignSystemTaskFilterToggle {
   };
 }
 
+/// The complete immutable model backing the `DesignSystemTaskFilterSheet` — the
+/// single source of truth for every section the sheet can show.
+///
+/// Bundles the localized [title]/[clearAllLabel]/[applyLabel], a single-select
+/// sort section, a multi-select priority selection ([selectedPriorityIds],
+/// with [allPriorityId] as the "no filter" sentinel), the optional status/
+/// category/label/project [DesignSystemTaskFilterFieldState]s, single-select
+/// agent-filter and search-mode sections, and boolean [toggles]. Section
+/// presence is derived via the `has…` getters, [appliedCount] reports the
+/// active-filter total, and a family of immutable update methods
+/// ([selectSort], [togglePriority], [removeSelection], [clearAll], …) produce
+/// new states. JSON-serializable, with backward-compatible priority migration.
 @immutable
 class DesignSystemTaskFilterState {
   DesignSystemTaskFilterState({

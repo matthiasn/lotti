@@ -18,6 +18,14 @@ enum _DesignSystemBadgeType {
   icon,
 }
 
+/// The design-system's status badge — a small token-styled indicator selected
+/// by named constructor.
+///
+/// Comes in five shapes: `.dot` (bare presence dot), `.number` (numeric count
+/// with tabular figures), `.filled`/`.outlined` (solid vs. bordered text pill),
+/// and `.icon` (single glyph). Each is tinted by [DesignSystemBadgeTone]
+/// (primary/secondary/danger/warning/success). [semanticLabel] supplies an
+/// accessibility label, or set [excludeFromSemantics] to hide it from the tree.
 class DesignSystemBadge extends StatelessWidget {
   const DesignSystemBadge.dot({
     this.tone = DesignSystemBadgeTone.primary,

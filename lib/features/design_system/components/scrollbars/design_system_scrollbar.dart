@@ -10,6 +10,13 @@ enum DesignSystemScrollbarSize {
   defaultSize,
 }
 
+/// The design-system's scrollbar — a token-styled [Scrollbar] wrapper that
+/// themes the thumb and suppresses the ambient platform scrollbar around its
+/// [child].
+///
+/// Sized by [DesignSystemScrollbarSize] (small/default thumb thickness), it
+/// drives an optional [controller] and honors [thumbVisibility] (always-on vs.
+/// fade-on-scroll).
 class DesignSystemScrollbar extends StatelessWidget {
   const DesignSystemScrollbar({
     required this.child,
