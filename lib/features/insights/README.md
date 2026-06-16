@@ -13,7 +13,7 @@ entries with instantaneous (sub-200ms, measured ~5ms) range switching.
 flowchart LR
     DB[(journal table)] -->|"insightsTimeRows()\nslim 3-column query,\nno serialized blob"| REPO[InsightsRepository]
     NOTIF[UpdateNotifications\nTEXT_ENTRY · TASK · LINK_CHANGED · PRIVATE_FLAG_TOGGLED] --> BUCKETS
-    REPO --> BUCKETS["insightsBucketsProvider\nStreamProvider.family(InsightsWindow{startDay, endYear})\nnotificationDrivenItemStream + cacheFor"]
+    REPO --> BUCKETS["insightsBucketsProvider\nStreamProvider.autoDispose.family(InsightsWindow{startDay, endYear})\nnotificationDrivenItemStream + cacheFor"]
     BUCKETS -->|"current + previousPeriod window\n(when compare is on)"| PAGE[TimeAnalysisPage]
     RANGE[InsightsRangeController\nperiod stepper: unit + range + compareEnabled, clock-injected] --> PAGE
     REGION[firstDayOfWeekIndexProvider\nregion-aware week start] --> RANGE

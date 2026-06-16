@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
-/// The single "pick one of N" pill idiom for the Insights dashboard —
-/// shared by the range presets, the custom-date button, and the chart
-/// mode toggle so every selector speaks one visual language (instead of
-/// mixing custom pills with a default-Material `SegmentedButton`).
+/// The single "pick one / toggle" pill idiom for the Insights dashboard —
+/// shared by the period stepper's MTD/YTD to-date shortcuts and Compare toggle,
+/// the KPI row's "choose focus categories" pill, and the empty-state recovery
+/// action, so every selector speaks one visual language (instead of mixing
+/// custom pills with a default-Material `SegmentedButton`).
 class InsightsPillButton extends StatelessWidget {
   const InsightsPillButton({
     required this.label,
