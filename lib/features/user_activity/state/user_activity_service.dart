@@ -16,6 +16,10 @@ class UserActivityService {
   final StreamController<DateTime> _activityController =
       StreamController<DateTime>.broadcast();
 
+  /// Records `clock.now()` as the latest [lastActivity] and broadcasts it on
+  /// [activityStream]. Called from UI surfaces on each scroll/interaction.
+  /// No-ops the broadcast after [dispose] (the controller is closed), but the
+  /// timestamp is still updated.
   void updateActivity() {
     _lastActivity = clock.now();
     if (!_activityController.isClosed) {
