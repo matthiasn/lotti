@@ -10,6 +10,13 @@ import 'package:lotti/utils/color.dart';
 
 const _sentinel = Object();
 
+/// Immutable form state for the label create/edit flow.
+///
+/// Mirrors the editable fields of a [LabelDefinition] plus transient UI flags:
+/// [isSaving] gates the save button/spinner, [hasChanges] tracks dirtiness
+/// against the initial baseline (drives Save enablement), and [errorMessage]
+/// surfaces validation/persistence failures. [colorHex] is kept upper-cased so
+/// dirty comparisons against the stored definition are case-stable.
 class LabelEditorState {
   const LabelEditorState({
     required this.name,
@@ -22,6 +29,11 @@ class LabelEditorState {
     this.errorMessage,
   });
 
+  /// Seeds the form from an existing [label] (edit) or a blank create form.
+  ///
+  /// In create mode [initialName] pre-fills the name field (e.g. typed in the
+  /// picker's search box) and the color defaults to the first preset. Category
+  /// IDs are copied into a mutable set so the editor can toggle them.
   factory LabelEditorState.initial({
     LabelDefinition? label,
     String? initialName,
@@ -73,6 +85,11 @@ class LabelEditorState {
   }
 }
 
+/// Identity/seed for a [LabelEditorController] instance.
+///
+/// Pass [label] for edit mode or [initialName] for a pre-filled create form.
+/// This object is also the family key, so distinct args yield distinct
+/// controllers; equal args reuse the same one.
 class LabelEditorArgs {
   const LabelEditorArgs({this.label, this.initialName});
 
@@ -85,6 +102,14 @@ final labelEditorControllerProvider = NotifierProvider.autoDispose
       LabelEditorController.new,
     );
 
+/// Drives the label create/edit form: validation, dirty tracking, and the
+/// duplicate-name-checked save against [LabelsRepository].
+///
+/// Field setters update [LabelEditorState] and recompute [LabelEditorState.hasChanges]
+/// against the initial baseline. [save] enforces a non-empty name and rejects a
+/// case-insensitive duplicate of any other label before creating or updating.
+/// On a successful create the controller adopts the persisted label as its new
+/// baseline so subsequent edits diff correctly.
 class LabelEditorController extends Notifier<LabelEditorState> {
   LabelEditorController(this.params);
 
@@ -108,6 +133,8 @@ class LabelEditorController extends Notifier<LabelEditorState> {
     );
   }
 
+  /// The current [LabelEditorState.colorHex] parsed into a [Color], falling
+  /// back to blue when the hex is unparseable.
   Color get selectedColor =>
       colorFromCssHex(state.colorHex, substitute: Colors.blue);
 
@@ -222,6 +249,14 @@ class LabelEditorController extends Notifier<LabelEditorState> {
         !setEquals(effectiveCategories, initialCats);
   }
 
+  /// Validates and persists the form, returning the saved [LabelDefinition] or
+  /// `null` when validation/persistence failed (with [LabelEditorState.errorMessage] set).
+  ///
+  /// Rejects an empty name and a case-insensitive duplicate of any other label.
+  /// Empty descriptions become `null` on create and `''` on update (the
+  /// repository treats `''` as "clear" and `null` as "keep"). The selected
+  /// category set is passed through wholesale: empty clears the scope, making
+  /// the label global.
   Future<LabelDefinition?> save() async {
     final trimmedName = state.name.trim();
 
@@ -292,6 +327,8 @@ class LabelEditorController extends Notifier<LabelEditorState> {
     }
   }
 
+  /// Discards in-progress edits, restoring the form to the last saved baseline
+  /// (the original label, or a blank create form if none exists yet).
   void resetToInitial() {
     state = LabelEditorState.initial(label: _initialLabel);
   }

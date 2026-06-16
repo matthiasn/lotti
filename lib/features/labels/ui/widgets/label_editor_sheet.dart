@@ -11,6 +11,16 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
 
+/// Bottom-sheet form for creating or editing a label.
+///
+/// Backed by [LabelEditorController] (keyed on a [LabelEditorArgs] built from
+/// [label]/[initialName]): name, description, a [ColorPicker] over
+/// [labelColorPresets], an applicable-categories multi-picker, and a privacy
+/// switch. The text controllers are seeded once and only re-synced from
+/// controller state on programmatic changes, so user typing is never clobbered.
+/// On save the sheet pops with the persisted [LabelDefinition] and invokes
+/// [onSaved]. This is the inline/modal counterpart to the full-page
+/// `LabelDetailsPage`.
 class LabelEditorSheet extends ConsumerStatefulWidget {
   const LabelEditorSheet({
     this.label,

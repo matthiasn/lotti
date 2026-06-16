@@ -11,6 +11,13 @@ import 'package:lotti/features/labels/services/label_validator.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 
+/// Outcome of a single [LabelAssignmentProcessor.processAssignment] run.
+///
+/// Partitions the proposed IDs into three buckets: [assigned] (persisted),
+/// [invalid] (unknown or soft-deleted definitions), and [skipped] — each a
+/// `{id, reason}` map where reason is one of `out_of_scope`, `suppressed`,
+/// `already_assigned`, `over_cap`, or `duplicate`. [toStructuredJson] renders
+/// this for return to the model.
 class LabelAssignmentResult {
   LabelAssignmentResult({
     required this.assigned,
