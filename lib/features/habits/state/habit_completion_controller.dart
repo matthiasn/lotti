@@ -9,6 +9,13 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'habit_completion_controller.g.dart';
 
+/// Owns one habit card's completion-history strip for a fixed date range.
+///
+/// Deliberately separate from `HabitsController`: it fetches completions for a
+/// single `habitId` + range and, via [listen], refreshes only when an update
+/// notification's affected IDs include that habit — so one new completion
+/// repaints one card instead of recomputing the whole tab. Keyed by
+/// `(habitId, rangeStart, rangeEnd)`.
 @riverpod
 class HabitCompletionController extends _$HabitCompletionController {
   late final String _habitId;
@@ -18,6 +25,9 @@ class HabitCompletionController extends _$HabitCompletionController {
   StreamSubscription<Set<String>>? _updateSubscription;
   late HabitsRepository _repository;
 
+  /// Subscribes to the repository update stream and refetches this habit's
+  /// strip when an emitted batch of affected IDs contains [_habitId], emitting
+  /// new state only when the fetched result actually differs.
   void listen() {
     _updateSubscription = _repository.updateStream.listen((affectedIds) async {
       if (affectedIds.contains(_habitId)) {

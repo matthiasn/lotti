@@ -41,10 +41,10 @@ lib/features/habits/
 └── ui/
     ├── habits_page.dart                        # Main habits list page
     └── widgets/
-        ├── habit_category.dart                 # Category display widget
+        ├── habit_category.dart                 # SelectCategoryWidget — category picker field (settings form)
         ├── habit_completion_card.dart           # Habit completion UI card
-        ├── habit_completion_color_icon.dart     # Completion status icon
-        ├── habit_dashboard.dart                 # Dashboard integration widget
+        ├── habit_completion_color_icon.dart     # HabitCompletionColorIcon — used by the journal card, not the tab
+        ├── habit_dashboard.dart                 # SelectDashboardWidget — dashboard picker field (settings form)
         ├── habit_page_app_bar.dart              # Habits page app bar
         ├── habit_streaks.dart                   # Completed-today count display (HabitStreaksCounter)
         ├── habits_filter.dart                   # Habit filtering controls
@@ -181,6 +181,8 @@ From active habit definitions plus completion entries in the selected range, it 
 
 One important grounding detail: the controller immediately filters definitions to `habit.active == true`. Archived habits still exist in settings and storage, but the main tab only derives from active definitions.
 
+A second subtlety: `successfulToday` (which feeds `completedToday`, the open/completed split) counts both `success` **and** `skip` completions — a deliberately skipped habit still clears the day. Only an explicit `fail` leaves the habit open.
+
 ### Refresh lifecycle
 
 ```mermaid
@@ -240,7 +242,7 @@ Tapping the chart sets `selectedInfoYmd`, which updates the summary row above th
 
 That selected day is cleared with a 15-second debounce in the controller. The chart is interactive, but it is intentionally not sticky forever.
 
-The chart can also toggle between a zero-based Y axis and a cropped minimum Y value when the computed minimum is high enough to make that useful.
+The chart can also toggle between a zero-based Y axis and a cropped minimum Y value; the toggle button only appears when the computed minimum Y is above 20 (otherwise cropping the axis would not buy enough vertical resolution to matter).
 
 ## Per-Card Completion History
 
@@ -253,6 +255,8 @@ That controller:
 - refreshes only when the affected IDs include that habit ID
 
 That narrower refresh path is the main reason this controller exists separately from `HabitsController`.
+
+The card is also stale-while-revalidate: `HabitCompletionCard` retains the previously rendered strip (`_lastResults`) across range changes and only drops the cache when the `habitId` changes, so a background refresh never flashes the strip back to a loading shell.
 
 The strip itself is synthesized day by day:
 
@@ -337,8 +341,8 @@ Delete is a soft delete via `deletedAt`, not a hard remove.
 
 ## Current Constraints And Reality Checks
 
-- The model has an optional `autoCompleteRule`, and `HabitSettingsState` carries an `autoCompleteRule` field, but that field is always initialized to `null` and never mutated by `HabitSettingsController`; no autocomplete editing widget is wired up — only a dead `// const HabitAutocompleteWrapper(),` reference remains at `lib/features/settings/ui/pages/habits/habit_details_page.dart:197`, and there is no `HabitAutocompleteWrapper` class anywhere in the codebase.
-- `shortStreakCount` and `longStreakCount` are still computed in `HabitsController`, but `HabitStreaksCounter` currently renders only "`X out of Y habits completed today`" and never displays the computed streak counts.
+- The model has an optional `autoCompleteRule`, and `HabitSettingsState` carries an `autoCompleteRule` field, but that field is always initialized to `null` and never mutated by `HabitSettingsController`; no autocomplete editing widget is wired up, and there is no `HabitAutocompleteWrapper` class anywhere in the codebase.
+- `shortStreakCount` and `longStreakCount` are still computed in `HabitsController`, but `HabitStreaksCounter` currently renders only "`X out of Y habits completed today`" and never displays the computed streak counts. (The windows are the trailing 3 days and trailing 7 days; a day counts as a success when it has a `success`, `skip`, or untyped completion, and a single missing day breaks the streak — see `countHabitsWithStreak`.)
 - Text search is local page filtering, not repository querying.
 - The "due now" split is based only on daily `showFrom` and current clock time.
 
