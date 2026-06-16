@@ -18,11 +18,20 @@ import 'package:uuid/uuid.dart';
 
 part 'rating_repository.g.dart';
 
+/// Provides the singleton [RatingRepository] used by controllers and UI.
 @riverpod
 RatingRepository ratingRepository(Ref ref) {
   return RatingRepository();
 }
 
+/// Persistence layer for ratings.
+///
+/// A rating is stored as a [RatingEntry] journal entity plus a [RatingLink]
+/// connecting it to the entry being rated. The repository keeps those two
+/// writes consistent: the link is created inside a vector-clock scope so a
+/// no-op upsert releases the reserved counter, and a failed link triggers a
+/// compensating soft-delete of the orphaned rating. Sync enqueue and sequence
+/// logging are best-effort and never roll back an already-persisted local row.
 class RatingRepository {
   final JournalDb _journalDb = getIt<JournalDb>();
   final PersistenceLogic _persistenceLogic = getIt<PersistenceLogic>();
@@ -56,9 +65,15 @@ class RatingRepository {
 
   /// Creates or updates a rating for a target entry.
   ///
-  /// If a rating already exists for [targetId] with the given [catalogId],
-  /// updates it. Otherwise, creates a new [RatingEntry] and links it via
-  /// [RatingLink].
+  /// Looks up any existing rating for ([targetId], [catalogId]). If one
+  /// exists, its dimensions and note are updated in place. Otherwise a new
+  /// [RatingEntry] is created — inheriting the target entry's category — and
+  /// a [RatingLink] from the rating to the target is written.
+  ///
+  /// The rating's id is deterministic (uuid v5 over
+  /// `['rating', targetId, catalogId]`), so the same target/catalog pair
+  /// always resolves to the same entity across devices. Returns the persisted
+  /// [RatingEntry], or `null` on any failure (errors are logged, not thrown).
   Future<RatingEntry?> createOrUpdateRating({
     required String targetId,
     required List<RatingDimension> dimensions,
@@ -186,6 +201,15 @@ class RatingRepository {
     return updated;
   }
 
+  /// Writes the [RatingLink] from a rating entity ([fromId]) to its target
+  /// ([toId]) under a vector-clock scope.
+  ///
+  /// The scope commits only when the upsert actually changed a row
+  /// (`commitWhen: (ok) => ok`); a no-op upsert releases the reserved counter
+  /// so peers receive an unresolvable hint and skip the gap without a backfill.
+  /// On a successful write it records the sent sequence, notifies listeners,
+  /// and best-effort enqueues the sync message — outbox/sequence failures are
+  /// logged but do not roll back the committed link.
   Future<void> _createRatingLink({
     required String fromId,
     required String toId,
