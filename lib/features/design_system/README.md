@@ -22,7 +22,7 @@ flowchart LR
   Generator --> Generated["theme/generated/design_tokens.g.dart"]
   Generated --> TokensApi["design_tokens.dart"]
   TokensApi --> DsTheme["DesignSystemTheme"]
-  TokensApi --> AppTheme["lib/themes/theme.dart"]
+  TokensApi --> AppTheme["lib/themes/theme_overrides.dart"]
   DsTheme --> Widgetbook["lib/widgetbook.dart"]
   AppTheme --> Features["Tasks / Projects / other production UI"]
   TokensApi --> Components["Design-system components"]
@@ -133,7 +133,7 @@ This is the design-system-native theme used by Widgetbook.
 
 ### App Theme Integration
 
-The production app does not need to swap wholesale to `DesignSystemTheme` in order to use DS tokens. `lib/themes/theme.dart` also injects `dsTokensLight` or `dsTokensDark` into the app theme's `extensions`, which means production widgets can call:
+The production app does not need to swap wholesale to `DesignSystemTheme` in order to use DS tokens. `lib/themes/theme_overrides.dart` (`withOverrides`) injects `dsTokensLight` or `dsTokensDark` into the app theme's `extensions`, which means production widgets can call:
 
 ```dart
 final tokens = context.designTokens;
