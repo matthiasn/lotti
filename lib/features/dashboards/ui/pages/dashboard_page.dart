@@ -15,6 +15,15 @@ import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 import 'package:lotti/widgets/misc/timespan_segmented_control.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
+/// Full view of a single dashboard: a pinned header (title + time-span picker +
+/// edit affordance) above a scrolling stack of charts ([DashboardWidget]).
+///
+/// Holds the selected time span in state (default 90 days) and derives the
+/// `[rangeStart, rangeEnd]` window from it on every build, so changing the span
+/// re-keys the charts' providers. Beams back to `/dashboards` if the dashboard
+/// id no longer resolves. Renders both as a standalone mobile route and as the
+/// desktop detail pane of the dashboards list; opening the definition editor
+/// slides in a side panel on desktop and pushes full-screen on mobile.
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({
     required this.dashboardId,

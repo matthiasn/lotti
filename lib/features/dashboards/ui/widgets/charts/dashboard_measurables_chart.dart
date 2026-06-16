@@ -14,6 +14,16 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Chart card for one measurable on a dashboard. The name is historical: this
+/// renders a *bar* chart only when an aggregation is applied; with
+/// `AggregationType.none` it renders a line chart of individual readings.
+///
+/// Resolves the measurable definition and the effective aggregation (dashboard
+/// override → type default → daily sum) via providers, then watches
+/// [MeasurableObservationsController] and wraps the result in a stale-aware
+/// [DashboardChart]. With `enableCreate` the header shows an add button that
+/// opens the measurement capture dialog. Renders nothing until the measurable
+/// definition has loaded.
 class MeasurablesBarChart extends ConsumerWidget {
   const MeasurablesBarChart({
     required this.measurableDataTypeId,

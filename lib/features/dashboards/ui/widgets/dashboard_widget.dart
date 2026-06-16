@@ -10,6 +10,16 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_ch
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_chart.dart';
 
+/// Renders a dashboard's ordered list of items as a vertical stack of chart
+/// cards over the shared `[rangeStart, rangeEnd]` window.
+///
+/// Acts as the dispatcher from each `DashboardItem` variant to its chart widget
+/// (measurement, health, workout, survey, habit). Each chart is keyed by item
+/// *identity* (not list position or range) so a chart's
+/// stale-while-revalidate state stays attached to its item across edits and
+/// span changes — preventing a new item from briefly showing a sibling's cached
+/// data. Optionally shows the dashboard name as a title and its description as a
+/// caption.
 class DashboardWidget extends ConsumerWidget {
   const DashboardWidget({
     required this.rangeStart,

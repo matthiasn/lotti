@@ -12,6 +12,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Header for a workout chart card: the series display name as title and the
+/// value type's unit symbol (`min`/`km`/`kcal`) as subtitle.
 class WorkoutChartInfoWidget extends StatelessWidget {
   const WorkoutChartInfoWidget(
     this.chartConfig, {
@@ -43,6 +45,12 @@ String workoutUnitLabel(WorkoutValueType valueType) {
   }
 }
 
+/// Chart card for one workout series: a daily-sum bar chart of the configured
+/// workout type's chosen dimension (duration / distance / energy).
+///
+/// Watches [WorkoutObservationsController] for the per-day totals and wraps them
+/// in a stale-aware [DashboardChart] so a span change doesn't flash the card
+/// empty.
 class DashboardWorkoutChart extends ConsumerWidget {
   const DashboardWorkoutChart({
     required this.chartConfig,

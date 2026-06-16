@@ -2,6 +2,12 @@ import 'dart:core';
 
 import 'package:lotti/classes/entity_definitions.dart';
 
+/// Catalogue of selectable workout chart series, keyed by
+/// `'<workoutType>.<valueType>'` (e.g. `running.distance`). Each entry pairs a
+/// workout activity with one of its measurable dimensions (duration / energy /
+/// distance) and supplies the display name used when adding the series to a
+/// dashboard definition. The chart itself sums the chosen dimension per day —
+/// see `aggregateWorkoutDailySum`.
 Map<String, DashboardWorkoutItem> workoutTypes = {
   'walking.duration': const DashboardWorkoutItem(
     displayName: 'Walking (time)',

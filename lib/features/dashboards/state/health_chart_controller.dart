@@ -14,6 +14,14 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'health_chart_controller.g.dart';
 
+/// Loads the raw quantitative health entities of one `healthDataType` within a
+/// date range and keeps them fresh.
+///
+/// Holds the result for `dashboardCacheDuration` so flipping between dashboards
+/// doesn't re-query, and subscribes to [UpdateNotifications] so an inbound
+/// change to this exact health type re-fetches and pushes new data (skipping
+/// the rebuild when the rows are unchanged). The returned entities are
+/// unaggregated; [HealthObservationsController] turns them into chart points.
 @riverpod
 class HealthChartDataController extends _$HealthChartDataController {
   final JournalDb _journalDb = getIt<JournalDb>();
@@ -21,6 +29,9 @@ class HealthChartDataController extends _$HealthChartDataController {
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
+  /// Starts watching [UpdateNotifications] for changes to this controller's
+  /// `healthDataType` and re-fetches when one arrives. Called once from
+  /// `build`; the subscription is cancelled on dispose.
   void listen() {
     _updateSubscription = _updateNotifications.updateStream.listen((
       affectedIds,
@@ -60,6 +71,16 @@ class HealthChartDataController extends _$HealthChartDataController {
   }
 }
 
+/// Chart-ready observations for one health type: watches
+/// [HealthChartDataController] for the raw entities and reduces them via
+/// `aggregateByType` (the per-type rule from `healthTypes`).
+///
+/// On construction (outside tests) it kicks off a short, jittered-delay
+/// background health-data sync for this type so the chart refreshes itself with
+/// freshly imported samples without blocking first paint. The build awaits the
+/// upstream future (rather than reading a possibly-empty cached value) so the
+/// provider stays in `AsyncLoading` until the DB read completes — otherwise the
+/// chart's stale-while-revalidate wrapper would flash an empty "No data" state.
 @riverpod
 class HealthObservationsController extends _$HealthObservationsController {
   HealthObservationsController() {

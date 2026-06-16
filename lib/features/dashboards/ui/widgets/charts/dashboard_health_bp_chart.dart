@@ -13,6 +13,15 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Blood-pressure chart card: a dual-line chart plotting systolic (alert.error)
+/// and diastolic (alert.info) over the range, with dashed reference lines at
+/// 120 and 80 mmHg and a two-entry legend.
+///
+/// Watches both `BLOOD_PRESSURE_SYSTOLIC` and `BLOOD_PRESSURE_DIASTOLIC`
+/// observation providers and keeps each series' last value via its own
+/// [StaleValue] so a span change doesn't flash the card empty. Stateful (rather
+/// than using [StaleAsyncValue]) precisely because it stitches together two
+/// independent async streams.
 class DashboardHealthBpChart extends ConsumerStatefulWidget {
   const DashboardHealthBpChart({
     required this.rangeStart,
@@ -205,6 +214,8 @@ class _DashboardHealthBpChartState
   }
 }
 
+/// Header for the blood-pressure card: localized "Blood pressure" title with a
+/// "mmHg" unit subtitle.
 class BpChartInfoWidget extends StatelessWidget {
   const BpChartInfoWidget({super.key});
 

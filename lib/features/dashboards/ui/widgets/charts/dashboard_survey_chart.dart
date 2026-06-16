@@ -14,6 +14,14 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.da
 import 'package:lotti/features/surveys/tools/run_surveys.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// Chart card for a survey series (CFQ-11, GHQ-12, or PANAS): a multi-line plot
+/// of each tracked score over time, with an add button that launches the
+/// matching survey.
+///
+/// Watches [SurveyChartDataController] for survey completions, derives one line
+/// per score key via `surveyLines`, and computes the shared min/max so all
+/// lines share an axis. The add action dispatches to the right survey runner by
+/// `surveyType`.
 class DashboardSurveyChart extends ConsumerWidget {
   const DashboardSurveyChart({
     required this.chartConfig,

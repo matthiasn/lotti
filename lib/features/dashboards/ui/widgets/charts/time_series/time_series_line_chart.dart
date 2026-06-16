@@ -10,6 +10,11 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Single-series line chart over a date range, plotting [data] as a filled-area
+/// line in epoch-millis x against a "nice" value axis derived from the data's
+/// min/max. The x range is fixed to `[rangeStart, rangeEnd]` so adjacent cards
+/// align; tooltips show the formatted value, [unit], and date. Unlike the bar
+/// chart it does not backfill missing days — gaps are simply not drawn.
 class TimeSeriesLineChart extends StatelessWidget {
   const TimeSeriesLineChart({
     required this.data,

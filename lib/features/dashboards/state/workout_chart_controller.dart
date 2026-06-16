@@ -13,6 +13,15 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'workout_chart_controller.g.dart';
 
+/// Loads *all* workout entities in a date range (not filtered by type) and
+/// keeps them live; one instance backs every workout chart sharing the same
+/// range.
+///
+/// On construction it triggers a background workout-import delta so newly
+/// recorded workouts appear without a manual refresh. Caches for
+/// `dashboardCacheDuration` and re-fetches on workout [UpdateNotifications]
+/// events. Per-type filtering and aggregation happen downstream in
+/// [WorkoutObservationsController].
 @riverpod
 class WorkoutChartDataController extends _$WorkoutChartDataController {
   WorkoutChartDataController() {
@@ -24,6 +33,8 @@ class WorkoutChartDataController extends _$WorkoutChartDataController {
   StreamSubscription<Set<String>>? _updateSubscription;
   final UpdateNotifications _updateNotifications = getIt<UpdateNotifications>();
 
+  /// Subscribes to workout update notifications and re-fetches on change.
+  /// Called once from `build`; cancelled on dispose.
   void listen() {
     _updateSubscription = _updateNotifications.updateStream.listen((
       affectedIds,
@@ -61,6 +72,15 @@ class WorkoutChartDataController extends _$WorkoutChartDataController {
   }
 }
 
+/// Chart-ready daily-sum observations for one workout series (a workout type +
+/// value dimension described by `chartConfig`).
+///
+/// Watches [WorkoutChartDataController] for all workouts in range, then sums the
+/// configured dimension per day via `aggregateWorkoutDailySum`. `chartConfig` is
+/// typed as `DashboardItem` and cast to `DashboardWorkoutItem` to work around a
+/// Riverpod codegen limitation. Returns an empty list when no workout of this
+/// type exists in range so the chart shows "No data" rather than a flat row of
+/// the prefilled zero buckets the aggregator produces.
 @riverpod
 class WorkoutObservationsController extends _$WorkoutObservationsController {
   @override

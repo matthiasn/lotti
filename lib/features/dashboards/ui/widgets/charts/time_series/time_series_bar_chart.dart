@@ -12,6 +12,13 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
+/// Daily bar chart over a date range. Buckets [data] by day and fills every
+/// missing day in `[rangeStart, rangeEnd]` with a zero bar so the time axis is
+/// continuous, derives a "nice" zero-based value axis, and sizes the bars to the
+/// chart's actual (not screen) width via [LayoutBuilder] so the row fits the
+/// card exactly — important in the narrow desktop detail pane, where fl_chart
+/// bars don't clip. Bar colour comes from [colorByValue]; tooltips show the
+/// value (formatted as h:mm when [valueInHours]) plus the date.
 class TimeSeriesBarChart extends StatelessWidget {
   const TimeSeriesBarChart({
     required this.data,
