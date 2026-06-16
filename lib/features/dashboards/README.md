@@ -123,9 +123,9 @@ flowchart TD
   Active --> Sort["Sort by lowercased name"]
   Sort --> Visible["filteredSortedDashboardsProvider"]
 
-  FilterTap["Tap filter button"] --> BottomSheet["Category chip sheet"]
-  BottomSheet --> Toggle["selectedCategoryIdsProvider.toggle(id)"]
-  Toggle --> Visible
+  FilterTap["Tap filter button"] --> Picker["showCategoryMultiPicker (Wolt sheet)"]
+  Picker --> Apply["selectedCategoryIdsProvider.setAll(ids) on Apply"]
+  Apply --> Visible
   Visible --> Cards["DashboardCard widgets"]
 ```
 
@@ -136,8 +136,10 @@ Code-backed details worth knowing:
 - category filtering is purely local UI state; no database query changes
 - `DashboardsFilter` is an `IconButton` whose icon toggles between
   `Icons.filter_alt_rounded` (when at least one category is selected) and
-  `Icons.filter_alt_outlined` (when none are); tapping it opens a bottom sheet of
-  category `ActionChip`s that toggle `selectedCategoryIdsProvider`
+  `Icons.filter_alt_outlined` (when none are); tapping it opens the unified
+  `showCategoryMultiPicker` Wolt sheet (the same picker categories use).
+  Selection is staged in the sheet and committed only on Apply via
+  `selectedCategoryIdsProvider.setAll(result.ids)` — not per-chip toggling
 - `DashboardsListPage` wires its scroll controller into
   `UserActivityService.updateActivity`, so even scrolling quietly counts as user
   activity
@@ -174,7 +176,7 @@ sequenceDiagram
   end
 ```
 
-The page has a simple two-state lifecycle driven by `EntitiesCacheService.getDashboardById()`, which is a synchronous cache lookup:
+The page `watch`es `dashboardByIdProvider(id)` (which reads from `EntitiesCacheService` but is invalidated whenever `dashboardsProvider` changes), so the title and chart set rebuild reactively after an inline definition edit rather than from a one-shot read. Its lifecycle has two states:
 
 ```mermaid
 stateDiagram-v2
@@ -191,7 +193,12 @@ stateDiagram-v2
 
 Important reality checks:
 
-- the page title comes from `EntitiesCacheService.getDashboardById()`
+- the page title comes from the watched `dashboardByIdProvider(id)`, so it
+  updates after an inline edit
+- a "tune" header button opens the definition editor in place
+  (`DashboardDefinitionPage`, `popOnClose: true`) — a right-side slide-in panel
+  (`_DefinitionSidePanelRoute`) on desktop, a full-screen route on mobile — so
+  editing never beams away into the settings tab
 - the visible date range is derived from `DateTime.now()` and midnight helpers
 - `DashboardDefinition.days` exists on the entity, but `DashboardPage` does not
   currently use it; the UI always starts at 90 days until the user changes the
@@ -254,10 +261,11 @@ that is fine.
   widths. The date axis is only rendered when the chart is shown — never in the
   loading or empty states.
 - measurement charts resolve aggregation from either the dashboard item or the
-  measurable type definition. The card caption is a single phrase: the
-  measurable description when present, otherwise the humanized aggregation
-  (`aggregationDisplayLabel`), otherwise nothing — never an "[agg] · [desc]"
-  stack.
+  measurable type definition. The card caption is a single phrase that leads with
+  the **unit** (`unitName`), to stay consistent with the health/workout cards
+  ("ml", "bpm", "kcal"); only when a measurable has no unit does it fall back to
+  the description, then to the humanized aggregation (`aggregationDisplayLabel`),
+  then to nothing — never an "[agg] · [desc]" stack.
 - health charts use the `healthTypes` config map for display names, units, and
   aggregation behavior
 - the `BODY_MASS_INDEX` item plots WEIGHT only, so its card title is the WEIGHT
