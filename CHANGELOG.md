@@ -17,6 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   centered dialog on desktop — instead of taking over the whole screen. The
   fields are unchanged (title, category, target date); Cancel/Create sit inside
   the overlay, and the new project shows up in the list as soon as you save.
+- When the image provider turns down a cover art request, the modal now says the
+  provider rejected it and shows the provider's own reason verbatim (for example
+  "PROHIBITED_CONTENT") instead of a generic "Failed to generate image" — so
+  it's clear the block is the AI provider's content policy, not Lotti, and you
+  can reword the request and try again.
 - Every button across the app now uses one unified style, and modal action bars
   share one layout where the confirming action is the wide, dominant button and
   the cancel/secondary actions stay compact beside it. Disabled buttons now
