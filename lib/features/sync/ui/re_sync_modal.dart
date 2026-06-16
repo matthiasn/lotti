@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
-import 'package:lotti/widgets/misc/buttons.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 class ReSyncModalContent extends ConsumerStatefulWidget {
@@ -103,8 +103,10 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
               ),
             ),
           const SizedBox(height: 20),
-          RoundedButton(
-            'Start',
+          DesignSystemButton(
+            label: 'Start',
+            variant: DesignSystemButtonVariant.secondary,
+            size: DesignSystemButtonSize.large,
             onPressed: _canStart && dateFrom != null && dateTo != null
                 ? () {
                     ref

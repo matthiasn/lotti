@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -62,7 +62,7 @@ void main() {
     await tester.pump();
 
     final startButtonFinder = find.widgetWithText(
-      LottiSecondaryButton,
+      DesignSystemButton,
       'Start',
     );
     expect(startButtonFinder, findsOneWidget);
@@ -103,7 +103,7 @@ void main() {
       await tester.pump();
 
       final startButtonFinder = find.widgetWithText(
-        LottiSecondaryButton,
+        DesignSystemButton,
         'Start',
       );
       expect(startButtonFinder, findsOneWidget);
@@ -143,7 +143,7 @@ void main() {
       await tester.pump();
 
       final startButtonFinder = find.widgetWithText(
-        LottiSecondaryButton,
+        DesignSystemButton,
         'Start',
       );
       await tester.tap(startButtonFinder);
@@ -184,8 +184,8 @@ void main() {
       await tester.tap(find.byKey(const Key('reSyncAgentEntitiesCheckbox')));
       await tester.pump();
 
-      final startButton = tester.widget<LottiSecondaryButton>(
-        find.widgetWithText(LottiSecondaryButton, 'Start'),
+      final startButton = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Start'),
       );
       expect(startButton.onPressed, isNull);
       // The user-visible signal that explains the disabled state.
@@ -197,8 +197,8 @@ void main() {
       // Re-tick journal — start should re-enable and the hint disappears.
       await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
       await tester.pump();
-      final startButtonAfter = tester.widget<LottiSecondaryButton>(
-        find.widgetWithText(LottiSecondaryButton, 'Start'),
+      final startButtonAfter = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Start'),
       );
       expect(startButtonAfter.onPressed, isNotNull);
       expect(
@@ -223,12 +223,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     final startButtonFinder = find.widgetWithText(
-      LottiSecondaryButton,
+      DesignSystemButton,
       'Start',
     );
     expect(startButtonFinder, findsOneWidget);
 
-    final startButton = tester.widget<LottiSecondaryButton>(startButtonFinder);
+    final startButton = tester.widget<DesignSystemButton>(startButtonFinder);
     expect(startButton.onPressed, isNotNull);
   });
 

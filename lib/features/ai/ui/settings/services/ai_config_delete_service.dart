@@ -11,7 +11,6 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Undo window for the delete toast. Matches the checklist row's delete
 /// pattern so the destructive-undoable feedback feels uniform across the
@@ -284,9 +283,11 @@ class AiConfigDeleteService {
               ],
             ),
             actions: [
-              LottiTertiaryButton(
+              DesignSystemButton(
                 onPressed: () => Navigator.of(context).pop(false),
                 label: context.messages.cancelButton,
+                variant: DesignSystemButtonVariant.tertiary,
+                size: DesignSystemButtonSize.large,
               ),
               DesignSystemButton(
                 onPressed: () => Navigator.of(context).pop(true),

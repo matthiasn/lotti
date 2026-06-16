@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -148,10 +149,10 @@ void main() {
       expect(createButton, findsOneWidget);
 
       // Button should be disabled (no name or voice directive).
-      final buttonWidget = tester.widget<FilledButton>(
+      final buttonWidget = tester.widget<DesignSystemButton>(
         find.ancestor(
           of: createButton,
-          matching: find.byType(FilledButton),
+          matching: find.byType(DesignSystemButton),
         ),
       );
       expect(buttonWidget.onPressed, isNull);
@@ -192,10 +193,10 @@ void main() {
 
       // Create button should now be enabled.
       final createButton = find.text(context.messages.createButton);
-      final buttonWidget = tester.widget<FilledButton>(
+      final buttonWidget = tester.widget<DesignSystemButton>(
         find.ancestor(
           of: createButton,
-          matching: find.byType(FilledButton),
+          matching: find.byType(DesignSystemButton),
         ),
       );
       expect(buttonWidget.onPressed, isNotNull);

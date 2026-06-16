@@ -6,7 +6,6 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart' as platform;
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Modal shown to users who don't have any AI provider configured.
 ///
@@ -121,9 +120,11 @@ class _AiProviderSelectionModalState extends State<AiProviderSelectionModal> {
         ),
       ),
       actions: [
-        LottiTertiaryButton(
+        DesignSystemButton(
           onPressed: widget.onDismiss,
           label: "Don't Show Again",
+          variant: DesignSystemButtonVariant.tertiary,
+          size: DesignSystemButtonSize.large,
         ),
         DesignSystemButton(
           onPressed: _selectedProvider != null

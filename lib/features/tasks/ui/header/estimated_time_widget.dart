@@ -93,6 +93,7 @@ class _EstimatedTimeStickyActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DesignSystemModalActionBar(
+      glass: true,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       secondary: [
         DesignSystemButton(

@@ -2773,7 +2773,7 @@ void main() {
 
     testWidgets(
       "error state surfaces the localised 'Go Back' button and tapping "
-      "it does not crash — covers _buildErrorState's LottiSecondaryButton "
+      "it does not crash — covers _buildErrorState's DesignSystemButton "
       'onPressed callback',
       (tester) async {
         await _setTestSurface(tester, height: 1200);

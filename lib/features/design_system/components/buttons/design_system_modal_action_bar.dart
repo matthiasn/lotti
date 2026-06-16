@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// The app's standard modal/sheet action bar.
@@ -25,6 +26,7 @@ class DesignSystemModalActionBar extends StatelessWidget {
     required this.primary,
     this.secondary = const [],
     this.padding,
+    this.glass = false,
     super.key,
   });
 
@@ -37,6 +39,12 @@ class DesignSystemModalActionBar extends StatelessWidget {
 
   /// Optional padding around the row.
   final EdgeInsetsGeometry? padding;
+
+  /// When true, the bar is rendered on a [DesignSystemGlassStrip] — a blurred
+  /// "glass" surface with a hairline top divider and theme-aware scrim. Use for
+  /// sticky action bars that float above scrolling/picker content (e.g. the
+  /// date/time picker sheets).
+  final bool glass;
 
   @override
   Widget build(BuildContext context) {
@@ -56,6 +64,9 @@ class DesignSystemModalActionBar extends StatelessWidget {
     children.add(Expanded(child: primary));
 
     final row = Row(children: children);
-    return padding == null ? row : Padding(padding: padding!, child: row);
+    final padded = padding == null
+        ? row
+        : Padding(padding: padding!, child: row);
+    return glass ? DesignSystemGlassStrip(child: padded) : padded;
   }
 }

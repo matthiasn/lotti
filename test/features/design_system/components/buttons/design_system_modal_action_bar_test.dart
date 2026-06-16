@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -139,5 +140,35 @@ void main() {
       greaterThan(500),
       reason: 'a lone primary should fill most of the 600px row',
     );
+  });
+
+  testWidgets('glass: true renders the bar on a DesignSystemGlassStrip', (
+    tester,
+  ) async {
+    await pumpBar(
+      tester,
+      DesignSystemModalActionBar(
+        glass: true,
+        secondary: [secondaryBtn('Cancel')],
+        primary: primaryBtn('Done'),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(DesignSystemGlassStrip), findsOneWidget);
+    // The buttons still render inside the glass surface.
+    expect(find.widgetWithText(DesignSystemButton, 'Done'), findsOneWidget);
+  });
+
+  testWidgets('glass defaults to off (no DesignSystemGlassStrip)', (
+    tester,
+  ) async {
+    await pumpBar(
+      tester,
+      DesignSystemModalActionBar(primary: primaryBtn('Save')),
+    );
+    await tester.pump();
+
+    expect(find.byType(DesignSystemGlassStrip), findsNothing);
   });
 }

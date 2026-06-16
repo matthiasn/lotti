@@ -17,7 +17,6 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -562,10 +561,10 @@ void main() {
           find.byType(_ConfigActionBarTestWrapper),
         );
 
-        // Find the Next button (LottiPrimaryButton) - it should be disabled
-        final nextButton = tester.widget<LottiPrimaryButton>(
+        // Find the Next button (DesignSystemButton) - it should be disabled
+        final nextButton = tester.widget<DesignSystemButton>(
           find.widgetWithText(
-            LottiPrimaryButton,
+            DesignSystemButton,
             context.messages.settingsMatrixNextPage,
           ),
         );
@@ -597,9 +596,9 @@ void main() {
           find.byType(_ConfigActionBarTestWrapper),
         );
 
-        final nextButton = tester.widget<LottiPrimaryButton>(
+        final nextButton = tester.widget<DesignSystemButton>(
           find.widgetWithText(
-            LottiPrimaryButton,
+            DesignSystemButton,
             context.messages.settingsMatrixNextPage,
           ),
         );
@@ -663,9 +662,9 @@ void main() {
           find.byType(_ConfigActionBarTestWrapper),
         );
 
-        final nextButton = tester.widget<LottiPrimaryButton>(
+        final nextButton = tester.widget<DesignSystemButton>(
           find.widgetWithText(
-            LottiPrimaryButton,
+            DesignSystemButton,
             context.messages.settingsMatrixNextPage,
           ),
         );
@@ -731,9 +730,9 @@ void main() {
           find.byType(_ConfigActionBarTestWrapper),
         );
 
-        final nextButton = tester.widget<LottiPrimaryButton>(
+        final nextButton = tester.widget<DesignSystemButton>(
           find.widgetWithText(
-            LottiPrimaryButton,
+            DesignSystemButton,
             context.messages.settingsMatrixNextPage,
           ),
         );
@@ -765,9 +764,9 @@ void main() {
           find.byType(_ConfigActionBarTestWrapper),
         );
 
-        final nextButton = tester.widget<LottiPrimaryButton>(
+        final nextButton = tester.widget<DesignSystemButton>(
           find.widgetWithText(
-            LottiPrimaryButton,
+            DesignSystemButton,
             context.messages.settingsMatrixNextPage,
           ),
         );
@@ -1152,7 +1151,7 @@ class _ConfigActionBarTestWrapper extends ConsumerWidget {
               child: Text(context.messages.settingsMatrixPreviousPage),
             ),
             const SizedBox(width: 8),
-            LottiPrimaryButton(
+            DesignSystemButton(
               onPressed: isComplete ? () => pageIndexNotifier.value = 2 : null,
               label: context.messages.settingsMatrixNextPage,
             ),

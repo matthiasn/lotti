@@ -6,6 +6,7 @@ import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/utils/platform.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:tinycolor2/tinycolor2.dart';
@@ -264,30 +264,34 @@ class _HabitDialogState extends State<HabitDialog> {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Flexible(
-                                  child: LottiTertiaryButton(
+                                  child: DesignSystemButton(
                                     key: const Key('habit_fail'),
                                     onPressed: () =>
                                         saveHabit(HabitCompletionType.fail),
                                     label: context
                                         .messages
                                         .completeHabitFailButton,
+                                    variant: DesignSystemButtonVariant.tertiary,
+                                    size: DesignSystemButtonSize.large,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Flexible(
-                                  child: LottiTertiaryButton(
+                                  child: DesignSystemButton(
                                     key: const Key('habit_skip'),
                                     onPressed: () =>
                                         saveHabit(HabitCompletionType.skip),
                                     label: context
                                         .messages
                                         .completeHabitSkipButton,
+                                    variant: DesignSystemButtonVariant.tertiary,
+                                    size: DesignSystemButtonSize.large,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
                                 Flexible(
                                   child:
-                                      LottiTertiaryButton(
+                                      DesignSystemButton(
                                             key: const Key('habit_save'),
                                             onPressed: () => saveHabit(
                                               HabitCompletionType.success,
@@ -295,6 +299,9 @@ class _HabitDialogState extends State<HabitDialog> {
                                             label: context
                                                 .messages
                                                 .completeHabitSuccessButton,
+                                            variant: DesignSystemButtonVariant
+                                                .tertiary,
+                                            size: DesignSystemButtonSize.large,
                                           )
                                           .animate(autoPlay: true)
                                           .shimmer(

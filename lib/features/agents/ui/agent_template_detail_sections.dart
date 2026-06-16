@@ -8,12 +8,11 @@ import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_history_dashboard.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Expandable section showing version history for a template.
 ///
@@ -135,11 +134,13 @@ class _VersionTile extends ConsumerWidget {
           dialogContext.messages.agentTemplateRollbackConfirm(version.version),
         ),
         actions: [
-          LottiTertiaryButton(
+          DesignSystemButton(
             onPressed: () => Navigator.pop(dialogContext),
             label: dialogContext.messages.cancelButton,
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.large,
           ),
-          LottiPrimaryButton(
+          DesignSystemButton(
             onPressed: () async {
               Navigator.pop(dialogContext);
               try {
@@ -170,6 +171,7 @@ class _VersionTile extends ConsumerWidget {
               }
             },
             label: dialogContext.messages.agentTemplateRollbackAction,
+            size: DesignSystemButtonSize.large,
           ),
         ],
       ),

@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 class Header extends StatelessWidget {
   const Header({
@@ -448,13 +448,17 @@ class _HeaderMenu extends StatelessWidget {
                 title: Text(context.messages.checklistDelete),
                 content: Text(context.messages.checklistItemDeleteWarning),
                 actions: [
-                  LottiTertiaryButton(
+                  DesignSystemButton(
                     label: context.messages.checklistItemDeleteCancel,
                     onPressed: () => Navigator.of(ctx).pop(false),
+                    variant: DesignSystemButtonVariant.tertiary,
+                    size: DesignSystemButtonSize.large,
                   ),
-                  LottiTertiaryButton(
+                  DesignSystemButton(
                     label: context.messages.checklistItemDeleteConfirm,
                     onPressed: () => Navigator.of(ctx).pop(true),
+                    variant: DesignSystemButtonVariant.tertiary,
+                    size: DesignSystemButtonSize.large,
                   ),
                 ],
               ),

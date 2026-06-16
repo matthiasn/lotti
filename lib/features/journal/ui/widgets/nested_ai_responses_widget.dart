@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 /// Displays AI responses linked to an entry (e.g., audio) in a collapsible
 /// nested tree view.
@@ -297,14 +297,17 @@ class _NestedAiResponsesWidgetState
           title: Text(dialogContext.messages.aiResponseDeleteTitle),
           content: Text(dialogContext.messages.aiResponseDeleteWarning),
           actions: [
-            LottiTertiaryButton(
+            DesignSystemButton(
               label: dialogContext.messages.aiResponseDeleteCancel,
               onPressed: () => Navigator.of(dialogContext).pop(false),
+              variant: DesignSystemButtonVariant.tertiary,
+              size: DesignSystemButtonSize.large,
             ),
-            LottiTertiaryButton(
+            DesignSystemButton(
               label: dialogContext.messages.aiResponseDeleteConfirm,
               onPressed: () => Navigator.of(dialogContext).pop(true),
-              isDestructive: true,
+              variant: DesignSystemButtonVariant.dangerTertiary,
+              size: DesignSystemButtonSize.large,
             ),
           ],
         );

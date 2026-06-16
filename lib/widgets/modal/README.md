@@ -71,9 +71,9 @@ final ok = await showConfirmationModal(
 ### showModalActionSheet / ModalSheetAction
 
 `Future<T?> showModalActionSheet<T>({required context, ...})` in
-`modal_action_sheet.dart` shows a bottom sheet of `LottiTertiaryButton` actions
-plus an optional title, message, and cancel button. Each action is a
-`ModalSheetAction<T>` (`label`, optional `key`, optional `icon`,
+`modal_action_sheet.dart` shows a bottom sheet of `tertiary`/`dangerTertiary`
+`DesignSystemButton` actions plus an optional title, message, and cancel button.
+Each action is a `ModalSheetAction<T>` (`label`, optional `key`, optional `icon`,
 `isDestructiveAction`); the sheet pops with the tapped action's `key`.
 
 ```dart

@@ -378,6 +378,7 @@ class _DateTimeRangeStickyActionBar extends ConsumerWidget {
                 dateFrom != entry.meta.dateFrom || dateTo != entry.meta.dateTo;
 
             return DesignSystemModalActionBar(
+              glass: true,
               padding: const EdgeInsets.all(20),
               primary: DesignSystemButton(
                 onPressed: valid && changed
@@ -433,6 +434,7 @@ class _DateTimePickerStickyActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DesignSystemModalActionBar(
+      glass: true,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       secondary: [
         DesignSystemButton(

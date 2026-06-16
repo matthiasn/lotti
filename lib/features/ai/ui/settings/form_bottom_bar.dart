@@ -3,7 +3,6 @@ import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 class FormBottomBar extends StatelessWidget {
   const FormBottomBar({
@@ -80,9 +79,11 @@ class FormBottomBar extends StatelessWidget {
               ],
 
               // Buttons
-              LottiTertiaryButton(
+              DesignSystemButton(
                 label: context.messages.aiFormCancel,
                 onPressed: onCancel,
+                variant: DesignSystemButtonVariant.tertiary,
+                size: DesignSystemButtonSize.large,
               ),
               const SizedBox(width: 20),
               DesignSystemButton(

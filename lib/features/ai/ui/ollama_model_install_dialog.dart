@@ -5,10 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
 
 class OllamaModelInstallDialog extends ConsumerStatefulWidget {
   const OllamaModelInstallDialog({
@@ -157,9 +157,11 @@ class OllamaModelInstallDialogState
       ),
       actions: [
         if (!_isInstalling) ...[
-          LottiTertiaryButton(
-            onPressed: () => Navigator.of(context).pop(),
+          DesignSystemButton(
             label: context.messages.cancelButton,
+            onPressed: () => Navigator.of(context).pop(),
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.large,
           ),
           ElevatedButton(
             onPressed: _installModel,
