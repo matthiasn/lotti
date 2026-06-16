@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   report when expanded — synthesized locally with the Supertonic model, no
   cloud. Still off by default; the model (~400 MB) downloads once on first use.
 
+### Fixed
+- Mobile: removed the faint hairline that showed along the very bottom edge of
+  the bottom navigation bar. The bar docks flush against the screen, so its
+  bottom border is now dropped while the top and sides keep theirs.
+
 ## [0.9.1024]
 ### Changed
 - Category selection is now one consistent picker across the app. Assigning a

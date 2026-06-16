@@ -273,16 +273,53 @@ void main() {
         ),
       );
       // ...and the surface extends exactly the absorbed inset
-      // (bottomInsetFraction of the OS-reported one) plus the hairline
-      // border below the slot row: the
-      // trimmed inset replaces the internal bottom padding instead of
-      // stacking onto it, so home-indicator devices get no dead space.
+      // (bottomInsetFraction of the OS-reported one) below the slot row:
+      // the trimmed inset replaces the internal bottom padding instead of
+      // stacking onto it, so home-indicator devices get no dead space. The
+      // docked bar omits the bottom hairline (includeBottomBorder: false),
+      // so no border width is added below the slot row.
       expect(
         barRect.bottom - slotRect.bottom,
         moreOrLessEquals(
-          inset * DesignSystemFiveSlotNavBar.bottomInsetFraction +
-              DesignSystemNavigationFrostedSurface.borderWidth,
+          inset * DesignSystemFiveSlotNavBar.bottomInsetFraction,
         ),
+      );
+    });
+
+    testWidgets('docked surface draws no bottom hairline, keeps the others', (
+      tester,
+    ) async {
+      await pumpBar(tester, items: barItems());
+
+      // The frosted surface's bordered Container: the only descendant whose
+      // BoxDecoration carries a Border.
+      final decoration = tester
+          .widgetList<Container>(
+            find.descendant(
+              of: find.byType(DesignSystemNavigationFrostedSurface),
+              matching: find.byType(Container),
+            ),
+          )
+          .map((c) => c.decoration)
+          .whereType<BoxDecoration>()
+          .firstWhere((d) => d.border != null);
+      final border = decoration.border! as Border;
+
+      // The docked bar sits flush against the screen edge: no bottom
+      // hairline (that was the stray light line below the bar), while the
+      // top and both sides keep their hairline.
+      expect(border.bottom, BorderSide.none);
+      expect(
+        border.top.width,
+        DesignSystemNavigationFrostedSurface.borderWidth,
+      );
+      expect(
+        border.left.width,
+        DesignSystemNavigationFrostedSurface.borderWidth,
+      );
+      expect(
+        border.right.width,
+        DesignSystemNavigationFrostedSurface.borderWidth,
       );
     });
 

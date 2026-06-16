@@ -41,6 +41,7 @@
     <release version="0.9.1025" date="2026-06-15">
       <description>
           <p>Experimental on-device text-to-speech is now available on Linux too: with the "Enable local AI summary playback" flag on, the AI summary card's play button reads a task's TL;DR aloud, synthesized locally with the Supertonic model — no cloud. Still off by default; the model (~400 MB) downloads once on first use.</p>
+          <p>Fixed: removed the faint hairline that showed along the very bottom edge of the mobile bottom navigation bar, which docks flush against the screen.</p>
       </description>
     </release>
     <release version="0.9.1024" date="2026-06-15">
