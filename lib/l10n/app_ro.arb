@@ -2233,6 +2233,7 @@
   "habitsPendingLaterHeader": "Mai târziu astăzi",
   "imageGenerationError": "Generarea imaginii a eșuat",
   "imageGenerationGenerating": "Se generează imaginea...",
+  "imageGenerationProviderRejectedTitle": "Furnizorul de imagini a respins această solicitare",
   "imageGenerationWithReferences": "{count, plural, =0{Fără imagini de referință} =1{Cu 1 imagine de referință} few{Cu {count} imagini de referință} other{Cu {count} de imagini de referință}}",
   "@imageGenerationWithReferences": {
     "placeholders": {

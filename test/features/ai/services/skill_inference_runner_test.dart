@@ -11,6 +11,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -19,6 +20,7 @@ import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/services/skill_inference_runner.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -3333,6 +3335,85 @@ void main() {
           final prompt = captured.first as String;
           expect(prompt, contains('**Entry Notes:**'));
           expect(prompt, contains('Sunset over mountains, painterly style'));
+        },
+      );
+
+      String? imageGenError(String id) =>
+          container.read(imageGenerationErrorControllerProvider(id: id));
+
+      void stubImageGenPipeline(String entryId, String taskId) {
+        when(
+          () => mockAiInputRepo.getEntity(entryId),
+        ).thenAnswer(
+          (_) async =>
+              makeTextEntry(id: entryId, markdown: 'A scene', categoryId: 'c'),
+        );
+        when(
+          () => mockAiInputRepo.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{}');
+        when(
+          () => mockAiInputRepo.buildLinkedTasksJson(taskId),
+        ).thenAnswer((_) async => '{}');
+        when(
+          () => mockTaskSummaryResolver.resolve(taskId),
+        ).thenAnswer((_) async => 'brief');
+      }
+
+      test(
+        'publishes the provider reason to the error controller on rejection',
+        () async {
+          stubImageGenPipeline('img-rej', 'task-rej');
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).thenThrow(
+            ImageGenerationException(
+              'blocked',
+              providerReason: 'PROHIBITED_CONTENT',
+            ),
+          );
+          stubLoggingException();
+
+          await runner.runImageGeneration(
+            entryId: 'img-rej',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-rej',
+          );
+
+          // Set for both the entry and the linked task (the UI watches the
+          // task) so the cover-art modal can surface the verbatim reason.
+          expect(imageGenError('task-rej'), 'PROHIBITED_CONTENT');
+          expect(imageGenError('img-rej'), 'PROHIBITED_CONTENT');
+        },
+      );
+
+      test(
+        'leaves the error reason null when the failure has no provider reason',
+        () async {
+          stubImageGenPipeline('img-net', 'task-net');
+          when(
+            () => mockCloudRepo.generateImage(
+              prompt: any(named: 'prompt'),
+              model: any(named: 'model'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              referenceImages: any(named: 'referenceImages'),
+            ),
+          ).thenThrow(Exception('network down'));
+          stubLoggingException();
+
+          await runner.runImageGeneration(
+            entryId: 'img-net',
+            automationResult: makeImageGenResult(),
+            linkedTaskId: 'task-net',
+          );
+
+          expect(imageGenError('task-net'), isNull);
         },
       );
 

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
@@ -507,6 +508,76 @@ void main() {
       expect(find.text('Failed to generate image'), findsOneWidget);
       expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
     });
+
+    testWidgets(
+      'shows the provider reason verbatim under a localized rejected title',
+      (tester) async {
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              referenceImageSelectionControllerProvider(
+                taskId: testLinkedTaskId,
+              ).overrideWith(
+                () => FakeReferenceImageSelectionController(
+                  const ReferenceImageSelectionState(),
+                ),
+              ),
+              triggerSkillProvider.overrideWith((ref, params) {
+                ref
+                    .read(
+                      inferenceStatusControllerProvider(
+                        id: testLinkedTaskId,
+                        aiResponseType: AiResponseType.imageGeneration,
+                      ).notifier,
+                    )
+                    .setStatus(InferenceStatus.running);
+                return Future<void>.value();
+              }),
+            ],
+            child: const _CoverArtSkillModalHost(
+              entityId: testEntityId,
+              skillId: testSkillId,
+              linkedTaskId: testLinkedTaskId,
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(_CoverArtSkillModalHost)),
+        );
+        // Provider rejection: error status + a verbatim provider reason.
+        container
+            .read(
+              imageGenerationErrorControllerProvider(
+                id: testLinkedTaskId,
+              ).notifier,
+            )
+            .setError('PROHIBITED_CONTENT');
+        container
+            .read(
+              inferenceStatusControllerProvider(
+                id: testLinkedTaskId,
+                aiResponseType: AiResponseType.imageGeneration,
+              ).notifier,
+            )
+            .setStatus(InferenceStatus.error);
+        await tester.pump();
+
+        // Localized frame attributing the block to the provider...
+        expect(
+          find.text('The image provider rejected this request'),
+          findsOneWidget,
+        );
+        // ...plus the provider's verbatim reason, not an invented description.
+        expect(find.text('PROHIBITED_CONTENT'), findsOneWidget);
+        expect(find.text('Failed to generate image'), findsNothing);
+        expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      },
+    );
   });
 }
 

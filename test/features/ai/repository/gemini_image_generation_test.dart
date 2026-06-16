@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/repository/gemini_image_generation.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
 
@@ -323,6 +324,79 @@ void main() {
     });
   });
 
+  group('provider reason (verbatim, for the UI)', () {
+    ImageGenerationException reasonFor(Map<String, dynamic> response) {
+      try {
+        extractGeminiImageFromResponse(response);
+      } on ImageGenerationException catch (e) {
+        return e;
+      }
+      fail('expected ImageGenerationException');
+    }
+
+    test('carries the candidate finishReason verbatim', () {
+      final e = reasonFor(const {
+        'candidates': [
+          {
+            'finishReason': 'PROHIBITED_CONTENT',
+            'content': {'parts': <dynamic>[]},
+          },
+        ],
+      });
+      expect(e.providerReason, 'PROHIBITED_CONTENT');
+    });
+
+    test(
+      'carries the promptFeedback blockReason when there are no candidates',
+      () {
+        final e = reasonFor(const {
+          'candidates': <dynamic>[],
+          'promptFeedback': {'blockReason': 'BLOCKLIST'},
+        });
+        expect(e.providerReason, 'BLOCKLIST');
+      },
+    );
+
+    test('appends a human finishMessage to the reason when present', () {
+      final e = reasonFor(const {
+        'candidates': [
+          {
+            'finishReason': 'IMAGE_SAFETY',
+            'finishMessage': 'Generated image violates policy.',
+            'content': {'parts': <dynamic>[]},
+          },
+        ],
+      });
+      expect(
+        e.providerReason,
+        'IMAGE_SAFETY: Generated image violates policy.',
+      );
+    });
+
+    test('is null when the response carries no reason at all', () {
+      final e = reasonFor(const {
+        'candidates': [
+          {
+            'content': {'parts': <dynamic>[]},
+          },
+        ],
+      });
+      expect(e.providerReason, isNull);
+    });
+
+    test('is not classified or remapped — unknown reasons surface as-is', () {
+      final e = reasonFor(const {
+        'candidates': [
+          {
+            'finishReason': 'SOME_FUTURE_REASON',
+            'content': {'parts': <dynamic>[]},
+          },
+        ],
+      });
+      expect(e.providerReason, 'SOME_FUTURE_REASON');
+    });
+  });
+
   group('generateGeminiImage', () {
     test(
       'posts to the generateContent endpoint and returns the image',
@@ -371,6 +445,34 @@ void main() {
         ),
       );
     });
+
+    test(
+      'surfaces the provider error message verbatim on HTTP errors',
+      () async {
+        final client = _CapturingClient(
+          statusCode: 400,
+          body:
+              '{"error":{"status":"INVALID_ARGUMENT","message":"Unsupported '
+              'model"}}',
+        );
+
+        await expectLater(
+          generateGeminiImage(
+            httpClient: client,
+            prompt: 'a cat',
+            model: 'gemini-3-pro-image-preview',
+            provider: _provider(),
+          ),
+          throwsA(
+            isA<ImageGenerationException>().having(
+              (e) => e.providerReason,
+              'providerReason',
+              'INVALID_ARGUMENT: Unsupported model',
+            ),
+          ),
+        );
+      },
+    );
 
     test(
       'includes the system message in the request body when provided',

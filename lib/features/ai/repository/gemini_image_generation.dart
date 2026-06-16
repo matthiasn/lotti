@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/image_generation_error.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
@@ -60,9 +61,10 @@ Future<GeneratedImage> generateGeminiImage({
       .timeout(const Duration(seconds: 120));
 
   if (response.statusCode < 200 || response.statusCode >= 300) {
-    throw Exception(
+    throw ImageGenerationException(
       'Gemini image generation error ${response.statusCode} for model '
       '"$model": ${response.body}',
+      providerReason: _httpErrorReason(response.statusCode, response.body),
     );
   }
 
@@ -77,9 +79,10 @@ Future<GeneratedImage> generateGeminiImage({
 GeneratedImage extractGeminiImageFromResponse(Map<String, dynamic> response) {
   final candidates = response['candidates'];
   if (candidates is! List || candidates.isEmpty) {
-    throw Exception(
+    throw ImageGenerationException(
       'No candidates in image generation response'
       '${_responseDiagnostics(response, null)}',
+      providerReason: _providerReason(response, null),
     );
   }
 
@@ -87,17 +90,19 @@ GeneratedImage extractGeminiImageFromResponse(Map<String, dynamic> response) {
   final candidate = first is Map<String, dynamic> ? first : null;
   final content = candidate != null ? candidate['content'] : null;
   if (content is! Map<String, dynamic>) {
-    throw Exception(
+    throw ImageGenerationException(
       'No content in image generation response'
       '${_responseDiagnostics(response, candidate)}',
+      providerReason: _providerReason(response, candidate),
     );
   }
 
   final parts = content['parts'];
   if (parts is! List || parts.isEmpty) {
-    throw Exception(
+    throw ImageGenerationException(
       'No parts in image generation response'
       '${_responseDiagnostics(response, candidate)}',
+      providerReason: _providerReason(response, candidate),
     );
   }
 
@@ -123,10 +128,69 @@ GeneratedImage extractGeminiImageFromResponse(Map<String, dynamic> response) {
     }
   }
 
-  throw Exception(
+  throw ImageGenerationException(
     'No image data found in response'
     '${_responseDiagnostics(response, candidate)}',
+    providerReason: _providerReason(response, candidate),
   );
+}
+
+/// Extracts the provider's *verbatim* reason for an empty/blocked response, to
+/// be shown to the user as-is (never paraphrased).
+///
+/// Prefers a prompt-level `promptFeedback.blockReason`, then the candidate's
+/// terminal `finishReason` (e.g. `PROHIBITED_CONTENT`), and appends any
+/// human-readable `finishMessage`. Returns `null` when the response carries no
+/// reason — the UI then falls back to a generic failure message. Deliberately
+/// provider-shaped and unmapped, so new/other reasons surface truthfully
+/// without code changes.
+String? _providerReason(
+  Map<String, dynamic> response,
+  Map<String, dynamic>? candidate,
+) {
+  final promptFeedback = response['promptFeedback'];
+  final blockReason = promptFeedback is Map<String, dynamic>
+      ? promptFeedback['blockReason']
+      : null;
+  final finishReason = candidate?['finishReason'];
+  final finishMessage = candidate?['finishMessage'];
+
+  final parts = <String>[
+    if (blockReason is String && blockReason.isNotEmpty) blockReason,
+    if (finishReason is String && finishReason.isNotEmpty) finishReason,
+  ];
+  var reason = parts.isEmpty ? null : parts.join(' / ');
+
+  if (finishMessage is String && finishMessage.isNotEmpty) {
+    reason = reason == null ? finishMessage : '$reason: $finishMessage';
+  }
+  return reason;
+}
+
+/// Builds the provider's verbatim reason for a non-2xx HTTP response.
+///
+/// Gemini error bodies are shaped `{"error": {"status": ..., "message": ...}}`;
+/// when present we surface `STATUS: message`, otherwise fall back to the HTTP
+/// status code so the user still sees a concrete provider signal.
+String _httpErrorReason(int statusCode, String body) {
+  try {
+    final decoded = jsonDecode(body);
+    if (decoded is Map<String, dynamic>) {
+      final error = decoded['error'];
+      if (error is Map<String, dynamic>) {
+        final message = error['message'];
+        final status = error['status'];
+        if (message is String && message.isNotEmpty) {
+          return status is String && status.isNotEmpty
+              ? '$status: $message'
+              : message;
+        }
+      }
+    }
+  } on FormatException {
+    // Non-JSON body — fall through to the status code.
+  }
+  return 'HTTP $statusCode';
 }
 
 /// Builds a human-readable diagnostics suffix explaining *why* a Gemini image

@@ -36,7 +36,7 @@ test_glados:
 
 .PHONY: analyze
 analyze:
-	$(FLUTTER_CMD) analyze
+	FLUTTER="$(FLUTTER_CMD)" DART="$(DART_CMD)" ./tool/analyze.sh
 
 .PHONY: junit_test
 junit_test:
