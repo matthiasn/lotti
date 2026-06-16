@@ -26,7 +26,7 @@ flowchart TD
   Seen --> Content["Fetch content.md for unseen releases"]
   Content --> Parser["Resolve markdown and asset URLs"]
   Parser --> State["WhatsNewState"]
-  State --> Indicator["WhatsNewIndicator"]
+  State --> Indicator["WhatsNewIndicator (defined, not currently mounted)"]
   State --> Modal["WhatsNewModal"]
 ```
 
@@ -145,7 +145,7 @@ It also owns the mutation side:
 There are two ways into the feature:
 
 - `beamer_app.dart` listens to `shouldAutoShowWhatsNewProvider` and schedules the modal after the first frame when startup gating says yes
-- `settings_page.dart` exposes both a dedicated Settings row and a small pulsing indicator in the Settings header
+- the Settings tree (`settings_v2`) exposes a dedicated row: the `whats-new` leaf node is declared in `settings_v2/domain/settings_tree_data.dart` (gated on the `enableWhatsNew` flag) and tapping it calls `WhatsNewModal.show` from `settings_v2/ui/mobile/settings_mobile_nav.dart`
 
 That split keeps "should I auto-open?" separate from "what content exists?" and separate again from "let the user open it manually".
 
@@ -198,7 +198,7 @@ Important behaviors:
 
 ### `WhatsNewIndicator`
 
-`WhatsNewIndicator` is the small pulsing dot in Settings. It watches `whatsNewControllerProvider` and disappears entirely when there is nothing unseen.
+`WhatsNewIndicator` is a small pulsing dot that watches `whatsNewControllerProvider` and disappears entirely when there is nothing unseen. **It is not currently mounted anywhere** — the only references are its own definition and test. The Settings row (above) is the live manual entry point; the indicator remains as ready-to-wire UI.
 
 ### `WhatsNewModal`
 
