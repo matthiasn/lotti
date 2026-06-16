@@ -55,7 +55,10 @@ class SupertonicOnnxEngine implements TtsEngine {
 
   @override
   bool get isSupported =>
-      platform.isMacOS || platform.isIOS || platform.isLinux;
+      platform.isMacOS ||
+      platform.isIOS ||
+      platform.isLinux ||
+      platform.isAndroid;
 
   @override
   Future<File> synthesizeToFile({

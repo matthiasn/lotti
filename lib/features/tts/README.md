@@ -5,8 +5,8 @@ On-device text-to-speech that reads a task's AI **TL;DR** aloud: it runs the
 (~99M params, 44.1kHz 16-bit WAV) locally via `flutter_onnxruntime` and plays
 the result through the app's existing `media_kit` stack. No cloud, no API.
 
-The engine is wired (`ttsEngine` → `SupertonicOnnxEngine` on macOS, iOS, and
-Linux — behind a `TtsEngine` interface). On the Apple platforms onnxruntime
+The engine is wired (`ttsEngine` → `SupertonicOnnxEngine` on macOS, iOS, Linux,
+and Android — behind a `TtsEngine` interface). On the Apple platforms onnxruntime
 ships as a statically linked binary, which CocoaPods rejects under the project's
 dynamic `use_frameworks!`; rather than the global
 `use_frameworks! :linkage => :static` (which breaks `super_native_extensions`'
@@ -17,14 +17,19 @@ the ObjC `@import` in `GeneratedPluginRegistrant.m` finds a module). On Linux
 there is no such friction: the plugin's CMake resolves onnxruntime from a system
 install via `pkg-config` when present and otherwise auto-downloads the official
 `onnxruntime-linux-x64`/`-aarch64` release at build time, and audio plays through
-`media_kit_libs_linux` (libmpv → PipeWire/PulseAudio/ALSA). The ten voice-style
-JSONs are bundled under `assets/tts/voice_styles/`; the ~400MB `onnx/` model
+`media_kit_libs_linux` (libmpv → PipeWire/PulseAudio/ALSA). On Android the
+runtime ships as the prebuilt `onnxruntime-android` AAR (a normal Gradle/Maven
+dependency — no vendoring), inference runs off the platform thread via the
+plugin's Flutter background task queue, and audio plays through
+`media_kit_libs_android_audio`; the build is `arm64-v8a` (with the matching arm64
+onnxruntime libs) and the app's `minSdk 29` covers the plugin's `minSdk 21`. The
+ten voice-style JSONs are bundled under `assets/tts/voice_styles/`; the ~400MB `onnx/` model
 files are **downloaded from Hugging Face on first use** (see the download
 repository — filenames verified against the repo). This feature **replaces** the
 previous MLX/Qwen3-TTS "speak summary" path and is gated behind the
 `enable_ai_summary_tts` config flag (default off), so the playback control
-appears once the flag is on, the engine is supported (macOS, iOS, or Linux), and
-a TL;DR exists.
+appears once the flag is on, the engine is supported (macOS, iOS, Linux, or
+Android), and a TL;DR exists.
 
 ## Architecture
 
@@ -80,11 +85,15 @@ distinct from the audio control. This **replaced** the old fire-and-forget MLX
 
 ## Platform threading caveat
 
-`isSupported` is true on macOS, iOS, and Linux, but the off-main-thread
+`isSupported` is true on macOS, iOS, Linux, and Android, but the off-main-thread
 guarantee differs per platform:
 
 - **iOS** offloads `runInference` correctly via its working platform-channel
   task queue.
+- **Android** likewise offloads `runInference` off the platform thread via the
+  upstream plugin's Flutter background task queue (`makeBackgroundTaskQueue` in
+  `FlutterOnnxruntimePlugin.kt`) — no fork needed and no main-thread stall
+  (unlike the macOS problem below).
 - **macOS** is offloaded by the fork patch above (`workQueue`).
 - **Linux** uses the **upstream** plugin unchanged: its GLib/GTK
   `method_call_handler` dispatches `runInference` **synchronously on the
@@ -109,6 +118,15 @@ guarantee differs per platform:
   `isSupported` on macOS + iOS and `ios/Podfile` links the static framework),
   but the ~400MB model download is heavy on a phone and inference is slower on
   mobile CPUs — add a Wi-Fi/size confirmation before enabling it broadly on iOS.
+- **Android device verification + first-use guard:** Android is now un-gated
+  (the engine reports `isSupported` on Android; onnxruntime ships via the
+  `onnxruntime-android` AAR, no vendoring; inference offloads via the plugin's
+  background task queue). The Dart gate and tests are green, but it has **not yet
+  been verified on an Android device** — the standard Android emulator and the
+  SDK build tools (aapt2/NDK) are x86_64-only and don't run on arm64 Linux, so
+  build on macOS/CI and run on a device (or Waydroid, arm64) to confirm synthesis
+  + playback. As on iOS, add a Wi-Fi/size confirmation before the ~400MB
+  first-use download on mobile/metered networks.
 - **Linux off-main-thread patch:** port the macOS `workQueue` offload to the
   Linux plugin so `runInference` no longer blocks the GTK main thread (see
   "Platform threading caveat"), then exercise an end-to-end run on Linux
@@ -163,6 +181,9 @@ The `onnx/` model files (`duration_predictor`, `text_encoder`,
 bundled. The tiny voice-style JSONs (`voice_styles/<id>.json`) are bundled
 assets. `flutter_onnxruntime` fetches its native runtime at install time and
 needs iOS deployment target ≥ 16.0 (`ios/Podfile` is on 17.0) and macOS ≥ 14.0.
+On Android the native runtime is the `onnxruntime-android` AAR pulled from Maven
+by the plugin's Gradle module at build time (no vendoring), and audio uses
+`media_kit_libs_android_audio`.
 On Linux the runtime is the onnxruntime shared library. For local desktop builds
 the plugin's CMake resolves it from a system install (`pkg-config`) or, failing
 that, auto-downloads it at build time. That auto-download is unavailable in the

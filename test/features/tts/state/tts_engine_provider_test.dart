@@ -33,20 +33,24 @@ void main() {
     late bool originalMac;
     late bool originalIos;
     late bool originalLinux;
+    late bool originalAndroid;
 
     setUp(() {
       originalMac = platform.isMacOS;
       originalIos = platform.isIOS;
       originalLinux = platform.isLinux;
+      originalAndroid = platform.isAndroid;
       // Clean baseline so the host platform doesn't leak into assertions.
       platform.isMacOS = false;
       platform.isIOS = false;
       platform.isLinux = false;
+      platform.isAndroid = false;
     });
     tearDown(() {
       platform.isMacOS = originalMac;
       platform.isIOS = originalIos;
       platform.isLinux = originalLinux;
+      platform.isAndroid = originalAndroid;
     });
 
     test('falls back to the unavailable engine on unsupported platforms', () {
@@ -60,6 +64,7 @@ void main() {
       'macOS': () => platform.isMacOS = true,
       'iOS': () => platform.isIOS = true,
       'Linux': () => platform.isLinux = true,
+      'Android': () => platform.isAndroid = true,
     }.entries) {
       test('provides the Supertonic engine on ${entry.key}', () {
         entry.value();
