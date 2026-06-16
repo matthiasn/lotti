@@ -5287,10 +5287,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalDateInvalid => 'Neplatné časové rozmezí';
 
   @override
+  String get journalDateLabel => 'Datum';
+
+  @override
   String get journalDateNowButton => 'Nyní';
 
   @override
   String get journalDateSaveButton => 'ULOŽIT';
+
+  @override
+  String get journalDateTimeRangeTitle => 'Datum a čas';
 
   @override
   String get journalDateToLabel => 'Datum do:';
@@ -5306,7 +5312,19 @@ class AppLocalizationsCs extends AppLocalizations {
       'Opravdu chcete smazat tento deníkový záznam?';
 
   @override
-  String get journalDurationLabel => 'Doba trvání:';
+  String get journalDurationLabel => 'Doba trvání';
+
+  @override
+  String get journalEndDateLabel => 'Datum konce';
+
+  @override
+  String get journalEndsAnotherDayHint => 'Vyber samostatné datum konce';
+
+  @override
+  String get journalEndsAnotherDayLabel => 'Končí jiný den';
+
+  @override
+  String get journalEndTimeLabel => 'Čas konce';
 
   @override
   String get journalFavoriteTooltip => 'pouze oblíbené';
@@ -5358,6 +5376,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalLinkToHint => 'Odkaz na';
 
   @override
+  String journalOvernightNextDay(String date) {
+    return 'Končí $date (další den)';
+  }
+
+  @override
   String get journalPrivateTooltip => 'pouze soukromé';
 
   @override
@@ -5371,6 +5394,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get journalShowMapHint => 'Zobrazit mapu';
+
+  @override
+  String get journalStartDateLabel => 'Datum začátku';
+
+  @override
+  String get journalStartTimeLabel => 'Čas začátku';
+
+  @override
+  String get journalTodayButton => 'Dnes';
 
   @override
   String get journalToggleFlaggedTitle => 'Označené';

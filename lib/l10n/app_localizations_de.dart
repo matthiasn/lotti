@@ -5291,10 +5291,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalDateInvalid => 'Ungültiger Datumsbereich';
 
   @override
+  String get journalDateLabel => 'Datum';
+
+  @override
   String get journalDateNowButton => 'Jetzt';
 
   @override
   String get journalDateSaveButton => 'SPEICHERN';
+
+  @override
+  String get journalDateTimeRangeTitle => 'Datum & Uhrzeit';
 
   @override
   String get journalDateToLabel => 'Datum bis:';
@@ -5310,7 +5316,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchtest du diesen Journaleintrag löschen?';
 
   @override
-  String get journalDurationLabel => 'Dauer:';
+  String get journalDurationLabel => 'Dauer';
+
+  @override
+  String get journalEndDateLabel => 'Enddatum';
+
+  @override
+  String get journalEndsAnotherDayHint => 'Eigenes Enddatum wählen';
+
+  @override
+  String get journalEndsAnotherDayLabel => 'Endet an einem anderen Tag';
+
+  @override
+  String get journalEndTimeLabel => 'Endzeit';
 
   @override
   String get journalFavoriteTooltip => 'nur Favoriten';
@@ -5362,6 +5380,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalLinkToHint => 'Verknüpfen mit';
 
   @override
+  String journalOvernightNextDay(String date) {
+    return 'Endet $date (nächster Tag)';
+  }
+
+  @override
   String get journalPrivateTooltip => 'nur privat';
 
   @override
@@ -5375,6 +5398,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get journalShowMapHint => 'Karte anzeigen';
+
+  @override
+  String get journalStartDateLabel => 'Startdatum';
+
+  @override
+  String get journalStartTimeLabel => 'Startzeit';
+
+  @override
+  String get journalTodayButton => 'Heute';
 
   @override
   String get journalToggleFlaggedTitle => 'Markiert';

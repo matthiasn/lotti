@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1026]
 ### Changed
+- Editing an entry's start and end time is simpler: you set the date once and
+  the start/end times separately, instead of picking the full date on both
+  pickers. One date wheel sits above paired start/end time wheels, with a live
+  duration. If the end time is earlier than the start, it automatically rolls to
+  the next day and shows a "+1 day" badge — so logging something past midnight
+  needs no extra steps. For entries that span different days, an "Ends on another
+  day" toggle reveals a separate end date.
 - Creating a project now opens a compact overlay — a bottom sheet on phones, a
   centered dialog on desktop — instead of taking over the whole screen. The
   fields are unchanged (title, category, target date); Cancel/Create sit inside

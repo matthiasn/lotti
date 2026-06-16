@@ -2,460 +2,506 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_range.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-enum DateTimeFieldType { from, to }
-
 class EntryDateTimeMultiPageModal {
   static Future<void> show({
     required BuildContext context,
     required JournalEntity entry,
   }) async {
-    final dateFromNotifier = ValueNotifier(entry.meta.dateFrom);
-    final dateToNotifier = ValueNotifier(entry.meta.dateTo);
-    final pageIndexNotifier = ValueNotifier(0);
-    final selectedFieldNotifier = ValueNotifier<DateTimeFieldType?>(null);
-
-    await ModalUtils.showMultiPageModal<void>(
-      context: context,
-      pageIndexNotifier: pageIndexNotifier,
-      pageListBuilder: (modalContext) {
-        return [
-          // Page 0: Date range selection
-          ModalUtils.modalSheetPage(
-            context: modalContext,
-            titleWidget: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  MdiIcons.calendarRange,
-                  size: 22,
-                  color: modalContext.colorScheme.primary,
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  'Date & Time Range',
-                  style: modalContext.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            navBarHeight: 65,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: _DateRangeSelectionPage(
-                entry: entry,
-                dateFromNotifier: dateFromNotifier,
-                dateToNotifier: dateToNotifier,
-                onFieldTapped: (fieldType) {
-                  selectedFieldNotifier.value = fieldType;
-                  pageIndexNotifier.value = 1;
-                },
-              ),
-            ),
-            stickyActionBar: _DateTimeRangeStickyActionBar(
-              entry: entry,
-              dateFromNotifier: dateFromNotifier,
-              dateToNotifier: dateToNotifier,
-            ),
-          ),
-          // Page 1: Date/time picker
-          ModalUtils.modalSheetPage(
-            context: modalContext,
-            onTapBack: () => pageIndexNotifier.value = 0,
-            title: '',
-            titleWidget: ValueListenableBuilder<DateTimeFieldType?>(
-              valueListenable: selectedFieldNotifier,
-              builder: (context, selectedField, _) {
-                final label = selectedField == DateTimeFieldType.from
-                    ? context.messages.journalDateFromLabel
-                    : context.messages.journalDateToLabel;
-                return Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      MdiIcons.clockEdit,
-                      size: 22,
-                      color: context.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 10),
-                    Text(
-                      label,
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-            navBarHeight: 65,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              child: _DateTimePickerPage(
-                dateFromNotifier: dateFromNotifier,
-                dateToNotifier: dateToNotifier,
-                selectedFieldNotifier: selectedFieldNotifier,
-              ),
-            ),
-            stickyActionBar: _DateTimePickerStickyActionBar(
-              dateFromNotifier: dateFromNotifier,
-              dateToNotifier: dateToNotifier,
-              selectedFieldNotifier: selectedFieldNotifier,
-              onCancel: () => pageIndexNotifier.value = 0,
-              onDone: () => pageIndexNotifier.value = 0,
-              onNow: () {
-                final selectedField = selectedFieldNotifier.value;
-                final now = DateTime.now();
-                if (selectedField == DateTimeFieldType.from) {
-                  dateFromNotifier.value = now;
-                } else if (selectedField == DateTimeFieldType.to) {
-                  dateToNotifier.value = now;
-                }
-                pageIndexNotifier.value = 0;
-              },
-            ),
-          ),
-        ];
-      },
+    final stateNotifier = ValueNotifier(
+      EntryDateTimeRange.fromBounds(entry.meta.dateFrom, entry.meta.dateTo),
     );
 
-    dateFromNotifier.dispose();
-    dateToNotifier.dispose();
-    pageIndexNotifier.dispose();
-    selectedFieldNotifier.dispose();
+    await ModalUtils.showSinglePageModal<void>(
+      context: context,
+      titleWidget: Builder(
+        builder: (context) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              MdiIcons.calendarClock,
+              size: 22,
+              color: context.colorScheme.primary,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              context.messages.journalDateTimeRangeTitle,
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      ),
+      navBarHeight: 65,
+      builder: (modalContext) => _EntryDateTimeEditor(stateNotifier),
+      stickyActionBarBuilder: (modalContext) =>
+          _SaveActionBar(entry: entry, stateNotifier: stateNotifier),
+    );
+
+    stateNotifier.dispose();
   }
 }
 
-class _DateRangeSelectionPage extends ConsumerWidget {
-  const _DateRangeSelectionPage({
-    required this.entry,
-    required this.dateFromNotifier,
-    required this.dateToNotifier,
-    required this.onFieldTapped,
-  });
+class _EntryDateTimeEditor extends StatefulWidget {
+  const _EntryDateTimeEditor(this.stateNotifier);
 
-  final JournalEntity entry;
-  final ValueNotifier<DateTime> dateFromNotifier;
-  final ValueNotifier<DateTime> dateToNotifier;
-  final void Function(DateTimeFieldType) onFieldTapped;
+  final ValueNotifier<EntryDateTimeRange> stateNotifier;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final entryId = entry.meta.id;
-    final provider = entryControllerProvider(id: entryId);
-    final entryState = ref.watch(provider).value;
-    final liveEntity = entryState?.entry;
+  State<_EntryDateTimeEditor> createState() => _EntryDateTimeEditorState();
+}
 
-    if (liveEntity == null) {
-      return const SizedBox.shrink();
+class _EntryDateTimeEditorState extends State<_EntryDateTimeEditor> {
+  late bool _differentDates;
+
+  EntryDateTimeRange get _state => widget.stateNotifier.value;
+  set _state(EntryDateTimeRange value) => widget.stateNotifier.value = value;
+
+  @override
+  void initState() {
+    super.initState();
+    _differentDates = _state.differentDates;
+    widget.stateNotifier.addListener(_onStateChanged);
+  }
+
+  @override
+  void dispose() {
+    widget.stateNotifier.removeListener(_onStateChanged);
+    super.dispose();
+  }
+
+  /// Only the mode flip changes the *layout* (and therefore which wheels exist),
+  /// so only that triggers a rebuild. Time/date spins update the shared state
+  /// for the live readouts without rebuilding — otherwise the uncontrolled
+  /// Cupertino wheels would jump back to their initial position on every tick.
+  void _onStateChanged() {
+    if (_state.differentDates != _differentDates) {
+      setState(() => _differentDates = _state.differentDates);
     }
+  }
 
-    return ValueListenableBuilder<DateTime>(
-      valueListenable: dateFromNotifier,
-      builder: (context, dateFrom, _) {
-        return ValueListenableBuilder<DateTime>(
-          valueListenable: dateToNotifier,
-          builder: (context, dateTo, _) {
-            final valid = dateTo.isAfter(dateFrom) || dateTo == dateFrom;
+  void _toggleDifferentDates({required bool value}) {
+    if (value) {
+      // Freeze the current effective end day so the reveal seeds to the right
+      // date (start + 1 for an overnight, otherwise the start day).
+      _state = _state.copyWith(
+        differentDates: true,
+        endDateOverride: _state.dateTo,
+      );
+    } else {
+      _state = _state.copyWith(differentDates: false, clearOverride: true);
+    }
+  }
 
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                // Date range selection
-                Row(
-                  children: [
-                    Expanded(
-                      child: _TappableDateTimeField(
-                        dateTime: dateFrom,
-                        labelText: context.messages.journalDateFromLabel,
-                        onTap: () => onFieldTapped(DateTimeFieldType.from),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _TappableDateTimeField(
-                        dateTime: dateTo,
-                        labelText: context.messages.journalDateToLabel,
-                        onTap: () => onFieldTapped(DateTimeFieldType.to),
-                      ),
-                    ),
-                  ],
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final state = _state;
+    // In different-dates mode two date wheels coexist with the time wheels, so
+    // every wheel shrinks to keep the duration + toggle above the sticky bar.
+    final compact = state.differentDates;
+    final dateHeight = compact ? 148.0 : 180.0;
+    final timeHeight = compact ? 132.0 : 160.0;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Caption(
+            emphasized: true,
+            label: compact
+                ? context.messages.journalStartDateLabel
+                : context.messages.journalDateLabel,
+            trailing: _TodayPill(
+              onTap: () {
+                final now = DateTime.now();
+                _state = _state.copyWith(
+                  startDate: DateTime(now.year, now.month, now.day),
+                );
+                setState(() {}); // re-seed the date wheel to today
+              },
+            ),
+          ),
+          _DateWheel(
+            key: ValueKey('start-date-${state.startDate}'),
+            height: dateHeight,
+            initial: state.startDate,
+            onChanged: (date) =>
+                _state = _state.copyWith(startDate: _dateOnly(date)),
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          // The toggle sits high — right under the (start) date wheel and where
+          // its revealed End date appears — so the control that drives the mode
+          // is always on screen, never occluded by the pinned bar.
+          DesignSystemToggle(
+            value: state.differentDates,
+            label: context.messages.journalEndsAnotherDayLabel,
+            onChanged: (value) => _toggleDifferentDates(value: value),
+          ),
+          if (!compact)
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step2),
+              child: Text(
+                context.messages.journalEndsAnotherDayHint,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(height: 20),
-                // Duration display
-                Row(
-                  children: [
-                    Icon(
-                      MdiIcons.clockTimeFour,
-                      size: 20,
-                      color: context.colorScheme.primary,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      context.messages.journalDurationLabel,
-                      style: context.textTheme.bodyMedium?.copyWith(
-                        color: context.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      formatDuration(dateFrom.difference(dateTo).abs()),
-                      style: context.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: context.colorScheme.primary,
-                        fontFeatures: [const FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
+              ),
+            ),
+          if (compact) ...[
+            SizedBox(height: tokens.spacing.step4),
+            _Caption(
+              emphasized: true,
+              label: context.messages.journalEndDateLabel,
+            ),
+            _DateWheel(
+              key: ValueKey('end-date-${state.endDateOverride}'),
+              height: dateHeight,
+              initial: state.endDateOverride ?? state.startDate,
+              onChanged: (date) =>
+                  _state = _state.copyWith(endDateOverride: _dateOnly(date)),
+            ),
+          ],
+          // A deliberate section gap separates the date block from the time
+          // block (mirrors the same-day rhythm even when stacked in multi-day).
+          SizedBox(height: tokens.spacing.step6),
+          // Start/end times stay paired side by side in both modes — the
+          // standout density + "same range" clarity win from round 1.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: _TimeColumn(
+                  label: context.messages.journalStartTimeLabel,
+                  height: timeHeight,
+                  initial: state.startTime,
+                  onChanged: (time) =>
+                      _state = _state.copyWith(startTime: time),
                 ),
-                if (!valid) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: context.colorScheme.errorContainer.withValues(
-                        alpha: 0.2,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: context.colorScheme.error.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.warning_rounded,
-                          size: 20,
-                          color: context.colorScheme.error,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            context.messages.journalDateInvalid,
-                            style: context.textTheme.bodyMedium?.copyWith(
-                              color: context.colorScheme.error,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-                // Add bottom padding to ensure content isn't hidden by sticky action bar
-                const SizedBox(height: 80),
-              ],
-            );
-          },
-        );
-      },
+              ),
+              SizedBox(width: tokens.spacing.step4),
+              Expanded(
+                child: _TimeColumn(
+                  label: context.messages.journalEndTimeLabel,
+                  height: timeHeight,
+                  initial: state.endTime,
+                  onChanged: (time) => _state = _state.copyWith(endTime: time),
+                ),
+              ),
+            ],
+          ),
+          // Keep content clear of the glass status + Save bar.
+          const SizedBox(height: 124),
+        ],
+      ),
     );
   }
 }
 
-class _TappableDateTimeField extends StatelessWidget {
-  const _TappableDateTimeField({
-    required this.dateTime,
-    required this.labelText,
-    required this.onTap,
+DateTime _dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+class _Caption extends StatelessWidget {
+  const _Caption({
+    required this.label,
+    this.trailing,
+    this.emphasized = false,
   });
 
-  final DateTime dateTime;
-  final String labelText;
+  final String label;
+  final Widget? trailing;
+
+  /// Primary captions (the date sections) read a step heavier than the
+  /// secondary time captions, reinforcing the "one date contains the times"
+  /// containment the design relies on.
+  final bool emphasized;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final style = emphasized
+        ? context.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: context.colorScheme.onSurface,
+          )
+        : context.textTheme.bodyMedium?.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          );
+    return Padding(
+      padding: EdgeInsets.only(bottom: tokens.spacing.step2),
+      child: Row(
+        children: [
+          Text(label, style: style),
+          const Spacer(),
+          ?trailing,
+        ],
+      ),
+    );
+  }
+}
+
+class _TodayPill extends StatelessWidget {
+  const _TodayPill({required this.onTap});
+
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final style = context.textTheme.titleMedium;
-
-    return TextField(
-      decoration:
-          createDialogInputDecoration(
-            labelText: labelText,
-            style: style,
-            themeData: Theme.of(context),
-          ).copyWith(
-            suffixIcon: Icon(
-              Icons.edit_calendar_rounded,
-              color: context.colorScheme.primary,
-            ),
-          ),
-      style: style,
-      readOnly: true,
-      controller: TextEditingController(
-        text: dfShorter.format(dateTime),
-      ),
+    // A neutral grey pill (high-emphasis white tinted at 18%) — visibly filled
+    // above the sheet background and distinct from the teal overnight chip, so
+    // the two capsules read as one family differentiated by meaning.
+    return DsPill(
+      variant: DsPillVariant.tinted,
+      color: context.designTokens.colors.text.highEmphasis,
+      label: context.messages.journalTodayButton,
       onTap: onTap,
     );
   }
 }
 
-class _DateTimePickerPage extends StatelessWidget {
-  const _DateTimePickerPage({
-    required this.dateFromNotifier,
-    required this.dateToNotifier,
-    required this.selectedFieldNotifier,
+class _DateWheel extends StatelessWidget {
+  const _DateWheel({
+    required this.height,
+    required this.initial,
+    required this.onChanged,
+    super.key,
   });
 
-  final ValueNotifier<DateTime> dateFromNotifier;
-  final ValueNotifier<DateTime> dateToNotifier;
-  final ValueNotifier<DateTimeFieldType?> selectedFieldNotifier;
+  final double height;
+  final DateTime initial;
+  final ValueChanged<DateTime> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<DateTimeFieldType?>(
-      valueListenable: selectedFieldNotifier,
-      builder: (context, selectedField, _) {
-        if (selectedField == null) {
-          return const SizedBox.shrink();
-        }
-
-        final initialDateTime = selectedField == DateTimeFieldType.from
-            ? dateFromNotifier.value
-            : dateToNotifier.value;
-
-        return CupertinoTheme(
-          data: CupertinoThemeData(
-            textTheme: CupertinoTextThemeData(
-              dateTimePickerTextStyle:
-                  context.textTheme.titleLarge?.withTabularFigures,
-            ),
+    return SizedBox(
+      height: height,
+      child: CupertinoTheme(
+        data: CupertinoThemeData(
+          textTheme: CupertinoTextThemeData(
+            dateTimePickerTextStyle: context.textTheme.titleMedium,
           ),
-          child: SizedBox(
-            height: 265,
-            child: CupertinoDatePicker(
-              initialDateTime: initialDateTime,
-              use24hFormat: true,
-              onDateTimeChanged: (dateTime) {
-                if (selectedField == DateTimeFieldType.from) {
-                  dateFromNotifier.value = dateTime;
-                } else {
-                  dateToNotifier.value = dateTime;
-                }
-              },
-            ),
-          ),
-        );
-      },
+        ),
+        child: CupertinoDatePicker(
+          mode: CupertinoDatePickerMode.date,
+          initialDateTime: initial,
+          onDateTimeChanged: onChanged,
+        ),
+      ),
     );
   }
 }
 
-class _DateTimeRangeStickyActionBar extends ConsumerWidget {
-  const _DateTimeRangeStickyActionBar({
-    required this.entry,
-    required this.dateFromNotifier,
-    required this.dateToNotifier,
+class _TimeColumn extends StatelessWidget {
+  const _TimeColumn({
+    required this.label,
+    required this.height,
+    required this.initial,
+    required this.onChanged,
   });
 
+  final String label;
+  final double height;
+  final TimeOfDay initial;
+  final ValueChanged<TimeOfDay> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _Caption(label: label),
+        SizedBox(
+          height: height,
+          child: CupertinoTheme(
+            data: CupertinoThemeData(
+              textTheme: CupertinoTextThemeData(
+                dateTimePickerTextStyle:
+                    context.textTheme.titleLarge?.withTabularFigures,
+              ),
+            ),
+            child: CupertinoDatePicker(
+              mode: CupertinoDatePickerMode.time,
+              use24hFormat: true,
+              initialDateTime: DateTime(
+                2020,
+                1,
+                1,
+                initial.hour,
+                initial.minute,
+              ),
+              onDateTimeChanged: (dateTime) => onChanged(
+                TimeOfDay(hour: dateTime.hour, minute: dateTime.minute),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The pinned readout that sits in the glass sticky bar above Save, so the
+/// duration (the design's primary clarity device) is always visible — even in
+/// the taller different-dates layout. Shows an inline invalid state when the
+/// composed end falls before the start (only reachable in different-dates mode).
+class _DurationStatus extends StatelessWidget {
+  const _DurationStatus({required this.state});
+
+  final EntryDateTimeRange state;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+
+    if (!state.valid) {
+      return Row(
+        children: [
+          Icon(
+            Icons.warning_rounded,
+            size: 20,
+            color: context.colorScheme.error,
+          ),
+          SizedBox(width: tokens.spacing.step3),
+          Expanded(
+            child: Text(
+              context.messages.journalDateInvalid,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.error,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            Icon(
+              MdiIcons.clockTimeFourOutline,
+              size: 20,
+              color: context.colorScheme.primary,
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            Text(
+              context.messages.journalDurationLabel,
+              style: context.textTheme.bodyMedium?.copyWith(
+                color: context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              formatRangeDuration(state.duration),
+              style: context.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: context.colorScheme.primary,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
+        if (state.overnightAuto) ...[
+          SizedBox(height: tokens.spacing.step3),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: DsPill(
+              variant: DsPillVariant.tinted,
+              // Teal (not the brand-purple Duration accent) so it reads as a
+              // distinct "heads up" state badge rather than echoing the value.
+              color: tokens.colors.interactive.enabled,
+              label: context.messages.journalOvernightNextDay(
+                DateFormat('EEE d MMM').format(state.dateTo),
+              ),
+              leading: Icon(
+                MdiIcons.weatherNight,
+                size: 14,
+                color: tokens.colors.interactive.enabled,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _SaveActionBar extends ConsumerWidget {
+  const _SaveActionBar({required this.entry, required this.stateNotifier});
+
   final JournalEntity entry;
-  final ValueNotifier<DateTime> dateFromNotifier;
-  final ValueNotifier<DateTime> dateToNotifier;
+  final ValueNotifier<EntryDateTimeRange> stateNotifier;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final entryId = entry.meta.id;
-    final provider = entryControllerProvider(id: entryId);
+    final provider = entryControllerProvider(id: entry.meta.id);
 
-    return ValueListenableBuilder<DateTime>(
-      valueListenable: dateFromNotifier,
-      builder: (context, dateFrom, _) {
-        return ValueListenableBuilder<DateTime>(
-          valueListenable: dateToNotifier,
-          builder: (context, dateTo, _) {
-            final valid = dateTo.isAfter(dateFrom) || dateTo == dateFrom;
-            final changed =
-                dateFrom != entry.meta.dateFrom || dateTo != entry.meta.dateTo;
+    return ValueListenableBuilder<EntryDateTimeRange>(
+      valueListenable: stateNotifier,
+      builder: (context, state, _) {
+        final changed =
+            state.dateFrom != entry.meta.dateFrom ||
+            state.dateTo != entry.meta.dateTo;
+        final canSave = state.valid && changed;
 
-            return DesignSystemModalActionBar(
-              glass: true,
-              padding: const EdgeInsets.all(20),
-              primary: DesignSystemButton(
-                onPressed: valid && changed
-                    ? () async {
-                        try {
-                          await ref
-                              .read(provider.notifier)
-                              .updateFromTo(
-                                dateFrom: dateFrom,
-                                dateTo: dateTo,
-                              );
-                          if (context.mounted) {
-                            Navigator.of(context).pop();
+        return DesignSystemGlassStrip(
+          child: Padding(
+            padding: EdgeInsets.all(context.designTokens.spacing.step5),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _DurationStatus(state: state),
+                SizedBox(height: context.designTokens.spacing.step4),
+                DesignSystemButton(
+                  label: context.messages.journalDateSaveButton,
+                  leadingIcon: Icons.check_rounded,
+                  size: DesignSystemButtonSize.large,
+                  fullWidth: true,
+                  onPressed: canSave
+                      ? () async {
+                          try {
+                            await ref
+                                .read(provider.notifier)
+                                .updateFromTo(
+                                  dateFrom: state.dateFrom,
+                                  dateTo: state.dateTo,
+                                );
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          } catch (e) {
+                            DevLogger.warning(
+                              name: 'EntryDateTimeMultiPageModal',
+                              message: 'Error updating date range: $e',
+                            );
                           }
-                        } catch (e) {
-                          DevLogger.warning(
-                            name: 'EntryDateTimeMultiPageModal',
-                            message: 'Error updating date range: $e',
-                          );
                         }
-                      }
-                    : null,
-                label: context.messages.journalDateSaveButton,
-                leadingIcon: Icons.check_rounded,
-                size: DesignSystemButtonSize.large,
-                fullWidth: true,
-              ),
-            );
-          },
+                      : null,
+                ),
+              ],
+            ),
+          ),
         );
       },
-    );
-  }
-}
-
-class _DateTimePickerStickyActionBar extends StatelessWidget {
-  const _DateTimePickerStickyActionBar({
-    required this.dateFromNotifier,
-    required this.dateToNotifier,
-    required this.selectedFieldNotifier,
-    required this.onCancel,
-    required this.onDone,
-    required this.onNow,
-  });
-
-  final ValueNotifier<DateTime> dateFromNotifier;
-  final ValueNotifier<DateTime> dateToNotifier;
-  final ValueNotifier<DateTimeFieldType?> selectedFieldNotifier;
-  final VoidCallback onCancel;
-  final VoidCallback onDone;
-  final VoidCallback onNow;
-
-  @override
-  Widget build(BuildContext context) {
-    return DesignSystemModalActionBar(
-      glass: true,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      secondary: [
-        DesignSystemButton(
-          label: context.messages.cancelButton,
-          variant: DesignSystemButtonVariant.secondary,
-          size: DesignSystemButtonSize.large,
-          onPressed: onCancel,
-        ),
-        DesignSystemButton(
-          label: context.messages.journalDateNowButton,
-          variant: DesignSystemButtonVariant.secondary,
-          size: DesignSystemButtonSize.large,
-          onPressed: onNow,
-        ),
-      ],
-      primary: DesignSystemButton(
-        label: context.messages.doneButton,
-        size: DesignSystemButtonSize.large,
-        fullWidth: true,
-        onPressed: onDone,
-      ),
     );
   }
 }

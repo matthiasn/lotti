@@ -5332,10 +5332,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalDateInvalid => 'Plage de dates invalide';
 
   @override
+  String get journalDateLabel => 'Date';
+
+  @override
   String get journalDateNowButton => 'maintenant';
 
   @override
   String get journalDateSaveButton => 'ENREGISTRER';
+
+  @override
+  String get journalDateTimeRangeTitle => 'Date et heure';
 
   @override
   String get journalDateToLabel => 'Date de fin :';
@@ -5351,7 +5357,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Veux-tu vraiment supprimer cette entrée ?';
 
   @override
-  String get journalDurationLabel => 'Durée :';
+  String get journalDurationLabel => 'Durée';
+
+  @override
+  String get journalEndDateLabel => 'Date de fin';
+
+  @override
+  String get journalEndsAnotherDayHint => 'Choisis une date de fin distincte';
+
+  @override
+  String get journalEndsAnotherDayLabel => 'Se termine un autre jour';
+
+  @override
+  String get journalEndTimeLabel => 'Heure de fin';
 
   @override
   String get journalFavoriteTooltip => 'Préféré';
@@ -5403,6 +5421,11 @@ class AppLocalizationsFr extends AppLocalizations {
   String get journalLinkToHint => 'Lié à';
 
   @override
+  String journalOvernightNextDay(String date) {
+    return 'Fin $date (jour suivant)';
+  }
+
+  @override
   String get journalPrivateTooltip => 'Privé';
 
   @override
@@ -5416,6 +5439,15 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get journalShowMapHint => 'Afficher la carte';
+
+  @override
+  String get journalStartDateLabel => 'Date de début';
+
+  @override
+  String get journalStartTimeLabel => 'Heure de début';
+
+  @override
+  String get journalTodayButton => 'Aujourd\'hui';
 
   @override
   String get journalToggleFlaggedTitle => 'Signalé';

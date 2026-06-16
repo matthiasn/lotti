@@ -26,6 +26,28 @@ String formatDuration(Duration? duration) {
   return durationString;
 }
 
+/// Formats a span as a compact, multi-day-aware readout (e.g. `45m`, `1h 30m`,
+/// `1d 7h 45m`) for the start/end date-time editor.
+///
+/// Unlike [formatDuration] (which renders `H:MM:SS` and would show a multi-day
+/// span as `31:45:00`), this drops seconds and rolls whole days into a `d`
+/// component. A non-positive span returns `0m`; callers gate truly invalid
+/// (negative) ranges separately, so this never needs to render a sign.
+String formatRangeDuration(Duration duration) {
+  if (duration <= Duration.zero) {
+    return '0m';
+  }
+  final days = duration.inDays;
+  final hours = duration.inHours % 24;
+  final minutes = duration.inMinutes % 60;
+  final parts = <String>[
+    if (days > 0) '${days}d',
+    if (hours > 0) '${hours}h',
+    if (minutes > 0) '${minutes}m',
+  ];
+  return parts.isEmpty ? '0m' : parts.join(' ');
+}
+
 // ignore: avoid_positional_boolean_parameters
 bool fromNullableBool(bool? value) {
   if (value != null) {

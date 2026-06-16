@@ -87,7 +87,7 @@
   "journalDeleteConfirm": "YES, DELETE THIS ENTRY",
   "journalDeleteHint": "Delete entry",
   "journalDeleteQuestion": "Do you want to delete this journal entry?",
-  "journalDurationLabel": "Duration:",
+  "journalDurationLabel": "Duration",
   "journalFavoriteTooltip": "starred only",
   "journalFlaggedTooltip": "flagged only",
   "journalHideMapHint": "Hide map",

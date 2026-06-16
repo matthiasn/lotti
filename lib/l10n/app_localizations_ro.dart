@@ -5333,10 +5333,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalDateInvalid => 'Dată invalidă';
 
   @override
+  String get journalDateLabel => 'Dată';
+
+  @override
   String get journalDateNowButton => 'acum';
 
   @override
   String get journalDateSaveButton => 'SALVEAZĂ';
+
+  @override
+  String get journalDateTimeRangeTitle => 'Dată și oră';
 
   @override
   String get journalDateToLabel => 'Până la:';
@@ -5352,7 +5358,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Vrei să ștergi această intrare în jurnal?';
 
   @override
-  String get journalDurationLabel => 'Durată:';
+  String get journalDurationLabel => 'Durată';
+
+  @override
+  String get journalEndDateLabel => 'Dată de sfârșit';
+
+  @override
+  String get journalEndsAnotherDayHint => 'Alegeți o dată de sfârșit separată';
+
+  @override
+  String get journalEndsAnotherDayLabel => 'Se termină în altă zi';
+
+  @override
+  String get journalEndTimeLabel => 'Oră de sfârșit';
 
   @override
   String get journalFavoriteTooltip => 'Favorit';
@@ -5404,6 +5422,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalLinkToHint => 'Legătură la';
 
   @override
+  String journalOvernightNextDay(String date) {
+    return 'Se termină $date (ziua următoare)';
+  }
+
+  @override
   String get journalPrivateTooltip => 'Privat';
 
   @override
@@ -5417,6 +5440,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalShowMapHint => 'Arată harta';
+
+  @override
+  String get journalStartDateLabel => 'Dată de început';
+
+  @override
+  String get journalStartTimeLabel => 'Oră de început';
+
+  @override
+  String get journalTodayButton => 'Azi';
 
   @override
   String get journalToggleFlaggedTitle => 'Marcate';

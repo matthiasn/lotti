@@ -9198,6 +9198,12 @@ abstract class AppLocalizations {
   /// **'Invalid Date Range'**
   String get journalDateInvalid;
 
+  /// No description provided for @journalDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date'**
+  String get journalDateLabel;
+
   /// No description provided for @journalDateNowButton.
   ///
   /// In en, this message translates to:
@@ -9209,6 +9215,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'SAVE'**
   String get journalDateSaveButton;
+
+  /// No description provided for @journalDateTimeRangeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Date & Time'**
+  String get journalDateTimeRangeTitle;
 
   /// No description provided for @journalDateToLabel.
   ///
@@ -9237,8 +9249,32 @@ abstract class AppLocalizations {
   /// No description provided for @journalDurationLabel.
   ///
   /// In en, this message translates to:
-  /// **'Duration:'**
+  /// **'Duration'**
   String get journalDurationLabel;
+
+  /// No description provided for @journalEndDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End date'**
+  String get journalEndDateLabel;
+
+  /// No description provided for @journalEndsAnotherDayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a separate end date'**
+  String get journalEndsAnotherDayHint;
+
+  /// No description provided for @journalEndsAnotherDayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends on another day'**
+  String get journalEndsAnotherDayLabel;
+
+  /// No description provided for @journalEndTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'End time'**
+  String get journalEndTimeLabel;
 
   /// No description provided for @journalFavoriteTooltip.
   ///
@@ -9336,6 +9372,12 @@ abstract class AppLocalizations {
   /// **'Link to'**
   String get journalLinkToHint;
 
+  /// Chip shown when an entry's end time is earlier than its start time, indicating it ends on the next day.
+  ///
+  /// In en, this message translates to:
+  /// **'Ends {date} (next day)'**
+  String journalOvernightNextDay(String date);
+
   /// No description provided for @journalPrivateTooltip.
   ///
   /// In en, this message translates to:
@@ -9365,6 +9407,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show map'**
   String get journalShowMapHint;
+
+  /// No description provided for @journalStartDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start date'**
+  String get journalStartDateLabel;
+
+  /// No description provided for @journalStartTimeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Start time'**
+  String get journalStartTimeLabel;
+
+  /// No description provided for @journalTodayButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get journalTodayButton;
 
   /// No description provided for @journalToggleFlaggedTitle.
   ///
