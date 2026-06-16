@@ -6,6 +6,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1026]
 ### Changed
+- The Habits tab was reworked to match the rest of the app. It now uses the same
+  calm, light-on-canvas surfaces as Tasks and Time Analysis instead of the old
+  near-black background, with a Time-Analysis-style header. A new summary card
+  shows, at a glance, how many habits you've done today, how many are left
+  ("3 to go"), and your current streaks. Each habit's day-by-day history reads as
+  a quiet "chain": done, skipped, and missed days each carry their own mark
+  (check / dash / cross), not just a colour, so it stays legible for colour-blind
+  and low-vision users — and not-yet-recorded days are a plain neutral instead of
+  looking like failures. Swipe a habit right to mark it done or left to mark it
+  missed, or tap the round button to log it in one tap (with an instant
+  confirmation). The recording dialog was rebuilt around a Success / Skip / Missed
+  segmented picker with one Record button, and a linked dashboard (for example an
+  exercise habit's charts) now sits cleanly above the form.
 - Editing an entry's start and end time is simpler: you set the date once and
   the start/end times separately, instead of picking the full date on both
   pickers. One date wheel sits above paired start/end time wheels, with a live

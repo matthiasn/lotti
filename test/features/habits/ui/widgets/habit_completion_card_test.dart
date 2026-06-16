@@ -1,117 +1,32 @@
-import 'dart:async';
-
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/habits/repository/habits_repository.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/themes/colors.dart';
-import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
-// Fixed reference date for deterministic tests
-final _today = DateTime(2024, 3, 15);
-final _rangeStart = DateTime(2024, 3, 8);
+// Deterministic range — no real timers, no wall-clock reads in assertions.
+final _rangeStart = DateTime(2024, 3, 2);
 final _rangeEnd = DateTime(2024, 3, 15);
 
-/// Finds the tappable [GestureDetector] for the day cell whose date equals
-/// [dayString] (a `yyyy-MM-dd` string).
-///
-/// Each day cell wraps its `GestureDetector` inside a [Tooltip] whose `message`
-/// is `chartDateFormatter(res.dayString)`. Scoping to the [Tooltip] with that
-/// day-specific message resolves to exactly one cell, even when the card
-/// renders multiple days.
-Finder _dayCellTapFinder(String dayString) => find.descendant(
-  of: find.byWidgetPredicate(
-    (w) => w is Tooltip && w.message == chartDateFormatter(dayString),
-  ),
-  matching: find.byWidgetPredicate(
-    (w) => w is GestureDetector && w.onTap != null,
-  ),
-);
-
-/// Returns a single-day result for today with the given [completionType].
-List<HabitResult> _singleResult(HabitCompletionType completionType) {
-  return [
-    HabitResult(
-      dayString: _today.toIso8601String().substring(0, 10),
-      completionType: completionType,
-    ),
-  ];
-}
-
-/// Pumps a [HabitCompletionCard] for [habit] with [results] injected via a mock
-/// repository.
-///
-/// The cache service must already have [habit] stubbed via
-/// `getIt<EntitiesCacheService>()`. An optional [theme] is forwarded to the
-/// surrounding [MaterialApp] so bottom-sheet styling can be asserted.
-Future<void> _pumpCard(
-  WidgetTester tester, {
-  required List<HabitResult> results,
-  required MockHabitsRepository mockRepository,
-  HabitDefinition? habit,
-  ThemeData? theme,
-}) async {
-  final habitDefinition = habit ?? habitFlossing;
-
-  // Stub the repository so HabitCompletionController resolves synchronously.
-  when(
-    () => mockRepository.getHabitCompletionsByHabitId(
-      habitId: habitDefinition.id,
-      rangeStart: any(named: 'rangeStart'),
-      rangeEnd: any(named: 'rangeEnd'),
-    ),
-  ).thenAnswer((_) async => []);
-
-  when(() => mockRepository.updateStream).thenAnswer(
-    (_) => const Stream<Set<String>>.empty(),
-  );
-
-  await tester.pumpWidget(
-    ProviderScope(
-      overrides: [
-        habitsRepositoryProvider.overrideWithValue(mockRepository),
-        // Override the family provider to return [results] immediately.
-        habitCompletionControllerProvider(
-          habitId: habitDefinition.id,
-          rangeStart: _rangeStart,
-          rangeEnd: _rangeEnd,
-        ).overrideWith(() => _StubHabitCompletionController(results)),
-      ],
-      child: makeTestableWidgetWithScaffold(
-        HabitCompletionCard(
-          habitId: habitDefinition.id,
-          rangeStart: _rangeStart,
-          rangeEnd: _rangeEnd,
-        ),
-        theme: theme,
-      ),
-    ),
-  );
-
-  await tester.pump();
-}
-
-/// A stub controller that returns a fixed list without any database access.
-class _StubHabitCompletionController extends HabitCompletionController {
-  _StubHabitCompletionController(this._results);
-
-  final List<HabitResult> _results;
-
+/// A fake [HabitCompletionController] that serves a canned list of
+/// [HabitResult]s without touching the database. Overriding the family with
+/// `_FakeController.new` lets every keyed instance return `_results`, so the
+/// strip and the `completedToday` flag are fully controlled by the test.
+class _FakeController extends HabitCompletionController {
   @override
   Future<List<HabitResult>> build({
     required String habitId,
@@ -120,547 +35,489 @@ class _StubHabitCompletionController extends HabitCompletionController {
   }) async => _results;
 }
 
-/// A stub controller that never resolves, leaving the provider in
-/// [AsyncLoading] so the card has no value to render.
-class _LoadingHabitCompletionController extends HabitCompletionController {
-  @override
-  Future<List<HabitResult>> build({
-    required String habitId,
-    required DateTime rangeStart,
-    required DateTime rangeEnd,
-  }) => Completer<List<HabitResult>>().future;
-}
+// The list the active [_FakeController] returns. Set per-test before pumping
+// (the family builds lazily on first watch, so this is read at build time).
+List<HabitResult> _results = const [];
+
+/// Builds a [HabitResult] for [day] (a `DateTime`) with [type].
+HabitResult _result(DateTime day, HabitCompletionType type) => HabitResult(
+  dayString:
+      '${day.year.toString().padLeft(4, '0')}-'
+      '${day.month.toString().padLeft(2, '0')}-'
+      '${day.day.toString().padLeft(2, '0')}',
+  completionType: type,
+);
+
+/// A single result on the range-end day with [type] — controls
+/// `completedToday`, which keys off `results.last.completionType`.
+List<HabitResult> _last(HabitCompletionType type) => [
+  _result(_rangeEnd, type),
+];
 
 void main() {
   late MockEntitiesCacheService mockCacheService;
-  late MockHabitsRepository mockRepository;
+  late MockPersistenceLogic mockPersistenceLogic;
+
+  setUpAll(() {
+    registerFallbackValue(FakeHabitCompletionData());
+  });
 
   setUp(() async {
+    _results = const [];
+    // Quick-complete and swipe paths await HapticFeedback.lightImpact(); without
+    // a platform-channel handler that future never resolves and the persistence
+    // call that follows it is never reached.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          SystemChannels.platform,
+          (methodCall) async => null,
+        );
     await setUpTestGetIt(
       additionalSetup: () {
         mockCacheService = MockEntitiesCacheService();
-        mockRepository = MockHabitsRepository();
+        mockPersistenceLogic = MockPersistenceLogic();
 
         when(
           () => mockCacheService.getHabitById(habitFlossing.id),
         ).thenReturn(habitFlossing);
+        // The card's CategoryIconCompact resolves the habit's category; the
+        // test habit has none, so a null category is fine.
+        when(
+          () => mockCacheService.getCategoryById(any()),
+        ).thenReturn(null);
 
-        // HabitDialog accesses PersistenceLogic from getIt on construction.
-        final mockPersistenceLogic = MockPersistenceLogic();
+        when(
+          () => mockPersistenceLogic.createHabitCompletionEntry(
+            data: any(named: 'data'),
+            comment: any(named: 'comment'),
+            habitDefinition: any(named: 'habitDefinition'),
+          ),
+        ).thenAnswer((_) async => null);
+
         getIt
+          // The HabitDialog (opened on tap) reads habits from JournalDb.
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(
+            mockJournalDbWithHabits([habitFlossing]),
+          )
           ..registerSingleton<EntitiesCacheService>(mockCacheService)
           ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
       },
     );
   });
 
-  tearDown(tearDownTestGetIt);
+  tearDown(() async {
+    // Reset the platform-channel handler installed in setUp so it can't swallow
+    // platform calls in unrelated tests that share this isolate under the
+    // batched (very_good) CI runner.
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null);
+    await tearDownTestGetIt();
+  });
 
-  group('HabitCompletionCard — null habit', () {
-    testWidgets('renders SizedBox.shrink when habit is not found', (
-      tester,
-    ) async {
-      when(
-        () => mockCacheService.getHabitById(any()),
-      ).thenReturn(null);
+  /// Pumps a [HabitCompletionCard] for [habit] with the family overridden to
+  /// serve [_results]. [extraOverrides] lets a test layer in additional
+  /// provider overrides (e.g. stubbing the linked dashboard). Returns nothing —
+  /// assertions run against the tester.
+  Future<void> pumpCard(
+    WidgetTester tester, {
+    HabitDefinition? habit,
+    List<Override> extraOverrides = const [],
+  }) async {
+    final definition = habit ?? habitFlossing;
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        HabitCompletionCard(
+          habitId: definition.id,
+          rangeStart: _rangeStart,
+          rangeEnd: _rangeEnd,
+        ),
+        overrides: [
+          habitCompletionControllerProvider.overrideWith(_FakeController.new),
+          ...extraOverrides,
+        ],
+      ),
+    );
+    // One frame to resolve the async family value into the card.
+    await tester.pump();
+  }
+
+  /// The captured [HabitCompletionData] from the single recorded completion.
+  HabitCompletionData captureCompletionData() {
+    return verify(
+          () => mockPersistenceLogic.createHabitCompletionEntry(
+            data: captureAny(named: 'data'),
+            comment: any(named: 'comment'),
+            habitDefinition: any(named: 'habitDefinition'),
+          ),
+        ).captured.single
+        as HabitCompletionData;
+  }
+
+  group('null habit', () {
+    testWidgets('renders SizedBox.shrink with no card content', (tester) async {
+      when(() => mockCacheService.getHabitById('unknown')).thenReturn(null);
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsRepositoryProvider.overrideWithValue(mockRepository),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            HabitCompletionCard(
-              habitId: 'unknown-id',
-              rangeStart: _rangeStart,
-              rangeEnd: _rangeEnd,
-            ),
+        makeTestableWidgetWithScaffold(
+          HabitCompletionCard(
+            habitId: 'unknown',
+            rangeStart: _rangeStart,
+            rangeEnd: _rangeEnd,
           ),
+          overrides: [
+            habitCompletionControllerProvider.overrideWith(_FakeController.new),
+          ],
         ),
       );
       await tester.pump();
 
-      // No card/list-tile rendered — only the invisible shrink box.
-      expect(find.byType(ListTile), findsNothing);
+      // No row body, no swipe wrapper, no name — just the invisible shrink.
+      expect(find.byType(Dismissible), findsNothing);
+      expect(find.text(habitFlossing.name), findsNothing);
     });
   });
 
-  group('HabitCompletionCard — rebinding to a different habit', () {
-    testWidgets(
-      "drops the previous habit's cached results so they never flash under "
-      'the new habit while it loads',
-      (tester) async {
-        final habitB = habitFlossing.copyWith(
-          id: 'habit-b',
-          name: 'Second habit',
-        );
-        when(
-          () => mockCacheService.getHabitById(habitB.id),
-        ).thenReturn(habitB);
-        when(() => mockRepository.updateStream).thenAnswer(
-          (_) => const Stream<Set<String>>.empty(),
-        );
-
-        // habitFlossing resolves immediately; habitB never resolves.
-        Widget build(String habitId) => ProviderScope(
-          overrides: [
-            habitsRepositoryProvider.overrideWithValue(mockRepository),
-            habitCompletionControllerProvider(
-              habitId: habitFlossing.id,
-              rangeStart: _rangeStart,
-              rangeEnd: _rangeEnd,
-            ).overrideWith(
-              () => _StubHabitCompletionController(
-                _singleResult(HabitCompletionType.success),
-              ),
-            ),
-            habitCompletionControllerProvider(
-              habitId: habitB.id,
-              rangeStart: _rangeStart,
-              rangeEnd: _rangeEnd,
-            ).overrideWith(_LoadingHabitCompletionController.new),
-          ],
-          // No Key on the card: rebuilding at the same position reuses the
-          // State, exercising didUpdateWidget's habitId-change branch.
-          child: makeTestableWidgetWithScaffold(
-            HabitCompletionCard(
-              habitId: habitId,
-              rangeStart: _rangeStart,
-              rangeEnd: _rangeEnd,
-            ),
-          ),
-        );
-
-        await tester.pumpWidget(build(habitFlossing.id));
-        await tester.pump();
-        expect(find.text(habitFlossing.name), findsOneWidget);
-
-        // Rebind the same State to habitB while its provider is still loading.
-        await tester.pumpWidget(build(habitB.id));
-        await tester.pump();
-
-        // The cache reset means the card collapses instead of rendering
-        // habitB's title over habitFlossing's stale completion squares.
-        expect(find.text(habitFlossing.name), findsNothing);
-        expect(find.text(habitB.name), findsNothing);
-        expect(find.byType(ListTile), findsNothing);
-      },
-    );
-  });
-
-  group('HabitCompletionCard — habit name display', () {
-    testWidgets('shows habit name in list tile title', (tester) async {
-      await _pumpCard(
-        tester,
-        results: _singleResult(HabitCompletionType.open),
-        mockRepository: mockRepository,
-      );
+  group('habit name and priority star', () {
+    testWidgets('renders the habit name', (tester) async {
+      _results = _last(HabitCompletionType.open);
+      await pumpCard(tester);
 
       expect(find.text(habitFlossing.name), findsOneWidget);
     });
 
-    testWidgets(
-      'applies line-through decoration when completed today (success)',
-      (tester) async {
-        await _pumpCard(
-          tester,
-          results: _singleResult(HabitCompletionType.success),
-          mockRepository: mockRepository,
+    for (final priority in [true, false]) {
+      testWidgets('priority star ${priority ? 'shown' : 'absent'} when '
+          'priority=$priority', (tester) async {
+        final habit = habitFlossing.copyWith(
+          id: 'priority-$priority',
+          priority: priority,
         );
+        when(() => mockCacheService.getHabitById(habit.id)).thenReturn(habit);
+        _results = _last(HabitCompletionType.open);
 
-        // Find the Text widget displaying the habit name.
-        final textWidget = tester.widget<Text>(find.text(habitFlossing.name));
+        await pumpCard(tester, habit: habit);
+
         expect(
-          textWidget.style?.decoration,
-          TextDecoration.lineThrough,
-          reason: 'Completed habit name should have line-through',
+          find.byIcon(Icons.star_rounded),
+          priority ? findsOneWidget : findsNothing,
+          reason:
+              'priority=$priority should ${priority ? '' : 'not '}'
+              'render the star',
         );
-      },
-    );
-
-    testWidgets(
-      'applies line-through decoration when completed today (skip)',
-      (tester) async {
-        await _pumpCard(
-          tester,
-          results: _singleResult(HabitCompletionType.skip),
-          mockRepository: mockRepository,
-        );
-
-        final textWidget = tester.widget<Text>(find.text(habitFlossing.name));
-        expect(
-          textWidget.style?.decoration,
-          TextDecoration.lineThrough,
-          reason: 'Skipped habit name should have line-through',
-        );
-      },
-    );
-
-    testWidgets('does NOT apply line-through when habit is open', (
-      tester,
-    ) async {
-      await _pumpCard(
-        tester,
-        results: _singleResult(HabitCompletionType.open),
-        mockRepository: mockRepository,
-      );
-
-      final textWidget = tester.widget<Text>(find.text(habitFlossing.name));
-      expect(
-        textWidget.style?.decoration,
-        isNot(TextDecoration.lineThrough),
-        reason: 'Open habit should not have line-through',
-      );
-    });
-  });
-
-  group('HabitCompletionCard — completion colors', () {
-    // Verify that each completion type maps to the correct container color.
-    for (final testCase in [
-      (HabitCompletionType.success, successColor, 'success → successColor'),
-      (HabitCompletionType.fail, alarm, 'fail → alarm (red)'),
-      (
-        HabitCompletionType.open,
-        failColor.withAlpha(153),
-        'open → failColor dimmed',
-      ),
-    ]) {
-      final completionType = testCase.$1;
-      final expectedColor = testCase.$2;
-      final description = testCase.$3;
-
-      testWidgets('color correct for $description', (tester) async {
-        await _pumpCard(
-          tester,
-          results: _singleResult(completionType),
-          mockRepository: mockRepository,
-        );
-
-        final container = tester.widget<Container>(
-          find
-              .descendant(
-                of: find.byType(ClipRRect),
-                matching: find.byType(Container),
-              )
-              .first,
-        );
-        expect(
-          container.color,
-          expectedColor,
-          reason: description,
-        );
+        expect(find.text(habit.name), findsOneWidget);
       });
     }
 
-    testWidgets('color correct for skip → habitSkipColor dimmed', (
-      tester,
-    ) async {
-      await _pumpCard(
-        tester,
-        results: _singleResult(HabitCompletionType.skip),
-        mockRepository: mockRepository,
-      );
+    testWidgets('priority star absent when priority is null', (tester) async {
+      // habitFlossing has priority == null (defaults to not shown).
+      _results = _last(HabitCompletionType.open);
+      await pumpCard(tester);
 
-      final container = tester.widget<Container>(
-        find
-            .descendant(
-              of: find.byType(ClipRRect),
-              matching: find.byType(Container),
-            )
-            .first,
-      );
-      expect(
-        container.color,
-        habitSkipColor.withAlpha(102),
-        reason: 'skip → habitSkipColor with 40% alpha',
-      );
+      expect(find.byIcon(Icons.star_rounded), findsNothing);
     });
   });
 
-  group('HabitCompletionCard — trailing check button', () {
-    testWidgets('trailing IconButton with check_circle_outline is present', (
-      tester,
-    ) async {
-      await _pumpCard(
-        tester,
-        results: [],
-        mockRepository: mockRepository,
-      );
+  group('trailing complete button — not done', () {
+    testWidgets('shows the filled check_rounded button', (tester) async {
+      _results = _last(HabitCompletionType.fail);
+      await pumpCard(tester);
 
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+      // Not done → quick-complete button with the bare check.
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+      // The "already done" check is absent in this state (the strip cell for
+      // a fail uses close_rounded, never the circle check).
+      expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
     });
 
     testWidgets(
-      'tapping trailing check button opens HabitDialog bottom sheet',
+      'tapping records a SUCCESS for today and shows a SnackBar',
       (tester) async {
-        await _pumpCard(
-          tester,
-          results: [],
-          mockRepository: mockRepository,
+        _results = _last(HabitCompletionType.fail);
+        await pumpCard(tester);
+
+        await tester.tap(find.byIcon(Icons.check_rounded));
+        // The quick-complete is async (haptic + persistence + snackbar).
+        await tester.pump();
+        await tester.pump();
+
+        final data = captureCompletionData();
+        expect(
+          data.completionType,
+          HabitCompletionType.success,
+          reason: 'the quick-complete button records a success',
         );
+        expect(data.habitId, habitFlossing.id);
 
-        final checkButton = find.byIcon(Icons.check_circle_outline);
-        expect(checkButton, findsOneWidget);
+        // The confirming SnackBar names the habit.
+        expect(find.byType(SnackBar), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.byType(SnackBar),
+            matching: find.text(habitFlossing.name),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+  });
 
-        await tester.tap(checkButton);
+  group('trailing complete button — completed today', () {
+    testWidgets('shows check_circle_rounded when last result is success', (
+      tester,
+    ) async {
+      _results = _last(HabitCompletionType.success);
+      await pumpCard(tester);
+
+      // The success strip cell AND the trailing button both use the rounded
+      // glyphs; the trailing "done" button is the circle check.
+      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+    });
+
+    testWidgets(
+      'tapping does NOT record a duplicate and opens the HabitDialog',
+      (tester) async {
+        _results = _last(HabitCompletionType.success);
+        await pumpCard(tester);
+
+        await tester.tap(find.byIcon(Icons.check_circle_rounded));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The HabitDialog is shown in a bottom sheet.
+        // No silent duplicate completion is recorded.
+        verifyNever(
+          () => mockPersistenceLogic.createHabitCompletionEntry(
+            data: any(named: 'data'),
+            comment: any(named: 'comment'),
+            habitDefinition: any(named: 'habitDefinition'),
+          ),
+        );
+        // Instead the review dialog opens.
         expect(find.byType(HabitDialog), findsOneWidget);
       },
     );
   });
 
-  group('HabitCompletionCard — day cell tap', () {
-    testWidgets(
-      'each day cell GestureDetector has an onTap callback',
-      (tester) async {
-        await _pumpCard(
-          tester,
-          results: _singleResult(HabitCompletionType.open),
-          mockRepository: mockRepository,
-        );
+  group('row body tap', () {
+    testWidgets('opens the HabitDialog bottom sheet', (tester) async {
+      _results = _last(HabitCompletionType.open);
+      await pumpCard(tester);
 
-        // Each result day is wrapped in a GestureDetector.
-        // Verify that at least one GestureDetector with onTap exists (the day
-        // cell's) — the trailing IconButton is NOT a GestureDetector, so all
-        // GestureDetectors here come from the day cells.
-        final gds = tester.widgetList<GestureDetector>(
-          find.byType(GestureDetector),
-        );
-        final cellDetectors = gds.where((gd) => gd.onTap != null).toList();
-        expect(
-          cellDetectors,
-          isNotEmpty,
-          reason: 'Day cells must expose onTap on their GestureDetector',
-        );
-      },
-    );
+      // Tap the name text — it sits on the InkWell row body, away from the
+      // trailing button and the read-only strip.
+      await tester.tap(find.text(habitFlossing.name));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-    testWidgets(
-      'tapping a past day cell opens HabitDialog with that day as dateString',
-      (tester) async {
-        // A result for a day that is NOT today exercises the
-        // `DateTime.now().ymd != res.dayString ? res.dayString : ...` branch
-        // where res.dayString is forwarded to the dialog.
-        const pastDay = '2024-03-12';
-        await _pumpCard(
-          tester,
-          results: const [
-            HabitResult(
-              dayString: pastDay,
-              completionType: HabitCompletionType.open,
-            ),
-          ],
-          mockRepository: mockRepository,
-        );
-
-        // Scope to the cell whose tooltip matches this specific past day so
-        // the finder resolves to exactly one GestureDetector.
-        final cell = _dayCellTapFinder(pastDay);
-        expect(cell, findsOneWidget);
-        await tester.tap(cell);
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final dialog = tester.widget<HabitDialog>(find.byType(HabitDialog));
-        expect(
-          dialog.dateString,
-          pastDay,
-          reason: 'Tapping a non-today cell forwards its dayString',
-        );
-        expect(dialog.habitId, habitFlossing.id);
-      },
-    );
-
-    testWidgets(
-      "tapping today's day cell opens HabitDialog with today as dateString",
-      (tester) async {
-        // The card now reads clock.now(), so the "today" branch is pinned
-        // to a fixed date instead of depending on the real wall clock.
-        final fixedToday = DateTime(2024, 3, 15, 14, 30);
-        final todayYmd = fixedToday.ymd;
-        await withClock(Clock.fixed(fixedToday), () async {
-          await _pumpCard(
-            tester,
-            results: [
-              HabitResult(
-                dayString: todayYmd,
-                completionType: HabitCompletionType.open,
-              ),
-            ],
-            mockRepository: mockRepository,
-          );
-
-          // Scope to today's cell via its tooltip so the finder targets
-          // exactly one GestureDetector.
-          final cell = _dayCellTapFinder(todayYmd);
-          expect(cell, findsOneWidget);
-          await tester.tap(cell);
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 300));
-        });
-
-        final dialog = tester.widget<HabitDialog>(find.byType(HabitDialog));
-        expect(
-          dialog.dateString,
-          todayYmd,
-          reason: "Tapping today's cell forwards today's ymd",
-        );
-      },
-    );
-  });
-
-  group('HabitCompletionCard — bottom sheet background color', () {
-    // Sentinel color so we can assert which backgroundColor branch was taken
-    // when onTapAdd opens the bottom sheet.
-    const sentinelSheetColor = Color(0xFF123456);
-
-    ThemeData themeWithSheetColor() => ThemeData(
-      useMaterial3: true,
-      bottomSheetTheme: const BottomSheetThemeData(
-        backgroundColor: sentinelSheetColor,
-      ),
-    );
-
-    testWidgets(
-      'uses theme bottomSheet background when habit has a dashboardId',
-      (tester) async {
-        final habitWithDashboard = habitFlossing.copyWith(
-          dashboardId: 'dashboard-123',
-        );
-        when(
-          () => mockCacheService.getHabitById(habitWithDashboard.id),
-        ).thenReturn(habitWithDashboard);
-
-        await _pumpCard(
-          tester,
-          results: const [],
-          mockRepository: mockRepository,
-          habit: habitWithDashboard,
-          theme: themeWithSheetColor(),
-        );
-
-        await tester.tap(find.byIcon(Icons.check_circle_outline));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
-        expect(
-          sheet.backgroundColor,
-          sentinelSheetColor,
-          reason: 'dashboardId != null → theme bottomSheet backgroundColor',
-        );
-      },
-    );
-
-    testWidgets(
-      'uses transparent background when habit has no dashboardId',
-      (tester) async {
-        // habitFlossing has dashboardId == null → transparent branch.
-        await _pumpCard(
-          tester,
-          results: const [],
-          mockRepository: mockRepository,
-          theme: themeWithSheetColor(),
-        );
-
-        await tester.tap(find.byIcon(Icons.check_circle_outline));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
-        expect(
-          sheet.backgroundColor,
-          Colors.transparent,
-          reason: 'dashboardId == null → Colors.transparent',
-        );
-      },
-    );
-  });
-
-  group('HabitCompletionCard — reduced opacity when completed today', () {
-    testWidgets('opacity is 0.75 when last result is success', (tester) async {
-      await _pumpCard(
-        tester,
-        results: _singleResult(HabitCompletionType.success),
-        mockRepository: mockRepository,
-      );
-
-      final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
-      expect(opacity.opacity, closeTo(0.75, 0.01));
-    });
-
-    testWidgets('opacity is 1.0 when last result is open', (tester) async {
-      await _pumpCard(
-        tester,
-        results: _singleResult(HabitCompletionType.open),
-        mockRepository: mockRepository,
-      );
-
-      final opacity = tester.widget<Opacity>(find.byType(Opacity).first);
-      expect(opacity.opacity, closeTo(1.0, 0.01));
+      expect(find.byType(HabitDialog), findsOneWidget);
+      final dialog = tester.widget<HabitDialog>(find.byType(HabitDialog));
+      expect(dialog.habitId, habitFlossing.id);
     });
   });
 
-  group('HabitCompletionCard — priority star', () {
-    testWidgets('shows star icon when habit has priority=true', (tester) async {
-      final priorityHabit = habitFlossing.copyWith(priority: true);
+  group('swipe gestures', () {
+    // The row's Dismissible, scoped by its habit-keyed ValueKey so it never
+    // collides with the floating SnackBar (itself a Dismissible).
+    final swipeRow = find.byKey(
+      ValueKey<String>('habit-swipe-${habitFlossing.id}'),
+    );
 
+    testWidgets('swipe right records a SUCCESS', (tester) async {
+      _results = _last(HabitCompletionType.open);
+      await pumpCard(tester);
+
+      await tester.drag(swipeRow, const Offset(600, 0));
+      // confirmDismiss is async: record completion, then snap back.
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final data = captureCompletionData();
+      expect(
+        data.completionType,
+        HabitCompletionType.success,
+        reason: 'startToEnd (right) swipe records success',
+      );
+      // confirmDismiss returns false → the row snaps back and is never removed.
+      expect(swipeRow, findsOneWidget);
+    });
+
+    testWidgets('swipe left records a FAIL', (tester) async {
+      _results = _last(HabitCompletionType.open);
+      await pumpCard(tester);
+
+      await tester.drag(swipeRow, const Offset(-600, 0));
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final data = captureCompletionData();
+      expect(
+        data.completionType,
+        HabitCompletionType.fail,
+        reason: 'endToStart (left) swipe records a miss',
+      );
+      // confirmDismiss returns false → the row snaps back and is never removed.
+      expect(swipeRow, findsOneWidget);
+    });
+  });
+
+  group('history strip glyphs', () {
+    testWidgets(
+      'renders the correct glyph per outcome and a Semantics label',
+      (tester) async {
+        // One cell per outcome, spanning the recorded states. The open day is
+        // placed before the success day so `results.last` is success (the
+        // trailing button is the done-circle, not another check_rounded).
+        _results = [
+          _result(DateTime(2024, 3, 11), HabitCompletionType.open),
+          _result(DateTime(2024, 3, 12), HabitCompletionType.fail),
+          _result(DateTime(2024, 3, 13), HabitCompletionType.skip),
+          _result(_rangeEnd, HabitCompletionType.success),
+        ];
+        await pumpCard(tester);
+
+        // success cell → check_rounded (strip) + done-circle never check_rounded
+        // for the trailing button in this state, so the only check_rounded is
+        // the success strip cell.
+        expect(
+          find.byIcon(Icons.check_rounded),
+          findsOneWidget,
+          reason: 'success strip cell shows the check glyph',
+        );
+        // fail cell → close_rounded
+        expect(
+          find.byIcon(Icons.close_rounded),
+          findsOneWidget,
+          reason: 'fail strip cell shows the close glyph',
+        );
+        // skip cell → remove_rounded
+        expect(
+          find.byIcon(Icons.remove_rounded),
+          findsOneWidget,
+          reason: 'skip strip cell shows the remove glyph',
+        );
+
+        // A strip cell exposes a habit-name Semantics label
+        // (habitDayStatusSemantic: "{habit}, {status}").
+        final semantics = tester.widgetList<Semantics>(
+          find.byType(Semantics),
+        );
+        final labels = semantics
+            .map((s) => s.properties.label)
+            .whereType<String>()
+            .toList();
+        expect(
+          labels.any((l) => l.contains(habitFlossing.name)),
+          isTrue,
+          reason: 'at least one strip cell labels itself with the habit name',
+        );
+      },
+    );
+
+    testWidgets('open/empty cells render no glyph', (tester) async {
+      // A range of only open days: the strip draws cells but no outcome glyph,
+      // and "not done yet" must never read as a recorded outcome.
+      _results = [
+        _result(DateTime(2024, 3, 13), HabitCompletionType.open),
+        _result(DateTime(2024, 3, 14), HabitCompletionType.open),
+        _result(_rangeEnd, HabitCompletionType.open),
+      ];
+      await pumpCard(tester);
+
+      // No outcome glyphs anywhere in the strip.
+      expect(find.byIcon(Icons.close_rounded), findsNothing);
+      expect(find.byIcon(Icons.remove_rounded), findsNothing);
+      // The only check_rounded would be the trailing button (not done today),
+      // never a strip cell — exactly one, from the button.
+      expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    });
+  });
+
+  group('rebinding to a different habit (didUpdateWidget)', () {
+    testWidgets('clears stale results when habitId changes', (tester) async {
+      // Card B's name and completions resolve through the same mocks.
       when(
-        () => mockCacheService.getHabitById(priorityHabit.id),
-      ).thenReturn(priorityHabit);
+        () => mockCacheService.getHabitById(habitFlossingDueLater.id),
+      ).thenReturn(habitFlossingDueLater);
+      _results = _last(HabitCompletionType.open);
 
+      // Pump card A (no Key) at the root position.
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsRepositoryProvider.overrideWithValue(mockRepository),
-            habitCompletionControllerProvider(
-              habitId: priorityHabit.id,
-              rangeStart: _rangeStart,
-              rangeEnd: _rangeEnd,
-            ).overrideWith(() => _StubHabitCompletionController([])),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            HabitCompletionCard(
-              habitId: priorityHabit.id,
-              rangeStart: _rangeStart,
-              rangeEnd: _rangeEnd,
-            ),
+        makeTestableWidgetWithScaffold(
+          HabitCompletionCard(
+            habitId: habitFlossing.id,
+            rangeStart: _rangeStart,
+            rangeEnd: _rangeEnd,
           ),
+          overrides: [
+            habitCompletionControllerProvider.overrideWith(_FakeController.new),
+          ],
+        ),
+      );
+      await tester.pump();
+      expect(find.text(habitFlossing.name), findsOneWidget);
+
+      // Pump the SAME tree shape with card B at the same position and no
+      // differing Key. Flutter reconciles the element in place and calls
+      // didUpdateWidget, whose habitId-changed branch drops the cached results.
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          HabitCompletionCard(
+            habitId: habitFlossingDueLater.id,
+            rangeStart: _rangeStart,
+            rangeEnd: _rangeEnd,
+          ),
+          overrides: [
+            habitCompletionControllerProvider.overrideWith(_FakeController.new),
+          ],
         ),
       );
       await tester.pump();
 
-      expect(find.byIcon(Icons.star), findsOneWidget);
+      // The rebound card now shows habit B and no longer habit A.
+      expect(find.text(habitFlossingDueLater.name), findsOneWidget);
+      expect(find.text(habitFlossing.name), findsNothing);
     });
+  });
 
-    testWidgets('star icon is NOT shown when habit priority is null/false', (
-      tester,
-    ) async {
-      // habitFlossing has no priority set (defaults to null → not shown).
-      // When Visibility.visible is false the child is replaced by SizedBox.shrink
-      // and the Icon widget is not in the tree at all.
-      await _pumpCard(
-        tester,
-        results: [],
-        mockRepository: mockRepository,
-      );
+  group('linked dashboard', () {
+    testWidgets(
+      'opens the dialog honouring showLinkedDashboard for a dashboard habit',
+      (tester) async {
+        // A habit with a dashboardId makes onTapAdd take the
+        // showLinkedDashboard branch (the bottomSheetTheme background path).
+        final dashboardHabit = habitFlossing.copyWith(dashboardId: 'dash-1');
+        when(
+          () => mockCacheService.getHabitById(dashboardHabit.id),
+        ).thenReturn(dashboardHabit);
+        // The embedded DashboardWidget watches dashboardByIdProvider; a null
+        // dashboard collapses it to a SizedBox.shrink so we can assert the
+        // dialog without standing up the full dashboard provider graph.
+        when(
+          () => mockCacheService.getDashboardById('dash-1'),
+        ).thenReturn(null);
+        _results = _last(HabitCompletionType.open);
 
-      // The Visibility widget is present but should report visible: false.
-      final visibilities = tester.widgetList<Visibility>(
-        find.byType(Visibility),
-      );
-      final starVisibility = visibilities.firstWhere(
-        (v) => v.child is Padding,
-        orElse: () => throw StateError('Star Visibility widget not found'),
-      );
-      expect(
-        starVisibility.visible,
-        isFalse,
-        reason: 'Star should not be visible when habit has no priority',
-      );
-    });
+        await pumpCard(
+          tester,
+          habit: dashboardHabit,
+          extraOverrides: [
+            dashboardByIdProvider('dash-1').overrideWithValue(null),
+          ],
+        );
+
+        // Tap the row body (the name on the InkWell) to open the dialog.
+        await tester.tap(find.text(dashboardHabit.name));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final dialog = tester.widget<HabitDialog>(find.byType(HabitDialog));
+        expect(dialog.habitId, dashboardHabit.id);
+        // The card passes its showLinkedDashboard flag straight through; with a
+        // dashboardId present the dialog will embed the (collapsed) dashboard.
+        expect(dialog.showLinkedDashboard, isTrue);
+      },
+    );
   });
 }

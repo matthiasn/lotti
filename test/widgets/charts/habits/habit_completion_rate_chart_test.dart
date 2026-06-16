@@ -99,7 +99,7 @@ void main() {
 
       expect(find.byType(LineChart), findsOneWidget);
       expect(find.textContaining('active habits'), findsOneWidget);
-      expect(find.textContaining('Tap chart'), findsOneWidget);
+      expect(find.textContaining('Tap a day'), findsOneWidget);
     });
 
     testWidgets('chart tap triggers setInfoYmd on next frame', (tester) async {

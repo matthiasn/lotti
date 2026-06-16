@@ -6,6 +6,7 @@ import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_section_header.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -77,6 +78,28 @@ void main() {
 
     tearDown(getIt.reset);
 
+    /// Pumps the [HabitsTabPage] with a [FakeHabitsController] serving [state]
+    /// and lets the page's async card providers settle. Returns the fake so
+    /// individual tests can assert on the mutation calls it records.
+    Future<FakeHabitsController> pump(
+      WidgetTester tester,
+      HabitsState state,
+    ) async {
+      final controller = FakeHabitsController(state);
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            habitsControllerProvider.overrideWith(() => controller),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const HabitsTabPage(),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      return controller;
+    }
+
     testWidgets('habits page is rendered', (tester) async {
       final testState = HabitsState.initial().copyWith(
         habitDefinitions: [habitFlossing, habitFlossingDueLater],
@@ -85,37 +108,23 @@ void main() {
         displayFilter: HabitDisplayFilter.all,
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider.overrideWith(
-              () => FakeHabitsController(testState),
-            ),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            const HabitsTabPage(),
-          ),
-        ),
-      );
-
-      await tester.pump(const Duration(milliseconds: 100));
+      final controller = await pump(tester, testState);
 
       expect(
         find.text(habitFlossing.name),
         findsOneWidget,
       );
 
+      // The header carries the search tool button and the category filter; the
+      // old calendar/time-span button moved into the chart card and is gone.
       final searchButtonFinder = find.byIcon(Icons.search);
       expect(searchButtonFinder, findsOneWidget);
+      expect(find.byIcon(Icons.calendar_month), findsNothing);
 
+      // Tapping search toggles the in-page search affordance via the controller.
       await tester.tap(searchButtonFinder);
       await tester.pump(const Duration(milliseconds: 100));
-
-      final timeSpanButtonFinder = find.byIcon(Icons.calendar_month);
-      expect(timeSpanButtonFinder, findsOneWidget);
-
-      await tester.tap(timeSpanButtonFinder);
-      await tester.pump(const Duration(milliseconds: 100));
+      expect(controller.toggleShowSearchCalls, 1);
 
       final habitCategoryFilterFinder = find.byKey(
         const Key('habit_category_filter'),
@@ -137,20 +146,7 @@ void main() {
           displayFilter: HabitDisplayFilter.openNow,
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              habitsControllerProvider.overrideWith(
-                () => FakeHabitsController(testState),
-              ),
-            ],
-            child: makeTestableWidgetWithScaffold(
-              const HabitsTabPage(),
-            ),
-          ),
-        );
-
-        await tester.pump(const Duration(milliseconds: 100));
+        await pump(tester, testState);
 
         // Should have exactly 1 HabitCompletionCard for openNow habit
         expect(find.byType(HabitCompletionCard), findsOneWidget);
@@ -170,24 +166,67 @@ void main() {
           displayFilter: HabitDisplayFilter.completed,
         );
 
+        await pump(tester, testState);
+
+        // Should have exactly 1 HabitCompletionCard for completed habit
+        expect(find.byType(HabitCompletionCard), findsOneWidget);
+        expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders the Completed section header under the all filter',
+      (tester) async {
+        // The "all" filter renders a grouping header for every non-empty
+        // bucket. With only the completed bucket populated, the page must build
+        // the Completed section header and the card beneath it.
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing],
+          openNow: [],
+          pendingLater: [],
+          completed: [habitFlossing],
+          displayFilter: HabitDisplayFilter.all,
+        );
+
+        await pump(tester, testState);
+
+        // The localized habitsCompletedHeader == 'Completed'.
+        expect(find.text('Completed'), findsOneWidget);
+        expect(find.byType(HabitCompletionCard), findsOneWidget);
+        expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'centres content within a max width on wide windows',
+      (tester) async {
+        // A window wider than 720 + step6*2 (768) takes the responsive
+        // horizontal-padding branch that centres the reading column instead of
+        // letting rows stretch edge-to-edge. 800 clears the threshold while
+        // still fitting the harness's 800px ConstrainedBox (no overflow).
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing],
+          openNow: [habitFlossing],
+          displayFilter: HabitDisplayFilter.all,
+        );
+
         await tester.pumpWidget(
-          ProviderScope(
+          makeTestableWidgetWithScaffold(
+            const HabitsTabPage(),
             overrides: [
               habitsControllerProvider.overrideWith(
                 () => FakeHabitsController(testState),
               ),
             ],
-            child: makeTestableWidgetWithScaffold(
-              const HabitsTabPage(),
-            ),
+            mediaQueryData: const MediaQueryData(size: Size(800, 800)),
           ),
         );
-
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Should have exactly 1 HabitCompletionCard for completed habit
-        expect(find.byType(HabitCompletionCard), findsOneWidget);
-        expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+        // The wide-screen padding branch lays out without overflowing and still
+        // renders the habit row.
+        expect(find.text(habitFlossing.name), findsOneWidget);
+        expect(tester.takeException(), isNull);
       },
     );
 
@@ -202,20 +241,7 @@ void main() {
           displayFilter: HabitDisplayFilter.pendingLater,
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              habitsControllerProvider.overrideWith(
-                () => FakeHabitsController(testState),
-              ),
-            ],
-            child: makeTestableWidgetWithScaffold(
-              const HabitsTabPage(),
-            ),
-          ),
-        );
-
-        await tester.pump(const Duration(milliseconds: 100));
+        await pump(tester, testState);
 
         // Should have exactly 1 HabitCompletionCard for pendingLater habit
         expect(find.byType(HabitCompletionCard), findsOneWidget);
@@ -232,51 +258,111 @@ void main() {
         displayFilter: HabitDisplayFilter.all,
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider.overrideWith(
-              () => FakeHabitsController(testState),
-            ),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            const HabitsTabPage(),
-          ),
-        ),
-      );
-
-      await tester.pump(const Duration(milliseconds: 100));
+      await pump(tester, testState);
 
       // No HabitCompletionCards when all lists are empty
       expect(find.byType(HabitCompletionCard), findsNothing);
     });
 
     testWidgets(
-      'renders TimeSpanSegmentedControl when showTimeSpan is true',
+      'chart card renders the time-span selector',
       (tester) async {
+        // The time-span selector now lives in HabitsChartCard at the bottom of
+        // the page and is always rendered, independent of any showTimeSpan flag.
         final testState = HabitsState.initial().copyWith(
           habitDefinitions: [habitFlossing],
           openNow: [habitFlossing],
-          showTimeSpan: true,
           displayFilter: HabitDisplayFilter.openNow,
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              habitsControllerProvider.overrideWith(
-                () => FakeHabitsController(testState),
-              ),
-            ],
-            child: makeTestableWidgetWithScaffold(
-              const HabitsTabPage(),
-            ),
-          ),
-        );
-
-        await tester.pump(const Duration(milliseconds: 100));
+        await pump(tester, testState);
 
         expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'summary card surfaces the remaining "to go" count from state',
+      (tester) async {
+        // total = habitDefinitions.length (2), done = completedToday.length (1),
+        // so the gain-framed caption should read "1 to go".
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          completedToday: {habitFlossing.id},
+          openNow: [habitFlossingDueLater],
+          displayFilter: HabitDisplayFilter.openNow,
+        );
+
+        await pump(tester, testState);
+
+        expect(find.text('1 to go'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'summary card shows "All done today" once every habit is completed',
+      (tester) async {
+        // done == total, so remaining is 0 and the caption flips to the
+        // all-done message instead of a "to go" count.
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          completedToday: {habitFlossing.id, habitFlossingDueLater.id},
+          completed: [habitFlossing, habitFlossingDueLater],
+          displayFilter: HabitDisplayFilter.completed,
+        );
+
+        await pump(tester, testState);
+
+        expect(find.text('All done today'), findsOneWidget);
+        expect(find.textContaining('to go'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'renders section headers with per-bucket counts when filter is all',
+      (tester) async {
+        // With the "all" filter every non-empty bucket gets a section header
+        // whose count equals that bucket's length.
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [habitFlossing],
+          pendingLater: [habitFlossingDueLater],
+          completed: [],
+          displayFilter: HabitDisplayFilter.all,
+        );
+
+        await pump(tester, testState);
+
+        // Only the two non-empty buckets render headers (completed is empty).
+        expect(find.byType(HabitsSectionHeader), findsNWidgets(2));
+        // "Due now" / "Later today" labels with a count of 1 each.
+        expect(find.text('Due now'), findsOneWidget);
+        expect(find.text('Later today'), findsOneWidget);
+        expect(find.text('Completed'), findsNothing);
+        // Each non-empty bucket holds a single habit, so the count pills read 1.
+        expect(find.text('1'), findsNWidgets(2));
+        expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+        expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'does not render section headers when a single-status filter is active',
+      (tester) async {
+        // Section headers are gated on the "all" filter; a focused filter shows
+        // the bucket's cards without the grouping header.
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [habitFlossing],
+          pendingLater: [habitFlossingDueLater],
+          displayFilter: HabitDisplayFilter.openNow,
+        );
+
+        await pump(tester, testState);
+
+        expect(find.byType(HabitsSectionHeader), findsNothing);
+        expect(find.byType(HabitCompletionCard), findsOneWidget);
+        expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
       },
     );
 
@@ -295,20 +381,7 @@ void main() {
           displayFilter: HabitDisplayFilter.openNow,
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              habitsControllerProvider.overrideWith(
-                () => FakeHabitsController(testState),
-              ),
-            ],
-            child: makeTestableWidgetWithScaffold(
-              const HabitsTabPage(),
-            ),
-          ),
-        );
-
-        await tester.pump(const Duration(milliseconds: 100));
+        await pump(tester, testState);
 
         expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
         expect(find.byKey(Key(habitFlossing.id)), findsNothing);
@@ -327,20 +400,7 @@ void main() {
           displayFilter: HabitDisplayFilter.openNow,
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              habitsControllerProvider.overrideWith(
-                () => FakeHabitsController(testState),
-              ),
-            ],
-            child: makeTestableWidgetWithScaffold(
-              const HabitsTabPage(),
-            ),
-          ),
-        );
-
-        await tester.pump(const Duration(milliseconds: 100));
+        await pump(tester, testState);
 
         expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
         expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
@@ -361,20 +421,7 @@ void main() {
           displayFilter: HabitDisplayFilter.openNow,
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              habitsControllerProvider.overrideWith(
-                () => FakeHabitsController(testState),
-              ),
-            ],
-            child: makeTestableWidgetWithScaffold(
-              const HabitsTabPage(),
-            ),
-          ),
-        );
-
-        await tester.pump(const Duration(milliseconds: 100));
+        await pump(tester, testState);
 
         expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
         expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
@@ -394,20 +441,7 @@ void main() {
           displayFilter: HabitDisplayFilter.openNow,
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              habitsControllerProvider.overrideWith(
-                () => FakeHabitsController(testState),
-              ),
-            ],
-            child: makeTestableWidgetWithScaffold(
-              const HabitsTabPage(),
-            ),
-          ),
-        );
-
-        await tester.pump(const Duration(milliseconds: 100));
+        await pump(tester, testState);
 
         expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
         expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
@@ -427,20 +461,7 @@ void main() {
           displayFilter: HabitDisplayFilter.openNow,
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              habitsControllerProvider.overrideWith(
-                () => FakeHabitsController(testState),
-              ),
-            ],
-            child: makeTestableWidgetWithScaffold(
-              const HabitsTabPage(),
-            ),
-          ),
-        );
-
-        await tester.pump(const Duration(milliseconds: 100));
+        await pump(tester, testState);
 
         expect(find.byKey(Key(habitFlossing.id)), findsNothing);
         expect(find.byKey(Key(habitFlossingDueLater.id)), findsNothing);

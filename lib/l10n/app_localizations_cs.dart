@@ -2659,7 +2659,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get commonUnknown => 'Neznámé';
 
   @override
-  String get completeHabitFailButton => 'Neúspěch';
+  String get completeHabitFailButton => 'Zmeškáno';
 
   @override
   String get completeHabitSkipButton => 'Přeskočit';
@@ -4867,10 +4867,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitCategoryLabel => 'Kategorie';
 
   @override
+  String habitCompleteSemanticLabel(String habit) {
+    return 'Zaznamenat $habit';
+  }
+
+  @override
   String get habitDashboardHint => 'Vyberte panel';
 
   @override
   String get habitDashboardLabel => 'Panel (volitelné)';
+
+  @override
+  String habitDayStatusSemantic(String habit, String status) {
+    return '$habit, $status';
+  }
 
   @override
   String get habitDeleteConfirm => 'ANO, SMAŽ TENTO ZVYK';
@@ -4879,10 +4889,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitDeleteQuestion => 'Chcete tento zvyk smazat?';
 
   @override
+  String get habitNotRecordedLabel => 'Nezaznamenáno';
+
+  @override
   String get habitPriorityLabel => 'Priorita';
 
   @override
+  String habitsActiveHabitsCount(int count) {
+    return '$count aktivních návyků';
+  }
+
+  @override
+  String get habitsAllDoneToday => 'Dnes hotovo vše';
+
+  @override
   String get habitsCompletedHeader => 'Dokončeno';
+
+  @override
+  String get habitsCompletionRateTitle => 'Míra plnění';
+
+  @override
+  String get habitsDoneTodayLabel => 'Hotovo dnes';
 
   @override
   String get habitSectionOptionsTitle => 'Možnosti';
@@ -4913,6 +4940,30 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitsPendingLaterHeader => 'Později dnes';
+
+  @override
+  String get habitsRecordButton => 'Zaznamenat';
+
+  @override
+  String get habitsStartStreakToday => 'Začněte sérii ještě dnes';
+
+  @override
+  String habitsStreakLongCount(int count) {
+    return '$count se sérií 7 dnů';
+  }
+
+  @override
+  String habitsStreakShortCount(int count) {
+    return '$count se sérií 3 dnů';
+  }
+
+  @override
+  String get habitsTapForBreakdown => 'Klepnutím na den zobrazíte rozpis';
+
+  @override
+  String habitsToGoCount(int count) {
+    return 'zbývá $count';
+  }
 
   @override
   String get imageGenerationError => 'Nepodařilo se vygenerovat obrázek';

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/segmented_button.dart';
 
-/// Segmented control selecting which habit bucket the tab shows.
-///
-/// Renders one segment per [HabitDisplayFilter] value — open now, pending
-/// later, completed, all — and reports the chosen value through
-/// [onValueChanged] (wired to `HabitsController.setDisplayFilter`).
+/// The status filter (due / later / done / all) rendered with the shared
+/// [DsSegmentedToggle] so it speaks the same visual language as the Time
+/// Analysis chart-mode switch and the Daily OS plan-view toggle — instead of a
+/// default-Material `SegmentedButton` with its own outline and selected-icon
+/// chrome.
 class HabitStatusSegmentedControl extends StatelessWidget {
   const HabitStatusSegmentedControl({
     required this.filter,
@@ -16,43 +16,22 @@ class HabitStatusSegmentedControl extends StatelessWidget {
   });
 
   final HabitDisplayFilter filter;
-  final void Function(HabitDisplayFilter?) onValueChanged;
+  final void Function(HabitDisplayFilter) onValueChanged;
 
   @override
   Widget build(BuildContext context) {
-    return SegmentedButton<HabitDisplayFilter>(
-      selected: {filter},
-      showSelectedIcon: false,
-      onSelectionChanged: (selected) => onValueChanged(selected.first),
+    final messages = context.messages;
+    return DsSegmentedToggle<HabitDisplayFilter>(
+      selected: filter,
+      onChanged: onValueChanged,
       segments: [
-        buttonSegment(
-          context: context,
-          value: HabitDisplayFilter.openNow,
-          selected: filter,
-          label: context.messages.habitsFilterOpenNow,
-          semanticsLabel: 'Habits - due',
+        DsSegment(HabitDisplayFilter.openNow, messages.habitsFilterOpenNow),
+        DsSegment(
+          HabitDisplayFilter.pendingLater,
+          messages.habitsFilterPendingLater,
         ),
-        buttonSegment(
-          context: context,
-          value: HabitDisplayFilter.pendingLater,
-          selected: filter,
-          label: context.messages.habitsFilterPendingLater,
-          semanticsLabel: 'Habits - later',
-        ),
-        buttonSegment(
-          context: context,
-          value: HabitDisplayFilter.completed,
-          selected: filter,
-          label: context.messages.habitsFilterCompleted,
-          semanticsLabel: 'Habits - done',
-        ),
-        buttonSegment(
-          context: context,
-          value: HabitDisplayFilter.all,
-          selected: filter,
-          label: context.messages.habitsFilterAll,
-          semanticsLabel: 'Habits - all',
-        ),
+        DsSegment(HabitDisplayFilter.completed, messages.habitsFilterCompleted),
+        DsSegment(HabitDisplayFilter.all, messages.habitsFilterAll),
       ],
     );
   }

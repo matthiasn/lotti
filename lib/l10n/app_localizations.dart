@@ -4552,7 +4552,7 @@ abstract class AppLocalizations {
   /// No description provided for @completeHabitFailButton.
   ///
   /// In en, this message translates to:
-  /// **'Fail'**
+  /// **'Missed'**
   String get completeHabitFailButton;
 
   /// No description provided for @completeHabitSkipButton.
@@ -8424,6 +8424,12 @@ abstract class AppLocalizations {
   /// **'Category'**
   String get habitCategoryLabel;
 
+  /// No description provided for @habitCompleteSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Record {habit}'**
+  String habitCompleteSemanticLabel(String habit);
+
   /// No description provided for @habitDashboardHint.
   ///
   /// In en, this message translates to:
@@ -8435,6 +8441,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dashboard (optional)'**
   String get habitDashboardLabel;
+
+  /// No description provided for @habitDayStatusSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'{habit}, {status}'**
+  String habitDayStatusSemantic(String habit, String status);
 
   /// No description provided for @habitDeleteConfirm.
   ///
@@ -8448,17 +8460,47 @@ abstract class AppLocalizations {
   /// **'Do you want to delete this habit?'**
   String get habitDeleteQuestion;
 
+  /// No description provided for @habitNotRecordedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recorded'**
+  String get habitNotRecordedLabel;
+
   /// No description provided for @habitPriorityLabel.
   ///
   /// In en, this message translates to:
   /// **'Priority'**
   String get habitPriorityLabel;
 
+  /// No description provided for @habitsActiveHabitsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} active habits'**
+  String habitsActiveHabitsCount(int count);
+
+  /// No description provided for @habitsAllDoneToday.
+  ///
+  /// In en, this message translates to:
+  /// **'All done today'**
+  String get habitsAllDoneToday;
+
   /// No description provided for @habitsCompletedHeader.
   ///
   /// In en, this message translates to:
   /// **'Completed'**
   String get habitsCompletedHeader;
+
+  /// No description provided for @habitsCompletionRateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion rate'**
+  String get habitsCompletionRateTitle;
+
+  /// No description provided for @habitsDoneTodayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Done today'**
+  String get habitsDoneTodayLabel;
 
   /// No description provided for @habitSectionOptionsTitle.
   ///
@@ -8519,6 +8561,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Later today'**
   String get habitsPendingLaterHeader;
+
+  /// No description provided for @habitsRecordButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get habitsRecordButton;
+
+  /// No description provided for @habitsStartStreakToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a streak today'**
+  String get habitsStartStreakToday;
+
+  /// No description provided for @habitsStreakLongCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} on a 7-day streak'**
+  String habitsStreakLongCount(int count);
+
+  /// No description provided for @habitsStreakShortCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} on a 3-day streak'**
+  String habitsStreakShortCount(int count);
+
+  /// No description provided for @habitsTapForBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a day for the breakdown'**
+  String get habitsTapForBreakdown;
+
+  /// No description provided for @habitsToGoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} to go'**
+  String habitsToGoCount(int count);
 
   /// No description provided for @imageGenerationError.
   ///

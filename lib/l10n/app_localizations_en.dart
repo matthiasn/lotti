@@ -2618,7 +2618,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonUnknown => 'Unknown';
 
   @override
-  String get completeHabitFailButton => 'Fail';
+  String get completeHabitFailButton => 'Missed';
 
   @override
   String get completeHabitSkipButton => 'Skip';
@@ -4807,10 +4807,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitCategoryLabel => 'Category';
 
   @override
+  String habitCompleteSemanticLabel(String habit) {
+    return 'Record $habit';
+  }
+
+  @override
   String get habitDashboardHint => 'Select a dashboard';
 
   @override
   String get habitDashboardLabel => 'Dashboard (optional)';
+
+  @override
+  String habitDayStatusSemantic(String habit, String status) {
+    return '$habit, $status';
+  }
 
   @override
   String get habitDeleteConfirm => 'YES, DELETE THIS HABIT';
@@ -4819,10 +4829,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitDeleteQuestion => 'Do you want to delete this habit?';
 
   @override
+  String get habitNotRecordedLabel => 'Not recorded';
+
+  @override
   String get habitPriorityLabel => 'Priority';
 
   @override
+  String habitsActiveHabitsCount(int count) {
+    return '$count active habits';
+  }
+
+  @override
+  String get habitsAllDoneToday => 'All done today';
+
+  @override
   String get habitsCompletedHeader => 'Completed';
+
+  @override
+  String get habitsCompletionRateTitle => 'Completion rate';
+
+  @override
+  String get habitsDoneTodayLabel => 'Done today';
 
   @override
   String get habitSectionOptionsTitle => 'Options';
@@ -4853,6 +4880,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get habitsPendingLaterHeader => 'Later today';
+
+  @override
+  String get habitsRecordButton => 'Record';
+
+  @override
+  String get habitsStartStreakToday => 'Start a streak today';
+
+  @override
+  String habitsStreakLongCount(int count) {
+    return '$count on a 7-day streak';
+  }
+
+  @override
+  String habitsStreakShortCount(int count) {
+    return '$count on a 3-day streak';
+  }
+
+  @override
+  String get habitsTapForBreakdown => 'Tap a day for the breakdown';
+
+  @override
+  String habitsToGoCount(int count) {
+    return '$count to go';
+  }
 
   @override
   String get imageGenerationError => 'Failed to generate image';

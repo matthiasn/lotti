@@ -2653,7 +2653,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get commonUnknown => 'Unbekannt';
 
   @override
-  String get completeHabitFailButton => 'Fehlgeschlagen';
+  String get completeHabitFailButton => 'Verpasst';
 
   @override
   String get completeHabitSkipButton => 'Überspringen';
@@ -4868,10 +4868,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitCategoryLabel => 'Kategorie';
 
   @override
+  String habitCompleteSemanticLabel(String habit) {
+    return '$habit eintragen';
+  }
+
+  @override
   String get habitDashboardHint => 'Dashboard auswählen';
 
   @override
   String get habitDashboardLabel => 'Dashboard (optional)';
+
+  @override
+  String habitDayStatusSemantic(String habit, String status) {
+    return '$habit, $status';
+  }
 
   @override
   String get habitDeleteConfirm => 'JA, DIESE GEWOHNHEIT LÖSCHEN';
@@ -4880,10 +4890,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitDeleteQuestion => 'Möchtest du diese Gewohnheit löschen?';
 
   @override
+  String get habitNotRecordedLabel => 'Nicht erfasst';
+
+  @override
   String get habitPriorityLabel => 'Priorität';
 
   @override
+  String habitsActiveHabitsCount(int count) {
+    return '$count aktive Gewohnheiten';
+  }
+
+  @override
+  String get habitsAllDoneToday => 'Heute alles erledigt';
+
+  @override
   String get habitsCompletedHeader => 'Abgeschlossen';
+
+  @override
+  String get habitsCompletionRateTitle => 'Erfolgsquote';
+
+  @override
+  String get habitsDoneTodayLabel => 'Heute erledigt';
 
   @override
   String get habitSectionOptionsTitle => 'Optionen';
@@ -4914,6 +4941,31 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitsPendingLaterHeader => 'Später heute';
+
+  @override
+  String get habitsRecordButton => 'Eintragen';
+
+  @override
+  String get habitsStartStreakToday => 'Starte heute eine Serie';
+
+  @override
+  String habitsStreakLongCount(int count) {
+    return '$count mit 7-Tage-Serie';
+  }
+
+  @override
+  String habitsStreakShortCount(int count) {
+    return '$count mit 3-Tage-Serie';
+  }
+
+  @override
+  String get habitsTapForBreakdown =>
+      'Tippe auf einen Tag für die Aufschlüsselung';
+
+  @override
+  String habitsToGoCount(int count) {
+    return 'noch $count';
+  }
 
   @override
   String get imageGenerationError => 'Bildgenerierung fehlgeschlagen';

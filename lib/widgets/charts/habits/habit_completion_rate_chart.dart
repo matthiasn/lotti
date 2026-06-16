@@ -10,10 +10,9 @@ import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.da
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:tinycolor2/tinycolor2.dart';
 
 class HabitCompletionRateChart extends ConsumerWidget
     implements PreferredSizeWidget {
@@ -68,15 +67,17 @@ class HabitCompletionRateChart extends ConsumerWidget
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     InfoLabel(
-                      '${state.habitDefinitions.length} active habits.'
-                      ' Tap chart for daily breakdown.',
+                      context.messages.habitsActiveHabitsCount(
+                        state.habitDefinitions.length,
+                      ),
                     ),
+                    InfoLabel(context.messages.habitsTapForBreakdown),
                   ],
                 ),
         ),
         SizedBox(
           height: 150,
-          width: MediaQuery.of(context).size.width,
+          width: double.infinity,
           child: Padding(
             padding: const EdgeInsets.only(
               right: 25,
@@ -161,7 +162,11 @@ class HabitCompletionRateChart extends ConsumerWidget
                     showSuccessful: true,
                     showFailed: true,
                     habitDefinitions: state.habitDefinitions,
-                    aboveColor: failColor.lighten().desaturate().withAlpha(127),
+                    // The headroom above the line is "distance to 100%", not a
+                    // failure: a quiet neutral wash, never the old muddy maroon
+                    // that read as a battlefield (esp. in dark mode).
+                    aboveColor: context.designTokens.colors.decorative.level01
+                        .withValues(alpha: 0.3),
                     color: failColor.withAlpha(204),
                   ),
                   barData(
@@ -186,7 +191,7 @@ class HabitCompletionRateChart extends ConsumerWidget
                     showSuccessful: true,
                     showFailed: false,
                     habitDefinitions: state.habitDefinitions,
-                    alpha: 230,
+                    alpha: 90,
                     color: successColor,
                   ),
                 ],
@@ -289,13 +294,13 @@ class InfoLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: 0.5,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-        child: Text(
-          text,
-          style: context.textTheme.labelSmall,
+    final tokens = context.designTokens;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      child: Text(
+        text,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
         ),
       ),
     );
