@@ -56,7 +56,12 @@ class TtsPlaybackState {
   /// [status] is [TtsPlaybackStatus.downloadingModel].
   final double downloadProgress;
 
+  /// Current playhead position, updated from the player while
+  /// [status] is [TtsPlaybackStatus.playing]; reset to zero on stop.
   final Duration position;
+
+  /// Total length of the synthesized clip, reported by the player once the
+  /// WAV is opened.
   final Duration duration;
 
   /// Human-readable error detail, set only when [status] is

@@ -15,9 +15,14 @@ class TtsSpeedSelector extends StatelessWidget {
     super.key,
   });
 
+  /// Currently selected speed; must be one of [kTtsSpeedSequence].
   final double value;
+
+  /// Called with the tapped speed step.
   final ValueChanged<double> onChanged;
 
+  /// Renders a speed for the toggle: whole numbers drop the decimal
+  /// (`1` not `1.0`), fractional steps keep it (`0.75`).
   static String formatSpeed(double speed) {
     return speed == speed.roundToDouble()
         ? speed.toInt().toString()

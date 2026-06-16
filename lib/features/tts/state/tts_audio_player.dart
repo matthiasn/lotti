@@ -16,9 +16,13 @@ abstract interface class TtsAudioPlayer {
   /// Opens [file] and starts playback at [speed]× (1.0 = natural).
   Future<void> play(File file, {required double speed});
 
+  /// Halts playback; the controller treats this as the end of the utterance.
   Future<void> stop();
 
+  /// Current playhead position, emitted continuously during playback.
   Stream<Duration> get positionStream;
+
+  /// Total clip length, emitted once the file is opened.
   Stream<Duration> get durationStream;
 
   /// Emits once each time playback reaches the end.

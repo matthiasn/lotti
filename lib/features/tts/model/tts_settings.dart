@@ -34,8 +34,14 @@ class TtsSettings {
     this.speed = kDefaultTtsSpeed,
   });
 
+  /// Selected Supertonic voice id (e.g. `F1`); resolve via [voice].
   final String voiceId;
+
+  /// Selected model id (e.g. `supertonic-3`); resolve via [model].
   final String modelId;
+
+  /// Playback rate multiplier in `[kMinTtsSpeed, kMaxTtsSpeed]` (1.0 =
+  /// natural). [copyWith] clamps on assignment.
   final double speed;
 
   /// Resolved voice, never null (falls back to the default voice).
