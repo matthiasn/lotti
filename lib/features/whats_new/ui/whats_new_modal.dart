@@ -68,7 +68,17 @@ class WhatsNewModal {
     return _imageUrlPattern.allMatches(markdown).map((m) => m.group(1)!);
   }
 
-  /// Shows the What's New modal.
+  /// Shows the What's New modal and persists which releases were seen.
+  ///
+  /// Reads [whatsNewControllerProvider] for the unseen releases. When there
+  /// are none, shows the "all caught up" modal via [_showEmptyModal] instead.
+  /// Otherwise it precaches every banner and inline markdown image, builds one
+  /// [WoltModalSheetPage] per release (newest first), and tracks the highest
+  /// page index the user reaches.
+  ///
+  /// On close it marks releases as seen: tapping "Done" marks every release
+  /// ([WhatsNewController.markAllAsSeen]); dragging or barrier-dismissing only
+  /// marks the releases actually viewed (indices up to the high-water mark).
   static Future<void> show(BuildContext context, WidgetRef ref) async {
     final state = await ref.read(whatsNewControllerProvider.future);
     final releases = state.unseenContent;
@@ -201,6 +211,10 @@ class WhatsNewModal {
     }
   }
 
+  /// Shows the "you're all caught up" modal when there are no unseen
+  /// releases. Offers a "View past releases" action that resets the seen
+  /// status via [WhatsNewController.resetSeenStatus] and re-invokes [show]
+  /// so the user can browse previously dismissed releases.
   static Future<void> _showEmptyModal(BuildContext context, WidgetRef ref) {
     final colorScheme = context.colorScheme;
 
@@ -254,6 +268,12 @@ class WhatsNewModal {
     );
   }
 
+  /// Builds a single release page: a [HeroBanner] in the hero-image slot, a
+  /// [NavigationFooter] in the sticky action bar, and the joined header +
+  /// section markdown rendered as selectable [GptMarkdown] in the body. The
+  /// body is given a minimum height (half the screen, less banner and footer)
+  /// so short releases still fill the dialog. [pageNotifier] is shared across
+  /// all pages so the footer chevrons can drive page changes.
   static WoltModalSheetPage _buildReleasePage({
     required BuildContext context,
     required WhatsNewContent content,
@@ -307,6 +327,15 @@ class WhatsNewModal {
   }
 }
 
+/// Centered dialog [WoltModalType] used on wide screens (above
+/// [WoltModalConfig.pageBreakpoint]).
+///
+/// Unlike the default Wolt dialog, this caps width at 500 logical pixels (or
+/// 90% of the available width on narrower-but-still-wide screens) and allows
+/// the modal to grow to 90% of the screen height, so the magazine-style
+/// banner plus markdown content has room. It centers itself, has no drag
+/// handle, dismisses downward, and animates with a combined fade + subtle
+/// scale-up.
 class _TallDialogType extends WoltModalType {
   const _TallDialogType()
     : super(
