@@ -120,6 +120,11 @@ class ThemingBody extends ConsumerWidget {
   }
 }
 
+/// Tappable theme-name field used twice in [ThemingBody] (light + dark).
+///
+/// Reads the current selection via [getSelected] and shows it as an
+/// `InputDecorator` field; tapping opens a bottom sheet listing every name
+/// in `allThemeNames` and calls [setTheme] with the chosen key.
 class SelectTheme extends ConsumerWidget {
   const SelectTheme({
     required this.setTheme,

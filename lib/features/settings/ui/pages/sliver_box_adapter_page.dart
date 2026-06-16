@@ -6,6 +6,17 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/app_bar/settings_page_header.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
+/// Legacy scaffold for the mobile / drill-down settings sub-pages.
+///
+/// Wraps [child] in a `Scaffold` + `CustomScrollView` with a
+/// `SettingsPageHeader` (title, optional back button, optional [actions])
+/// and fades the body in over 500ms. Scroll activity is forwarded to the
+/// [UserActivityService] so settings browsing keeps the idle timer alive.
+///
+/// Used by the `*Page` wrappers (`FlagsPage`, `ThemingPage`, `AboutPage`,
+/// `MaintenancePage`, `LoggingSettingsPage`, `HealthImportPage`) that pair
+/// chrome here with a chrome-free `*Body` embedded by settings_v2. See
+/// [fillRemaining] for the bounded vs. unbounded body-height modes.
 class SliverBoxAdapterPage extends StatefulWidget {
   const SliverBoxAdapterPage({
     required this.child,

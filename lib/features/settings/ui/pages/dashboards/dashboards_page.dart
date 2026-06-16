@@ -34,6 +34,12 @@ class DashboardsBody extends StatelessWidget {
   Widget build(BuildContext context) => const DashboardSettingsPage();
 }
 
+/// Settings list of all dashboard definitions.
+///
+/// Watches [allDashboardsStreamProvider] and renders it through the shared
+/// [DefinitionsListPage] shell; the search haystack also covers the
+/// description. Rows beam to the per-dashboard editor and the create button
+/// to `/settings/dashboards/create`.
 class DashboardSettingsPage extends ConsumerWidget {
   const DashboardSettingsPage({super.key});
 

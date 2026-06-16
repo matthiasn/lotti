@@ -34,6 +34,11 @@ class MeasurablesBody extends StatelessWidget {
   Widget build(BuildContext context) => const MeasurablesPage();
 }
 
+/// Settings list of all measurable data types.
+///
+/// Watches [measurableDataTypesStreamProvider] and renders it through the
+/// shared [DefinitionsListPage] shell; rows beam to the per-type editor and
+/// the create button to `/settings/measurables/create`.
 class MeasurablesPage extends ConsumerWidget {
   const MeasurablesPage({super.key});
 

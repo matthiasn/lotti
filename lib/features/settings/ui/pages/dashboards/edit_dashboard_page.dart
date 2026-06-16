@@ -8,6 +8,13 @@ import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
 
+/// Loads the dashboard [dashboardId] and opens it in
+/// [DashboardDefinitionPage].
+///
+/// Subscribes to a notification-driven stream so edits / sync updates push
+/// the latest definition into the editor; renders an
+/// `EmptyScaffoldWithTitle` "not found" page while the lookup is null
+/// (missing or still loading).
 class EditDashboardPage extends StatelessWidget {
   EditDashboardPage({
     required this.dashboardId,

@@ -13,6 +13,15 @@ import 'package:lotti/services/notification_stream.dart';
 import 'package:lotti/widgets/charts/dashboard_item_modal.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
+/// Renders one chart row in the dashboard editor, dispatching on the
+/// [DashboardItem] variant.
+///
+/// Measurement and habit items resolve their display name from the database
+/// (so they stay editable / reorderable) via [MeasurableItemCard] /
+/// [HabitItemCard]; health, workout, and survey items resolve from the
+/// static config maps and render a read-only [ItemCard]. [updateItemFn] is
+/// invoked with the edited item + [index] when a measurement row's modal
+/// changes its aggregation.
 class DashboardItemCard extends StatelessWidget {
   const DashboardItemCard({
     required this.index,
@@ -62,6 +71,10 @@ class DashboardItemCard extends StatelessWidget {
   }
 }
 
+/// Chart row for a measurement item. Looks up the referenced
+/// [MeasurableDataType] to show its display name plus the aggregation suffix
+/// (falling back to the raw id when the type was deleted), and opens the
+/// aggregation-editing modal on tap.
 class MeasurableItemCard extends StatelessWidget {
   const MeasurableItemCard({
     required this.measurement,
@@ -126,6 +139,8 @@ class MeasurableItemCard extends StatelessWidget {
   }
 }
 
+/// Chart row for a habit item. Resolves the referenced habit's name from
+/// the database (falling back to the raw habit id if it's gone).
 class HabitItemCard extends StatelessWidget {
   const HabitItemCard({
     required this.habitItem,

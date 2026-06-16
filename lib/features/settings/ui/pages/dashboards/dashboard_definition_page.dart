@@ -31,6 +31,19 @@ import 'package:multi_select_flutter/multi_select_flutter.dart';
 
 export 'package:lotti/features/settings/ui/pages/dashboards/edit_dashboard_page.dart';
 
+/// Full dashboard create/edit form on the shared settings-detail kit.
+///
+/// Wraps a `FormBuilder` (name, description, category, private/active
+/// switches) plus a reorderable, dismissible list of chart items. The
+/// `ChartMultiSelect` rows below the list add measurement / habit / health /
+/// survey / workout charts. The local `dirty` flag gates the save action;
+/// saving validates, `copyWith`s the values onto [dashboard], and upserts
+/// via `PersistenceLogic`. "Copy" serializes the dashboard plus its
+/// referenced measurable types to the clipboard as JSON.
+///
+/// Reused by both `CreateDashboardPage` ([isCreateMode]) and
+/// `EditDashboardPage`. See [popOnClose] for the route-pop vs. beam-to-list
+/// navigation split.
 class DashboardDefinitionPage extends StatefulWidget {
   const DashboardDefinitionPage({
     required this.dashboard,

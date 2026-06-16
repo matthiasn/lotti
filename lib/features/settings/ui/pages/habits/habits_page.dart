@@ -27,6 +27,12 @@ class HabitsBody extends StatelessWidget {
   Widget build(BuildContext context) => const HabitsPage();
 }
 
+/// Settings list of all habit definitions.
+///
+/// Watches [habitDefinitionsStreamProvider] and hands it to the shared
+/// [DefinitionsListPage] shell; rows beam to the per-habit editor and the
+/// create button to `/settings/habits/create`. [initialSearchTerm] seeds
+/// the filter from deep links like `/settings/habits/search/<term>`.
 class HabitsPage extends ConsumerWidget {
   const HabitsPage({this.initialSearchTerm, super.key});
 

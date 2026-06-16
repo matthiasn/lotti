@@ -14,6 +14,12 @@ const grayscaleColorMatrix = ColorFilter.matrix(<double>[
   0, 0, 0, 1, 0, //
 ]);
 
+/// Wraps [icon] with a pending-outbox count badge for the settings entry.
+///
+/// When sync is offline the bare [icon] is returned. When online but not
+/// logged in, the icon is desaturated ([grayscaleColorMatrix]) and dimmed
+/// and the badge turns neutral; logged in, the badge is the error color.
+/// The badge is hidden when the pending count is zero.
 class OutboxBadgeIcon extends ConsumerWidget {
   const OutboxBadgeIcon({
     required this.icon,

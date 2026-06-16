@@ -9,9 +9,26 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
+/// Two-page confirm-then-run modal for long-running settings actions.
+///
+/// Page one is a (by default destructive) confirmation prompt; on confirm
+/// it advances to page two and runs the async [show] `operation`, showing
+/// the caller's `progressBuilder`. Errors during the operation are logged
+/// (not surfaced) and the sheet is dismissed when done. Used by maintenance
+/// flows like purge / FTS5 recreate that need a progress phase after the
+/// user commits.
 class ConfirmationProgressModal {
   const ConfirmationProgressModal._();
 
+  /// Shows the modal and returns `true` if the user confirmed (the
+  /// operation then ran), `false` if they cancelled.
+  ///
+  /// [progressBuilder] renders the second page while [operation] runs.
+  /// [isDestructive] styles the confirm button (danger vs. primary) and
+  /// shows the warning icon. [closeOnComplete] auto-dismisses the sheet
+  /// when the operation finishes. [confirmationContent] injects extra UI
+  /// above the action bar; [isConfirmEnabled] / [confirmEnabledListenable]
+  /// gate and reactively rebuild the confirm button.
   static Future<bool> show({
     required BuildContext context,
     required String message,
