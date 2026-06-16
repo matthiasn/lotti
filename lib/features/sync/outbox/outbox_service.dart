@@ -55,6 +55,14 @@ abstract class _OutboxServiceBase {
   set _watchdogTimer(Timer? value);
 }
 
+/// App-facing write boundary for outbound sync.
+///
+/// Features enqueue `SyncMessage`s here; the service persists them to the outbox
+/// table in `sync_db` (merging/superseding redundant work and enriching them
+/// with sequence metadata), then nudges the send runner. It waits for the
+/// user-activity idle gate before draining so outbound sending yields to live
+/// input. The actual claim → send → mark-sent/retry loop lives in
+/// `OutboxProcessor`; this class owns enqueue + scheduling.
 class OutboxService extends _OutboxServiceBase with _OutboxSend {
   OutboxService({
     required SyncDatabase syncDatabase,
