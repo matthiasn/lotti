@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -274,6 +275,50 @@ void main() {
 
       // updateFromTo threw → caught → the modal stays open.
       expect(find.text('Date & Time'), findsOneWidget);
+    });
+
+    testWidgets('spinning the date and time wheels changes the range and '
+        'enables Save', (tester) async {
+      await openModal(tester, _sameDay);
+      expect(saveButton(tester).onPressed, isNull);
+
+      // Large drags cross several wheel items so each wheel's onDateTimeChanged
+      // fires and the derived range actually changes.
+      final pickers = find.byType(CupertinoDatePicker);
+      await tester.drag(pickers.at(0), const Offset(0, -120)); // shared date
+      await tester.pumpAndSettle();
+      await tester.drag(pickers.at(1), const Offset(0, -100)); // start time
+      await tester.pumpAndSettle();
+      await tester.drag(pickers.at(2), const Offset(0, -100)); // end time
+      await tester.pumpAndSettle();
+
+      expect(saveButton(tester).onPressed, isNotNull);
+    });
+
+    testWidgets('multi-day: spinning the end date works and toggling off '
+        'collapses back to a single date', (tester) async {
+      await openModal(tester, _multiDay);
+      expect(find.text('End date'), findsOneWidget);
+
+      // The end-date wheel is the second CupertinoDatePicker in this layout.
+      await tester.drag(
+        find.byType(CupertinoDatePicker).at(1),
+        const Offset(0, -120),
+      );
+      await tester.pumpAndSettle();
+
+      // Toggling off clears the override and collapses to a single shared date.
+      await tester.tap(find.byType(DesignSystemToggle));
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widget<DesignSystemToggle>(find.byType(DesignSystemToggle))
+            .value,
+        isFalse,
+      );
+      expect(find.text('End date'), findsNothing);
+      expect(find.text('Date'), findsOneWidget);
     });
   });
 }

@@ -1724,6 +1724,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSelectContinue => 'Pokračovat';
+
+  @override
+  String get aiProviderSelectDontShowAgain => 'Příště nezobrazovat';
+
+  @override
   String get aiProviderSetupOptionGeminiDescription =>
       'Multimodální modely s přepisem zvuku. Vyžaduje API klíč.';
 
@@ -5687,6 +5693,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Vyber alespoň jeden typ entity';
 
   @override
+  String get maintenanceReSyncStart => 'Spustit';
+
+  @override
   String get maintenanceSyncDefinitions =>
       'Synchronizovat měřitelné údaje, dashboardy, návyky, kategorie, AI nastavení';
 
@@ -6919,13 +6928,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsHabitsTitle => 'Návyky';
 
   @override
+  String get settingsHealthImportActivity => 'Importovat data aktivity';
+
+  @override
+  String get settingsHealthImportBloodPressure =>
+      'Importovat data krevního tlaku';
+
+  @override
+  String get settingsHealthImportBodyMeasurement =>
+      'Importovat data tělesných měr';
+
+  @override
   String get settingsHealthImportFromDate => 'Začátek';
+
+  @override
+  String get settingsHealthImportHeartRate =>
+      'Importovat data tepové frekvence';
+
+  @override
+  String get settingsHealthImportSleep => 'Importovat data spánku';
 
   @override
   String get settingsHealthImportTitle => 'Import zdraví';
 
   @override
   String get settingsHealthImportToDate => 'Konec';
+
+  @override
+  String get settingsHealthImportWorkout => 'Importovat data tréninků';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Přidat kategorii';

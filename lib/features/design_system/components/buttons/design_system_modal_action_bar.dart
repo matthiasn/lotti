@@ -49,21 +49,21 @@ class DesignSystemModalActionBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final children = <Widget>[];
-    for (var i = 0; i < secondary.length; i++) {
-      children.add(secondary[i]);
-      // Widen the gap just before the primary so the dominant action is set
-      // clearly apart from the (possibly destructive) last secondary.
-      final isLast = i == secondary.length - 1;
-      children.add(
-        SizedBox(
-          width: isLast ? tokens.spacing.step5 : tokens.spacing.step3,
-        ),
-      );
-    }
-    children.add(Expanded(child: primary));
-
-    final row = Row(children: children);
+    final row = Row(
+      children: [
+        for (var i = 0; i < secondary.length; i++) ...[
+          secondary[i],
+          // Widen the gap just before the primary so the dominant action is set
+          // clearly apart from the (possibly destructive) last secondary.
+          SizedBox(
+            width: i == secondary.length - 1
+                ? tokens.spacing.step5
+                : tokens.spacing.step3,
+          ),
+        ],
+        Expanded(child: primary),
+      ],
+    );
     final padded = padding == null
         ? row
         : Padding(padding: padding!, child: row);

@@ -104,7 +104,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
             ),
           const SizedBox(height: 20),
           DesignSystemButton(
-            label: 'Start',
+            label: context.messages.maintenanceReSyncStart,
             variant: DesignSystemButtonVariant.secondary,
             size: DesignSystemButtonSize.large,
             fullWidth: true,

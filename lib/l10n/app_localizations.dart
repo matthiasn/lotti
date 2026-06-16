@@ -3013,6 +3013,18 @@ abstract class AppLocalizations {
   /// **'OpenRouter'**
   String get aiProviderOpenRouterName;
 
+  /// No description provided for @aiProviderSelectContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get aiProviderSelectContinue;
+
+  /// No description provided for @aiProviderSelectDontShowAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t Show Again'**
+  String get aiProviderSelectDontShowAgain;
+
   /// No description provided for @aiProviderSetupOptionGeminiDescription.
   ///
   /// In en, this message translates to:
@@ -9880,6 +9892,12 @@ abstract class AppLocalizations {
   /// **'Select at least one entity type'**
   String get maintenanceReSyncSelectAtLeastOne;
 
+  /// No description provided for @maintenanceReSyncStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get maintenanceReSyncStart;
+
   /// No description provided for @maintenanceSyncDefinitions.
   ///
   /// In en, this message translates to:
@@ -11824,11 +11842,41 @@ abstract class AppLocalizations {
   /// **'Habits'**
   String get settingsHabitsTitle;
 
+  /// No description provided for @settingsHealthImportActivity.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Activity Data'**
+  String get settingsHealthImportActivity;
+
+  /// No description provided for @settingsHealthImportBloodPressure.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Blood Pressure Data'**
+  String get settingsHealthImportBloodPressure;
+
+  /// No description provided for @settingsHealthImportBodyMeasurement.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Body Measurement Data'**
+  String get settingsHealthImportBodyMeasurement;
+
   /// No description provided for @settingsHealthImportFromDate.
   ///
   /// In en, this message translates to:
   /// **'Start'**
   String get settingsHealthImportFromDate;
+
+  /// No description provided for @settingsHealthImportHeartRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Heart Rate Data'**
+  String get settingsHealthImportHeartRate;
+
+  /// No description provided for @settingsHealthImportSleep.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Sleep Data'**
+  String get settingsHealthImportSleep;
 
   /// No description provided for @settingsHealthImportTitle.
   ///
@@ -11841,6 +11889,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'End'**
   String get settingsHealthImportToDate;
+
+  /// No description provided for @settingsHealthImportWorkout.
+  ///
+  /// In en, this message translates to:
+  /// **'Import Workout Data'**
+  String get settingsHealthImportWorkout;
 
   /// No description provided for @settingsLabelsCategoriesAdd.
   ///

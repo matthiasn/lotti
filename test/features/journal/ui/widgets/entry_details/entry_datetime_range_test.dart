@@ -140,6 +140,16 @@ void main() {
       expect(next.differentDates, isFalse);
     });
 
+    test('differentDates without an end-date override falls back to the start '
+        'day instead of crashing', () {
+      final r = base.copyWith(differentDates: true);
+      expect(r.endDateOverride, isNull);
+      // dateTo/valid/duration must not throw on the missing override.
+      expect(r.dateTo, DateTime(2024, 6, 15, 10));
+      expect(r.valid, isTrue);
+      expect(r.duration, const Duration(hours: 1));
+    });
+
     test('clearOverride nulls the end date override', () {
       final withOverride = base.copyWith(
         differentDates: true,

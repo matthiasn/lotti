@@ -70,18 +70,11 @@ void main() {
       await tester.tap(entryDateFromFinder);
       await tester.pumpAndSettle();
 
-      // Check that modal opened with the date range selector
-      expect(find.text('Date & Time Range'), findsOneWidget);
-
-      // Check that both date fields are present
-      expect(
-        find.text(dfShorter.format(testTextEntry.meta.dateFrom)),
-        findsWidgets,
-      );
-      expect(
-        find.text(dfShorter.format(testTextEntry.meta.dateTo)),
-        findsOneWidget,
-      );
+      // The redesigned single-page editor opened: one shared date plus the
+      // paired start/end time wheels (the date is no longer entered twice).
+      expect(find.text('Date & Time'), findsOneWidget);
+      expect(find.text('Start time'), findsOneWidget);
+      expect(find.text('End time'), findsOneWidget);
 
       // Close modal by tapping outside
       await tester.tapAt(Offset.zero);

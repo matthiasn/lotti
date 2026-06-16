@@ -1735,6 +1735,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSelectContinue => 'Continuer';
+
+  @override
+  String get aiProviderSelectDontShowAgain => 'Ne plus afficher';
+
+  @override
   String get aiProviderSetupOptionGeminiDescription =>
       'Modèles multimodaux avec transcription audio. Nécessite une clé API.';
 
@@ -5729,6 +5735,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Sélectionne au moins un type d\'entité';
 
   @override
+  String get maintenanceReSyncStart => 'Démarrer';
+
+  @override
   String get maintenanceSyncDefinitions =>
       'Synchroniser les mesurables, tableaux de bord, habitudes, catégories, paramètres AI';
 
@@ -6978,13 +6987,34 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsHabitsTitle => 'Habitudes';
 
   @override
+  String get settingsHealthImportActivity => 'Importer les données d\'activité';
+
+  @override
+  String get settingsHealthImportBloodPressure =>
+      'Importer les données de tension artérielle';
+
+  @override
+  String get settingsHealthImportBodyMeasurement => 'Importer les mensurations';
+
+  @override
   String get settingsHealthImportFromDate => 'Début';
+
+  @override
+  String get settingsHealthImportHeartRate =>
+      'Importer les données de fréquence cardiaque';
+
+  @override
+  String get settingsHealthImportSleep => 'Importer les données de sommeil';
 
   @override
   String get settingsHealthImportTitle => 'Health Import';
 
   @override
   String get settingsHealthImportToDate => 'Fin';
+
+  @override
+  String get settingsHealthImportWorkout =>
+      'Importer les données d\'entraînement';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Ajouter une catégorie';

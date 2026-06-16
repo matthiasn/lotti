@@ -1727,6 +1727,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSelectContinue => 'Weiter';
+
+  @override
+  String get aiProviderSelectDontShowAgain => 'Nicht mehr anzeigen';
+
+  @override
   String get aiProviderSetupOptionGeminiDescription =>
       'Multimodale Modelle mit Audiotranskription. Erfordert API-Schlüssel.';
 
@@ -5671,6 +5677,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wähle mindestens einen Entitätstyp aus';
 
   @override
+  String get maintenanceReSyncStart => 'Starten';
+
+  @override
   String get maintenanceSyncDefinitions =>
       'Messgrößen, Dashboards, Gewohnheiten, Kategorien, AI-Einstellungen synchronisieren';
 
@@ -6886,13 +6895,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsHabitsTitle => 'Gewohnheiten';
 
   @override
+  String get settingsHealthImportActivity => 'Aktivitätsdaten importieren';
+
+  @override
+  String get settingsHealthImportBloodPressure => 'Blutdruckdaten importieren';
+
+  @override
+  String get settingsHealthImportBodyMeasurement => 'Körpermaße importieren';
+
+  @override
   String get settingsHealthImportFromDate => 'Start';
+
+  @override
+  String get settingsHealthImportHeartRate => 'Herzfrequenzdaten importieren';
+
+  @override
+  String get settingsHealthImportSleep => 'Schlafdaten importieren';
 
   @override
   String get settingsHealthImportTitle => 'Gesundheitsdatenimport';
 
   @override
   String get settingsHealthImportToDate => 'Ende';
+
+  @override
+  String get settingsHealthImportWorkout => 'Trainingsdaten importieren';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Kategorie hinzufügen';

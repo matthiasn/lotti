@@ -1704,6 +1704,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSelectContinue => 'Continue';
+
+  @override
+  String get aiProviderSelectDontShowAgain => 'Don\'t Show Again';
+
+  @override
   String get aiProviderSetupOptionGeminiDescription =>
       'Multimodal models with audio transcription. Requires API key.';
 
@@ -5598,6 +5604,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Select at least one entity type';
 
   @override
+  String get maintenanceReSyncStart => 'Start';
+
+  @override
   String get maintenanceSyncDefinitions =>
       'Sync measurables, dashboards, habits, categories, AI settings';
 
@@ -6798,13 +6807,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsHabitsTitle => 'Habits';
 
   @override
+  String get settingsHealthImportActivity => 'Import Activity Data';
+
+  @override
+  String get settingsHealthImportBloodPressure => 'Import Blood Pressure Data';
+
+  @override
+  String get settingsHealthImportBodyMeasurement =>
+      'Import Body Measurement Data';
+
+  @override
   String get settingsHealthImportFromDate => 'Start';
+
+  @override
+  String get settingsHealthImportHeartRate => 'Import Heart Rate Data';
+
+  @override
+  String get settingsHealthImportSleep => 'Import Sleep Data';
 
   @override
   String get settingsHealthImportTitle => 'Health Import';
 
   @override
   String get settingsHealthImportToDate => 'End';
+
+  @override
+  String get settingsHealthImportWorkout => 'Import Workout Data';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Add category';

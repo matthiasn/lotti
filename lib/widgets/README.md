@@ -367,9 +367,9 @@ Animated checkbox with label, optional subtitle, proper touch targets, and disab
 
 ## Usage Guidelines
 
-1. **Import widgets** using their relative path:
+1. **Import widgets** using their package path:
    ```dart
-   import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
+   import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
    ```
 
 2. **Maintain consistency** by using these widgets instead of creating similar ones.

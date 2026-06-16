@@ -61,7 +61,10 @@ class EntryDateTimeRange {
       !differentDates && _minutes(endTime) < _minutes(startTime);
 
   DateTime get _effectiveEndDate {
-    if (differentDates) return endDateOverride!;
+    // Defensive: callers that flip [differentDates] on are expected to supply an
+    // [endDateOverride], but fall back to the start day rather than crashing if
+    // the invariant is ever violated (e.g. a bare copyWith(differentDates: true)).
+    if (differentDates) return endDateOverride ?? startDate;
     return overnightAuto ? startDate.add(const Duration(days: 1)) : startDate;
   }
 

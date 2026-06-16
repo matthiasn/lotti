@@ -58,7 +58,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
             const SizedBox(height: 20),
             ...<Widget>[
               DesignSystemButton(
-                label: 'Import Activity Data',
+                label: context.messages.settingsHealthImportActivity,
                 onPressed: () {
                   _healthImport.getActivityHealthData(
                     dateFrom: _dateFrom,
@@ -69,7 +69,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 size: DesignSystemButtonSize.large,
               ),
               DesignSystemButton(
-                label: 'Import Sleep Data',
+                label: context.messages.settingsHealthImportSleep,
                 onPressed: () {
                   _healthImport.fetchHealthData(
                     dateFrom: _dateFrom,
@@ -81,7 +81,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 size: DesignSystemButtonSize.large,
               ),
               DesignSystemButton(
-                label: 'Import Heart Rate Data',
+                label: context.messages.settingsHealthImportHeartRate,
                 onPressed: () {
                   _healthImport.fetchHealthData(
                     dateFrom: _dateFrom,
@@ -93,7 +93,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 size: DesignSystemButtonSize.large,
               ),
               DesignSystemButton(
-                label: 'Import Blood Pressure Data',
+                label: context.messages.settingsHealthImportBloodPressure,
                 onPressed: () {
                   _healthImport.fetchHealthData(
                     dateFrom: _dateFrom,
@@ -105,7 +105,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 size: DesignSystemButtonSize.large,
               ),
               DesignSystemButton(
-                label: 'Import Body Measurement Data',
+                label: context.messages.settingsHealthImportBodyMeasurement,
                 onPressed: () {
                   _healthImport.fetchHealthData(
                     dateFrom: _dateFrom,
@@ -117,7 +117,7 @@ class _HealthImportPageState extends State<HealthImportPage> {
                 size: DesignSystemButtonSize.large,
               ),
               DesignSystemButton(
-                label: 'Import Workout Data',
+                label: context.messages.settingsHealthImportWorkout,
                 onPressed: () {
                   _healthImport.getWorkoutsHealthData(
                     dateFrom: _dateFrom,

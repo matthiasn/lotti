@@ -112,20 +112,17 @@ class SyncModal extends ConsumerWidget {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 24),
-                  Align(
-                    child: DesignSystemButton(
-                      label: context.messages.doneButton.toUpperCase(),
-                      size: DesignSystemButtonSize.large,
-                      onPressed: () {
-                        if (context.mounted) {
-                          container
-                              .read(syncControllerProvider.notifier)
-                              .reset();
-                          Navigator.of(context).pop();
-                        }
-                      },
-                      leadingIcon: Icons.check_circle_rounded,
-                    ),
+                  DesignSystemButton(
+                    label: context.messages.doneButton.toUpperCase(),
+                    size: DesignSystemButtonSize.large,
+                    fullWidth: true,
+                    onPressed: () {
+                      if (context.mounted) {
+                        container.read(syncControllerProvider.notifier).reset();
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    leadingIcon: Icons.check_circle_rounded,
                   ),
                 ] else
                   Row(

@@ -1736,6 +1736,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiProviderOpenRouterName => 'OpenRouter';
 
   @override
+  String get aiProviderSelectContinue => 'Continuați';
+
+  @override
+  String get aiProviderSelectDontShowAgain => 'Nu mai afișați';
+
+  @override
   String get aiProviderSetupOptionGeminiDescription =>
       'Modele multimodale cu transcriere audio. Necesită cheie API.';
 
@@ -5726,6 +5732,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Selectați cel puțin un tip de entitate';
 
   @override
+  String get maintenanceReSyncStart => 'Porniți';
+
+  @override
   String get maintenanceSyncDefinitions =>
       'Sincronizează măsurabile, tablouri de bord, obiceiuri, categorii, setări AI';
 
@@ -6963,13 +6972,33 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsHabitsTitle => 'Obiceiuri';
 
   @override
+  String get settingsHealthImportActivity => 'Importați datele de activitate';
+
+  @override
+  String get settingsHealthImportBloodPressure =>
+      'Importați datele de tensiune arterială';
+
+  @override
+  String get settingsHealthImportBodyMeasurement =>
+      'Importați datele de măsurători corporale';
+
+  @override
   String get settingsHealthImportFromDate => 'Început';
+
+  @override
+  String get settingsHealthImportHeartRate => 'Importați datele de puls';
+
+  @override
+  String get settingsHealthImportSleep => 'Importați datele de somn';
 
   @override
   String get settingsHealthImportTitle => 'Health Import';
 
   @override
   String get settingsHealthImportToDate => 'Sfârșit';
+
+  @override
+  String get settingsHealthImportWorkout => 'Importați datele de antrenament';
 
   @override
   String get settingsLabelsCategoriesAdd => 'Adaugă categorie';

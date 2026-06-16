@@ -220,7 +220,7 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
                       child: DesignSystemButton(
                         onPressed: _textController.text.trim().isEmpty
                             ? null
-                            : () => _importBundle(_textController.text),
+                            : () => _importBundle(_textController.text.trim()),
                         label: messages.provisionedSyncImportButton,
                         size: DesignSystemButtonSize.large,
                       ),

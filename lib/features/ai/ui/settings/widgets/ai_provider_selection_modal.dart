@@ -4,6 +4,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 
@@ -122,7 +123,7 @@ class _AiProviderSelectionModalState extends State<AiProviderSelectionModal> {
       actions: [
         DesignSystemButton(
           onPressed: widget.onDismiss,
-          label: "Don't Show Again",
+          label: context.messages.aiProviderSelectDontShowAgain,
           variant: DesignSystemButtonVariant.tertiary,
           size: DesignSystemButtonSize.large,
         ),
@@ -133,7 +134,7 @@ class _AiProviderSelectionModalState extends State<AiProviderSelectionModal> {
                 )
               : null,
           leadingIcon: Icons.arrow_forward,
-          label: 'Continue',
+          label: context.messages.aiProviderSelectContinue,
           size: DesignSystemButtonSize.large,
         ),
       ],
