@@ -62,8 +62,23 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
   final Set<String> _lingering = {};
   final Map<String, Timer> _lingerTimers = {};
 
+  /// Habits whose linger has ended and are now collapsing out of the list; kept
+  /// in the order until their exit animation reports back via [_finishRemoval].
+  final Set<String> _leaving = {};
+
   /// Last seen `successfulToday`, to detect the completion transition in build.
   Set<String> _prevSuccessful = {};
+
+  /// Drops a row from the open section once its collapse-out animation finishes.
+  void _finishRemoval(String id) {
+    if (!mounted) return;
+    setState(() {
+      _lingering.remove(id);
+      _leaving.remove(id);
+      _openOrder.remove(id);
+      _lingerTimers.remove(id);
+    });
+  }
 
   @override
   void initState() {
@@ -101,13 +116,12 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
       if (_openOrder.contains(id) && !_lingering.contains(id)) {
         _lingering.add(id);
         _lingerTimers[id]?.cancel();
+        // When the linger ends, mark the row leaving so it collapses out
+        // gracefully (see [_CollapsibleRow]) rather than popping; the row is
+        // dropped from the order once that exit animation completes.
         _lingerTimers[id] = Timer(_lingerDuration, () {
           if (!mounted) return;
-          setState(() {
-            _lingering.remove(id);
-            _openOrder.remove(id);
-            _lingerTimers.remove(id);
-          });
+          setState(() => _leaving.add(id));
         });
       }
     }
@@ -195,6 +209,21 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
       );
     }
 
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+
+    // Open rows collapse out gracefully when their post-completion linger ends,
+    // instead of the list snapping shut under them.
+    Widget buildOpenRow(HabitDefinition habitDefinition) {
+      return _CollapsibleRow(
+        key: ValueKey('open-collapse-${habitDefinition.id}'),
+        collapsing: _leaving.contains(habitDefinition.id),
+        reduceMotion: reduceMotion,
+        onCollapsed: () => _finishRemoval(habitDefinition.id),
+        child: buildRow(habitDefinition),
+      );
+    }
+
     return Scaffold(
       backgroundColor: dsPageSurface(context),
       body: SafeArea(
@@ -225,7 +254,7 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                       )
                     else
                       SizedBox(height: tokens.spacing.step5),
-                    ...openNow.map(buildRow),
+                    ...openNow.map(buildOpenRow),
                   ],
                   if (showPendingLater) ...[
                     if (showAll)
@@ -272,6 +301,79 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Wraps an open habit row so that, when [collapsing] flips true, it fades and
+/// collapses its height to zero over a short beat, then reports back via
+/// [onCollapsed] — a just-completed row leaves the list gracefully instead of
+/// the list snapping shut under it. Under [reduceMotion] it removes itself at
+/// once (no animation).
+class _CollapsibleRow extends StatefulWidget {
+  const _CollapsibleRow({
+    required this.collapsing,
+    required this.reduceMotion,
+    required this.onCollapsed,
+    required this.child,
+    super.key,
+  });
+
+  final bool collapsing;
+  final bool reduceMotion;
+  final VoidCallback onCollapsed;
+  final Widget child;
+
+  @override
+  State<_CollapsibleRow> createState() => _CollapsibleRowState();
+}
+
+class _CollapsibleRowState extends State<_CollapsibleRow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 280),
+    value: 1, // full height + opaque at rest
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.collapsing) _collapse();
+  }
+
+  @override
+  void didUpdateWidget(_CollapsibleRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.collapsing && !oldWidget.collapsing) _collapse();
+  }
+
+  void _collapse() {
+    // Defer the callback past the current frame: it removes this row from the
+    // parent's list (a setState), which must not run during build.
+    if (widget.reduceMotion) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onCollapsed();
+      });
+      return;
+    }
+    _controller.reverse().whenComplete(() {
+      if (mounted) widget.onCollapsed();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizeTransition(
+      sizeFactor: CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+      alignment: Alignment.topCenter,
+      child: FadeTransition(opacity: _controller, child: widget.child),
     );
   }
 }

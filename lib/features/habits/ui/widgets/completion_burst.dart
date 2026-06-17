@@ -53,44 +53,46 @@ class _BurstPainter extends CustomPainter {
   final Color accent;
   final Color gold;
 
-  static const _count = 16;
+  // A modest count in a single ring — enough to read as a celebratory spark
+  // without the swarming, hectic feel of a dense double ring.
+  static const _count = 11;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = origin.alongSize(size);
-    // Kept tighter than the row is tall so sparks read as thrown from the check,
+    // Tight to the check so the sparks read as a small flourish thrown from it,
     // not flung across the screen.
-    final reach = size.height * 1.25;
+    final reach = size.height * 1.05;
 
     for (var i = 0; i < _count; i++) {
-      // Two interleaved rings, rotated so they don't line up.
-      final ring = i.isEven ? 0 : 1;
-      final angle =
-          (i / _count) * math.pi * 2 + (ring == 0 ? 0.0 : math.pi / _count);
-      final speed = 0.55 + ((i * 7) % 5) * 0.09;
+      // One evenly-spaced ring, offset so it doesn't sit on the axes.
+      final angle = (i / _count) * math.pi * 2 + 0.35;
+      final speed = 0.6 + ((i * 7) % 5) * 0.07; // 0.60 … 0.88, gentle variation
 
       // Per-particle lifetime so the tail dies in a staggered spread instead of
       // every spark vanishing on the same frame; a spent spark is dropped
       // entirely so nothing lingers out in dead space.
-      final life = 0.55 + ((i * 3) % 4) * 0.11; // 0.55 … 0.88
+      final life = 0.6 + ((i * 3) % 4) * 0.1; // 0.6 … 0.9
       final lt = (progress / life).clamp(0.0, 1.0);
       if (lt >= 1) continue;
 
-      final travel = reach * speed * Curves.easeOutQuart.transform(lt);
-      final gravity = size.height * 0.45 * lt * lt; // arcs down as it slows
+      // easeOutCubic eases out more softly than quart — the sparks drift to a
+      // stop rather than snapping outward.
+      final travel = reach * speed * Curves.easeOutCubic.transform(lt);
+      final gravity = size.height * 0.32 * lt * lt; // a gentle downward arc
       final pos =
           center +
           Offset(math.cos(angle) * travel, math.sin(angle) * travel + gravity);
 
-      final opacity = (1 - lt) * (1 - lt); // fast fade so the burst stays crisp
-      final radius = (2.4 - 1.6 * lt) * (ring == 0 ? 1.0 : 0.66);
+      final opacity = (1 - lt) * (1 - lt); // smooth quadratic fade
+      final radius = 2.6 - 1.6 * lt;
       if (radius <= 0.3) continue;
 
       // Gold is the rarer, smaller spark — an accent on the accent, not a second
       // colour competing with the brand green.
       final isGold = i % 4 == 0;
       final color = (isGold ? gold : accent).withValues(
-        alpha: (opacity * (ring == 0 ? 0.95 : 0.7)).clamp(0.0, 1.0),
+        alpha: (opacity * 0.9).clamp(0.0, 1.0),
       );
       canvas.drawCircle(
         pos,

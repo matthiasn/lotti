@@ -192,8 +192,9 @@ void main() {
       // Still pinned mid-celebration.
       expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
 
-      // After the linger window it leaves the due list.
-      await tester.pump(const Duration(milliseconds: 1300));
+      // Past the linger window the row collapses out, then leaves the due list.
+      await tester.pump(const Duration(milliseconds: 1000));
+      await tester.pumpAndSettle();
       expect(find.byKey(Key(habitFlossing.id)), findsNothing);
     });
 
