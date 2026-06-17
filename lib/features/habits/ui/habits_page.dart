@@ -43,10 +43,6 @@ class HabitsTabPage extends ConsumerStatefulWidget {
 class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
   final _scrollController = ScrollController();
 
-  /// The reading content (header, summary, list, chart) is centred on this
-  /// column on wide windows; the heatmap band breaks out to the full width.
-  static const _maxReadingWidth = 820.0;
-
   /// How long a just-completed habit's row is kept pinned in the open section so
   /// its in-place completion celebration can finish before the row leaves. On
   /// the default "due" filter the row would otherwise be removed the instant the
@@ -153,11 +149,10 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
     final state = ref.watch(habitsControllerProvider);
     final streaks = ref.watch(habitHeatmapControllerProvider).streaksByHabit;
 
-    final width = MediaQuery.sizeOf(context).width;
-    final readingPadding = width > _maxReadingWidth + tokens.spacing.step6 * 2
-        ? (width - _maxReadingWidth) / 2
-        : tokens.spacing.step6;
-    final bandPadding = tokens.spacing.step6;
+    // One content width for every block (header, summary, list, heatmap, chart),
+    // so the page reads as a single column like Time Analysis rather than a
+    // narrow column with the heatmap jutting out wider than everything else.
+    final pagePadding = tokens.spacing.step6;
 
     final displayFilter = state.displayFilter;
     final showAll = displayFilter == HabitDisplayFilter.all;
@@ -232,9 +227,9 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
           slivers: <Widget>[
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
-                readingPadding,
+                pagePadding,
                 tokens.spacing.step5,
-                readingPadding,
+                pagePadding,
                 0,
               ),
               sliver: SliverList(
@@ -284,16 +279,16 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
             // comfortable column.
             SliverPadding(
               padding: EdgeInsets.symmetric(
-                horizontal: bandPadding,
+                horizontal: pagePadding,
                 vertical: tokens.spacing.sectionGap,
               ),
               sliver: const SliverToBoxAdapter(child: HabitHeatmapCard()),
             ),
             SliverPadding(
               padding: EdgeInsets.fromLTRB(
-                readingPadding,
+                pagePadding,
                 0,
-                readingPadding,
+                pagePadding,
                 tokens.spacing.step6,
               ),
               sliver: const SliverToBoxAdapter(child: HabitsChartCard()),

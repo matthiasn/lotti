@@ -9,13 +9,14 @@ import 'package:lotti/features/habits/ui/widgets/status_segmented_control.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The Habits tab header — the calm title-plus-controls band that mirrors the
-/// Time Analysis surface: a page title on the left, the quiet tool cluster
-/// (search, category filter) on the right, and the status filter as a
-/// design-system segmented toggle below.
+/// Time Analysis surface: the page title on the left and, on the right, the
+/// status filter (due / later / done / all) beside the quiet tool cluster
+/// (search, category filter) — all in one row on desktop, exactly like Time
+/// Analysis's title + period controls.
 ///
-/// The status toggle scrolls horizontally so the four segments never overflow
-/// a narrow phone, and the header never flashes or reflows when a tool is
-/// toggled (constant widths throughout).
+/// On a narrow phone the status toggle drops to its own horizontally-scrollable
+/// row beneath the title so the four segments never overflow. The header never
+/// flashes or reflows when a tool is toggled (constant widths throughout).
 class HabitsHeader extends ConsumerWidget {
   const HabitsHeader({super.key});
 
@@ -26,36 +27,58 @@ class HabitsHeader extends ConsumerWidget {
     final state = ref.watch(habitsControllerProvider);
     final controller = ref.read(habitsControllerProvider.notifier);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+    final title = Text(
+      messages.settingsHabitsTitle,
+      style: calmPageTitleStyle(tokens),
+      overflow: TextOverflow.ellipsis,
+    );
+    final filter = HabitStatusSegmentedControl(
+      filter: state.displayFilter,
+      onValueChanged: controller.setDisplayFilter,
+    );
+    final search = HabitsToolButton(
+      icon: Icons.search,
+      active: state.showSearch,
+      onPressed: controller.toggleShowSearch,
+      semanticLabel: messages.searchHint,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Single row when there's room for the title + the four-segment filter +
+        // both tools; otherwise the filter drops to its own scrollable row.
+        if (constraints.maxWidth >= 520) {
+          return Row(
+            children: [
+              Expanded(child: title),
+              filter,
+              SizedBox(width: tokens.spacing.step4),
+              search,
+              SizedBox(width: tokens.spacing.step2),
+              const HabitsFilter(),
+            ],
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: Text(
-                messages.settingsHabitsTitle,
-                style: calmPageTitleStyle(tokens),
-              ),
+            Row(
+              children: [
+                Expanded(child: title),
+                search,
+                SizedBox(width: tokens.spacing.step2),
+                const HabitsFilter(),
+              ],
             ),
-            HabitsToolButton(
-              icon: Icons.search,
-              active: state.showSearch,
-              onPressed: controller.toggleShowSearch,
-              semanticLabel: messages.searchHint,
+            SizedBox(height: tokens.spacing.step4),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: filter,
             ),
-            SizedBox(width: tokens.spacing.step2),
-            const HabitsFilter(),
           ],
-        ),
-        SizedBox(height: tokens.spacing.step4),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: HabitStatusSegmentedControl(
-            filter: state.displayFilter,
-            onValueChanged: controller.setDisplayFilter,
-          ),
-        ),
-      ],
+        );
+      },
     );
   }
 }

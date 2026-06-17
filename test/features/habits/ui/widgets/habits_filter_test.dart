@@ -12,7 +12,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:pie_chart/pie_chart.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
@@ -81,19 +80,22 @@ void main() {
   }
 
   group('HabitsFilter', () {
-    testWidgets('renders filter icon when no habits', (tester) async {
-      await pumpFilter(tester, _EmptyController.new);
-
-      expect(find.byIcon(Icons.filter_alt_off_outlined), findsOneWidget);
-    });
-
-    testWidgets('renders pie chart when habits have categories', (
+    testWidgets('renders an outlined filter icon when nothing is selected', (
       tester,
     ) async {
       await pumpFilter(tester, _WithHabitsController.new);
 
-      expect(find.byType(IconButton), findsOneWidget);
-      expect(find.byType(PieChart), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt_outlined), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt), findsNothing);
+    });
+
+    testWidgets('renders a filled filter icon when categories are selected', (
+      tester,
+    ) async {
+      await pumpFilter(tester, _SelectedController.new);
+
+      expect(find.byIcon(Icons.filter_alt), findsOneWidget);
+      expect(find.byIcon(Icons.filter_alt_outlined), findsNothing);
     });
 
     testWidgets('opens the deferred category picker when tapped', (
@@ -136,19 +138,23 @@ void main() {
   });
 }
 
-class _EmptyController extends HabitsController {
-  @override
-  HabitsState build() {
-    return HabitsState.initial();
-  }
-}
-
 class _WithHabitsController extends HabitsController {
   @override
   HabitsState build() {
     return HabitsState.initial().copyWith(
       openNow: [habitFlossing],
       habitDefinitions: [habitFlossing],
+    );
+  }
+}
+
+class _SelectedController extends HabitsController {
+  @override
+  HabitsState build() {
+    return HabitsState.initial().copyWith(
+      openNow: [habitFlossing],
+      habitDefinitions: [habitFlossing],
+      selectedCategoryIds: {categoryMindfulness.id},
     );
   }
 }

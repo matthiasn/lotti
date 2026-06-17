@@ -83,8 +83,10 @@ void main() {
   }) async {
     await pumpHeader(tester, state: stateWith(showSearch: showSearch));
 
+    // The header has two tool buttons (search + category filter); pick the
+    // search one by its icon.
     final button = tester.widget<HabitsToolButton>(
-      find.byType(HabitsToolButton),
+      find.widgetWithIcon(HabitsToolButton, Icons.search),
     );
     expect(button.active, showSearch);
     expect(button.icon, Icons.search);
