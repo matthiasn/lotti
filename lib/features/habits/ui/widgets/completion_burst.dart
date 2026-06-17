@@ -53,44 +53,47 @@ class _BurstPainter extends CustomPainter {
   final Color accent;
   final Color gold;
 
-  // A generous spread of sparks — enough to feel like a real burst, drawn as
+  // A full spread of sparks — enough to feel like a real burst, drawn as
   // trailed "comets" with varied size, speed and lifetime so it reads rich and
   // alive rather than a sparse handful of identical dots.
-  static const _count = 20;
+  static const _count = 30;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = origin.alongSize(size);
-    final reach = size.height * 1.5;
+    final reach = size.height * 2.1;
 
     for (var i = 0; i < _count; i++) {
       // An even radial spread with a small per-spark jitter so it reads organic,
       // not mechanical.
-      final angle = (i / _count) * math.pi * 2 + (((i * 13) % 7) - 3) * 0.06;
+      final angle = (i / _count) * math.pi * 2 + (((i * 13) % 7) - 3) * 0.05;
       // Varied speed → some sparks shoot far, some stay close (a sense of depth)
-      final speed = 0.45 + ((i * 7) % 9) / 9 * 0.7; // 0.45 … 1.15
+      final speed = 0.5 + ((i * 7) % 9) / 9 * 0.8; // 0.5 … 1.3
       // Varied lifetime → the tail dies in a long staggered spread, not all at
       // once; a spent spark is dropped so nothing lingers in dead space.
-      final life = 0.62 + ((i * 5) % 5) / 5 * 0.36; // 0.62 … 0.98
+      final life = 0.7 + ((i * 5) % 5) / 5 * 0.3; // 0.7 … 1.0
       final lt = (progress / life).clamp(0.0, 1.0);
       if (lt >= 1) continue;
 
-      final ease = Curves.easeOutCubic.transform(lt);
+      // A quick initial pop blended with a steady linear component, so the
+      // sparks keep *drifting* outward through their life instead of snapping to
+      // a stop right after the burst.
+      final ease = 0.5 * Curves.easeOutCubic.transform(lt) + 0.5 * lt;
       final dist = reach * speed * ease;
-      final gravity = size.height * 0.32 * lt * lt; // a gentle downward arc
+      final gravity = size.height * 0.16 * lt * lt; // a faint floaty droop
       final dir = Offset(math.cos(angle), math.sin(angle));
       final head = center + dir * dist + Offset(0, gravity);
 
-      // A comet head that fades slowly (1 - lt², concave) so the burst lingers
-      // long enough to watch, and a tapered trail behind it that's long while
-      // the spark is fast and shrinks as it slows.
+      // A big comet head that fades slowly (1 - lt², concave) so the burst
+      // lingers long enough to watch, with a tapered trail behind it that's long
+      // while the spark is fast and shrinks as it drifts.
       final opacity = (1 - lt * lt).clamp(0.0, 1.0);
-      final headR = (1.7 + ((i * 3) % 4) / 3 * 1.9) * (1 - 0.4 * lt);
+      final headR = (2.6 + ((i * 3) % 4) / 3 * 2.6) * (1 - 0.32 * lt);
       if (headR <= 0.3) continue;
       final isGold = i % 5 == 0;
       final base = isGold ? gold : accent;
 
-      final trailLen = reach * speed * 0.18 * (1 - ease);
+      final trailLen = reach * speed * 0.2 * (1 - ease);
       final tail = head - dir * trailLen;
       canvas
         ..drawLine(

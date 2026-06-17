@@ -87,7 +87,7 @@ class _HabitActionRowState extends State<HabitActionRow>
     super.initState();
     _celebrate = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1150),
+      duration: const Duration(milliseconds: 1400),
     );
   }
 

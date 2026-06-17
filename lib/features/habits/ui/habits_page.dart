@@ -51,7 +51,7 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
   /// its in-place completion celebration can finish before the row leaves. On
   /// the default "due" filter the row would otherwise be removed the instant the
   /// habit is logged, cutting the celebration off before it is seen.
-  static const _lingerDuration = Duration(milliseconds: 1450);
+  static const _lingerDuration = Duration(milliseconds: 1750);
 
   /// The open section's row order, including habits that are lingering after
   /// completion. Maintained across rebuilds so a completed row holds its place
