@@ -53,6 +53,9 @@ class SettingsMobileBranchPage extends ConsumerWidget {
       nodes: node?.children ?? const <SettingsNode>[],
       header: panelSpec == null ? null : panelSpec.build(context),
       showBack: true,
+      // Sync keeps the teal icon treatment its standalone page had before
+      // it was folded into the shared tree (other branches stay grey).
+      accentIcons: branchId == 'sync',
       onNodeTap: (child) => handleSettingsNodeTap(context, ref, child),
     );
   }

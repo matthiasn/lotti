@@ -102,23 +102,25 @@ void main() {
   );
 
   testWidgets(
-    'sync hub renders its landing panel (provisioned card) as a header '
-    'above the children, in the shared-tree order',
+    'sync hub renders its children with no landing-panel header, in the '
+    'shared-tree order with provisioned first',
     (tester) async {
       await _pump(tester, branchId: 'sync', overrides: _flags());
 
-      // The `sync` branch carries `panel: 'sync'`, whose body is the
-      // provisioned-sync QR card — it must render once, at the top.
-      expect(find.byType(ProvisionedSyncSettingsCard), findsOneWidget);
+      // The `sync` branch no longer carries a landing panel, so the
+      // provisioned card is not rendered as a header here — it is reached
+      // via the `sync/provisioned` leaf row instead.
+      expect(find.byType(ProvisionedSyncSettingsCard), findsNothing);
 
       // Children come straight from `buildSettingsTree`, so the mobile
-      // order now matches the desktop sidebar instead of the old
-      // hand-maintained SyncSettingsPage order.
+      // order matches the desktop sidebar. Provisioned Sync is the first
+      // row, replacing the old header.
       final rowIds = tester
           .widgetList<SettingsTreeRow>(find.byType(SettingsTreeRow))
           .map((row) => row.node.id)
           .toList();
       expect(rowIds, [
+        'sync/provisioned',
         'sync/node-profile',
         'sync/backfill',
         'sync/stats',
@@ -131,6 +133,33 @@ void main() {
       // settingsNodeIndicatorFor) so the at-a-glance backlog count the old
       // SyncSettingsPage showed is preserved on the unified row.
       expect(find.byType(OutboxCountIndicator), findsOneWidget);
+
+      // Sync rows keep the teal icon treatment the standalone page had.
+      final rows = tester.widgetList<SettingsTreeRow>(
+        find.byType(SettingsTreeRow),
+      );
+      expect(rows.every((row) => row.accentIcon), isTrue);
+    },
+  );
+
+  testWidgets(
+    'non-sync hubs render grey (non-accent) icons',
+    (tester) async {
+      await _pump(tester, branchId: 'definitions', overrides: _flags());
+      final rows = tester.widgetList<SettingsTreeRow>(
+        find.byType(SettingsTreeRow),
+      );
+      expect(rows.every((row) => !row.accentIcon), isTrue);
+    },
+  );
+
+  testWidgets(
+    'tapping the provisioned-sync row beams to its leaf URL',
+    (tester) async {
+      await _pump(tester, branchId: 'sync', overrides: _flags());
+      await tester.tap(find.byKey(const ValueKey('sync/provisioned')));
+      await tester.pump();
+      expect(beamed, '/settings/sync/provisioned');
     },
   );
 

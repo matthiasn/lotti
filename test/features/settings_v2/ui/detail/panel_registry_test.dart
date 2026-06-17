@@ -49,10 +49,10 @@ void main() {
     /// removal and surfaces additions that weren't deliberately
     /// signed off. Grouped by the plan step that introduced each id.
     const expectedIds = <String>{
-      // Branches that carry their own landing page.
+      // Branches that carry their own landing page. Sync has no
+      // landing panel — its provisioned-sync entry is a leaf below.
       'ai',
       'agents',
-      'sync',
       // Step 7 — simple leaves.
       'flags',
       'theming',
@@ -60,6 +60,7 @@ void main() {
       'advanced-about',
       'advanced-maintenance',
       'advanced-logging',
+      'sync-provisioned',
       'sync-node-profile',
       'sync-backfill',
       'sync-stats',
@@ -178,6 +179,10 @@ void main() {
         late BuildContext capturedContext;
         await tester.pumpWidget(
           MaterialApp(
+            // The sync-backfill builder reads design tokens eagerly to
+            // compute its desktop inset, so the host theme must carry the
+            // DsTokens extension.
+            theme: resolveTestTheme(),
             home: Builder(
               builder: (context) {
                 capturedContext = context;
@@ -195,7 +200,11 @@ void main() {
         expect(build('advanced-about'), isA<AboutBody>());
         expect(build('advanced-maintenance'), isA<MaintenanceBody>());
         expect(build('advanced-logging'), isA<LoggingSettingsBody>());
-        expect(build('sync-backfill'), isA<BackfillSettingsBody>());
+        // Backfill is wrapped in a desktop-only horizontal inset so its
+        // content doesn't run edge-to-edge (matching the Stats card margin).
+        final backfill = build('sync-backfill');
+        expect(backfill, isA<Padding>());
+        expect((backfill as Padding).child, isA<BackfillSettingsBody>());
         expect(build('sync-stats'), isA<SyncStatsBody>());
         expect(build('sync-outbox'), isA<OutboxMonitorBody>());
         expect(
@@ -294,9 +303,9 @@ void main() {
         expect(build('agents-instances'), isA<DetailIdDispatch>());
 
         // The remaining two registered builders: the node-profile page and
-        // the sync consumer wrapper.
+        // the provisioned-sync consumer wrapper.
         expect(build('sync-node-profile'), isA<SyncNodeProfilePage>());
-        expect(build('sync'), isA<Consumer>());
+        expect(build('sync-provisioned'), isA<Consumer>());
       },
     );
   });

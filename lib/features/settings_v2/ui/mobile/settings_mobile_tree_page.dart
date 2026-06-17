@@ -16,11 +16,10 @@ import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
 /// route-agnostic is what lets the same widget render the root and every
 /// branch hub, and makes it trivial to screenshot in isolation.
 ///
-/// A branch that carries its own landing panel (currently only `sync`)
-/// passes that panel body as [header] so its content — e.g. the
-/// provisioned-sync QR card — renders above the child rows, mirroring the
-/// desktop detail pane. Branches without a landing panel pass `null` and
-/// render the bare row list.
+/// A branch that carries its own landing panel passes that panel body as
+/// [header] so its content renders above the child rows, mirroring the
+/// desktop detail pane. No branch attaches one today (Sync's provisioned
+/// card is a leaf row), so [header] is `null` and the bare row list shows.
 class SettingsMobileTreePage extends StatelessWidget {
   const SettingsMobileTreePage({
     required this.title,
@@ -28,6 +27,7 @@ class SettingsMobileTreePage extends StatelessWidget {
     required this.onNodeTap,
     this.header,
     this.showBack = false,
+    this.accentIcons = false,
     super.key,
   });
 
@@ -39,6 +39,11 @@ class SettingsMobileTreePage extends StatelessWidget {
   /// panel body when it has one. `null` for pure-navigation branches.
   final Widget? header;
   final bool showBack;
+
+  /// When `true`, every row in this level paints its icon in the teal
+  /// accent (see [SettingsTreeRow.accentIcon]). Used by the Sync branch to
+  /// keep the teal-icon look its standalone page had before unification.
+  final bool accentIcons;
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +71,7 @@ class SettingsMobileTreePage extends StatelessWidget {
                 onActivePath: false,
                 isExpanded: false,
                 trailing: settingsNodeIndicatorFor(node.id),
+                accentIcon: accentIcons,
                 showActiveRail: false,
                 showLeafChevron: true,
                 // 3 lines so even the longest section summary stays fully

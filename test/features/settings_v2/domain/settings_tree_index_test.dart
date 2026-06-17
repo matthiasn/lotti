@@ -454,8 +454,9 @@ void main() {
       final node = index.findById('sync');
       expect(node, isNotNull);
       expect(node!.hasChildren, isTrue);
-      // node-profile / backfill / stats / outbox / conflicts / matrix-maintenance.
-      expect(node.children!.length, 6);
+      // provisioned / node-profile / backfill / stats / outbox / conflicts /
+      // matrix-maintenance.
+      expect(node.children!.length, 7);
     });
 
     test('returns null for an id that was never in the tree', () {

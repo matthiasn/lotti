@@ -42,6 +42,7 @@ const Map<String, String> settingsNodeUrls = {
   'definitions/categories': '/settings/categories',
   'definitions/labels': '/settings/labels',
   'sync': '/settings/sync',
+  'sync/provisioned': '/settings/sync/provisioned',
   'sync/node-profile': '/settings/sync/node-profile',
   'sync/backfill': '/settings/sync/backfill',
   'sync/stats': '/settings/sync/stats',
