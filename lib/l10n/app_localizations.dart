@@ -8466,6 +8466,12 @@ abstract class AppLocalizations {
   /// **'{date}, {done} of {total} done'**
   String habitHeatmapDaySemantic(String date, int done, int total);
 
+  /// No description provided for @habitLogOtherDayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to log another day'**
+  String get habitLogOtherDayHint;
+
   /// No description provided for @habitNotRecordedLabel.
   ///
   /// In en, this message translates to:

@@ -4834,6 +4834,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get habitLogOtherDayHint => 'Hold to log another day';
+
+  @override
   String get habitNotRecordedLabel => 'Not recorded';
 
   @override

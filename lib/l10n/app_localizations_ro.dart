@@ -4932,6 +4932,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get habitLogOtherDayHint =>
+      'Țineți apăsat pentru a înregistra altă zi';
+
+  @override
   String get habitNotRecordedLabel => 'Neînregistrat';
 
   @override

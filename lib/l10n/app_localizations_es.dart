@@ -4923,6 +4923,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get habitLogOtherDayHint => 'Mantén pulsado para registrar otro día';
+
+  @override
   String get habitNotRecordedLabel => 'Sin registrar';
 
   @override

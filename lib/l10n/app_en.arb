@@ -2519,6 +2519,7 @@
       }
     }
   },
+  "habitLogOtherDayHint": "Hold to log another day",
   "habitNotRecordedLabel": "Not recorded",
   "habitPriorityLabel": "Priority",
   "habitsActiveHabitsCount": "{count} active habits",

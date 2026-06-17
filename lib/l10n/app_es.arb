@@ -2224,6 +2224,7 @@
   "habitDeleteConfirm": "SÍ, BORRAR ESTE HÁBITO",
   "habitDeleteQuestion": "¿Quieres borrar este hábito?",
   "habitHeatmapDaySemantic": "{date}, {done} de {total} hechos",
+  "habitLogOtherDayHint": "Mantén pulsado para registrar otro día",
   "habitNotRecordedLabel": "Sin registrar",
   "habitPriorityLabel": "Prioridad",
   "habitsActiveHabitsCount": "{count} hábitos activos",

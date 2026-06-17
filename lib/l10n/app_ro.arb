@@ -2224,6 +2224,7 @@
   "habitDeleteConfirm": "DA, ȘTERGEȚI ACEST OBICEI",
   "habitDeleteQuestion": "Doriți să ștergeți acest obicei?",
   "habitHeatmapDaySemantic": "{date}, {done} din {total} realizate",
+  "habitLogOtherDayHint": "Țineți apăsat pentru a înregistra altă zi",
   "habitNotRecordedLabel": "Neînregistrat",
   "habitPriorityLabel": "Prioritate",
   "habitsActiveHabitsCount": "{count} obiceiuri active",

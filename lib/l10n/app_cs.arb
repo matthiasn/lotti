@@ -2033,6 +2033,7 @@
   "habitDeleteConfirm": "ANO, SMAŽ TENTO ZVYK",
   "habitDeleteQuestion": "Chcete tento zvyk smazat?",
   "habitHeatmapDaySemantic": "{date}, {done} z {total} splněno",
+  "habitLogOtherDayHint": "Podržením zaznamenáš jiný den",
   "habitNotRecordedLabel": "Nezaznamenáno",
   "habitPriorityLabel": "Priorita",
   "habitsActiveHabitsCount": "{count} aktivních návyků",

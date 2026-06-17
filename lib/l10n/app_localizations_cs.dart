@@ -4894,6 +4894,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get habitLogOtherDayHint => 'Podržením zaznamenáš jiný den';
+
+  @override
   String get habitNotRecordedLabel => 'Nezaznamenáno';
 
   @override

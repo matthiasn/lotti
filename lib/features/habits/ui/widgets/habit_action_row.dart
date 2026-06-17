@@ -52,9 +52,10 @@ class HabitActionRow extends StatefulWidget {
   /// trailing button's two modes.
   final bool completedToday;
 
-  /// This habit's current consecutive-day streak. A small flame chip is shown
-  /// next to the name once it reaches 2 (below that it's noise) — restoring the
-  /// per-habit "don't break the chain" signal the combined heatmap can't give.
+  /// This habit's current consecutive-day streak. Rendered under the name as a
+  /// chain of green boxes (one per kept day, capped) plus a flame + count once
+  /// it reaches 1 — the per-habit "don't break the chain" signal the combined
+  /// heatmap can't give.
   final int currentStreak;
 
   /// Optional per-day history shown under the name (the dashboard card's strip).
@@ -409,6 +410,10 @@ class _HabitCardBody extends StatelessWidget {
                     habitDefinition.name,
                   ),
                   onPressed: completedToday ? onTapAdd : onQuickComplete,
+                  // Press-and-hold → the dialog with the date picker, to log a
+                  // past or specific day.
+                  onLongPress: onTapAdd,
+                  longPressHint: messages.habitLogOtherDayHint,
                 ),
               ],
             ),
@@ -555,6 +560,8 @@ class _CompleteButton extends StatelessWidget {
     required this.doneColor,
     required this.semanticLabel,
     required this.onPressed,
+    required this.onLongPress,
+    required this.longPressHint,
   });
 
   final bool completed;
@@ -562,44 +569,58 @@ class _CompleteButton extends StatelessWidget {
   final String semanticLabel;
   final VoidCallback onPressed;
 
+  /// Press-and-hold opens the full completion dialog (with the date picker), so
+  /// a past or specific day can be logged without leaving the row — the tap
+  /// stays the instant "done today" path.
+  final VoidCallback onLongPress;
+  final String longPressHint;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final accent = tokens.colors.interactive.enabled;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: SizedBox(
-        width: tokens.spacing.step9,
-        height: tokens.spacing.step9,
-        child: Material(
-          color: Colors.transparent,
-          shape: completed
-              ? const CircleBorder()
-              : CircleBorder(side: BorderSide(color: accent, width: 2)),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onPressed,
-            customBorder: const CircleBorder(),
-            // Pop the check in when the habit is completed, so the tap lands
-            // with a real reward beat: the incoming check overshoots past full
-            // size and settles back, while the "+" fades out underneath. Snaps
-            // instantly when the platform asks to reduce motion.
-            child: AnimatedSwitcher(
-              duration: reduceMotion
-                  ? Duration.zero
-                  : const Duration(milliseconds: 320),
-              switchInCurve: Curves.easeOutBack,
-              switchOutCurve: Curves.easeIn,
-              transitionBuilder: (child, animation) =>
-                  ScaleTransition(scale: animation, child: child),
-              child: Icon(
-                completed ? Icons.check_circle_rounded : Icons.add_rounded,
-                key: ValueKey(completed),
-                color: completed ? doneColor : accent,
-                size: tokens.spacing.step7,
+    return Tooltip(
+      message: longPressHint,
+      // Hover (desktop) reveals the hint; the touch long-press is reserved for
+      // the gesture itself rather than popping the tooltip.
+      triggerMode: TooltipTriggerMode.manual,
+      child: Semantics(
+        button: true,
+        label: semanticLabel,
+        onLongPress: onLongPress,
+        child: SizedBox(
+          width: tokens.spacing.step9,
+          height: tokens.spacing.step9,
+          child: Material(
+            color: Colors.transparent,
+            shape: completed
+                ? const CircleBorder()
+                : CircleBorder(side: BorderSide(color: accent, width: 2)),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: onPressed,
+              onLongPress: onLongPress,
+              customBorder: const CircleBorder(),
+              // Pop the check in when the habit is completed, so the tap lands
+              // with a real reward beat: the incoming check overshoots past full
+              // size and settles back, while the "+" fades out underneath. Snaps
+              // instantly when the platform asks to reduce motion.
+              child: AnimatedSwitcher(
+                duration: reduceMotion
+                    ? Duration.zero
+                    : const Duration(milliseconds: 320),
+                switchInCurve: Curves.easeOutBack,
+                switchOutCurve: Curves.easeIn,
+                transitionBuilder: (child, animation) =>
+                    ScaleTransition(scale: animation, child: child),
+                child: Icon(
+                  completed ? Icons.check_circle_rounded : Icons.add_rounded,
+                  key: ValueKey(completed),
+                  color: completed ? doneColor : accent,
+                  size: tokens.spacing.step7,
+                ),
               ),
             ),
           ),

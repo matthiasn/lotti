@@ -334,6 +334,28 @@ void main() {
     });
   });
 
+  group('long-press the + button', () {
+    testWidgets('opens the dialog (to log another day), not a quick-complete', (
+      tester,
+    ) async {
+      await pumpRow(tester);
+      await tester.longPress(find.byIcon(Icons.add_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Opens the date-picker dialog rather than silently logging today.
+      verifyNever(
+        () => mockPersistenceLogic.createHabitCompletionEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: any(named: 'habitDefinition'),
+        ),
+      );
+      final dialog = tester.widget<HabitDialog>(find.byType(HabitDialog));
+      expect(dialog.habitId, habitFlossing.id);
+    });
+  });
+
   group('swipe gestures', () {
     final swipeRow = find.byKey(
       ValueKey<String>('habit-swipe-${habitFlossing.id}'),
