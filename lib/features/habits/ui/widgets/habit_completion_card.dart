@@ -121,10 +121,10 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
 /// anywhere on the row (or the complete button) opens the dialog, where any
 /// past day can be backfilled via the date field — so the strip needs no tiny,
 /// swipe-conflicting per-cell tap targets. Each cell still exposes its date +
-/// outcome to screen readers. Cells are size-capped squares laid out from the
-/// start, so the strip stays a quiet footprint instead of stretching into wide
-/// "pill bars" on desktop; on dense ranges they shrink and the glyph drops out
-/// below a legibility floor.
+/// outcome to screen readers. Cells are fixed-size squares (never the stretchy
+/// "pill bars" of the old layout); they shrink toward a legibility floor as the
+/// range grows, and once the range is longer than the width can hold even at
+/// that floor, the strip keeps the most recent days and drops the oldest.
 class _HistoryStrip extends StatelessWidget {
   const _HistoryStrip({
     required this.results,
@@ -136,10 +136,13 @@ class _HistoryStrip extends StatelessWidget {
   final bool showGaps;
   final String habitName;
 
-  /// Data-viz dimensions (not layout spacing): cells never exceed this square
-  /// size, and the outcome glyph is only drawn once a cell clears the legibility
-  /// floor — below it the colour + shape would be too small to read.
+  /// Data-viz dimensions (not layout spacing): cells are square, never larger
+  /// than [_maxCell] nor smaller than [_minCell] (below which the colour + shape
+  /// stop reading), and the outcome glyph is only drawn once a cell clears the
+  /// [_glyphFloor]. When the range holds more days than fit at [_minCell], the
+  /// oldest are dropped so the strip shows the most recent chain (see build).
   static const double _maxCell = 24;
+  static const double _minCell = 6;
   static const double _glyphFloor = 14;
 
   @override
@@ -153,15 +156,27 @@ class _HistoryStrip extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final raw = (constraints.maxWidth - gap * (n - 1)) / n;
-        final size = raw.clamp(6.0, _maxCell);
+        final maxWidth = constraints.maxWidth;
+        // How many fixed-size cells fit at the smallest legible size. When the
+        // range is longer than that, render the most recent days that fit and
+        // drop the oldest (left edge) rather than overflow — fixed cells can't
+        // shrink past [_minCell], and the deep chain lives in the heatmap now.
+        final fits = maxWidth.isFinite
+            ? ((maxWidth + gap) / (_minCell + gap)).floor()
+            : n;
+        final count = fits < n ? (fits < 0 ? 0 : fits) : n;
+        if (count == 0) return const SizedBox.shrink();
+        final visible = results.sublist(n - count);
+
+        final raw = (maxWidth - gap * (count - 1)) / count;
+        final size = raw.clamp(_minCell, _maxCell);
         final showGlyph = size >= _glyphFloor;
 
         return Row(
           children: [
-            for (var i = 0; i < n; i++) ...[
+            for (var i = 0; i < count; i++) ...[
               if (i > 0) SizedBox(width: gap),
-              _cell(tokens, messages, surface, results[i], size, showGlyph),
+              _cell(tokens, messages, surface, visible[i], size, showGlyph),
             ],
           ],
         );
