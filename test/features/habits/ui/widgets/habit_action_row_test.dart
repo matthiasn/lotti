@@ -196,6 +196,17 @@ void main() {
       expect(boxes, greaterThan(0));
       expect(boxes, lessThanOrEqualTo(30));
     });
+
+    testWidgets('extends with a new box when the streak grows', (tester) async {
+      await pumpRow(tester, currentStreak: 5);
+      expect(greenBoxes(), findsNWidgets(5));
+
+      // Grow in place → the chain gains a box (which pops in); let it settle.
+      await pumpRow(tester, currentStreak: 6);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(greenBoxes(), findsNWidgets(6));
+      expect(find.text('6'), findsOneWidget);
+    });
   });
 
   group('completion flash', () {

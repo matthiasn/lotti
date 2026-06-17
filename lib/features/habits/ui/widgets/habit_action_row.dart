@@ -425,17 +425,73 @@ class _HabitCardBody extends StatelessWidget {
 /// Only the *current unbroken run* is shown: when the streak breaks it resets to
 /// empty (a habit with no streak shows nothing), and there are no red or gap
 /// cells — a kept day is green, that's all, so a struggling habit is never a
-/// wall of failure. The chain caps at [_cap] boxes and fits to the available
+/// wall of failure. The chain caps at 30 boxes and fits to the available
 /// width (older boxes drop first); a trailing flame + count gives the exact
 /// length, including runs past the cap. The streak is announced once via a
 /// semantics label, so screen readers don't read each box.
-class _StreakChain extends StatelessWidget {
+///
+/// When the streak grows the newest (rightmost) box pops in (a brief scale +
+/// fade), so extending the chain on completion reads as a small reward; the rest
+/// of the chain is static. Reduced motion skips the pop.
+class _StreakChain extends StatefulWidget {
   const _StreakChain({required this.count});
 
   final int count;
 
+  @override
+  State<_StreakChain> createState() => _StreakChainState();
+}
+
+class _StreakChainState extends State<_StreakChain>
+    with SingleTickerProviderStateMixin {
   static const _cap = 30;
   static const _box = 14.0;
+
+  late final AnimationController _grow = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 420),
+    value: 1, // rest = newest box at full size
+  );
+
+  @override
+  void didUpdateWidget(_StreakChain oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.count > oldWidget.count &&
+        !(MediaQuery.maybeOf(context)?.disableAnimations ?? false)) {
+      _grow.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _grow.dispose();
+    super.dispose();
+  }
+
+  Widget _boxWidget(BuildContext context, {required bool newest}) {
+    final tokens = context.designTokens;
+    final box = Container(
+      width: _box,
+      height: _box,
+      decoration: BoxDecoration(
+        color: successColor,
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+      ),
+    );
+    if (!newest) return box;
+    return AnimatedBuilder(
+      animation: _grow,
+      builder: (context, child) => Opacity(
+        opacity: _grow.value.clamp(0.0, 1.0),
+        // easeOutBack overshoots past full then settles — a little pop.
+        child: Transform.scale(
+          scale: Curves.easeOutBack.transform(_grow.value),
+          child: child,
+        ),
+      ),
+      child: box,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -443,7 +499,7 @@ class _StreakChain extends StatelessWidget {
     final gap = tokens.spacing.step1;
 
     return Semantics(
-      label: context.messages.habitStreakDaysSemantic(count),
+      label: context.messages.habitStreakDaysSemantic(widget.count),
       child: ExcludeSemantics(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -455,7 +511,7 @@ class _StreakChain extends StatelessWidget {
               double.infinity,
             );
             final fits = (avail / (_box + gap)).floor();
-            var shown = count < _cap ? count : _cap;
+            var shown = widget.count < _cap ? widget.count : _cap;
             if (shown > fits) shown = fits < 0 ? 0 : fits;
 
             return Row(
@@ -463,14 +519,7 @@ class _StreakChain extends StatelessWidget {
               children: [
                 for (var i = 0; i < shown; i++) ...[
                   if (i > 0) SizedBox(width: gap),
-                  Container(
-                    width: _box,
-                    height: _box,
-                    decoration: BoxDecoration(
-                      color: successColor,
-                      borderRadius: BorderRadius.circular(tokens.radii.xs),
-                    ),
-                  ),
+                  _boxWidget(context, newest: i == shown - 1),
                 ],
                 SizedBox(width: tokens.spacing.step2),
                 Icon(
@@ -480,7 +529,7 @@ class _StreakChain extends StatelessWidget {
                 ),
                 SizedBox(width: tokens.spacing.step1),
                 Text(
-                  '$count',
+                  '${widget.count}',
                   style: tokens.typography.styles.body.bodySmall.copyWith(
                     color: tokens.colors.text.highEmphasis,
                     fontWeight: tokens.typography.weight.semiBold,
