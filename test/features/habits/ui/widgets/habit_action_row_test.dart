@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
+import 'package:lotti/features/habits/ui/widgets/completion_burst.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -221,18 +222,22 @@ void main() {
       expect(flash, findsNothing);
     });
 
-    testWidgets('reduced motion: completing the habit plays no celebration', (
+    testWidgets('reduced motion: static glow, but no spark burst', (
       tester,
     ) async {
       await pumpRow(tester, reduceMotion: true);
       await pumpRow(tester, completedToday: true, reduceMotion: true);
-      // Step across the whole timeline — no glow ever appears.
-      for (final ms in const [40, 200, 500, 950]) {
-        await tester.pump(Duration(milliseconds: ms));
-        expect(flash, findsNothing);
-      }
-      // The row still lands in its done state.
+
+      // The spark burst never renders under reduced motion...
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.byType(CompletionBurst), findsNothing);
+      // ...but the glow still acknowledges the completion (opacity-only).
+      expect(flash, findsOneWidget);
+
+      // Settles to the done state with the glow gone.
+      await tester.pump(const Duration(milliseconds: 900));
       expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
+      expect(flash, findsNothing);
     });
   });
 

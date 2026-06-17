@@ -10,11 +10,22 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// around the edges; the shadow must not be inside a clip, or it gets cut off.
 /// The blur/spread are visual-effect dimensions (like a cell size), not layout
 /// spacing; the colour and radius come from tokens.
+///
+/// When [staticGlow] is set (the reduced-motion path) the halo holds a fixed
+/// size and only its opacity fades — an acknowledgement with no spatial motion,
+/// so it stays safe under "reduce motion" while the glow still happens.
 class CompletionGlow extends StatelessWidget {
-  const CompletionGlow({required this.value, super.key});
+  const CompletionGlow({
+    required this.value,
+    this.staticGlow = false,
+    super.key,
+  });
 
   /// `0` → bright + tight (just completed); `1` → gone (rest).
   final double value;
+
+  /// Fixed-size halo, opacity-only fade — for reduced motion.
+  final bool staticGlow;
 
   @override
   Widget build(BuildContext context) {
@@ -26,8 +37,8 @@ class CompletionGlow extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: tokens.colors.interactive.enabled.withValues(alpha: alpha),
-            blurRadius: 8 + 20 * value,
-            spreadRadius: 1 + 12 * value,
+            blurRadius: staticGlow ? 18 : 8 + 20 * value,
+            spreadRadius: staticGlow ? 6 : 1 + 12 * value,
           ),
         ],
       ),

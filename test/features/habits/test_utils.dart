@@ -20,6 +20,11 @@ class FakeHabitsController extends HabitsController {
   @override
   HabitsState build() => _state;
 
+  /// Pushes a new state, so tests can exercise transitions (e.g. completing a
+  /// habit) against a page that watches this controller.
+  // ignore: use_setters_to_change_properties
+  void emit(HabitsState next) => state = next;
+
   @override
   void setDisplayFilter(HabitDisplayFilter? displayFilter) {
     displayFilterCalls.add(displayFilter);

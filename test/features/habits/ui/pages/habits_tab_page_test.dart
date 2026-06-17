@@ -161,6 +161,42 @@ void main() {
       expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
     });
 
+    testWidgets('completing a habit lingers its row, then removes it', (
+      tester,
+    ) async {
+      final controller = await pump(
+        tester,
+        HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [habitFlossing],
+          displayFilter: HabitDisplayFilter.openNow,
+        ),
+      );
+      expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+
+      // Check it off: it leaves the openNow bucket — on the "due" filter it would
+      // normally vanish instantly — but the page pins it through the linger so
+      // its celebration can play.
+      controller.emit(
+        HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: const [],
+          completed: [habitFlossing],
+          completedToday: {habitFlossing.id},
+          successfulToday: {habitFlossing.id},
+          displayFilter: HabitDisplayFilter.openNow,
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      // Still pinned mid-celebration.
+      expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+
+      // After the linger window it leaves the due list.
+      await tester.pump(const Duration(milliseconds: 1300));
+      expect(find.byKey(Key(habitFlossing.id)), findsNothing);
+    });
+
     testWidgets('renders an action row for completed habits', (tester) async {
       final testState = HabitsState.initial().copyWith(
         habitDefinitions: [habitFlossing, habitFlossingDueLater],

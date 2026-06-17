@@ -298,7 +298,9 @@ void main() {
         expect(flash, findsNothing);
       });
 
-      testWidgets('reduced motion: no all-done glow plays', (tester) async {
+      testWidgets('reduced motion: all-done glow still plays (static)', (
+        tester,
+      ) async {
         final flash = find.byKey(const ValueKey('habit-all-done-flash'));
         final controller = _ControllableController(
           _state(definitionCount: 2, completedCount: 1),
@@ -318,10 +320,9 @@ void main() {
 
         controller.emit(_state(definitionCount: 2, completedCount: 2));
         await tester.pump();
+        // The glow still acknowledges the finish (opacity-only) after its delay.
         await tester.pump(const Duration(milliseconds: 500));
-        // The glow never fires when motion is reduced.
-        expect(flash, findsNothing);
-        // The finished state is still reached.
+        expect(flash, findsOneWidget);
         expect(find.text('All done today'), findsOneWidget);
       });
     });

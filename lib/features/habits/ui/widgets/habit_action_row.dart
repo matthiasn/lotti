@@ -95,9 +95,9 @@ class _HabitActionRowState extends State<HabitActionRow>
   void didUpdateWidget(HabitActionRow oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.completedToday && widget.completedToday) {
-      // Respect the platform "reduce motion" setting: skip the celebration and
-      // let the row settle straight into its done state.
-      if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return;
+      // Always run the timeline; the builders decide what it *looks* like. Under
+      // reduced motion that's an opacity-only glow with no particles (see
+      // [build]); otherwise the full staged celebration.
       _celebrate.forward(from: 0);
     }
   }
@@ -203,6 +203,8 @@ class _HabitActionRowState extends State<HabitActionRow>
     final tokens = context.designTokens;
     final messages = context.messages;
     final doneColor = habitCompletionColor(HabitCompletionType.success);
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
@@ -212,7 +214,8 @@ class _HabitActionRowState extends State<HabitActionRow>
           // A soft accent glow that blooms around the card on completion —
           // behind the (opaque) card and outside the swipe clip so the halo
           // shows around the edges instead of being cut off. Starts ~80ms in so
-          // it reads as caused by the check landing, not co-fired with it.
+          // it reads as caused by the check landing, not co-fired with it. Under
+          // reduced motion it holds a fixed size and only fades (no expansion).
           Positioned.fill(
             child: IgnorePointer(
               child: AnimatedBuilder(
@@ -224,6 +227,7 @@ class _HabitActionRowState extends State<HabitActionRow>
                       : CompletionGlow(
                           key: const ValueKey('habit-completion-flash'),
                           value: v,
+                          staticGlow: reduceMotion,
                         );
                 },
               ),
@@ -274,20 +278,22 @@ class _HabitActionRowState extends State<HabitActionRow>
           ),
           // Sparks flying out of the completed check — over the card and free to
           // leave the rounded rect (the Stack does not clip). Launches ~135ms in
-          // so the sparks read as thrown by the check as it lands.
-          Positioned.fill(
-            child: IgnorePointer(
-              child: AnimatedBuilder(
-                animation: _celebrate,
-                builder: (context, _) {
-                  final p = _stageProgress(_celebrate.value, 0.14, 0.82);
-                  return p == null
-                      ? const SizedBox.shrink()
-                      : CompletionBurst(progress: p);
-                },
+          // so the sparks read as thrown by the check as it lands. Suppressed
+          // entirely under reduced motion (the glow alone acknowledges it).
+          if (!reduceMotion)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: AnimatedBuilder(
+                  animation: _celebrate,
+                  builder: (context, _) {
+                    final p = _stageProgress(_celebrate.value, 0.14, 0.82);
+                    return p == null
+                        ? const SizedBox.shrink()
+                        : CompletionBurst(progress: p);
+                  },
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

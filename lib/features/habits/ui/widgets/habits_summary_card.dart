@@ -53,15 +53,16 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 
     // Fire the all-done flourish only on the transition into a fully-complete
-    // day, never on a card that opens already complete. The achievement is
-    // announced to screen readers by the live region in _DoneFraction; the glow
-    // plays unless the platform asks to reduce motion.
+    // day, never on a card that opens already complete. The achievement is also
+    // announced to screen readers by the live region in _DoneFraction. The glow
+    // plays either way; under reduced motion it holds a fixed size and only
+    // fades (see the builder below).
     ref.listen(habitsControllerProvider, (previous, next) {
-      if ((previous == null || !_isAllDone(previous)) &&
-          _isAllDone(next) &&
-          !(MediaQuery.maybeOf(context)?.disableAnimations ?? false)) {
+      if ((previous == null || !_isAllDone(previous)) && _isAllDone(next)) {
         _allDoneFlash.forward(from: 0);
       }
     });
@@ -130,6 +131,7 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
                 return CompletionGlow(
                   key: const ValueKey('habit-all-done-flash'),
                   value: v,
+                  staticGlow: reduceMotion,
                 );
               },
             ),
