@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_filter.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_search.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_tool_button.dart';
 import 'package:lotti/features/habits/ui/widgets/status_segmented_control.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -27,11 +28,6 @@ class HabitsHeader extends ConsumerWidget {
     final state = ref.watch(habitsControllerProvider);
     final controller = ref.read(habitsControllerProvider.notifier);
 
-    final title = Text(
-      messages.settingsHabitsTitle,
-      style: calmPageTitleStyle(tokens),
-      overflow: TextOverflow.ellipsis,
-    );
     final filter = HabitStatusSegmentedControl(
       filter: state.displayFilter,
       onValueChanged: controller.setDisplayFilter,
@@ -43,14 +39,26 @@ class HabitsHeader extends ConsumerWidget {
       semanticLabel: messages.searchHint,
     );
 
+    // Toggling search swaps the title for the search field inline in the header
+    // (it fills the space between the title and the controls) instead of
+    // revealing a separate bar below the header.
+    final leading = state.showSearch
+        ? const HabitsSearchWidget(padding: EdgeInsets.zero)
+        : Text(
+            messages.settingsHabitsTitle,
+            style: calmPageTitleStyle(tokens),
+            overflow: TextOverflow.ellipsis,
+          );
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Single row when there's room for the title + the four-segment filter +
-        // both tools; otherwise the filter drops to its own scrollable row.
+        // Single row when there's room for the title/search + the four-segment
+        // filter + both tools; otherwise the filter drops to its own row.
         if (constraints.maxWidth >= 520) {
           return Row(
             children: [
-              Expanded(child: title),
+              Expanded(child: leading),
+              SizedBox(width: tokens.spacing.step4),
               filter,
               SizedBox(width: tokens.spacing.step4),
               search,
@@ -65,7 +73,7 @@ class HabitsHeader extends ConsumerWidget {
           children: [
             Row(
               children: [
-                Expanded(child: title),
+                Expanded(child: leading),
                 search,
                 SizedBox(width: tokens.spacing.step2),
                 const HabitsFilter(),

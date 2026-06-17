@@ -43,6 +43,12 @@ class HabitsTabPage extends ConsumerStatefulWidget {
 class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
   final _scrollController = ScrollController();
 
+  /// The whole dashboard (header, summary, list, heatmap, chart) is capped at
+  /// this width and centred, so on a wide window it reads as one comfortable
+  /// column rather than rows stretched edge-to-edge — and every block shares the
+  /// same width, so nothing juts out wider than the rest.
+  static const _maxContentWidth = 1100.0;
+
   /// How long a just-completed habit's row is kept pinned in the open section so
   /// its in-place completion celebration can finish before the row leaves. On
   /// the default "due" filter the row would otherwise be removed the instant the
@@ -149,10 +155,13 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
     final state = ref.watch(habitsControllerProvider);
     final streaks = ref.watch(habitHeatmapControllerProvider).streaksByHabit;
 
-    // One content width for every block (header, summary, list, heatmap, chart),
-    // so the page reads as a single column like Time Analysis rather than a
-    // narrow column with the heatmap jutting out wider than everything else.
-    final pagePadding = tokens.spacing.step6;
+    // One content width for every block (header, summary, list, heatmap, chart):
+    // capped + centred on a wide window, full-bleed minus a gutter when narrow.
+    // The heatmap no longer breaks out wider than everything else (the "cross").
+    final width = MediaQuery.sizeOf(context).width;
+    final pagePadding = width > _maxContentWidth + tokens.spacing.step6 * 2
+        ? (width - _maxContentWidth) / 2
+        : tokens.spacing.step6;
 
     final displayFilter = state.displayFilter;
     final showAll = displayFilter == HabitDisplayFilter.all;
@@ -237,10 +246,6 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                   const HabitsHeader(),
                   SizedBox(height: tokens.spacing.sectionGap),
                   const HabitsSummaryCard(),
-                  if (state.showSearch) ...[
-                    SizedBox(height: tokens.spacing.step4),
-                    const HabitsSearchWidget(),
-                  ],
                   if (showOpenNow) ...[
                     if (showAll)
                       HabitsSectionHeader(

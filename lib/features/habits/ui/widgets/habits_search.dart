@@ -13,7 +13,11 @@ import 'package:lotti/widgets/search/lotti_search_bar.dart';
 /// to the end. Seeds the field with the current search string on init so the
 /// query survives toggling the bar closed and open.
 class HabitsSearchWidget extends ConsumerStatefulWidget {
-  const HabitsSearchWidget({super.key});
+  const HabitsSearchWidget({this.padding, super.key});
+
+  /// Outer padding. Defaults to a comfortable inset when the bar stands on its
+  /// own; pass [EdgeInsets.zero] to drop it inline into the header row.
+  final EdgeInsetsGeometry? padding;
 
   @override
   ConsumerState<HabitsSearchWidget> createState() => _HabitsSearchWidgetState();
@@ -55,7 +59,9 @@ class _HabitsSearchWidgetState extends ConsumerState<HabitsSearchWidget> {
     );
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding:
+          widget.padding ??
+          const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       child: LottiSearchBar(
         controller: _controller,
         hintText: context.messages.searchHint,
