@@ -58,7 +58,42 @@ class HabitActionRow extends StatefulWidget {
   State<HabitActionRow> createState() => _HabitActionRowState();
 }
 
-class _HabitActionRowState extends State<HabitActionRow> {
+class _HabitActionRowState extends State<HabitActionRow>
+    with SingleTickerProviderStateMixin {
+  /// Fires a one-shot accent glow when the habit flips to done, so completing
+  /// it from this row reads as a moment, not a silent state change. Driven from
+  /// [didUpdateWidget] so it only fires on the *transition*, never on a row that
+  /// was already done when the list first built.
+  ///
+  /// Created in [initState] (not a lazy initializer) so it always exists by the
+  /// time [dispose] runs — even for a missing habit whose `build` returns early
+  /// and never touches it.
+  late final AnimationController _flash;
+
+  @override
+  void initState() {
+    super.initState();
+    _flash = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 650),
+      value: 1, // rest at 1 → glow opacity (1 - value) is 0 until a flash fires
+    );
+  }
+
+  @override
+  void didUpdateWidget(HabitActionRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.completedToday && widget.completedToday) {
+      _flash.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _flash.dispose();
+    super.dispose();
+  }
+
   void onTapAdd({String? dateString}) {
     final height = MediaQuery.of(context).size.height;
     final maxHeight = height * 0.9;
@@ -192,6 +227,7 @@ class _HabitActionRowState extends State<HabitActionRow> {
             currentStreak: widget.currentStreak,
             doneColor: doneColor,
             history: widget.history,
+            flash: _flash,
             onTapAdd: onTapAdd,
             onQuickComplete: () => _recordQuickCompletion(
               HabitCompletionType.success,
@@ -213,6 +249,7 @@ class _HabitCardBody extends StatelessWidget {
     required this.completedToday,
     required this.currentStreak,
     required this.doneColor,
+    required this.flash,
     required this.onTapAdd,
     required this.onQuickComplete,
     this.history,
@@ -222,6 +259,10 @@ class _HabitCardBody extends StatelessWidget {
   final bool completedToday;
   final int currentStreak;
   final Color doneColor;
+
+  /// Drives the one-shot completion glow; `1 - flash.value` is the glow opacity,
+  /// so it is invisible at rest (value 1) and flashes bright→gone on completion.
+  final Animation<double> flash;
   final Widget? history;
   final void Function({String? dateString}) onTapAdd;
 
@@ -238,7 +279,7 @@ class _HabitCardBody extends StatelessWidget {
       color: tokens.colors.text.highEmphasis,
     );
 
-    return Material(
+    final card = Material(
       color: dsCardSurface(context),
       child: InkWell(
         onTap: onTapAdd,
@@ -317,37 +358,125 @@ class _HabitCardBody extends StatelessWidget {
         ),
       ),
     );
+
+    // A bright accent border that flashes on completion and fades out, sitting
+    // above the card so it never shifts the layout.
+    return Stack(
+      children: [
+        card,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: flash,
+              builder: (context, _) {
+                final opacity = (1 - flash.value).clamp(0.0, 1.0);
+                if (opacity == 0) {
+                  return const SizedBox.shrink();
+                }
+                return Opacity(
+                  key: const ValueKey('habit-completion-flash'),
+                  opacity: opacity,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(tokens.radii.m),
+                      border: Border.all(
+                        color: tokens.colors.interactive.enabled,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
 /// A small flame + count shown beside the name when this habit has a running
 /// streak — the per-habit "don't break the chain" cue the combined heatmap
-/// can't surface. The flame is decorative; the streak is announced via a
-/// semantics label so it isn't read as a bare number.
-class _StreakChip extends StatelessWidget {
+/// can't surface. When a fresh completion extends the chain, the flame gives a
+/// quick pulse and the number counts up — the "🔥 22 → 23" reward beat. The
+/// flame is decorative; the streak is announced via a semantics label so it
+/// isn't read as a bare number.
+class _StreakChip extends StatefulWidget {
   const _StreakChip({required this.count});
 
   final int count;
 
   @override
+  State<_StreakChip> createState() => _StreakChipState();
+}
+
+class _StreakChipState extends State<_StreakChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 450),
+    value: 1, // rest at the sequence's end (scale 1) → no pulse until it grows
+  );
+
+  @override
+  void didUpdateWidget(_StreakChip oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.count > oldWidget.count) {
+      _pulse.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulse.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Semantics(
-      label: context.messages.habitStreakDaysSemantic(count),
+      label: context.messages.habitStreakDaysSemantic(widget.count),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(
-            Icons.local_fire_department_rounded,
-            size: tokens.spacing.step5,
-            color: tokens.colors.interactive.enabled,
+          ScaleTransition(
+            // 1 → 1.45 → 1 as the pulse plays; flat (1.0) at rest.
+            scale: _pulse.drive(
+              TweenSequence<double>([
+                TweenSequenceItem(
+                  tween: Tween<double>(
+                    begin: 1,
+                    end: 1.45,
+                  ).chain(CurveTween(curve: Curves.easeOut)),
+                  weight: 1,
+                ),
+                TweenSequenceItem(
+                  tween: Tween<double>(
+                    begin: 1.45,
+                    end: 1,
+                  ).chain(CurveTween(curve: Curves.easeIn)),
+                  weight: 1,
+                ),
+              ]),
+            ),
+            child: Icon(
+              Icons.local_fire_department_rounded,
+              size: tokens.spacing.step5,
+              color: tokens.colors.interactive.enabled,
+            ),
           ),
           SizedBox(width: tokens.spacing.step1),
-          Text(
-            '$count',
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-              fontWeight: tokens.typography.weight.semiBold,
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(end: widget.count.toDouble()),
+            duration: const Duration(milliseconds: 450),
+            curve: Curves.easeOut,
+            builder: (context, value, _) => Text(
+              '${value.round()}',
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+                fontWeight: tokens.typography.weight.semiBold,
+              ),
             ),
           ),
         ],
@@ -394,9 +523,12 @@ class _CompleteButton extends StatelessWidget {
             onTap: onPressed,
             customBorder: const CircleBorder(),
             // Pop the check in when the habit is completed, so the tap lands
-            // with a small reward instead of a silent swap.
+            // with a real reward beat: the incoming check overshoots past full
+            // size and settles back, while the "+" fades out underneath.
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
+              duration: const Duration(milliseconds: 320),
+              switchInCurve: Curves.easeOutBack,
+              switchOutCurve: Curves.easeIn,
               transitionBuilder: (child, animation) =>
                   ScaleTransition(scale: animation, child: child),
               child: Icon(

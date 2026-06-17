@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
+import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The summary KPI card at the top of the Habits tab — the analogue of the
@@ -14,20 +15,53 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// The streak counts were computed by [HabitsController] but never rendered
 /// before this card; surfacing "don't break the chain" makes the habit loop's
 /// reward visible, which is the whole point of a habits surface.
-class HabitsSummaryCard extends ConsumerWidget {
+class HabitsSummaryCard extends ConsumerStatefulWidget {
   const HabitsSummaryCard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HabitsSummaryCard> createState() => _HabitsSummaryCardState();
+}
+
+class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
+    with SingleTickerProviderStateMixin {
+  /// A grander one-shot glow when the *last* habit of the day is logged — the
+  /// peak reward. Rests at 1 (glow opacity `1 - value` is 0) and flashes
+  /// bright→gone when the day flips to fully complete.
+  late final AnimationController _allDoneFlash = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 900),
+    value: 1,
+  );
+
+  static bool _isAllDone(HabitsState state) =>
+      state.habitDefinitions.isNotEmpty &&
+      state.completedToday.length >= state.habitDefinitions.length;
+
+  @override
+  void dispose() {
+    _allDoneFlash.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final state = ref.watch(habitsControllerProvider);
 
+    // Fire the all-done flourish only on the transition into a fully-complete
+    // day, never on a card that opens already complete.
+    ref.listen(habitsControllerProvider, (previous, next) {
+      if ((previous == null || !_isAllDone(previous)) && _isAllDone(next)) {
+        _allDoneFlash.forward(from: 0);
+      }
+    });
+
+    final state = ref.watch(habitsControllerProvider);
     final total = state.habitDefinitions.length;
     final done = state.completedToday.length;
     final fraction = total == 0 ? 0.0 : (done / total).clamp(0.0, 1.0);
 
-    return DecoratedBox(
+    final card = DecoratedBox(
       decoration: BoxDecoration(
         color: dsCardSurface(context),
         borderRadius: BorderRadius.circular(tokens.radii.m),
@@ -65,6 +99,38 @@ class HabitsSummaryCard extends ConsumerWidget {
           ],
         ),
       ),
+    );
+
+    return Stack(
+      children: [
+        card,
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedBuilder(
+              animation: _allDoneFlash,
+              builder: (context, _) {
+                final opacity = (1 - _allDoneFlash.value).clamp(0.0, 1.0);
+                if (opacity == 0) {
+                  return const SizedBox.shrink();
+                }
+                return Opacity(
+                  key: const ValueKey('habit-all-done-flash'),
+                  opacity: opacity,
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(tokens.radii.m),
+                      border: Border.all(
+                        color: tokens.colors.interactive.enabled,
+                        width: 2,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

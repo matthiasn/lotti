@@ -113,11 +113,6 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
       );
     }
 
-    Widget habitList(List<HabitDefinition> items) => Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: items.map(buildRow).toList(),
-    );
-
     return Scaffold(
       backgroundColor: dsPageSurface(context),
       body: SafeArea(
@@ -148,7 +143,7 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                       )
                     else
                       SizedBox(height: tokens.spacing.step5),
-                    habitList(openNow),
+                    ...openNow.map(buildRow),
                   ],
                   if (showPendingLater) ...[
                     if (showAll)
@@ -158,7 +153,7 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                       )
                     else
                       SizedBox(height: tokens.spacing.step5),
-                    habitList(pendingLater),
+                    ...pendingLater.map(buildRow),
                   ],
                   if (showCompleted) ...[
                     if (showAll)
@@ -168,7 +163,7 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                       )
                     else
                       SizedBox(height: tokens.spacing.step5),
-                    habitList(completed),
+                    ...completed.map(buildRow),
                   ],
                 ]),
               ),

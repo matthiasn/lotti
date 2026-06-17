@@ -264,6 +264,34 @@ void main() {
         // Semibold accent caption distinguishes the finished state.
         expect(caption.style?.fontWeight, FontWeight.w600);
       });
+
+      testWidgets('flashes the all-done glow on the finishing completion', (
+        tester,
+      ) async {
+        final flash = find.byKey(const ValueKey('habit-all-done-flash'));
+        final controller = _ControllableController(
+          _state(definitionCount: 3, completedCount: 2),
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const HabitsSummaryCard(),
+            overrides: [
+              habitsControllerProvider.overrideWith(() => controller),
+            ],
+          ),
+        );
+        await tester.pump();
+        expect(flash, findsNothing);
+
+        // Logging the last habit flips the day to fully complete → flourish.
+        controller.emit(_state(definitionCount: 3, completedCount: 3));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 40));
+        expect(flash, findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 950));
+        expect(flash, findsNothing);
+      });
     });
   });
 }

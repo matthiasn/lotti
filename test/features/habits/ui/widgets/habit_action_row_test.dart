@@ -167,6 +167,48 @@ void main() {
       await pumpRow(tester, currentStreak: 1);
       expect(find.byIcon(Icons.local_fire_department_rounded), findsNothing);
     });
+
+    testWidgets('counts up rather than snapping when the chain grows', (
+      tester,
+    ) async {
+      await pumpRow(tester, currentStreak: 22);
+      expect(find.text('22'), findsOneWidget);
+
+      await pumpRow(tester, currentStreak: 23);
+      await tester.pump(const Duration(milliseconds: 40));
+      // Still counting toward 23, not snapped.
+      expect(find.text('23'), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(find.text('23'), findsOneWidget);
+    });
+  });
+
+  group('completion flash', () {
+    final flash = find.byKey(const ValueKey('habit-completion-flash'));
+
+    testWidgets('flashes an accent glow on completion, then fades out', (
+      tester,
+    ) async {
+      await pumpRow(tester);
+      expect(flash, findsNothing);
+
+      // Flip to done in place → the one-shot glow fires.
+      await pumpRow(tester, completedToday: true);
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(flash, findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 700));
+      expect(flash, findsNothing);
+    });
+
+    testWidgets('a row already done on first build does not flash', (
+      tester,
+    ) async {
+      await pumpRow(tester, completedToday: true);
+      await tester.pump(const Duration(milliseconds: 40));
+      expect(flash, findsNothing);
+    });
   });
 
   group('trailing complete button', () {
@@ -202,9 +244,9 @@ void main() {
       expect(find.byType(AnimatedSwitcher), findsWidgets);
 
       // Rebuild in place with the habit now done → the check settles in and the
-      // "+" is gone.
+      // "+" is gone once the ~320ms switch completes.
       await pumpRow(tester, completedToday: true);
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 500));
       expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
       expect(find.byIcon(Icons.add_rounded), findsNothing);
     });
