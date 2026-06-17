@@ -51,9 +51,9 @@ class HabitCompletionRateChart extends ConsumerWidget
       children: [
         SizedBox(
           // Tall enough that the default caption wraps to two lines on a narrow
-          // phone instead of truncating, while the day-breakdown row (one line)
-          // still centres.
-          height: 40,
+          // phone without colliding with the chart's top axis label, while the
+          // day-breakdown row (one line) still centres.
+          height: 52,
           child: state.selectedInfoYmd.isNotEmpty
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -194,6 +194,12 @@ class HabitCompletionRateChart extends ConsumerWidget
                     // The success rate is the line the eye should read — give it
                     // a prominent stroke over its fill, not a 1px hairline.
                     barWidth: 2.5,
+                    // A dot per day so the line reads as discrete daily values,
+                    // not an interpolated wave, and a gradient fill that fades
+                    // out so the area doesn't read as a flat block clashing with
+                    // the stepped greens of the heatmap above.
+                    showDots: true,
+                    gradientFill: true,
                     color: successColor,
                   ),
                 ],
@@ -220,6 +226,8 @@ LineChartBarData barData({
   required Color color,
   int alpha = 127,
   double barWidth = 1,
+  bool showDots = false,
+  bool gradientFill = false,
   Color? aboveColor,
 }) {
   final spots = days.mapIndexed((idx, day) {
@@ -256,10 +264,25 @@ LineChartBarData barData({
     spots: spots,
     color: color,
     barWidth: barWidth,
-    dotData: const FlDotData(show: false),
+    dotData: FlDotData(
+      show: showDots,
+      getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
+        radius: 2,
+        color: color,
+      ),
+    ),
     belowBarData: BarAreaData(
       show: true,
-      color: color.withAlpha(alpha),
+      color: gradientFill ? null : color.withAlpha(alpha),
+      gradient: gradientFill
+          // Fade the area out toward the baseline so it reads as a light wash
+          // under the line, not a flat saturated block.
+          ? LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [color.withAlpha(alpha), color.withAlpha(0)],
+            )
+          : null,
     ),
     aboveBarData: aboveColor != null
         ? BarAreaData(

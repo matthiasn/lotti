@@ -125,7 +125,9 @@ class _HeatmapLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final labelStyle = tokens.typography.styles.others.caption.copyWith(
+    // body-small (not the tinier caption) so the Less → More scale stays legible
+    // for low-vision readers.
+    final labelStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.highEmphasis,
     );
     final swatch = isDesktop ? 14.0 : 11.0;

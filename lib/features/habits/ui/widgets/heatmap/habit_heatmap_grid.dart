@@ -274,32 +274,40 @@ class _HeatmapCell extends StatelessWidget {
   }
 }
 
-/// The discrete alpha steps a lit heatmap cell can take, lowest → highest. The
-/// floor is deliberately well clear of the neutral "empty" tint so a single
-/// completion is unmistakably *green*, not a faint smudge, and the steps are
-/// spaced so neighbouring buckets stay distinguishable on a dark canvas.
-const _heatmapAlphaSteps = [0.40, 0.58, 0.76, 1.0];
+/// The discrete alpha steps a *sub-perfect* lit cell can take, lowest →
+/// highest. The floor is well clear of the neutral "empty" tint so a single
+/// completion is unmistakably *green*, and the steps are spaced wide so
+/// neighbouring buckets stay distinguishable on a dark canvas. A perfect day
+/// does **not** use this scale — see [heatmapFillColor].
+const _heatmapAlphaSteps = [0.36, 0.58, 0.80];
+
+/// A perfect (100%) day is lifted toward white so it is unmistakably the
+/// brightest, most saturated cell in the grid — the whole point of the heatmap
+/// is to separate a *great* day from a *perfect* one, which alpha alone (capped
+/// at full [successColor]) cannot do on a dark ground.
+final Color _heatmapPerfectColor = Color.lerp(successColor, Colors.white, 0.18)!;
 
 /// The fill for a heatmap cell (or legend swatch) of [intensity] in `[0, 1]`:
-/// a quiet neutral when nothing was done, otherwise [successColor] snapped to
-/// one of [_heatmapAlphaSteps] by quartile. The sanctioned data-viz shading
-/// pattern (alpha on a semantic colour), shared by the grid cells and the
-/// card's legend.
+/// a quiet neutral when nothing was done; a perfect day its own brightest tier;
+/// otherwise [successColor] snapped to one of [_heatmapAlphaSteps]. The
+/// sanctioned data-viz shading pattern (alpha on a semantic colour), shared by
+/// the grid cells and the card's legend.
 Color heatmapFillColor(double intensity, DsTokens tokens) {
   if (intensity <= 0) {
     return tokens.colors.decorative.level01;
   }
-  final bucket = intensity <= 0.25
+  if (intensity >= 1.0) {
+    return _heatmapPerfectColor;
+  }
+  final bucket = intensity <= 0.34
       ? 0
-      : intensity <= 0.5
+      : intensity <= 0.67
       ? 1
-      : intensity <= 0.75
-      ? 2
-      : 3;
+      : 2;
   return successColor.withValues(alpha: _heatmapAlphaSteps[bucket]);
 }
 
-/// The intensities (0 = empty, then one per [_heatmapAlphaSteps] bucket) the
+/// The intensities (0 = empty, three lit buckets, then the perfect tier) the
 /// card's "Less → More" legend renders, so the legend swatches exactly match
 /// the five appearances a cell can take.
-const heatmapLegendIntensities = [0.0, 0.25, 0.5, 0.75, 1.0];
+const heatmapLegendIntensities = [0.0, 0.2, 0.5, 0.85, 1.0];
