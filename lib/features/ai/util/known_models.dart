@@ -7,7 +7,7 @@
 /// The models are organized by provider:
 /// - Gemini: Google's models with multi-modal capabilities
 /// - Nebius: High-performance models for text and image tasks
-/// - oMLX: Local OpenAI-compatible Qwen models served via MLX
+/// - oMLX: Local OpenAI-compatible Qwen and Gemma models served via MLX
 /// - Ollama: Local models for text processing
 /// - OpenAI: Advanced language and multimodal models
 library;
@@ -96,6 +96,8 @@ const String omlxQwen36A35bA3bTurboQuantMlx4BitModelId =
     'Qwen3.6-35B-A3B-TurboQuant-MLX-4bit';
 const String omlxQwen36A35bA3b4BitModelId = 'Qwen3.6-35B-A3B-4bit';
 const String omlxQwen36A35bA3bMlx8BitModelId = 'Qwen3.6-35B-A3B-MLX-8bit';
+const String omlxGemma426BA4BItQatMlx4BitModelId =
+    'gemma-4-26B-A4B-it-QAT-MLX-4bit';
 const String omlxRecommendedMultimodalModelId = omlxQwen36A35bA3b4BitModelId;
 
 /// Whether [providerModelId] is a Qwen3-ASR checkpoint converted for MLX Audio.

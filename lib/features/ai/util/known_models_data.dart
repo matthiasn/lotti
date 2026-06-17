@@ -85,9 +85,8 @@ const List<KnownModel> mlxAudioModels = [
 
 /// oMLX models served through the local OpenAI-compatible API.
 ///
-/// Qwen3.6-35B-A3B is multimodal: the base model includes a vision encoder, so
-/// these local MLX variants are cataloged for both thinking and image
-/// recognition slots.
+/// Qwen3.6-35B-A3B and Gemma 4 26B A4B are multimodal, so these local MLX
+/// variants are cataloged for both thinking and image recognition slots.
 const List<KnownModel> omlxModels = [
   KnownModel(
     providerModelId: omlxQwen36A35bA3b4BitModelId,
@@ -121,6 +120,18 @@ const List<KnownModel> omlxModels = [
     description:
         'Higher-precision MLX conversion for oMLX. Keep this explicit when '
         'comparing quality and memory use against the 4-bit variants.',
+  ),
+  KnownModel(
+    providerModelId: omlxGemma426BA4BItQatMlx4BitModelId,
+    name: 'Gemma 4 26B A4B QAT (oMLX 4-bit)',
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'QAT 4-bit MLX conversion for local oMLX serving. 26B total '
+        'parameters with about 4B active, cataloged as a separate local '
+        'Gemma reasoning and image-recognition option.',
   ),
 ];
 

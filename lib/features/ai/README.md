@@ -612,15 +612,17 @@ Grounded implementation notes:
 - `Anthropic Claude`
 - `Local (Ollama)`
 - `Local Power (oMLX)`
+- `Local Gemma 4 (oMLX)`
 - `Local Gemma 4 (Ollama)`
 - `Local Gemma 4 Power (Ollama)`
 
 Operational details from the seeded definitions:
 
-- the four local profiles are `desktopOnly`
+- the five local profiles are `desktopOnly`
 - `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
 - `Local Power (oMLX)` uses `Qwen3.6-35B-A3B-4bit` for both thinking and image recognition
-- `Local Power (oMLX)` and `Local Gemma 4 Power (Ollama)` currently ship with no default skill assignments
+- `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` for both thinking and image recognition
+- `Local Power (oMLX)`, `Local Gemma 4 (oMLX)`, and `Local Gemma 4 Power (Ollama)` currently ship with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 

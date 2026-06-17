@@ -636,7 +636,7 @@ void main() {
         );
       });
 
-      test('catalogs all local Qwen 3.6 oMLX variants as text and image', () {
+      test('catalogs all bundled local oMLX variants as text and image', () {
         final modelIds = omlxModels.map((m) => m.providerModelId).toSet();
 
         expect(modelIds, contains(omlxQwen36A35bA3b4BitModelId));
@@ -645,6 +645,7 @@ void main() {
           contains(omlxQwen36A35bA3bTurboQuantMlx4BitModelId),
         );
         expect(modelIds, contains(omlxQwen36A35bA3bMlx8BitModelId));
+        expect(modelIds, contains(omlxGemma426BA4BItQatMlx4BitModelId));
 
         for (final model in omlxModels) {
           expect(model.inputModalities, contains(Modality.text));
@@ -653,6 +654,19 @@ void main() {
           expect(model.isReasoningModel, isTrue);
           expect(model.supportsFunctionCalling, isTrue);
         }
+      });
+
+      test('Gemma 4 26B A4B QAT oMLX is a multimodal reasoning model', () {
+        final model = omlxModels.firstWhere(
+          (m) => m.providerModelId == omlxGemma426BA4BItQatMlx4BitModelId,
+        );
+
+        expect(model.name, contains('Gemma 4'));
+        expect(model.inputModalities, contains(Modality.text));
+        expect(model.inputModalities, contains(Modality.image));
+        expect(model.outputModalities, equals([Modality.text]));
+        expect(model.isReasoningModel, isTrue);
+        expect(model.supportsFunctionCalling, isTrue);
       });
     });
 

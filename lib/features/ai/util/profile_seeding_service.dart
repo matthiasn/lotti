@@ -17,6 +17,7 @@ const profileAlibabaId = 'profile-alibaba-001';
 const profileAnthropicId = 'profile-anthropic-001';
 const profileLocalId = 'profile-local-001';
 const profileLocalPowerId = 'profile-local-power-001';
+const profileLocalGemmaOmlxId = 'profile-local-gemma-omlx-001';
 const profileLocalGemmaId = 'profile-local-gemma-001';
 const profileLocalGemmaPowerId = 'profile-local-gemma-power-001';
 
@@ -383,6 +384,14 @@ class ProfileSeedingService {
       name: _localPowerName,
       thinkingModelId: omlxRecommendedMultimodalModelId,
       imageRecognitionModelId: omlxRecommendedMultimodalModelId,
+      desktopOnly: true,
+      createdAt: DateTime(2026),
+    ),
+    AiConfigInferenceProfile(
+      id: profileLocalGemmaOmlxId,
+      name: 'Local Gemma 4 (oMLX)',
+      thinkingModelId: omlxGemma426BA4BItQatMlx4BitModelId,
+      imageRecognitionModelId: omlxGemma426BA4BItQatMlx4BitModelId,
       desktopOnly: true,
       createdAt: DateTime(2026),
     ),

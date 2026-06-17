@@ -39,10 +39,10 @@ void main() {
   });
 
   group('ProfileSeedingService', () {
-    test('seeds all 10 default profiles when none exist', () async {
+    test('seeds all 11 default profiles when none exist', () async {
       await service.seedDefaults();
 
-      verify(() => mockRepo.saveConfig(any())).called(10);
+      verify(() => mockRepo.saveConfig(any())).called(11);
     });
 
     test('skips profiles that already exist', () async {
@@ -72,8 +72,8 @@ void main() {
 
       await service.seedDefaults();
 
-      // Only 9 profiles should be saved (Gemini Flash skipped).
-      verify(() => mockRepo.saveConfig(any())).called(9);
+      // Only 10 profiles should be saved (Gemini Flash skipped).
+      verify(() => mockRepo.saveConfig(any())).called(10);
     });
 
     test(
@@ -118,9 +118,9 @@ void main() {
 
         await service.seedDefaults();
 
-        // Only the 9 missing profiles get written. The existing Local
+        // Only the 10 missing profiles get written. The existing Local
         // profile is left untouched — user edit survives.
-        verify(() => mockRepo.saveConfig(any())).called(9);
+        verify(() => mockRepo.saveConfig(any())).called(10);
         verifyNever(
           () => mockRepo.saveConfig(
             any(
@@ -154,9 +154,9 @@ void main() {
 
         await service.seedDefaults();
 
-        // 9 new profiles only — the Local profile is not re-asserted to
+        // 10 new profiles only — the Local profile is not re-asserted to
         // isDefault: true.
-        verify(() => mockRepo.saveConfig(any())).called(9);
+        verify(() => mockRepo.saveConfig(any())).called(10);
       },
     );
 
@@ -173,6 +173,7 @@ void main() {
         profileAnthropicId,
         profileLocalId,
         profileLocalPowerId,
+        profileLocalGemmaOmlxId,
         profileLocalGemmaId,
         profileLocalGemmaPowerId,
       ]) {
@@ -199,8 +200,8 @@ void main() {
 
         await service.seedDefaults();
 
-        // 9 new profiles only — Local profile preserved as-is.
-        verify(() => mockRepo.saveConfig(any())).called(9);
+        // 10 new profiles only — Local profile preserved as-is.
+        verify(() => mockRepo.saveConfig(any())).called(10);
       },
     );
 
@@ -229,6 +230,36 @@ void main() {
         omlxRecommendedMultimodalModelId,
       );
       expect(powerProfile.isDefault, isFalse);
+    });
+
+    test('local Gemma 4 oMLX profile has correct configuration', () async {
+      final capturedConfigs = <AiConfig>[];
+      when(
+        () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+      ).thenAnswer((invocation) async {
+        capturedConfigs.add(
+          invocation.positionalArguments.first as AiConfig,
+        );
+      });
+
+      await service.seedDefaults();
+
+      final gemmaProfile = capturedConfigs
+          .whereType<AiConfigInferenceProfile>()
+          .where((p) => p.id == profileLocalGemmaOmlxId)
+          .first;
+
+      expect(gemmaProfile.desktopOnly, isTrue);
+      expect(gemmaProfile.name, 'Local Gemma 4 (oMLX)');
+      expect(
+        gemmaProfile.thinkingModelId,
+        omlxGemma426BA4BItQatMlx4BitModelId,
+      );
+      expect(
+        gemmaProfile.imageRecognitionModelId,
+        omlxGemma426BA4BItQatMlx4BitModelId,
+      );
+      expect(gemmaProfile.isDefault, isFalse);
     });
 
     test('local profile is marked as desktopOnly', () async {
@@ -270,6 +301,7 @@ void main() {
         for (final config in capturedConfigs) {
           final profile = config as AiConfigInferenceProfile;
           if (profile.id == profileLocalPowerId ||
+              profile.id == profileLocalGemmaOmlxId ||
               profile.id == profileLocalGemmaPowerId) {
             // Power profiles are opt-in (require large models).
             expect(
@@ -304,6 +336,7 @@ void main() {
         final profile = config as AiConfigInferenceProfile;
         // Power profiles have no skill assignments (opt-in profiles).
         if (profile.id == profileLocalPowerId) continue;
+        if (profile.id == profileLocalGemmaOmlxId) continue;
         if (profile.id == profileLocalGemmaPowerId) continue;
         expect(
           profile.skillAssignments,
