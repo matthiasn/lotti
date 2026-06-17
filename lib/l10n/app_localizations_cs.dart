@@ -4903,6 +4903,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitPriorityLabel => 'Priorita';
 
   @override
+  String habitsAboveGoal(int target) {
+    return 'Podle plánu, nad $target%';
+  }
+
+  @override
   String habitsActiveHabitsCount(int count) {
     return '$count aktivních návyků';
   }
@@ -4957,13 +4962,26 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitShowFromLabel => 'Zobrazit od';
 
   @override
+  String habitsLaggardHint(String habit, int kept, int active) {
+    return '$habit — splněno $kept z $active';
+  }
+
+  @override
   String get habitsOpenHeader => 'K splnění';
 
   @override
   String get habitsPendingLaterHeader => 'Později dnes';
 
   @override
+  String habitsPointsToGoal(int points, int target) {
+    return '$points bodů k tvému cíli $target%';
+  }
+
+  @override
   String get habitsRecordButton => 'Zaznamenat';
+
+  @override
+  String get habitsRollingAverageLabel => '7denní průměr';
 
   @override
   String get habitsStartStreakToday => 'Začněte sérii ještě dnes';
@@ -4990,6 +5008,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String habitStreakDaysSemantic(int count) {
     return '$count dní v řadě';
   }
+
+  @override
+  String get habitsVsPreviousWeek => 'vs. minulý týden';
 
   @override
   String get imageGenerationError => 'Nepodařilo se vygenerovat obrázek';

@@ -4942,6 +4942,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitPriorityLabel => 'Prioritate';
 
   @override
+  String habitsAboveGoal(int target) {
+    return 'Conform planului, peste $target%';
+  }
+
+  @override
   String habitsActiveHabitsCount(int count) {
     return '$count obiceiuri active';
   }
@@ -4996,13 +5001,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitShowFromLabel => 'Afișați de la';
 
   @override
+  String habitsLaggardHint(String habit, int kept, int active) {
+    return '$habit — $kept din $active realizate';
+  }
+
+  @override
   String get habitsOpenHeader => 'Scadente acum';
 
   @override
   String get habitsPendingLaterHeader => 'Mai târziu astăzi';
 
   @override
+  String habitsPointsToGoal(int points, int target) {
+    return '$points puncte până la obiectivul de $target%';
+  }
+
+  @override
   String get habitsRecordButton => 'Înregistrați';
+
+  @override
+  String get habitsRollingAverageLabel => 'media pe 7 zile';
 
   @override
   String get habitsStartStreakToday => 'Începeți o serie astăzi';
@@ -5029,6 +5047,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String habitStreakDaysSemantic(int count) {
     return '$count zile la rând';
   }
+
+  @override
+  String get habitsVsPreviousWeek => 'față de săptămâna trecută';
 
   @override
   String get imageGenerationError => 'Generarea imaginii a eșuat';

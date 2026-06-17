@@ -8484,6 +8484,12 @@ abstract class AppLocalizations {
   /// **'Priority'**
   String get habitPriorityLabel;
 
+  /// No description provided for @habitsAboveGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'On track, above {target}%'**
+  String habitsAboveGoal(int target);
+
   /// No description provided for @habitsActiveHabitsCount.
   ///
   /// In en, this message translates to:
@@ -8586,6 +8592,12 @@ abstract class AppLocalizations {
   /// **'Show from'**
   String get habitShowFromLabel;
 
+  /// No description provided for @habitsLaggardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'{habit} — kept {kept} of {active}'**
+  String habitsLaggardHint(String habit, int kept, int active);
+
   /// No description provided for @habitsOpenHeader.
   ///
   /// In en, this message translates to:
@@ -8598,11 +8610,23 @@ abstract class AppLocalizations {
   /// **'Later today'**
   String get habitsPendingLaterHeader;
 
+  /// No description provided for @habitsPointsToGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'{points} points from your {target}% goal'**
+  String habitsPointsToGoal(int points, int target);
+
   /// No description provided for @habitsRecordButton.
   ///
   /// In en, this message translates to:
   /// **'Record'**
   String get habitsRecordButton;
+
+  /// No description provided for @habitsRollingAverageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'7-day avg'**
+  String get habitsRollingAverageLabel;
 
   /// No description provided for @habitsStartStreakToday.
   ///
@@ -8639,6 +8663,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count}-day streak'**
   String habitStreakDaysSemantic(int count);
+
+  /// No description provided for @habitsVsPreviousWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'vs previous week'**
+  String get habitsVsPreviousWeek;
 
   /// No description provided for @imageGenerationError.
   ///

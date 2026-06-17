@@ -4904,6 +4904,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitPriorityLabel => 'Priorität';
 
   @override
+  String habitsAboveGoal(int target) {
+    return 'Im Plan, über $target%';
+  }
+
+  @override
   String habitsActiveHabitsCount(int count) {
     return '$count aktive Gewohnheiten';
   }
@@ -4958,13 +4963,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitShowFromLabel => 'Anzeigen ab';
 
   @override
+  String habitsLaggardHint(String habit, int kept, int active) {
+    return '$habit — $kept von $active geschafft';
+  }
+
+  @override
   String get habitsOpenHeader => 'Jetzt fällig';
 
   @override
   String get habitsPendingLaterHeader => 'Später heute';
 
   @override
+  String habitsPointsToGoal(int points, int target) {
+    return '$points Punkte bis zu deinem Ziel von $target%';
+  }
+
+  @override
   String get habitsRecordButton => 'Eintragen';
+
+  @override
+  String get habitsRollingAverageLabel => '7-Tage-Schnitt';
 
   @override
   String get habitsStartStreakToday => 'Starte heute eine Serie';
@@ -4992,6 +5010,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String habitStreakDaysSemantic(int count) {
     return '$count Tage in Folge';
   }
+
+  @override
+  String get habitsVsPreviousWeek => 'ggü. Vorwoche';
 
   @override
   String get imageGenerationError => 'Bildgenerierung fehlgeschlagen';
