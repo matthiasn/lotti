@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -45,6 +47,24 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
   /// column on wide windows; the heatmap band breaks out to the full width.
   static const _maxReadingWidth = 820.0;
 
+  /// How long a just-completed habit's row is kept pinned in the open section so
+  /// its in-place completion celebration can finish before the row leaves. On
+  /// the default "due" filter the row would otherwise be removed the instant the
+  /// habit is logged, cutting the celebration off before it is seen.
+  static const _lingerDuration = Duration(milliseconds: 1200);
+
+  /// The open section's row order, including habits that are lingering after
+  /// completion. Maintained across rebuilds so a completed row holds its place
+  /// instead of jumping, and new open habits append.
+  List<String> _openOrder = [];
+
+  /// Habits kept visible past completion until their linger timer fires.
+  final Set<String> _lingering = {};
+  final Map<String, Timer> _lingerTimers = {};
+
+  /// Last seen `successfulToday`, to detect the completion transition in build.
+  Set<String> _prevSuccessful = {};
+
   @override
   void initState() {
     final listener = getIt<UserActivityService>().updateActivity;
@@ -54,8 +74,62 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
 
   @override
   void dispose() {
+    for (final timer in _lingerTimers.values) {
+      timer.cancel();
+    }
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// Returns the open-section habits in stable order, pinning any that just
+  /// flipped to done for [_lingerDuration] so their celebration can play in
+  /// place. Mutates the linger bookkeeping and schedules removal timers.
+  List<HabitDefinition> _openWithLinger(HabitsState state) {
+    final byId = <String, HabitDefinition>{
+      for (final h in [
+        ...state.openNow,
+        ...state.completed,
+        ...state.pendingLater,
+      ])
+        h.id: h,
+    };
+
+    // Pin habits that just flipped to done while shown in the open section.
+    final newlyDone = state.successfulToday.difference(_prevSuccessful);
+    _prevSuccessful = state.successfulToday.toSet();
+    for (final id in newlyDone) {
+      if (_openOrder.contains(id) && !_lingering.contains(id)) {
+        _lingering.add(id);
+        _lingerTimers[id]?.cancel();
+        _lingerTimers[id] = Timer(_lingerDuration, () {
+          if (!mounted) return;
+          setState(() {
+            _lingering.remove(id);
+            _openOrder.remove(id);
+            _lingerTimers.remove(id);
+          });
+        });
+      }
+    }
+
+    // Keep order: drop rows that are neither open nor lingering, append new
+    // open habits at the end.
+    final openIds = state.openNow.map((h) => h.id).toSet();
+    final newOpen = state.openNow
+        .map((h) => h.id)
+        .where((id) => !_openOrder.contains(id))
+        .toList();
+    _openOrder = [
+      ..._openOrder.where(
+        (id) => openIds.contains(id) || _lingering.contains(id),
+      ),
+      ...newOpen,
+    ];
+
+    return _openOrder
+        .map((id) => byId[id])
+        .whereType<HabitDefinition>()
+        .toList();
   }
 
   @override
@@ -84,12 +158,20 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
           .toList();
     }
 
+    // Pin just-completed rows in the open section briefly so their celebration
+    // plays before they leave (and exclude them from the completed bucket so
+    // they don't appear twice during the linger).
+    final openWithLinger = _openWithLinger(state);
+    final completedRaw = state.completed
+        .where((h) => !_lingering.contains(h.id))
+        .toList();
+
     final openNow = state.showSearch
-        ? filterMatching(state.openNow)
-        : state.openNow;
+        ? filterMatching(openWithLinger)
+        : openWithLinger;
     final completed = state.showSearch
-        ? filterMatching(state.completed)
-        : state.completed;
+        ? filterMatching(completedRaw)
+        : completedRaw;
     final pendingLater = state.showSearch
         ? filterMatching(state.pendingLater)
         : state.pendingLater;
