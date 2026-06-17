@@ -118,6 +118,10 @@ void main() {
     // is enough — no need to re-check `isRegistered`.
     mockNavService = MockNavService();
     when(() => mockNavService.beamToNamed(any())).thenReturn(null);
+    // `navigateToCreateProvider` reads `isDesktopMode` to decide whether the
+    // form pushes onto the root navigator (mobile) or the nested one
+    // (desktop). Default the page tests to mobile.
+    when(() => mockNavService.isDesktopMode).thenReturn(false);
     await setUpTestGetIt(
       additionalSetup: () {
         getIt.registerSingleton<NavService>(mockNavService);

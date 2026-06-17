@@ -543,24 +543,33 @@ class _InferenceProviderEditPageState
             // Fixed bottom bar — create mode uses the v5 three-button
             // footer (Back to providers / Save as draft / Save &
             // continue); edit mode keeps the legacy two-button bar.
-            if (isCreate)
-              AddProviderFooterBar(
-                onBack: () => popAiSettingsDetail(context),
-                onSaveDraft: handleSaveDraft,
-                onSaveAndContinue: handleSave,
-                canSaveDraft: canSaveAsDraft,
-                canSaveAndContinue: isFormValid,
-                isSaving: _isSaving,
-              )
-            else
-              FormBottomBar(
-                onSave: isFormValid && !_isSaving ? handleSave : null,
-                onCancel: () => popAiSettingsDetail(context),
-                isFormValid: isFormValid,
-                isDirty:
-                    widget.configId == null || (formState?.isDirty ?? false),
-                isLoading: _isSaving,
-              ),
+            //
+            // Wrapped in a bottom-only `SafeArea` so the save action clears
+            // the home indicator: this form is lifted above the app shell on
+            // mobile (root-navigator push — see
+            // `AiSettingsNavigationService`), so the bottom nav no longer
+            // reserves that inset for it.
+            SafeArea(
+              top: false,
+              child: isCreate
+                  ? AddProviderFooterBar(
+                      onBack: () => popAiSettingsDetail(context),
+                      onSaveDraft: handleSaveDraft,
+                      onSaveAndContinue: handleSave,
+                      canSaveDraft: canSaveAsDraft,
+                      canSaveAndContinue: isFormValid,
+                      isSaving: _isSaving,
+                    )
+                  : FormBottomBar(
+                      onSave: isFormValid && !_isSaving ? handleSave : null,
+                      onCancel: () => popAiSettingsDetail(context),
+                      isFormValid: isFormValid,
+                      isDirty:
+                          widget.configId == null ||
+                          (formState?.isDirty ?? false),
+                      isLoading: _isSaving,
+                    ),
+            ),
           ],
         ),
       ),

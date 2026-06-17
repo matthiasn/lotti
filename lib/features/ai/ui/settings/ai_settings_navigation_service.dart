@@ -3,6 +3,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 
 /// Service responsible for handling navigation to AI configuration edit pages
@@ -72,12 +73,12 @@ class AiSettingsNavigationService {
     BuildContext context, {
     InferenceProviderType? preselectedType,
   }) async {
-    final route = _createSlideRoute(
+    await _pushEditorForm(
+      context,
       builder: (context) => InferenceProviderEditPage(
         preselectedType: preselectedType,
       ),
     );
-    await Navigator.of(context).push(route);
   }
 
   /// Opens the provider edit form for an existing provider on top of
@@ -92,13 +93,13 @@ class AiSettingsNavigationService {
     required String providerId,
     bool focusApiKey = false,
   }) async {
-    final route = _createSlideRoute(
+    await _pushEditorForm(
+      context,
       builder: (context) => InferenceProviderEditPage(
         configId: providerId,
         focusApiKey: focusApiKey,
       ),
     );
-    await Navigator.of(context).push(route);
   }
 
   /// Navigates to the model create form. When [preselectedProviderId]
@@ -125,6 +126,33 @@ class AiSettingsNavigationService {
       builder: (context) => const InferenceProfileForm(),
     );
     await Navigator.of(context).push(route);
+  }
+
+  /// Pushes a full-screen AI-settings editor form (the provider connect /
+  /// edit form) so its sticky save bar stays reachable.
+  ///
+  /// On mobile the app shell paints a floating bottom navigation bar as an
+  /// overlay on top of each tab's page stack (see `beamer_app.dart`). A form
+  /// pushed onto the *nested* tab navigator therefore has its bottom save bar
+  /// hidden behind that pill — the original "couldn't save the provider" bug.
+  /// Pushing onto the root navigator lifts the whole form above the shell,
+  /// including the bottom nav, so the save action always clears the bottom
+  /// edge.
+  ///
+  /// On desktop there is no bottom nav (a sidebar drives navigation) and the
+  /// editor forms are meant to overlay only the settings panel, so the nested
+  /// push is preserved there.
+  Future<void> _pushEditorForm(
+    BuildContext context, {
+    required WidgetBuilder builder,
+  }) {
+    final isDesktop =
+        getIt.isRegistered<nav_service.NavService>() &&
+        getIt<nav_service.NavService>().isDesktopMode;
+    return Navigator.of(
+      context,
+      rootNavigator: !isDesktop,
+    ).push(_createSlideRoute(builder: builder));
   }
 
   /// Creates a smooth slide transition route with both pages moving

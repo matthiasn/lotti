@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   sync screens (setup, bundle import, device verification, and the maintenance
   modals), the AI settings screens (error/retry states, provider setup, and
   delete dialogs), health import, the agent editors, and habit completion.
+### Fixed
+- On phones, the Save button on the AI provider setup screen was hidden behind
+  the bottom navigation bar, so a freshly added provider — for example after
+  pasting a Gemini API key — couldn't be saved. The provider connect and edit
+  form now opens as a full-screen page above the navigation bar, keeping the
+  save action reachable.
 
 ## [0.9.1025]
 ### Added
