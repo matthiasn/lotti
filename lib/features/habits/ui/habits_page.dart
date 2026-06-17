@@ -370,10 +370,23 @@ class _CollapsibleRowState extends State<_CollapsibleRow>
 
   @override
   Widget build(BuildContext context) {
-    return SizeTransition(
-      sizeFactor: CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
-      alignment: Alignment.topCenter,
-      child: FadeTransition(opacity: _controller, child: widget.child),
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        // At rest the row is rendered unclipped, so the completion spark burst
+        // can paint beyond the row's bounds and off the card edges. Only once
+        // the row is actually collapsing out (controller < 1) do we clip and
+        // shrink it — by then the burst has finished.
+        if (_controller.value >= 1.0) return child!;
+        return ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: Curves.easeInOut.transform(_controller.value),
+            child: Opacity(opacity: _controller.value, child: child),
+          ),
+        );
+      },
+      child: widget.child,
     );
   }
 }
