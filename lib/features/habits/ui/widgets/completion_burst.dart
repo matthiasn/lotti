@@ -53,52 +53,60 @@ class _BurstPainter extends CustomPainter {
   final Color accent;
   final Color gold;
 
-  // A modest count in a single ring — enough to read as a celebratory spark
-  // without the swarming, hectic feel of a dense double ring.
-  static const _count = 11;
+  // A generous spread of sparks — enough to feel like a real burst, drawn as
+  // trailed "comets" with varied size, speed and lifetime so it reads rich and
+  // alive rather than a sparse handful of identical dots.
+  static const _count = 20;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = origin.alongSize(size);
-    // Tight to the check so the sparks read as a small flourish thrown from it,
-    // not flung across the screen.
-    final reach = size.height * 1.05;
+    final reach = size.height * 1.5;
 
     for (var i = 0; i < _count; i++) {
-      // One evenly-spaced ring, offset so it doesn't sit on the axes.
-      final angle = (i / _count) * math.pi * 2 + 0.35;
-      final speed = 0.6 + ((i * 7) % 5) * 0.07; // 0.60 … 0.88, gentle variation
-
-      // Per-particle lifetime so the tail dies in a staggered spread instead of
-      // every spark vanishing on the same frame; a spent spark is dropped
-      // entirely so nothing lingers out in dead space.
-      final life = 0.6 + ((i * 3) % 4) * 0.1; // 0.6 … 0.9
+      // An even radial spread with a small per-spark jitter so it reads organic,
+      // not mechanical.
+      final angle = (i / _count) * math.pi * 2 + (((i * 13) % 7) - 3) * 0.06;
+      // Varied speed → some sparks shoot far, some stay close (a sense of depth)
+      final speed = 0.45 + ((i * 7) % 9) / 9 * 0.7; // 0.45 … 1.15
+      // Varied lifetime → the tail dies in a long staggered spread, not all at
+      // once; a spent spark is dropped so nothing lingers in dead space.
+      final life = 0.62 + ((i * 5) % 5) / 5 * 0.36; // 0.62 … 0.98
       final lt = (progress / life).clamp(0.0, 1.0);
       if (lt >= 1) continue;
 
-      // easeOutCubic eases out more softly than quart — the sparks drift to a
-      // stop rather than snapping outward.
-      final travel = reach * speed * Curves.easeOutCubic.transform(lt);
+      final ease = Curves.easeOutCubic.transform(lt);
+      final dist = reach * speed * ease;
       final gravity = size.height * 0.32 * lt * lt; // a gentle downward arc
-      final pos =
-          center +
-          Offset(math.cos(angle) * travel, math.sin(angle) * travel + gravity);
+      final dir = Offset(math.cos(angle), math.sin(angle));
+      final head = center + dir * dist + Offset(0, gravity);
 
-      final opacity = (1 - lt) * (1 - lt); // smooth quadratic fade
-      final radius = 2.6 - 1.6 * lt;
-      if (radius <= 0.3) continue;
+      // A comet head that fades slowly (1 - lt², concave) so the burst lingers
+      // long enough to watch, and a tapered trail behind it that's long while
+      // the spark is fast and shrinks as it slows.
+      final opacity = (1 - lt * lt).clamp(0.0, 1.0);
+      final headR = (1.7 + ((i * 3) % 4) / 3 * 1.9) * (1 - 0.4 * lt);
+      if (headR <= 0.3) continue;
+      final isGold = i % 5 == 0;
+      final base = isGold ? gold : accent;
 
-      // Gold is the rarer, smaller spark — an accent on the accent, not a second
-      // colour competing with the brand green.
-      final isGold = i % 4 == 0;
-      final color = (isGold ? gold : accent).withValues(
-        alpha: (opacity * 0.9).clamp(0.0, 1.0),
-      );
-      canvas.drawCircle(
-        pos,
-        isGold ? radius * 0.82 : radius,
-        Paint()..color = color,
-      );
+      final trailLen = reach * speed * 0.18 * (1 - ease);
+      final tail = head - dir * trailLen;
+      canvas
+        ..drawLine(
+          tail,
+          head,
+          Paint()
+            ..color = base.withValues(alpha: (opacity * 0.4).clamp(0.0, 1.0))
+            ..strokeWidth = headR * 0.9
+            ..strokeCap = StrokeCap.round,
+        )
+        ..drawCircle(
+          head,
+          headR,
+          Paint()
+            ..color = base.withValues(alpha: (opacity * 0.95).clamp(0.0, 1.0)),
+        );
     }
   }
 

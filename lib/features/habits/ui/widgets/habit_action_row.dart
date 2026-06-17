@@ -87,7 +87,7 @@ class _HabitActionRowState extends State<HabitActionRow>
     super.initState();
     _celebrate = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 950),
+      duration: const Duration(milliseconds: 1150),
     );
   }
 
@@ -286,7 +286,7 @@ class _HabitActionRowState extends State<HabitActionRow>
                 child: AnimatedBuilder(
                   animation: _celebrate,
                   builder: (context, _) {
-                    final p = _stageProgress(_celebrate.value, 0.14, 0.82);
+                    final p = _stageProgress(_celebrate.value, 0.12, 0.96);
                     return p == null
                         ? const SizedBox.shrink()
                         : CompletionBurst(progress: p);
