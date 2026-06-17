@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   report when expanded — synthesized locally with the Supertonic model, no
   cloud. Still off by default; the model (~400 MB) downloads once on first use.
 
+### Changed
+- On phones, the Sync settings list now follows the same order and layout as the
+  desktop settings tree (Node profile, Backfill, Stats, Outbox, Conflicts,
+  Matrix maintenance), so the two surfaces no longer disagree. The
+  provisioned-sync QR pairing entry stays at the top, and the Outbox row shows
+  the live count of items still waiting to sync — now on desktop too, not just
+  mobile.
+
 ## [0.9.1024]
 ### Changed
 - Category selection is now one consistent picker across the app. Assigning a

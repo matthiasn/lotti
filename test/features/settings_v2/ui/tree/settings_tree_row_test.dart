@@ -42,6 +42,7 @@ Future<void> _pumpRow(
   bool isExpanded = false,
   bool showLeafChevron = false,
   int descMaxLines = 1,
+  Widget? trailing,
   VoidCallback? onTap,
 }) async {
   await tester.pumpWidget(
@@ -56,6 +57,7 @@ Future<void> _pumpRow(
             isExpanded: isExpanded,
             showLeafChevron: showLeafChevron,
             descMaxLines: descMaxLines,
+            trailing: trailing,
             onTap: onTap ?? () {},
           ),
         ),
@@ -70,6 +72,22 @@ void main() {
       await _pumpRow(tester, node: _leaf());
       expect(find.text('Flags'), findsOneWidget);
       expect(find.text('Feature flags'), findsOneWidget);
+    });
+
+    testWidgets('renders a supplied live trailing widget', (tester) async {
+      await _pumpRow(
+        tester,
+        node: _leaf(),
+        trailing: const Text('live-indicator', key: Key('trailing')),
+      );
+      expect(find.byKey(const Key('trailing')), findsOneWidget);
+    });
+
+    testWidgets('omits the trailing region when none is supplied', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf());
+      expect(find.byKey(const Key('trailing')), findsNothing);
     });
 
     testWidgets('renders the node icon', (tester) async {

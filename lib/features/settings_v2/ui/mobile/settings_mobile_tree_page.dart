@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/mobile/settings_mobile_shell.dart';
+import 'package:lotti/features/settings_v2/ui/tree/settings_node_indicators.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
 
 /// Presentational mobile settings level — one rung of the drill-down.
@@ -14,11 +15,18 @@ import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
 /// / back behaviour) for every level. Keeping it stateless and
 /// route-agnostic is what lets the same widget render the root and every
 /// branch hub, and makes it trivial to screenshot in isolation.
+///
+/// A branch that carries its own landing panel (currently only `sync`)
+/// passes that panel body as [header] so its content — e.g. the
+/// provisioned-sync QR card — renders above the child rows, mirroring the
+/// desktop detail pane. Branches without a landing panel pass `null` and
+/// render the bare row list.
 class SettingsMobileTreePage extends StatelessWidget {
   const SettingsMobileTreePage({
     required this.title,
     required this.nodes,
     required this.onNodeTap,
+    this.header,
     this.showBack = false,
     super.key,
   });
@@ -26,6 +34,10 @@ class SettingsMobileTreePage extends StatelessWidget {
   final String title;
   final List<SettingsNode> nodes;
   final void Function(SettingsNode node) onNodeTap;
+
+  /// Optional content rendered above the row list — the branch's landing
+  /// panel body when it has one. `null` for pure-navigation branches.
+  final Widget? header;
   final bool showBack;
 
   @override
@@ -45,6 +57,7 @@ class SettingsMobileTreePage extends StatelessWidget {
           // header title instead of sitting behind an extra left gutter.
           padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
           children: [
+            ?header,
             for (final node in nodes)
               SettingsTreeRow(
                 key: ValueKey(node.id),
@@ -52,6 +65,7 @@ class SettingsMobileTreePage extends StatelessWidget {
                 depth: 0,
                 onActivePath: false,
                 isExpanded: false,
+                trailing: settingsNodeIndicatorFor(node.id),
                 showActiveRail: false,
                 showLeafChevron: true,
                 // 3 lines so even the longest section summary stays fully

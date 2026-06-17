@@ -43,8 +43,8 @@ import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
-import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -427,7 +427,7 @@ void main() {
       },
     );
 
-    test('buildPages builds SyncSettingsPage', () {
+    test('buildPages builds the sync branch hub from the shared tree', () {
       final routeInformation = RouteInformation(
         uri: Uri.parse('/settings/sync'),
       );
@@ -439,7 +439,11 @@ void main() {
       );
       expect(pages.length, 2);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<SyncSettingsPage>());
+      final gate = pages[1].child;
+      expect(gate, isA<SyncFeatureGate>());
+      final hub = (gate as SyncFeatureGate).child;
+      expect(hub, isA<SettingsMobileBranchPage>());
+      expect((hub as SettingsMobileBranchPage).branchId, 'sync');
     });
 
     test('buildPages builds MatrixSyncMaintenancePage', () {
@@ -454,7 +458,11 @@ void main() {
       );
       expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<SyncSettingsPage>());
+      final gate = pages[1].child;
+      expect(gate, isA<SyncFeatureGate>());
+      final hub = (gate as SyncFeatureGate).child;
+      expect(hub, isA<SettingsMobileBranchPage>());
+      expect((hub as SettingsMobileBranchPage).branchId, 'sync');
       expect(pages[2].child, isA<MatrixSyncMaintenancePage>());
     });
 
@@ -1014,7 +1022,11 @@ void main() {
       );
       expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<SyncSettingsPage>());
+      final gate = pages[1].child;
+      expect(gate, isA<SyncFeatureGate>());
+      final hub = (gate as SyncFeatureGate).child;
+      expect(hub, isA<SettingsMobileBranchPage>());
+      expect((hub as SettingsMobileBranchPage).branchId, 'sync');
       expect(pages[2].child, isA<OutboxMonitorPage>());
     });
 
@@ -1030,7 +1042,11 @@ void main() {
       );
       expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<SyncSettingsPage>());
+      final gate = pages[1].child;
+      expect(gate, isA<SyncFeatureGate>());
+      final hub = (gate as SyncFeatureGate).child;
+      expect(hub, isA<SettingsMobileBranchPage>());
+      expect((hub as SettingsMobileBranchPage).branchId, 'sync');
       expect(pages[2].child, isA<SyncStatsPage>());
     });
 
@@ -1219,7 +1235,11 @@ void main() {
       );
       expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsMobileRootPage>());
-      expect(pages[1].child, isA<SyncSettingsPage>());
+      final gate = pages[1].child;
+      expect(gate, isA<SyncFeatureGate>());
+      final hub = (gate as SyncFeatureGate).child;
+      expect(hub, isA<SettingsMobileBranchPage>());
+      expect((hub as SettingsMobileBranchPage).branchId, 'sync');
       expect(pages[2].child, isA<BackfillSettingsPage>());
     });
 
