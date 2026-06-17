@@ -380,12 +380,15 @@ class _HabitCardBody extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (currentStreak >= 2) ...[
-                            SizedBox(width: tokens.spacing.step3),
-                            _StreakChip(count: currentStreak),
-                          ],
                         ],
                       ),
+                      // The current streak as a chain of green boxes — the
+                      // visible "don't break the chain". Empty when there's no
+                      // run going.
+                      if (currentStreak >= 1) ...[
+                        SizedBox(height: tokens.spacing.step3),
+                        _StreakChain(count: currentStreak),
+                      ],
                       if (history != null) ...[
                         SizedBox(height: tokens.spacing.step3),
                         history!,
@@ -416,99 +419,76 @@ class _HabitCardBody extends StatelessWidget {
   }
 }
 
-/// A small flame + count shown beside the name when this habit has a running
-/// streak — the per-habit "don't break the chain" cue the combined heatmap
-/// can't surface. When a fresh completion extends the chain, the flame gives a
-/// quick pulse and the number counts up — the "🔥 22 → 23" reward beat. The
-/// flame is decorative; the streak is announced via a semantics label so it
-/// isn't read as a bare number.
-class _StreakChip extends StatefulWidget {
-  const _StreakChip({required this.count});
+/// The current streak rendered as a chain of small green rounded boxes — the
+/// visible "don't break the chain" the combined heatmap can't surface per habit.
+///
+/// Only the *current unbroken run* is shown: when the streak breaks it resets to
+/// empty (a habit with no streak shows nothing), and there are no red or gap
+/// cells — a kept day is green, that's all, so a struggling habit is never a
+/// wall of failure. The chain caps at [_cap] boxes and fits to the available
+/// width (older boxes drop first); a trailing flame + count gives the exact
+/// length, including runs past the cap. The streak is announced once via a
+/// semantics label, so screen readers don't read each box.
+class _StreakChain extends StatelessWidget {
+  const _StreakChain({required this.count});
 
   final int count;
 
-  @override
-  State<_StreakChip> createState() => _StreakChipState();
-}
-
-class _StreakChipState extends State<_StreakChip>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _pulse = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 450),
-    value: 1, // rest at the sequence's end (scale 1) → no pulse until it grows
-  );
-
-  @override
-  void didUpdateWidget(_StreakChip oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.count > oldWidget.count &&
-        !(MediaQuery.maybeOf(context)?.disableAnimations ?? false)) {
-      _pulse.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _pulse.dispose();
-    super.dispose();
-  }
+  static const _cap = 30;
+  static const _box = 14.0;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final gap = tokens.spacing.step1;
+
     return Semantics(
-      label: context.messages.habitStreakDaysSemantic(widget.count),
-      // The flame + tweening digit are decorative; the streak is conveyed by the
-      // label above, so screen readers don't read intermediate count-up digits.
+      label: context.messages.habitStreakDaysSemantic(count),
       child: ExcludeSemantics(
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ScaleTransition(
-              // 1 → 1.45 → 1 as the pulse plays; flat (1.0) at rest.
-              scale: _pulse.drive(
-                TweenSequence<double>([
-                  TweenSequenceItem(
-                    tween: Tween<double>(
-                      begin: 1,
-                      end: 1.45,
-                    ).chain(CurveTween(curve: Curves.easeOut)),
-                    weight: 1,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Reserve room for the trailing flame + count, then fit as many
+            // boxes as the width allows (capped), newest kept.
+            const reserve = 48.0;
+            final avail = (constraints.maxWidth - reserve).clamp(
+              0.0,
+              double.infinity,
+            );
+            final fits = (avail / (_box + gap)).floor();
+            var shown = count < _cap ? count : _cap;
+            if (shown > fits) shown = fits < 0 ? 0 : fits;
+
+            return Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < shown; i++) ...[
+                  if (i > 0) SizedBox(width: gap),
+                  Container(
+                    width: _box,
+                    height: _box,
+                    decoration: BoxDecoration(
+                      color: successColor,
+                      borderRadius: BorderRadius.circular(tokens.radii.xs),
+                    ),
                   ),
-                  TweenSequenceItem(
-                    tween: Tween<double>(
-                      begin: 1.45,
-                      end: 1,
-                    ).chain(CurveTween(curve: Curves.easeIn)),
-                    weight: 1,
-                  ),
-                ]),
-              ),
-              child: Icon(
-                Icons.local_fire_department_rounded,
-                size: tokens.spacing.step5,
-                color: tokens.colors.interactive.enabled,
-              ),
-            ),
-            SizedBox(width: tokens.spacing.step1),
-            TweenAnimationBuilder<double>(
-              tween: Tween<double>(end: widget.count.toDouble()),
-              duration: reduceMotion
-                  ? Duration.zero
-                  : const Duration(milliseconds: 450),
-              curve: Curves.easeOut,
-              builder: (context, value, _) => Text(
-                '${value.round()}',
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                  fontWeight: tokens.typography.weight.semiBold,
+                ],
+                SizedBox(width: tokens.spacing.step2),
+                Icon(
+                  Icons.local_fire_department_rounded,
+                  size: tokens.spacing.step5,
+                  color: tokens.colors.interactive.enabled,
                 ),
-              ),
-            ),
-          ],
+                SizedBox(width: tokens.spacing.step1),
+                Text(
+                  '$count',
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                    fontWeight: tokens.typography.weight.semiBold,
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

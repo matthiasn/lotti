@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -159,33 +160,41 @@ void main() {
     });
   });
 
-  group('streak chip', () {
-    testWidgets('shows a flame + count for a streak of 2 or more', (
+  group('streak chain', () {
+    Finder greenBoxes() => find.byWidgetPredicate(
+      (w) =>
+          w is Container &&
+          w.decoration is BoxDecoration &&
+          (w.decoration! as BoxDecoration).color == successColor,
+    );
+
+    testWidgets('shows one green box per kept day, plus the flame + count', (
       tester,
     ) async {
-      await pumpRow(tester, currentStreak: 12);
+      await pumpRow(tester, currentStreak: 3);
       expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
-      expect(find.text('12'), findsOneWidget);
+      expect(find.text('3'), findsOneWidget);
+      expect(greenBoxes(), findsNWidgets(3));
     });
 
-    testWidgets('hides the chip for a streak below 2', (tester) async {
-      await pumpRow(tester, currentStreak: 1);
-      expect(find.byIcon(Icons.local_fire_department_rounded), findsNothing);
-    });
-
-    testWidgets('counts up rather than snapping when the chain grows', (
+    testWidgets('shows nothing when there is no current streak', (
       tester,
     ) async {
-      await pumpRow(tester, currentStreak: 22);
-      expect(find.text('22'), findsOneWidget);
+      await pumpRow(tester);
+      expect(find.byIcon(Icons.local_fire_department_rounded), findsNothing);
+      expect(greenBoxes(), findsNothing);
+    });
 
-      await pumpRow(tester, currentStreak: 23);
-      await tester.pump(const Duration(milliseconds: 40));
-      // Still counting toward 23, not snapped.
-      expect(find.text('23'), findsNothing);
-
-      await tester.pump(const Duration(milliseconds: 600));
-      expect(find.text('23'), findsOneWidget);
+    testWidgets('a long streak keeps the true count but caps the chain', (
+      tester,
+    ) async {
+      await pumpRow(tester, currentStreak: 41);
+      // The flame count is always the real length...
+      expect(find.text('41'), findsOneWidget);
+      // ...but the chain is capped (and never exceeds 30 boxes).
+      final boxes = greenBoxes().evaluate().length;
+      expect(boxes, greaterThan(0));
+      expect(boxes, lessThanOrEqualTo(30));
     });
   });
 
