@@ -26,13 +26,18 @@ class HabitsSummaryCard extends ConsumerStatefulWidget {
 class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
     with SingleTickerProviderStateMixin {
   /// A grander one-shot glow when the *last* habit of the day is logged — the
-  /// peak reward. Rests at 1 (glow opacity `1 - value` is 0) and flashes
-  /// bright→gone when the day flips to fully complete.
+  /// peak reward, held back to ~350ms so it lands as the closing "exhale" after
+  /// the habit's own row beat rather than firing simultaneously. The glow reads
+  /// off a window of this timeline (see [build]); it rests at 0 (no glow) and
+  /// runs to 1 once the day flips to fully complete.
   late final AnimationController _allDoneFlash = AnimationController(
     vsync: this,
-    duration: const Duration(milliseconds: 900),
-    value: 1,
+    duration: const Duration(milliseconds: 1300),
   );
+
+  /// The glow only shows after this fraction of the timeline — the ~350ms delay
+  /// that makes the day-done flourish read as caused by the final completion.
+  static const _allDoneGlowStart = 0.27;
 
   static bool _isAllDone(HabitsState state) =>
       state.habitDefinitions.isNotEmpty &&
@@ -50,9 +55,13 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
     final messages = context.messages;
 
     // Fire the all-done flourish only on the transition into a fully-complete
-    // day, never on a card that opens already complete.
+    // day, never on a card that opens already complete. The achievement is
+    // announced to screen readers by the live region in _DoneFraction; the glow
+    // plays unless the platform asks to reduce motion.
     ref.listen(habitsControllerProvider, (previous, next) {
-      if ((previous == null || !_isAllDone(previous)) && _isAllDone(next)) {
+      if ((previous == null || !_isAllDone(previous)) &&
+          _isAllDone(next) &&
+          !(MediaQuery.maybeOf(context)?.disableAnimations ?? false)) {
         _allDoneFlash.forward(from: 0);
       }
     });
@@ -111,12 +120,18 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
           child: IgnorePointer(
             child: AnimatedBuilder(
               animation: _allDoneFlash,
-              builder: (context, _) => _allDoneFlash.value >= 0.999
-                  ? const SizedBox.shrink()
-                  : CompletionGlow(
-                      key: const ValueKey('habit-all-done-flash'),
-                      value: _allDoneFlash.value,
-                    ),
+              builder: (context, _) {
+                final c = _allDoneFlash.value;
+                if (c <= _allDoneGlowStart || c >= 1) {
+                  return const SizedBox.shrink();
+                }
+                // Remap the late window to a full 0→1 bloom.
+                final v = (c - _allDoneGlowStart) / (1 - _allDoneGlowStart);
+                return CompletionGlow(
+                  key: const ValueKey('habit-all-done-flash'),
+                  value: v,
+                );
+              },
             ),
           ),
         ),
@@ -143,53 +158,66 @@ class _DoneFraction extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final remaining = (total - done).clamp(0, total);
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    final caption = remaining == 0
+        ? messages.habitsAllDoneToday
+        : messages.habitsToGoCount(remaining);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.baseline,
-          textBaseline: TextBaseline.alphabetic,
+    // Screen readers get one stable, live-updating sentence ("3 of 3. All done
+    // today") instead of the tweening per-frame digits, which are excluded.
+    return Semantics(
+      liveRegion: true,
+      label: '$done / $total. $caption',
+      child: ExcludeSemantics(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Count up to the new total when a habit is completed, so the win
-            // is felt at the moment of the tap rather than snapping silently.
-            TweenAnimationBuilder<double>(
-              tween: Tween<double>(end: done.toDouble()),
-              duration: const Duration(milliseconds: 500),
-              curve: Curves.easeOutCubic,
-              builder: (context, value, _) => Text(
-                '${value.round()}',
-                style: calmDisplayStyle(
-                  tokens,
-                  color: tokens.colors.interactive.enabled,
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                // Count up to the new total when a habit is completed, so the
+                // win is felt at the moment of the tap rather than snapping.
+                TweenAnimationBuilder<double>(
+                  tween: Tween<double>(end: done.toDouble()),
+                  duration: reduceMotion
+                      ? Duration.zero
+                      : const Duration(milliseconds: 500),
+                  curve: Curves.easeOutCubic,
+                  builder: (context, value, _) => Text(
+                    '${value.round()}',
+                    style: calmDisplayStyle(
+                      tokens,
+                      color: tokens.colors.interactive.enabled,
+                    ),
+                  ),
                 ),
-              ),
+                SizedBox(width: tokens.spacing.step2),
+                Text(
+                  '/ $total',
+                  style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ],
             ),
-            SizedBox(width: tokens.spacing.step2),
             Text(
-              '/ $total',
-              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                color: tokens.colors.text.lowEmphasis,
+              caption,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                // The all-done caption carries the accent ink so finishing the
+                // day reads as a distinct reward state, not just another count.
+                color: remaining == 0
+                    ? tokens.colors.interactive.enabled
+                    : tokens.colors.text.mediumEmphasis,
+                fontWeight: remaining == 0
+                    ? tokens.typography.weight.semiBold
+                    : null,
               ),
             ),
           ],
         ),
-        Text(
-          remaining == 0
-              ? messages.habitsAllDoneToday
-              : messages.habitsToGoCount(remaining),
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            // The all-done caption carries the accent ink so finishing the day
-            // reads as a distinct reward state, not just another count.
-            color: remaining == 0
-                ? tokens.colors.interactive.enabled
-                : tokens.colors.text.mediumEmphasis,
-            fontWeight: remaining == 0
-                ? tokens.typography.weight.semiBold
-                : null,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -267,6 +295,8 @@ class _ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.xs),
       child: Stack(
@@ -277,7 +307,9 @@ class _ProgressBar extends StatelessWidget {
           ),
           TweenAnimationBuilder<double>(
             tween: Tween<double>(end: fraction),
-            duration: const Duration(milliseconds: 500),
+            duration: reduceMotion
+                ? Duration.zero
+                : const Duration(milliseconds: 500),
             curve: Curves.easeOutCubic,
             builder: (context, value, child) => FractionallySizedBox(
               widthFactor: value.clamp(0.0, 1.0),

@@ -25,10 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dashboard (for example an exercise habit's charts) now sits cleanly above the
   form. The completion-rate chart reads more clearly — a single caption, a
   visible 80% target line, and a prominent rate line over the fill — and logging
-  a habit is now a small celebration: the check pops in with a burst of sparks,
-  the row blooms a soft accent glow, its streak flame pulses and ticks up, the
-  done count counts up and the progress bar eases forward, and finishing the last
-  habit of the day lights the summary card with an all-done glow.
+  a habit is now a small, staged celebration: the check pops in, a soft accent
+  glow blooms on the row, a burst of sparks flies from the check, its streak
+  flame pulses and ticks up, the done count counts up and the progress bar eases
+  forward, and finishing the last habit of the day lights the summary card with
+  an all-done glow. The whole celebration respects the system "reduce motion"
+  setting and announces completion to screen readers.
 - Editing an entry's start and end time is simpler: you set the date once and
   the start/end times separately, instead of picking the full date on both
   pickers. One date wheel sits above paired start/end time wheels, with a live

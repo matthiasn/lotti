@@ -75,6 +75,7 @@ void main() {
     int currentStreak = 0,
     Widget? history,
     bool showLinkedDashboard = true,
+    bool reduceMotion = false,
     List<Override> extraOverrides = const [],
   }) async {
     final definition = habit ?? habitFlossing;
@@ -87,6 +88,9 @@ void main() {
           history: history,
           showLinkedDashboard: showLinkedDashboard,
         ),
+        mediaQueryData: reduceMotion
+            ? phoneMediaQueryData.copyWith(disableAnimations: true)
+            : null,
         overrides: extraOverrides,
       ),
     );
@@ -187,18 +191,25 @@ void main() {
   group('completion flash', () {
     final flash = find.byKey(const ValueKey('habit-completion-flash'));
 
-    testWidgets('flashes an accent glow on completion, then fades out', (
+    testWidgets('glow is staged in — fires after the check, then fades out', (
       tester,
     ) async {
       await pumpRow(tester);
       expect(flash, findsNothing);
 
-      // Flip to done in place → the one-shot glow fires.
+      // Flip to done in place → the celebration timeline starts, but the glow
+      // is windowed to begin ~76ms in (the check pops first), so it is not yet
+      // visible at 40ms.
       await pumpRow(tester, completedToday: true);
       await tester.pump(const Duration(milliseconds: 40));
+      expect(flash, findsNothing);
+
+      // Into the glow's window now.
+      await tester.pump(const Duration(milliseconds: 180));
       expect(flash, findsOneWidget);
 
-      await tester.pump(const Duration(milliseconds: 700));
+      // Past the end of the timeline → gone.
+      await tester.pump(const Duration(milliseconds: 900));
       expect(flash, findsNothing);
     });
 
@@ -208,6 +219,20 @@ void main() {
       await pumpRow(tester, completedToday: true);
       await tester.pump(const Duration(milliseconds: 40));
       expect(flash, findsNothing);
+    });
+
+    testWidgets('reduced motion: completing the habit plays no celebration', (
+      tester,
+    ) async {
+      await pumpRow(tester, reduceMotion: true);
+      await pumpRow(tester, completedToday: true, reduceMotion: true);
+      // Step across the whole timeline — no glow ever appears.
+      for (final ms in const [40, 200, 500, 950]) {
+        await tester.pump(Duration(milliseconds: ms));
+        expect(flash, findsNothing);
+      }
+      // The row still lands in its done state.
+      expect(find.byIcon(Icons.check_circle_rounded), findsOneWidget);
     });
   });
 

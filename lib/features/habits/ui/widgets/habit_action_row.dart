@@ -16,6 +16,15 @@ import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
+/// The 0→1 progress of a celebration beat whose window is `[start, end]` within
+/// the shared timeline [c], or `null` when [c] is outside that window so the
+/// caller renders nothing. This is what staggers the beats off one controller:
+/// each reads its own slice, so the glow and the burst start at different times.
+double? _stageProgress(double c, double start, double end) {
+  if (c <= start || c >= end) return null;
+  return (c - start) / (end - start);
+}
+
 /// The shared habit action row used by the habits tab and the dashboard habit
 /// chart: a swipe-to-record row (right = success, left = missed) whose body
 /// opens the completion dialog on tap, with a category icon, an optional
@@ -62,23 +71,23 @@ class HabitActionRow extends StatefulWidget {
 
 class _HabitActionRowState extends State<HabitActionRow>
     with SingleTickerProviderStateMixin {
-  /// Fires a one-shot accent glow when the habit flips to done, so completing
-  /// it from this row reads as a moment, not a silent state change. Driven from
-  /// [didUpdateWidget] so it only fires on the *transition*, never on a row that
-  /// was already done when the list first built.
+  /// Drives the staged completion celebration as one timeline (0→1 over ~950ms);
+  /// the beats read off windowed slices of it so they *cascade* — glow bloom,
+  /// then spark burst — instead of all firing on the same frame. The check pop
+  /// is the t=0 anchor and stays on its own [AnimatedSwitcher]. Fired from
+  /// [didUpdateWidget] so it only plays on the completion *transition*, never on
+  /// a row that was already done when the list first built.
   ///
   /// Created in [initState] (not a lazy initializer) so it always exists by the
-  /// time [dispose] runs — even for a missing habit whose `build` returns early
-  /// and never touches it.
-  late final AnimationController _flash;
+  /// time [dispose] runs — even for a missing habit whose `build` returns early.
+  late final AnimationController _celebrate;
 
   @override
   void initState() {
     super.initState();
-    _flash = AnimationController(
+    _celebrate = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 650),
-      value: 1, // rest at 1 → glow opacity (1 - value) is 0 until a flash fires
+      duration: const Duration(milliseconds: 950),
     );
   }
 
@@ -86,13 +95,16 @@ class _HabitActionRowState extends State<HabitActionRow>
   void didUpdateWidget(HabitActionRow oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.completedToday && widget.completedToday) {
-      _flash.forward(from: 0);
+      // Respect the platform "reduce motion" setting: skip the celebration and
+      // let the row settle straight into its done state.
+      if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return;
+      _celebrate.forward(from: 0);
     }
   }
 
   @override
   void dispose() {
-    _flash.dispose();
+    _celebrate.dispose();
     super.dispose();
   }
 
@@ -199,17 +211,21 @@ class _HabitActionRowState extends State<HabitActionRow>
         children: [
           // A soft accent glow that blooms around the card on completion —
           // behind the (opaque) card and outside the swipe clip so the halo
-          // shows around the edges instead of being cut off.
+          // shows around the edges instead of being cut off. Starts ~80ms in so
+          // it reads as caused by the check landing, not co-fired with it.
           Positioned.fill(
             child: IgnorePointer(
               child: AnimatedBuilder(
-                animation: _flash,
-                builder: (context, _) => _flash.value >= 0.999
-                    ? const SizedBox.shrink()
-                    : CompletionGlow(
-                        key: const ValueKey('habit-completion-flash'),
-                        value: _flash.value,
-                      ),
+                animation: _celebrate,
+                builder: (context, _) {
+                  final v = _stageProgress(_celebrate.value, 0.08, 0.78);
+                  return v == null
+                      ? const SizedBox.shrink()
+                      : CompletionGlow(
+                          key: const ValueKey('habit-completion-flash'),
+                          value: v,
+                        );
+                },
               ),
             ),
           ),
@@ -257,13 +273,18 @@ class _HabitActionRowState extends State<HabitActionRow>
             ),
           ),
           // Sparks flying out of the completed check — over the card and free to
-          // leave the rounded rect (the Stack does not clip).
+          // leave the rounded rect (the Stack does not clip). Launches ~135ms in
+          // so the sparks read as thrown by the check as it lands.
           Positioned.fill(
             child: IgnorePointer(
               child: AnimatedBuilder(
-                animation: _flash,
-                builder: (context, _) =>
-                    CompletionBurst(progress: _flash.value),
+                animation: _celebrate,
+                builder: (context, _) {
+                  final p = _stageProgress(_celebrate.value, 0.14, 0.82);
+                  return p == null
+                      ? const SizedBox.shrink()
+                      : CompletionBurst(progress: p);
+                },
               ),
             ),
           ),
@@ -415,7 +436,8 @@ class _StreakChipState extends State<_StreakChip>
   @override
   void didUpdateWidget(_StreakChip oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.count > oldWidget.count) {
+    if (widget.count > oldWidget.count &&
+        !(MediaQuery.maybeOf(context)?.disableAnimations ?? false)) {
       _pulse.forward(from: 0);
     }
   }
@@ -429,51 +451,59 @@ class _StreakChipState extends State<_StreakChip>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     return Semantics(
       label: context.messages.habitStreakDaysSemantic(widget.count),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ScaleTransition(
-            // 1 → 1.45 → 1 as the pulse plays; flat (1.0) at rest.
-            scale: _pulse.drive(
-              TweenSequence<double>([
-                TweenSequenceItem(
-                  tween: Tween<double>(
-                    begin: 1,
-                    end: 1.45,
-                  ).chain(CurveTween(curve: Curves.easeOut)),
-                  weight: 1,
-                ),
-                TweenSequenceItem(
-                  tween: Tween<double>(
-                    begin: 1.45,
-                    end: 1,
-                  ).chain(CurveTween(curve: Curves.easeIn)),
-                  weight: 1,
-                ),
-              ]),
-            ),
-            child: Icon(
-              Icons.local_fire_department_rounded,
-              size: tokens.spacing.step5,
-              color: tokens.colors.interactive.enabled,
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step1),
-          TweenAnimationBuilder<double>(
-            tween: Tween<double>(end: widget.count.toDouble()),
-            duration: const Duration(milliseconds: 450),
-            curve: Curves.easeOut,
-            builder: (context, value, _) => Text(
-              '${value.round()}',
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-                fontWeight: tokens.typography.weight.semiBold,
+      // The flame + tweening digit are decorative; the streak is conveyed by the
+      // label above, so screen readers don't read intermediate count-up digits.
+      child: ExcludeSemantics(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ScaleTransition(
+              // 1 → 1.45 → 1 as the pulse plays; flat (1.0) at rest.
+              scale: _pulse.drive(
+                TweenSequence<double>([
+                  TweenSequenceItem(
+                    tween: Tween<double>(
+                      begin: 1,
+                      end: 1.45,
+                    ).chain(CurveTween(curve: Curves.easeOut)),
+                    weight: 1,
+                  ),
+                  TweenSequenceItem(
+                    tween: Tween<double>(
+                      begin: 1.45,
+                      end: 1,
+                    ).chain(CurveTween(curve: Curves.easeIn)),
+                    weight: 1,
+                  ),
+                ]),
+              ),
+              child: Icon(
+                Icons.local_fire_department_rounded,
+                size: tokens.spacing.step5,
+                color: tokens.colors.interactive.enabled,
               ),
             ),
-          ),
-        ],
+            SizedBox(width: tokens.spacing.step1),
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: widget.count.toDouble()),
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 450),
+              curve: Curves.easeOut,
+              builder: (context, value, _) => Text(
+                '${value.round()}',
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                  fontWeight: tokens.typography.weight.semiBold,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -501,6 +531,8 @@ class _CompleteButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final accent = tokens.colors.interactive.enabled;
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     return Semantics(
       button: true,
       label: semanticLabel,
@@ -518,9 +550,12 @@ class _CompleteButton extends StatelessWidget {
             customBorder: const CircleBorder(),
             // Pop the check in when the habit is completed, so the tap lands
             // with a real reward beat: the incoming check overshoots past full
-            // size and settles back, while the "+" fades out underneath.
+            // size and settles back, while the "+" fades out underneath. Snaps
+            // instantly when the platform asks to reduce motion.
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 320),
+              duration: reduceMotion
+                  ? Duration.zero
+                  : const Duration(milliseconds: 320),
               switchInCurve: Curves.easeOutBack,
               switchOutCurve: Curves.easeIn,
               transitionBuilder: (child, animation) =>

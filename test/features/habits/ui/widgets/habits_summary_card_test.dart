@@ -265,7 +265,7 @@ void main() {
         expect(caption.style?.fontWeight, FontWeight.w600);
       });
 
-      testWidgets('flashes the all-done glow on the finishing completion', (
+      testWidgets('all-done glow is held back as a late exhale, then fades', (
         tester,
       ) async {
         final flash = find.byKey(const ValueKey('habit-all-done-flash'));
@@ -283,14 +283,46 @@ void main() {
         await tester.pump();
         expect(flash, findsNothing);
 
-        // Logging the last habit flips the day to fully complete → flourish.
+        // Logging the last habit flips the day to fully complete → flourish,
+        // but the glow is delayed ~350ms so it lands after the row's own beat.
         controller.emit(_state(definitionCount: 3, completedCount: 3));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 40));
+        expect(flash, findsNothing);
+
+        // Into the delayed window now.
+        await tester.pump(const Duration(milliseconds: 450));
         expect(flash, findsOneWidget);
 
-        await tester.pump(const Duration(milliseconds: 950));
+        await tester.pump(const Duration(milliseconds: 1000));
         expect(flash, findsNothing);
+      });
+
+      testWidgets('reduced motion: no all-done glow plays', (tester) async {
+        final flash = find.byKey(const ValueKey('habit-all-done-flash'));
+        final controller = _ControllableController(
+          _state(definitionCount: 2, completedCount: 1),
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const HabitsSummaryCard(),
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              disableAnimations: true,
+            ),
+            overrides: [
+              habitsControllerProvider.overrideWith(() => controller),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        controller.emit(_state(definitionCount: 2, completedCount: 2));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        // The glow never fires when motion is reduced.
+        expect(flash, findsNothing);
+        // The finished state is still reached.
+        expect(find.text('All done today'), findsOneWidget);
       });
     });
   });
