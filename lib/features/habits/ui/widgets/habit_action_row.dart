@@ -503,7 +503,7 @@ class _StreakChipState extends State<_StreakChip>
               builder: (context, value, _) => Text(
                 '${value.round()}',
                 style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
+                  color: tokens.colors.text.highEmphasis,
                   fontWeight: tokens.typography.weight.semiBold,
                 ),
               ),

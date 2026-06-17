@@ -194,7 +194,7 @@ class _WeekColumn extends StatelessWidget {
                   child: Text(
                     monthLabel!,
                     style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
+                      color: tokens.colors.text.highEmphasis,
                     ),
                   ),
                 ),
@@ -285,7 +285,11 @@ const _heatmapAlphaSteps = [0.36, 0.58, 0.80];
 /// brightest, most saturated cell in the grid — the whole point of the heatmap
 /// is to separate a *great* day from a *perfect* one, which alpha alone (capped
 /// at full [successColor]) cannot do on a dark ground.
-final Color _heatmapPerfectColor = Color.lerp(successColor, Colors.white, 0.18)!;
+final Color _heatmapPerfectColor = Color.lerp(
+  successColor,
+  Colors.white,
+  0.18,
+)!;
 
 /// The fill for a heatmap cell (or legend swatch) of [intensity] in `[0, 1]`:
 /// a quiet neutral when nothing was done; a perfect day its own brightest tier;

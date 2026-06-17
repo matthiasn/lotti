@@ -162,10 +162,11 @@ class HabitCompletionRateChart extends ConsumerWidget
                     showFailed: true,
                     habitDefinitions: state.habitDefinitions,
                     // The headroom above the line is "distance to 100%", not a
-                    // failure: a quiet neutral wash, never the old muddy maroon
-                    // that read as a battlefield (esp. in dark mode).
+                    // failure: a faint neutral wash kept well below the green
+                    // value area so the filled region (under the line) clearly
+                    // reads as the value, never the headroom.
                     aboveColor: context.designTokens.colors.decorative.level01
-                        .withValues(alpha: 0.3),
+                        .withValues(alpha: 0.12),
                     color: failColor.withAlpha(204),
                   ),
                   barData(
@@ -267,7 +268,7 @@ LineChartBarData barData({
     dotData: FlDotData(
       show: showDots,
       getDotPainter: (spot, percent, bar, index) => FlDotCirclePainter(
-        radius: 2,
+        radius: 3,
         color: color,
       ),
     ),
@@ -275,12 +276,17 @@ LineChartBarData barData({
       show: true,
       color: gradientFill ? null : color.withAlpha(alpha),
       gradient: gradientFill
-          // Fade the area out toward the baseline so it reads as a light wash
-          // under the line, not a flat saturated block.
+          // Soften the area toward the baseline so it reads less like a flat
+          // block, but keep it dense enough that the green stays the dominant
+          // fill (a fully-transparent foot would reveal the stacked skip/fail
+          // bands beneath and read muddy).
           ? LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [color.withAlpha(alpha), color.withAlpha(0)],
+              colors: [
+                color.withAlpha(alpha),
+                color.withAlpha((alpha * 0.55).round()),
+              ],
             )
           : null,
     ),
