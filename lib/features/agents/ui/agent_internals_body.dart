@@ -19,6 +19,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
 
 /// Tabbed body for the agent internals view.
 ///
@@ -257,7 +258,11 @@ class _TemplateSection extends ConsumerWidget {
               ),
               label: Text(template.displayName),
               onPressed: () {
-                Navigator.of(context).push(
+                // Root navigator on mobile so the editor's FormBottomBar
+                // clears the floating bottom nav — this push keeps the
+                // instance route's URL, so the route-based slide-away can't
+                // see it.
+                bottomNavSafeNavigatorOf(context).push(
                   MaterialPageRoute<void>(
                     builder: (_) => AgentTemplateDetailPage(
                       templateId: template.id,

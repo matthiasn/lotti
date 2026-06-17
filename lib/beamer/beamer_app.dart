@@ -89,14 +89,21 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
   return isUuid(location.state.pathParameters['taskId']);
 }
 
-/// True when the settings beamer location points at an entity-definition
-/// editor — the detail and create pages of categories, habits, labels,
-/// dashboards, and measurables, plus the per-project editors drilled into
-/// from category pages. The list pages keep the bar: they are ordinary
-/// browse surfaces, and only the editors need the whole bottom edge. The
-/// mobile shell slides the bottom nav out of the way on these routes.
-/// Pure function of router state.
-bool isSettingsEntityDefinitionRoute(BeamLocation<dynamic>? location) {
+/// True when the settings beamer location points at a detail/editor surface
+/// that docks its own action bar against the bottom edge — so the mobile
+/// shell slides the bottom nav out of the way and the page owns the whole
+/// bottom edge. Covers the entity-definition editors (categories, habits,
+/// labels, dashboards, measurables, per-project), the agent template/soul
+/// editors, and the sync conflict resolver. The list/browse pages keep the
+/// bar: they are ordinary browse surfaces. Pure function of router state.
+///
+/// Editor surfaces that are *pushed* on top of another settings route rather
+/// than being routes themselves (the AI provider connect form, the agent
+/// template editor opened from an instance's internals, the evolution chat)
+/// keep the URL of the page they were pushed from, so they can't be matched
+/// here — they escape the nav by pushing onto the root navigator via
+/// `bottomNavSafeNavigatorOf` instead.
+bool settingsRouteHidesBottomNav(BeamLocation<dynamic>? location) {
   if (location is! SettingsLocation) return false;
   final segments = location.state.uri.pathSegments;
   if (segments.length < 3 || segments.first != 'settings') return false;
@@ -115,6 +122,22 @@ bool isSettingsEntityDefinitionRoute(BeamLocation<dynamic>? location) {
     // the Projects tab, with no route of its own), so a stale deep link to it
     // must not hide the bar over the bare settings root.
     'projects' => segments[2] != 'create',
+    // Agent template/soul editors (`create` + per-id edit) dock a
+    // `FormBottomBar`. The `/review` history surfaces and the read-only
+    // instance detail keep the bar — they are browse surfaces; the evolution
+    // chat pushed from a review page escapes the nav via the root navigator.
+    'agents' =>
+      (segments[2] == 'templates' || segments[2] == 'souls') &&
+          segments.length >= 4 &&
+          segments.last != 'review',
+    // Sync conflict resolver detail (`/advanced/conflicts/<id>`) docks a
+    // `ConflictFooter`. The conflicts list keeps the bar, and the entry
+    // editor opened for a manual merge (`/edit`) is the journal editor — it
+    // manages its own bottom inset, so it stays out.
+    'advanced' =>
+      segments[2] == 'conflicts' &&
+          segments.length >= 4 &&
+          segments.last != 'edit',
     _ => false,
   };
 }
@@ -392,7 +415,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         // rebuilds when their routes change (push to / pop from task
         // details, into / out of settings entity editors). That's how we
         // know whether to hide the mobile bottom nav.
-        // See [_isTaskDetailRoute] and [isSettingsEntityDefinitionRoute].
+        // See [_isTaskDetailRoute] and [settingsRouteHidesBottomNav].
         return ListenableBuilder(
           listenable: _routeChangeListenable,
           builder: (context, _) => isWide
@@ -559,14 +582,15 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     // every route change.
     final showBottomNav = !_isTaskDetailRoute(index);
 
-    // Settings entity-definition editors (category, habit, label,
-    // dashboard, measurable, project detail/create pages — not the list
-    // pages) slide the bar away instead of removing it: nothing replaces
-    // the bar there, so an instant unmount would read as a jumpy glitch
-    // rather than a handoff to a page-owned surface.
+    // Settings detail/editor routes (category/habit/label/dashboard/
+    // measurable/project editors, agent template & soul editors, the sync
+    // conflict resolver — not the list pages) slide the bar away instead of
+    // removing it: nothing replaces the bar there, so an instant unmount
+    // would read as a jumpy glitch rather than a handoff to a page-owned
+    // surface.
     final slideNavAway =
         destinations[index].kind == _AppNavigationDestinationKind.settings &&
-        isSettingsEntityDefinitionRoute(
+        settingsRouteHidesBottomNav(
           navService.settingsDelegate.currentBeamLocation,
         );
 

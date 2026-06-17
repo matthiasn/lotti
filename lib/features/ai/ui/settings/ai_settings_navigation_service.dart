@@ -3,8 +3,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/inference_model_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
 
 /// Service responsible for handling navigation to AI configuration edit pages
 ///
@@ -135,23 +135,16 @@ class AiSettingsNavigationService {
   /// overlay on top of each tab's page stack (see `beamer_app.dart`). A form
   /// pushed onto the *nested* tab navigator therefore has its bottom save bar
   /// hidden behind that pill — the original "couldn't save the provider" bug.
-  /// Pushing onto the root navigator lifts the whole form above the shell,
-  /// including the bottom nav, so the save action always clears the bottom
-  /// edge.
-  ///
-  /// On desktop there is no bottom nav (a sidebar drives navigation) and the
-  /// editor forms are meant to overlay only the settings panel, so the nested
-  /// push is preserved there.
+  /// [bottomNavSafeNavigatorOf] returns the root navigator on mobile, lifting
+  /// the whole form above the shell (including the bottom nav) so the save
+  /// action always clears the bottom edge. On desktop there is no bottom nav
+  /// and the form overlays only the settings panel, so it stays nested.
   Future<void> _pushEditorForm(
     BuildContext context, {
     required WidgetBuilder builder,
   }) {
-    final isDesktop =
-        getIt.isRegistered<nav_service.NavService>() &&
-        getIt<nav_service.NavService>().isDesktopMode;
-    return Navigator.of(
+    return bottomNavSafeNavigatorOf(
       context,
-      rootNavigator: !isDesktop,
     ).push(_createSlideRoute(builder: builder));
   }
 
