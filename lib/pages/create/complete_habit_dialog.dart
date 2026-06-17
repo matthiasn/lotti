@@ -185,9 +185,21 @@ class _HabitDialogState extends State<HabitDialog> {
                   ],
                 ),
               )
-            : Align(
-                alignment: Alignment.bottomCenter,
-                child: form,
+            : GestureDetector(
+                // The form floats on a transparent sheet; make a tap on the
+                // empty space around it close the dialog (the scrim above the
+                // sheet isn't reachable here), as is conventional in the app.
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.of(context).maybePop(),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  // Swallow taps on the form itself so they don't bubble up and
+                  // dismiss it.
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: form,
+                  ),
+                ),
               ),
       ),
     );
