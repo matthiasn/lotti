@@ -8460,6 +8460,12 @@ abstract class AppLocalizations {
   /// **'Do you want to delete this habit?'**
   String get habitDeleteQuestion;
 
+  /// No description provided for @habitHeatmapDaySemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'{date}, {done} of {total} done'**
+  String habitHeatmapDaySemantic(String date, int done, int total);
+
   /// No description provided for @habitNotRecordedLabel.
   ///
   /// In en, this message translates to:
@@ -8495,6 +8501,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completion rate'**
   String get habitsCompletionRateTitle;
+
+  /// No description provided for @habitsConsistencyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Consistency'**
+  String get habitsConsistencyTitle;
 
   /// No description provided for @habitsDoneTodayLabel.
   ///
@@ -8537,6 +8549,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'later'**
   String get habitsFilterPendingLater;
+
+  /// No description provided for @habitsHeatmapEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a habit to start building your consistency'**
+  String get habitsHeatmapEmpty;
+
+  /// No description provided for @habitsHeatmapLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Less'**
+  String get habitsHeatmapLess;
+
+  /// No description provided for @habitsHeatmapMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get habitsHeatmapMore;
 
   /// No description provided for @habitShowAlertAtLabel.
   ///
@@ -8597,6 +8627,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} to go'**
   String habitsToGoCount(int count);
+
+  /// No description provided for @habitStreakDaysSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}-day streak'**
+  String habitStreakDaysSemantic(int count);
 
   /// No description provided for @imageGenerationError.
   ///

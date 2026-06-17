@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 
+/// A habit row that carries its own per-day completion history strip — used by
+/// the dashboard habit chart, where seeing the chain over the dashboard's range
+/// is the point.
+///
+/// Wraps the shared [HabitActionRow] (swipe + quick-complete + dialog), adding
+/// the range-keyed [habitCompletionControllerProvider] watch that feeds the
+/// [_HistoryStrip] and derives the done-state from the latest in-range result.
+/// The habits tab does NOT use this card — it renders [HabitActionRow] directly
+/// (history lives in the consistency heatmap).
 class HabitCompletionCard extends ConsumerStatefulWidget {
   const HabitCompletionCard({
     required this.habitId,
@@ -62,88 +66,6 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
     }
   }
 
-  void onTapAdd({String? dateString}) {
-    final height = MediaQuery.of(context).size.height;
-    final maxHeight = height * 0.9;
-    final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
-      widget.habitId,
-    );
-
-    if (habitDefinition == null) {
-      return;
-    }
-
-    // Mirror the dialog's gate: the linked dashboard only fills the sheet when
-    // it will actually be shown, otherwise the form floats on a transparent
-    // background.
-    final showLinkedDashboard =
-        widget.showLinkedDashboard && habitDefinition.dashboardId != null;
-
-    ModalUtils.showBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      constraints: BoxConstraints(maxHeight: maxHeight),
-      backgroundColor: showLinkedDashboard
-          ? Theme.of(context).bottomSheetTheme.backgroundColor
-          : Colors.transparent,
-      builder: (BuildContext context) {
-        return HabitDialog(
-          habitId: habitDefinition.id,
-          themeData: Theme.of(context),
-          dateString: dateString,
-          showLinkedDashboard: widget.showLinkedDashboard,
-        );
-      },
-    );
-  }
-
-  /// Records a one-tap completion for *today* with [completionType] and no
-  /// comment — the fast path shared by the trailing check button (success) and
-  /// the horizontal swipe gestures (success / fail). The detailed dialog (date,
-  /// comment, linked dashboard) stays one tap away on the row body.
-  ///
-  /// Confirms with a brief outcome SnackBar so the action is acknowledged
-  /// instantly, before the provider round-trips and recolours the strip.
-  Future<void> _recordQuickCompletion(
-    HabitCompletionType completionType,
-    HabitDefinition habitDefinition,
-  ) async {
-    await HapticFeedback.lightImpact();
-    final now = DateTime.now();
-    await getIt<PersistenceLogic>().createHabitCompletionEntry(
-      data: HabitCompletionData(
-        habitId: habitDefinition.id,
-        dateFrom: now,
-        dateTo: now,
-        completionType: completionType,
-      ),
-      comment: '',
-      habitDefinition: habitDefinition,
-    );
-    if (!mounted) return;
-    final tokens = context.designTokens;
-    ScaffoldMessenger.maybeOf(context)
-      ?..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          content: Row(
-            children: [
-              Icon(
-                completionType == HabitCompletionType.fail
-                    ? Icons.cancel_rounded
-                    : Icons.check_circle_rounded,
-                color: habitCompletionColor(completionType),
-              ),
-              SizedBox(width: tokens.spacing.step4),
-              Expanded(child: Text(habitDefinition.name)),
-            ],
-          ),
-        ),
-      );
-  }
-
   @override
   Widget build(BuildContext context) {
     final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
@@ -177,222 +99,14 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
           HabitCompletionType.skip,
         }.contains(results.last.completionType);
 
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final doneColor = habitCompletionColor(HabitCompletionType.success);
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        child: Dismissible(
-          key: ValueKey<String>('habit-swipe-${habitDefinition.id}'),
-          dismissThresholds: const {
-            DismissDirection.startToEnd: 0.4,
-            DismissDirection.endToStart: 0.4,
-          },
-          background: _SwipeActionBackground(
-            alignment: Alignment.centerLeft,
-            color: habitCompletionColor(HabitCompletionType.success),
-            icon: Icons.check_circle_rounded,
-            label: messages.completeHabitSuccessButton,
-          ),
-          secondaryBackground: _SwipeActionBackground(
-            alignment: Alignment.centerRight,
-            color: habitCompletionColor(HabitCompletionType.fail),
-            icon: Icons.cancel_rounded,
-            label: messages.completeHabitFailButton,
-          ),
-          confirmDismiss: (direction) async {
-            final completionType = direction == DismissDirection.startToEnd
-                ? HabitCompletionType.success
-                : HabitCompletionType.fail;
-            await _recordQuickCompletion(completionType, habitDefinition);
-            // Record, then snap back — the row reflects the new state via its
-            // provider; it is never removed from the list.
-            return false;
-          },
-          child: _HabitCardBody(
-            habitDefinition: habitDefinition,
-            results: results,
-            rangeStart: widget.rangeStart,
-            rangeEnd: widget.rangeEnd,
-            showGaps: widget.showGaps,
-            completedToday: completedToday,
-            doneColor: doneColor,
-            onTapAdd: onTapAdd,
-            onQuickComplete: () => _recordQuickCompletion(
-              HabitCompletionType.success,
-              habitDefinition,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The visible row content (icon, name, history strip, trailing action). Split
-/// from the swipe wrapper so the layout reads on its own and is testable
-/// without driving a gesture.
-class _HabitCardBody extends StatelessWidget {
-  const _HabitCardBody({
-    required this.habitDefinition,
-    required this.results,
-    required this.rangeStart,
-    required this.rangeEnd,
-    required this.showGaps,
-    required this.completedToday,
-    required this.doneColor,
-    required this.onTapAdd,
-    required this.onQuickComplete,
-  });
-
-  final HabitDefinition habitDefinition;
-  final List<HabitResult> results;
-  final DateTime rangeStart;
-  final DateTime rangeEnd;
-  final bool showGaps;
-  final bool completedToday;
-  final Color doneColor;
-  final void Function({String? dateString}) onTapAdd;
-
-  /// One-tap "mark done today" — the trailing check records a success directly
-  /// (the icon's universal meaning), instead of opening the detail dialog the
-  /// row body / a strip cell open.
-  final VoidCallback onQuickComplete;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final titleStyle = tokens.typography.styles.subtitle.subtitle1.copyWith(
-      color: tokens.colors.text.highEmphasis,
-    );
-
-    return Material(
-      color: dsCardSurface(context),
-      child: InkWell(
-        onTap: onTapAdd,
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-            border: Border.all(
-              color: completedToday
-                  ? doneColor.withValues(alpha: 0.55)
-                  : tokens.colors.decorative.level01,
-            ),
-          ),
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
-              vertical: tokens.spacing.step3,
-            ),
-            child: Row(
-              children: [
-                CategoryIconCompact(
-                  habitDefinition.categoryId,
-                  size: CategoryIconConstants.iconSizeMedium,
-                ),
-                SizedBox(width: tokens.spacing.step4),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          if (habitDefinition.priority ?? false) ...[
-                            Icon(
-                              Icons.star_rounded,
-                              size: tokens.spacing.step5,
-                              color: starredGold,
-                            ),
-                            SizedBox(width: tokens.spacing.step2),
-                          ],
-                          Flexible(
-                            child: Text(
-                              habitDefinition.name,
-                              style: titleStyle,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: tokens.spacing.step3),
-                      _HistoryStrip(
-                        results: results,
-                        showGaps: showGaps,
-                        habitName: habitDefinition.name,
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                _CompleteButton(
-                  // Not done → one-tap success (the icon's universal meaning),
-                  // shown as a filled accent button so it clearly reads as the
-                  // row's primary action. Already done → a quiet status check
-                  // that opens the dialog to review/adjust (never a silent
-                  // duplicate).
-                  completed: completedToday,
-                  doneColor: doneColor,
-                  semanticLabel: messages.habitCompleteSemanticLabel(
-                    habitDefinition.name,
-                  ),
-                  onPressed: completedToday ? onTapAdd : onQuickComplete,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// The row's primary action affordance. When the habit is not yet done it is a
-/// filled, accent-tinted 48dp circle with a bare check — unmistakably a "tap to
-/// complete" button. Once done it becomes a quiet filled status check that opens
-/// the dialog for review. The 48dp target clears the accessible minimum.
-class _CompleteButton extends StatelessWidget {
-  const _CompleteButton({
-    required this.completed,
-    required this.doneColor,
-    required this.semanticLabel,
-    required this.onPressed,
-  });
-
-  final bool completed;
-  final Color doneColor;
-  final String semanticLabel;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final accent = tokens.colors.interactive.enabled;
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      child: SizedBox(
-        width: tokens.spacing.step9,
-        height: tokens.spacing.step9,
-        child: Material(
-          color: completed
-              ? Colors.transparent
-              : accent.withValues(alpha: 0.12),
-          shape: const CircleBorder(),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onPressed,
-            customBorder: const CircleBorder(),
-            child: Icon(
-              completed ? Icons.check_circle_rounded : Icons.check_rounded,
-              color: completed ? doneColor : accent,
-              size: tokens.spacing.step7,
-            ),
-          ),
-        ),
+    return HabitActionRow(
+      habitId: habitDefinition.id,
+      completedToday: completedToday,
+      showLinkedDashboard: widget.showLinkedDashboard,
+      history: _HistoryStrip(
+        results: results,
+        showGaps: widget.showGaps,
+        habitName: habitDefinition.name,
       ),
     );
   }
@@ -563,51 +277,5 @@ Color _glyphInk(Color bg) {
         glyph: null,
         ink: Colors.transparent,
       );
-  }
-}
-
-/// The coloured reveal behind a row while it is being swiped — an outcome
-/// colour with a leading/trailing icon and label so the gesture's effect is
-/// legible before the user commits to it.
-class _SwipeActionBackground extends StatelessWidget {
-  const _SwipeActionBackground({
-    required this.alignment,
-    required this.color,
-    required this.icon,
-    required this.label,
-  });
-
-  final Alignment alignment;
-  final Color color;
-  final IconData icon;
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final onColor = tokens.colors.text.highEmphasis;
-    return ColoredBox(
-      color: color,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
-        child: Align(
-          alignment: alignment,
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: onColor, size: tokens.spacing.step6),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                label,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: onColor,
-                  fontWeight: tokens.typography.weight.semiBold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
   }
 }

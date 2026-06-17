@@ -50,7 +50,10 @@ class HabitCompletionRateChart extends ConsumerWidget
     return Column(
       children: [
         SizedBox(
-          height: 25,
+          // Tall enough that the default caption wraps to two lines on a narrow
+          // phone instead of truncating, while the day-breakdown row (one line)
+          // still centres.
+          height: 40,
           child: state.selectedInfoYmd.isNotEmpty
               ? Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -62,17 +65,11 @@ class HabitCompletionRateChart extends ConsumerWidget
                     InfoLabel('${state.failedPercentage}% recorded fails'),
                   ],
                 )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    InfoLabel(
-                      context.messages.habitsActiveHabitsCount(
-                        state.habitDefinitions.length,
-                      ),
-                    ),
-                    InfoLabel(context.messages.habitsTapForBreakdown),
-                  ],
+              : Center(
+                  child: InfoLabel(
+                    '${context.messages.habitsActiveHabitsCount(state.habitDefinitions.length)}'
+                    '  ·  ${context.messages.habitsTapForBreakdown}',
+                  ),
                 ),
         ),
         SizedBox(
@@ -112,8 +109,10 @@ class HabitCompletionRateChart extends ConsumerWidget
                   verticalInterval: 1,
                   getDrawingHorizontalLine: (value) {
                     if (value == 80.0) {
+                      // The 80% "on track" target — make it clearly perceivable
+                      // (the prior low-emphasis hairline was near-invisible).
                       return chartEmphasisLine(
-                        context.designTokens.colors.text.lowEmphasis,
+                        context.designTokens.colors.text.mediumEmphasis,
                       );
                     }
 
@@ -192,6 +191,9 @@ class HabitCompletionRateChart extends ConsumerWidget
                     showFailed: false,
                     habitDefinitions: state.habitDefinitions,
                     alpha: 90,
+                    // The success rate is the line the eye should read — give it
+                    // a prominent stroke over its fill, not a 1px hairline.
+                    barWidth: 2.5,
                     color: successColor,
                   ),
                 ],
@@ -217,6 +219,7 @@ LineChartBarData barData({
   required bool showFailed,
   required Color color,
   int alpha = 127,
+  double barWidth = 1,
   Color? aboveColor,
 }) {
   final spots = days.mapIndexed((idx, day) {
@@ -252,7 +255,7 @@ LineChartBarData barData({
   return LineChartBarData(
     spots: spots,
     color: color,
-    barWidth: 1,
+    barWidth: barWidth,
     dotData: const FlDotData(show: false),
     belowBarData: BarAreaData(
       show: true,

@@ -5,30 +5,32 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
-import 'package:lotti/features/habits/ui/widgets/habit_completion_card.dart';
+import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_chart_card.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_header.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_search.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_section_header.dart';
 import 'package:lotti/features/habits/ui/widgets/habits_summary_card.dart';
+import 'package:lotti/features/habits/ui/widgets/heatmap/habit_heatmap_card.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/widgets/charts/utils.dart';
 
-/// Top-level habits tab: a [CustomScrollView] on the calm [dsPageSurface]
-/// canvas, driven by [HabitsController].
+/// Top-level habits tab: a dashboard on the calm [dsPageSurface] canvas, driven
+/// by [HabitsController].
 ///
 /// Renders, in order, a [HabitsHeader] (title + status filter + tools), a
 /// [HabitsSummaryCard] (today's progress + streaks), the optional
 /// [HabitsSearchWidget], the three habit buckets — open now, pending later,
-/// completed — each a list of [HabitCompletionCard]s grouped under a
-/// [HabitsSectionHeader] in the `all` filter, and finally the [HabitsChartCard].
-/// The visible buckets depend on the active [HabitDisplayFilter]; when search is
-/// active each bucket is filtered by a name/description substring match against
-/// `state.searchString`. Content is centred on a reading-width column on wide
-/// windows, and scroll activity is reported to the `UserActivityService`.
+/// completed — as lean single-column [HabitActionRow]s grouped under a
+/// [HabitsSectionHeader] in the `all` filter, then the dashboard band: the
+/// scrollable [HabitHeatmapCard] (rendered full-width so it can use the whole
+/// window) and the [HabitsChartCard]. Each action row's done-state comes from
+/// the controller's `successfulToday` bucket and its streak chip from the
+/// heatmap controller's deep-history `streaksByHabit`. The reading content is
+/// centred on a comfortable column on wide windows; the heatmap band spans the
+/// full width. Scroll activity is reported to the `UserActivityService`.
 class HabitsTabPage extends ConsumerStatefulWidget {
   const HabitsTabPage({super.key});
 
@@ -38,6 +40,10 @@ class HabitsTabPage extends ConsumerStatefulWidget {
 
 class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
   final _scrollController = ScrollController();
+
+  /// The reading content (header, summary, list, chart) is centred on this
+  /// column on wide windows; the heatmap band breaks out to the full width.
+  static const _maxReadingWidth = 820.0;
 
   @override
   void initState() {
@@ -57,21 +63,13 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
     final tokens = context.designTokens;
     final messages = context.messages;
     final state = ref.watch(habitsControllerProvider);
+    final streaks = ref.watch(habitHeatmapControllerProvider).streaksByHabit;
 
-    // Centre the content on a comfortable reading column on wide windows so the
-    // rows don't stretch edge-to-edge into a sparse, low-density desktop layout.
-    const maxContentWidth = 720.0;
     final width = MediaQuery.sizeOf(context).width;
-    final horizontalPadding = width > maxContentWidth + tokens.spacing.step6 * 2
-        ? (width - maxContentWidth) / 2
+    final readingPadding = width > _maxReadingWidth + tokens.spacing.step6 * 2
+        ? (width - _maxReadingWidth) / 2
         : tokens.spacing.step6;
-
-    final timeSpanDays = state.timeSpanDays;
-    final rangeStart = DateTime.now().dayAtMidnight.subtract(
-      Duration(days: timeSpanDays - 1),
-    );
-    final rangeEnd = getEndOfToday();
-    final showGaps = timeSpanDays < 180;
+    final bandPadding = tokens.spacing.step6;
 
     final displayFilter = state.displayFilter;
     final showAll = displayFilter == HabitDisplayFilter.all;
@@ -106,15 +104,19 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
         pendingLater.isNotEmpty &&
         (displayFilter == HabitDisplayFilter.pendingLater || showAll);
 
-    HabitCompletionCard buildCard(HabitDefinition habitDefinition) {
-      return HabitCompletionCard(
+    HabitActionRow buildRow(HabitDefinition habitDefinition) {
+      return HabitActionRow(
         key: Key(habitDefinition.id),
         habitId: habitDefinition.id,
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-        showGaps: showGaps,
+        completedToday: state.successfulToday.contains(habitDefinition.id),
+        currentStreak: streaks[habitDefinition.id] ?? 0,
       );
     }
+
+    Widget habitList(List<HabitDefinition> items) => Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: items.map(buildRow).toList(),
+    );
 
     return Scaffold(
       backgroundColor: dsPageSurface(context),
@@ -123,9 +125,11 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
           controller: _scrollController,
           slivers: <Widget>[
             SliverPadding(
-              padding: EdgeInsets.symmetric(
-                horizontal: horizontalPadding,
-                vertical: tokens.spacing.step5,
+              padding: EdgeInsets.fromLTRB(
+                readingPadding,
+                tokens.spacing.step5,
+                readingPadding,
+                0,
               ),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
@@ -144,7 +148,7 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                       )
                     else
                       SizedBox(height: tokens.spacing.step5),
-                    ...openNow.map(buildCard),
+                    habitList(openNow),
                   ],
                   if (showPendingLater) ...[
                     if (showAll)
@@ -154,7 +158,7 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                       )
                     else
                       SizedBox(height: tokens.spacing.step5),
-                    ...pendingLater.map(buildCard),
+                    habitList(pendingLater),
                   ],
                   if (showCompleted) ...[
                     if (showAll)
@@ -164,13 +168,29 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                       )
                     else
                       SizedBox(height: tokens.spacing.step5),
-                    ...completed.map(buildCard),
+                    habitList(completed),
                   ],
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  const HabitsChartCard(),
-                  SizedBox(height: tokens.spacing.step6),
                 ]),
               ),
+            ),
+            // The heatmap is the width-using centrepiece: a full-width band so a
+            // wide window shows more history, while the reading content stays a
+            // comfortable column.
+            SliverPadding(
+              padding: EdgeInsets.symmetric(
+                horizontal: bandPadding,
+                vertical: tokens.spacing.sectionGap,
+              ),
+              sliver: const SliverToBoxAdapter(child: HabitHeatmapCard()),
+            ),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                readingPadding,
+                0,
+                readingPadding,
+                tokens.spacing.step6,
+              ),
+              sliver: const SliverToBoxAdapter(child: HabitsChartCard()),
             ),
           ],
         ),

@@ -9,16 +9,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Habits tab was reworked to match the rest of the app. It now uses the same
   calm, light-on-canvas surfaces as Tasks and Time Analysis instead of the old
   near-black background, with a Time-Analysis-style header. A new summary card
-  shows, at a glance, how many habits you've done today, how many are left
-  ("3 to go"), and your current streaks. Each habit's day-by-day history reads as
-  a quiet "chain": done, skipped, and missed days each carry their own mark
-  (check / dash / cross), not just a colour, so it stays legible for colour-blind
-  and low-vision users — and not-yet-recorded days are a plain neutral instead of
-  looking like failures. Swipe a habit right to mark it done or left to mark it
-  missed, or tap the round button to log it in one tap (with an instant
-  confirmation). The recording dialog was rebuilt around a Success / Skip / Missed
-  segmented picker with one Record button, and a linked dashboard (for example an
-  exercise habit's charts) now sits cleanly above the form.
+  shows, at a glance, how many habits you've done today ("2 / 5"), how many are
+  left ("3 to go"), and your current streaks. Your overall consistency now reads
+  as a scrollable heatmap — a calendar of week columns, month-labelled along the
+  top, where each day is shaded by how many of your active habits you completed
+  that day, the way a contributions graph works. It spans the full width of the
+  window and scrolls back through months and years with today pinned to the right
+  edge; quiet (not-yet-done) days stay a plain neutral rather than looking like
+  failures, and every cell announces its date and count to screen readers. The
+  habit list itself is now lean and action-focused: each row shows its own streak
+  ("🔥 23"), a clear "＋" button to log it in one tap (turning into a green check
+  once done), and you can still swipe right to mark it done or left to mark it
+  missed (with an instant confirmation). The recording dialog was rebuilt around
+  a Success / Skip / Missed segmented picker with one Record button, and a linked
+  dashboard (for example an exercise habit's charts) now sits cleanly above the
+  form. The completion-rate chart reads more clearly — a single caption, a
+  visible 80% target line, and a prominent rate line over the fill — and logging
+  a habit now feels like progress: the done count ticks up, the progress bar
+  eases forward, and the check pops in.
 - Editing an entry's start and end time is simpler: you set the date once and
   the start/end times separately, instead of picking the full date on both
   pickers. One date wheel sits above paired start/end time wheels, with a live

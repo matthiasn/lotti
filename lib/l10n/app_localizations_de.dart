@@ -4890,6 +4890,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitDeleteQuestion => 'Möchtest du diese Gewohnheit löschen?';
 
   @override
+  String habitHeatmapDaySemantic(String date, int done, int total) {
+    return '$date, $done von $total erledigt';
+  }
+
+  @override
   String get habitNotRecordedLabel => 'Nicht erfasst';
 
   @override
@@ -4908,6 +4913,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitsCompletionRateTitle => 'Erfolgsquote';
+
+  @override
+  String get habitsConsistencyTitle => 'Beständigkeit';
 
   @override
   String get habitsDoneTodayLabel => 'Heute erledigt';
@@ -4929,6 +4937,16 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get habitsFilterPendingLater => 'später';
+
+  @override
+  String get habitsHeatmapEmpty =>
+      'Füge eine Gewohnheit hinzu, um deine Beständigkeit aufzubauen';
+
+  @override
+  String get habitsHeatmapLess => 'Weniger';
+
+  @override
+  String get habitsHeatmapMore => 'Mehr';
 
   @override
   String get habitShowAlertAtLabel => 'Alarm anzeigen um';
@@ -4965,6 +4983,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String habitsToGoCount(int count) {
     return 'noch $count';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    return '$count Tage in Folge';
   }
 
   @override

@@ -39,7 +39,6 @@ class HabitsSummaryCard extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Column(
@@ -54,6 +53,7 @@ class HabitsSummaryCard extends ConsumerWidget {
                     ],
                   ),
                 ),
+                SizedBox(width: tokens.spacing.step4),
                 _StreakBadge(
                   shortStreakCount: state.shortStreakCount,
                   longStreakCount: state.longStreakCount,
@@ -70,9 +70,11 @@ class HabitsSummaryCard extends ConsumerWidget {
 }
 
 /// The day's headline: the *completed* count carries the accent ink (the win
-/// the eye should land on), with the total kept quiet. A gain-framed caption —
-/// "{n} to go", or "All done today" when finished — replaces the old deficit
-/// "{done} / {total}" so an unfinished morning reads as momentum, not failure.
+/// the eye should land on) shown as a fraction "{done} / {total}" so the big
+/// numeral can't be misread, with a gain-framed caption beneath — "{n} to go",
+/// or "All done today" when finished — so an unfinished morning reads as
+/// momentum, not failure. Caption on its own line so it never collides with the
+/// headline number's baseline.
 class _DoneFraction extends StatelessWidget {
   const _DoneFraction({required this.done, required this.total});
 
@@ -85,27 +87,49 @@ class _DoneFraction extends StatelessWidget {
     final messages = context.messages;
     final remaining = (total - done).clamp(0, total);
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.baseline,
-      textBaseline: TextBaseline.alphabetic,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '$done',
-          style: calmDisplayStyle(
-            tokens,
-            color: tokens.colors.interactive.enabled,
-          ),
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Padding(
-          padding: EdgeInsets.only(bottom: tokens.spacing.step1),
-          child: Text(
-            remaining == 0
-                ? messages.habitsAllDoneToday
-                : messages.habitsToGoCount(remaining),
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.baseline,
+          textBaseline: TextBaseline.alphabetic,
+          children: [
+            // Count up to the new total when a habit is completed, so the win
+            // is felt at the moment of the tap rather than snapping silently.
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: done.toDouble()),
+              duration: const Duration(milliseconds: 500),
+              curve: Curves.easeOutCubic,
+              builder: (context, value, _) => Text(
+                '${value.round()}',
+                style: calmDisplayStyle(
+                  tokens,
+                  color: tokens.colors.interactive.enabled,
+                ),
+              ),
             ),
+            SizedBox(width: tokens.spacing.step2),
+            Text(
+              '/ $total',
+              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
+          ],
+        ),
+        Text(
+          remaining == 0
+              ? messages.habitsAllDoneToday
+              : messages.habitsToGoCount(remaining),
+          style: tokens.typography.styles.body.bodySmall.copyWith(
+            // The all-done caption carries the accent ink so finishing the day
+            // reads as a distinct reward state, not just another count.
+            color: remaining == 0
+                ? tokens.colors.interactive.enabled
+                : tokens.colors.text.mediumEmphasis,
+            fontWeight: remaining == 0
+                ? tokens.typography.weight.semiBold
+                : null,
           ),
         ),
       ],
@@ -141,7 +165,18 @@ class _StreakBadge extends StatelessWidget {
         ? tokens.colors.interactive.enabled
         : tokens.colors.text.lowEmphasis;
 
-    return Flexible(
+    // A quiet pill anchors the streak as a deliberate badge rather than text
+    // floating in the card's corner. It sizes to its content (one line) and the
+    // done-fraction takes the remaining width, so the label never wraps.
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.colors.decorative.level01,
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step2,
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -151,15 +186,10 @@ class _StreakBadge extends StatelessWidget {
             color: accent,
           ),
           SizedBox(width: tokens.spacing.step2),
-          Flexible(
-            child: Text(
-              label,
-              textAlign: TextAlign.end,
-              overflow: TextOverflow.ellipsis,
-              maxLines: 2,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
+          Text(
+            label,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
         ],
@@ -169,7 +199,9 @@ class _StreakBadge extends StatelessWidget {
 }
 
 /// Token-styled day-progress bar: a quiet track with an accent fill at the
-/// completion fraction. Pure design-system colours and radii — no new tokens.
+/// completion fraction. The fill eases to its new width when a habit is logged,
+/// so progress is *felt* advancing rather than jumping. Pure design-system
+/// colours and radii — no new tokens.
 class _ProgressBar extends StatelessWidget {
   const _ProgressBar({required this.fraction});
 
@@ -186,8 +218,14 @@ class _ProgressBar extends StatelessWidget {
             height: tokens.spacing.step3,
             color: tokens.colors.decorative.level01,
           ),
-          FractionallySizedBox(
-            widthFactor: fraction,
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(end: fraction),
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOutCubic,
+            builder: (context, value, child) => FractionallySizedBox(
+              widthFactor: value.clamp(0.0, 1.0),
+              child: child,
+            ),
             child: Container(
               height: tokens.spacing.step3,
               decoration: BoxDecoration(

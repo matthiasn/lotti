@@ -48,6 +48,20 @@ Future<void> _pump(WidgetTester tester, HabitsState state) async {
   await tester.pump();
 }
 
+/// A habits controller whose state can be mutated in place so the card's
+/// completion animations (count-up, progress fill) can be driven mid-test.
+class _ControllableController extends HabitsController {
+  _ControllableController(this._initial);
+
+  final HabitsState _initial;
+
+  @override
+  HabitsState build() => _initial;
+
+  // ignore: use_setters_to_change_properties
+  void emit(HabitsState next) => state = next;
+}
+
 void main() {
   group('HabitsSummaryCard', () {
     testWidgets('renders the completed-today count as the headline number', (
@@ -179,6 +193,76 @@ void main() {
         );
         expect(box.widthFactor, 0.0);
         expect(tester.takeException(), isNull);
+      });
+
+      testWidgets('the fill eases to its new width instead of snapping', (
+        tester,
+      ) async {
+        final controller = _ControllableController(
+          _state(definitionCount: 4, completedCount: 1),
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const HabitsSummaryCard(),
+            overrides: [
+              habitsControllerProvider.overrideWith(() => controller),
+            ],
+          ),
+        );
+        await tester.pump();
+        double widthFactor() => tester
+            .widget<FractionallySizedBox>(find.byType(FractionallySizedBox))
+            .widthFactor!;
+        expect(widthFactor(), 0.25);
+
+        // Complete every habit → target 1.0.
+        controller.emit(_state(definitionCount: 4, completedCount: 4));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        // Part-way through the 500ms ease, still climbing — not snapped.
+        expect(widthFactor(), greaterThan(0.25));
+        expect(widthFactor(), lessThan(1.0));
+
+        await tester.pump(const Duration(milliseconds: 600));
+        expect(widthFactor(), 1.0);
+      });
+    });
+
+    group('completion animations', () {
+      testWidgets('the headline number counts up rather than snapping', (
+        tester,
+      ) async {
+        final controller = _ControllableController(
+          _state(definitionCount: 5, completedCount: 2),
+        );
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const HabitsSummaryCard(),
+            overrides: [
+              habitsControllerProvider.overrideWith(() => controller),
+            ],
+          ),
+        );
+        await tester.pump();
+        expect(find.text('2'), findsOneWidget);
+
+        controller.emit(_state(definitionCount: 5, completedCount: 5));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 60));
+        // Mid-flight the headline has not yet reached the final 5.
+        expect(find.text('5'), findsNothing);
+
+        await tester.pump(const Duration(milliseconds: 700));
+        expect(find.text('5'), findsOneWidget);
+      });
+
+      testWidgets('all-done caption is emphasised as a reward state', (
+        tester,
+      ) async {
+        await _pump(tester, _state(definitionCount: 2, completedCount: 2));
+        final caption = tester.widget<Text>(find.text('All done today'));
+        // Semibold accent caption distinguishes the finished state.
+        expect(caption.style?.fontWeight, FontWeight.w600);
       });
     });
   });

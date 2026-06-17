@@ -4927,6 +4927,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitDeleteQuestion => 'Doriți să ștergeți acest obicei?';
 
   @override
+  String habitHeatmapDaySemantic(String date, int done, int total) {
+    return '$date, $done din $total realizate';
+  }
+
+  @override
   String get habitNotRecordedLabel => 'Neînregistrat';
 
   @override
@@ -4945,6 +4950,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get habitsCompletionRateTitle => 'Rata de finalizare';
+
+  @override
+  String get habitsConsistencyTitle => 'Consecvență';
 
   @override
   String get habitsDoneTodayLabel => 'Finalizate azi';
@@ -4966,6 +4974,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get habitsFilterPendingLater => 'mai târziu';
+
+  @override
+  String get habitsHeatmapEmpty =>
+      'Adăugați un obicei pentru a începe să vă urmăriți consecvența';
+
+  @override
+  String get habitsHeatmapLess => 'Mai puțin';
+
+  @override
+  String get habitsHeatmapMore => 'Mai mult';
 
   @override
   String get habitShowAlertAtLabel => 'Afișați alerta la';
@@ -5001,6 +5019,11 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String habitsToGoCount(int count) {
     return '$count rămase';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    return '$count zile la rând';
   }
 
   @override

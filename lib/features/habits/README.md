@@ -13,11 +13,13 @@ At runtime, the feature owns:
 
 1. the habits tab and its derived sections (`openNow`, `pendingLater`, `completed`)
 2. the gain-framed daily summary card (done-today count, "to go" caption, streak badge, progress bar)
-3. completion-rate chart state, the time-span switch, and day-level breakdowns
-4. per-habit read-only completion history strips on each card
+3. the combined **consistency heatmap** — a scrollable, deep-history calendar of per-day completion intensity across all habits
+4. completion-rate chart state, the time-span switch, and day-level breakdowns
 5. quick completion capture (swipe + one-tap button) and the detailed completion dialog
 6. habit settings state for create/edit flows
 7. category and dashboard assignment from the habit settings form
+
+The tab's habit rows are lean **action rows** (`HabitActionRow`): icon, name, swipe, one-tap complete — no per-row history. Per-day history reads from the heatmap instead. The older per-row history strip still exists, but only inside the dashboard habit chart (`HabitCompletionCard`, see [Dashboard Per-Habit History](#dashboard-per-habit-history)).
 
 It does not own every habit write path by itself.
 
@@ -46,15 +48,22 @@ lib/features/habits/
 ├── repository/
 │   └── habits_repository.dart                  # Repository interface and implementation
 ├── state/
-│   ├── habit_completion_controller.dart         # Per-habit completion history controller
+│   ├── heatmap/
+│   │   ├── habit_heatmap_data.dart               # Pure: HeatmapDay, buildHeatmapDays, groupIntoWeekColumns
+│   │   └── habit_heatmap_controller.dart         # Deep-history heatmap controller (keepAlive)
+│   ├── habit_completion_controller.dart         # Per-habit completion history controller (dashboard card)
 │   ├── habit_settings_controller.dart           # Habit settings form state (freezed)
 │   ├── habits_controller.dart                   # Main habits page state controller
-│   └── habits_state.dart                        # Freezed state class with helpers
+│   └── habits_state.dart                        # Freezed state class with helpers (activeBy, totalForDay)
 └── ui/
     ├── habits_page.dart                         # Main habits tab page (HabitsTabPage)
     └── widgets/
+        ├── heatmap/
+        │   ├── habit_heatmap_card.dart           # Card shell: title + legend + grid + empty state
+        │   └── habit_heatmap_grid.dart           # Week-column × weekday-row scrollable grid
+        ├── habit_action_row.dart                 # Shared lean action row: swipe, name, one-tap, optional history slot
         ├── habit_category.dart                  # Category display widget
-        ├── habit_completion_card.dart            # Habit row: swipe, history strip, complete button
+        ├── habit_completion_card.dart            # Dashboard-only: HabitActionRow + per-day history strip
         ├── habit_completion_color_icon.dart      # Completion status icon
         ├── habit_dashboard.dart                  # Dashboard integration widget
         ├── habits_chart_card.dart                # Completion-rate chart card (title + time-span + zero-baseline)
@@ -89,14 +98,17 @@ flowchart LR
   Page --> Header["HabitsHeader"]
   Page --> Summary["HabitsSummaryCard"]
   Page --> Search["HabitsSearchWidget (optional)"]
-  Page --> Sections["Section headers + HabitCompletionCard rows"]
+  Page --> Sections["Section headers + HabitActionRow rows"]
+  Page --> HeatCard["HabitHeatmapCard"]
   Page --> ChartCard["HabitsChartCard"]
 
   ChartCard --> Chart["HabitCompletionRateChart"]
-  Sections --> Card["HabitCompletionCard"]
-  Card --> CardCtl["HabitCompletionController"]
-  CardCtl --> CardRange["Per-habit range fetch"]
-  Card --> Dialog["HabitDialog"]
+  Sections --> Row["HabitActionRow (completedToday = successfulToday)"]
+  Row --> Dialog["HabitDialog"]
+
+  HeatCard --> HeatCtl["HabitHeatmapController"]
+  HeatCtl --> HeatFetch["Deep-history range fetch"]
+  HeatCtl --> FilterListen["listens HabitsController.selectedCategoryIds"]
 
   SettingsPage["HabitDetailsPage"] --> SettingsCtl["HabitSettingsController(habitId)"]
   SettingsCtl --> Repo["HabitsRepository"]
@@ -104,33 +116,37 @@ flowchart LR
   Persist --> Notifications["NotificationService.scheduleHabitNotification"]
 ```
 
-There are two different read models on purpose:
+There are three different read models on purpose:
 
-- `HabitsController` owns the whole tab-level query model.
-- `HabitCompletionController` owns one habit card's history strip for a specific date range.
+- `HabitsController` owns the whole tab-level query model (buckets, summary, chart, streaks).
+- `HabitHeatmapController` owns the combined consistency heatmap over a multi-year range.
+- `HabitCompletionController` owns one **dashboard** habit card's history strip for a specific date range (`HabitCompletionCard`, reached from `DashboardHabitsChart`, not the tab).
 
-That keeps the tab state coherent without turning every card refresh into a full-page recomputation.
+That keeps the tab state coherent without turning every card refresh into a full-page recomputation, and keeps the heatmap's deep fetch off the tab's completion hot path.
 
 ## Page Composition
 
-`HabitsTabPage` is a `CustomScrollView` whose single `SliverList` lays the surfaces out top-to-bottom inside a padded column. On wide windows the content is centred on a comfortable reading column (capped at `maxContentWidth = 720`): the horizontal padding becomes `(width - 720) / 2` once the window is wide enough, otherwise it falls back to `tokens.spacing.step6`. The `Scaffold` background is `dsPageSurface(context)`.
+`HabitsTabPage` is a `CustomScrollView` built from **three slivers**, an editorial layout that uses the window width without stranding the reading content. The reading content (header, summary, single-column habit list, chart) sits in a centred column capped at `maxReadingWidth = 820`: once the window clears that plus side padding, the horizontal padding becomes `(width - 820) / 2`, otherwise `tokens.spacing.step6`. Between the list and the chart, the **consistency heatmap breaks out to the full window width** (its own sliver, `step6` padding only) so a wide screen shows more history — the width-using centrepiece the user asked for, while the action content stays a comfortable column. The habit list is single-column (`Column(stretch)` of `HabitActionRow`s — no orphan rows). The `Scaffold` background is `dsPageSurface(context)`.
 
 ```mermaid
 flowchart TB
-  subgraph Column["Centred content column (max ~720dp)"]
+  subgraph Column["Dashboard content column (max ~1100dp, 1–2 habit columns)"]
     direction TB
     Header["HabitsHeader<br/>title · search tool · category filter · status toggle"]
     Summary["HabitsSummaryCard<br/>done-today · to-go · streak · progress bar"]
     Search["HabitsSearchWidget<br/>(only when search is toggled on)"]
-    Open["Section: Due now (HabitsSectionHeader + HabitCompletionCard…)"]
-    Later["Section: Later today (header + cards)"]
-    Done["Section: Completed (header + cards)"]
+    Open["Section: Due now (HabitsSectionHeader + HabitActionRow…)"]
+    Later["Section: Later today (header + rows)"]
+    Done["Section: Completed (header + rows)"]
+    HeatCard["HabitHeatmapCard<br/>title · legend · scrollable consistency grid"]
     ChartCard["HabitsChartCard<br/>title · zero-baseline toggle · time-span switch · rate chart"]
   end
-  Header --> Summary --> Search --> Open --> Later --> Done --> ChartCard
+  Header --> Summary --> Search --> Open --> Later --> Done --> HeatCard --> ChartCard
 ```
 
-The grouped sections only render when the relevant bucket is non-empty **and** the active `displayFilter` selects it (or the filter is `all`). When the filter is `all`, each visible bucket is preceded by a `HabitsSectionHeader` (a bold subtitle label plus a quiet count pill); otherwise a single filtered bucket is shown without a header (just top spacing). The completion-rate chart now lives at the **bottom** of the page in its own card, not behind a sliver app bar.
+The grouped sections only render when the relevant bucket is non-empty **and** the active `displayFilter` selects it (or the filter is `all`). When the filter is `all`, each visible bucket is preceded by a `HabitsSectionHeader` (a bold subtitle label plus a quiet count pill); otherwise a single filtered bucket is shown without a header (just top spacing). The action list is followed by the dashboard band: the scrollable consistency heatmap and then the completion-rate chart card (both at the bottom, action-first).
+
+Each habit row is a `HabitActionRow` keyed by habit id, with `completedToday` passed in from the controller's `successfulToday` set (success **or** skip today) — *not* `completedToday` (which also includes a recorded `fail`), so a failed-today habit still reads as not-done while bucket placement is unchanged.
 
 ### Header
 
@@ -147,8 +163,8 @@ The status control is the shared `DsSegmentedToggle`, so it speaks the same visu
 
 `HabitsSummaryCard` is the daily KPI card — the analogue of the Time Analysis "TOTAL" card — and it answers "how am I doing today?" at a glance. It surfaces three things the controller already computes but that no widget rendered before this card:
 
-- **Gain-framed done count.** The completed-today count carries the accent ink (the win the eye lands on); the caption beside it reads `"{n} to go"` (`habitsToGoCount`) while work remains, or `"All done today"` (`habitsAllDoneToday`) when finished — momentum framing, not a `done / total` deficit.
-- **Streak badge.** A flame chip showing the longest active streak. It prefers the 7-day streak (`longStreakCount`, the bigger win), falls back to the 3-day streak (`shortStreakCount`), and otherwise nudges with `habitsStartStreakToday`. This is where the previously-unused `shortStreakCount` / `longStreakCount` finally reach the screen — surfacing "don't break the chain" makes the habit loop's reward visible.
+- **Gain-framed done count.** The completed-today count carries the accent ink (the win the eye lands on), shown as a `"{done} / {total}"` fraction so the big numeral can't be misread; a caption on its own line beneath reads `"{n} to go"` (`habitsToGoCount`) while work remains, or `"All done today"` (`habitsAllDoneToday`) when finished — momentum framing, not a deficit.
+- **Streak pill.** A flame chip in a quiet pill showing the longest active streak. It prefers the 7-day streak (`longStreakCount`, the bigger win), falls back to the 3-day streak (`shortStreakCount`), and otherwise nudges with `habitsStartStreakToday`. The pill sizes to its content (one line) while the fraction takes the remaining width. This is where the previously-unused `shortStreakCount` / `longStreakCount` reach the screen — surfacing "don't break the chain" makes the habit loop's reward visible (per-habit streaks additionally live on each row's chip).
 - **Progress bar.** A token-styled quiet track with an accent fill at the completion fraction (`done / total`), so the day's progress reads both numerically and visually (low-vision support).
 
 ## Core Data Model
@@ -302,7 +318,59 @@ The completion-rate chart now lives inside `HabitsChartCard` at the bottom of th
 
 Tapping the chart sets `selectedInfoYmd`, which updates the breakdown caption with success / skipped / recorded-fail percentages for that day. Those percentages are computed by the pure `dayPercentages` helper, which clamps the failed band to the remaining headroom (`100 - success - skipped`) so the three bands never sum above 100. The selected day clears on a 15-second debounce in the controller — interactive, but intentionally not sticky forever.
 
-## Per-Card Completion History
+## Consistency Heatmap
+
+The heatmap is the tab's history surface: one combined, GitHub-contributions-style calendar of **week columns × weekday rows**, fixed-size day cells, horizontally scrollable through deep history with today pinned to the right edge. Each cell is shaded by that day's **completion intensity** = (active habits with a `success` that day) / (habits active that day). It respects the tab's category filter and is deliberately decoupled from the chart's short time-span window.
+
+### Data flow
+
+```mermaid
+flowchart LR
+  Defs["watchHabitDefinitions()\n(.active)"] --> Ctl["HabitHeatmapController"]
+  Fetch["getHabitCompletionsInRange(rangeStart)\nrangeStart = min(earliest activeFrom, today−365d), 5y cap"] --> Ctl
+  Filter["HabitsController.selectedCategoryIds\n(ref.listen, recompute, no refetch)"] --> Ctl
+
+  Ctl --> Build["buildHeatmapDays(...)\nper-day successCount / activeCount"]
+  Build --> Days["List&lt;HeatmapDay&gt; (ascending)"]
+  Days --> Group["groupIntoWeekColumns(firstDayOfWeekIndex)"]
+  Group --> Grid["HabitHeatmapGrid\nreverse horizontal ListView of week columns"]
+```
+
+The denominator reuses the tab's own convention — the union of `activeBy(ymd)` and habits with any recorded completion that day, exactly like `totalForDay` in `habits_state.dart` — so the heatmap can never disagree with the completion-rate chart. The numerator counts only `success` (the green "did it" signal); skips and fails raise the denominator but not the intensity. Days before any habit existed have a zero denominator and render a quiet neutral, never a miss. All of `habit_heatmap_data.dart` is pure (no Flutter, no wall clock — `today`/range come in as `YYYY-MM-DD` strings), so the bucketing and week-alignment math are unit-tested directly.
+
+### Controller lifecycle
+
+```mermaid
+sequenceDiagram
+  participant Repo as "HabitsRepository"
+  participant Tab as "HabitsController"
+  participant Heat as "HabitHeatmapController"
+  participant Grid as "HabitHeatmapCard / Grid"
+
+  Repo-->>Heat: watchHabitDefinitions() emits
+  Heat->>Repo: getHabitCompletionsInRange(deep rangeStart)
+  Repo-->>Heat: completions
+  Heat->>Heat: buildHeatmapDays → HabitHeatmapData (isLoading=false)
+  Heat-->>Grid: render columns (today at right edge)
+  Repo-->>Heat: updateStream(HABIT_COMPLETION)
+  Heat->>Repo: refetch + recompute
+  Tab-->>Heat: selectedCategoryIds changed
+  Heat->>Heat: recompute (no refetch — completions already in memory)
+```
+
+State is a plain `HabitHeatmapData` (`days` + `hasHabits` + `isLoading` + `streaksByHabit`), seeded `HabitHeatmapData.empty()`. After the first recompute the controller never republishes a loading state, so a background refresh never blanks the grid (stale-while-revalidate, the structural analogue of the dashboard card's `_lastResults`). `rangeStart` is recomputed from the earliest active habit, floored at a one-year minimum and capped at five years so a single ancient `activeFrom` can't produce a decade-wide grid. The same deep history feeds `currentStreaksByHabit` — each habit's current consecutive-kept-day streak (success or skip, ending today or yesterday) — which the page reads to render the per-row **streak chips**, so a habit's own chain isn't capped by the tab's short fetch window.
+
+### Grid, colour, and accessibility
+
+- **Rendering.** `HabitHeatmapGrid` is a pure widget: a fixed weekday-label gutter (Mon/Wed/Fri only — distinct initials, never the ambiguous Tue/Thu "T", placed at their rows for the region's first day) and a **month-label band** (one abbreviation at the first column of each month) above a horizontal `ListView.builder(reverse: true)` of week columns. `reverse: true` anchors today's column at the right edge on first paint and builds older columns lazily, so years of history cost nothing until scrolled to.
+- **Colour.** Intensity is snapped to **four discrete buckets** by quartile (`heatmapFillColor`: `successColor` at alpha `0.42 / 0.62 / 0.81 / 1.0`) rather than a continuous ramp, so adjacent days stay distinguishable on the dark canvas and the lowest lit step is unmistakably green — the sanctioned data-viz shading pattern, shared by the cells and the card's five-swatch "Less → More" legend (`heatmapLegendIntensities`). Zero-intensity and pre-existence days are `decorative.level01`, never red. Today's cell carries a 2px `interactive.enabled` ring.
+- **Accessibility.** Every in-range cell exposes a `Tooltip` (date · `n/m`) and a `habitHeatmapDaySemantic(date, done, total)` screen-reader label, so magnitude never depends on colour alone. The empty state (`habitsHeatmapEmpty`) shows only when the user has no habits at all; an empty category filter still renders a neutral grid rather than the placeholder.
+
+## Dashboard Per-Habit History
+
+The tab no longer renders a per-row history strip — that history now lives in the heatmap. The strip survives in one place: the **dashboard** habit chart (`DashboardHabitsChart → HabitCompletionCard`), where seeing one habit's chain over the dashboard's range is the point.
+
+Both surfaces share one widget. `HabitActionRow` is the lean, presentational action row (swipe, category icon, priority star, name, an optional **streak chip**, a trailing one-tap button, and an optional `history` slot). On the tab the chip shows the habit's `currentStreak` (≥ 2) from the heatmap controller, and the trailing button is a hollow accent **"＋" ring** when the habit isn't done (unmistakably "tap to log") that becomes a green **check-circle** once done (tap to review, never a silent duplicate). The tab uses the row bare; `HabitCompletionCard` is a thin `ConsumerStatefulWidget` wrapper that watches `HabitCompletionController`, builds the `_HistoryStrip`, derives `completedToday` from the latest in-range result, and injects the strip into the row's `history` slot. So the swipe / quick-complete / dialog logic lives once, in `HabitActionRow`.
 
 Each `HabitCompletionCard` asks `HabitCompletionController` for a habit-specific range and renders a read-only day strip.
 
@@ -342,17 +410,17 @@ The on-fill glyph ink is chosen by actual WCAG contrast ratio against the fill *
 
 ## Completion Flow
 
-Completions can be captured three ways from a `HabitCompletionCard`, all funnelling into the same `PersistenceLogic.createHabitCompletionEntry` write:
+Completions can be captured three ways from a `HabitActionRow` (the shared row used by both the tab and the dashboard card), all funnelling into the same `PersistenceLogic.createHabitCompletionEntry` write:
 
-1. **Swipe** the row — right (`startToEnd`) records a **success**, left (`endToStart`) records a **missed/fail**. The `Dismissible` uses `confirmDismiss` to fire `_recordQuickCompletion` and then returns `false`, so the row snaps back and reflects the new state via its provider — it is never removed from the list. A coloured `_SwipeActionBackground` (outcome colour + icon + label) makes the gesture's effect legible before the user commits.
-2. **One-tap complete button** — when the habit is *not* done, the trailing 48dp button is a filled accent circle that records **success today** directly (the check's universal meaning) via `_recordQuickCompletion`. When the habit *is* already done it becomes a quiet status check that opens the dialog to review/adjust, never a silent duplicate.
+1. **Swipe** the row — right (`startToEnd`) records a **success**, left (`endToStart`) records a **missed/fail**. The `Dismissible` uses `confirmDismiss` to fire `_recordQuickCompletion` and then returns `false`, so the row snaps back and reflects the new state via its host's state — it is never removed from the list. A coloured `_SwipeActionBackground` (outcome colour + icon + label) makes the gesture's effect legible before the user commits.
+2. **One-tap complete button** — when the habit is *not* done, the trailing 48dp button is a hollow accent **"＋" ring** that records **success today** directly via `_recordQuickCompletion` — visually distinct from a completed row so "tap to log" never reads as "already done". When the habit *is* already done it becomes a green check-circle that opens the dialog to review/adjust, never a silent duplicate.
 3. **Row body / detailed dialog** — tapping the row body opens `HabitDialog` for the full capture (date, comment, outcome picker, linked dashboard).
 
-The quick paths (swipe + button) fire light haptic feedback and confirm with a brief floating outcome `SnackBar` (the habit name plus a check/cancel icon) so the action is acknowledged instantly, before the provider round-trips and recolours the strip.
+The quick paths (swipe + button) fire light haptic feedback and confirm with a brief floating outcome `SnackBar` (the habit name plus a check/cancel icon) so the action is acknowledged instantly, before the provider round-trips and the tab re-renders (the habit moves between buckets / the heatmap recolours).
 
 ```mermaid
 flowchart TD
-  Row["HabitCompletionCard row"]
+  Row["HabitActionRow"]
   Row -->|swipe right| QSuccess["_recordQuickCompletion(success, today)"]
   Row -->|swipe left| QFail["_recordQuickCompletion(fail, today)"]
   Row -->|tap button when not done| QSuccess
@@ -438,7 +506,8 @@ Delete is a soft delete via `deletedAt`, not a hard remove.
 
 - The model has an optional `autoCompleteRule`, and `HabitSettingsState` carries an `autoCompleteRule` field, but that field is always initialized to `null` and never mutated by `HabitSettingsController`; no autocomplete editing widget is wired up — only a dead `// const HabitAutocompleteWrapper(),` reference remains at `lib/features/settings/ui/pages/habits/habit_details_page.dart:197`, and there is no `HabitAutocompleteWrapper` class anywhere in the codebase.
 - Streaks **are now displayed**: `shortStreakCount` / `longStreakCount` surface in `HabitsSummaryCard`'s streak badge. (Previously these were computed but never rendered.)
-- The per-day history strip is **read-only**; backfilling a past day is done through the dialog's date field, not by tapping a cell.
+- The tab's per-day history is the combined **consistency heatmap**; the per-row history strip now exists only on the **dashboard** habit chart. Both are **read-only** — backfilling a past day is done through the dialog's date field, not by tapping a cell.
+- The heatmap shades by **success only** and uses the same `activeBy` ∪ recorded denominator as the chart. Weekly/monthly per-period targets (`requiredCompletions`) are still not surfaced — the heatmap measures daily success, not cadence.
 - The chart **time span** lives in the chart card's header (`TimeSpanSegmentedControl`, `[7, 14, 30]`), not behind a calendar/visibility toggle. `state.showTimeSpan` is still in the state but no longer gates the switch.
 - Text search is local page filtering (only when `showSearch` is on), not repository querying.
 - The "due now" split is based only on daily `showFrom` and current clock time.
@@ -461,7 +530,9 @@ So the architecture leans into that:
 
 - repository for focused reads
 - a keep-alive page controller for whole-tab derivation
-- a smaller per-card controller for one habit's history strip
+- a separate keep-alive heatmap controller for combined deep-history derivation (its own range, off the tab's hot path)
+- a smaller per-card controller for one *dashboard* habit's history strip
+- one shared `HabitActionRow` so swipe / quick-complete / dialog logic lives once, with history as an optional slot
 - shared persistence services for writes, notifications, and metadata stamping
 - a shared design-system elevation language so the calm card-on-canvas surfaces stay consistent with Time Analysis
 

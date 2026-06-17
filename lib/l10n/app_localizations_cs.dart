@@ -4889,6 +4889,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitDeleteQuestion => 'Chcete tento zvyk smazat?';
 
   @override
+  String habitHeatmapDaySemantic(String date, int done, int total) {
+    return '$date, $done z $total splněno';
+  }
+
+  @override
   String get habitNotRecordedLabel => 'Nezaznamenáno';
 
   @override
@@ -4907,6 +4912,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitsCompletionRateTitle => 'Míra plnění';
+
+  @override
+  String get habitsConsistencyTitle => 'Důslednost';
 
   @override
   String get habitsDoneTodayLabel => 'Hotovo dnes';
@@ -4928,6 +4936,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get habitsFilterPendingLater => 'později';
+
+  @override
+  String get habitsHeatmapEmpty =>
+      'Přidej návyk a začni budovat svou důslednost';
+
+  @override
+  String get habitsHeatmapLess => 'Méně';
+
+  @override
+  String get habitsHeatmapMore => 'Více';
 
   @override
   String get habitShowAlertAtLabel => 'Zobrazit upozornění v';
@@ -4963,6 +4981,11 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String habitsToGoCount(int count) {
     return 'zbývá $count';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    return '$count dní v řadě';
   }
 
   @override
