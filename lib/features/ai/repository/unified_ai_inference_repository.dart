@@ -577,12 +577,23 @@ class UnifiedAiInferenceRepository {
 
     if (shouldSaveEntry) {
       try {
+        // Coding prompts attach to the parent task (like cover art) rather
+        // than the triggering audio/image entry. This makes each generated
+        // prompt part of the task context, so later prompts can build on
+        // earlier ones. Reuses the parent task already resolved for tool
+        // calls above; falls back to the source entity when no parent task
+        // can be resolved (e.g. an unlinked entry).
+        var linkedId = entity.id;
+        if (promptConfig.aiResponseType == AiResponseType.promptGeneration &&
+            taskForToolCalls != null) {
+          linkedId = taskForToolCalls.id;
+        }
         aiResponseEntry = await ref
             .read(aiInputRepositoryProvider)
             .createAiResponseEntry(
               data: data,
               start: start,
-              linkedId: entity.id,
+              linkedId: linkedId,
               categoryId: entity.meta.categoryId,
             );
         developer.log(

@@ -41,6 +41,28 @@ void main() {
       find.text(messages.journalLinkedEntriesActivityFilterImages),
       findsOneWidget,
     );
+    expect(
+      find.text(messages.journalLinkedEntriesActivityFilterCode),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Code pill renders with the code icon', (tester) async {
+    await pumpBar(tester);
+
+    final messages = await AppLocalizations.delegate.load(
+      const Locale('en'),
+    );
+
+    // The code icon lives in the same pill as the Code label.
+    final codePill = find.ancestor(
+      of: find.text(messages.journalLinkedEntriesActivityFilterCode),
+      matching: find.byType(Row),
+    );
+    expect(
+      find.descendant(of: codePill.first, matching: find.byIcon(Icons.code)),
+      findsOneWidget,
+    );
   });
 
   testWidgets('trailing trigger shows current sort label', (tester) async {

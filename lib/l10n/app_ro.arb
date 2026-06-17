@@ -2424,6 +2424,7 @@
   "journalHideLinkHint": "Ascunde linkul",
   "journalHideMapHint": "Ascunde harta",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
+  "journalLinkedEntriesActivityFilterCode": "Cod",
   "journalLinkedEntriesActivityFilterImages": "Imagini",
   "journalLinkedEntriesActivityFilterTimer": "Cronometru",
   "journalLinkedEntriesFilterModalTitle": "Filtrare și sortare",

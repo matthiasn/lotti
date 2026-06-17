@@ -2424,6 +2424,7 @@
   "journalHideLinkHint": "Ocultar enlace",
   "journalHideMapHint": "Ocultar mapa",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
+  "journalLinkedEntriesActivityFilterCode": "Código",
   "journalLinkedEntriesActivityFilterImages": "Imágenes",
   "journalLinkedEntriesActivityFilterTimer": "Temporizador",
   "journalLinkedEntriesFilterModalTitle": "Filtrar y ordenar",

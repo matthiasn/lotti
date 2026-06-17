@@ -527,10 +527,22 @@ class SkillInferenceRunner {
           type: skill.skillType.toResponseType,
         );
 
+        // Coding prompts attach to the parent task (like cover art) rather
+        // than the triggering audio/text entry, so each generated prompt
+        // becomes part of the task context and later prompts can build on
+        // earlier ones. Scoped to `SkillType.promptGeneration` (coding /
+        // design / research); image-prompt generation keeps its entry link.
+        // Falls back to the source entry when there is no parent task.
+        final linkedId =
+            skill.skillType == SkillType.promptGeneration &&
+                linkedTaskId != null
+            ? linkedTaskId
+            : entryId;
+
         await _aiInputRepository.createAiResponseEntry(
           data: data,
           start: start,
-          linkedId: entryId,
+          linkedId: linkedId,
           categoryId: entity.meta.categoryId,
         );
 

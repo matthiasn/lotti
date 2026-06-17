@@ -2805,6 +2805,7 @@
   "journalHideLinkHint": "Hide link",
   "journalHideMapHint": "Hide map",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
+  "journalLinkedEntriesActivityFilterCode": "Code",
   "journalLinkedEntriesActivityFilterImages": "Images",
   "journalLinkedEntriesActivityFilterTimer": "Timer",
   "journalLinkedEntriesFilterModalTitle": "Filter & Sort",

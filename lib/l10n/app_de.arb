@@ -2424,6 +2424,7 @@
   "journalHideLinkHint": "Link ausblenden",
   "journalHideMapHint": "Karte ausblenden",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
+  "journalLinkedEntriesActivityFilterCode": "Code",
   "journalLinkedEntriesActivityFilterImages": "Bilder",
   "journalLinkedEntriesActivityFilterTimer": "Timer",
   "journalLinkedEntriesFilterModalTitle": "Filtern & Sortieren",
