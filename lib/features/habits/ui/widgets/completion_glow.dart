@@ -1,0 +1,36 @@
+import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+
+/// A soft accent glow that **blooms outward and dissipates** — the premium
+/// successor to a hard flashing border. Driven by a one-shot controller that
+/// rests at `1`: at [value] `0` (the instant of completion) the glow is tight
+/// and bright; as it runs to `1` the halo spreads and fades to nothing.
+///
+/// Render it *behind* the (opaque) card it celebrates so only the halo shows
+/// around the edges; the shadow must not be inside a clip, or it gets cut off.
+/// The blur/spread are visual-effect dimensions (like a cell size), not layout
+/// spacing; the colour and radius come from tokens.
+class CompletionGlow extends StatelessWidget {
+  const CompletionGlow({required this.value, super.key});
+
+  /// `0` → bright + tight (just completed); `1` → gone (rest).
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final alpha = ((1 - value) * 0.55).clamp(0.0, 1.0);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        boxShadow: [
+          BoxShadow(
+            color: tokens.colors.interactive.enabled.withValues(alpha: alpha),
+            blurRadius: 8 + 20 * value,
+            spreadRadius: 1 + 12 * value,
+          ),
+        ],
+      ),
+    );
+  }
+}

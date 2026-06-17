@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/features/habits/ui/widgets/completion_glow.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The summary KPI card at the top of the Habits tab — the analogue of the
@@ -102,34 +103,24 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
     );
 
     return Stack(
+      clipBehavior: Clip.none,
       children: [
-        card,
+        // A soft accent glow that blooms around the card behind it — the peak
+        // all-done reward. Behind the (opaque) card so only the halo shows.
         Positioned.fill(
           child: IgnorePointer(
             child: AnimatedBuilder(
               animation: _allDoneFlash,
-              builder: (context, _) {
-                final opacity = (1 - _allDoneFlash.value).clamp(0.0, 1.0);
-                if (opacity == 0) {
-                  return const SizedBox.shrink();
-                }
-                return Opacity(
-                  key: const ValueKey('habit-all-done-flash'),
-                  opacity: opacity,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(tokens.radii.m),
-                      border: Border.all(
-                        color: tokens.colors.interactive.enabled,
-                        width: 2,
-                      ),
+              builder: (context, _) => _allDoneFlash.value >= 0.999
+                  ? const SizedBox.shrink()
+                  : CompletionGlow(
+                      key: const ValueKey('habit-all-done-flash'),
+                      value: _allDoneFlash.value,
                     ),
-                  ),
-                );
-              },
             ),
           ),
         ),
+        card,
       ],
     );
   }

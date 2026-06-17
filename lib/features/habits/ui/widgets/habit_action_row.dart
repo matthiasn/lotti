@@ -5,6 +5,8 @@ import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/habits/ui/widgets/completion_burst.dart';
+import 'package:lotti/features/habits/ui/widgets/completion_glow.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -192,49 +194,80 @@ class _HabitActionRowState extends State<HabitActionRow>
 
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        child: Dismissible(
-          key: ValueKey<String>('habit-swipe-${habitDefinition.id}'),
-          dismissThresholds: const {
-            DismissDirection.startToEnd: 0.4,
-            DismissDirection.endToStart: 0.4,
-          },
-          background: _SwipeActionBackground(
-            alignment: Alignment.centerLeft,
-            color: habitCompletionColor(HabitCompletionType.success),
-            icon: Icons.check_circle_rounded,
-            label: messages.completeHabitSuccessButton,
-          ),
-          secondaryBackground: _SwipeActionBackground(
-            alignment: Alignment.centerRight,
-            color: habitCompletionColor(HabitCompletionType.fail),
-            icon: Icons.cancel_rounded,
-            label: messages.completeHabitFailButton,
-          ),
-          confirmDismiss: (direction) async {
-            final completionType = direction == DismissDirection.startToEnd
-                ? HabitCompletionType.success
-                : HabitCompletionType.fail;
-            await _recordQuickCompletion(completionType, habitDefinition);
-            // Record, then snap back — the row reflects the new state via its
-            // host's state; it is never removed from the list.
-            return false;
-          },
-          child: _HabitCardBody(
-            habitDefinition: habitDefinition,
-            completedToday: widget.completedToday,
-            currentStreak: widget.currentStreak,
-            doneColor: doneColor,
-            history: widget.history,
-            flash: _flash,
-            onTapAdd: onTapAdd,
-            onQuickComplete: () => _recordQuickCompletion(
-              HabitCompletionType.success,
-              habitDefinition,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // A soft accent glow that blooms around the card on completion —
+          // behind the (opaque) card and outside the swipe clip so the halo
+          // shows around the edges instead of being cut off.
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _flash,
+                builder: (context, _) => _flash.value >= 0.999
+                    ? const SizedBox.shrink()
+                    : CompletionGlow(
+                        key: const ValueKey('habit-completion-flash'),
+                        value: _flash.value,
+                      ),
+              ),
             ),
           ),
-        ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            child: Dismissible(
+              key: ValueKey<String>('habit-swipe-${habitDefinition.id}'),
+              dismissThresholds: const {
+                DismissDirection.startToEnd: 0.4,
+                DismissDirection.endToStart: 0.4,
+              },
+              background: _SwipeActionBackground(
+                alignment: Alignment.centerLeft,
+                color: habitCompletionColor(HabitCompletionType.success),
+                icon: Icons.check_circle_rounded,
+                label: messages.completeHabitSuccessButton,
+              ),
+              secondaryBackground: _SwipeActionBackground(
+                alignment: Alignment.centerRight,
+                color: habitCompletionColor(HabitCompletionType.fail),
+                icon: Icons.cancel_rounded,
+                label: messages.completeHabitFailButton,
+              ),
+              confirmDismiss: (direction) async {
+                final completionType = direction == DismissDirection.startToEnd
+                    ? HabitCompletionType.success
+                    : HabitCompletionType.fail;
+                await _recordQuickCompletion(completionType, habitDefinition);
+                // Record, then snap back — the row reflects the new state via its
+                // host's state; it is never removed from the list.
+                return false;
+              },
+              child: _HabitCardBody(
+                habitDefinition: habitDefinition,
+                completedToday: widget.completedToday,
+                currentStreak: widget.currentStreak,
+                doneColor: doneColor,
+                history: widget.history,
+                onTapAdd: onTapAdd,
+                onQuickComplete: () => _recordQuickCompletion(
+                  HabitCompletionType.success,
+                  habitDefinition,
+                ),
+              ),
+            ),
+          ),
+          // Sparks flying out of the completed check — over the card and free to
+          // leave the rounded rect (the Stack does not clip).
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _flash,
+                builder: (context, _) =>
+                    CompletionBurst(progress: _flash.value),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -249,7 +282,6 @@ class _HabitCardBody extends StatelessWidget {
     required this.completedToday,
     required this.currentStreak,
     required this.doneColor,
-    required this.flash,
     required this.onTapAdd,
     required this.onQuickComplete,
     this.history,
@@ -259,10 +291,6 @@ class _HabitCardBody extends StatelessWidget {
   final bool completedToday;
   final int currentStreak;
   final Color doneColor;
-
-  /// Drives the one-shot completion glow; `1 - flash.value` is the glow opacity,
-  /// so it is invisible at rest (value 1) and flashes bright→gone on completion.
-  final Animation<double> flash;
   final Widget? history;
   final void Function({String? dateString}) onTapAdd;
 
@@ -279,7 +307,7 @@ class _HabitCardBody extends StatelessWidget {
       color: tokens.colors.text.highEmphasis,
     );
 
-    final card = Material(
+    return Material(
       color: dsCardSurface(context),
       child: InkWell(
         onTap: onTapAdd,
@@ -357,40 +385,6 @@ class _HabitCardBody extends StatelessWidget {
           ),
         ),
       ),
-    );
-
-    // A bright accent border that flashes on completion and fades out, sitting
-    // above the card so it never shifts the layout.
-    return Stack(
-      children: [
-        card,
-        Positioned.fill(
-          child: IgnorePointer(
-            child: AnimatedBuilder(
-              animation: flash,
-              builder: (context, _) {
-                final opacity = (1 - flash.value).clamp(0.0, 1.0);
-                if (opacity == 0) {
-                  return const SizedBox.shrink();
-                }
-                return Opacity(
-                  key: const ValueKey('habit-completion-flash'),
-                  opacity: opacity,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(tokens.radii.m),
-                      border: Border.all(
-                        color: tokens.colors.interactive.enabled,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
