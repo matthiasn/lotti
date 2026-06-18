@@ -74,7 +74,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   String? _previousFocusId;
   List<String> _walkPath = const [];
   Offset _focusWorld = Offset.zero;
-  final Map<String, ui.Image> _images = {};
+  Map<String, ui.Image> _images = const {};
 
   double _scale = 1;
   Offset _pan = Offset.zero;
@@ -131,6 +131,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
 
   /// Decode image-entry thumbnails off the main work and repaint when ready.
   Future<void> _loadImages() async {
+    final loaded = <String, ui.Image>{};
     for (final node in _scenario.nodes) {
       final path = node.imagePath;
       if (path == null || path.isEmpty) continue;
@@ -141,14 +142,24 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         codec.dispose();
         if (!mounted) {
           frame.image.dispose();
+          for (final image in loaded.values) {
+            image.dispose();
+          }
           return;
         }
-        _images[node.id] = frame.image;
+        loaded[node.id] = frame.image;
       } on Object {
         // Missing/unreadable file — fall back to the type glyph.
       }
     }
-    if (mounted && _images.isNotEmpty) setState(() {});
+    if (mounted && loaded.isNotEmpty) {
+      // Reassign a fresh (unmodifiable) map instead of mutating in place, so
+      // the painter's identity-based `shouldRepaint` (old.images != images)
+      // detects the newly loaded thumbnails and actually repaints.
+      setState(() {
+        _images = Map<String, ui.Image>.unmodifiable({..._images, ...loaded});
+      });
+    }
   }
 
   @override
@@ -652,6 +663,20 @@ String _relativeAge(Duration d) {
   return '${(days / 30).round()} months ago';
 }
 
+/// Flattens a markdown summary into a compact plain-text preview for the
+/// inspector card: drops heading markers, list bullets, and emphasis/quote
+/// punctuation, and collapses blank lines so the few lines we show read
+/// cleanly rather than as raw markdown.
+String _previewFromMarkdown(String md) {
+  final cleaned = md
+      .replaceAll(RegExp(r'^\s*#{1,6}\s*', multiLine: true), '')
+      .replaceAll(RegExp(r'^\s*[-*+]\s+', multiLine: true), '')
+      .replaceAll(RegExp('[*_`>]'), '')
+      .replaceAll(RegExp(r'\n{2,}'), '\n')
+      .trim();
+  return cleaned.isEmpty ? md.trim() : cleaned;
+}
+
 String _tldrFor(GraphNode node, int links, String cat) {
   switch (node.type) {
     case GraphNodeType.task:
@@ -698,6 +723,11 @@ class _InspectorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cat = style.categoryColor(node.categoryId);
     final categoryLabel = categoryNames[node.categoryId] ?? node.categoryId;
+    // Prefer a task's cover art, then an image entry's own photo.
+    final coverPath = node.coverImagePath ?? node.imagePath;
+    final summary = node.tldr == null || node.tldr!.trim().isEmpty
+        ? _tldrFor(node, links, categoryLabel)
+        : _previewFromMarkdown(node.tldr!);
     final catHsl = HSLColor.fromColor(cat);
     final coverDark = catHsl
         .withLightness((catHsl.lightness * 0.45).clamp(0.0, 1.0))
@@ -723,14 +753,14 @@ class _InspectorCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Cover banner — the real photo for image nodes, else a category
-            // gradient + the node's glyph.
+            // Cover banner — the real photo for image nodes, the task's cover
+            // art for task nodes, else a category gradient + the node's glyph.
             SizedBox(
               height: 92,
               width: double.infinity,
-              child: node.imagePath != null
+              child: coverPath != null
                   ? Image.file(
-                      File(node.imagePath!),
+                      File(coverPath),
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) => gradientCover,
                     )
@@ -744,7 +774,7 @@ class _InspectorCard extends StatelessWidget {
                 children: [
                   Text(
                     node.label,
-                    maxLines: 2,
+                    maxLines: 3,
                     overflow: TextOverflow.ellipsis,
                     style: tokens.typography.styles.subtitle.subtitle1.copyWith(
                       color: tokens.colors.text.highEmphasis,
@@ -784,7 +814,9 @@ class _InspectorCard extends StatelessWidget {
                   ),
                   SizedBox(height: tokens.spacing.step3),
                   Text(
-                    _tldrFor(node, links, categoryLabel),
+                    summary,
+                    maxLines: 6,
+                    overflow: TextOverflow.ellipsis,
                     style: tokens.typography.styles.body.bodySmall.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),

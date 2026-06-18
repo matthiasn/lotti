@@ -2748,6 +2748,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Afișează pagina Obiceiuri în navigarea principală. Urmăriți și gestionați-vă obiceiurile zilnice aici.';
 
   @override
+  String get configFlagEnableKnowledgeGraph => 'Graf de cunoștințe';
+
+  @override
+  String get configFlagEnableKnowledgeGraphDescription =>
+      'Afișează exploratorul experimental al grafului de cunoștințe pentru sarcini — o hartă vizuală a legăturilor dintre sarcini, intrări și proiecte.';
+
+  @override
   String get configFlagEnableLogging => 'Activează înregistrarea';
 
   @override
@@ -5653,6 +5660,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get knowledgeGraphEmpty => 'Încă nu există legături de explorat';
+
+  @override
+  String get knowledgeGraphError =>
+      'Graful de cunoștințe nu a putut fi încărcat';
 
   @override
   String get knowledgeGraphTitle => 'Graf de cunoștințe';

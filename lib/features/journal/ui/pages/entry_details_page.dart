@@ -124,14 +124,12 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
     }
 
     return MediaDropTarget(
-      onFiles: (files) {
-        handleDroppedMediaFiles(
-          files,
-          linkedId: item.meta.id,
-          categoryId: item.meta.categoryId,
-          analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
-        );
-      },
+      onFiles: (files) => handleDroppedMediaFiles(
+        files,
+        linkedId: item.meta.id,
+        categoryId: item.meta.categoryId,
+        analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
+      ),
       child: Scaffold(
         floatingActionButton: FloatingAddActionButton(
           linkedFromId: item.meta.id,

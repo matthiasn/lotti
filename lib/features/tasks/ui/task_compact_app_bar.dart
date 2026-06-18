@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 /// Scroll offset at which the compact app bar surfaces the task title in
@@ -44,6 +46,8 @@ class TaskCompactAppBar extends ConsumerWidget {
     final offset =
         ref.watch(taskAppBarControllerProvider(id: task.id)).value ?? 0;
     final showTitle = offset >= _persistentTitleScrollThreshold;
+    final showGraph =
+        ref.watch(configFlagProvider(enableKnowledgeGraphFlag)).value ?? false;
     final isDesktop = isDesktopLayout(context);
     // On desktop the back arrow is only rendered while a linked task
     // sits on top of the detail stack — at that point we use the same
@@ -68,26 +72,27 @@ class TaskCompactAppBar extends ConsumerWidget {
               )
             : const SizedBox.shrink(key: ValueKey('no-title')),
       ),
-      actions: _buildActions(context),
+      actions: _buildActions(context, showGraph: showGraph),
       pinned: true,
       automaticallyImplyLeading: false,
     );
   }
 
-  List<Widget> _buildActions(BuildContext context) {
+  List<Widget> _buildActions(BuildContext context, {required bool showGraph}) {
     return [
-      IconButton(
-        icon: Icon(
-          Icons.hub_outlined,
-          color: context.colorScheme.outline,
-        ),
-        tooltip: context.messages.knowledgeGraphTooltip,
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => TaskKnowledgeGraphPage(taskId: task.id),
+      if (showGraph)
+        IconButton(
+          icon: Icon(
+            Icons.hub_outlined,
+            color: context.colorScheme.outline,
+          ),
+          tooltip: context.messages.knowledgeGraphTooltip,
+          onPressed: () => Navigator.of(context).push(
+            MaterialPageRoute<void>(
+              builder: (_) => TaskKnowledgeGraphPage(taskId: task.id),
+            ),
           ),
         ),
-      ),
       IconButton(
         icon: Icon(
           Icons.more_horiz,

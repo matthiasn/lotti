@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
@@ -9,6 +10,8 @@ import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 
@@ -33,6 +36,8 @@ class TaskExpandableAppBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final offset =
         ref.watch(taskAppBarControllerProvider(id: task.id)).value ?? 0;
+    final showGraph =
+        ref.watch(configFlagProvider(enableKnowledgeGraphFlag)).value ?? false;
     return SliverLayoutBuilder(
       builder: (context, constraints) {
         // Use the actual available width (not MediaQuery) so that in
@@ -68,7 +73,7 @@ class TaskExpandableAppBar extends ConsumerWidget {
                   )
                 : const SizedBox.shrink(key: ValueKey('no-title')),
           ),
-          actions: _buildGlassActions(context),
+          actions: _buildGlassActions(context, showGraph: showGraph),
           pinned: true,
           automaticallyImplyLeading: false,
           flexibleSpace: FlexibleSpaceBar(
@@ -79,20 +84,34 @@ class TaskExpandableAppBar extends ConsumerWidget {
     );
   }
 
-  List<Widget> _buildGlassActions(BuildContext context) {
+  List<Widget> _buildGlassActions(
+    BuildContext context, {
+    required bool showGraph,
+  }) {
     return [
-      GlassActionButton(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => TaskKnowledgeGraphPage(taskId: task.id),
+      if (showGraph)
+        // Wrap the icon-only glass button with Tooltip + Semantics so the
+        // action is discoverable (the compact bar's IconButton gets this for
+        // free via its `tooltip`). Uses the same localized string.
+        Tooltip(
+          message: context.messages.knowledgeGraphTooltip,
+          child: Semantics(
+            button: true,
+            label: context.messages.knowledgeGraphTooltip,
+            child: GlassActionButton(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => TaskKnowledgeGraphPage(taskId: task.id),
+                ),
+              ),
+              child: const Icon(
+                Icons.hub_outlined,
+                size: 26,
+                color: Colors.white,
+              ),
+            ),
           ),
         ),
-        child: const Icon(
-          Icons.hub_outlined,
-          size: 26,
-          color: Colors.white,
-        ),
-      ),
       GlassActionButton(
         onTap: () => ExtendedHeaderModal.show(
           context: context,

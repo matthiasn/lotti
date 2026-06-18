@@ -99,6 +99,37 @@ GraphEdgeKind edgeKindFor(EntryLink link, JournalEntity a, JournalEntity b) {
   };
 }
 
+/// Maps a task id → its linked AI summary text, derived from already-loaded
+/// [entities] and [edges] (pure; unit-tested). Drives the inspector preview's
+/// TL;DR for task nodes: an edge between a [Task] and an [AiResponseEntry]
+/// contributes that response's text, and when a task has several linked AI
+/// responses in view the most recently created (non-empty) one wins. Keyed on
+/// the entity type rather than a specific AI response type so it covers both
+/// legacy summaries and current agent-era responses.
+Map<String, String> taskSummaryTextByTask(
+  Iterable<GraphEdge> edges,
+  Map<String, JournalEntity> entities,
+) {
+  final latestByTask = <String, AiResponseEntry>{};
+  for (final edge in edges) {
+    final a = entities[edge.fromId];
+    final b = entities[edge.toId];
+    final task = a is Task ? a : (b is Task ? b : null);
+    final resp = a is AiResponseEntry ? a : (b is AiResponseEntry ? b : null);
+    if (task == null || resp == null) continue;
+    if (resp.data.response.trim().isEmpty) continue;
+    final current = latestByTask[task.id];
+    if (current == null ||
+        resp.meta.createdAt.isAfter(current.meta.createdAt)) {
+      latestByTask[task.id] = resp;
+    }
+  }
+  return {
+    for (final entry in latestByTask.entries)
+      entry.key: entry.value.data.response.trim(),
+  };
+}
+
 String? _firstLine(String? s) {
   final t = (s ?? '').trim();
   if (t.isEmpty) return null;
@@ -121,15 +152,22 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
       final cache = getIt<EntitiesCacheService>();
       final notifications = getIt<UpdateNotifications>();
 
+      // Refresh when the seed task OR any loaded neighbor (linked task,
+      // checklist item, rating, AI response, …) changes — not just the seed —
+      // so a change to a connected node doesn't leave the graph stale. The
+      // listener closes over `entities`, which grows as the BFS loads nodes.
+      final entities = <String, JournalEntity>{};
       final sub = notifications.updateStream.listen((ids) {
-        if (ids.contains(taskId)) ref.invalidateSelf();
+        if (ids.contains(taskId) || ids.any(entities.containsKey)) {
+          ref.invalidateSelf();
+        }
       });
       ref.onDispose(sub.cancel);
 
       final focus = await db.journalEntityById(taskId);
       if (focus == null) return null;
 
-      final entities = <String, JournalEntity>{focus.id: focus};
+      entities[focus.id] = focus;
       final visited = <String>{focus.id};
       final edgeKeys = <String>{};
       final edges = <GraphEdge>[];
@@ -239,6 +277,30 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
         level++;
       }
 
+      // Resolve task cover art (its `coverArtId` image) so the inspector shows
+      // a real cover banner for task previews. Some cover images are already
+      // loaded by the BFS; fetch only the missing ones.
+      final coverArtIds = <String>{
+        for (final e in entities.values)
+          if (e is Task && (e.data.coverArtId?.isNotEmpty ?? false))
+            e.data.coverArtId!,
+      };
+      final missingCovers = coverArtIds
+          .where((id) => entities[id] is! JournalImage)
+          .toList();
+      final fetchedCovers = await Future.wait(
+        missingCovers.map(db.journalEntityById),
+      );
+      final coverPathById = <String, String>{};
+      for (final e in [...entities.values, ...fetchedCovers]) {
+        if (e is JournalImage && coverArtIds.contains(e.id)) {
+          coverPathById[e.id] = getFullImagePath(e);
+        }
+      }
+
+      // Real TL;DR text per task (from its linked AI task-summary).
+      final tldrByTask = taskSummaryTextByTask(edges, entities);
+
       final now = DateTime.now();
       final nodes = <GraphNode>[
         for (final e in entities.values.take(_maxNodes))
@@ -249,6 +311,13 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
             categoryId: e.categoryId ?? kUncategorized,
             createdAt: e.meta.createdAt,
             imagePath: e is JournalImage ? getFullImagePath(e) : null,
+            coverImagePath: e is Task ? coverPathById[e.data.coverArtId] : null,
+            tldr: switch (e) {
+              Task() => tldrByTask[e.id],
+              AiResponseEntry() =>
+                e.data.response.trim().isEmpty ? null : e.data.response.trim(),
+              _ => null,
+            },
           ),
       ];
       final nodeIds = nodes.map((n) => n.id).toSet();
@@ -261,11 +330,12 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
       for (final n in nodes) {
         if (categoryColors.containsKey(n.categoryId)) continue;
         final cat = cache.getCategoryById(n.categoryId);
-        final hex = cat?.color;
+        if (cat == null) continue;
+        final hex = cat.color;
         if (hex != null && hex.isNotEmpty) {
           categoryColors[n.categoryId] = categoryColorFromHex(hex);
         }
-        if (cat?.name != null && cat!.name.isNotEmpty) {
+        if (cat.name.isNotEmpty) {
           categoryNames[n.categoryId] = cat.name;
         }
       }

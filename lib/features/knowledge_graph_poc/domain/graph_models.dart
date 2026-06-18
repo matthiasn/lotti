@@ -51,6 +51,8 @@ class GraphNode {
     required this.categoryId,
     required this.createdAt,
     this.imagePath,
+    this.coverImagePath,
+    this.tldr,
   });
 
   final String id;
@@ -66,6 +68,17 @@ class GraphNode {
   /// Absolute file path for image entries — rendered as a real thumbnail in the
   /// node and the inspector cover. Null for non-image nodes.
   final String? imagePath;
+
+  /// Absolute file path of a task's cover art (its `coverArtId` image), shown
+  /// as the inspector cover banner for task nodes. Null when the task has no
+  /// cover art or the node is not a task.
+  final String? coverImagePath;
+
+  /// Real summary text for the inspector preview — a task's most recent linked
+  /// AI-response text, or an AI-response node's own text. Null when there is no
+  /// summary to show (the inspector then falls back to a generic, type-based
+  /// description).
+  final String? tldr;
 }
 
 /// A directed, typed edge.

@@ -153,6 +153,11 @@ final expectedFlags = <ConfigFlag>{
     description: 'Enable agent fork healing?',
     status: false,
   ),
+  const ConfigFlag(
+    name: enableKnowledgeGraphFlag,
+    description: 'Enable Knowledge Graph?',
+    status: false,
+  ),
 };
 
 void main() {

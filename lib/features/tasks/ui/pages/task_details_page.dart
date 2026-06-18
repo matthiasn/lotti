@@ -253,14 +253,12 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     final body = ScaffoldMessenger(child: scaffold);
 
     return MediaDropTarget(
-      onFiles: (files) {
-        handleDroppedMediaFiles(
-          files,
-          linkedId: task.meta.id,
-          categoryId: task.meta.categoryId,
-          analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
-        );
-      },
+      onFiles: (files) => handleDroppedMediaFiles(
+        files,
+        linkedId: task.meta.id,
+        categoryId: task.meta.categoryId,
+        analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
+      ),
       child: body,
     );
   }

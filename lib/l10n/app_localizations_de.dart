@@ -2727,6 +2727,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Zeigt die Seite \"Gewohnheiten\" in der Hauptnavigation an. Verfolge und verwalte hier deine täglichen Gewohnheiten.';
 
   @override
+  String get configFlagEnableKnowledgeGraph => 'Wissensgraph';
+
+  @override
+  String get configFlagEnableKnowledgeGraphDescription =>
+      'Zeige den experimentellen Wissensgraph-Explorer bei Aufgaben — eine visuelle Karte der Verknüpfungen zwischen Aufgaben, Einträgen und Projekten.';
+
+  @override
   String get configFlagEnableLogging => 'Protokollierung aktivieren';
 
   @override
@@ -5595,6 +5602,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get knowledgeGraphEmpty => 'Noch keine Verknüpfungen zum Erkunden';
+
+  @override
+  String get knowledgeGraphError => 'Wissensgraph konnte nicht geladen werden';
 
   @override
   String get knowledgeGraphTitle => 'Wissensgraph';

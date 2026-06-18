@@ -4,12 +4,14 @@ import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/task_compact_app_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -56,9 +58,15 @@ void main() {
   Widget buildTestWidget(
     Task task, {
     List<Override> overrides = const [],
+    bool enableGraph = false,
   }) {
     return ProviderScope(
-      overrides: overrides,
+      overrides: [
+        configFlagProvider(
+          enableKnowledgeGraphFlag,
+        ).overrideWith((ref) => Stream<bool>.value(enableGraph)),
+        ...overrides,
+      ],
       child: MaterialApp(
         theme: DesignSystemTheme.dark(),
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -104,6 +112,30 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.more_horiz), findsOneWidget);
+    });
+
+    testWidgets('hides the knowledge-graph hub button when the flag is off', (
+      tester,
+    ) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(buildTestWidget(task));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byIcon(Icons.hub_outlined), findsNothing);
+    });
+
+    testWidgets('shows the knowledge-graph hub button when the flag is on', (
+      tester,
+    ) async {
+      final task = buildTask();
+
+      await tester.pumpWidget(buildTestWidget(task, enableGraph: true));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
     });
 
     testWidgets('SliverAppBar is pinned', (tester) async {

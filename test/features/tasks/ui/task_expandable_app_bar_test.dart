@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
@@ -16,6 +17,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:mocktail/mocktail.dart';
@@ -88,9 +90,13 @@ void main() {
     Task task,
     String coverArtId, {
     double? initialOffset,
+    bool enableGraph = false,
   }) {
     return ProviderScope(
       overrides: [
+        configFlagProvider(
+          enableKnowledgeGraphFlag,
+        ).overrideWith((ref) => Stream<bool>.value(enableGraph)),
         if (initialOffset != null)
           taskAppBarControllerProvider(id: task.id).overrideWith(
             () => _FixedOffsetTaskAppBarController(initialOffset),
@@ -159,27 +165,37 @@ void main() {
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     });
 
-    testWidgets('renders GlassActionButtons for back, graph and more menu', (
-      tester,
-    ) async {
-      final task = buildTask();
+    testWidgets(
+      'with the knowledge-graph flag off renders only back and more menu',
+      (tester) async {
+        final task = buildTask();
 
-      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
-      await tester.pump();
+        await pumpMobile(tester, buildTestWidget(task, 'image-1'));
+        await tester.pump();
 
-      // GlassBackButton uses GlassActionButton internally, plus one each for
-      // the knowledge graph and the more menu.
-      expect(find.byType(GlassActionButton), findsNWidgets(3));
-    });
+        // GlassBackButton uses GlassActionButton internally, plus one for the
+        // more menu. The knowledge-graph hub button is gated behind the flag.
+        expect(find.byType(GlassActionButton), findsNWidgets(2));
+        expect(find.byIcon(Icons.hub_outlined), findsNothing);
+      },
+    );
 
-    testWidgets('renders knowledge graph hub icon', (tester) async {
-      final task = buildTask();
+    testWidgets(
+      'with the knowledge-graph flag on renders the hub button too',
+      (tester) async {
+        final task = buildTask();
 
-      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
-      await tester.pump();
+        await pumpMobile(
+          tester,
+          buildTestWidget(task, 'image-1', enableGraph: true),
+        );
+        await tester.pump();
 
-      expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
-    });
+        // Back + knowledge-graph hub + more menu.
+        expect(find.byType(GlassActionButton), findsNWidgets(3));
+        expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
+      },
+    );
 
     testWidgets('renders more_horiz icon', (tester) async {
       final task = buildTask();

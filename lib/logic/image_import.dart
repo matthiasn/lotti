@@ -163,7 +163,6 @@ Future<void> importImagePickerFiles({
   AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
   const group = XTypeGroup(
-    label: 'Images',
     extensions: ['jpg', 'jpeg', 'png'],
   );
   final files = await openFiles(acceptedTypeGroups: const [group]);

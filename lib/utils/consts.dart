@@ -16,6 +16,7 @@ const enableEventsFlag = 'enable_events';
 const enableSessionRatingsFlag = 'enable_session_ratings';
 const enableSyncActorFlag = 'enable_sync_actor';
 const enableProjectsFlag = 'enable_projects';
+const enableKnowledgeGraphFlag = 'enable_knowledge_graph';
 const enableEmbeddingsFlag = 'enable_embeddings';
 const enableVectorSearchFlag = 'enable_vector_search';
 const enableSyncedAlertsFlag = 'enable_synced_alerts';

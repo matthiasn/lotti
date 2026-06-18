@@ -423,7 +423,7 @@ void main() {
           final imageFile = File(p.join(tempDir.path, 'dropped.png'));
           await imageFile.writeAsBytes(List<int>.filled(64, 0));
 
-          dropTarget.onFiles([XFile(imageFile.path)]);
+          unawaited(dropTarget.onFiles([XFile(imageFile.path)]));
 
           // Yield to the event loop (not just microtasks) so the real file
           // copy and the async persistence chain can run to completion. Bounded

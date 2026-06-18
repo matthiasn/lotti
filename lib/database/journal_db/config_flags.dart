@@ -131,6 +131,14 @@ Future<void> initConfigFlags(
     ),
   );
 
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
+      name: enableKnowledgeGraphFlag,
+      description: 'Enable Knowledge Graph?',
+      status: false,
+    ),
+  );
+
   // One toggle per logging domain. Flag names for sync / agentRuntime /
   // agentWorkflow deliberately match the historical log_sync /
   // log_agent_runtime / log_agent_workflow flags so existing preferences

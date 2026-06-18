@@ -103,6 +103,11 @@ void main() {
             description: 'Enable agent fork healing?',
             status: false,
           ),
+          const ConfigFlag(
+            name: enableKnowledgeGraphFlag,
+            description: 'Enable Knowledge Graph?',
+            status: false,
+          ),
         },
       ]),
     );
@@ -135,8 +140,8 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      // 12 flags in the mock data.
-      expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+      // 13 flags in the mock data.
+      expect(find.byType(DesignSystemListItem), findsNWidgets(13));
     });
 
     testWidgets('uses SettingsIcon as leading widget', (tester) async {
@@ -145,7 +150,7 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(SettingsIcon), findsNWidgets(12));
+      expect(find.byType(SettingsIcon), findsNWidgets(13));
     });
 
     testWidgets('shows correct title and description for private flag', (
@@ -348,6 +353,17 @@ void main() {
               status: true,
             ),
           ),
+          (
+            name: 'knowledge-graph',
+            title: (m) => m.configFlagEnableKnowledgeGraph,
+            description: (m) => m.configFlagEnableKnowledgeGraphDescription,
+            icon: Icons.bubble_chart_outlined,
+            expectedToggle: const ConfigFlag(
+              name: enableKnowledgeGraphFlag,
+              description: 'Enable Knowledge Graph?',
+              status: true,
+            ),
+          ),
         ];
 
     // Pumps the page and narrows the list to the row via the search bar,
@@ -527,7 +543,7 @@ void main() {
         await tester.tap(clearIcon);
         await tester.pump(const Duration(milliseconds: 100));
 
-        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
       },
     );
 
@@ -548,7 +564,7 @@ void main() {
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
       },
     );
 
@@ -565,7 +581,7 @@ void main() {
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
-        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
       },
     );
   });

@@ -450,6 +450,10 @@ class KnowledgeGraphPainter extends CustomPainter {
   void _paintLabels(Canvas canvas) {
     final ordered = [...scenario.nodes]
       ..sort((a, b) {
+        // Keep the comparator reflexive (compare(x, x) == 0) so the sort obeys
+        // strict weak ordering — returning -1 for an equal pair can crash or
+        // misorder depending on the platform sort.
+        if (a.id == b.id) return 0;
         if (a.id == focusId) return -1;
         if (b.id == focusId) return 1;
         final d = (degrees[b.id] ?? 0).compareTo(degrees[a.id] ?? 0);
@@ -549,6 +553,9 @@ class KnowledgeGraphPainter extends CustomPainter {
     double dash,
     double gap,
   ) {
+    // Guard against a non-positive dash/gap, which would make the segment
+    // walk below never advance and hang the UI thread.
+    if (dash <= 0 || gap <= 0) return;
     var remaining = dash;
     var drawing = true;
     for (var i = 0; i < pts.length - 1; i++) {

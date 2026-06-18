@@ -120,7 +120,12 @@ GraphLayout computeGraphLayout(
   });
 
   // Seed deeper nodes (checklist items) around their parent, fanned outward.
-  final deep = ids.where((id) => (hop[id] ?? 9) >= 2).toList();
+  // Nodes with no hop entry are disconnected, not depth-2 — they must fall
+  // through to the jitter fallback below rather than be seated under the seed.
+  final deep = ids.where((id) {
+    final h = hop[id];
+    return h != null && h >= 2;
+  }).toList();
   final byParent = <String, List<String>>{};
   for (final id in deep) {
     byParent.putIfAbsent(parent[id] ?? scenario.seedId, () => []).add(id);

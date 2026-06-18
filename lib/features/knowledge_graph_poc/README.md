@@ -38,8 +38,11 @@ consensus on interaction *and* looks** (every reviewer ≥ 9.0).
   category-tinted **biome haze** behind clusters (so you can aim at distant
   regions); lit-sphere nodes with a glow; the focus on a contact-shadow seat. No
   streaks / XP / badges.
-- **Inspector preview.** Center-right card: category-gradient cover + glyph,
-  title, type · category, created + link count, TL;DR; updates as you walk.
+- **Inspector preview.** Center-right card: cover banner (a task's real cover
+  art or an image entry's photo, else a category-gradient + glyph), full title,
+  type · category, created + link count, and a real TL;DR — a task shows its
+  most recent linked AI-response text, an AI node shows its own; other types
+  fall back to a generic, type-based line. Updates as you walk.
 
 All colors and text styles come from the design-system tokens (`DsTokens`); the
 painter takes a plain `GraphStyle` value object so it never needs a
@@ -108,6 +111,23 @@ live `db.sqlite` schema (`BasicLink`→association/provenance, `ProjectLink`→
 containment, `RatingLink`→evaluation, plus embedded project + checklists). The
 expert panel scored the integration **9/10 in full app-scaffold screenshots**
 (every reviewer ≥ 9).
+
+### Feature flag
+
+The hub icon is gated behind the `enable_knowledge_graph` config flag
+(`enableKnowledgeGraphFlag` in `lib/utils/consts.dart`), seeded **off** by
+default. Both app bars watch `configFlagProvider(enableKnowledgeGraphFlag)` and
+omit the hub button while the flag is off, so there is no in-app entry point
+until it's enabled under Settings → Advanced → Flags ("Knowledge Graph"). The
+explorer is still an experimental spike, so it stays hidden for normal users.
+
+The flag name/description and the page chrome (title, empty, error) are
+localized in all six ARBs. The **in-graph copy** rendered by the painter/view —
+node + relation type labels, legend/title captions, relative-age text, and the
+fallback TL;DR sentences — is intentionally **English-only during the spike**.
+Localizing that surface (≈40 strings × 6 locales) is deferred until the feature
+graduates from behind the flag; it must be done before the flag is enabled by
+default.
 
 ## Status & next steps
 

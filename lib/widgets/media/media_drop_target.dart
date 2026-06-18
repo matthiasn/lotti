@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:file_selector/file_selector.dart' show XFile;
 import 'package:flutter/widgets.dart';
@@ -18,7 +17,9 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 /// stack removes that conflict.
 ///
 /// Dropped items are normalized to a list of [XFile]s (each dropped file's
-/// stream is read into a temp file) and handed to [onFiles].
+/// stream is written to a temp file) and handed to [onFiles]. [onFiles] returns
+/// a `Future` so the temp files can be awaited and cleaned up once the caller
+/// has finished importing them.
 class MediaDropTarget extends StatelessWidget {
   const MediaDropTarget({
     required this.onFiles,
@@ -26,7 +27,7 @@ class MediaDropTarget extends StatelessWidget {
     super.key,
   });
 
-  final void Function(List<XFile> files) onFiles;
+  final Future<void> Function(List<XFile> files) onFiles;
   final Widget child;
 
   @override
@@ -49,14 +50,23 @@ class MediaDropTarget extends StatelessWidget {
             null,
             (file) async {
               try {
-                final name = file.fileName ?? 'dropped_file';
-                final builder = BytesBuilder(copy: false);
-                await file.getStream().forEach(builder.add);
+                // Drag payload metadata is untrusted — keep only the basename
+                // so path separators / traversal tokens in `fileName` can't
+                // redirect the write outside the temp dir.
+                final base = p.basename(file.fileName ?? '');
+                final name = base.isEmpty ? 'dropped_file' : base;
                 final dir = await Directory.systemTemp.createTemp(
                   'lotti_drop_',
                 );
                 final tmp = File(p.join(dir.path, name));
-                await tmp.writeAsBytes(builder.takeBytes());
+                // Stream straight to disk rather than buffering the whole file
+                // in memory, so large drops don't cause memory pressure.
+                final sink = tmp.openWrite();
+                try {
+                  await file.getStream().forEach(sink.add);
+                } finally {
+                  await sink.close();
+                }
                 if (!completer.isCompleted) {
                   completer.complete(XFile(tmp.path, name: name));
                 }
@@ -72,7 +82,27 @@ class MediaDropTarget extends StatelessWidget {
           futures.add(completer.future);
         }
         final files = (await Future.wait(futures)).whereType<XFile>().toList();
-        if (files.isNotEmpty) onFiles(files);
+        if (files.isEmpty) return;
+        try {
+          await onFiles(files);
+        } finally {
+          // Best-effort cleanup of the per-file `lotti_drop_` temp dirs created
+          // above, so dropped files don't accumulate in systemTemp over time.
+          // The importer copies into the app's media dir, so the temps are
+          // safe to remove once onFiles completes.
+          for (final file in files) {
+            try {
+              final parent = File(file.path).parent;
+              if (p.basename(parent.path).startsWith('lotti_drop_')) {
+                await parent.delete(recursive: true);
+              } else {
+                await File(file.path).delete();
+              }
+            } on Object {
+              // best-effort
+            }
+          }
+        }
       },
       child: child,
     );

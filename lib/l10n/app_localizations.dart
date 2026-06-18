@@ -4675,6 +4675,18 @@ abstract class AppLocalizations {
   /// **'Show the Habits page in the main navigation. Track and manage your daily habits here.'**
   String get configFlagEnableHabitsPageDescription;
 
+  /// No description provided for @configFlagEnableKnowledgeGraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Knowledge Graph'**
+  String get configFlagEnableKnowledgeGraph;
+
+  /// No description provided for @configFlagEnableKnowledgeGraphDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the experimental knowledge graph explorer on tasks — a visual map of links between tasks, entries, and projects.'**
+  String get configFlagEnableKnowledgeGraphDescription;
+
   /// No description provided for @configFlagEnableLogging.
   ///
   /// In en, this message translates to:
@@ -9719,6 +9731,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No links to explore yet'**
   String get knowledgeGraphEmpty;
+
+  /// No description provided for @knowledgeGraphError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load the knowledge graph'**
+  String get knowledgeGraphError;
 
   /// No description provided for @knowledgeGraphTitle.
   ///
