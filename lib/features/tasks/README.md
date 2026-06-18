@@ -330,14 +330,24 @@ The header is exercised in isolation under Widgetbook → Tasks → Desktop task
 
 Checklists are one of the main reasons the tasks feature exists as its own feature instead of being a loose set of task helper widgets.
 
-Completing checklist work is celebrated through the shared `CompletionCelebration`
-(see the design-system README): checking an item fires a light haptic + an
-`easeOutBack` checkbox pop + a left-to-right `StrikethroughWipe` on its title;
-reaching 100% on a checklist blooms a glow + a `clearCenter` spark burst around
-its progress ring with a medium haptic; and marking the whole task Done fires the
-same celebration (plus an `anchorScale` pop and a heavy haptic) on the status
-pill. Every beat is gated on the system reduce-motion setting and fires only on
-the not-done → done transition.
+Completing checklist work is celebrated through the shared celebration
+primitives (see the design-system README): checking an item fires a light
+haptic + an `easeOutBack` checkbox pop + a spark burst at the checkbox +
+a left-to-right `StrikethroughWipe` on its title. The burst is fired
+imperatively from the tap via `spawnCompletionBurst` (not the widget edge), so
+it still plays when checking the **last** open item collapses the row away.
+Reaching 100% on a checklist blooms a soft, low-intensity (`glowIntensity: 0.1`)
+glow around the card with a medium haptic — and *no* card-wide burst, since the
+completing item's own checkbox burst already carries the sparks. Marking the
+whole task Done fires the full celebration (glow + spark burst + an
+`anchorScale` pop + a heavy haptic) on the status pill.
+
+The **visual** beats are gated on the user's celebration switches
+(`celebrationPreferencesProvider`: `.checklistItems` for the item pop/burst,
+the strike-through wipe, and the 100% glow; `.tasks` for the task-done beat —
+Settings → Advanced → Animations) and on the system reduce-motion setting. The
+haptics always fire (the switch turns off animations, not feedback). Every beat
+fires only on the not-done → done transition.
 
 ### Checklist runtime model
 

@@ -238,6 +238,11 @@ List<SettingsNode> buildSettingsTree({
         // Advanced. URL stays `/settings/flags` for deep-link compat.
         leaf('advanced/flags', Icons.flag_outlined, panel: 'flags'),
         leaf(
+          'advanced/animations',
+          Icons.animation_rounded,
+          panel: 'advanced-animations',
+        ),
+        leaf(
           'advanced/logging',
           Icons.bug_report_outlined,
           panel: 'advanced-logging',

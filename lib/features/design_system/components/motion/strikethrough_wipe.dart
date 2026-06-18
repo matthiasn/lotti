@@ -19,11 +19,17 @@ class StrikethroughWipe extends StatefulWidget {
     this.maxLines,
     this.overflow,
     this.duration = const Duration(milliseconds: 220),
+    this.animate = true,
     super.key,
   });
 
   final bool done;
   final String text;
+
+  /// When false the struck state applies instantly with no wipe — same as the
+  /// reduced-motion path. Lets a caller honour a "celebratory animations off"
+  /// preference while still showing the strike-through itself.
+  final bool animate;
 
   /// Style for the un-struck text (the resting state).
   final TextStyle baseStyle;
@@ -61,9 +67,10 @@ class _StrikethroughWipeState extends State<StrikethroughWipe>
       _controller.duration = widget.duration;
     }
     if (oldWidget.done == widget.done) return;
-    final reduceMotion =
-        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    if (reduceMotion) {
+    final instant =
+        !widget.animate ||
+        (MediaQuery.maybeOf(context)?.disableAnimations ?? false);
+    if (instant) {
       _controller.value = widget.done ? 1 : 0;
     } else if (widget.done) {
       _controller.forward(from: 0);

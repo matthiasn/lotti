@@ -2,11 +2,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dart';
@@ -17,7 +19,7 @@ import 'package:lotti/utils/color.dart';
 /// pill. On wide viewports the chips wrap on the left and status sits at
 /// the far right; below the breakpoint the chips wrap above and status
 /// drops to its own right-aligned line.
-class MetaRow extends StatelessWidget {
+class MetaRow extends ConsumerWidget {
   const MetaRow({
     required this.priority,
     required this.status,
@@ -44,7 +46,7 @@ class MetaRow extends StatelessWidget {
   final VoidCallback? onAddLabelTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final children = <Widget>[
       _PriorityPillTinted(priority: priority, onTap: onPriorityTap),
@@ -76,6 +78,9 @@ class MetaRow extends StatelessWidget {
           completed: status is TaskDone,
           burstOrigin: Alignment.center,
           anchorScale: true,
+          // The heavy haptic still fires; the glow + burst + pop honour the
+          // user's "celebrate task completion" switch.
+          animate: ref.watch(celebrationPreferencesProvider).tasks,
           onCelebrate: () => unawaited(HapticFeedback.heavyImpact()),
           child: _StatusPill(status: status, onTap: onStatusTap),
         ),

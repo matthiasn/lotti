@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_components.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
@@ -38,9 +40,11 @@ Future<void> _pump(
   VoidCallback? onDelete,
   VoidCallback? onExportMarkdown,
   VoidCallback? onShareMarkdown,
+  List<Override> extraOverrides = const [],
 }) async {
   await tester.pumpWidget(
     makeTestableWidgetWithScaffold(
+      overrides: extraOverrides,
       ChecklistCard(
         id: 'cl-1',
         taskId: 'task-1',
@@ -1240,6 +1244,37 @@ void main() {
       await tester.pump(const Duration(milliseconds: 560));
       expect(find.byType(CompletionGlow), findsNothing);
       expect(find.byType(CompletionBurst), findsNothing);
+    });
+
+    testWidgets('no glow when checklist celebrations are off', (tester) async {
+      final overrides = [
+        celebrationPreferencesProvider.overrideWithValue(
+          const CelebrationPreferences(
+            habits: true,
+            checklistItems: false,
+            tasks: true,
+          ),
+        ),
+      ];
+      await _pump(
+        tester,
+        completionRate: 0.5,
+        totalCount: 3,
+        initiallyExpanded: false,
+        extraOverrides: overrides,
+      );
+      // Cross to 100% with checklist celebrations off → no glow bloom.
+      await _pump(
+        tester,
+        completionRate: 1,
+        totalCount: 3,
+        initiallyExpanded: false,
+        extraOverrides: overrides,
+      );
+      await tester.pump(const Duration(milliseconds: 560));
+      expect(find.byType(CompletionGlow), findsNothing);
+
+      await tester.pumpAndSettle();
     });
   });
 }

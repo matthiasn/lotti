@@ -132,6 +132,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
         );
       case 'advanced/flags':
         return (title: m.settingsFlagsTitle, desc: m.settingsFlagsSubtitle);
+      case 'advanced/animations':
+        return (
+          title: m.settingsCelebrationsTitle,
+          desc: m.settingsCelebrationsSubtitle,
+        );
       case 'advanced':
         return (
           title: m.settingsAdvancedTitle,

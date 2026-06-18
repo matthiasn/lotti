@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The summary KPI card at the top of the Habits tab — the analogue of the
@@ -62,7 +63,9 @@ class _HabitsSummaryCardState extends ConsumerState<HabitsSummaryCard>
     // plays either way; under reduced motion it holds a fixed size and only
     // fades (see the builder below).
     ref.listen(habitsControllerProvider, (previous, next) {
-      if ((previous == null || !_isAllDone(previous)) && _isAllDone(next)) {
+      if ((previous == null || !_isAllDone(previous)) &&
+          _isAllDone(next) &&
+          ref.read(celebrationPreferencesProvider).habits) {
         _allDoneFlash.forward(from: 0);
       }
     });

@@ -6,7 +6,9 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
@@ -347,6 +349,34 @@ void main() {
         await tester.pump(const Duration(milliseconds: 1400)); // settle
       },
     );
+
+    testWidgets('no celebration when habit celebrations are off', (
+      tester,
+    ) async {
+      await pumpRow(
+        tester,
+        extraOverrides: [
+          celebrationPreferencesProvider.overrideWithValue(
+            const CelebrationPreferences(
+              habits: false,
+              checklistItems: true,
+              tasks: true,
+            ),
+          ),
+        ],
+      );
+      expect(find.byType(CompletionBurst), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 220));
+      // The completion still records (haptic + persist run), but neither the
+      // spark burst nor the glow plays.
+      expect(find.byType(CompletionBurst), findsNothing);
+      expect(find.byType(CompletionGlow), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 1400)); // settle
+    });
 
     testWidgets('a failed persist clears the flag so a later one celebrates', (
       tester,

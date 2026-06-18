@@ -1011,9 +1011,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(
-          haptics
-              .where((h) => h == 'HapticFeedbackType.selectionClick')
-              .length,
+          haptics.where((h) => h == 'HapticFeedbackType.selectionClick').length,
           greaterThanOrEqualTo(2),
         );
 

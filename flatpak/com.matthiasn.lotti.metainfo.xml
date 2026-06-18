@@ -35,6 +35,7 @@
     <release version="0.9.1028" date="2026-06-18">
       <description>
           <p>The Task details page got a high-end, celebratory rework. The task title is the clear focal point, and the AI "Proposed changes" read as clean, colour-coded cards — on a phone each shows its change type above full-width text with visible accept/reject buttons (you can still swipe to confirm or dismiss), with a glowing sparkle badge and a clear "Confirm all" button. Your checklists now sit above the AI suggestions. Completing things is celebrated: checking a checklist item pops and strikes through left-to-right, and finishing a checklist or marking the task Done blooms a soft glow with a ring of sparks around the progress ring / status pill — tuned so it never covers the text it celebrates. Sections fade in as the page opens, everything respects the system "reduce motion" setting, and on wide screens the content sits in a centred reading column.</p>
+          <p>You can now switch the completion celebrations off: Settings → Advanced → Animations has three independent switches — for habit, checklist-item, and task completion — to turn off the glow, sparks, and pop for any of them. The brief completion haptic is unaffected, and completion itself works exactly the same; only the animation is skipped.</p>
       </description>
     </release>
     <release version="0.9.1027" date="2026-06-18">

@@ -285,6 +285,7 @@ void main() {
       final advanced = _tree().firstWhere((n) => n.id == 'advanced');
       expect(advanced.children!.map((n) => n.id).toList(), [
         'advanced/flags',
+        'advanced/animations',
         'advanced/logging',
         'advanced/maintenance',
         'advanced/about',
@@ -378,6 +379,7 @@ void main() {
         'definitions/measurables': 'measurables',
         'theming': 'theming',
         'advanced/flags': 'flags',
+        'advanced/animations': 'advanced-animations',
         'advanced/logging': 'advanced-logging',
         'advanced/maintenance': 'advanced-maintenance',
         'advanced/about': 'advanced-about',
@@ -427,18 +429,22 @@ void main() {
       ]);
     });
 
-    test('Advanced has flags / logging / maintenance / about in order', () {
-      // Conflicts moved out of Advanced and into Sync; flags moved
-      // in from the root list. The order locks visual stability
-      // across the menu.
-      final advanced = _tree().firstWhere((n) => n.id == 'advanced');
-      expect(advanced.children!.map((n) => n.id).toList(), [
-        'advanced/flags',
-        'advanced/logging',
-        'advanced/maintenance',
-        'advanced/about',
-      ]);
-    });
+    test(
+      'Advanced has flags / animations / logging / maintenance / about in order',
+      () {
+        // Conflicts moved out of Advanced and into Sync; flags moved
+        // in from the root list; animations (the celebration toggles) sits
+        // right after flags. The order locks visual stability across the menu.
+        final advanced = _tree().firstWhere((n) => n.id == 'advanced');
+        expect(advanced.children!.map((n) => n.id).toList(), [
+          'advanced/flags',
+          'advanced/animations',
+          'advanced/logging',
+          'advanced/maintenance',
+          'advanced/about',
+        ]);
+      },
+    );
 
     test(
       'Sync has provisioned / node-profile / backfill / stats / outbox / '

@@ -22,6 +22,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Everything honours the system "reduce motion" setting — the celebrations
   become a quiet static acknowledgement with no flying particles — and on wide
   screens the content sits in a comfortable centred reading column.
+- You can now switch the completion celebrations off. Settings → Advanced →
+  Animations has three independent switches — habit completion, checklist-item
+  completion, and task completion — so you can turn off the glow, sparks, and
+  pop for any of them you'd rather not see. The brief haptic on completion is
+  unaffected, and completion itself works exactly the same; only the animation
+  is skipped.
 
 ## [0.9.1027]
 ### Changed

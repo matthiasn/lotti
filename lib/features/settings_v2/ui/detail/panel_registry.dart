@@ -14,6 +14,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
@@ -127,6 +128,10 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
         build: _advancedLoggingPanel,
         scrollable: true,
       ),
+      'advanced-animations': SettingsPanelSpec(
+        build: _advancedAnimationsPanel,
+        scrollable: true,
+      ),
       // Light grouped-list body (the provisioned-sync QR card), so the
       // host wraps it in a scroll view.
       'sync-provisioned': SettingsPanelSpec(
@@ -202,6 +207,8 @@ Widget _advancedMaintenancePanel(BuildContext context) =>
     const MaintenanceBody();
 Widget _advancedLoggingPanel(BuildContext context) =>
     const LoggingSettingsBody();
+Widget _advancedAnimationsPanel(BuildContext context) =>
+    const CelebrationSettingsBody();
 
 /// Leaf panel for the `sync/provisioned` entry. Surfaces the
 /// provisioned-sync (QR-pairing) card — the first row under the Sync

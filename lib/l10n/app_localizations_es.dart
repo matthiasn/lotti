@@ -7062,6 +7062,40 @@ class AppLocalizationsEs extends AppLocalizations {
   String get settingsCategoriesTitle => 'Categorías';
 
   @override
+  String get settingsCelebrationsChecklistDescription =>
+      'Un toque y chispas cuando marcas un elemento';
+
+  @override
+  String get settingsCelebrationsChecklistTitle => 'Elementos de lista';
+
+  @override
+  String get settingsCelebrationsHabitsDescription =>
+      'Brillo y chispas cuando completas un hábito';
+
+  @override
+  String get settingsCelebrationsHabitsTitle => 'Hábitos';
+
+  @override
+  String get settingsCelebrationsSectionDescription =>
+      'Una pequeña celebración cuando terminas algo. Si desactivas una, la finalización y su vibración se mantienen; solo se omite la animación.';
+
+  @override
+  String get settingsCelebrationsSectionTitle => 'Celebraciones al completar';
+
+  @override
+  String get settingsCelebrationsSubtitle => 'Celebraciones al completar';
+
+  @override
+  String get settingsCelebrationsTasksDescription =>
+      'Brillo y chispas cuando pasas una tarea a Hecho';
+
+  @override
+  String get settingsCelebrationsTasksTitle => 'Tareas';
+
+  @override
+  String get settingsCelebrationsTitle => 'Animaciones';
+
+  @override
   String get settingsConflictsTitle => 'Conflictos de Sincronización';
 
   @override

@@ -6971,6 +6971,40 @@ class AppLocalizationsDe extends AppLocalizations {
   String get settingsCategoriesTitle => 'Kategorien';
 
   @override
+  String get settingsCelebrationsChecklistDescription =>
+      'Ein Pop und Funken, wenn du einen Eintrag abhakst';
+
+  @override
+  String get settingsCelebrationsChecklistTitle => 'Checklisten-Einträge';
+
+  @override
+  String get settingsCelebrationsHabitsDescription =>
+      'Leuchten und Funken, wenn du eine Gewohnheit abschließt';
+
+  @override
+  String get settingsCelebrationsHabitsTitle => 'Gewohnheiten';
+
+  @override
+  String get settingsCelebrationsSectionDescription =>
+      'Eine kleine Feier, wenn du etwas abschließt. Schaltest du eine aus, bleibt der Abschluss samt Haptik erhalten – nur die Animation entfällt.';
+
+  @override
+  String get settingsCelebrationsSectionTitle => 'Feiern beim Abschließen';
+
+  @override
+  String get settingsCelebrationsSubtitle => 'Feiern beim Abschließen';
+
+  @override
+  String get settingsCelebrationsTasksDescription =>
+      'Leuchten und Funken, wenn du eine Aufgabe auf Erledigt setzt';
+
+  @override
+  String get settingsCelebrationsTasksTitle => 'Aufgaben';
+
+  @override
+  String get settingsCelebrationsTitle => 'Animationen';
+
+  @override
   String get settingsConflictsTitle => 'Synchronisierungskonflikte';
 
   @override

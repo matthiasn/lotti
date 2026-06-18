@@ -7064,6 +7064,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCategoriesTitle => 'Categorii';
 
   @override
+  String get settingsCelebrationsChecklistDescription =>
+      'Un efect și scântei când bifați un element';
+
+  @override
+  String get settingsCelebrationsChecklistTitle => 'Elemente din listă';
+
+  @override
+  String get settingsCelebrationsHabitsDescription =>
+      'Strălucire și scântei când finalizați un obicei';
+
+  @override
+  String get settingsCelebrationsHabitsTitle => 'Obiceiuri';
+
+  @override
+  String get settingsCelebrationsSectionDescription =>
+      'O mică festivitate când finalizați ceva. Dacă dezactivați una, finalizarea și vibrația rămân — doar animația este omisă.';
+
+  @override
+  String get settingsCelebrationsSectionTitle => 'Celebrări la finalizare';
+
+  @override
+  String get settingsCelebrationsSubtitle => 'Celebrări la finalizare';
+
+  @override
+  String get settingsCelebrationsTasksDescription =>
+      'Strălucire și scântei când mutați o sarcină la Finalizat';
+
+  @override
+  String get settingsCelebrationsTasksTitle => 'Sarcini';
+
+  @override
+  String get settingsCelebrationsTitle => 'Animații';
+
+  @override
   String get settingsConflictsTitle => 'Sync cu conflicte';
 
   @override

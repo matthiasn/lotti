@@ -7014,6 +7014,40 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsCategoriesTitle => 'Kategorie';
 
   @override
+  String get settingsCelebrationsChecklistDescription =>
+      'Cuknutí a jiskry, když odškrtneš položku';
+
+  @override
+  String get settingsCelebrationsChecklistTitle => 'Položky seznamu';
+
+  @override
+  String get settingsCelebrationsHabitsDescription =>
+      'Záře a jiskry, když dokončíš návyk';
+
+  @override
+  String get settingsCelebrationsHabitsTitle => 'Návyky';
+
+  @override
+  String get settingsCelebrationsSectionDescription =>
+      'Malá oslava, když něco dokončíš. Když některou vypneš, dokončení (i jeho vibrace) zůstane — jen se vynechá animace.';
+
+  @override
+  String get settingsCelebrationsSectionTitle => 'Oslavy při dokončení';
+
+  @override
+  String get settingsCelebrationsSubtitle => 'Oslavy při dokončení';
+
+  @override
+  String get settingsCelebrationsTasksDescription =>
+      'Záře a jiskry, když přesuneš úkol na Hotovo';
+
+  @override
+  String get settingsCelebrationsTasksTitle => 'Úkoly';
+
+  @override
+  String get settingsCelebrationsTitle => 'Animace';
+
+  @override
   String get settingsConflictsTitle => 'Konflikty synchronizace';
 
   @override
