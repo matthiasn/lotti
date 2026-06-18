@@ -8,8 +8,8 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
-import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -77,7 +77,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ModernJournalImageCard', () {
-    testWidgets('renders journal image entry', (tester) async {
+    testWidgets('renders the image thumbnail', (tester) async {
       final imageEntry = testImageEntry;
 
       await tester.pumpWidget(
@@ -86,12 +86,14 @@ void main() {
         ),
       );
 
-      expect(find.byType(ModernJournalImageCard), findsOneWidget);
       expect(find.byType(ModernBaseCard), findsOneWidget);
+      // The leading thumbnail is a CardImageWidget over a framed-image glyph
+      // placeholder, so a missing file degrades gracefully.
       expect(find.byType(CardImageWidget), findsOneWidget);
+      expect(find.byIcon(MdiIcons.imageOutline), findsOneWidget);
     });
 
-    testWidgets('displays entry text when available', (tester) async {
+    testWidgets('renders the caption text as the title', (tester) async {
       final imageEntry = testImageEntry;
       // Guard: this assertion only has value if the fixture carries text.
       expect(imageEntry.entryText, isNotNull);
@@ -102,17 +104,13 @@ void main() {
         ),
       );
 
-      // TextViewerWidgetNonScrollable is used for displaying text in
-      // non-compact mode, and it receives the entry's text unchanged.
-      final viewer = tester.widget<TextViewerWidgetNonScrollable>(
-        find.byType(TextViewerWidgetNonScrollable),
-      );
-      expect(viewer.entryText, imageEntry.entryText);
+      // The caption is rendered as plain text (no rich text viewer anymore).
+      expect(find.text(imageEntry.entryText!.plainText), findsOneWidget);
     });
 
-    // _buildTextContent returns SizedBox.shrink() (no text viewer) when there
-    // is nothing to show. Both the null-entryText and the empty-plainText
-    // branches collapse to the same observable outcome.
+    // When there is no caption text, the card falls back to the localized
+    // "Photo" label as its title. Both the null-entryText and the
+    // empty-plainText branches collapse to the same observable outcome.
     for (final (label, entry) in [
       ('null entryText', testImageEntry.copyWith(entryText: null)),
       (
@@ -122,16 +120,23 @@ void main() {
         ),
       ),
     ]) {
-      testWidgets('omits text viewer for $label', (tester) async {
+      testWidgets('falls back to the photo label for $label', (tester) async {
         await tester.pumpWidget(
           makeTestableWidget(
             ModernJournalImageCard(item: entry),
           ),
         );
 
-        // The card itself still renders, but the text region is collapsed.
-        expect(find.byType(ModernJournalImageCard), findsOneWidget);
-        expect(find.byType(TextViewerWidgetNonScrollable), findsNothing);
+        final BuildContext context = tester.element(
+          find.byType(ModernJournalImageCard),
+        );
+        // The card still renders, titled with the localized type label.
+        expect(
+          find.text(context.messages.entryTypeLabelJournalImage),
+          findsOneWidget,
+        );
+        // And it never shows the original (empty) caption.
+        expect(find.text('test image entry text'), findsNothing);
       });
     }
 
@@ -151,7 +156,7 @@ void main() {
 
     testWidgets('shows private icon when entry is private', (tester) async {
       final privateEntry = testImageEntry.copyWith(
-        meta: testImageEntry.meta.copyWith(private: true),
+        meta: testImageEntry.meta.copyWith(private: true, starred: false),
       );
 
       await tester.pumpWidget(
@@ -165,7 +170,10 @@ void main() {
 
     testWidgets('shows flag icon for imported entries', (tester) async {
       final importedEntry = testImageEntry.copyWith(
-        meta: testImageEntry.meta.copyWith(flag: EntryFlag.import),
+        meta: testImageEntry.meta.copyWith(
+          flag: EntryFlag.import,
+          starred: false,
+        ),
       );
 
       await tester.pumpWidget(
@@ -204,7 +212,8 @@ void main() {
       );
 
       await tester.tap(find.byType(ModernBaseCard));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         mockNavService.navigationHistory,
@@ -212,7 +221,33 @@ void main() {
       );
     });
 
-    testWidgets('shows category icon', (tester) async {
+    testWidgets('shows a time-of-day date label for a same-day entry', (
+      tester,
+    ) async {
+      // An entry dated "today" renders its relative date label as the time
+      // (HH:MM via DateFormat.jm), so the meta row reads as a clock time.
+      final todayEntry = testImageEntry.copyWith(
+        meta: testImageEntry.meta.copyWith(
+          dateFrom: DateTime.now(),
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalImageCard(item: todayEntry),
+        ),
+      );
+
+      // The relative label for today is a wall-clock time like "3:30 PM".
+      expect(
+        find.textContaining(RegExp(r'\d{1,2}:\d{2}')),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('uses rounded-left border radius on the thumbnail', (
+      tester,
+    ) async {
       final imageEntry = testImageEntry;
 
       await tester.pumpWidget(
@@ -221,48 +256,7 @@ void main() {
         ),
       );
 
-      // Category icon should be displayed
-      expect(find.byType(Icon), findsWidgets);
-    });
-
-    testWidgets('shows date in correct format', (tester) async {
-      final imageEntry = testImageEntry;
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernJournalImageCard(item: imageEntry),
-        ),
-      );
-
-      // Date should be displayed
-      expect(find.textContaining(RegExp(r'\d{2}:\d{2}')), findsOneWidget);
-    });
-
-    testWidgets('shows text viewer in non-compact mode', (tester) async {
-      final imageEntry = testImageEntry;
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernJournalImageCard(
-            item: imageEntry,
-          ),
-        ),
-      );
-
-      // Verify text content is present
-      expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-    });
-
-    testWidgets('uses correct border radius for image', (tester) async {
-      final imageEntry = testImageEntry;
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernJournalImageCard(item: imageEntry),
-        ),
-      );
-
-      // ClipRRect should have correct border radius
+      // The thumbnail clips its top-left and bottom-left corners only.
       final clipRRect = tester.widget<ClipRRect>(
         find.byType(ClipRRect).first,
       );
@@ -273,32 +267,6 @@ void main() {
           bottomLeft: Radius.circular(AppTheme.cardBorderRadius),
         ),
       );
-    });
-
-    testWidgets('text viewer receives finite maxHeight instead of infinity', (
-      tester,
-    ) async {
-      final imageEntry = testImageEntry.copyWith(
-        entryText: const EntryText(
-          plainText: 'Test content for overflow detection',
-          markdown: 'Test content for overflow detection',
-        ),
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          ModernJournalImageCard(item: imageEntry),
-        ),
-      );
-
-      // Find the TextViewerWidgetNonScrollable widget
-      final textViewer = tester.widget<TextViewerWidgetNonScrollable>(
-        find.byType(TextViewerWidgetNonScrollable),
-      );
-
-      // Verify that maxHeight is not infinity (our bug fix)
-      expect(textViewer.maxHeight, isNot(double.infinity));
-      expect(textViewer.maxHeight, greaterThan(0));
     });
   });
 }

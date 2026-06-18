@@ -5,9 +5,9 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
@@ -127,25 +127,29 @@ void main() {
 
       await tester.pump();
 
-      // Find the FilterChoiceChip for Task - it should be selected
+      // Find the DesignSystemFilterChoicePill for Task - it should be selected
       final taskChipFinder = find.ancestor(
         of: find.text('Task'),
-        matching: find.byType(FilterChoiceChip),
+        matching: find.byType(DesignSystemFilterChoicePill),
       );
       expect(taskChipFinder, findsOneWidget);
 
-      final taskChip = tester.widget<FilterChoiceChip>(taskChipFinder);
-      expect(taskChip.isSelected, isTrue);
+      final taskChip = tester.widget<DesignSystemFilterChoicePill>(
+        taskChipFinder,
+      );
+      expect(taskChip.selected, isTrue);
 
-      // Find the FilterChoiceChip for Text - it should NOT be selected
+      // Find the DesignSystemFilterChoicePill for Text - it should NOT be selected
       final textChipFinder = find.ancestor(
         of: find.text('Text'),
-        matching: find.byType(FilterChoiceChip),
+        matching: find.byType(DesignSystemFilterChoicePill),
       );
       expect(textChipFinder, findsOneWidget);
 
-      final textChip = tester.widget<FilterChoiceChip>(textChipFinder);
-      expect(textChip.isSelected, isFalse);
+      final textChip = tester.widget<DesignSystemFilterChoicePill>(
+        textChipFinder,
+      );
+      expect(textChip.selected, isFalse);
     });
 
     testWidgets('displays correct labels for all entry types', (tester) async {
@@ -328,15 +332,17 @@ void main() {
 
       await tester.pump();
 
-      // Find the "All" FilterChoiceChip
+      // Find the "All" DesignSystemFilterChoicePill
       final allChipFinder = find.ancestor(
         of: find.text('All'),
-        matching: find.byType(FilterChoiceChip),
+        matching: find.byType(DesignSystemFilterChoicePill),
       );
       expect(allChipFinder, findsOneWidget);
 
-      final allChip = tester.widget<FilterChoiceChip>(allChipFinder);
-      expect(allChip.isSelected, isTrue);
+      final allChip = tester.widget<DesignSystemFilterChoicePill>(
+        allChipFinder,
+      );
+      expect(allChip.selected, isTrue);
     });
 
     testWidgets(
@@ -358,15 +364,17 @@ void main() {
 
         await tester.pump();
 
-        // Find the "All" FilterChoiceChip
+        // Find the "All" DesignSystemFilterChoicePill
         final allChipFinder = find.ancestor(
           of: find.text('All'),
-          matching: find.byType(FilterChoiceChip),
+          matching: find.byType(DesignSystemFilterChoicePill),
         );
         expect(allChipFinder, findsOneWidget);
 
-        final allChip = tester.widget<FilterChoiceChip>(allChipFinder);
-        expect(allChip.isSelected, isFalse);
+        final allChip = tester.widget<DesignSystemFilterChoicePill>(
+          allChipFinder,
+        );
+        expect(allChip.selected, isFalse);
       },
     );
   });

@@ -4,9 +4,13 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/themes/theme.dart';
 
 NumberFormat nf = NumberFormat('###.##');
+
+/// Whole-number formatter for metrics where decimals add noise (kcal, steps).
+NumberFormat nfWhole = NumberFormat('###');
 
 /// The span between an entry's `dateFrom` and `dateTo` (e.g. a timer's elapsed
 /// time).
@@ -76,6 +80,95 @@ String formatType(String s) => s.replaceAll('HealthDataType.', '');
 /// Strips the `HealthDataUnit.` enum prefix for display.
 String formatUnit(String s) => s.replaceAll('HealthDataUnit.', '');
 
+/// Human-readable name for a health/quantitative data type, e.g.
+/// `HealthDataType.BLOOD_PRESSURE_SYSTOLIC` → `Systolic Blood Pressure`.
+///
+/// Prefers the curated [healthTypes] registry (which also feeds dashboards);
+/// falls back to a title-cased version of the stripped enum name so unknown
+/// types never surface raw `SCREAMING_SNAKE` identifiers.
+String humanHealthTypeName(String dataType) {
+  final fromConfig = healthTypes[dataType]?.displayName;
+  if (fromConfig != null && fromConfig.isNotEmpty) {
+    return fromConfig;
+  }
+  return _titleCaseTokens(formatType(dataType));
+}
+
+/// Human-readable unit for a quantitative entry, e.g. `mmHg`, `bpm`, `kg`.
+///
+/// Prefers the curated [healthTypes] registry unit; falls back to a cleaned-up
+/// version of the stored `HealthDataUnit.*` enum so raw identifiers like
+/// `MILLIMETER_OF_MERCURY` never reach the UI.
+String humanHealthUnit(QuantitativeData qd) {
+  final fromConfig = healthTypes[qd.dataType]?.unit;
+  if (fromConfig != null && fromConfig.isNotEmpty) {
+    return fromConfig;
+  }
+  return _titleCaseTokens(formatUnit(qd.unit)).toLowerCase();
+}
+
+/// Human-readable workout activity name, e.g. `running` → `Running`,
+/// `functionalStrengthTraining` → `Functional Strength Training`.
+String humanWorkoutType(String workoutType) => _titleCaseTokens(workoutType);
+
+/// Splits a `camelCase` / `SNAKE_CASE` / `dot.separated` identifier into
+/// space-separated, title-cased words.
+String _titleCaseTokens(String raw) {
+  final spaced = raw
+      .replaceAll(RegExp('[_.]'), ' ')
+      .replaceAllMapped(
+        RegExp('([a-z0-9])([A-Z])'),
+        (m) => '${m[1]} ${m[2]}',
+      );
+  return spaced
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .map(
+        (w) => w.length == 1
+            ? w.toUpperCase()
+            : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}',
+      )
+      .join(' ');
+}
+
+/// A locale-aware, de-emphasized date label for list cards. Keeps the feed
+/// scannable by showing only what's needed: the time for today, a weekday for
+/// the past/coming week, `MMM d` within the current year, and `MMM d, y` for
+/// anything older. [now] is injected so the logic stays deterministic in tests.
+String relativeEntryDateLabel(
+  DateTime date,
+  DateTime now, {
+  String? locale,
+}) {
+  final local = date.toLocal();
+  final startOfToday = DateTime(now.year, now.month, now.day);
+  final startOfThatDay = DateTime(local.year, local.month, local.day);
+  final dayDelta = startOfThatDay.difference(startOfToday).inDays;
+  final time = DateFormat.jm(locale).format(local);
+
+  if (dayDelta == 0) {
+    return time;
+  }
+  if (dayDelta.abs() < 7) {
+    return '${DateFormat.E(locale).format(local)} $time';
+  }
+  if (local.year == now.year) {
+    return DateFormat.MMMd(locale).format(local);
+  }
+  return DateFormat.yMMMd(locale).format(local);
+}
+
+/// [relativeEntryDateLabel] resolved against the current wall clock and the
+/// active locale. Used by list cards; the underlying pure function is unit
+/// tested with a fixed `now`.
+String entryDateLabel(BuildContext context, DateTime date) {
+  return relativeEntryDateLabel(
+    date,
+    DateTime.now(),
+    locale: Localizations.localeOf(context).toString(),
+  );
+}
+
 class InfoText extends StatelessWidget {
   const InfoText(
     this.text, {
@@ -100,12 +193,8 @@ class InfoText extends StatelessWidget {
 /// cumulative and discrete data shapes.
 String entryTextForQuant(QuantitativeEntry qe) {
   final qd = qe.data;
-  return switch (qd) {
-    CumulativeQuantityData(:final dataType, :final value, :final unit) =>
-      '${formatType(dataType)}: ${nf.format(value)} ${formatUnit(unit)}',
-    DiscreteQuantityData(:final dataType, :final value, :final unit) =>
-      '${formatType(dataType)}: ${nf.format(value)} ${formatUnit(unit)}',
-  };
+  return '${humanHealthTypeName(qd.dataType)}: '
+      '${nf.format(qd.value)} ${humanHealthUnit(qd)}';
 }
 
 /// Multi-line workout summary (type, energy in kcal, duration in minutes);

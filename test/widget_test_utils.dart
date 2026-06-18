@@ -289,6 +289,7 @@ Widget makeTestableWidgetNoScroll(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
+        debugShowCheckedModeBanner: false,
         navigatorKey: navigatorKey,
         navigatorObservers: navigatorObservers,
         theme: resolveTestTheme(theme),

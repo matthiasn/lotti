@@ -4875,6 +4875,18 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get habitCompletionStatusCompleted => 'Hotovo';
+
+  @override
+  String get habitCompletionStatusFailed => 'Nezdařeno';
+
+  @override
+  String get habitCompletionStatusOpen => 'Otevřeno';
+
+  @override
+  String get habitCompletionStatusSkipped => 'Přeskočeno';
+
+  @override
   String get habitDashboardHint => 'Vyberte panel';
 
   @override
@@ -5472,6 +5484,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get journalFavoriteTooltip => 'pouze oblíbené';
+
+  @override
+  String get journalFilterEntryTypesTitle => 'Typy záznamů';
+
+  @override
+  String get journalFilterShowTitle => 'Zobrazit';
 
   @override
   String get journalFlaggedTooltip => 'pouze označené';

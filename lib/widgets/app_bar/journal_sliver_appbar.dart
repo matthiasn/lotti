@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/ai_chat_icon.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -150,6 +152,11 @@ class _SearchModeRow extends ConsumerWidget {
   }
 }
 
+/// The starred / flagged / private display toggles for the logbook filter.
+///
+/// These are three independent booleans (any combination can be on), so they
+/// render as multi-select design-system choice pills — matching the entry-type
+/// and tasks filters — rather than a single-select segmented control.
 class JournalFilter extends ConsumerWidget {
   const JournalFilter({
     super.key,
@@ -163,51 +170,115 @@ class JournalFilter extends ConsumerWidget {
       journalPageControllerProvider(showTasks).notifier,
     );
 
-    ButtonSegment<DisplayFilter> segment({
+    final tokens = context.designTokens;
+    final palette = DesignSystemFilterPalette.fromTokens(tokens);
+    final textStyle = tokens.typography.styles.body.bodyMedium;
+
+    String capitalize(String value) => value.isEmpty
+        ? value
+        : '${value[0].toUpperCase()}${value.substring(1)}';
+
+    Widget pill({
       required DisplayFilter filter,
       required IconData icon,
-      required IconData activeIcon,
-      required String semanticLabel,
+      required String label,
     }) {
       final active = state.filters.contains(filter);
-      return ButtonSegment<DisplayFilter>(
-        value: filter,
-        label: Tooltip(
-          message: semanticLabel,
-          child: Icon(
-            active ? activeIcon : icon,
-            semanticLabel: semanticLabel,
-            color: context.textTheme.titleLarge?.color ?? Colors.grey,
-          ),
+      return DesignSystemFilterChoicePill(
+        label: capitalize(label),
+        selected: active,
+        palette: palette,
+        textStyle: textStyle,
+        leading: Icon(
+          icon,
+          size: 16,
+          color: active ? palette.accent : palette.secondaryText,
         ),
+        onTap: () {
+          final next = {...state.filters};
+          if (active) {
+            next.remove(filter);
+          } else {
+            next.add(filter);
+          }
+          controller.setFilters(next);
+        },
       );
     }
 
-    return SegmentedButton<DisplayFilter>(
-      selected: state.filters,
-      showSelectedIcon: false,
-      multiSelectionEnabled: true,
-      onSelectionChanged: controller.setFilters,
-      emptySelectionAllowed: true,
-      segments: [
-        segment(
+    return Wrap(
+      spacing: tokens.spacing.step2,
+      runSpacing: tokens.spacing.step2,
+      children: [
+        pill(
           filter: DisplayFilter.starredEntriesOnly,
-          icon: Icons.star_outline,
-          activeIcon: Icons.star,
-          semanticLabel: context.messages.journalFavoriteTooltip,
+          icon: Icons.star_rounded,
+          label: context.messages.journalFavoriteTooltip,
         ),
-        segment(
+        pill(
           filter: DisplayFilter.flaggedEntriesOnly,
-          icon: Icons.flag_outlined,
-          activeIcon: Icons.flag,
-          semanticLabel: context.messages.journalFlaggedTooltip,
+          icon: Icons.flag_rounded,
+          label: context.messages.journalFlaggedTooltip,
         ),
-        segment(
+        pill(
           filter: DisplayFilter.privateEntriesOnly,
-          icon: Icons.shield_outlined,
-          activeIcon: Icons.shield,
-          semanticLabel: context.messages.journalPrivateTooltip,
+          icon: Icons.shield_rounded,
+          label: context.messages.journalPrivateTooltip,
         ),
+      ],
+    );
+  }
+}
+
+/// The full logbook filter, as shown in the filter modal: labeled sections for
+/// the display toggles, entry types, and categories. Mirrors the sectioned
+/// structure of the tasks filter sheet so the two filters read as one system.
+class LogbookFilterSheet extends StatelessWidget {
+  const LogbookFilterSheet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _FilterSection(
+          label: context.messages.journalFilterShowTitle,
+          child: const JournalFilter(),
+        ),
+        SizedBox(height: tokens.spacing.step5),
+        _FilterSection(
+          label: context.messages.journalFilterEntryTypesTitle,
+          child: const EntryTypeFilter(),
+        ),
+        SizedBox(height: tokens.spacing.step4),
+        const TaskCategoryFilter(),
+      ],
+    );
+  }
+}
+
+class _FilterSection extends StatelessWidget {
+  const _FilterSection({required this.label, required this.child});
+
+  final String label;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        child,
       ],
     );
   }
@@ -242,16 +313,7 @@ class JournalFilterIcon extends ConsumerWidget {
                 ),
               );
             },
-            builder: (_) => const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                JournalFilter(),
-                SizedBox(height: 10),
-                EntryTypeFilter(),
-                SizedBox(height: 10),
-                TaskCategoryFilter(),
-              ],
-            ),
+            builder: (_) => const LogbookFilterSheet(),
           );
         },
         icon: const Icon(MdiIcons.filterVariant),

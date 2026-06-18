@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/get_it.dart';
@@ -7,14 +9,14 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/color.dart';
-import 'package:lotti/widgets/search/filter_choice_chip.dart';
 
-/// Category filter section for the task filter modal.
+/// Category filter section for the logbook filter sheet.
 ///
-/// Renders selectable chips for favorite and currently-selected categories
-/// plus "unassigned" and "all" options; the trailing `...` chip expands the
-/// list to show every category. Toggling a chip updates the active journal
-/// page controller's `selectedCategoryIds`.
+/// Renders selectable design-system choice pills for favorite and
+/// currently-selected categories (each prefixed with its color dot) plus
+/// "unassigned" and "all" options; the trailing `...` chip expands the list to
+/// show every category. Toggling a chip updates the active journal page
+/// controller's `selectedCategoryIds`.
 class TaskCategoryFilter extends ConsumerStatefulWidget {
   const TaskCategoryFilter({super.key});
 
@@ -35,6 +37,10 @@ class _TaskCategoryFilterState extends ConsumerState<TaskCategoryFilter> {
       journalPageControllerProvider(showTasks).notifier,
     );
 
+    final tokens = context.designTokens;
+    final palette = DesignSystemFilterPalette.fromTokens(tokens);
+    final textStyle = tokens.typography.styles.body.bodyMedium;
+
     final filteredCategories = _showAll
         ? categories
         : categories.where((category) {
@@ -48,54 +54,75 @@ class _TaskCategoryFilterState extends ConsumerState<TaskCategoryFilter> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 10),
+        SizedBox(height: tokens.spacing.step4),
         Text(
-          context.messages.taskCategoryLabel,
-          style: context.textTheme.bodySmall,
+          stripTrailingColon(context.messages.taskCategoryLabel),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: context.colorScheme.onSurfaceVariant,
+          ),
         ),
-        const SizedBox(height: 5),
+        SizedBox(height: tokens.spacing.step3),
         Wrap(
-          spacing: 8,
-          runSpacing: 8,
+          spacing: tokens.spacing.step2,
+          runSpacing: tokens.spacing.step2,
           children: [
             ...filteredCategories.map((category) {
               final isSelected = state.selectedCategoryIds.contains(
                 category.id,
               );
-              final color = colorFromCssHex(category.color);
-              return FilterChoiceChip(
-                isSelected: isSelected,
-                onTap: () => controller.toggleSelectedCategoryIds(
-                  category.id,
-                ),
+              return DesignSystemFilterChoicePill(
                 label: category.name,
-                selectedColor: color,
+                selected: isSelected,
+                palette: palette,
+                textStyle: textStyle,
+                leading: _CategoryDot(color: colorFromCssHex(category.color)),
+                onTap: () => controller.toggleSelectedCategoryIds(category.id),
               );
             }),
-            FilterChoiceChip(
-              onTap: () => controller.toggleSelectedCategoryIds(''),
+            DesignSystemFilterChoicePill(
               label: context.messages.taskCategoryUnassignedLabel,
-              selectedColor: Colors.grey,
-              isSelected: state.selectedCategoryIds.contains(''),
+              selected: state.selectedCategoryIds.contains(''),
+              palette: palette,
+              textStyle: textStyle,
+              onTap: () => controller.toggleSelectedCategoryIds(''),
             ),
-            FilterChoiceChip(
-              onTap: controller.selectedAllCategories,
+            DesignSystemFilterChoicePill(
               label: context.messages.taskCategoryAllLabel,
-              selectedColor: Colors.grey,
-              isSelected: state.selectedCategoryIds.isEmpty,
+              selected: state.selectedCategoryIds.isEmpty,
+              palette: palette,
+              textStyle: textStyle,
+              onTap: controller.selectedAllCategories,
             ),
             if (!_showAll)
-              FilterChoiceChip(
+              DesignSystemFilterChoicePill(
+                label: '...',
+                selected: false,
+                palette: palette,
+                textStyle: textStyle,
                 onTap: () => setState(() {
                   _showAll = !_showAll;
                 }),
-                label: '...',
-                selectedColor: Colors.grey,
-                isSelected: _showAll,
               ),
           ],
         ),
       ],
+    );
+  }
+}
+
+/// Small filled circle showing a category's color, used as the leading element
+/// of a category filter pill.
+class _CategoryDot extends StatelessWidget {
+  const _CategoryDot({required this.color});
+
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 12,
+      height: 12,
+      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
     );
   }
 }

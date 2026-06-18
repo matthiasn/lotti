@@ -7,7 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/task_card.dart';
@@ -46,7 +45,7 @@ void main() {
     // Minimal registrations needed by ModernTaskCard children
     getIt.registerSingleton<TimeService>(TimeService());
 
-    // Mock EntitiesCacheService so CategoryIconCompact can query it safely
+    // Mock EntitiesCacheService for the category-coloured glyph + card children
     final mockCache = MockEntitiesCacheService();
     when(() => mockCache.getCategoryById(any())).thenReturn(null);
     when(() => mockCache.getLabelById(any())).thenReturn(null);
@@ -125,12 +124,16 @@ void main() {
     expect(rowFinder, findsOneWidget);
     final row = tester.widget<Row>(rowFinder);
 
-    // Verify order: [ModernStatusChip(priority), SizedBox, ModernStatusChip(status), SizedBox, CategoryIconCompact]
+    // The redundant inline category badge was removed (category identity now
+    // lives in the glyph-tile colour). Verify the remaining order:
+    // [ModernStatusChip(priority), SizedBox, ModernStatusChip(status), Spacer,
+    //  CompactTaskProgress]
+    expect(row.children, hasLength(5));
     expect(row.children[0], isA<ModernStatusChip>());
     expect(row.children[1], isA<SizedBox>());
     expect(row.children[2], isA<ModernStatusChip>());
-    expect(row.children[3], isA<SizedBox>());
-    expect(row.children[4], isA<CategoryIconCompact>());
+    expect(row.children[3], isA<Spacer>());
+    expect(row.children[4], isA<CompactTaskProgress>());
   });
 
   testWidgets('no leading ModernIconContainer remains in ModernCardContent', (
@@ -150,16 +153,16 @@ void main() {
     );
   });
 
-  testWidgets('inline category icon has compact 24x24 size', (tester) async {
+  testWidgets('leads with a category-coloured glyph tile, not a badge', (
+    tester,
+  ) async {
     final task = buildTask();
 
     await pumpTaskCard(tester, ModernTaskCard(task: task));
 
-    final iconFinder = find.byType(CategoryIconCompact);
-    expect(iconFinder, findsOneWidget);
-    final size = tester.getSize(iconFinder.first);
-    expect(size.width, 24);
-    expect(size.height, 24);
+    // The task row now leads with the shared glyph rail (tinted by category)
+    // instead of an inline category badge.
+    expect(find.byType(TintedTypeGlyph), findsOneWidget);
   });
 
   testWidgets('shows due date icon when due is set', (tester) async {

@@ -8436,6 +8436,30 @@ abstract class AppLocalizations {
   /// **'Record {habit}'**
   String habitCompleteSemanticLabel(String habit);
 
+  /// No description provided for @habitCompletionStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get habitCompletionStatusCompleted;
+
+  /// No description provided for @habitCompletionStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get habitCompletionStatusFailed;
+
+  /// No description provided for @habitCompletionStatusOpen.
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get habitCompletionStatusOpen;
+
+  /// No description provided for @habitCompletionStatusSkipped.
+  ///
+  /// In en, this message translates to:
+  /// **'Skipped'**
+  String get habitCompletionStatusSkipped;
+
   /// No description provided for @habitDashboardHint.
   ///
   /// In en, this message translates to:
@@ -9473,6 +9497,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'starred only'**
   String get journalFavoriteTooltip;
+
+  /// No description provided for @journalFilterEntryTypesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Entry types'**
+  String get journalFilterEntryTypesTitle;
+
+  /// No description provided for @journalFilterShowTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Show'**
+  String get journalFilterShowTitle;
 
   /// No description provided for @journalFlaggedTooltip.
   ///

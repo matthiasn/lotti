@@ -96,3 +96,34 @@ class ModernIconContainer extends StatelessWidget {
     );
   }
 }
+
+/// A [ModernIconContainer] whose tile (gradient + border) is tinted by [color]
+/// instead of the default primary-container fill, so a list of cards reads as a
+/// type-differentiated glyph rail rather than a monotone column.
+class TintedTypeGlyph extends StatelessWidget {
+  const TintedTypeGlyph({
+    required this.icon,
+    required this.color,
+    super.key,
+  });
+
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return ModernIconContainer(
+      icon: icon,
+      iconColor: color,
+      gradient: LinearGradient(
+        colors: [
+          color.withValues(alpha: 0.24),
+          color.withValues(alpha: 0.12),
+        ],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderColor: color.withValues(alpha: 0.32),
+    );
+  }
+}

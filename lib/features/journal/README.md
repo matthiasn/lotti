@@ -236,6 +236,17 @@ The controller owns:
   keep visible rows mounted until replacement data resolves
 - vector-search timing and distance metadata for the UI
 
+### List Row Cards
+
+Each browse row is rendered by [`CardWrapperWidget`](ui/widgets/list_cards/card_wrapper_widget.dart), the per-row dispatcher: images go to `ModernJournalImageCard`, tasks to `ModernTaskCard`, and every other entry type to `ModernJournalCard`. All three share one visual anatomy so the feed reads as a single system:
+
+- a leading ~40dp **glyph tile** (`TintedTypeGlyph`) — the icon identifies the entry type, and the tile is tinted by the entry's **category** color (via `_categoryColor`), so the feed's left rail also colour-codes life-area at a glance;
+- a **content-first title** — the entry's own content (note preview, task/event title, humanized metric name) as the brightest element;
+- a **de-emphasized meta line**: a locale-aware relative date (`entryDateLabel`) plus an optional category dot;
+- type-specific **metric chips** (`ModernStatusChip`) on their own row.
+
+Structured types are humanized rather than surfacing storage values: health/quantitative shows `humanHealthTypeName` + a `value unit` chip (e.g. `Systolic Blood Pressure` · `122 mmHg`, never the raw `HealthDataType.*`/`HealthDataUnit.*` enum); workout shows the sport name + duration/energy/distance chips; measurement shows the measurable name + value; survey shows the instrument name + compact score chips. Checklist rows surface `done/total` progress (via `checklistCompletionControllerProvider`) with a thin progress bar; habit-completion rows resolve the habit name and show an explicit status chip (Completed / Skipped / Failed). `ModernJournalCard` is also reused on detail and linked-from surfaces, where the same anatomy renders with `showLinkedDuration` / `removeHorizontalMargin`.
+
 ### Browse and Search Flow
 
 ```mermaid

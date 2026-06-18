@@ -4913,6 +4913,18 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get habitCompletionStatusCompleted => 'Finalizat';
+
+  @override
+  String get habitCompletionStatusFailed => 'Eșuat';
+
+  @override
+  String get habitCompletionStatusOpen => 'Deschis';
+
+  @override
+  String get habitCompletionStatusSkipped => 'Omis';
+
+  @override
   String get habitDashboardHint => 'Selectați un panou de bord';
 
   @override
@@ -5526,6 +5538,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalFavoriteTooltip => 'Favorit';
+
+  @override
+  String get journalFilterEntryTypesTitle => 'Tipuri de intrare';
+
+  @override
+  String get journalFilterShowTitle => 'Afișează';
 
   @override
   String get journalFlaggedTooltip => 'Marcat';

@@ -4,6 +4,7 @@ import 'package:flutter_material_design_icons/flutter_material_design_icons.dart
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -186,20 +187,22 @@ void main() {
       child: const Scaffold(body: JournalFilter()),
     );
 
-    testWidgets('renders SegmentedButton with three segments', (tester) async {
+    testWidgets('renders three multi-select filter pills with icons', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject(createState()));
       await tester.pumpAndSettle();
 
       expect(find.byType(JournalFilter), findsOneWidget);
-      expect(find.byType(SegmentedButton<DisplayFilter>), findsOneWidget);
+      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(3));
 
-      // Verify three filter icons are present (starred, flagged, private)
-      expect(find.byIcon(Icons.star_outline), findsOneWidget);
-      expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
-      expect(find.byIcon(Icons.shield_outlined), findsOneWidget);
+      // Each toggle carries its rounded icon (state-independent).
+      expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.flag_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.shield_rounded), findsOneWidget);
     });
 
-    testWidgets('shows filled icons when filters are active', (tester) async {
+    testWidgets('active filters render as selected pills', (tester) async {
       await tester.pumpWidget(
         buildSubject(
           createState(
@@ -213,22 +216,17 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Active filters show filled icons
-      expect(find.byIcon(Icons.star), findsOneWidget);
-      expect(find.byIcon(Icons.flag), findsOneWidget);
-      expect(find.byIcon(Icons.shield), findsOneWidget);
-
-      // Outlined icons should not be present
-      expect(find.byIcon(Icons.star_outline), findsNothing);
-      expect(find.byIcon(Icons.flag_outlined), findsNothing);
-      expect(find.byIcon(Icons.shield_outlined), findsNothing);
+      final pills = tester.widgetList<DesignSystemFilterChoicePill>(
+        find.byType(DesignSystemFilterChoicePill),
+      );
+      expect(pills.where((pill) => pill.selected).length, 3);
     });
 
     // Each filter toggles its own DisplayFilter value through setFilters.
     for (final filter in [
-      (icon: Icons.star_outline, value: DisplayFilter.starredEntriesOnly),
-      (icon: Icons.flag_outlined, value: DisplayFilter.flaggedEntriesOnly),
-      (icon: Icons.shield_outlined, value: DisplayFilter.privateEntriesOnly),
+      (icon: Icons.star_rounded, value: DisplayFilter.starredEntriesOnly),
+      (icon: Icons.flag_rounded, value: DisplayFilter.flaggedEntriesOnly),
+      (icon: Icons.shield_rounded, value: DisplayFilter.privateEntriesOnly),
     ]) {
       testWidgets('tapping ${filter.value.name} filter calls setFilters', (
         tester,
@@ -244,16 +242,26 @@ void main() {
       });
     }
 
-    testWidgets('multi-selection is enabled', (tester) async {
-      await tester.pumpWidget(buildSubject(createState()));
+    testWidgets('toggling a second filter keeps the first (multi-select)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          createState(filters: {DisplayFilter.starredEntriesOnly}),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      final segmentedButton = tester.widget<SegmentedButton<DisplayFilter>>(
-        find.byType(SegmentedButton<DisplayFilter>),
-      );
+      await tester.tap(find.byIcon(Icons.flag_rounded));
+      await tester.pump();
 
-      expect(segmentedButton.multiSelectionEnabled, isTrue);
-      expect(segmentedButton.emptySelectionAllowed, isTrue);
+      expect(
+        fakeController.filtersCalls.last,
+        containsAll(<DisplayFilter>[
+          DisplayFilter.starredEntriesOnly,
+          DisplayFilter.flaggedEntriesOnly,
+        ]),
+      );
     });
 
     testWidgets('deselecting active filter removes it', (tester) async {
@@ -267,7 +275,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Tap on the active starred filter to deselect
-      await tester.tap(find.byIcon(Icons.star));
+      await tester.tap(find.byIcon(Icons.star_rounded));
       await tester.pump();
 
       expect(fakeController.filtersCalls, isNotEmpty);
@@ -393,7 +401,7 @@ void main() {
         expect(find.byType(JournalFilter), findsOneWidget);
 
         // Tap on the starred filter icon in the modal
-        await tester.tap(find.byIcon(Icons.star_outline));
+        await tester.tap(find.byIcon(Icons.star_rounded));
         await tester.pump();
 
         // Verify the controller's setFilters was called
