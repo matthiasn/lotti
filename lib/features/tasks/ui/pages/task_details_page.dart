@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -23,6 +22,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:lotti/widgets/media/media_drop_target.dart';
 
 /// Full-screen detail view for a single task identified by [taskId].
 ///
@@ -33,7 +33,7 @@ import 'package:lotti/services/dev_logger.dart';
 /// trailing [SliverPadding] reserves the bar's height so the last entry can
 /// scroll clear of it. Listens to the task focus controller to auto-scroll
 /// to a target entry or the AI suggestions, and accepts dropped media via
-/// [DropTarget] to link and (optionally) analyze it.
+/// [MediaDropTarget] to link and (optionally) analyze it.
 class TaskDetailsPage extends ConsumerStatefulWidget {
   const TaskDetailsPage({
     required this.taskId,
@@ -252,10 +252,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     // app window's bottom edge.
     final body = ScaffoldMessenger(child: scaffold);
 
-    return DropTarget(
-      onDragDone: (data) {
-        handleDroppedMedia(
-          data: data,
+    return MediaDropTarget(
+      onFiles: (files) {
+        handleDroppedMediaFiles(
+          files,
           linkedId: task.meta.id,
           categoryId: task.meta.categoryId,
           analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),

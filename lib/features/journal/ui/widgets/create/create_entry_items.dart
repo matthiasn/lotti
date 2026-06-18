@@ -18,6 +18,7 @@ import 'package:lotti/logic/image_import.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/platform.dart';
 
 // Constants for timer auto-scroll polling behavior
 const _kTimerScrollPollInterval = Duration(milliseconds: 100);
@@ -271,12 +272,22 @@ class ImportImageItem extends ConsumerWidget {
       icon: Icons.photo_library_rounded,
       title: context.messages.addActionImportImage,
       onTap: () async {
-        await importImageAssets(
-          context,
-          linkedId: linkedFromId,
-          categoryId: categoryId,
-          analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
-        );
+        final trigger = ref.read(automaticImageAnalysisTriggerProvider);
+        // Desktop Linux/Windows have no gallery picker — use a file dialog.
+        if (isLinux || isWindows) {
+          await importImagePickerFiles(
+            linkedId: linkedFromId,
+            categoryId: categoryId,
+            analysisTrigger: trigger,
+          );
+        } else {
+          await importImageAssets(
+            context,
+            linkedId: linkedFromId,
+            categoryId: categoryId,
+            analysisTrigger: trigger,
+          );
+        }
         if (context.mounted) {
           Navigator.of(context).pop();
         }

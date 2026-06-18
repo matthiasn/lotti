@@ -18,7 +18,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:path/path.dart' as p;
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
@@ -71,16 +70,6 @@ Future<void> importImageAssets(
   String? categoryId,
   AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
-  // Linux/Windows have no gallery picker — use a native file dialog instead.
-  if (isLinux || isWindows) {
-    await importImagePickerFiles(
-      linkedId: linkedId,
-      categoryId: categoryId,
-      analysisTrigger: analysisTrigger,
-    );
-    return;
-  }
-
   final ps = await PhotoManager.requestPermissionExtend();
   if (!ps.isAuth) {
     return;
@@ -238,7 +227,7 @@ Future<void> importImageXFiles(
         getIt<DomainLogger>().error(
           LogDomain.ai,
           'Image file too large: $fileSize bytes',
-          subDomain: 'importImageXFiles',
+          subDomain: 'importDroppedImages',
         );
         continue;
       }
@@ -274,7 +263,7 @@ Future<void> importImageXFiles(
         LogDomain.ai,
         exception,
         stackTrace: stackTrace,
-        subDomain: 'importImageXFiles',
+        subDomain: 'importDroppedImages',
       );
       // Continue processing other files even if one fails
     }

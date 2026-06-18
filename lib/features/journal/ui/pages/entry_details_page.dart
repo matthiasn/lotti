@@ -1,4 +1,3 @@
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -22,13 +21,14 @@ import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
+import 'package:lotti/widgets/media/media_drop_target.dart';
 
 /// Full-screen detail view for a single journal entry, keyed by `itemId`.
 ///
 /// Composes the scrollable detail stack: the primary [EntryDetailsWidget],
 /// the entry's outgoing links via [LinkedEntriesWithTimer], incoming links via
 /// [LinkedFromEntriesWidget], and checklist/task back-references. Acts as a
-/// [DropTarget] so dropped media is imported and linked to this entry.
+/// [MediaDropTarget] so dropped media is imported and linked to this entry.
 ///
 /// Uses [HighlightScrollMixin] to scroll-to and briefly highlight a target
 /// entry: it listens to [journalFocusControllerProvider] for focus intents
@@ -123,10 +123,10 @@ class _EntryDetailsPageState extends ConsumerState<EntryDetailsPage>
       return const EmptyScaffoldWithTitle('');
     }
 
-    return DropTarget(
-      onDragDone: (data) {
-        handleDroppedMedia(
-          data: data,
+    return MediaDropTarget(
+      onFiles: (files) {
+        handleDroppedMediaFiles(
+          files,
           linkedId: item.meta.id,
           categoryId: item.meta.categoryId,
           analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),

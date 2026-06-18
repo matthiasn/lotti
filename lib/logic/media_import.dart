@@ -1,4 +1,5 @@
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_selector/file_selector.dart' show XFile;
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/logic/audio_import.dart';
 import 'package:lotti/logic/image_import.dart';
@@ -43,5 +44,29 @@ Future<void> handleDroppedMedia({
       linkedId: linkedId,
       categoryId: categoryId,
     );
+  }
+}
+
+/// Routes already-resolved media [files] (e.g. from the Linux
+/// super_drag_and_drop path) to the image/audio importers by extension.
+Future<void> handleDroppedMediaFiles(
+  List<XFile> files, {
+  required String linkedId,
+  String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
+}) async {
+  bool hasExt(Set<String> exts) =>
+      files.any((f) => exts.contains(f.name.split('.').last.toLowerCase()));
+
+  if (hasExt(ImageImportConstants.supportedExtensions)) {
+    await importImageXFiles(
+      files,
+      linkedId: linkedId,
+      categoryId: categoryId,
+      analysisTrigger: analysisTrigger,
+    );
+  }
+  if (hasExt(AudioImportConstants.supportedExtensions)) {
+    await importAudioXFiles(files, linkedId: linkedId, categoryId: categoryId);
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:desktop_drop/desktop_drop.dart';
+import 'package:file_selector/file_selector.dart' show XFile;
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -35,8 +36,22 @@ Future<void> importDroppedAudio({
   required DropDoneDetails data,
   String? linkedId,
   String? categoryId,
+}) {
+  return importAudioXFiles(
+    data.files,
+    linkedId: linkedId,
+    categoryId: categoryId,
+  );
+}
+
+/// Shared importer for a list of audio [files] — used by both drag-and-drop
+/// and the Linux super_drag_and_drop path.
+Future<void> importAudioXFiles(
+  List<XFile> files, {
+  String? linkedId,
+  String? categoryId,
 }) async {
-  for (final file in data.files) {
+  for (final file in files) {
     String? copiedFilePath;
 
     try {
