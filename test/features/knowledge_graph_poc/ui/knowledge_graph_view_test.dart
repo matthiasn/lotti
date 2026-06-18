@@ -291,7 +291,7 @@ void main() {
   );
 
   group('inspector preview content (desktop)', () {
-    testWidgets('resolves the category NAME, type label and links breakdown', (
+    testWidgets('resolves the category NAME, the kicker and the linked timeline', (
       tester,
     ) async {
       final scenario = taskEgoNetworkScenario();
@@ -309,15 +309,35 @@ void main() {
       // Kicker: "TYPE · CATEGORY" uppercased, with the RESOLVED category name
       // (not the raw id).
       expect(inspectorText('TASK · WORK PROJECTS'), findsOneWidget);
-      // LINKED breakdown: a "LINKED" section plus a chip per neighbor type. The
-      // seed's neighbors are 3 tasks, 2 notes, 2 audio notes, 1 photo, 1
-      // project, 2 AI summaries, 1 rating and 1 checklist (13 links total).
-      expect(inspectorText('LINKED'), findsOneWidget);
-      expect(inspectorText('3  Task'), findsOneWidget);
-      expect(inspectorText('2  Note'), findsOneWidget);
-      expect(inspectorText('2  Audio note'), findsOneWidget);
-      expect(inspectorText('1  Project'), findsOneWidget);
-      expect(inspectorText('2  AI summary'), findsOneWidget);
+
+      // LINKED timeline: a "LINKED · N" section header where N is the seed's
+      // direct-neighbor count (the same set `_neighborsOf` builds — the other
+      // endpoint of every edge touching the seed, deduped). The seed `t0`
+      // touches p0, t1-t3, l1-l5, a1, a2, r1 and c1 -> 13 direct neighbors
+      // (its checklist's items ci1-ci4 hang off c1, not the seed).
+      final neighborIds = <String>{};
+      for (final e in scenario.edges) {
+        if (e.fromId == scenario.seedId) {
+          neighborIds.add(e.toId);
+        } else if (e.toId == scenario.seedId) {
+          neighborIds.add(e.fromId);
+        }
+      }
+      expect(neighborIds.length, 13);
+      expect(inspectorText('LINKED · ${neighborIds.length}'), findsOneWidget);
+
+      // Each direct neighbor appears as a timeline row: its snippet label plus a
+      // "typeLabel · relativeAge" caption. Assert two distinct neighbors — a
+      // linked task and a note — to prove the timeline is populated from the
+      // focus node's real edges, with the right type label and age.
+      // t1 "Fix sync race condition" is a task created 9 days ago.
+      expect(inspectorText('Fix sync race condition'), findsOneWidget);
+      expect(inspectorText('Task · 9 days ago'), findsOneWidget);
+      // l1 "Standup notes" is a text entry (Note) created 2 days ago.
+      expect(inspectorText('Standup notes'), findsOneWidget);
+      expect(inspectorText('Note · 2 days ago'), findsOneWidget);
+      // The seed's checklist items are NOT direct neighbors, so they are absent.
+      expect(inspectorText('Tag build'), findsNothing);
     });
 
     testWidgets('falls back to the raw category id when no name is provided', (
@@ -330,18 +350,24 @@ void main() {
       expect(inspectorText('TASK · WORK'), findsOneWidget);
     });
 
-    testWidgets('shows the type-based lede fallback when tldr is absent', (
+    testWidgets('omits the SUMMARY section when the node has no tldr', (
       tester,
     ) async {
-      // The ego scenario's seed has no tldr, so the inspector renders the
-      // task-type fallback lede (`tldrFallback`).
+      // The ego scenario's seed has no tldr, so the inspector renders no SUMMARY
+      // section at all (there is no type-based fallback lede). The title and
+      // kicker still render, and the LINKED timeline takes over the body.
       await pumpView(
         tester,
         scenario: taskEgoNetworkScenario(),
         categoryNames: const {catWork: 'Work'},
       );
 
-      expect(inspectorText('A Work task in your graph.'), findsOneWidget);
+      expect(inspectorText('SUMMARY'), findsNothing);
+      // The identity (title + kicker) is unaffected by the missing summary.
+      expect(inspectorText('Ship v2.3 release'), findsOneWidget);
+      expect(inspectorText('TASK · WORK'), findsOneWidget);
+      // The timeline still renders the linked entries below the (absent) summary.
+      expect(inspectorText('LINKED · 13'), findsOneWidget);
     });
 
     testWidgets('shows the node tldr (split into a lede) when present', (

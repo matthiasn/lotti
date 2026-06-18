@@ -22,6 +22,7 @@ void main() {
     GraphNodeType type = GraphNodeType.task,
     String label = 'Focus task',
     String categoryId = 'work',
+    DateTime? createdAt,
     String? tldr,
     String? coverImagePath,
     String? imagePath,
@@ -30,7 +31,7 @@ void main() {
     type: type,
     label: label,
     categoryId: categoryId,
-    createdAt: created,
+    createdAt: createdAt ?? created,
     tldr: tldr,
     coverImagePath: coverImagePath,
     imagePath: imagePath,
@@ -161,29 +162,6 @@ void main() {
     });
   });
 
-  group('tldrFallback', () {
-    const categoryLabel = 'Work';
-
-    test('returns a non-empty descriptor for every node type', () {
-      for (final type in GraphNodeType.values) {
-        final fallback = tldrFallback(node(type: type), categoryLabel);
-        expect(fallback, isNotEmpty, reason: 'fallback for $type');
-      }
-    });
-
-    test('includes the category label for task and project nodes', () {
-      expect(
-        // node() defaults to a task node.
-        tldrFallback(node(), categoryLabel),
-        contains(categoryLabel),
-      );
-      expect(
-        tldrFallback(node(type: GraphNodeType.project), categoryLabel),
-        contains(categoryLabel),
-      );
-    });
-  });
-
   // ---------------------------------------------------------------------------
   // Widget
   // ---------------------------------------------------------------------------
@@ -192,9 +170,11 @@ void main() {
     Future<void> pumpPanel(
       WidgetTester tester, {
       required GraphNode node,
-      Map<GraphNodeType, int> neighborCounts = const {},
+      List<GraphNode> neighbors = const [],
+      DateTime? now,
       String createdLabel = '2 days ago',
       Map<String, String> categoryNames = const {},
+      void Function(String id)? onNeighborTap,
     }) async {
       tester.view
         ..physicalSize = const Size(420, 900)
@@ -208,13 +188,20 @@ void main() {
             child: SizedBox(
               width: 360,
               height: 860,
-              child: NodeInspectorPanel(
-                node: node,
-                createdLabel: createdLabel,
-                neighborCounts: neighborCounts,
-                categoryNames: categoryNames,
-                style: style,
-                tokens: tokens,
+              // The timeline rows use InkWell, which needs a Material ancestor;
+              // the panel itself is a frosted DecoratedBox with no Material.
+              child: Material(
+                type: MaterialType.transparency,
+                child: NodeInspectorPanel(
+                  node: node,
+                  neighbors: neighbors,
+                  now: now ?? created,
+                  createdLabel: createdLabel,
+                  categoryNames: categoryNames,
+                  style: style,
+                  tokens: tokens,
+                  onNeighborTap: onNeighborTap,
+                ),
               ),
             ),
           ),
@@ -222,9 +209,16 @@ void main() {
       );
     }
 
-    testWidgets('renders the node label as the title', (tester) async {
-      await pumpPanel(tester, node: node(label: 'My focus task'));
-      expect(find.text('My focus task'), findsOneWidget);
+    testWidgets('renders the full node label as the title, untruncated', (
+      tester,
+    ) async {
+      // A 60+ char title proves the heading has no maxLines / truncation.
+      const longTitle =
+          'Refactor the knowledge graph explorer and ship the inspector panel';
+      expect(longTitle.length, greaterThan(60));
+      await pumpPanel(tester, node: node(label: longTitle));
+      // The complete string is found → nothing was clipped or ellipsized.
+      expect(find.text(longTitle), findsOneWidget);
     });
 
     testWidgets('kicker shows TYPE · resolved category name, uppercased', (
@@ -256,30 +250,30 @@ void main() {
         tester,
         node: node(tldr: 'A crisp lede line\nThe longer body explanation.'),
       );
+      expect(find.text('SUMMARY'), findsOneWidget);
       expect(find.text('A crisp lede line'), findsOneWidget);
       expect(find.text('The longer body explanation.'), findsOneWidget);
-      expect(find.text('SUMMARY'), findsOneWidget);
     });
 
-    testWidgets('shows the type-based fallback lede and no SUMMARY when tldr '
-        'is null', (tester) async {
-      // node() defaults to a task node in category 'work'.
-      final taskNode = node();
+    testWidgets('shows the lede but no SUMMARY body for a single-sentence '
+        'tldr', (tester) async {
+      await pumpPanel(tester, node: node(tldr: 'Just one sentence.'));
+      // SUMMARY label appears whenever a tldr exists; the lede renders, and
+      // there is no separate body line for a single sentence.
+      expect(find.text('SUMMARY'), findsOneWidget);
+      expect(find.text('Just one sentence.'), findsOneWidget);
+    });
+
+    testWidgets('shows no SUMMARY label and no fallback text when tldr is '
+        'null', (tester) async {
+      // node() defaults to a task node in category 'work' with no tldr.
       await pumpPanel(
         tester,
-        node: taskNode,
+        node: node(),
         categoryNames: const {'work': 'Work'},
       );
-      // The fallback lede for a task includes the category label.
-      expect(find.text(tldrFallback(taskNode, 'Work')), findsOneWidget);
-      expect(find.text('SUMMARY'), findsNothing);
-    });
-
-    testWidgets('shows the lede but no SUMMARY for a single-sentence tldr', (
-      tester,
-    ) async {
-      await pumpPanel(tester, node: node(tldr: 'Just one sentence.'));
-      expect(find.text('Just one sentence.'), findsOneWidget);
+      // No tldr → the SUMMARY section is omitted entirely. The old generic
+      // type-based fallback line no longer exists.
       expect(find.text('SUMMARY'), findsNothing);
     });
 
@@ -291,7 +285,7 @@ void main() {
         node: node(coverImagePath: '/tmp/does-not-exist-cover.png'),
       );
       // Image.file may not decode under test (the file is absent); asserting
-      // the Image widget is present in the tree is sufficient.
+      // the Image widget is present in the tree is sufficient here.
       expect(find.byType(Image), findsOneWidget);
     });
 
@@ -327,8 +321,9 @@ void main() {
                 height: 860,
                 child: NodeInspectorPanel(
                   node: coverNode,
+                  neighbors: const [],
+                  now: created,
                   createdLabel: 'today',
-                  neighborCounts: const {},
                   categoryNames: const {},
                   style: style,
                   tokens: tokens,
@@ -361,52 +356,48 @@ void main() {
       // node() defaults to a task node.
       await pumpPanel(tester, node: node());
       expect(find.byType(Image), findsNothing);
-      // The gradient hero watermark uses the type glyph.
+      // The gradient hero watermark uses the type glyph (also reused by the
+      // kicker), so it is present at least once.
       expect(find.byIcon(glyphForType(GraphNodeType.task)), findsWidgets);
     });
 
-    testWidgets('renders a LINKED section with a chip per type when there are '
-        'neighbors', (tester) async {
-      await pumpPanel(
-        tester,
-        node: node(),
-        neighborCounts: const {
-          GraphNodeType.textEntry: 3,
-          GraphNodeType.aiResponse: 1,
-        },
-      );
-      expect(find.text('LINKED'), findsOneWidget);
-      // One chip per type, each showing "count  typeLabel".
-      expect(
-        find.text('3  ${typeLabel(GraphNodeType.textEntry)}'),
-        findsOneWidget,
-      );
-      expect(
-        find.text('1  ${typeLabel(GraphNodeType.aiResponse)}'),
-        findsOneWidget,
-      );
-    });
+    testWidgets('renders a LINKED · N section with a timeline row per '
+        'neighbor', (tester) async {
+      // Two neighbors of distinct types, each 2 days before `now`, so the age
+      // string is deterministically 'today' for one and computed for both.
+      // createdAt = created - 2 days → relativeAge == '2 days ago'.
+      final twoDaysBefore = created.subtract(const Duration(days: 2));
+      final neighbors = [
+        node(
+          id: 'nb-note',
+          type: GraphNodeType.textEntry,
+          label: 'A linked note snippet',
+          createdAt: twoDaysBefore,
+        ),
+        node(
+          id: 'nb-ai',
+          type: GraphNodeType.aiResponse,
+          label: 'An AI summary snippet',
+          createdAt: twoDaysBefore,
+        ),
+      ];
+      await pumpPanel(tester, node: node(), neighbors: neighbors);
 
-    testWidgets('omits zero-count neighbors from the LINKED section', (
-      tester,
-    ) async {
-      await pumpPanel(
-        tester,
-        node: node(),
-        neighborCounts: const {
-          GraphNodeType.textEntry: 2,
-          GraphNodeType.rating: 0,
-        },
-      );
-      expect(find.text('LINKED'), findsOneWidget);
+      // Header counts the neighbors.
+      expect(find.text('LINKED · 2'), findsOneWidget);
+
+      // Each row shows the neighbor snippet label …
+      expect(find.text('A linked note snippet'), findsOneWidget);
+      expect(find.text('An AI summary snippet'), findsOneWidget);
+
+      // … and its "typeLabel · age" caption (age is deterministic).
       expect(
-        find.text('2  ${typeLabel(GraphNodeType.textEntry)}'),
+        find.text('${typeLabel(GraphNodeType.textEntry)} · 2 days ago'),
         findsOneWidget,
       );
-      // The zero-count rating chip must not render.
       expect(
-        find.text('0  ${typeLabel(GraphNodeType.rating)}'),
-        findsNothing,
+        find.text('${typeLabel(GraphNodeType.aiResponse)} · 2 days ago'),
+        findsOneWidget,
       );
     });
 
@@ -414,7 +405,49 @@ void main() {
       tester,
     ) async {
       await pumpPanel(tester, node: node());
-      expect(find.text('LINKED'), findsNothing);
+      // No 'LINKED · ...' header is rendered for an empty timeline.
+      expect(find.textContaining('LINKED'), findsNothing);
+    });
+
+    testWidgets('tapping a timeline row invokes onNeighborTap with the '
+        'neighbor id', (tester) async {
+      final tapped = <String>[];
+      final neighbor = node(
+        id: 'nb-tap',
+        label: 'Tap target row',
+        createdAt: created.subtract(const Duration(days: 2)),
+      );
+      await pumpPanel(
+        tester,
+        node: node(),
+        neighbors: [neighbor],
+        onNeighborTap: tapped.add,
+      );
+
+      // Tap the row by its snippet text; the InkWell wrapping the row fires the
+      // callback with the neighbor's id.
+      await tester.tap(find.text('Tap target row'));
+      await tester.pump();
+
+      expect(tapped, ['nb-tap']);
+    });
+
+    testWidgets('timeline rows render and do not crash on tap when '
+        'onNeighborTap is null', (tester) async {
+      final neighbor = node(
+        id: 'nb-null',
+        type: GraphNodeType.textEntry,
+        label: 'Non-tappable row',
+        createdAt: created.subtract(const Duration(days: 2)),
+      );
+      // No onNeighborTap passed → rows still render; tapping is a no-op.
+      await pumpPanel(tester, node: node(), neighbors: [neighbor]);
+
+      expect(find.text('Non-tappable row'), findsOneWidget);
+      // Tapping must not throw even though the InkWell's onTap is null.
+      await tester.tap(find.text('Non-tappable row'));
+      await tester.pump();
+      expect(find.text('Non-tappable row'), findsOneWidget);
     });
 
     testWidgets('renders the pre-formatted created label in the footer', (
@@ -439,8 +472,9 @@ void main() {
             height: 860,
             child: NodeInspectorPanel(
               node: n,
+              neighbors: const [],
+              now: created,
               createdLabel: 'today',
-              neighborCounts: const {},
               categoryNames: const {},
               style: style,
               tokens: tokens,

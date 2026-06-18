@@ -347,21 +347,24 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     if (hit != null) _walkTo(hit);
   }
 
-  /// Direct-neighbor count per node type for [id] — the inspector turns this
-  /// into a "linked" breakdown (e.g. "3 Note · 1 AI summary").
-  Map<GraphNodeType, int> _neighborCountsFor(String id) {
-    final typeById = {for (final n in _scenario.nodes) n.id: n.type};
-    final counts = <GraphNodeType, int>{};
+  /// Direct neighbors of [id] (the other endpoint of every edge touching it),
+  /// most-recent first — the inspector renders these as a tappable timeline of
+  /// the focused node's linked entries.
+  List<GraphNode> _neighborsOf(String id) {
+    final byId = {for (final n in _scenario.nodes) n.id: n};
+    final ids = <String>{};
     for (final e in _scenario.edges) {
-      final otherId = e.fromId == id
-          ? e.toId
-          : (e.toId == id ? e.fromId : null);
-      if (otherId == null) continue;
-      final type = typeById[otherId];
-      if (type == null) continue;
-      counts[type] = (counts[type] ?? 0) + 1;
+      if (e.fromId == id) {
+        ids.add(e.toId);
+      } else if (e.toId == id) {
+        ids.add(e.fromId);
+      }
     }
-    return counts;
+    final list = [
+      for (final nid in ids)
+        if (byId[nid] != null) byId[nid]!,
+    ]..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
   }
 
   @override
@@ -458,7 +461,8 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                       width: (size.width * 0.30).clamp(320.0, 400.0),
                       child: NodeInspectorPanel(
                         node: _scenario.nodeById(_focusId),
-                        neighborCounts: _neighborCountsFor(_focusId),
+                        neighbors: _neighborsOf(_focusId),
+                        now: _scenario.now,
                         createdLabel: relativeAge(
                           _scenario.now.difference(
                             _scenario.nodeById(_focusId).createdAt,
@@ -467,6 +471,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                         categoryNames: widget.categoryNames,
                         style: style,
                         tokens: tokens,
+                        onNeighborTap: _walkTo,
                       ),
                     ),
                   ),

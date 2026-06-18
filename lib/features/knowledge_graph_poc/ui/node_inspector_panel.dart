@@ -8,45 +8,51 @@ import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
 
 /// Full-height "dossier" preview of the focused graph node, docked to the right
 /// edge of the explorer. A frosted, category-lit surface anchors it over the
-/// starfield; a cover hero, a headline title, a one-liner lede, the scrollable
-/// TL;DR, a "linked" breakdown, and the node's age fill the column.
+/// starfield; a cover banner heads it, then the full title, the AI summary (if
+/// any), and a tappable timeline of the node's linked entries fill the column.
 ///
-/// Content cross-fades when the focus node changes (keyed on [GraphNode.id]).
+/// Tapping a timeline row walks the graph to that node (via [onNeighborTap]),
+/// so the panel doubles as a navigator. Content cross-fades when the focus
+/// node changes (keyed on [GraphNode.id]).
 class NodeInspectorPanel extends StatelessWidget {
   const NodeInspectorPanel({
     required this.node,
+    required this.neighbors,
+    required this.now,
     required this.createdLabel,
-    required this.neighborCounts,
     required this.categoryNames,
     required this.style,
     required this.tokens,
+    this.onNeighborTap,
     super.key,
   });
 
   final GraphNode node;
 
-  /// Pre-formatted relative age (e.g. "2 days ago"); see [relativeAge].
-  final String createdLabel;
+  /// Direct neighbors of [node] (its linked entries), most-recent first —
+  /// rendered as the tappable timeline.
+  final List<GraphNode> neighbors;
 
-  /// Direct-neighbor count per node type — drives the "linked" breakdown, which
-  /// names what the graph can't label at a glance.
-  final Map<GraphNodeType, int> neighborCounts;
+  /// Deterministic "now" used to label each neighbor's relative age.
+  final DateTime now;
+
+  /// Pre-formatted relative age of [node] itself (e.g. "2 days ago").
+  final String createdLabel;
   final Map<String, String> categoryNames;
   final GraphStyle style;
   final DsTokens tokens;
+
+  /// Called with a neighbor's id when its timeline row is tapped.
+  final void Function(String id)? onNeighborTap;
 
   @override
   Widget build(BuildContext context) {
     final cat = style.categoryColor(node.categoryId);
     final radius = BorderRadius.circular(tokens.radii.l);
     return DecoratedBox(
-      // Soft category-keyed glow so the rail reads as lit by the same light as
-      // the graph rather than pasted on top of the starfield.
       decoration: BoxDecoration(
         borderRadius: radius,
         boxShadow: [
-          // Biased left because the rail is docked to the right edge — the
-          // visible (left) side gets the stronger halo into the starfield.
           BoxShadow(
             color: cat.withValues(alpha: 0.16),
             blurRadius: 48,
@@ -74,18 +80,19 @@ class NodeInspectorPanel extends StatelessWidget {
                     child: _InspectorContent(
                       key: ValueKey(node.id),
                       node: node,
+                      neighbors: neighbors,
+                      now: now,
                       createdLabel: createdLabel,
-                      neighborCounts: neighborCounts,
                       categoryLabel:
                           categoryNames[node.categoryId] ?? node.categoryId,
+                      categoryNames: categoryNames,
                       style: style,
                       tokens: tokens,
                       cat: cat,
+                      onNeighborTap: onNeighborTap,
                     ),
                   ),
                 ),
-                // Inboard accent edge — a crisp rule plus an outward glow that
-                // ties the panel to the focused node's hue.
                 Positioned(
                   left: 0,
                   top: 0,
@@ -125,28 +132,34 @@ class NodeInspectorPanel extends StatelessWidget {
 class _InspectorContent extends StatelessWidget {
   const _InspectorContent({
     required this.node,
+    required this.neighbors,
+    required this.now,
     required this.createdLabel,
-    required this.neighborCounts,
     required this.categoryLabel,
+    required this.categoryNames,
     required this.style,
     required this.tokens,
     required this.cat,
+    required this.onNeighborTap,
     super.key,
   });
 
   final GraphNode node;
+  final List<GraphNode> neighbors;
+  final DateTime now;
   final String createdLabel;
-  final Map<GraphNodeType, int> neighborCounts;
   final String categoryLabel;
+  final Map<String, String> categoryNames;
   final GraphStyle style;
   final DsTokens tokens;
   final Color cat;
+  final void Function(String id)? onNeighborTap;
 
   @override
   Widget build(BuildContext context) {
     final summary = node.tldr != null && node.tldr!.trim().isNotEmpty
         ? splitTldr(node.tldr!)
-        : (lede: tldrFallback(node, categoryLabel), body: '');
+        : null;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -159,13 +172,65 @@ class _InspectorContent extends StatelessWidget {
           cat: cat,
         ),
         Expanded(
-          child: _Body(
-            lede: summary.lede,
-            body: summary.body,
-            neighborCounts: neighborCounts,
-            cat: cat,
-            style: style,
-            tokens: tokens,
+          child: SingleChildScrollView(
+            padding: EdgeInsets.all(tokens.spacing.cardPadding),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Full title — never truncated; this is the node's identity.
+                Text(
+                  node.label,
+                  style: tokens.typography.styles.heading.heading2.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+                if (summary != null) ...[
+                  SizedBox(height: tokens.spacing.sectionGap),
+                  _SectionLabel(label: 'SUMMARY', cat: cat, tokens: tokens),
+                  SizedBox(height: tokens.spacing.step3),
+                  if (summary.lede.isNotEmpty)
+                    Text(
+                      summary.lede,
+                      style: tokens.typography.styles.body.bodyLarge.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    ),
+                  if (summary.body.isNotEmpty) ...[
+                    SizedBox(height: tokens.spacing.step3),
+                    Text(
+                      summary.body,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ],
+                if (neighbors.isNotEmpty) ...[
+                  SizedBox(height: tokens.spacing.sectionGap),
+                  _SectionLabel(
+                    label: 'LINKED · ${neighbors.length}',
+                    cat: cat,
+                    tokens: tokens,
+                  ),
+                  SizedBox(height: tokens.spacing.step2),
+                  for (final n in neighbors)
+                    _TimelineItem(
+                      node: n,
+                      ageLabel: relativeAge(now.difference(n.createdAt)),
+                      categoryLabel:
+                          categoryNames[n.categoryId] ?? n.categoryId,
+                      color: style
+                          .edgeVisual(relStyleForNeighborType(n.type))
+                          .color,
+                      tokens: tokens,
+                      onTap: onNeighborTap == null
+                          ? null
+                          : () => onNeighborTap!(n.id),
+                    ),
+                ],
+              ],
+            ),
           ),
         ),
         _Footer(createdLabel: createdLabel, cat: cat, tokens: tokens),
@@ -174,8 +239,8 @@ class _InspectorContent extends StatelessWidget {
   }
 }
 
-/// Cover hero: the node's real cover art (or an image entry's photo) under a
-/// bottom scrim with the kicker + title overlaid; a category-gradient + glyph
+/// Cover banner: the node's real cover art (or an image entry's photo) under a
+/// scrim with the type·category kicker overlaid; a category-gradient + glyph
 /// watermark when there is no image.
 class _Hero extends StatelessWidget {
   const _Hero({
@@ -196,8 +261,11 @@ class _Hero extends StatelessWidget {
   Widget build(BuildContext context) {
     final coverPath = node.coverImagePath ?? node.imagePath;
     final scrimEnd = tokens.colors.background.level01;
+    final hasCover = coverPath != null;
     return AspectRatio(
-      aspectRatio: 16 / 9,
+      // A tall 16:9 hero earns its space when there's real cover art; without
+      // one it's a slim category banner so the title + timeline get the room.
+      aspectRatio: hasCover ? 16 / 9 : 16 / 5,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -209,60 +277,29 @@ class _Hero extends StatelessWidget {
             )
           else
             _gradientHero(),
-          // Top scrim — softens the hard top edge against the rounded corner so
-          // the cover/kicker isn't cramped against the panel's top.
           DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                stops: const [0, 0.3],
-                colors: [
-                  scrimEnd.withValues(alpha: 0.45),
-                  scrimEnd.withValues(alpha: 0),
-                ],
-              ),
-            ),
-          ),
-          // Bottom scrim so the overlaid title reads over any cover, fading
-          // fully to the body colour so the hero and body read as one surface.
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: const [0.25, 1],
+                // Lighter over the gradient banner (only the kicker sits on it);
+                // stronger over a photo so the kicker stays legible.
+                stops: const [0.4, 1],
                 colors: [
                   scrimEnd.withValues(alpha: 0),
-                  scrimEnd.withValues(alpha: 0.96),
+                  scrimEnd.withValues(alpha: hasCover ? 0.92 : 0.55),
                 ],
               ),
             ),
           ),
           Positioned(
             left: tokens.spacing.cardPadding,
-            right: tokens.spacing.cardPadding,
             bottom: tokens.spacing.cardPadding,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _Kicker(
-                  node: node,
-                  label: '${typeLabel(node.type)} · $categoryLabel',
-                  cat: cat,
-                  tokens: tokens,
-                ),
-                SizedBox(height: tokens.spacing.step3),
-                Text(
-                  node.label,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.heading.heading2.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-              ],
+            child: _Kicker(
+              node: node,
+              label: '${typeLabel(node.type)} · $categoryLabel',
+              cat: cat,
+              tokens: tokens,
             ),
           ),
         ],
@@ -289,10 +326,7 @@ class _Hero extends StatelessWidget {
           maxHeight: double.infinity,
           alignment: Alignment.topRight,
           child: Padding(
-            padding: EdgeInsets.only(
-              top: tokens.spacing.step4,
-              right: tokens.spacing.step4,
-            ),
+            padding: EdgeInsets.all(tokens.spacing.step4),
             child: Icon(
               glyphForType(node.type),
               size: 132,
@@ -326,9 +360,6 @@ class _Kicker extends StatelessWidget {
         vertical: tokens.spacing.step1,
       ),
       decoration: BoxDecoration(
-        // Emissive chip: a faint hue fill + a brighter hue hairline that echoes
-        // the panel's lit edges, with near-white text that stays legible over
-        // any cover.
         color: cat.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(tokens.radii.smallChips),
         border: Border.all(color: cat.withValues(alpha: 0.45)),
@@ -342,14 +373,10 @@ class _Kicker extends StatelessWidget {
             color: tokens.colors.text.highEmphasis,
           ),
           SizedBox(width: tokens.spacing.step2),
-          Flexible(
-            child: Text(
-              label.toUpperCase(),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: tokens.typography.styles.others.overline.copyWith(
-                color: tokens.colors.text.highEmphasis,
-              ),
+          Text(
+            label.toUpperCase(),
+            style: tokens.typography.styles.others.overline.copyWith(
+              color: tokens.colors.text.highEmphasis,
             ),
           ),
         ],
@@ -358,89 +385,61 @@ class _Kicker extends StatelessWidget {
   }
 }
 
-class _Body extends StatelessWidget {
-  const _Body({
-    required this.lede,
-    required this.body,
-    required this.neighborCounts,
-    required this.cat,
-    required this.style,
+/// One linked entry in the timeline: a relation-coloured glyph, the entry's
+/// snippet, and its relative age. Tapping walks the graph to that node.
+class _TimelineItem extends StatelessWidget {
+  const _TimelineItem({
+    required this.node,
+    required this.ageLabel,
+    required this.categoryLabel,
+    required this.color,
     required this.tokens,
+    required this.onTap,
   });
 
-  final String lede;
-  final String body;
-  final Map<GraphNodeType, int> neighborCounts;
-  final Color cat;
-  final GraphStyle style;
+  final GraphNode node;
+  final String ageLabel;
+  final String categoryLabel;
+  final Color color;
   final DsTokens tokens;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
-    final linked = neighborCounts.entries.where((e) => e.value > 0).toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-    return DecoratedBox(
-      // Feather the hero's category hue a little way into the body so the two
-      // regions read as one continuous surface, not stacked tiles.
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: const [0, 0.22],
-          colors: [cat.withValues(alpha: 0.1), cat.withValues(alpha: 0)],
-        ),
-      ),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.all(tokens.spacing.cardPadding),
-        child: Column(
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(tokens.radii.smallChips),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (lede.isNotEmpty)
-              Text(
-                lede,
-                style: tokens.typography.styles.body.bodyLarge.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-            if (body.isNotEmpty) ...[
-              SizedBox(height: tokens.spacing.sectionGap),
-              _SectionLabel(label: 'SUMMARY', cat: cat, tokens: tokens),
-              SizedBox(height: tokens.spacing.step3),
-              Text(
-                body,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                  height: 1.5,
-                ),
-              ),
-            ],
-            // Named-neighbour breakdown — sits under the content so it fills the
-            // column on thin summaries instead of stranding a void above the
-            // footer, and tells the reader what the graph can't label at a
-            // glance.
-            if (linked.isNotEmpty) ...[
-              SizedBox(height: tokens.spacing.sectionGap),
-              _SectionLabel(label: 'LINKED', cat: cat, tokens: tokens),
-              SizedBox(height: tokens.spacing.step3),
-              Wrap(
-                spacing: tokens.spacing.step2,
-                runSpacing: tokens.spacing.step2,
+            Padding(
+              padding: EdgeInsets.only(top: tokens.spacing.step1),
+              child: Icon(glyphForType(node.type), size: 16, color: color),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (final e in linked)
-                    _LinkChip(
-                      type: e.key,
-                      count: e.value,
-                      // Colour each chip with the graph's own relation hue for
-                      // that neighbour type, so the breakdown reads as the same
-                      // system as the edges/legend on the canvas.
-                      color: style
-                          .edgeVisual(relStyleForNeighborType(e.key))
-                          .color,
-                      tokens: tokens,
+                  Text(
+                    node.label,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.highEmphasis,
                     ),
+                  ),
+                  Text(
+                    '${typeLabel(node.type)} · $ageLabel',
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
+                  ),
                 ],
               ),
-            ],
+            ),
           ],
         ),
       ),
@@ -448,8 +447,7 @@ class _Body extends StatelessWidget {
   }
 }
 
-/// Category-tinted section eyebrow + hairline divider, shared by the body's
-/// SUMMARY and LINKED sections.
+/// Category-tinted section eyebrow + hairline divider.
 class _SectionLabel extends StatelessWidget {
   const _SectionLabel({
     required this.label,
@@ -496,14 +494,10 @@ class _Footer extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Hue-tinted so the category light carries to the very bottom of the
-          // column instead of dead-ending in a neutral grey footer.
           Divider(color: cat.withValues(alpha: 0.12), height: 1),
           SizedBox(height: tokens.spacing.step4),
           Row(
             children: [
-              // Category-hued so the panel's accent terminates on content, not
-              // on the divider line above.
               Icon(Icons.schedule_rounded, size: 14, color: cat),
               SizedBox(width: tokens.spacing.step2),
               Text(
@@ -520,49 +514,7 @@ class _Footer extends StatelessWidget {
   }
 }
 
-class _LinkChip extends StatelessWidget {
-  const _LinkChip({
-    required this.type,
-    required this.count,
-    required this.color,
-    required this.tokens,
-  });
-
-  final GraphNodeType type;
-  final int count;
-  final Color color;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step3,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02.withValues(alpha: 0.6),
-        borderRadius: BorderRadius.circular(tokens.radii.smallChips),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(glyphForType(type), size: 12, color: color),
-          SizedBox(width: tokens.spacing.step2),
-          Text(
-            '$count  ${typeLabel(type)}',
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Relative-age label for the footer (pure; unit-tested).
+/// Relative-age label for the footer/timeline (pure; unit-tested).
 String relativeAge(Duration d) {
   if (d.inHours < 24) return 'today';
   final days = d.inDays;
@@ -618,9 +570,8 @@ String previewFromMarkdown(String md) {
 }
 
 /// The graph relation class whose colour best represents a neighbour of the
-/// given node type, so the inspector's "linked" chips reuse the graph's edge
-/// palette (pure; unit-tested). Mirrors the relation a focus task has to each
-/// neighbour kind: project→containment, AI→provenance, rating→evaluation,
+/// given node type, so the timeline glyphs reuse the graph's edge palette
+/// (pure; unit-tested). project→containment, AI→provenance, rating→evaluation,
 /// checklist(item)→checklist, task→linkedTask, entries→note.
 RelStyle relStyleForNeighborType(GraphNodeType type) {
   switch (type) {
@@ -639,30 +590,5 @@ RelStyle relStyleForNeighborType(GraphNodeType type) {
     case GraphNodeType.audioEntry:
     case GraphNodeType.imageEntry:
       return RelStyle.note;
-  }
-}
-
-/// A short, type-specific descriptor for nodes that have no real summary — used
-/// as the lede so the panel is never bare (pure; unit-tested).
-String tldrFallback(GraphNode node, String categoryLabel) {
-  switch (node.type) {
-    case GraphNodeType.task:
-      return 'A $categoryLabel task in your graph.';
-    case GraphNodeType.project:
-      return 'A $categoryLabel project — walk in to explore its tasks.';
-    case GraphNodeType.aiResponse:
-      return 'An AI-generated summary derived from the linked task.';
-    case GraphNodeType.rating:
-      return 'A rating of the linked task.';
-    case GraphNodeType.checklist:
-      return 'A checklist — its items branch off from here.';
-    case GraphNodeType.checklistItem:
-      return 'One item on a checklist.';
-    case GraphNodeType.audioEntry:
-      return 'A voice note captured against this task.';
-    case GraphNodeType.imageEntry:
-      return 'An image attached to this task.';
-    case GraphNodeType.textEntry:
-      return 'A text log entry on this task.';
   }
 }
