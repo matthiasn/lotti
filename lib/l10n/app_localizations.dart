@@ -9498,6 +9498,12 @@ abstract class AppLocalizations {
   /// **'Audio'**
   String get journalLinkedEntriesActivityFilterAudio;
 
+  /// No description provided for @journalLinkedEntriesActivityFilterCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Code'**
+  String get journalLinkedEntriesActivityFilterCode;
+
   /// No description provided for @journalLinkedEntriesActivityFilterImages.
   ///
   /// In en, this message translates to:

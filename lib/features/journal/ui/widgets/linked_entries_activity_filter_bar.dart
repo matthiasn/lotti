@@ -14,9 +14,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// breakpoint.
 ///
 /// Pill colors come from the design system where available
-/// (`alert.warning` for Timer). Audio and Images are not in the token
-/// set yet — their hex values come straight from the Figma activity-
-/// filter spec.
+/// (`alert.warning` for Timer). Audio, Images, and Code are not in the
+/// token set yet — their hex values come straight from the Figma
+/// activity-filter spec.
 class LinkedEntriesActivityFilterBar extends ConsumerWidget {
   const LinkedEntriesActivityFilterBar({required this.entryId, super.key});
 
@@ -229,6 +229,14 @@ class _ActivityPillSpec {
         label: messages.journalLinkedEntriesActivityFilterImages,
         icon: Icons.photo_outlined,
         accent: const Color(0xFF619EFF),
+        borderAlpha: 0.7,
+      ),
+      // Code (coding prompts) uses a Figma-spec green that isn't in the
+      // token set yet. Border alpha matches the Audio/Images pills.
+      LinkedEntryActivityFilter.code => _ActivityPillSpec(
+        label: messages.journalLinkedEntriesActivityFilterCode,
+        icon: Icons.code,
+        accent: const Color(0xFF34C759),
         borderAlpha: 0.7,
       ),
     };

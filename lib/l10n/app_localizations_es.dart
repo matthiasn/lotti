@@ -5527,6 +5527,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalLinkedEntriesActivityFilterAudio => 'Audio';
 
   @override
+  String get journalLinkedEntriesActivityFilterCode => 'Código';
+
+  @override
   String get journalLinkedEntriesActivityFilterImages => 'Imágenes';
 
   @override

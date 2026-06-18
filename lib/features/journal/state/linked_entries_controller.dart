@@ -141,8 +141,8 @@ class ShowFlaggedOnlyController extends _$ShowFlaggedOnlyController {
 }
 
 /// Per-entry toggle state for the activity filter pills shown above the
-/// linked entries list (Timer / Audio / Images). Defaults to all kinds
-/// active so existing behavior is preserved when the bar mounts.
+/// linked entries list (Timer / Audio / Images / Code). Defaults to all
+/// kinds active so existing behavior is preserved when the bar mounts.
 @riverpod
 class LinkedEntriesActivityFilterController
     extends _$LinkedEntriesActivityFilterController {

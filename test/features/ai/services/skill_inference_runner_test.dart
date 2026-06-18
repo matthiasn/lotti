@@ -2089,7 +2089,8 @@ void main() {
               categoryId: captureAny(named: 'categoryId'),
             ),
           ).captured;
-          expect(responseCaptured[1], 'text-prompt');
+          // Coding prompt links to the parent task, not the source text entry.
+          expect(responseCaptured[1], 'task-text');
           expect(responseCaptured[2], 'cat-text');
         },
       );
@@ -2437,12 +2438,189 @@ void main() {
         expect(data.response, contains('Fix login bug'));
         expect(data.model, 'models/gemini-flash');
 
+        // Coding prompts attach to the parent task (like cover art), not the
+        // triggering audio entry, so later prompts inherit them as context.
         final linkedId = captured[1] as String;
-        expect(linkedId, 'audio-happy');
+        expect(linkedId, 'task-happy');
 
         final categoryId = captured[2] as String?;
         expect(categoryId, 'cat-1');
       });
+
+      test(
+        'coding prompt links to the source entry when there is no task',
+        () async {
+          final audioEntity =
+              JournalEntity.journalAudio(
+                    meta: Metadata(
+                      id: 'audio-no-task',
+                      createdAt: DateTime(2024),
+                      updatedAt: DateTime(2024),
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      categoryId: 'cat-1',
+                    ),
+                    data: AudioData(
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      duration: const Duration(minutes: 1),
+                      audioDirectory: '/audio/',
+                      audioFile: 'test.aac',
+                    ),
+                    entryText: const EntryText(
+                      plainText: 'Fix the login bug',
+                      markdown: 'Fix the login bug',
+                    ),
+                  )
+                  as JournalAudio;
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-no-task'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('## Prompt\nFix the login bug'),
+            ]),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'audio-no-task',
+            automationResult: makePromptGenerationResult(),
+            // No linkedTaskId — nothing to attach to but the entry itself.
+          );
+
+          final captured = verify(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: captureAny(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).captured;
+          expect(captured.single, 'audio-no-task');
+        },
+      );
+
+      test(
+        'image-prompt generation keeps the source-entry link even with a task',
+        () async {
+          final imagePromptSkill =
+              AiConfig.skill(
+                    id: 'skill-image-prompt-gen',
+                    name: 'Generate Image Prompt',
+                    skillType: SkillType.imagePromptGeneration,
+                    requiredInputModalities: const [Modality.audio],
+                    contextPolicy: ContextPolicy.fullTask,
+                    systemInstructions: 'You are a prompt engineer.',
+                    userInstructions: 'Generate an image prompt.',
+                    useReasoning: true,
+                    createdAt: DateTime(2024),
+                  )
+                  as AiConfigSkill;
+
+          final audioEntity =
+              JournalEntity.journalAudio(
+                    meta: Metadata(
+                      id: 'audio-image-prompt',
+                      createdAt: DateTime(2024),
+                      updatedAt: DateTime(2024),
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      categoryId: 'cat-1',
+                    ),
+                    data: AudioData(
+                      dateFrom: DateTime(2024),
+                      dateTo: DateTime(2024),
+                      duration: const Duration(minutes: 1),
+                      audioDirectory: '/audio/',
+                      audioFile: 'test.aac',
+                    ),
+                    entryText: const EntryText(
+                      plainText: 'A serene mountain lake',
+                      markdown: 'A serene mountain lake',
+                    ),
+                  )
+                  as JournalAudio;
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-image-prompt'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-img'),
+          ).thenAnswer((_) async => '{"id": "task-img"}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-img'),
+          ).thenAnswer((_) async => '{"linked_from": [], "linked_to": []}');
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('## Prompt\nA serene mountain lake at dawn'),
+            ]),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'audio-image-prompt',
+            automationResult: AutomationResult(
+              handled: true,
+              resolvedProfile: ResolvedProfile(
+                thinkingModelId: 'models/gemini-flash',
+                thinkingProvider: testInferenceProvider(id: 'p-flash'),
+              ),
+              skill: imagePromptSkill,
+            ),
+            linkedTaskId: 'task-img',
+          );
+
+          // Only AiResponseType.promptGeneration (coding) re-targets to the
+          // task; image-prompt generation stays linked to the source entry.
+          final captured = verify(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: captureAny(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).captured;
+          expect(captured.single, 'audio-image-prompt');
+        },
+      );
 
       test(
         'extracts transcript from latest transcript when no entryText',
@@ -2758,7 +2936,14 @@ void main() {
             );
             expect(data.type, AiResponseType.promptGeneration);
             expect(data.skillId, testPromptGenSkill.id);
-            expect(captured[1], 'generated-prompt-entry');
+            // Coding prompts link to the parent task when one exists,
+            // otherwise fall back to the source entry.
+            expect(
+              captured[1],
+              scenario.includeLinkedTask
+                  ? 'generated-linked-task'
+                  : 'generated-prompt-entry',
+            );
             expect(captured[2], 'cat-generated');
           } finally {
             localContainer.dispose();
@@ -2943,7 +3128,9 @@ void main() {
             expect(data.model, scenario.expectedModel, reason: '$scenario');
             expect(data.type, AiResponseType.promptGeneration);
             expect(data.skillId, testPromptGenSkill.id);
-            expect(captured[1], entryId);
+            // Coding prompts link to the parent task when one exists,
+            // otherwise fall back to the source entry.
+            expect(captured[1], linkedTaskId ?? entryId);
             expect(captured[2], 'cat-generated');
             verify(
               () => bench.loggingService.log(

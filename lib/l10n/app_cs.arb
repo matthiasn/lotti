@@ -2216,6 +2216,7 @@
   "journalHideLinkHint": "Skrýt odkaz",
   "journalHideMapHint": "Skrýt mapu",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
+  "journalLinkedEntriesActivityFilterCode": "Kód",
   "journalLinkedEntriesActivityFilterImages": "Obrázky",
   "journalLinkedEntriesActivityFilterTimer": "Časovač",
   "journalLinkedEntriesFilterModalTitle": "Filtrovat a řadit",

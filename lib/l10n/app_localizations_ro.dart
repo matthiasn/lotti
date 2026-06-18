@@ -5540,6 +5540,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalLinkedEntriesActivityFilterAudio => 'Audio';
 
   @override
+  String get journalLinkedEntriesActivityFilterCode => 'Cod';
+
+  @override
   String get journalLinkedEntriesActivityFilterImages => 'Imagini';
 
   @override

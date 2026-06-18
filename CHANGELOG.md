@@ -37,7 +37,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   readers.
 
 ## [0.9.1026]
+### Added
+- A new "Code" filter pill above a task's linked entries lets you show or hide
+  coding prompts, alongside the existing Timer, Audio, and Images toggles.
+
 ### Changed
+- Coding prompts generated from an audio note now attach to the parent task —
+  the same way cover art does — instead of hanging off the individual audio
+  entry. Because each coding prompt becomes part of the task, follow-up prompts
+  can build on the ones that came before, so you can record a new note asking to
+  continue from an earlier prompt and it has that context.
 - Editing an entry's start and end time is simpler: you set the date once and
   the start/end times separately, instead of picking the full date on both
   pickers. One date wheel sits above paired start/end time wheels, with a live

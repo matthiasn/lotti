@@ -5486,6 +5486,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalLinkedEntriesActivityFilterAudio => 'Audio';
 
   @override
+  String get journalLinkedEntriesActivityFilterCode => 'Kód';
+
+  @override
   String get journalLinkedEntriesActivityFilterImages => 'Obrázky';
 
   @override

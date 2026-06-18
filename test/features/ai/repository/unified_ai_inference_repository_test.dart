@@ -1231,6 +1231,182 @@ void main() {
         ).called(1);
       });
 
+      group('coding prompt task linking', () {
+        // A coding prompt (AiResponseType.promptGeneration) should attach to
+        // the parent task — like cover art — rather than the triggering
+        // audio/image entry, so each generated prompt becomes part of the
+        // task context for later prompts.
+
+        JournalAudio audioEntity() => JournalAudio(
+          meta: _createMetadata(categoryId: 'cat-1'),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+            audioFile: 'test.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        Task parentTask() => Task(
+          meta: _createMetadata(id: 'task-id'),
+          data: TaskData(
+            status: TaskStatus.inProgress(
+              id: 'status-1',
+              createdAt: DateTime(2024, 3, 15, 10, 30),
+              utcOffset: 0,
+            ),
+            title: 'Parent Task',
+            statusHistory: const [],
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+          ),
+        );
+
+        AiConfigPrompt codingPrompt() => _createPrompt(
+          id: 'coding-prompt',
+          name: 'Generate Coding Prompt',
+          requiredInputData: [InputDataType.task],
+          aiResponseType: AiResponseType.promptGeneration,
+        );
+
+        final model = _createModel(
+          id: 'model-1',
+          inferenceProviderId: 'provider-1',
+          providerModelId: 'gpt-4',
+        );
+        final provider = _createProvider(
+          id: 'provider-1',
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        );
+
+        Future<void> runCodingPrompt({
+          required JournalEntity entity,
+          required AiConfigPrompt prompt,
+        }) async {
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: entity,
+            model: model,
+            provider: provider,
+          );
+          _stubGenerate(
+            mockCloudInferenceRepo,
+            stream: _createMockTextStream(['Generated prompt']),
+          );
+          _stubCreateAiResponseEntry(mockAiInputRepo);
+          when(
+            () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
+          ).thenAnswer((_) async => true);
+
+          await repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: prompt,
+            onProgress: (_) {},
+            onStatusChange: (_) {},
+          );
+        }
+
+        test(
+          'coding prompt from audio links to the resolved parent task',
+          () async {
+            when(
+              () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+            ).thenAnswer((_) async => [parentTask()]);
+
+            await runCodingPrompt(
+              entity: audioEntity(),
+              prompt: codingPrompt(),
+            );
+
+            // Linked to the parent task, not the triggering audio entry.
+            verify(
+              () => mockAiInputRepo.createAiResponseEntry(
+                data: any(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: 'task-id',
+                categoryId: any(named: 'categoryId'),
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'coding prompt from audio falls back to the entry when no task',
+          () async {
+            when(
+              () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+            ).thenAnswer((_) async => <JournalEntity>[]);
+
+            await runCodingPrompt(
+              entity: audioEntity(),
+              prompt: codingPrompt(),
+            );
+
+            // No parent task resolved → keep linking to the source entry.
+            verify(
+              () => mockAiInputRepo.createAiResponseEntry(
+                data: any(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: 'test-id',
+                categoryId: any(named: 'categoryId'),
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'coding prompt from a task links to the task without a lookup',
+          () async {
+            await runCodingPrompt(
+              entity: parentTask().copyWith(meta: _createMetadata()),
+              prompt: codingPrompt(),
+            );
+
+            // Task entities resolve to themselves; no link traversal needed.
+            verifyNever(
+              () => mockJournalRepo.getLinkedToEntities(
+                linkedTo: any(named: 'linkedTo'),
+              ),
+            );
+            verify(
+              () => mockAiInputRepo.createAiResponseEntry(
+                data: any(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: 'test-id',
+                categoryId: any(named: 'categoryId'),
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'coding prompt from a non-task/non-audio entry keeps the entry link',
+          () async {
+            final textEntry = JournalEntry(
+              meta: _createMetadata(),
+              entryText: const EntryText(plainText: 'note'),
+            );
+
+            await runCodingPrompt(
+              entity: textEntry,
+              prompt: codingPrompt(),
+            );
+
+            // _getTaskForEntity returns null for plain entries → fallback.
+            verify(
+              () => mockAiInputRepo.createAiResponseEntry(
+                data: any(named: 'data'),
+                start: any(named: 'start'),
+                linkedId: 'test-id',
+                categoryId: any(named: 'categoryId'),
+              ),
+            ).called(1);
+          },
+        );
+      });
+
       test(
         'runInference emits single progress update when streaming flag is disabled',
         () async {
