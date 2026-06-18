@@ -26,7 +26,15 @@ consensus on interaction *and* looks** (every reviewer ≥ 9.0).
 - **Walk-the-link navigation.** Tap → the camera glides (emphasized easing + a
   "travel dolly" that pulls back mid-move and settles) to the new focus; a
   brightening **wake trail** and a **ghost ring** make the traversal read as
-  travel. **Back / Recenter** controls + history. Free pan / pinch-zoom anytime.
+  travel. **Back / Recenter** controls + history. Free pan / pinch-zoom anytime,
+  including trackpad scroll-to-zoom on desktop.
+- **Local force simulation.** The deterministic layout is the rest state; the
+  focused 1–2-hop neighborhood becomes a short-lived force island with edge
+  springs, local separation, damping, and a weak anchor back to the static
+  layout. Walk-to navigation gives the destination node a larger, lower-damping
+  impulse so it keeps wobbling after the camera arrives. Edges, labels, and the
+  walk trail use those display positions, then the ticker stops once the island
+  settles. System "reduce motion" disables it.
 - **Relation class drives edge styling.** Containment = thick near-white
   backbone; the generic `BasicLink` association splits into *linked-task*
   (dashed + arrow) vs *note/log*; AI provenance = cyan dash; rating/evaluation =
@@ -57,6 +65,7 @@ renders cleanly outside a `Scaffold`.
 | `domain/graph_scenarios.dart` | Deterministic scenarios: `exploreWorldScenario` (~120 nodes) + the task ego-views (`taskEgoNetworkScenario`, `busyTaskScenario`, `lightTaskScenario`). |
 | `domain/graph_layout_engine.dart` | `computeGraphLayout` (ego sector seed + FR relax) and `computeWorldLayout` (world-scale FR). Deterministic, seeded. `computeLayoutForScenario` dispatches between them at `kWorldScaleThreshold` (the single source of truth shared with the view). |
 | `ui/graph_style.dart` | Token-backed `GraphStyle`, node glyphs, type labels, and the relation-class → `EdgeVisual` mapping. |
+| `ui/graph_motion_controller.dart` | Event-driven local force island: edge springs, local separation, damping, anchored offsets, graph-surface repaint ticker, and settle/stop logic. |
 | `ui/knowledge_graph_painter.dart` | The `CustomPainter`: atmosphere, biome haze, edges, walk trail, lit nodes, ghost ring, labels. |
 | `ui/knowledge_graph_view.dart` | Host: layout choice, fit/walk camera, pan/zoom/tap, history, title + controls + inspector + legend. Uses a pre-computed `layout` when given (provider path) and only relaxes the graph itself as a fallback (synthetic scenarios / tests). |
 | `state/task_graph_provider.dart` | **Real-data adapter** (Phase 1): `taskGraphProvider` loads a task's real `linked_entries` (depth-2 BFS + project + checklists), maps entities→node types and links→relation kinds, resolves real category colors, and relaxes the layout **on a background isolate** (`Isolate.run`) so opening the page never blocks the UI thread — the result rides in `TaskGraphData.layout`. Pure helpers `graphNodeTypeFor` / `graphNodeLabelFor` / `edgeKindFor` are unit-tested. |
@@ -74,9 +83,11 @@ flowchart LR
   E --> V
   T[DsTokens] --> Y[GraphStyle.fromTokens]
   V -->|focus + BFS hops + camera| PA[KnowledgeGraphPainter]
+  V -->|tap / walk / pan-end impulses| M[GraphMotionController]
+  M -->|display offsets + repaint| PA
   Y --> PA
   PA --> O["Canvas: vignette → biome haze → edges → trail → nodes → labels"]
-  V -.->|tap| WK[walk: re-focus + glide + wake] --> V
+  V -.->|tap| WK[walk: re-focus + glide + wake + spring kick] --> V
 ```
 
 ## Previewing

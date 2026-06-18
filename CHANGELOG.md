@@ -28,6 +28,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   pop for any of them you'd rather not see. The brief haptic on completion is
   unaffected, and completion itself works exactly the same; only the animation
   is skipped.
+- The experimental task knowledge graph now feels more physical: tapping or
+  walking to a node turns the focused 1–2-hop neighborhood into a short-lived
+  local force simulation, with edge springs, local separation, damping, and a
+  weak anchor back to the static layout. Walked-to nodes now get a stronger,
+  lower-damping wobble so they keep calling attention after the camera lands.
+  Desktop trackpads can now zoom the graph with a two-finger scroll gesture.
+  Links stretch and settle without recomputing the graph, and the motion stops
+  once settled and respects the system "reduce motion" setting.
 
 ## [0.9.1027]
 ### Changed

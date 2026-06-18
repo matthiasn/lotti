@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/graph_motion_controller.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_painter.dart';
 
@@ -202,6 +203,7 @@ void main() {
     List<String> walkPath = const [],
     double wake = 0,
     int labelMaxHop = 2,
+    GraphMotionController? motion,
   }) {
     final pos =
         positions ?? computeGraphLayout(scenario, iterations: 12).positions;
@@ -220,6 +222,7 @@ void main() {
       walkPath: walkPath,
       wake: wake,
       labelMaxHop: labelMaxHop,
+      motion: motion,
     );
   }
 
@@ -409,6 +412,7 @@ void main() {
           walkPath: base.walkPath,
           wake: base.wake,
           labelMaxHop: base.labelMaxHop,
+          motion: base.motion,
         );
         expect(same.shouldRepaint(base), isFalse);
       },
@@ -487,6 +491,19 @@ void main() {
       );
       expect(prevChanged.shouldRepaint(base), isTrue);
       expect(hopChanged.shouldRepaint(base), isTrue);
+    });
+
+    test('returns true when the motion controller changes', () {
+      final motion = GraphMotionController(vsync: const TestVSync());
+      addTearDown(motion.dispose);
+
+      final next = painterFor(
+        scenario,
+        positions: base.positions,
+        motion: motion,
+      );
+
+      expect(next.shouldRepaint(base), isTrue);
     });
   });
 }
