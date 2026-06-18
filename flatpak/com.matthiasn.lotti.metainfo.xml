@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1028" date="2026-06-18">
+      <description>
+          <p>The Task details page got a high-end, celebratory rework. The task title is the clear focal point, and the AI "Proposed changes" read as clean, colour-coded cards — on a phone each shows its change type above full-width text with visible accept/reject buttons (you can still swipe to confirm or dismiss), with a glowing sparkle badge and a clear "Confirm all" button. Your checklists now sit above the AI suggestions. Completing things is celebrated: checking a checklist item pops and strikes through left-to-right, and finishing a checklist or marking the task Done blooms a soft glow with a ring of sparks around the progress ring / status pill — tuned so it never covers the text it celebrates. Sections fade in as the page opens, everything respects the system "reduce motion" setting, and on wide screens the content sits in a centred reading column.</p>
+      </description>
+    </release>
     <release version="0.9.1027" date="2026-06-18">
       <description>
           <p>The logbook (journal list) was redesigned to match the rest of the app. Every entry now uses one consistent card layout: a type icon on the left — its tile tinted with the entry's category colour, so the list colour-codes your life-areas at a glance — the entry's own content as the most prominent line, and a friendly relative date instead of a technical timestamp. Health, workout, measurement and survey entries appear with human-readable names and compact value chips — for example "Systolic Blood Pressure · 122 mmHg" and "Running · 32 min · 413 kcal · 5.6 km" — rather than raw data; checklists show their completion progress with a bar, and habit completions show a clear status. The logbook filter was rebuilt to match the Tasks page: each entry type is a labelled pill carrying its own icon, the starred / flagged / private toggles are clearer multi-select pills, and category pills show their colour.</p>

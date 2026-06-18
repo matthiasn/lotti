@@ -8,6 +8,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
@@ -303,9 +304,14 @@ void main() {
 
     testWidgets('checked item shows strikethrough text style', (tester) async {
       await _pump(tester, item: _makeItem(title: 'Done item', isChecked: true));
-
-      final textWidget = tester.widget<Text>(find.text('Done item'));
-      expect(textWidget.style?.decoration, TextDecoration.lineThrough);
+      // The title is rendered by StrikethroughWipe as two glyph-aligned layers
+      // (an un-struck base and a struck overlay). A checked item reveals the
+      // struck layer, so a lineThrough decoration is present among them.
+      final decorations = tester
+          .widgetList<Text>(find.text('Done item'))
+          .map((t) => t.style?.decoration)
+          .toList();
+      expect(decorations, contains(TextDecoration.lineThrough));
     });
 
     testWidgets('unchecked item does not show strikethrough', (tester) async {
@@ -452,6 +458,81 @@ void main() {
       await tester.pump();
 
       expect(ctrls.itemController.checkedValue, isTrue);
+    });
+
+    testWidgets('checking an item fires a light haptic and pops the checkbox', (
+      tester,
+    ) async {
+      final haptics = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            haptics.add(call.arguments as String? ?? '');
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      final popFinder = find.ancestor(
+        of: find.byType(Checkbox),
+        matching: find.byType(ScaleTransition),
+      );
+
+      await _pumpWithControllers(tester);
+      await tester.pump();
+
+      double popScale() =>
+          tester.widget<ScaleTransition>(popFinder).scale.value;
+
+      // At rest the checkbox sits at its natural scale.
+      expect(popScale(), moreOrLessEquals(1, epsilon: 0.001));
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pump();
+
+      // A light-impact haptic fired on the not-checked → checked edge.
+      expect(haptics, contains('HapticFeedbackType.lightImpact'));
+
+      // The check "pop" is mid-flight: the checkbox has scaled past rest.
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(popScale(), greaterThan(1.05));
+
+      // …and settles back to its natural scale.
+      await tester.pumpAndSettle();
+      expect(popScale(), moreOrLessEquals(1, epsilon: 0.01));
+    });
+
+    testWidgets('checking an item fires a spark burst at the checkbox', (
+      tester,
+    ) async {
+      await _pumpWithControllers(tester);
+      await tester.pump();
+
+      // No celebration at rest.
+      expect(find.byType(CompletionBurst), findsNothing);
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pump(); // process the check → schedule the overlay burst
+      // The burst spawns into the app overlay a frame later and runs its own
+      // ~850ms timeline; pump into its spark window (0.12–0.96 of it).
+      await tester.pump(
+        const Duration(milliseconds: 100),
+      ); // build + start burst
+      await tester.pump(
+        const Duration(milliseconds: 300),
+      ); // advance into window
+      expect(find.byType(CompletionBurst), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      // The burst clears once the timeline completes.
+      expect(find.byType(CompletionBurst), findsNothing);
     });
 
     testWidgets('checkbox is disabled when item is archived', (tester) async {

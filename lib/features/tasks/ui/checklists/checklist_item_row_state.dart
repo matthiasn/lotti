@@ -2,10 +2,13 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
+import 'package:lotti/features/design_system/components/motion/strikethrough_wipe.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -25,7 +28,7 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 /// suggestion targets this item. Tracks the item's last checked/archived
 /// state to decide visibility on data updates.
 class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool _isEditing = false;
   bool _showRow = true;
   Timer? _holdTimer;
@@ -33,6 +36,17 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
 
   late AnimationController _suggestionController;
   late Animation<double> _suggestionPulse;
+
+  /// Drives the brief "pop" of the checkbox when an item is checked off — the
+  /// per-item reward beat (a light haptic fires alongside it). Scales up with
+  /// an overshoot and settles back, so the tap lands with a small bounce.
+  late AnimationController _checkPopController;
+  late Animation<double> _checkPopScale;
+
+  /// Anchors the spark burst to the checkbox. Used to read the checkbox's
+  /// on-screen rect at tap time so the burst can be fired into the overlay
+  /// before the row is (potentially) torn down by the completion.
+  final GlobalKey _checkboxKey = GlobalKey();
 
   bool _lastIsChecked = false;
   bool _lastIsArchived = false;
@@ -48,6 +62,24 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     _suggestionPulse = Tween<double>(begin: 1, end: 1.2).animate(
       CurvedAnimation(parent: _suggestionController, curve: Curves.easeInOut),
     );
+    _checkPopController = AnimationController(
+      duration: const Duration(milliseconds: 320),
+      vsync: this,
+    );
+    _checkPopScale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1, end: 1.28).chain(
+          CurveTween(curve: Curves.easeOut),
+        ),
+        weight: 45,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.28, end: 1).chain(
+          CurveTween(curve: Curves.easeIn),
+        ),
+        weight: 55,
+      ),
+    ]).animate(_checkPopController);
   }
 
   @override
@@ -68,7 +100,38 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     _holdTimer?.cancel();
     _deleteTimer?.cancel();
     _suggestionController.dispose();
+    _checkPopController.dispose();
     super.dispose();
+  }
+
+  /// The interactive check-off reward — a light haptic, the checkbox "pop", and
+  /// a spark burst at the checkbox. Fired straight from the tap (or the AI
+  /// "mark complete" action), so it runs while the row is still mounted and the
+  /// checkbox rect is still readable.
+  ///
+  /// This must NOT wait for a widget rebuild: completing the *last* open item
+  /// brings the checklist to 100%, and the card swaps the row list for an "all
+  /// done" line on the next build — unmounting this row before any
+  /// lifecycle-driven celebration could fire. [spawnCompletionBurst] captures
+  /// the geometry here and renders in the overlay, so the sparks survive the
+  /// row collapsing away. Burst + pop are suppressed under reduced motion; the
+  /// haptic still fires, since it is feedback, not motion.
+  void _celebrateInteractiveCheck() {
+    unawaited(HapticFeedback.lightImpact());
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion) return;
+    _checkPopController.forward(from: 0);
+    final checkboxContext = _checkboxKey.currentContext;
+    if (checkboxContext != null) {
+      spawnCompletionBurst(
+        checkboxContext,
+        count: 16,
+        sizeScale: 0.7,
+        clearCenter: 0.3,
+        duration: const Duration(milliseconds: 850),
+      );
+    }
   }
 
   bool get _shouldHide {
@@ -200,9 +263,16 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
           ),
         );
 
-        if (suggestion != null && !_suggestionController.isAnimating) {
+        // The suggestion pulse loops forever, so it must yield to reduced
+        // motion: freeze it at rest (scale 1.0) rather than pulsing.
+        final reduceMotion =
+            MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        if (suggestion != null &&
+            !reduceMotion &&
+            !_suggestionController.isAnimating) {
           _suggestionController.repeat(reverse: true);
-        } else if (suggestion == null && _suggestionController.isAnimating) {
+        } else if ((suggestion == null || reduceMotion) &&
+            _suggestionController.isAnimating) {
           _suggestionController
             ..stop()
             ..reset();
@@ -241,36 +311,50 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     ),
                     SizedBox(width: tokens.spacing.step3),
                     // Checkbox
+                    // Checking an item off earns a small spark burst at the
+                    // checkbox — the same celebration language as habits, but
+                    // dialled down (no glow, fewer/finer sparks, quicker) so
+                    // rapid check-offs read as a cascade of little pops rather
+                    // than visual chaos. Fired imperatively from the tap (see
+                    // [_celebrateInteractiveCheck]) rather than from a widget
+                    // edge, so it also fires when checking the LAST item
+                    // collapses the row. Reduced motion suppresses the sparks
+                    // and pop (the haptic still fires).
                     SizedBox(
+                      key: _checkboxKey,
                       width: 20,
                       height: 20,
-                      child: Checkbox(
-                        value: item.data.isChecked,
-                        onChanged: item.data.isArchived
-                            ? null
-                            : (value) {
-                                itemNotifier.updateChecked(
-                                  checked: value ?? false,
-                                );
-                                if (suggestion != null) {
-                                  ref
-                                      .read(
-                                        checklistCompletionServiceProvider
-                                            .notifier,
-                                      )
-                                      .clearSuggestion(widget.itemId);
-                                }
-                              },
-                        activeColor: tokens.colors.interactive.enabled,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
+                      child: ScaleTransition(
+                        scale: _checkPopScale,
+                        child: Checkbox(
+                          value: item.data.isChecked,
+                          onChanged: item.data.isArchived
+                              ? null
+                              : (value) {
+                                  final checked = value ?? false;
+                                  itemNotifier.updateChecked(checked: checked);
+                                  if (checked) _celebrateInteractiveCheck();
+                                  if (suggestion != null) {
+                                    ref
+                                        .read(
+                                          checklistCompletionServiceProvider
+                                              .notifier,
+                                        )
+                                        .clearSuggestion(widget.itemId);
+                                  }
+                                },
+                          activeColor: tokens.colors.interactive.enabled,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          side: BorderSide(
+                            color: tokens.colors.text.lowEmphasis,
+                            width: 1.5,
+                          ),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
                         ),
-                        side: BorderSide(
-                          color: tokens.colors.text.lowEmphasis,
-                          width: 1.5,
-                        ),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
                       ),
                     ),
                     SizedBox(width: tokens.spacing.step3),
@@ -290,16 +374,21 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                               onCancel: () =>
                                   setState(() => _isEditing = false),
                             )
-                          : Text(
-                              item.data.title,
-                              style: tokens.typography.styles.body.bodySmall
+                          : StrikethroughWipe(
+                              done: isStrikethrough,
+                              text: item.data.title,
+                              baseStyle: tokens.typography.styles.body.bodySmall
                                   .copyWith(
-                                    color: isStrikethrough
-                                        ? tokens.colors.text.lowEmphasis
-                                        : tokens.colors.text.highEmphasis,
-                                    decoration: isStrikethrough
-                                        ? TextDecoration.lineThrough
-                                        : null,
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                              struckStyle: tokens
+                                  .typography
+                                  .styles
+                                  .body
+                                  .bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.lowEmphasis,
+                                    decoration: TextDecoration.lineThrough,
                                   ),
                               maxLines: 4,
                               overflow: TextOverflow.fade,
@@ -567,6 +656,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     )).notifier,
                   )
                   .updateChecked(checked: true);
+              _celebrateInteractiveCheck();
               ref
                   .read(checklistCompletionServiceProvider.notifier)
                   .clearSuggestion(widget.itemId);

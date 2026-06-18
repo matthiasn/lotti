@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/state/dashboards_page_controller.dart';
-import 'package:lotti/features/habits/ui/widgets/completion_burst.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';

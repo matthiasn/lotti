@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
@@ -64,7 +68,17 @@ class MetaRow extends StatelessWidget {
       runSpacing: tokens.spacing.step3,
       children: [
         ...children,
-        _StatusPill(status: status, onTap: onStatusTap),
+        // Closing a task is the page's summit — celebrate the transition to
+        // Done with the staged glow + spark burst over the status pill and a
+        // heavy haptic. Fires only on the edge into Done, never on a task that
+        // was already done when the page opened.
+        CompletionCelebration(
+          completed: status is TaskDone,
+          burstOrigin: Alignment.center,
+          anchorScale: true,
+          onCelebrate: () => unawaited(HapticFeedback.heavyImpact()),
+          child: _StatusPill(status: status, onTap: onStatusTap),
+        ),
       ],
     );
   }

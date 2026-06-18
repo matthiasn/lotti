@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_body.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_components.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
@@ -190,89 +193,105 @@ class _ChecklistCardState extends State<ChecklistCard> {
         ? checklistChevronRotationDuration
         : Duration.zero;
 
-    return Material(
-      color: Colors.transparent,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // ── Header ────────────────────────────────────────────────────────
-          if (widget.isSortingMode)
-            SortingHeader(
-              title: widget.title,
-              completedCount: completed,
-              totalCount: total,
-              completionRate: widget.completionRate,
-              reorderIndex: widget.reorderIndex,
-            )
-          else
-            Header(
-              title: widget.title,
-              isExpanded: _isExpanded,
-              isEditingTitle: _isEditingTitle,
-              completedCount: completed,
-              totalCount: total,
-              completionRate: widget.completionRate,
-              filter: _filter,
-              chevronDuration: chevronDuration,
-              filterStripDuration: animationDuration,
-              onToggleExpand: () => _setExpanded(!_isExpanded),
-              onTitleTap: () => setState(() => _isEditingTitle = true),
-              onTitleSave: (t) {
-                widget.onTitleSave(t);
-                setState(() => _isEditingTitle = false);
-              },
-              onTitleCancel: () => setState(() => _isEditingTitle = false),
-              onFilterChanged: _setFilter,
-              onDelete: widget.onDelete,
-              onExportMarkdown: widget.onExportMarkdown,
-              onShareMarkdown: widget.onShareMarkdown,
-            ),
+    // Celebrate the moment the checklist reaches 100% with a soft accent glow
+    // bloom around the card + a medium haptic — but NO card-spanning spark
+    // burst: the last item's own checkbox burst already fires the sparks, and a
+    // second burst painted across the whole section read as chaotic particle
+    // flashes. The glow halo is the "whole checklist done" beat; the checkbox
+    // sparks are the "this item done" beat. Fires only on the transition.
+    //
+    // The glow runs at a low intensity: the per-item bursts already carry the
+    // celebration, so a full-strength bloom across the whole card read as a
+    // blinding flash. This is a soft acknowledgement layered under the sparks.
+    return CompletionCelebration(
+      completed: total > 0 && widget.completionRate >= 1.0,
+      showBurst: false,
+      glowIntensity: 0.1,
+      onCelebrate: () => unawaited(HapticFeedback.mediumImpact()),
+      child: Material(
+        color: Colors.transparent,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // ── Header ────────────────────────────────────────────────────────
+            if (widget.isSortingMode)
+              SortingHeader(
+                title: widget.title,
+                completedCount: completed,
+                totalCount: total,
+                completionRate: widget.completionRate,
+                reorderIndex: widget.reorderIndex,
+              )
+            else
+              Header(
+                title: widget.title,
+                isExpanded: _isExpanded,
+                isEditingTitle: _isEditingTitle,
+                completedCount: completed,
+                totalCount: total,
+                completionRate: widget.completionRate,
+                filter: _filter,
+                chevronDuration: chevronDuration,
+                filterStripDuration: animationDuration,
+                onToggleExpand: () => _setExpanded(!_isExpanded),
+                onTitleTap: () => setState(() => _isEditingTitle = true),
+                onTitleSave: (t) {
+                  widget.onTitleSave(t);
+                  setState(() => _isEditingTitle = false);
+                },
+                onTitleCancel: () => setState(() => _isEditingTitle = false),
+                onFilterChanged: _setFilter,
+                onDelete: widget.onDelete,
+                onExportMarkdown: widget.onExportMarkdown,
+                onShareMarkdown: widget.onShareMarkdown,
+              ),
 
-          // ── Body (animated) ───────────────────────────────────────────────
-          AnimatedCrossFade(
-            duration: animationDuration,
-            sizeCurve: Curves.easeInOut,
-            crossFadeState: showBody
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
-            firstChild: Body(
-              itemIds: _itemIds,
-              checklistId: widget.id,
-              taskId: widget.taskId,
-              filter: _filter,
-              completionRate: widget.completionRate,
-              activeTotalCount: total,
-              focusNode: _addFocusNode,
-              onCreateItem: (title) async {
-                if (_isCreatingItem) return;
-                setState(() => _isCreatingItem = true);
-                String? id;
-                try {
-                  id = await widget.onCreateItem(title);
-                } finally {
-                  if (mounted) setState(() => _isCreatingItem = false);
-                }
-                if (!mounted || id == null) return;
-                setState(() => _itemIds = [..._itemIds, id!]);
-                // Restore keyboard focus on the add field.
-                WidgetsBinding.instance.addPostFrameCallback((_) async {
-                  if (!mounted) return;
-                  _addFocusNode.unfocus();
-                  if (context.mounted) {
-                    FocusScope.of(context).requestFocus(_addFocusNode);
-                  }
+            // ── Body (animated) ───────────────────────────────────────────────
+            AnimatedCrossFade(
+              duration: animationDuration,
+              sizeCurve: Curves.easeInOut,
+              crossFadeState: showBody
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
+              firstChild: Body(
+                itemIds: _itemIds,
+                checklistId: widget.id,
+                taskId: widget.taskId,
+                filter: _filter,
+                completionRate: widget.completionRate,
+                activeTotalCount: total,
+                focusNode: _addFocusNode,
+                onCreateItem: (title) async {
+                  if (_isCreatingItem) return;
+                  setState(() => _isCreatingItem = true);
+                  String? id;
                   try {
-                    await SystemChannels.textInput.invokeMethod(
-                      'TextInput.show',
-                    );
-                  } catch (_) {}
-                });
-              },
+                    id = await widget.onCreateItem(title);
+                  } finally {
+                    if (mounted) setState(() => _isCreatingItem = false);
+                  }
+                  if (!mounted || id == null) return;
+                  setState(() => _itemIds = [..._itemIds, id!]);
+                  // Restore keyboard focus on the add field.
+                  WidgetsBinding.instance.addPostFrameCallback((_) async {
+                    if (!mounted) return;
+                    _addFocusNode.unfocus();
+                    if (context.mounted) {
+                      FocusScope.of(context).requestFocus(_addFocusNode);
+                    }
+                    try {
+                      await SystemChannels.textInput.invokeMethod(
+                        'TextInput.show',
+                      );
+                    } catch (_) {}
+                  });
+                },
+              ),
+              secondChild: const SizedBox.shrink(),
             ),
-            secondChild: const SizedBox.shrink(),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

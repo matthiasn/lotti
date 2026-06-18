@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer' as developer;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
@@ -33,12 +34,16 @@ class ProposalRow extends ConsumerStatefulWidget {
   const ProposalRow({
     required PendingSuggestion this.suggestion,
     this.isFirst = false,
+    this.confirmAllPulse = 0,
+    this.cascadeIndex = 0,
     super.key,
   }) : entry = null;
 
   const ProposalRow.fromLedger({required LedgerEntry this.entry, super.key})
     : suggestion = null,
-      isFirst = false;
+      isFirst = false,
+      confirmAllPulse = 0,
+      cascadeIndex = 0;
 
   final PendingSuggestion? suggestion;
   final LedgerEntry? entry;
@@ -47,6 +52,14 @@ class ProposalRow extends ConsumerStatefulWidget {
   /// swipe-affordance wiggle hint on narrow viewports.
   final bool isFirst;
 
+  /// Incremented by the parent each time "Confirm all" is pressed; the row
+  /// reacts by popping (staggered by [cascadeIndex]) so a batch confirm reads
+  /// as a satisfying downward sweep rather than everything vanishing at once.
+  final int confirmAllPulse;
+
+  /// This row's position in the open list, used to stagger the confirm-all pop.
+  final int cascadeIndex;
+
   bool get isResolved => entry != null;
 
   @override
@@ -54,7 +67,7 @@ class ProposalRow extends ConsumerStatefulWidget {
 }
 
 class _ProposalRowState extends ConsumerState<ProposalRow>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static const double _swipeTrigger = 70;
 
   /// Peek distance for the swipe-affordance wiggle hint. The row
@@ -72,6 +85,56 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
   Animation<double>? _wiggleOffset;
   Timer? _wiggleStartTimer;
   bool _wiggleScheduled = false;
+
+  /// One-shot scale pop played when "Confirm all" cascades to this row.
+  late final AnimationController _confirmPopController;
+  late final Animation<double> _confirmPopScale;
+  Timer? _cascadeTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _confirmPopController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    );
+    _confirmPopScale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1, end: 1.06).chain(
+          CurveTween(curve: Curves.easeOut),
+        ),
+        weight: 45,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.06, end: 1).chain(
+          CurveTween(curve: Curves.easeIn),
+        ),
+        weight: 55,
+      ),
+    ]).animate(_confirmPopController);
+  }
+
+  @override
+  void didUpdateWidget(ProposalRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A fresh "Confirm all" press: pop this row after a per-index delay so the
+    // batch confirm sweeps top-to-bottom. A light selection tick rides each
+    // pop; the ~45ms stagger keeps the haptics from machine-gunning.
+    if (widget.confirmAllPulse > oldWidget.confirmAllPulse &&
+        !widget.isResolved) {
+      _cascadeTimer?.cancel();
+      final reduceMotion =
+          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      _cascadeTimer = Timer(
+        Duration(milliseconds: 45 * widget.cascadeIndex),
+        () {
+          if (!mounted) return;
+          unawaited(HapticFeedback.selectionClick());
+          if (!reduceMotion) _confirmPopController.forward(from: 0);
+        },
+      );
+    }
+  }
 
   @override
   void didChangeDependencies() {
@@ -135,6 +198,8 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
   void dispose() {
     _wiggleStartTimer?.cancel();
     _wiggleController?.dispose();
+    _cascadeTimer?.cancel();
+    _confirmPopController.dispose();
     super.dispose();
   }
 
@@ -308,113 +373,102 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
         _resolvedStatus == ChangeItemStatus.retracted;
     final dimmed = lineThrough;
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 120),
-              decoration: BoxDecoration(
-                gradient: dx == 0
-                    ? null
-                    : LinearGradient(
-                        begin: dx > 0
-                            ? Alignment.centerLeft
-                            : Alignment.centerRight,
-                        end: dx > 0
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        colors: [
-                          intentColor.withValues(alpha: 0.20),
-                          Colors.transparent,
+    return ScaleTransition(
+      scale: _confirmPopScale,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                decoration: BoxDecoration(
+                  gradient: dx == 0
+                      ? null
+                      : LinearGradient(
+                          begin: dx > 0
+                              ? Alignment.centerLeft
+                              : Alignment.centerRight,
+                          end: dx > 0
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                          colors: [
+                            intentColor.withValues(alpha: 0.20),
+                            Colors.transparent,
+                          ],
+                        ),
+                ),
+                alignment: dx > 0
+                    ? Alignment.centerLeft
+                    : Alignment.centerRight,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: intentLabel == null
+                    ? const SizedBox.shrink()
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (dx > 0)
+                            Icon(Icons.check, size: 14, color: intentColor),
+                          if (dx > 0) const SizedBox(width: 6),
+                          Text(
+                            intentLabel,
+                            style: tokens.typography.styles.others.caption
+                                .copyWith(
+                                  color: intentColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          if (dx < 0) const SizedBox(width: 6),
+                          if (dx < 0)
+                            Icon(Icons.close, size: 14, color: intentColor),
                         ],
                       ),
               ),
-              alignment: dx > 0 ? Alignment.centerLeft : Alignment.centerRight,
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: intentLabel == null
-                  ? const SizedBox.shrink()
-                  : Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (dx > 0)
-                          Icon(Icons.check, size: 14, color: intentColor),
-                        if (dx > 0) const SizedBox(width: 6),
-                        Text(
-                          intentLabel,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: intentColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                        if (dx < 0) const SizedBox(width: 6),
-                        if (dx < 0)
-                          Icon(Icons.close, size: 14, color: intentColor),
-                      ],
-                    ),
             ),
-          ),
-          AnimatedContainer(
-            duration: _animating
-                ? const Duration(milliseconds: 180)
-                : Duration.zero,
-            transform: Matrix4.translationValues(dx, 0, 0),
-            decoration: BoxDecoration(
-              color: widget.isResolved ? ai.subtleWash : ai.row,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: ai.rowBorder),
-            ),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onHorizontalDragStart: _onHorizontalDragStart,
-              onHorizontalDragUpdate: _onHorizontalDragUpdate,
-              onHorizontalDragEnd: _onHorizontalDragEnd,
-              onHorizontalDragCancel: _onHorizontalDragCancel,
-              child: Opacity(
-                opacity: dimmed ? 0.45 : 1,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    KindChip(meta: meta),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        cleanText,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: ai.bodyText,
-                          height: 1.5,
-                          decoration: lineThrough
-                              ? TextDecoration.lineThrough
-                              : null,
+            AnimatedContainer(
+              duration: _animating
+                  ? const Duration(milliseconds: 180)
+                  : Duration.zero,
+              transform: Matrix4.translationValues(dx, 0, 0),
+              decoration: BoxDecoration(
+                color: widget.isResolved ? ai.subtleWash : ai.row,
+                borderRadius: BorderRadius.circular(10),
+                // Pending rows pick up a faint tint of their kind color so
+                // the frame reinforces the proposal type at a glance;
+                // resolved rows stay neutral.
+                border: Border.all(
+                  color: widget.isResolved
+                      ? ai.rowBorder
+                      : Color.alphaBlend(
+                          meta.color.withValues(alpha: 0.55),
+                          ai.rowBorder,
                         ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    if (widget.isResolved)
-                      ResolvedTag(status: _resolvedStatus)
-                    else if (isCompactWidth(context))
-                      // On narrow viewports the buttons take up too
-                      // much horizontal space — rely on swipe alone
-                      // (the `GestureDetector` above accepts a swipe
-                      // anywhere on the row, and the gradient backdrop
-                      // surfaces the "Confirm" / "Dismiss" intent past
-                      // the swipe threshold).
-                      const SizedBox.shrink()
-                    else
-                      RowActions(
-                        busy: _busy,
-                        onReject: _reject,
-                        onConfirm: _confirm,
-                      ),
-                  ],
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onHorizontalDragStart: _onHorizontalDragStart,
+                onHorizontalDragUpdate: _onHorizontalDragUpdate,
+                onHorizontalDragEnd: _onHorizontalDragEnd,
+                onHorizontalDragCancel: _onHorizontalDragCancel,
+                child: Opacity(
+                  opacity: dimmed ? 0.45 : 1,
+                  child: ProposalRowContent(
+                    meta: meta,
+                    text: cleanText,
+                    lineThrough: lineThrough,
+                    isResolved: widget.isResolved,
+                    resolvedStatus: _resolvedStatus,
+                    busy: _busy,
+                    onReject: _reject,
+                    onConfirm: _confirm,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -442,5 +496,96 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     _cachedCleanInputKey = key;
     _cachedCleanText = result;
     return result;
+  }
+}
+
+/// The inner content of a proposal row: the kind chip, the human summary
+/// text, and the trailing actions / resolved tag.
+///
+/// Layout adapts to width:
+/// * **Narrow viewports** stack the kind chip *above* full-width text, so
+///   the summary reads as one clean rectangular block instead of text
+///   squished into a ragged column beside the chip. Action buttons stay
+///   hidden here — the whole row is swipeable (right = confirm, left =
+///   dismiss) — so only resolved rows show a trailing status tag, pinned
+///   to the chip line.
+/// * **Comfortable viewports** keep the chip, text, and trailing actions
+///   on a single row.
+class ProposalRowContent extends StatelessWidget {
+  const ProposalRowContent({
+    required this.meta,
+    required this.text,
+    required this.lineThrough,
+    required this.isResolved,
+    required this.resolvedStatus,
+    required this.busy,
+    required this.onReject,
+    required this.onConfirm,
+    super.key,
+  });
+
+  final KindMeta meta;
+  final String text;
+  final bool lineThrough;
+  final bool isResolved;
+  final ChangeItemStatus? resolvedStatus;
+  final bool busy;
+  final Future<void> Function() onReject;
+  final Future<void> Function() onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    final textWidget = Text(
+      text,
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: ai.bodyText,
+        height: 1.5,
+        decoration: lineThrough ? TextDecoration.lineThrough : null,
+      ),
+    );
+
+    if (isCompactWidth(context)) {
+      // Narrow viewports: kind chip + trailing actions on the first line, then
+      // full-width text below. The whole row also stays swipeable (right =
+      // confirm, left = dismiss) — the buttons are an additional, visible
+      // affordance so the action isn't swipe-only-and-hidden.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              KindChip(meta: meta),
+              const Spacer(),
+              if (isResolved)
+                ResolvedTag(status: resolvedStatus)
+              else
+                RowActions(
+                  busy: busy,
+                  onReject: onReject,
+                  onConfirm: onConfirm,
+                ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          textWidget,
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        KindChip(meta: meta),
+        SizedBox(width: tokens.spacing.step3),
+        Expanded(child: textWidget),
+        SizedBox(width: tokens.spacing.step3),
+        if (isResolved)
+          ResolvedTag(status: resolvedStatus)
+        else
+          RowActions(busy: busy, onReject: onReject, onConfirm: onConfirm),
+      ],
+    );
   }
 }

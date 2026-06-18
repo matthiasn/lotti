@@ -41,8 +41,10 @@ lib/features/design_system/
 │   ├── badges/
 │   ├── buttons/
 │   ├── calendar_pickers/
+│   ├── celebration/      # completion glow + spark burst + orchestrator
 │   ├── chips/
 │   ├── dropdowns/
+│   ├── motion/           # staggered entrance, strikethrough wipe
 │   ├── navigation/
 │   ├── task_filters/
 │   ├── task_list_items/
@@ -202,6 +204,21 @@ Representative composite or feature-shaped components:
   collapsed, preserving the previous expanded width so re-expanding
   restores the exact prior divider position
 - reusable mobile detail back control and header chrome
+- celebration primitives (`components/celebration/`) — `CompletionGlow` (a soft
+  accent halo that blooms then fades, with a static opacity-only variant for
+  reduced motion) and `CompletionBurst` (index-seeded comet sparks, with
+  `count` / `sizeScale` knobs and a `clearCenter` ring so the burst can radiate
+  *around* a label instead of over it). `CompletionCelebration` orchestrates
+  both off one ~1400ms timeline (glow window 0.08–0.78, burst 0.12–0.96) and
+  fires once on the `false → true` edge of a `completed` flag, with an optional
+  `anchorScale` pop of the wrapped child, an `onCelebrate` hook for haptics, and
+  full reduced-motion handling. Habits and Tasks share these so completing a
+  habit, a checklist, or a task all speak one motion language
+- motion primitives (`components/motion/`) — `StaggeredEntrance` (a one-time
+  fade-and-rise cascade over a list of sections that does *not* replay on
+  background rebuilds) and `StrikethroughWipe` (reveals a struck text layer
+  left→right over an un-struck base, for animating a checklist item's
+  strike-through on completion); both no-op under reduced motion
 
 #### Desktop navigation sidebar collapse state
 

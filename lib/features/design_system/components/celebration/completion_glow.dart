@@ -14,10 +14,16 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// When [staticGlow] is set (the reduced-motion path) the halo holds a fixed
 /// size and only its opacity fades — an acknowledgement with no spatial motion,
 /// so it stays safe under "reduce motion" while the glow still happens.
+///
+/// [intensity] scales the peak opacity (1.0 = full). Dial it down for a glow
+/// that should be a soft acknowledgement rather than a celebration in its own
+/// right — e.g. a whole-section completion that already has per-item bursts, so
+/// a full-strength bloom would read as blinding.
 class CompletionGlow extends StatelessWidget {
   const CompletionGlow({
     required this.value,
     this.staticGlow = false,
+    this.intensity = 1.0,
     super.key,
   });
 
@@ -27,10 +33,13 @@ class CompletionGlow extends StatelessWidget {
   /// Fixed-size halo, opacity-only fade — for reduced motion.
   final bool staticGlow;
 
+  /// Multiplier on the peak opacity (1.0 = full strength).
+  final double intensity;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final alpha = ((1 - value) * 0.55).clamp(0.0, 1.0);
+    final alpha = ((1 - value) * 0.55 * intensity).clamp(0.0, 1.0);
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(tokens.radii.m),

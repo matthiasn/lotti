@@ -171,8 +171,16 @@ Checklist content is modeled separately through checklist entities and linked ch
 `TaskDetailsPage` is the main task surface. It composes:
 
 - `TaskSliverAppBar`
-- `TaskForm` (which begins with the `DesktopTaskHeaderConnector`)
-- linked entries with timer-aware highlighting
+- `TaskForm` — stacks the reading bands in order: the `DesktopTaskHeaderConnector`
+  identity header (a `heading2` title as the focal point; the breadcrumb and
+  unset metadata are muted-but-legible at medium emphasis), the optional legacy
+  body (set off by a hairline rule + `sectionGap`), then the user's *work*
+  (`ChecklistsWidget`, `LinkedTasksWidget`), and finally the `AiSummaryCard`
+  assistant zone — checklists come before the AI suggestions so "what's left to
+  do" is visible without scrolling past proposals. The bands are wrapped in a
+  `StaggeredEntrance` (a one-time fade-and-rise on load that does not replay on
+  background refresh) and, on wide windows, a centred max-width reading column.
+- linked entries with timer-aware highlighting (card padding evened onto tokens)
 - reverse linked-from entries
 - `TaskActionBar` — a sticky frosted-glass bar hosted in the page's
   `Scaffold.bottomNavigationBar` slot, replacing the floating action
@@ -229,9 +237,9 @@ flowchart TD
   Load --> AppBar["TaskSliverAppBar (cover image + back / AI / overflow)"]
   Load --> Form["TaskForm"]
   Form --> Header["DesktopTaskHeaderConnector → DesktopTaskHeader"]
-  Form --> Agents["AiSummaryCard"]
+  Form --> Checklists["ChecklistsWidget (work first)"]
   Form --> Linked["LinkedTasksWidget"]
-  Form --> Checklists["ChecklistsWidget"]
+  Form --> Agents["AiSummaryCard (assistant zone, below the work)"]
   Load --> Focus["HighlightScrollMixin + TaskFocusController"]
   Load --> ActionBar["TaskActionBar (sticky bottom)"]
   ActionBar --> DecoderBars["AiRunningDecoderBars (when inference runs)"]
@@ -321,6 +329,15 @@ The header is exercised in isolation under Widgetbook → Tasks → Desktop task
 ## Checklist Subsystem
 
 Checklists are one of the main reasons the tasks feature exists as its own feature instead of being a loose set of task helper widgets.
+
+Completing checklist work is celebrated through the shared `CompletionCelebration`
+(see the design-system README): checking an item fires a light haptic + an
+`easeOutBack` checkbox pop + a left-to-right `StrikethroughWipe` on its title;
+reaching 100% on a checklist blooms a glow + a `clearCenter` spark burst around
+its progress ring with a medium haptic; and marking the whole task Done fires the
+same celebration (plus an `anchorScale` pop and a heavy haptic) on the status
+pill. Every beat is gated on the system reduce-motion setting and fires only on
+the not-done → done transition.
 
 ### Checklist runtime model
 

@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
@@ -1344,5 +1346,43 @@ void main() {
         }
       },
     );
+  });
+
+  group('DesktopTaskHeader — task-done celebration', () {
+    final createdAt = DateTime.utc(2026);
+    TaskStatus open() =>
+        TaskStatus.open(id: 'o', createdAt: createdAt, utcOffset: 0);
+    TaskStatus done() =>
+        TaskStatus.done(id: 'd', createdAt: createdAt, utcOffset: 0);
+
+    Widget header(TaskStatus status) => DesktopTaskHeader(
+      data: _fixture(status: status),
+      onTitleSaved: (_) {},
+    );
+
+    testWidgets('celebrates the transition into Done on the status pill', (
+      tester,
+    ) async {
+      await _pumpDesktop(tester, header(open()));
+      expect(find.byType(CompletionGlow), findsNothing);
+      expect(find.byType(CompletionBurst), findsNothing);
+
+      // Re-pump with Done → the staged glow + spark burst play.
+      await _pumpDesktop(tester, header(done()));
+      await tester.pump(const Duration(milliseconds: 560));
+      expect(find.byType(CompletionGlow), findsOneWidget);
+      expect(find.byType(CompletionBurst), findsOneWidget);
+
+      await tester.pumpAndSettle();
+    });
+
+    testWidgets('does not celebrate a task that opened already Done', (
+      tester,
+    ) async {
+      await _pumpDesktop(tester, header(done()));
+      await tester.pump(const Duration(milliseconds: 560));
+      expect(find.byType(CompletionGlow), findsNothing);
+      expect(find.byType(CompletionBurst), findsNothing);
+    });
   });
 }
