@@ -207,7 +207,12 @@ void main() {
 
       // test entry displays expected date
       expect(
-        find.text(dfShorter.format(testTextEntry.meta.dateFrom)),
+        find.text(
+          entryDateLabel(
+            tester.element(find.byType(InfiniteJournalPage)),
+            testTextEntry.meta.dateFrom,
+          ),
+        ),
         findsOneWidget,
       );
 
@@ -233,15 +238,18 @@ void main() {
 
       // task entry displays expected date
       expect(
-        find.text(dfShorter.format(testWeightEntry.meta.dateFrom)),
+        find.text(
+          entryDateLabel(
+            tester.element(find.byType(InfiniteJournalPage)),
+            testWeightEntry.meta.dateFrom,
+          ),
+        ),
         findsOneWidget,
       );
 
-      // weight entry displays expected measurement data
-      expect(
-        find.text('WEIGHT: 94.49 KILOGRAMS'),
-        findsOneWidget,
-      );
+      // weight entry displays its humanised name (title) and value chip
+      expect(find.text('Weight'), findsOneWidget);
+      expect(find.text('94.49 kg'), findsOneWidget);
 
       // weight task is neither starred nor private (icons invisible)
       expect(find.byIcon(MdiIcons.star).hitTestable(), findsNothing);
@@ -283,16 +291,19 @@ void main() {
         // measurement entry displays expected date
         expect(
           find.text(
-            dfShorter.format(testMeasurementChocolateEntry.meta.dateFrom),
+            entryDateLabel(
+              tester.element(find.byType(InfiniteJournalPage)),
+              testMeasurementChocolateEntry.meta.dateFrom,
+            ),
           ),
           findsOneWidget,
         );
 
-        // measurement entry displays expected measurement data
+        // measurement entry displays its name (title) and value chip
+        expect(find.text(measurableChocolate.displayName), findsOneWidget);
         expect(
           find.text(
-            '${measurableChocolate.displayName}: '
-            '${testMeasurementChocolateEntry.data.value} '
+            '${nf.format(testMeasurementChocolateEntry.data.value)} '
             '${measurableChocolate.unitName}',
           ),
           findsOneWidget,
@@ -324,16 +335,19 @@ void main() {
       // measurement entry displays expected date
       expect(
         find.text(
-          dfShorter.format(testMeasurementChocolateEntry.meta.dateFrom),
+          entryDateLabel(
+            tester.element(find.byType(InfiniteJournalPage)),
+            testMeasuredCoverageEntry.meta.dateFrom,
+          ),
         ),
         findsOneWidget,
       );
 
-      // measurement entry displays expected measurement data
+      // measurement entry displays its name (title) and value chip
+      expect(find.text(measurableCoverage.displayName), findsOneWidget);
       expect(
         find.text(
-          '${measurableCoverage.displayName}: '
-          '${testMeasuredCoverageEntry.data.value} '
+          '${nf.format(testMeasuredCoverageEntry.data.value)} '
           '${measurableCoverage.unitName}',
         ),
         findsOneWidget,

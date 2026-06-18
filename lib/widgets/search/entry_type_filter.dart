@@ -2,15 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/util/entry_type_icon.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:quiver/collection.dart';
 
+/// Entry-type multi-select for the logbook filter. Renders the same
+/// design-system choice pills the tasks filter uses, each carrying the type's
+/// feed glyph so the filter and the list share one visual vocabulary.
 class EntryTypeFilter extends ConsumerWidget {
   const EntryTypeFilter({super.key});
 
@@ -45,13 +49,26 @@ class EntryTypeFilter extends ConsumerWidget {
       dashboards: enableDashboards,
     );
 
+    final tokens = context.designTokens;
+    final palette = DesignSystemFilterPalette.fromTokens(tokens);
+    final textStyle = tokens.typography.styles.body.bodyMedium;
+
     return Wrap(
-      runSpacing: 10,
-      spacing: 5,
+      runSpacing: tokens.spacing.step2,
+      spacing: tokens.spacing.step2,
       children: [
-        ...filteredEntryTypes.map(EntryTypeChip.new),
-        EntryTypeAllChip(filteredEntryTypes: filteredEntryTypes),
-        const SizedBox(width: 5),
+        ...filteredEntryTypes.map(
+          (type) => EntryTypeChip(
+            type,
+            palette: palette,
+            textStyle: textStyle,
+          ),
+        ),
+        EntryTypeAllChip(
+          filteredEntryTypes: filteredEntryTypes,
+          palette: palette,
+          textStyle: textStyle,
+        ),
       ],
     );
   }
@@ -60,10 +77,14 @@ class EntryTypeFilter extends ConsumerWidget {
 class EntryTypeChip extends ConsumerWidget {
   const EntryTypeChip(
     this.entryType, {
+    required this.palette,
+    required this.textStyle,
     super.key,
   });
 
   final String entryType;
+  final DesignSystemFilterPalette palette;
+  final TextStyle textStyle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -85,12 +106,18 @@ class EntryTypeChip extends ConsumerWidget {
       HapticFeedback.heavyImpact();
     }
 
-    return FilterChoiceChip(
+    return DesignSystemFilterChoicePill(
       label: _entryTypeLabel(context, entryType),
-      isSelected: isSelected,
+      selected: isSelected,
+      palette: palette,
+      textStyle: textStyle,
       onTap: onTap,
       onLongPress: onLongPress,
-      selectedColor: context.colorScheme.secondary,
+      leading: Icon(
+        entryTypeIcon(entryType),
+        size: 16,
+        color: isSelected ? palette.accent : palette.secondaryText,
+      ),
     );
   }
 }
@@ -98,10 +125,14 @@ class EntryTypeChip extends ConsumerWidget {
 class EntryTypeAllChip extends ConsumerWidget {
   const EntryTypeAllChip({
     required this.filteredEntryTypes,
+    required this.palette,
+    required this.textStyle,
     super.key,
   });
 
   final List<String> filteredEntryTypes;
+  final DesignSystemFilterPalette palette;
+  final TextStyle textStyle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -125,11 +156,12 @@ class EntryTypeAllChip extends ConsumerWidget {
       HapticFeedback.heavyImpact();
     }
 
-    return FilterChoiceChip(
+    return DesignSystemFilterChoicePill(
       label: context.messages.taskStatusAll,
-      isSelected: isSelected,
+      selected: isSelected,
+      palette: palette,
+      textStyle: textStyle,
       onTap: onTap,
-      selectedColor: context.colorScheme.secondary,
     );
   }
 }

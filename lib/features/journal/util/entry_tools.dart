@@ -4,9 +4,13 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
 import 'package:lotti/themes/theme.dart';
 
 NumberFormat nf = NumberFormat('###.##');
+
+/// Whole-number formatter for metrics where decimals add noise (kcal, steps).
+NumberFormat nfWhole = NumberFormat('###');
 
 /// The span between an entry's `dateFrom` and `dateTo` (e.g. a timer's elapsed
 /// time).
@@ -76,6 +80,71 @@ String formatType(String s) => s.replaceAll('HealthDataType.', '');
 /// Strips the `HealthDataUnit.` enum prefix for display.
 String formatUnit(String s) => s.replaceAll('HealthDataUnit.', '');
 
+/// Human-readable name for a health/quantitative data type, e.g.
+/// `HealthDataType.BLOOD_PRESSURE_SYSTOLIC` → `Systolic Blood Pressure`.
+///
+/// Prefers the curated [healthTypes] registry (which also feeds dashboards);
+/// falls back to a title-cased version of the stripped enum name so unknown
+/// types never surface raw `SCREAMING_SNAKE` identifiers.
+String humanHealthTypeName(String dataType) {
+  final fromConfig = healthTypes[dataType]?.displayName;
+  if (fromConfig != null && fromConfig.isNotEmpty) {
+    return fromConfig;
+  }
+  return _titleCaseTokens(formatType(dataType));
+}
+
+/// Human-readable unit for a quantitative entry, e.g. `mmHg`, `bpm`, `kg`.
+///
+/// Prefers the curated [healthTypes] registry unit; falls back to a cleaned-up
+/// version of the stored `HealthDataUnit.*` enum so raw identifiers like
+/// `MILLIMETER_OF_MERCURY` never reach the UI.
+String humanHealthUnit(QuantitativeData qd) {
+  final fromConfig = healthTypes[qd.dataType]?.unit;
+  if (fromConfig != null && fromConfig.isNotEmpty) {
+    return fromConfig;
+  }
+  return _titleCaseTokens(formatUnit(qd.unit)).toLowerCase();
+}
+
+/// Human-readable workout activity name, e.g. `running` → `Running`,
+/// `functionalStrengthTraining` → `Functional Strength Training`.
+String humanWorkoutType(String workoutType) => _titleCaseTokens(workoutType);
+
+/// Splits a `camelCase` / `SNAKE_CASE` / `dot.separated` identifier into
+/// space-separated, title-cased words.
+String _titleCaseTokens(String raw) {
+  final spaced = raw
+      .replaceAll(RegExp('[_.]'), ' ')
+      .replaceAllMapped(
+        RegExp('([a-z0-9])([A-Z])'),
+        (m) => '${m[1]} ${m[2]}',
+      );
+  return spaced
+      .split(RegExp(r'\s+'))
+      .where((w) => w.isNotEmpty)
+      .map(
+        (w) => w.length == 1
+            ? w.toUpperCase()
+            : '${w[0].toUpperCase()}${w.substring(1).toLowerCase()}',
+      )
+      .join(' ');
+}
+
+/// A full, locale-aware timestamp (date + time) for list cards, e.g.
+/// `Mar 15, 2024 10:30 AM`. Deterministic given a date and locale.
+String formatEntryTimestamp(DateTime date, {String? locale}) {
+  return DateFormat.yMMMd(locale).add_jm().format(date.toLocal());
+}
+
+/// [formatEntryTimestamp] resolved against the active locale. Used by list cards.
+String entryDateLabel(BuildContext context, DateTime date) {
+  return formatEntryTimestamp(
+    date,
+    locale: Localizations.localeOf(context).toString(),
+  );
+}
+
 class InfoText extends StatelessWidget {
   const InfoText(
     this.text, {
@@ -100,12 +169,8 @@ class InfoText extends StatelessWidget {
 /// cumulative and discrete data shapes.
 String entryTextForQuant(QuantitativeEntry qe) {
   final qd = qe.data;
-  return switch (qd) {
-    CumulativeQuantityData(:final dataType, :final value, :final unit) =>
-      '${formatType(dataType)}: ${nf.format(value)} ${formatUnit(unit)}',
-    DiscreteQuantityData(:final dataType, :final value, :final unit) =>
-      '${formatType(dataType)}: ${nf.format(value)} ${formatUnit(unit)}',
-  };
+  return '${humanHealthTypeName(qd.dataType)}: '
+      '${nf.format(qd.value)} ${humanHealthUnit(qd)}';
 }
 
 /// Multi-line workout summary (type, energy in kcal, duration in minutes);

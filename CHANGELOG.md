@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1027]
 ### Changed
+- The logbook (journal list) was redesigned to match the rest of the app. Every
+  entry now uses one consistent card layout: a type icon on the left — its tile
+  tinted with the entry's category colour, so the list colour-codes your
+  life-areas at a glance — the entry's own content as the most prominent line, and
+  a friendly relative date ("Mar 15, 2024") instead of a technical timestamp. Health, workout, measurement and survey
+  entries are shown with human-readable names and compact value chips — e.g.
+  "Systolic Blood Pressure · 122 mmHg" and "Running · 32 min · 413 kcal · 5.6 km" —
+  rather than raw data; checklists show their completion progress with a bar, and
+  habit completions show a clear status ("Completed"). The logbook filter was
+  rebuilt to match the Tasks page: each entry type is a labelled pill carrying its
+  own icon, the starred / flagged / private toggles are clearer multi-select pills,
+  and category pills show their colour.
 - The Habits tab was reworked to match the rest of the app. It now uses the same
   calm, light-on-canvas surfaces as Tasks and Time Analysis instead of the old
   near-black background, with a Time-Analysis-style header. A new summary card

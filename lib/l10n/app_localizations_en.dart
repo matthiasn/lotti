@@ -4815,6 +4815,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get habitCompletionStatusCompleted => 'Completed';
+
+  @override
+  String get habitCompletionStatusFailed => 'Failed';
+
+  @override
+  String get habitCompletionStatusOpen => 'Open';
+
+  @override
+  String get habitCompletionStatusSkipped => 'Skipped';
+
+  @override
   String get habitDashboardHint => 'Select a dashboard';
 
   @override
@@ -5401,6 +5413,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get journalFavoriteTooltip => 'starred only';
+
+  @override
+  String get journalFilterEntryTypesTitle => 'Entry types';
+
+  @override
+  String get journalFilterFlagged => 'Flagged';
+
+  @override
+  String get journalFilterPrivate => 'Private';
+
+  @override
+  String get journalFilterShowTitle => 'Show';
+
+  @override
+  String get journalFilterStarred => 'Starred';
 
   @override
   String get journalFlaggedTooltip => 'flagged only';

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -12,7 +13,6 @@ import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -138,7 +138,9 @@ void main() {
       // the "All" chip, and the "..." expander — and nothing else.
       final messages = tester.element(find.byType(TaskCategoryFilter)).messages;
       final chipLabels = tester
-          .widgetList<FilterChoiceChip>(find.byType(FilterChoiceChip))
+          .widgetList<DesignSystemFilterChoicePill>(
+            find.byType(DesignSystemFilterChoicePill),
+          )
           .map((chip) => chip.label)
           .toList();
       expect(
@@ -158,7 +160,7 @@ void main() {
       expect(
         find.byWidgetPredicate(
           (widget) =>
-              widget is FilterChoiceChip &&
+              widget is DesignSystemFilterChoicePill &&
               widget.label.toLowerCase().contains('all'),
         ),
         findsOneWidget,
@@ -173,11 +175,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Initially, we should see only favorites (2) + unassigned + all + "..." button = 5 chips
-      expect(find.byType(FilterChoiceChip), findsNWidgets(5));
+      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(5));
 
       // Find and tap the "..." chip to show all categories
       final ellipsisChip = find.byWidgetPredicate(
-        (widget) => widget is FilterChoiceChip && widget.label == '...',
+        (widget) =>
+            widget is DesignSystemFilterChoicePill && widget.label == '...',
       );
       expect(ellipsisChip, findsOneWidget);
 
@@ -186,7 +189,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Now we should see all categories (3) + unassigned + all = 5 chips (no "..." button)
-      expect(find.byType(FilterChoiceChip), findsNWidgets(5));
+      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(5));
       expect(ellipsisChip, findsNothing);
     });
 
@@ -199,7 +202,8 @@ void main() {
 
         // Find a category chip and tap it
         final workChip = find.byWidgetPredicate(
-          (widget) => widget is FilterChoiceChip && widget.label == 'Work',
+          (widget) =>
+              widget is DesignSystemFilterChoicePill && widget.label == 'Work',
         );
         expect(workChip, findsOneWidget);
 
@@ -225,7 +229,7 @@ void main() {
             .messages;
         final unassignedChip = find.byWidgetPredicate(
           (widget) =>
-              widget is FilterChoiceChip &&
+              widget is DesignSystemFilterChoicePill &&
               widget.label == messages.taskCategoryUnassignedLabel,
         );
         expect(unassignedChip, findsOneWidget);
@@ -249,7 +253,7 @@ void main() {
       // Find the "All" chip
       final allChip = find.byWidgetPredicate(
         (widget) =>
-            widget is FilterChoiceChip &&
+            widget is DesignSystemFilterChoicePill &&
             widget.label.toLowerCase().contains('all'),
       );
       expect(allChip, findsOneWidget);
@@ -275,13 +279,13 @@ void main() {
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
 
       // Should show unassigned chip, all chip, and "..." button
-      expect(find.byType(FilterChoiceChip), findsNWidgets(3));
+      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(3));
 
       // Verify the "All" chip is rendered
       expect(
         find.byWidgetPredicate(
           (widget) =>
-              widget is FilterChoiceChip &&
+              widget is DesignSystemFilterChoicePill &&
               widget.label.toLowerCase().contains('all'),
         ),
         findsOneWidget,
@@ -314,11 +318,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Find the unassigned chip
-      final chips = tester.widgetList<FilterChoiceChip>(
-        find.byType(FilterChoiceChip),
+      final chips = tester.widgetList<DesignSystemFilterChoicePill>(
+        find.byType(DesignSystemFilterChoicePill),
       );
 
-      FilterChoiceChip? unassignedChip;
+      DesignSystemFilterChoicePill? unassignedChip;
       for (final chip in chips) {
         if (!chip.label.toLowerCase().contains('all')) {
           unassignedChip = chip;
@@ -327,7 +331,7 @@ void main() {
       }
 
       expect(unassignedChip, isNotNull);
-      expect(unassignedChip!.isSelected, isTrue);
+      expect(unassignedChip!.selected, isTrue);
     });
 
     testWidgets('shows multiple selected categories', (tester) async {
@@ -352,8 +356,10 @@ void main() {
 
       // Find selected chips
       final selectedChips = tester
-          .widgetList<FilterChoiceChip>(find.byType(FilterChoiceChip))
-          .where((chip) => chip.isSelected)
+          .widgetList<DesignSystemFilterChoicePill>(
+            find.byType(DesignSystemFilterChoicePill),
+          )
+          .where((chip) => chip.selected)
           .toList();
 
       // Should have 2 selected (Work and Personal)
@@ -367,14 +373,22 @@ void main() {
 
       // Find the Work category chip
       final workChip = find.byWidgetPredicate(
-        (widget) => widget is FilterChoiceChip && widget.label == 'Work',
+        (widget) =>
+            widget is DesignSystemFilterChoicePill && widget.label == 'Work',
       );
 
       expect(workChip, findsOneWidget);
 
-      // Verify the color is set correctly (red from #FF0000)
-      final chip = tester.widget<FilterChoiceChip>(workChip);
-      expect(chip.selectedColor, equals(const Color(0xFFFF0000)));
+      // The category color renders as a leading dot on the pill.
+      final colorDot = find.descendant(
+        of: workChip,
+        matching: find.byWidgetPredicate((widget) {
+          final decoration = widget is Container ? widget.decoration : null;
+          return decoration is BoxDecoration &&
+              decoration.color == const Color(0xFFFF0000);
+        }),
+      );
+      expect(colorDot, findsOneWidget);
     });
 
     testWidgets('shows only favorite and selected categories by default', (
@@ -407,7 +421,9 @@ void main() {
       // Should not find the Hidden category
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is FilterChoiceChip && widget.label == 'Hidden',
+          (widget) =>
+              widget is DesignSystemFilterChoicePill &&
+              widget.label == 'Hidden',
         ),
         findsNothing,
       );
@@ -421,13 +437,13 @@ void main() {
 
       var allChip = find.byWidgetPredicate(
         (widget) =>
-            widget is FilterChoiceChip &&
+            widget is DesignSystemFilterChoicePill &&
             widget.label.toLowerCase().contains('all'),
       );
 
       // All chip should not be selected when categories are selected
       expect(
-        tester.widget<FilterChoiceChip>(allChip).isSelected,
+        tester.widget<DesignSystemFilterChoicePill>(allChip).selected,
         equals(false),
       );
 
@@ -453,12 +469,15 @@ void main() {
 
       allChip = find.byWidgetPredicate(
         (widget) =>
-            widget is FilterChoiceChip &&
+            widget is DesignSystemFilterChoicePill &&
             widget.label.toLowerCase().contains('all'),
       );
 
       // All chip should be selected when no categories are selected
-      expect(tester.widget<FilterChoiceChip>(allChip).isSelected, equals(true));
+      expect(
+        tester.widget<DesignSystemFilterChoicePill>(allChip).selected,
+        equals(true),
+      );
     });
 
     testWidgets('tapping ellipsis chip shows all categories and hides itself', (
@@ -475,19 +494,22 @@ void main() {
 
       // Initially, only favorites should be visible (Work and Health)
       // Plus unassigned, all, and ellipsis = 5 total
-      expect(find.byType(FilterChoiceChip), findsNWidgets(5));
+      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(5));
 
       // Verify Personal category is not visible initially
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is FilterChoiceChip && widget.label == 'Personal',
+          (widget) =>
+              widget is DesignSystemFilterChoicePill &&
+              widget.label == 'Personal',
         ),
         findsNothing,
       );
 
       // Find and tap the ellipsis chip
       final ellipsisChip = find.byWidgetPredicate(
-        (widget) => widget is FilterChoiceChip && widget.label == '...',
+        (widget) =>
+            widget is DesignSystemFilterChoicePill && widget.label == '...',
       );
       expect(ellipsisChip, findsOneWidget);
 
@@ -497,12 +519,14 @@ void main() {
 
       // After tapping, all categories should be visible
       // All 3 categories + unassigned + all = 5 total (no ellipsis)
-      expect(find.byType(FilterChoiceChip), findsNWidgets(5));
+      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(5));
 
       // Verify Personal category is now visible
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is FilterChoiceChip && widget.label == 'Personal',
+          (widget) =>
+              widget is DesignSystemFilterChoicePill &&
+              widget.label == 'Personal',
         ),
         findsOneWidget,
       );
@@ -510,7 +534,8 @@ void main() {
       // Ellipsis chip should be hidden
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is FilterChoiceChip && widget.label == '...',
+          (widget) =>
+              widget is DesignSystemFilterChoicePill && widget.label == '...',
         ),
         findsNothing,
       );
@@ -534,11 +559,12 @@ void main() {
 
       // Even with only favorites, ellipsis is shown initially
       // 2 favorites + unassigned + all + ellipsis = 5 total
-      expect(find.byType(FilterChoiceChip), findsNWidgets(5));
+      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(5));
 
       // Find and tap the ellipsis chip
       final ellipsisChip = find.byWidgetPredicate(
-        (widget) => widget is FilterChoiceChip && widget.label == '...',
+        (widget) =>
+            widget is DesignSystemFilterChoicePill && widget.label == '...',
       );
       expect(ellipsisChip, findsOneWidget);
 
@@ -548,12 +574,13 @@ void main() {
 
       // After tapping, ellipsis should disappear
       // 2 favorites + unassigned + all = 4 total
-      expect(find.byType(FilterChoiceChip), findsNWidgets(4));
+      expect(find.byType(DesignSystemFilterChoicePill), findsNWidgets(4));
 
       // Verify ellipsis chip is no longer present
       expect(
         find.byWidgetPredicate(
-          (widget) => widget is FilterChoiceChip && widget.label == '...',
+          (widget) =>
+              widget is DesignSystemFilterChoicePill && widget.label == '...',
         ),
         findsNothing,
       );

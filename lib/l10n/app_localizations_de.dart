@@ -4876,6 +4876,18 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get habitCompletionStatusCompleted => 'Erledigt';
+
+  @override
+  String get habitCompletionStatusFailed => 'Fehlgeschlagen';
+
+  @override
+  String get habitCompletionStatusOpen => 'Offen';
+
+  @override
+  String get habitCompletionStatusSkipped => 'Übersprungen';
+
+  @override
   String get habitDashboardHint => 'Dashboard auswählen';
 
   @override
@@ -5468,6 +5480,21 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get journalFavoriteTooltip => 'nur Favoriten';
+
+  @override
+  String get journalFilterEntryTypesTitle => 'Eintragstypen';
+
+  @override
+  String get journalFilterFlagged => 'Markiert';
+
+  @override
+  String get journalFilterPrivate => 'Privat';
+
+  @override
+  String get journalFilterShowTitle => 'Anzeigen';
+
+  @override
+  String get journalFilterStarred => 'Favoriten';
 
   @override
   String get journalFlaggedTooltip => 'nur markiert';

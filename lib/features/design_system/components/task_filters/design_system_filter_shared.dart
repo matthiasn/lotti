@@ -272,6 +272,7 @@ class DesignSystemFilterChoicePill extends StatefulWidget {
     required this.palette,
     required this.textStyle,
     required this.onTap,
+    this.onLongPress,
     this.leading,
     super.key,
   });
@@ -281,6 +282,10 @@ class DesignSystemFilterChoicePill extends StatefulWidget {
   final DesignSystemFilterPalette palette;
   final TextStyle textStyle;
   final VoidCallback onTap;
+
+  /// Optional long-press handler (e.g. the logbook's "isolate to this entry
+  /// type" power-user gesture).
+  final VoidCallback? onLongPress;
   final Widget? leading;
 
   static const Duration animationDuration = Duration(milliseconds: 400);
@@ -361,6 +366,7 @@ class _DesignSystemFilterChoicePillState
               child: InkWell(
                 borderRadius: borderRadius,
                 onTap: widget.onTap,
+                onLongPress: widget.onLongPress,
                 child: child,
               ),
             );

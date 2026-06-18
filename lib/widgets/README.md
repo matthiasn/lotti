@@ -38,10 +38,19 @@ Glass-styled back button for use over images. Wraps `GlassActionButton` with a c
 Container with a dark, blurred glass background for overlay icons, keeping them visible over images of varying brightness.
 
 ### JournalFilter
-Filter widget for journal entries with various filtering options.
+The starred / flagged / private display toggles for the logbook filter. These are
+three independent booleans, so they render as multi-select design-system choice
+pills (`DesignSystemFilterChoicePill`) with icon + label — matching the entry-type
+and tasks filters — rather than a single-select segmented control.
+
+### LogbookFilterSheet
+The full logbook filter shown in the filter modal: labeled sections ("Show",
+"Entry types", "Category") composing `JournalFilter`, `EntryTypeFilter`, and the
+category filter. Mirrors the sectioned structure of the tasks filter sheet so the
+two filters read as one system.
 
 ### JournalFilterIcon
-Icon component for the journal filter, providing visual feedback for active filters.
+Icon component for the journal filter; opens [LogbookFilterSheet] in a modal.
 
 ### JournalSliverAppBar
 A sliver app bar specifically designed for journal pages with scrolling behavior.
@@ -304,10 +313,11 @@ Chip for selecting/deselecting all entry types at once.
 Individual chip for each entry type in the filter.
 
 ### EntryTypeFilter
-Complete filter component for entry types.
-
-### FilterChoiceChip
-Generic choice chip for filter options.
+Entry-type multi-select for the logbook filter. Renders the same design-system
+choice pills the tasks filter uses, each carrying the type's feed glyph (via
+`entryTypeIcon`) so the filter and the list share one visual vocabulary. Selected
+pills use the shared teal accent; long-pressing a pill isolates the filter to that
+single type.
 
 ### LottiSearchBar
 Main search widget with text input and search functionality.

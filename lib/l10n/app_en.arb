@@ -2491,6 +2491,10 @@
       }
     }
   },
+  "habitCompletionStatusCompleted": "Completed",
+  "habitCompletionStatusFailed": "Failed",
+  "habitCompletionStatusOpen": "Open",
+  "habitCompletionStatusSkipped": "Skipped",
   "habitDashboardHint": "Select a dashboard",
   "habitDashboardLabel": "Dashboard (optional)",
   "habitDayStatusSemantic": "{habit}, {status}",
@@ -2801,6 +2805,11 @@
   "journalEndsAnotherDayLabel": "Ends on another day",
   "journalEndTimeLabel": "End time",
   "journalFavoriteTooltip": "starred only",
+  "journalFilterEntryTypesTitle": "Entry types",
+  "journalFilterFlagged": "Flagged",
+  "journalFilterPrivate": "Private",
+  "journalFilterShowTitle": "Show",
+  "journalFilterStarred": "Starred",
   "journalFlaggedTooltip": "flagged only",
   "journalHideLinkHint": "Hide link",
   "journalHideMapHint": "Hide map",

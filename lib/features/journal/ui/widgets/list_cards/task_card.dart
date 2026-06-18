@@ -3,16 +3,18 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/utils/color.dart';
 import 'package:lotti/widgets/cards/index.dart';
 
 /// A modern task card with gradient styling matching the settings page design.
@@ -46,6 +48,7 @@ class ModernTaskCard extends StatelessWidget {
 
     return ModernBaseCard(
       onTap: onTap,
+      backgroundColor: dsCardSurface(context),
       margin: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: AppTheme.cardSpacing / 2,
@@ -60,7 +63,17 @@ class ModernTaskCard extends StatelessWidget {
             ),
       child: hasCoverArt
           ? _buildWithCoverArt(context, coverArtId)
-          : _buildStandardContent(context),
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TintedTypeGlyph(
+                  icon: Icons.check_circle_outline_rounded,
+                  color: _glyphColor(context),
+                ),
+                const SizedBox(width: AppTheme.spacingLarge),
+                Expanded(child: _buildStandardContent(context)),
+              ],
+            ),
     );
   }
 
@@ -102,12 +115,26 @@ class ModernTaskCard extends StatelessWidget {
     BuildContext context, {
     bool hasCoverArt = false,
   }) {
+    // An empty task title would otherwise render as a blank gap; surface the
+    // localized "(untitled)" placeholder in the error colour (italic), matching
+    // the tasks list item, so the missing title is obvious.
+    final isUntitled = task.data.title.trim().isEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         ModernCardContent(
-          title: task.data.title,
+          title: isUntitled ? context.messages.taskUntitled : task.data.title,
+          titleStyle: isUntitled
+              ? context.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: AppTheme.letterSpacingTitle,
+                  fontSize: AppTheme.titleFontSize,
+                  color: context.colorScheme.error,
+                  fontStyle: FontStyle.italic,
+                )
+              : null,
           maxTitleLines: 3,
           subtitleWidget: _buildSubtitleWidget(
             context,
@@ -176,6 +203,18 @@ class ModernTaskCard extends StatelessWidget {
     );
   }
 
+  /// The glyph tile is tinted by the task's category colour (the icon shape
+  /// still says "task"), matching the rest of the logbook's category-coloured
+  /// rail; falls back to the primary accent when uncategorised.
+  Color _glyphColor(BuildContext context) {
+    final category = getIt<EntitiesCacheService>().getCategoryById(
+      task.meta.categoryId,
+    );
+    return category != null
+        ? colorFromCssHex(category.color)
+        : context.colorScheme.primary;
+  }
+
   Widget _buildSubtitleWidget(
     BuildContext context, {
     bool hasCoverArt = false,
@@ -203,8 +242,6 @@ class ModernTaskCard extends StatelessWidget {
                   icon: _getStatusIcon(task.data.status),
                 ),
               ),
-              const SizedBox(width: 6),
-              CategoryIconCompact(task.meta.categoryId),
             ],
           ),
           const SizedBox(height: 6),
@@ -228,9 +265,6 @@ class ModernTaskCard extends StatelessWidget {
           color: task.data.status.colorForBrightness(brightness),
           icon: _getStatusIcon(task.data.status),
         ),
-        const SizedBox(width: 6),
-        // Inline category icon after status chip for better chip alignment
-        CategoryIconCompact(task.meta.categoryId),
         const Spacer(),
         CompactTaskProgress(taskId: task.id),
       ],

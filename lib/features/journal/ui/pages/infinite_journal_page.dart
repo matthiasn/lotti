@@ -3,6 +3,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
@@ -37,6 +38,10 @@ class InfiniteJournalPage extends ConsumerWidget {
         journalPageScopeProvider.overrideWithValue(false),
       ],
       child: Scaffold(
+        // Adopt the shared "card-on-canvas" surface (as on Tasks, Habits and
+        // Time Analysis): a calm page canvas a step darker than the cards,
+        // instead of the near-black default scaffold.
+        backgroundColor: dsPageSurface(context),
         floatingActionButton: FloatingAddActionButton(categoryId: categoryId),
         body: const _InfiniteJournalPageBody(),
       ),
