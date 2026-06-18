@@ -172,65 +172,95 @@ class _InspectorContent extends StatelessWidget {
           cat: cat,
         ),
         Expanded(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(tokens.spacing.cardPadding),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Full title — never truncated; this is the node's identity.
-                Text(
-                  node.label,
-                  style: tokens.typography.styles.heading.heading2.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                if (summary != null) ...[
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  _SectionLabel(label: 'SUMMARY', cat: cat, tokens: tokens),
-                  SizedBox(height: tokens.spacing.step3),
-                  if (summary.lede.isNotEmpty)
+          child: Stack(
+            children: [
+              SingleChildScrollView(
+                padding: EdgeInsets.all(tokens.spacing.cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Full title — never truncated; this is the node's identity.
                     Text(
-                      summary.lede,
-                      style: tokens.typography.styles.body.bodyLarge.copyWith(
+                      node.label,
+                      style: tokens.typography.styles.heading.heading2.copyWith(
                         color: tokens.colors.text.highEmphasis,
                       ),
                     ),
-                  if (summary.body.isNotEmpty) ...[
-                    SizedBox(height: tokens.spacing.step3),
-                    Text(
-                      summary.body,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                        height: 1.5,
+                    if (summary != null) ...[
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      _SectionLabel(label: 'SUMMARY', cat: cat, tokens: tokens),
+                      SizedBox(height: tokens.spacing.step3),
+                      if (summary.lede.isNotEmpty)
+                        Text(
+                          summary.lede,
+                          style: tokens.typography.styles.body.bodyLarge
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                      if (summary.body.isNotEmpty) ...[
+                        SizedBox(height: tokens.spacing.step3),
+                        Text(
+                          summary.body,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                                height: 1.5,
+                              ),
+                        ),
+                      ],
+                    ],
+                    if (neighbors.isNotEmpty) ...[
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      _SectionLabel(
+                        label: 'LINKED · ${neighbors.length}',
+                        cat: cat,
+                        tokens: tokens,
+                      ),
+                      SizedBox(height: tokens.spacing.step2),
+                      for (final n in neighbors)
+                        _TimelineItem(
+                          node: n,
+                          ageLabel: relativeAge(now.difference(n.createdAt)),
+                          categoryLabel:
+                              categoryNames[n.categoryId] ?? n.categoryId,
+                          color: style
+                              .edgeVisual(relStyleForNeighborType(n.type))
+                              .color,
+                          tokens: tokens,
+                          onTap: onNeighborTap == null
+                              ? null
+                              : () => onNeighborTap!(n.id),
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+              // Bottom fade — signals "more below" when the timeline scrolls,
+              // dissolving the last row into the surface rather than cutting it.
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: tokens.spacing.sectionGap,
+                child: IgnorePointer(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          tokens.colors.background.level01.withValues(alpha: 0),
+                          tokens.colors.background.level01.withValues(
+                            alpha: 0.82,
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ],
-                if (neighbors.isNotEmpty) ...[
-                  SizedBox(height: tokens.spacing.sectionGap),
-                  _SectionLabel(
-                    label: 'LINKED · ${neighbors.length}',
-                    cat: cat,
-                    tokens: tokens,
                   ),
-                  SizedBox(height: tokens.spacing.step2),
-                  for (final n in neighbors)
-                    _TimelineItem(
-                      node: n,
-                      ageLabel: relativeAge(now.difference(n.createdAt)),
-                      categoryLabel:
-                          categoryNames[n.categoryId] ?? n.categoryId,
-                      color: style
-                          .edgeVisual(relStyleForNeighborType(n.type))
-                          .color,
-                      tokens: tokens,
-                      onTap: onNeighborTap == null
-                          ? null
-                          : () => onNeighborTap!(n.id),
-                    ),
-                ],
-              ],
-            ),
+                ),
+              ),
+            ],
           ),
         ),
         _Footer(createdLabel: createdLabel, cat: cat, tokens: tokens),
@@ -414,8 +444,14 @@ class _TimelineItem extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: EdgeInsets.only(top: tokens.spacing.step1),
+            // Relation-colour swatch — a tinted chip behind the glyph so the
+            // relation class reads at a glance, not just the icon shape.
+            Container(
+              padding: EdgeInsets.all(tokens.spacing.step1),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(tokens.radii.smallChips),
+              ),
               child: Icon(glyphForType(node.type), size: 16, color: color),
             ),
             SizedBox(width: tokens.spacing.step3),
@@ -434,7 +470,7 @@ class _TimelineItem extends StatelessWidget {
                   Text(
                     '${typeLabel(node.type)} · $ageLabel',
                     style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
+                      color: tokens.colors.text.mediumEmphasis,
                     ),
                   ),
                 ],
