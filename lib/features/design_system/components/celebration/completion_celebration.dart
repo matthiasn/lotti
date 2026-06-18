@@ -29,6 +29,7 @@ class CompletionCelebration extends StatefulWidget {
     this.burstOrigin = const Alignment(0, -0.6),
     this.showBurst = true,
     this.glow = true,
+    this.glowIntensity = 1.0,
     this.anchorScale = false,
     this.duration = const Duration(milliseconds: 1400),
     this.burstCount = 50,
@@ -54,6 +55,11 @@ class CompletionCelebration extends StatefulWidget {
 
   /// When false, the glow halo is skipped.
   final bool glow;
+
+  /// Scales the glow's peak opacity (1.0 = full). Lower it for a section-level
+  /// completion that already celebrates per item, so the bloom reads as a soft
+  /// acknowledgement rather than a blinding flash.
+  final double glowIntensity;
 
   /// Length of the celebration timeline. The glow/burst windows scale with it.
   final Duration duration;
@@ -167,7 +173,11 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
                 final v = _stageProgress(_controller.value, 0.08, 0.78);
                 return v == null
                     ? const SizedBox.shrink()
-                    : CompletionGlow(value: v, staticGlow: reduceMotion);
+                    : CompletionGlow(
+                        value: v,
+                        staticGlow: reduceMotion,
+                        intensity: widget.glowIntensity,
+                      );
               },
             ),
           ),

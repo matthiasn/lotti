@@ -199,9 +199,14 @@ class _ChecklistCardState extends State<ChecklistCard> {
     // second burst painted across the whole section read as chaotic particle
     // flashes. The glow halo is the "whole checklist done" beat; the checkbox
     // sparks are the "this item done" beat. Fires only on the transition.
+    //
+    // The glow runs at a low intensity: the per-item bursts already carry the
+    // celebration, so a full-strength bloom across the whole card read as a
+    // blinding flash. This is a soft acknowledgement layered under the sparks.
     return CompletionCelebration(
       completed: total > 0 && widget.completionRate >= 1.0,
       showBurst: false,
+      glowIntensity: 0.1,
       onCelebrate: () => unawaited(HapticFeedback.mediumImpact()),
       child: Material(
         color: Colors.transparent,
