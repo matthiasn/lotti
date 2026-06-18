@@ -4867,6 +4867,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitCategoryLabel => 'Kategorie';
 
   @override
+  String get habitCloseCompletionLabel => 'Zavřít záznam návyku';
+
+  @override
   String habitCompleteSemanticLabel(String habit) {
     return 'Zaznamenat $habit';
   }
@@ -4907,7 +4910,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String habitsActiveHabitsCount(int count) {
-    return '$count aktivních návyků';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aktivních návyků',
+      few: '$count aktivní návyky',
+      one: '1 aktivní návyk',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -4985,7 +4995,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitsRollingAverageLabel => '7denní průměr';
 
   @override
-  String get habitsStartStreakToday => 'Začněte sérii ještě dnes';
+  String get habitsStartStreakToday => 'Začni sérii ještě dnes';
 
   @override
   String habitsStreakLongCount(int count) {
@@ -4998,16 +5008,30 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get habitsTapForBreakdown => 'Klepnutím na den zobrazíte rozpis';
+  String get habitsTapForBreakdown => 'Klepnutím na den zobrazíš rozpis';
 
   @override
   String habitsToGoCount(int count) {
-    return 'zbývá $count';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'zbývá $count',
+      few: 'zbývají $count',
+      one: 'zbývá 1',
+    );
+    return '$_temp0';
   }
 
   @override
   String habitStreakDaysSemantic(int count) {
-    return '$count dní v řadě';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dní v řadě',
+      few: '$count dny v řadě',
+      one: '1 den v řadě',
+    );
+    return '$_temp0';
   }
 
   @override

@@ -8424,6 +8424,12 @@ abstract class AppLocalizations {
   /// **'Category'**
   String get habitCategoryLabel;
 
+  /// No description provided for @habitCloseCompletionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close habit completion'**
+  String get habitCloseCompletionLabel;
+
   /// No description provided for @habitCompleteSemanticLabel.
   ///
   /// In en, this message translates to:
@@ -8493,7 +8499,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsActiveHabitsCount.
   ///
   /// In en, this message translates to:
-  /// **'{count} active habits'**
+  /// **'{count, plural, one{1 active habit} other{{count} active habits}}'**
   String habitsActiveHabitsCount(int count);
 
   /// No description provided for @habitsAllDoneToday.

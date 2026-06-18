@@ -2482,6 +2482,7 @@
   "habitArchivedLabel": "Archived",
   "habitCategoryHint": "Select a category",
   "habitCategoryLabel": "Category",
+  "habitCloseCompletionLabel": "Close habit completion",
   "habitCompleteSemanticLabel": "Record {habit}",
   "@habitCompleteSemanticLabel": {
     "placeholders": {
@@ -2523,7 +2524,7 @@
   "habitNotRecordedLabel": "Not recorded",
   "habitPriorityLabel": "Priority",
   "habitsAboveGoal": "On track",
-  "habitsActiveHabitsCount": "{count} active habits",
+  "habitsActiveHabitsCount": "{count, plural, one{1 active habit} other{{count} active habits}}",
   "@habitsActiveHabitsCount": {
     "placeholders": {
       "count": {

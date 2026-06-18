@@ -200,6 +200,9 @@ class _HistoryStrip extends StatelessWidget {
       message: chartDateFormatter(res.dayString),
       child: Semantics(
         label: messages.habitDayStatusSemantic(habitName, statusWord),
+        // The date distinguishes same-status cells for screen readers (the
+        // visual tooltip is excluded from semantics above).
+        value: chartDateFormatter(res.dayString),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(showGaps ? tokens.radii.xs : 0),
           child: Container(

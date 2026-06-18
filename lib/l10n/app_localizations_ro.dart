@@ -4905,6 +4905,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitCategoryLabel => 'Categorie';
 
   @override
+  String get habitCloseCompletionLabel => 'Închide înregistrarea obiceiului';
+
+  @override
   String habitCompleteSemanticLabel(String habit) {
     return 'Înregistrează $habit';
   }
@@ -4928,7 +4931,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
-    return '$date, $done din $total realizate';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total realizate',
+      few: '$total realizate',
+      one: '1 realizat',
+    );
+    return '$date, $done din $_temp0';
   }
 
   @override
@@ -4946,7 +4956,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String habitsActiveHabitsCount(int count) {
-    return '$count obiceiuri active';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de obiceiuri active',
+      few: '$count obiceiuri active',
+      one: '1 obicei activ',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5041,12 +5058,26 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String habitsToGoCount(int count) {
-    return '$count rămase';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rămase',
+      few: '$count rămase',
+      one: '1 rămasă',
+    );
+    return '$_temp0';
   }
 
   @override
   String habitStreakDaysSemantic(int count) {
-    return '$count zile la rând';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile la rând',
+      few: '$count zile la rând',
+      one: '1 zi la rând',
+    );
+    return '$_temp0';
   }
 
   @override

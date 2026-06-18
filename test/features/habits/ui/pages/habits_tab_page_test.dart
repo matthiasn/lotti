@@ -337,7 +337,17 @@ void main() {
         await pump(tester, testState);
 
         expect(find.text('All done today'), findsOneWidget);
-        expect(find.textContaining('to go'), findsNothing);
+        // No "N to go" remaining-count pill. (Excludes the chart's "pts to
+        // goal" chip, which also contains the substring "to go".)
+        expect(
+          find.byWidgetPredicate(
+            (w) =>
+                w is Text &&
+                (w.data?.contains('to go') ?? false) &&
+                !w.data!.contains('to goal'),
+          ),
+          findsNothing,
+        );
       },
     );
 

@@ -4807,6 +4807,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitCategoryLabel => 'Category';
 
   @override
+  String get habitCloseCompletionLabel => 'Close habit completion';
+
+  @override
   String habitCompleteSemanticLabel(String habit) {
     return 'Record $habit';
   }
@@ -4847,7 +4850,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String habitsActiveHabitsCount(int count) {
-    return '$count active habits';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active habits',
+      one: '1 active habit',
+    );
+    return '$_temp0';
   }
 
   @override

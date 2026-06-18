@@ -1,4 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -223,6 +224,25 @@ void main() {
       expect(find.textContaining('% successful'), findsOneWidget);
       expect(find.textContaining('% skipped'), findsOneWidget);
       expect(find.textContaining('% recorded fails'), findsOneWidget);
+    });
+
+    testWidgets('a pointer-exit is wired and a no-op with no selection', (
+      tester,
+    ) async {
+      await pumpChart(tester);
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      // The hover/scrub-exit clear is wired (so the breakdown snaps back to the
+      // headline on pointer-exit rather than waiting out the idle debounce).
+      expect(chart.data.lineTouchData.touchCallback, isNotNull);
+
+      // With nothing selected the guard short-circuits: no clear is scheduled
+      // and nothing throws.
+      chart.data.lineTouchData.touchCallback!(
+        const FlPointerExitEvent(PointerExitEvent()),
+        null,
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
 
     for (final edgeCase in [

@@ -197,7 +197,7 @@ Map<String, int> currentStreaksByHabit({
 int _streakFromKeptDays(Set<String> keptDays, String todayYmd) {
   var cursor = DateTime.parse(todayYmd);
   if (!keptDays.contains(cursor.ymd)) {
-    cursor = cursor.subtract(const Duration(days: 1));
+    cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
     if (!keptDays.contains(cursor.ymd)) {
       return 0;
     }
@@ -205,7 +205,7 @@ int _streakFromKeptDays(Set<String> keptDays, String todayYmd) {
   var streak = 0;
   while (keptDays.contains(cursor.ymd)) {
     streak++;
-    cursor = cursor.subtract(const Duration(days: 1));
+    cursor = DateTime(cursor.year, cursor.month, cursor.day - 1);
   }
   return streak;
 }

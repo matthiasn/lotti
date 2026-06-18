@@ -68,8 +68,27 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
   /// in the order until their exit animation reports back via [_finishRemoval].
   final Set<String> _leaving = {};
 
-  /// Last seen `successfulToday`, to detect the completion transition in build.
-  Set<String> _prevSuccessful = {};
+  /// Pins any habit that just flipped to done in the open section and schedules
+  /// its collapse-out. Called from a `ref.listen` (not `build`) so the side
+  /// effect fires once per real transition rather than on every rebuild.
+  void _scheduleLingerForNewlyDone(HabitsState? previous, HabitsState next) {
+    final newlyDone = next.successfulToday.difference(
+      previous?.successfulToday ?? const <String>{},
+    );
+    for (final id in newlyDone) {
+      if (_openOrder.contains(id) && !_lingering.contains(id)) {
+        _lingering.add(id);
+        _lingerTimers[id]?.cancel();
+        // When the linger ends, mark the row leaving so it collapses out
+        // gracefully (see [_CollapsibleRow]) rather than popping; the row is
+        // dropped from the order once that exit animation completes.
+        _lingerTimers[id] = Timer(_lingerDuration, () {
+          if (!mounted) return;
+          setState(() => _leaving.add(id));
+        });
+      }
+    }
+  }
 
   /// Drops a row from the open section once its collapse-out animation finishes.
   void _finishRemoval(String id) {
@@ -98,9 +117,10 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
     super.dispose();
   }
 
-  /// Returns the open-section habits in stable order, pinning any that just
-  /// flipped to done for [_lingerDuration] so their celebration can play in
-  /// place. Mutates the linger bookkeeping and schedules removal timers.
+  /// Returns the open-section habits in stable order, keeping any lingering
+  /// (just-completed) rows pinned in place. A pure projection of the current
+  /// state + linger bookkeeping — the transition detection and removal timers
+  /// live in [_scheduleLingerForNewlyDone], driven by a `ref.listen`.
   List<HabitDefinition> _openWithLinger(HabitsState state) {
     final byId = <String, HabitDefinition>{
       for (final h in [
@@ -110,23 +130,6 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
       ])
         h.id: h,
     };
-
-    // Pin habits that just flipped to done while shown in the open section.
-    final newlyDone = state.successfulToday.difference(_prevSuccessful);
-    _prevSuccessful = state.successfulToday.toSet();
-    for (final id in newlyDone) {
-      if (_openOrder.contains(id) && !_lingering.contains(id)) {
-        _lingering.add(id);
-        _lingerTimers[id]?.cancel();
-        // When the linger ends, mark the row leaving so it collapses out
-        // gracefully (see [_CollapsibleRow]) rather than popping; the row is
-        // dropped from the order once that exit animation completes.
-        _lingerTimers[id] = Timer(_lingerDuration, () {
-          if (!mounted) return;
-          setState(() => _leaving.add(id));
-        });
-      }
-    }
 
     // Keep order: drop rows that are neither open nor lingering, append new
     // open habits at the end.
@@ -154,6 +157,11 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
     final messages = context.messages;
     final state = ref.watch(habitsControllerProvider);
     final streaks = ref.watch(habitHeatmapControllerProvider).streaksByHabit;
+
+    // Detect the just-completed transition and schedule the linger here, in a
+    // listener, so the timer side effect fires once per real change rather than
+    // on every (possibly framework-driven) rebuild.
+    ref.listen(habitsControllerProvider, _scheduleLingerForNewlyDone);
 
     // One content width for every block (header, summary, list, heatmap, chart):
     // capped + centred on a wide window, full-bleed minus a gutter when narrow.

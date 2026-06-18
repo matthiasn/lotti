@@ -34,6 +34,10 @@ class HabitHeatmapController extends _$HabitHeatmapController {
   List<JournalEntity> _habitCompletions = [];
   Set<String> _selectedCategoryIds = const {};
 
+  /// Monotonic guard so overlapping refreshes can't let an older fetch finish
+  /// last and overwrite fresher completions with stale data.
+  int _refreshEpoch = 0;
+
   /// Never show more than this far back, regardless of how old the earliest
   /// habit is — a guard against a single ancient `activeFrom` producing a
   /// decade-wide grid.
@@ -67,9 +71,7 @@ class HabitHeatmapController extends _$HabitHeatmapController {
       definitions,
     ) async {
       _habitDefinitions = definitions.where((h) => h.active).toList();
-      await _fetchHabitCompletions();
-      if (!ref.mounted) return;
-      _recompute();
+      await _refreshAndRecompute();
     });
 
     Future.microtask(_startWatching);
@@ -85,17 +87,22 @@ class HabitHeatmapController extends _$HabitHeatmapController {
     if (!ref.mounted) return;
     _updateSubscription = _repository.updateStream.listen((affectedIds) async {
       if (affectedIds.contains(habitCompletionNotification)) {
-        await _fetchHabitCompletions();
-        if (!ref.mounted) return;
-        _recompute();
+        await _refreshAndRecompute();
       }
     });
   }
 
-  Future<void> _fetchHabitCompletions() async {
-    _habitCompletions = await _repository.getHabitCompletionsInRange(
+  /// Fetches the wide completion range and recomputes, but only applies the
+  /// result if no newer refresh started in the meantime — so concurrent
+  /// definition/completion events can't regress the grid to stale data.
+  Future<void> _refreshAndRecompute() async {
+    final epoch = ++_refreshEpoch;
+    final completions = await _repository.getHabitCompletionsInRange(
       rangeStart: _rangeStart(clock.now()),
     );
+    if (!ref.mounted || epoch != _refreshEpoch) return;
+    _habitCompletions = completions;
+    _recompute();
   }
 
   /// Earliest day the grid covers: the earlier of the oldest habit's

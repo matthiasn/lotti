@@ -4868,6 +4868,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitCategoryLabel => 'Kategorie';
 
   @override
+  String get habitCloseCompletionLabel => 'Gewohnheitserfassung schließen';
+
+  @override
   String habitCompleteSemanticLabel(String habit) {
     return '$habit eintragen';
   }
@@ -4908,7 +4911,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String habitsActiveHabitsCount(int count) {
-    return '$count aktive Gewohnheiten';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aktive Gewohnheiten',
+      one: '1 aktive Gewohnheit',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5009,7 +5018,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String habitStreakDaysSemantic(int count) {
-    return '$count Tage in Folge';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Tage in Folge',
+      one: '1 Tag in Folge',
+    );
+    return '$_temp0';
   }
 
   @override

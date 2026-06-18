@@ -2672,10 +2672,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get completeHabitFailButton => 'Manqué';
 
   @override
-  String get completeHabitSkipButton => 'Ignorer';
+  String get completeHabitSkipButton => 'Ignoré';
 
   @override
-  String get completeHabitSuccessButton => 'Succès';
+  String get completeHabitSuccessButton => 'Réussi';
 
   @override
   String get configFlagAttemptEmbeddingDescription =>
@@ -4907,6 +4907,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitCategoryLabel => 'Catégorie';
 
   @override
+  String get habitCloseCompletionLabel => 'Fermer la saisie d\'habitude';
+
+  @override
   String habitCompleteSemanticLabel(String habit) {
     return 'Enregistrer $habit';
   }
@@ -4930,7 +4933,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String habitHeatmapDaySemantic(String date, int done, int total) {
-    return '$date, $done sur $total faits';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total faits',
+      one: '1 fait',
+    );
+    return '$date, $done sur $_temp0';
   }
 
   @override
@@ -4948,7 +4957,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String habitsActiveHabitsCount(int count) {
-    return '$count habitudes actives';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count habitudes actives',
+      one: '1 habitude active',
+    );
+    return '$_temp0';
   }
 
   @override
@@ -5048,7 +5063,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String habitStreakDaysSemantic(int count) {
-    return '$count jours d\'affilée';
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours d\'\'affilée',
+      one: '1 jour d\'\'affilée',
+    );
+    return '$_temp0';
   }
 
   @override

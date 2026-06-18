@@ -115,5 +115,8 @@ class _BurstPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_BurstPainter oldDelegate) =>
-      oldDelegate.progress != progress;
+      oldDelegate.progress != progress ||
+      oldDelegate.origin != origin ||
+      oldDelegate.accent != accent ||
+      oldDelegate.gold != gold;
 }

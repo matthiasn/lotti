@@ -108,6 +108,23 @@ class HabitCompletionRateChart extends ConsumerWidget
             child: LineChart(
               LineChartData(
                 lineTouchData: LineTouchData(
+                  touchCallback: (event, response) {
+                    // On desktop the breakdown follows the hover; the moment the
+                    // pointer leaves the plot (or a touch ends), snap back to the
+                    // headline instead of waiting out the controller's idle
+                    // auto-clear.
+                    // Note: a plain tap (FlTapUpEvent) is the mobile
+                    // tap-to-inspect gesture, so it's deliberately not a clear.
+                    final ended =
+                        event is FlPointerExitEvent ||
+                        event is FlPanEndEvent ||
+                        event is FlLongPressEnd;
+                    if (ended && state.selectedInfoYmd.isNotEmpty) {
+                      SchedulerBinding.instance.addPostFrameCallback((_) {
+                        controller.setInfoYmd('');
+                      });
+                    }
+                  },
                   touchTooltipData: LineTouchTooltipData(
                     getTooltipColor: (_) => Colors.transparent,
                     getTooltipItems: (List<LineBarSpot> spots) {
@@ -201,6 +218,11 @@ class HabitCompletionRateChart extends ConsumerWidget
                     color: tokens.colors.decorative.level01,
                   ),
                 ),
+                // Clip to the plot rect: switching time span animates between
+                // different-length spot lists, and the curved hero line can
+                // briefly overshoot 0–100 mid-tween — clipping keeps it inside
+                // the axes instead of bleeding over the labels.
+                clipData: const FlClipData.all(),
                 minX: 0,
                 maxX: maxX,
                 minY: state.zeroBased ? 0 : state.minY,

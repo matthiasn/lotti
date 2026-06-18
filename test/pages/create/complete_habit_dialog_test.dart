@@ -313,7 +313,7 @@ void main() {
       final closeButton = find.byWidgetPredicate(
         (widget) =>
             widget is Semantics &&
-            widget.properties.label == 'close habit completion',
+            widget.properties.label == 'Close habit completion',
       );
       expect(closeButton, findsOneWidget);
 
