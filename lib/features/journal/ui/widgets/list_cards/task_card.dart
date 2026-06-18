@@ -10,6 +10,7 @@ import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import 'package:lotti/features/tasks/ui/time_recording_icon.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
@@ -114,12 +115,26 @@ class ModernTaskCard extends StatelessWidget {
     BuildContext context, {
     bool hasCoverArt = false,
   }) {
+    // An empty task title would otherwise render as a blank gap; surface the
+    // localized "(untitled)" placeholder in the error colour (italic), matching
+    // the tasks list item, so the missing title is obvious.
+    final isUntitled = task.data.title.trim().isEmpty;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
         ModernCardContent(
-          title: task.data.title,
+          title: isUntitled ? context.messages.taskUntitled : task.data.title,
+          titleStyle: isUntitled
+              ? context.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: AppTheme.letterSpacingTitle,
+                  fontSize: AppTheme.titleFontSize,
+                  color: context.colorScheme.error,
+                  fontStyle: FontStyle.italic,
+                )
+              : null,
           maxTitleLines: 3,
           subtitleWidget: _buildSubtitleWidget(
             context,

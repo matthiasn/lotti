@@ -161,6 +161,25 @@ void main() {
     expect(find.byType(TintedTypeGlyph), findsOneWidget);
   });
 
+  testWidgets('renders the (untitled) placeholder for an empty title', (
+    tester,
+  ) async {
+    final task = buildTask().copyWith(
+      data: buildTask().data.copyWith(title: ''),
+    );
+
+    await pumpTaskCard(tester, ModernTaskCard(task: task));
+
+    final context = tester.element(find.byType(ModernTaskCard));
+    final untitled = AppLocalizations.of(context)!.taskUntitled;
+
+    // The empty title is replaced by the localized "(untitled)" placeholder,
+    // rendered italic in the error colour so the gap is obvious.
+    final placeholder = tester.widget<Text>(find.text(untitled));
+    expect(placeholder.style?.color, Theme.of(context).colorScheme.error);
+    expect(placeholder.style?.fontStyle, FontStyle.italic);
+  });
+
   testWidgets('shows due date icon when due is set', (tester) async {
     final now = DateTime(2025, 11, 3, 12);
     final task = buildTask().copyWith(
