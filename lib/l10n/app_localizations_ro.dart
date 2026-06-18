@@ -5652,6 +5652,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Sigur doriți să despărțiți această intrare?';
 
   @override
+  String get knowledgeGraphEmpty => 'Încă nu există legături de explorat';
+
+  @override
+  String get knowledgeGraphTitle => 'Graf de cunoștințe';
+
+  @override
+  String get knowledgeGraphTooltip => 'Explorați legăturile';
+
+  @override
   String get linkedFromCaption => 'de la';
 
   @override

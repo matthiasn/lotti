@@ -160,10 +160,17 @@ class GraphStyle {
     required this.labelPill,
     required this.categoryPalette,
     required this.relVisuals,
+    this.categoryColors,
+    this.neutralCategory = const Color(0xFF9E9E9E),
   });
 
-  factory GraphStyle.fromTokens(DsTokens t) {
+  factory GraphStyle.fromTokens(
+    DsTokens t, {
+    Map<String, Color>? categoryColors,
+  }) {
     return GraphStyle(
+      categoryColors: categoryColors,
+      neutralCategory: t.colors.text.mediumEmphasis,
       background: t.colors.background.level01,
       backgroundDeep: t.colors.background.alternative01,
       vignetteLift: t.colors.background.level03,
@@ -245,9 +252,18 @@ class GraphStyle {
   final TextStyle titleStyle;
   final Color labelPill;
   final Map<String, Color> categoryPalette;
+
+  /// Real category id → color (from `CategoryDefinition`s). When present it
+  /// takes precedence over the synthetic [categoryPalette]; unknown ids fall
+  /// back to [neutralCategory].
+  final Map<String, Color>? categoryColors;
+  final Color neutralCategory;
   final Map<RelStyle, EdgeVisual> relVisuals;
 
   Color categoryColor(String categoryId) {
+    // Real category colors win when wired to live data.
+    final real = categoryColors;
+    if (real != null) return real[categoryId] ?? neutralCategory;
     final direct = categoryPalette[categoryId];
     if (direct != null) return direct;
     final values = categoryPalette.values.toList();

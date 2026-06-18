@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/task_knowledge_graph_page.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
@@ -80,6 +81,18 @@ class TaskExpandableAppBar extends ConsumerWidget {
 
   List<Widget> _buildGlassActions(BuildContext context) {
     return [
+      GlassActionButton(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => TaskKnowledgeGraphPage(taskId: task.id),
+          ),
+        ),
+        child: const Icon(
+          Icons.hub_outlined,
+          size: 26,
+          color: Colors.white,
+        ),
+      ),
       GlassActionButton(
         onTap: () => ExtendedHeaderModal.show(
           context: context,

@@ -5647,6 +5647,15 @@ class AppLocalizationsFr extends AppLocalizations {
       'Es-tu sûr de vouloir dissocier cette entrée ?';
 
   @override
+  String get knowledgeGraphEmpty => 'Aucun lien à explorer pour le moment';
+
+  @override
+  String get knowledgeGraphTitle => 'Graphe de connaissances';
+
+  @override
+  String get knowledgeGraphTooltip => 'Explorer les liens';
+
+  @override
   String get linkedFromCaption => 'depuis';
 
   @override

@@ -5639,6 +5639,15 @@ class AppLocalizationsEs extends AppLocalizations {
       '¿Estás seguro de que quieres desvincular esta entrada?';
 
   @override
+  String get knowledgeGraphEmpty => 'Aún no hay enlaces para explorar';
+
+  @override
+  String get knowledgeGraphTitle => 'Grafo de conocimiento';
+
+  @override
+  String get knowledgeGraphTooltip => 'Explorar enlaces';
+
+  @override
   String get linkedFromCaption => 'desde';
 
   @override

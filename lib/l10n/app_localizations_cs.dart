@@ -5597,6 +5597,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalUnlinkQuestion => 'Opravdu chcete tento záznam odepnout?';
 
   @override
+  String get knowledgeGraphEmpty => 'Zatím žádné odkazy k prozkoumání';
+
+  @override
+  String get knowledgeGraphTitle => 'Graf znalostí';
+
+  @override
+  String get knowledgeGraphTooltip => 'Prozkoumat odkazy';
+
+  @override
   String get linkedFromCaption => 'z';
 
   @override

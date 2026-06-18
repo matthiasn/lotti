@@ -9714,6 +9714,24 @@ abstract class AppLocalizations {
   /// **'Are you sure you want to unlink this entry?'**
   String get journalUnlinkQuestion;
 
+  /// No description provided for @knowledgeGraphEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No links to explore yet'**
+  String get knowledgeGraphEmpty;
+
+  /// No description provided for @knowledgeGraphTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Knowledge graph'**
+  String get knowledgeGraphTitle;
+
+  /// No description provided for @knowledgeGraphTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore links'**
+  String get knowledgeGraphTooltip;
+
   /// No description provided for @linkedFromCaption.
   ///
   /// In en, this message translates to:

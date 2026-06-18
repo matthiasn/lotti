@@ -4,9 +4,11 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/task_knowledge_graph_page.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
@@ -74,6 +76,18 @@ class TaskCompactAppBar extends ConsumerWidget {
 
   List<Widget> _buildActions(BuildContext context) {
     return [
+      IconButton(
+        icon: Icon(
+          Icons.hub_outlined,
+          color: context.colorScheme.outline,
+        ),
+        tooltip: context.messages.knowledgeGraphTooltip,
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => TaskKnowledgeGraphPage(taskId: task.id),
+          ),
+        ),
+      ),
       IconButton(
         icon: Icon(
           Icons.more_horiz,

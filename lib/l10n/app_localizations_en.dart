@@ -5526,6 +5526,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Are you sure you want to unlink this entry?';
 
   @override
+  String get knowledgeGraphEmpty => 'No links to explore yet';
+
+  @override
+  String get knowledgeGraphTitle => 'Knowledge graph';
+
+  @override
+  String get knowledgeGraphTooltip => 'Explore links';
+
+  @override
   String get linkedFromCaption => 'from';
 
   @override

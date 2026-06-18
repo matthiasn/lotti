@@ -20,6 +20,7 @@ import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_painter.da
 class KnowledgeGraphView extends StatefulWidget {
   const KnowledgeGraphView({
     this.scenario,
+    this.categoryColors,
     this.initialFocusId,
     this.initialPreviousFocusId,
     this.showTitle = true,
@@ -29,6 +30,10 @@ class KnowledgeGraphView extends StatefulWidget {
   });
 
   final GraphScenario? scenario;
+
+  /// Real category id → color (from `CategoryDefinition`s). When null the
+  /// synthetic palette is used (the standalone POC scenarios).
+  final Map<String, Color>? categoryColors;
 
   /// Optional starting focus (defaults to the scenario seed) — lets a capture
   /// show a "walked-to" state deterministically.
@@ -293,7 +298,10 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final style = GraphStyle.fromTokens(tokens);
+    final style = GraphStyle.fromTokens(
+      tokens,
+      categoryColors: widget.categoryColors,
+    );
 
     return ColoredBox(
       color: style.background,
@@ -301,6 +309,11 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         builder: (context, constraints) {
           final size = constraints.biggest;
           _lastSize = size;
+          // The inspector (desktop) already names the focus + carries its
+          // detail, and the page AppBar names the view — so the floating title
+          // chip is only shown when the inspector is absent (phone), avoiding a
+          // redundant/contradictory second identity.
+          final inspectorVisible = widget.showInspector && size.width >= 720;
           if (!_initialized && size.isFinite && !size.isEmpty) {
             final (s, p) = _framedTransform(size, _focusId);
             _scale = s;
@@ -340,7 +353,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                     ),
                   ),
                 ),
-                if (widget.showTitle)
+                if (widget.showTitle && !inspectorVisible)
                   Positioned(
                     left: tokens.spacing.step5,
                     top: tokens.spacing.step5,
@@ -366,7 +379,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                       ],
                     ),
                   ),
-                if (widget.showInspector && size.width >= 720)
+                if (inspectorVisible)
                   Positioned(
                     top: 0,
                     bottom: 0,
@@ -444,9 +457,7 @@ class _TitleCard extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step1),
           Text(
-            explorable
-                ? 'Tap a node to walk · $total in graph'
-                : '$total linked',
+            explorable ? 'Tap a node to walk · $total nodes' : '$total nodes',
             style: tokens.typography.styles.others.caption.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),
@@ -605,7 +616,7 @@ String _tldrFor(GraphNode node, int links) {
   final cat = node.categoryId;
   switch (node.type) {
     case GraphNodeType.task:
-      return 'A task in your $cat work, with $links linked entries. '
+      return 'A $cat task with $links linked entries. '
           'Tap a neighbor to follow a thread.';
     case GraphNodeType.project:
       return 'A $cat project. Walk into it to explore its tasks.';

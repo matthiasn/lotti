@@ -5594,6 +5594,15 @@ class AppLocalizationsDe extends AppLocalizations {
       'Möchtest du diesen Eintrag wirklich trennen?';
 
   @override
+  String get knowledgeGraphEmpty => 'Noch keine Verknüpfungen zum Erkunden';
+
+  @override
+  String get knowledgeGraphTitle => 'Wissensgraph';
+
+  @override
+  String get knowledgeGraphTooltip => 'Verknüpfungen erkunden';
+
+  @override
   String get linkedFromCaption => 'von';
 
   @override

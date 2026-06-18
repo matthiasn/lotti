@@ -56,7 +56,9 @@ renders cleanly outside a `Scaffold`.
 | `ui/graph_style.dart` | Token-backed `GraphStyle`, node glyphs, type labels, and the relation-class → `EdgeVisual` mapping. |
 | `ui/knowledge_graph_painter.dart` | The `CustomPainter`: atmosphere, biome haze, edges, walk trail, lit nodes, ghost ring, labels. |
 | `ui/knowledge_graph_view.dart` | Host: layout choice, fit/walk camera, pan/zoom/tap, history, title + controls + inspector + legend. |
-| `dev_main.dart` | Standalone dev entrypoint to explore interactively. |
+| `state/task_graph_provider.dart` | **Real-data adapter** (Phase 1): `taskGraphProvider` loads a task's real `linked_entries` (depth-2 BFS + project + checklists), maps entities→node types and links→relation kinds, resolves real category colors. Pure helpers `graphNodeTypeFor` / `graphNodeLabelFor` / `edgeKindFor` are unit-tested. |
+| `ui/task_knowledge_graph_page.dart` | **In-app page** (Phase 1): Scaffold + "Knowledge graph" AppBar hosting the view, with loading / empty / error states. Reached from a hub icon on the task app bar. |
+| `dev_main.dart` | Standalone dev entrypoint to explore the synthetic worlds interactively. |
 
 ## Pipeline
 
@@ -91,14 +93,25 @@ fvm flutter test \
 # PNGs → test/features/knowledge_graph_poc/ui/screenshots/ (gitignored)
 ```
 
+## App integration (Phase 1 — done)
+
+Wired to real data and reachable in-app: a **hub icon on the task app bar**
+(compact + expandable) opens `TaskKnowledgeGraphPage`, which loads the task's
+real `linked_entries` neighborhood via `taskGraphProvider` and renders it with
+real `CategoryDefinition` colors. The relation mapping is validated against the
+live `db.sqlite` schema (`BasicLink`→association/provenance, `ProjectLink`→
+containment, `RatingLink`→evaluation, plus embedded project + checklists). The
+expert panel scored the integration **9/10 in full app-scaffold screenshots**
+(every reviewer ≥ 9).
+
 ## Status & next steps
 
-POC complete and panel-approved on both interaction and looks. Not wired into app
-routes and not real data. The path to a shippable feature (per ADR 0029) is
-Phase 1 — bind to real `linked_entries` (an adapter projecting a task's links into
-this graph model) and add an entry affordance from the task UI — then the perf
+The view (interaction + looks) and the app integration are both panel-approved.
+Still a Phase-0/1 spike in scope: the data load is a bounded depth-2 BFS with
+per-id (coalesced) fetches — fine for a task neighborhood, but the eventual perf
 spike (Barnes–Hut layout in an isolate, `drawRawAtlas` batching, viewport
-culling) before scaling past the local neighborhood. Non-blocking polish the panel
-flagged for later: keep biome haze legible at the pulled-back zoom (aiming from
-out in the field), a touch more ghost-ring contrast, and larger control hit
-targets.
+culling, batched DB reads) is needed before scaling past the local
+neighborhood. Non-blocking polish the panel flagged: biome haze legibility at
+the pulled-back zoom, a touch more ghost-ring contrast, larger control hit
+targets, and a phone bottom-sheet inspector (the detail panel is desktop-only
+today).
