@@ -60,7 +60,7 @@ renders cleanly outside a `Scaffold`.
 | `ui/knowledge_graph_painter.dart` | The `CustomPainter`: atmosphere, biome haze, edges, walk trail, lit nodes, ghost ring, labels. |
 | `ui/knowledge_graph_view.dart` | Host: layout choice, fit/walk camera, pan/zoom/tap, history, title + controls + inspector + legend. |
 | `state/task_graph_provider.dart` | **Real-data adapter** (Phase 1): `taskGraphProvider` loads a task's real `linked_entries` (depth-2 BFS + project + checklists), maps entities→node types and links→relation kinds, resolves real category colors. Pure helpers `graphNodeTypeFor` / `graphNodeLabelFor` / `edgeKindFor` are unit-tested. |
-| `ui/task_knowledge_graph_page.dart` | **In-app page** (Phase 1): Scaffold + "Knowledge graph" AppBar hosting the view, with loading / empty / error states. Reached from a hub icon on the task app bar. |
+| `ui/task_knowledge_graph_page.dart` | **In-app page** (Phase 1): hosts the view full-bleed in a `Stack` with a compact, transparent top-left header (back + "Knowledge graph" title) floated over the graph — no banded app-bar row. Reserves the header's height in the view's `MediaQuery` top padding (so the view's own top-left chrome clears it) rather than a full-width bar that would swallow taps over the inspector. Loading / empty / error states; reached from a hub icon on the task app bar. |
 | `dev_main.dart` | Standalone dev entrypoint to explore the synthetic worlds interactively. |
 
 ## Pipeline

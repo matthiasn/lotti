@@ -35,33 +35,81 @@ class TaskKnowledgeGraphPage extends ConsumerWidget {
     });
 
     final graph = ref.watch(taskGraphProvider(taskId));
+    final mediaQuery = MediaQuery.of(context);
+
+    final content = graph.when(
+      // Keep the last rendered graph while a background refresh (sync / db
+      // notification) reloads, instead of flashing the spinner.
+      skipLoadingOnReload: true,
+      data: (data) {
+        // Only the focus node and nothing linked → nothing to explore.
+        if (data == null || data.scenario.nodes.length <= 1) {
+          return const _EmptyState();
+        }
+        // The view derives its state once in initState, so key it on the
+        // scenario to rebuild from scratch when fresh data arrives.
+        return KnowledgeGraphView(
+          key: ValueKey(data.scenario),
+          scenario: data.scenario,
+          categoryColors: data.categoryColors,
+          categoryNames: data.categoryNames,
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, _) => const _ErrorState(),
+    );
 
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
-      appBar: AppBar(
-        backgroundColor: tokens.colors.background.level01,
-        title: Text(context.messages.knowledgeGraphTitle),
-      ),
-      body: graph.when(
-        // Keep the last rendered graph while a background refresh (sync / db
-        // notification) reloads, instead of flashing the spinner.
-        skipLoadingOnReload: true,
-        data: (data) {
-          // Only the focus node and nothing linked → nothing to explore.
-          if (data == null || data.scenario.nodes.length <= 1) {
-            return const _EmptyState();
-          }
-          // The view derives its state once in initState, so key it on the
-          // scenario to rebuild from scratch when fresh data arrives.
-          return KnowledgeGraphView(
-            key: ValueKey(data.scenario),
-            scenario: data.scenario,
-            categoryColors: data.categoryColors,
-            categoryNames: data.categoryNames,
-          );
-        },
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) => const _ErrorState(),
+      body: Stack(
+        children: [
+          // The graph fills the whole body, full-bleed under the floating
+          // header. Reserving the header's height in the child's top padding
+          // (the same contract `extendBodyBehindAppBar` uses) keeps the view's
+          // own top-left chrome below the header — without banding off a header
+          // row, and without a full-width bar that would swallow taps over the
+          // inspector docked on the right.
+          Positioned.fill(
+            child: MediaQuery(
+              data: mediaQuery.copyWith(
+                padding: mediaQuery.padding.copyWith(
+                  top: mediaQuery.padding.top + kToolbarHeight,
+                ),
+              ),
+              child: content,
+            ),
+          ),
+          // Compact header: a back affordance + the page title, occupying only
+          // the top-left corner so it overlays the graph as part of the same
+          // canvas (top-left aligned, no background, no gap).
+          Positioned(
+            top: 0,
+            left: 0,
+            child: SafeArea(
+              bottom: false,
+              child: Material(
+                type: MaterialType.transparency,
+                child: SizedBox(
+                  height: kToolbarHeight,
+                  child: Padding(
+                    padding: EdgeInsets.only(right: tokens.spacing.step4),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const BackButton(),
+                        Text(
+                          context.messages.knowledgeGraphTitle,
+                          style: tokens.typography.styles.subtitle.subtitle1
+                              .copyWith(color: tokens.colors.text.highEmphasis),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

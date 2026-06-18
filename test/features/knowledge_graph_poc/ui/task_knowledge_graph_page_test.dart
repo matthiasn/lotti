@@ -3,17 +3,29 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/state/task_graph_provider.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/entry_detail_sidebar.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_view.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/task_knowledge_graph_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+
+/// Minimal [EntryController] resolving to `null` so the opened
+/// [EntryDetailSidebar] renders its cheap "Entry not found" shell instead of
+/// building the heavy real detail page.
+class _NullEntryController extends EntryController {
+  @override
+  Future<EntryState?> build({required String id}) async => null;
+}
 
 void main() {
   const taskId = 'task-1';
@@ -35,7 +47,10 @@ void main() {
         // swap the real one registered by setUpTestGetIt for a verifiable mock.
         getIt
           ..unregister<LoggingService>()
-          ..registerSingleton<LoggingService>(mockLoggingService);
+          ..registerSingleton<LoggingService>(mockLoggingService)
+          // EntryController's field initializers touch getIt<EditorStateService>
+          // when the detail overlay opens; a mock is enough for the null path.
+          ..registerSingleton<EditorStateService>(MockEditorStateService());
       },
     );
   });
@@ -100,12 +115,13 @@ void main() {
     // Phone-sized surface keeps the page off the desktop inspector path; either
     // is fine for the page-level branches we assert.
     Size surface = const Size(390, 844),
+    List<Override> extraOverrides = const [],
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const TaskKnowledgeGraphPage(taskId: taskId),
         mediaQueryData: MediaQueryData(size: surface),
-        overrides: [providerOverride],
+        overrides: [providerOverride, ...extraOverrides],
       ),
     );
   }
@@ -259,6 +275,41 @@ void main() {
         ),
       ).captured;
       expect(captured.single, same(failure));
+    },
+  );
+
+  testWidgets(
+    "the floating header doesn't block the inspector — Open details still "
+    'fires on a desktop surface',
+    (tester) async {
+      // Regression: the page used to chrome the graph with a full-width AppBar
+      // (`extendBodyBehindAppBar`), whose transparent toolbar absorbed taps
+      // across the whole top strip — so the inspector's top-right Open button
+      // stopped working. The header is now a compact top-left widget that never
+      // overlaps the right-hand inspector, so the tap reaches it.
+      await pumpPage(
+        tester,
+        taskGraphProvider(taskId).overrideWith((ref) async => multiNodeData()),
+        // Wide enough that the docked inspector (and its Open button) renders.
+        surface: const Size(1280, 800),
+        extraOverrides: [
+          // The initial focus is the seed task; resolve its controller to a
+          // null entry so the overlay shows the cheap "Entry not found" shell
+          // instead of building the real detail page + full provider graph.
+          entryControllerProvider(
+            id: taskId,
+          ).overrideWith(_NullEntryController.new),
+        ],
+      );
+      await tester.pump();
+
+      expect(find.byType(EntryDetailSidebar), findsNothing);
+      // The compact top-left header does not overlap the right-hand inspector,
+      // so this tap reaches the Open button instead of being swallowed.
+      await tester.tap(find.byIcon(Icons.open_in_full_rounded));
+      await tester.pump();
+      await tester.pump();
+      expect(find.byType(EntryDetailSidebar), findsOneWidget);
     },
   );
 }

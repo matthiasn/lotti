@@ -392,6 +392,10 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       tokens,
       categoryColors: widget.categoryColors,
     );
+    // The host page reserves its floating header's height in this view's top
+    // padding (status bar + header), so the phone-only title chip clears the
+    // header instead of hiding under it. Zero in the standalone POC harness.
+    final topInset = MediaQuery.paddingOf(context).top;
 
     return ColoredBox(
       color: style.background,
@@ -447,7 +451,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                 if (widget.showTitle && !inspectorVisible)
                   Positioned(
                     left: tokens.spacing.step5,
-                    top: tokens.spacing.step5,
+                    top: topInset + tokens.spacing.step5,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
