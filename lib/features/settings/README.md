@@ -212,15 +212,18 @@ AI and Agents keep their own rich mobile pages (tabbed `AiSettingsPage` /
 `AgentSettingsPage`) and open directly, so e.g. `/settings/ai/...` stacks that
 page rather than a hub.
 
-Sync is also a branch with `panel != null`, but its landing panel is just the
-provisioned-sync QR card, so it drills into the same `SettingsMobileBranchPage`
-hub as Definitions/Advanced — the hub renders the branch's landing panel
-(`panelSpecFor(node.panel)`) as a header above the child rows. The sync child
-list, ordering, and copy therefore come from `buildSettingsTree`, shared with
-the desktop sidebar, so the two surfaces can no longer drift. `/settings/sync`
-and `/settings/sync/...` stack `SettingsMobileBranchPage(sync)` (wrapped in
-`SyncFeatureGate` so the route bounces back to `/settings` when Matrix sync is
-disabled).
+Sync is a pure-navigation branch like Definitions/Advanced — it has no landing
+panel, so selecting it leaves the desktop detail pane empty. The provisioned-sync
+QR card is its first child leaf (`sync/provisioned`, URL `/settings/sync/provisioned`)
+instead of a branch header, so the hub just lists the branch's child rows
+(Provisioned Sync, This device, Backfill, Stats, Outbox, Conflicts, Matrix
+maintenance). The child list, ordering, and copy come from `buildSettingsTree`,
+shared with the desktop sidebar, so the two surfaces can no longer drift.
+`/settings/sync` and `/settings/sync/...` stack `SettingsMobileBranchPage(sync)`
+(wrapped in `SyncFeatureGate` so the route bounces back to `/settings` when
+Matrix sync is disabled). The Sync hub passes `accentIcons: true` so its rows
+keep the teal icon treatment the standalone `SyncSettingsPage` had — other
+branches stay grey-unless-selected.
 
 That stacked model is why detail pages feel like descendants of a section instead of random teleports. Beamer is doing real work here, which is nice for once.
 
@@ -257,7 +260,8 @@ flowchart LR
   Definitions --> Measurables["Measurables"]
 
   Categories --> Projects["Project detail route (/settings/projects/:projectId)"]
-  Sync --> NodeProfile["Node profile"]
+  Sync --> Provisioned["Provisioned Sync"]
+  Sync --> NodeProfile["This device (node profile)"]
   Sync --> Backfill["Backfill settings"]
   Sync --> Stats["Sync stats"]
   Sync --> Outbox["Outbox monitor"]
@@ -503,8 +507,8 @@ Key facts:
 
 - the `/settings` landing page only shows Sync when `enableMatrixFlag` is on
 - [`lib/features/sync/ui/widgets/sync_feature_gate.dart`](../sync/ui/widgets/sync_feature_gate.dart) guards sync pages and redirects back to `/settings` if sync is disabled
-- the sync landing page is the shared `SettingsMobileBranchPage(branchId: 'sync')` hub: it lists the `sync` branch's children from `buildSettingsTree` and renders the branch's landing panel (the provisioned-sync QR card) as a header, so mobile and desktop V2 share one definition
-- the `sync/outbox` row carries a live pending-count indicator (`OutboxCountIndicator`, registered in `settings_node_indicators.dart` and rendered through `SettingsTreeRow.trailing`); because the row is shared, the count now shows on the desktop V2 sidebar too, not just mobile
+- the sync landing page is the shared `SettingsMobileBranchPage(branchId: 'sync')` hub: it lists the `sync` branch's children from `buildSettingsTree`, so mobile and desktop V2 share one definition. The branch carries no panel, so its `/settings/sync` pane is empty; the provisioned-sync QR card is the first child leaf (`sync/provisioned` → `ProvisionedSyncPage` on mobile, the `sync-provisioned` panel on desktop)
+- the `sync/outbox` row carries a live trailing indicator (`OutboxCountIndicator`, registered in `settings_node_indicators.dart` and rendered through `SettingsTreeRow.trailing`); it reuses the live `OutboxBadgeIcon` to show the teal postbox glyph plus a pending-sync count badge, so the at-a-glance backlog the standalone Sync page showed now appears on the desktop V2 sidebar too, not just mobile
 - sync maintenance, node profile, outbox, stats, and backfill each get their own leaf routes
 
 This split keeps app-wide maintenance in Advanced and sync-specific maintenance with Sync, which is the correct kind of boring.

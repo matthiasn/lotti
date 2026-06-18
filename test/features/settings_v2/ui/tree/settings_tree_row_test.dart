@@ -2,6 +2,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
@@ -42,6 +43,7 @@ Future<void> _pumpRow(
   bool isExpanded = false,
   bool showLeafChevron = false,
   int descMaxLines = 1,
+  bool accentIcon = false,
   Widget? trailing,
   VoidCallback? onTap,
 }) async {
@@ -57,6 +59,7 @@ Future<void> _pumpRow(
             isExpanded: isExpanded,
             showLeafChevron: showLeafChevron,
             descMaxLines: descMaxLines,
+            accentIcon: accentIcon,
             trailing: trailing,
             onTap: onTap ?? () {},
           ),
@@ -93,6 +96,24 @@ void main() {
     testWidgets('renders the node icon', (tester) async {
       await _pumpRow(tester, node: _leaf());
       expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
+    });
+
+    testWidgets('icon glyph is grey (medium emphasis) when idle', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf());
+      final context = tester.element(find.byType(SettingsTreeRow));
+      final icon = tester.widget<Icon>(find.byIcon(Icons.flag_outlined));
+      expect(icon.color, context.designTokens.colors.text.mediumEmphasis);
+    });
+
+    testWidgets('accentIcon paints the glyph in the teal accent', (
+      tester,
+    ) async {
+      await _pumpRow(tester, node: _leaf(), accentIcon: true);
+      final context = tester.element(find.byType(SettingsTreeRow));
+      final icon = tester.widget<Icon>(find.byIcon(Icons.flag_outlined));
+      expect(icon.color, context.designTokens.colors.interactive.enabled);
     });
 
     testWidgets('description is omitted when the node desc is empty', (

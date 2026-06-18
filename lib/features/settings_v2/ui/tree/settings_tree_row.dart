@@ -21,11 +21,19 @@ class SettingsTreeRow extends StatelessWidget {
     this.showLeafChevron = false,
     this.descMaxLines = 1,
     this.showActiveRail = true,
+    this.accentIcon = false,
     super.key,
   });
 
   final SettingsNode node;
   final int depth;
+
+  /// When `true`, the leading icon tile is always painted in the teal
+  /// accent (teal glyph on a teal-tinted tile) regardless of selection,
+  /// restoring the legacy `SettingsIcon` look the mobile Sync list used.
+  /// Defaults to `false`, so every other surface keeps the grey-tile /
+  /// teal-when-active treatment.
+  final bool accentIcon;
 
   /// Optional live trailing widget (e.g. the `sync/outbox` pending count),
   /// rendered between the static [NodeBadge] and the chevron. Supplied by
@@ -76,10 +84,12 @@ class SettingsTreeRow extends StatelessWidget {
     final rowFill = onActivePath
         ? accent.withValues(alpha: SettingsV2Constants.activeRowFillAlpha)
         : Colors.transparent;
-    final tileBg = onActivePath
+    final tileBg = accentIcon
+        ? accent.withValues(alpha: SettingsV2Constants.accentTileFillAlpha)
+        : onActivePath
         ? accent.withValues(alpha: SettingsV2Constants.activeTileFillAlpha)
         : tokens.colors.background.level02;
-    final tileGlyph = onActivePath ? accent : textMid;
+    final tileGlyph = accentIcon || onActivePath ? accent : textMid;
 
     // MergeSemantics collapses the InkWell's auto-emitted button node
     // into the outer selected+expanded+label wrapper so screen readers

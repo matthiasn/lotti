@@ -316,12 +316,13 @@ void main() {
     });
 
     test(
-      'emits Sync with exactly node-profile/backfill/stats/outbox/conflicts/ '
-      'matrix-maintenance when on',
+      'emits Sync with exactly provisioned/node-profile/backfill/stats/ '
+      'outbox/conflicts/matrix-maintenance when on',
       () {
         final sync = _tree().firstWhere((n) => n.id == 'sync');
         expect(sync.hasChildren, isTrue);
         expect(sync.children!.map((n) => n.id).toList(), [
+          'sync/provisioned',
           'sync/node-profile',
           'sync/backfill',
           'sync/stats',
@@ -366,6 +367,7 @@ void main() {
         'definitions/habits': 'habits',
         'definitions/categories': 'categories',
         'definitions/labels': 'labels',
+        'sync/provisioned': 'sync-provisioned',
         'sync/node-profile': 'sync-node-profile',
         'sync/backfill': 'sync-backfill',
         'sync/stats': 'sync-stats',
@@ -383,10 +385,12 @@ void main() {
     });
 
     test('pure branch nodes have no panel', () {
-      // `advanced` and `definitions` are pure (landing-page-less)
-      // branches. `ai`, `agents`, and `sync` carry their own landing
-      // panel (asserted separately below).
-      for (final id in ['advanced', 'definitions']) {
+      // `advanced`, `definitions`, and `sync` are pure
+      // (landing-page-less) branches — selecting them leaves the detail
+      // pane empty. `ai` and `agents` carry their own landing panel
+      // (asserted separately below). Sync's provisioned-sync entry is a
+      // leaf (`sync/provisioned`) rather than a branch panel.
+      for (final id in ['advanced', 'definitions', 'sync']) {
         final tree = _tree();
         final node = SettingsTreeIndexTestHelper.findInTree(tree, id);
         expect(node, isNotNull, reason: 'expected $id to be present');
@@ -395,12 +399,11 @@ void main() {
     });
 
     test('branches that carry a landing panel expose it', () {
-      // AI / Agents / Sync branches render their own detail panel
-      // when the user lands on the branch itself (not a descendant
-      // leaf). For Sync, the landing panel surfaces the
-      // ProvisionedSyncSettingsCard so QR-pairing is reachable on
-      // desktop V2 the same way it is on mobile.
-      const expected = {'ai': 'ai', 'agents': 'agents', 'sync': 'sync'};
+      // AI / Agents branches render their own detail panel when the
+      // user lands on the branch itself (not a descendant leaf). Sync
+      // no longer carries a landing panel — its ProvisionedSyncSettingsCard
+      // is the first leaf (`sync/provisioned`) instead.
+      const expected = {'ai': 'ai', 'agents': 'agents'};
       for (final entry in expected.entries) {
         final tree = _tree();
         final node = SettingsTreeIndexTestHelper.findInTree(tree, entry.key);
@@ -438,11 +441,12 @@ void main() {
     });
 
     test(
-      'Sync has node-profile / backfill / stats / outbox / conflicts / '
-      'matrix-maintenance in order',
+      'Sync has provisioned / node-profile / backfill / stats / outbox / '
+      'conflicts / matrix-maintenance in order',
       () {
         final sync = _tree().firstWhere((n) => n.id == 'sync');
         expect(sync.children!.map((n) => n.id).toList(), [
+          'sync/provisioned',
           'sync/node-profile',
           'sync/backfill',
           'sync/stats',

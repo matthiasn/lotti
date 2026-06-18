@@ -43,6 +43,7 @@ import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
+import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/get_it.dart';
@@ -114,6 +115,7 @@ void main() {
         '/settings/ai/model/:modelId',
         '/settings/ai/profile/:profileId',
         '/settings/sync',
+        '/settings/sync/provisioned',
         '/settings/sync/matrix/maintenance',
         '/settings/sync/node-profile',
         '/settings/sync/backfill',
@@ -1049,6 +1051,30 @@ void main() {
       expect((hub as SettingsMobileBranchPage).branchId, 'sync');
       expect(pages[2].child, isA<SyncStatsPage>());
     });
+
+    test(
+      'buildPages stacks the provisioned-sync leaf under the sync hub',
+      () {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/sync/provisioned'),
+        );
+        final location = SettingsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(mockBuildContext, beamState);
+        expect(pages.length, 3);
+        expect(pages[0].child, isA<SettingsMobileRootPage>());
+        // The hub base sits beneath the leaf so back returns to the list.
+        final hubGate = pages[1].child;
+        expect(hubGate, isA<SyncFeatureGate>());
+        expect(
+          ((hubGate as SyncFeatureGate).child as SettingsMobileBranchPage)
+              .branchId,
+          'sync',
+        );
+        // The leaf renders the provisioned-sync wrapper page.
+        expect(pages[2].child, isA<ProvisionedSyncPage>());
+      },
+    );
 
     test('buildPages builds LoggingSettingsPage', () {
       final routeInformation = RouteInformation(

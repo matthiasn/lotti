@@ -78,9 +78,9 @@ void main() {
       'dispatches to CategoryEmpty when a pure branch (no landing panel) '
       'is selected',
       (tester) async {
-        // `advanced` is the only remaining root branch without its own
-        // landing panel — `ai`, `agents`, and `sync` all carry one and
-        // therefore fall through to the LeafPanel dispatch.
+        // `advanced`, `definitions`, and `sync` are pure branches without
+        // their own landing panel — only `ai` and `agents` carry one and
+        // fall through to the LeafPanel dispatch.
         await _pumpPane(
           tester,
           initialPath: ['advanced'],
@@ -92,8 +92,8 @@ void main() {
     );
 
     testWidgets(
-      'dispatches to LeafPanel when a branch that carries its own '
-      'landing panel is selected (sync after the desktop QR-pairing fix)',
+      'leaves the detail pane empty when the Sync branch itself is selected '
+      '(its provisioned-sync entry is a leaf, not a branch panel)',
       (tester) async {
         await _pumpPane(
           tester,
@@ -101,8 +101,8 @@ void main() {
           initialPath: ['sync'],
         );
         await tester.pump(const Duration(milliseconds: 200));
-        expect(find.byType(LeafPanel), findsOneWidget);
-        expect(find.byType(CategoryEmpty), findsNothing);
+        expect(find.byType(CategoryEmpty), findsOneWidget);
+        expect(find.byType(LeafPanel), findsNothing);
       },
     );
   });

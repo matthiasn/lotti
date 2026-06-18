@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/settings_v2/ui/tree/outbox_count_indicator.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
@@ -6,6 +7,8 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:matrix/matrix.dart';
 
 import '../../../../widget_test_utils.dart';
+
+Finder _postbox() => find.byIcon(MdiIcons.mailboxOutline);
 
 void main() {
   Future<void> pump(
@@ -42,7 +45,7 @@ void main() {
   }
 
   group('OutboxCountIndicator', () {
-    testWidgets('shows the pending count when online and items are queued', (
+    testWidgets('renders the postbox glyph + count when items are queued', (
       tester,
     ) async {
       await pump(
@@ -51,19 +54,26 @@ void main() {
         loginState: LoginState.loggedIn,
         pendingCount: 7,
       );
+      expect(_postbox(), findsOneWidget);
       expect(find.text('7'), findsOneWidget);
     });
 
-    testWidgets('renders nothing when the outbox is empty', (tester) async {
-      await pump(
+    testWidgets(
+      'shows the bare postbox with no count when the outbox is empty',
+      (
         tester,
-        connectionState: OutboxConnectionState.online,
-        loginState: LoginState.loggedIn,
-      );
-      expect(find.byType(Text), findsNothing);
-    });
+      ) async {
+        await pump(
+          tester,
+          connectionState: OutboxConnectionState.online,
+          loginState: LoginState.loggedIn,
+        );
+        expect(_postbox(), findsOneWidget);
+        expect(find.byType(Text), findsNothing);
+      },
+    );
 
-    testWidgets('renders nothing while sync is offline, even with a backlog', (
+    testWidgets('shows the bare postbox (no count) while sync is offline', (
       tester,
     ) async {
       await pump(
@@ -72,6 +82,7 @@ void main() {
         loginState: LoginState.loggedIn,
         pendingCount: 12,
       );
+      expect(_postbox(), findsOneWidget);
       expect(find.text('12'), findsNothing);
     });
 
@@ -87,6 +98,7 @@ void main() {
         loginState: LoginState.loggedOut,
         pendingCount: 3,
       );
+      expect(_postbox(), findsOneWidget);
       expect(find.text('3'), findsOneWidget);
     });
   });

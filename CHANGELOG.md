@@ -126,11 +126,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - On phones, the Sync settings list now follows the same order and layout as the
-  desktop settings tree (Node profile, Backfill, Stats, Outbox, Conflicts,
-  Matrix maintenance), so the two surfaces no longer disagree. The
-  provisioned-sync QR pairing entry stays at the top, and the Outbox row shows
-  the live count of items still waiting to sync — now on desktop too, not just
-  mobile.
+  desktop settings tree, so the two surfaces no longer disagree. The
+  provisioned-sync QR pairing entry is the first row in the list (Provisioned
+  Sync, This device, Backfill, Stats, Outbox, Conflicts, Matrix maintenance);
+  the Sync rows keep their teal icons, and the Outbox row shows the teal postbox
+  with its live pending-sync count badge — now on desktop too, not just mobile.
 
 ## [0.9.1024]
 ### Changed

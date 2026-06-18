@@ -141,13 +141,19 @@ List<SettingsNode> buildSettingsTree({
       branch(
         'sync',
         Icons.sync_rounded,
-        // Landing panel surfaces the provisioned-sync (QR-pairing)
-        // entry point on desktop V2 — the mobile sync settings page
-        // already shows it via SyncSettingsPage; on desktop the bare
-        // Sync branch used to be leafless so provisioned setup was
-        // unreachable.
-        panel: 'sync',
+        // The Sync branch has no landing panel of its own — selecting it
+        // leaves the desktop detail pane empty. The provisioned-sync
+        // (QR-pairing) entry point is the first child leaf instead, so it
+        // reads as a normal row in the list (Provisioned Sync · This
+        // device · Backfill · …) rather than as a default pane body.
         children: [
+          // QR-pairing / provisioning-bundle setup. First in the list so
+          // it stays the natural starting point for a fresh device.
+          leaf(
+            'sync/provisioned',
+            Icons.qr_code_scanner,
+            panel: 'sync-provisioned',
+          ),
           leaf(
             'sync/node-profile',
             Icons.devices_rounded,
@@ -159,7 +165,11 @@ List<SettingsNode> buildSettingsTree({
             panel: 'sync-backfill',
           ),
           leaf('sync/stats', Icons.bar_chart_rounded, panel: 'sync-stats'),
-          leaf('sync/outbox', Icons.outbox_rounded, panel: 'sync-outbox'),
+          // Mail-envelope leading glyph (as the standalone Sync page used),
+          // rounded to match the other tree icons; the teal postbox +
+          // pending-count badge lives in the row's trailing slot via
+          // OutboxCountIndicator.
+          leaf('sync/outbox', Icons.mail_rounded, panel: 'sync-outbox'),
           // The Beamer URL is still `/settings/advanced/conflicts`
           // for legacy-deep-link compatibility — the URL ↔ id mapping
           // in `settingsNodeUrls` does the translation, and the

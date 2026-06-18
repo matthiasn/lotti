@@ -43,6 +43,7 @@ import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dar
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
+import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
@@ -67,6 +68,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/ai/model/:modelId',
     '/settings/ai/profile/:profileId',
     '/settings/sync',
+    '/settings/sync/provisioned',
     '/settings/sync/matrix/maintenance',
     '/settings/sync/node-profile',
     '/settings/sync/backfill',
@@ -260,9 +262,10 @@ class SettingsLocation extends BeamLocation<BeamState> {
       // Sync Settings — the list, ordering, copy, and feature-flag gating
       // all come from the shared settings tree (`buildSettingsTree`), so
       // mobile renders the exact same `sync` branch the desktop V2 sidebar
-      // does, including the provisioned-sync QR card as its landing-panel
-      // header. `SyncFeatureGate` preserves the deep-link bounce back to
-      // `/settings` when Matrix sync is disabled.
+      // does. The provisioned-sync QR card is the first child leaf
+      // (`/settings/sync/provisioned`), not a branch header, so the bare
+      // branch hub just lists its rows. `SyncFeatureGate` preserves the
+      // deep-link bounce back to `/settings` when Matrix sync is disabled.
       if (path == '/settings/sync')
         const BeamPage(
           key: ValueKey('settings-sync'),
@@ -278,6 +281,16 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: SyncFeatureGate(
             child: SettingsMobileBranchPage(branchId: 'sync'),
           ),
+        ),
+
+      // Provisioned-sync leaf. The body is the same QR-pairing card the
+      // desktop `sync-provisioned` panel renders; the wrapper supplies the
+      // mobile page chrome (title + back button) and the sync feature gate.
+      if (path == '/settings/sync/provisioned')
+        const BeamPage(
+          key: ValueKey('settings-sync-provisioned'),
+          title: 'Provisioned Sync',
+          child: ProvisionedSyncPage(),
         ),
 
       if (path == '/settings/sync/matrix/maintenance')

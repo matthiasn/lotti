@@ -100,11 +100,12 @@ class SettingsPanelSpec {
 const Map<String, SettingsPanelSpec> kSettingsPanels =
     <String, SettingsPanelSpec>{
       // Branches that carry their own landing page. AI / Agents
-      // render full pages with their own scroll machinery; Sync is a
-      // light grouped-list body so the host wraps it.
+      // render full pages with their own scroll machinery. Sync has no
+      // landing panel — its provisioned-sync entry is a leaf
+      // (`sync-provisioned`) instead, so selecting the branch leaves the
+      // detail pane empty.
       'ai': SettingsPanelSpec(build: _aiPanel),
       'agents': SettingsPanelSpec(build: _agentsPanel),
-      'sync': SettingsPanelSpec(build: _syncPanel, scrollable: true),
 
       // Step 7 — simple leaves.
       // FlagsBody is `Column[fixed search, Expanded(scrollable list)]`
@@ -124,6 +125,12 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
       ),
       'advanced-logging': SettingsPanelSpec(
         build: _advancedLoggingPanel,
+        scrollable: true,
+      ),
+      // Light grouped-list body (the provisioned-sync QR card), so the
+      // host wraps it in a scroll view.
+      'sync-provisioned': SettingsPanelSpec(
+        build: _syncProvisionedPanel,
         scrollable: true,
       ),
       // SyncNodeProfilePage owns its Scaffold; don't wrap.
@@ -196,25 +203,19 @@ Widget _advancedMaintenancePanel(BuildContext context) =>
 Widget _advancedLoggingPanel(BuildContext context) =>
     const LoggingSettingsBody();
 
-/// Landing panel for the Sync branch on V2 desktop. Surfaces the
-/// provisioned-sync (QR-pairing) entry point that the mobile
-/// SyncSettingsPage already shows but that desktop V2 used to omit
-/// because the Sync branch was leafless.
+/// Leaf panel for the `sync/provisioned` entry. Surfaces the
+/// provisioned-sync (QR-pairing) card — the first row under the Sync
+/// branch, replacing the old branch-level landing panel.
 ///
 /// The card is matrix-only, so we gate it on `enableMatrixFlag` —
 /// but unlike `SyncFeatureGate` we DON'T redirect away when the flag
-/// is off. The Sync branch stays visible even with Matrix disabled
-/// (the conflicts leaf still needs to be reachable for legacy /
-/// local-only conflicts), so a parent-branch click must not bounce
-/// the user out of `/settings/sync`. With Matrix off the panel
-/// renders as an empty placeholder and the user can still drill into
-/// `sync-conflicts` via the sidebar tree.
+/// is off. With Matrix off the panel renders as an empty placeholder.
 ///
 /// Wired through Riverpod's `configFlagProvider` rather than a raw
 /// `StreamBuilder` so the underlying flag stream is cached across
 /// rebuilds — a fresh `watchConfigFlag(...)` subscription on every
 /// rebuild would resubscribe + re-emit the loading state unnecessarily.
-Widget _syncPanel(BuildContext context) {
+Widget _syncProvisionedPanel(BuildContext context) {
   return Consumer(
     builder: (context, ref, _) {
       final tokens = context.designTokens;
@@ -233,7 +234,19 @@ Widget _syncPanel(BuildContext context) {
   );
 }
 
-Widget _syncBackfillPanel(BuildContext context) => const BackfillSettingsBody();
+// Desktop-only: the legacy mobile `BackfillSettingsPage` supplies its own
+// horizontal gutter, but the V2 detail pane embeds `BackfillSettingsBody`
+// bare. Add a horizontal inset so the content doesn't run edge-to-edge and
+// instead matches the breathing room the Stats panel gets from
+// `SyncStatsBody`'s card margin (`tokens.spacing.step3`).
+Widget _syncBackfillPanel(BuildContext context) {
+  final tokens = context.designTokens;
+  return Padding(
+    padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
+    child: const BackfillSettingsBody(),
+  );
+}
+
 Widget _syncStatsPanel(BuildContext context) => const SyncStatsBody();
 Widget _syncOutboxPanel(BuildContext context) => const OutboxMonitorBody();
 Widget _syncNodeProfilePanel(BuildContext context) =>
