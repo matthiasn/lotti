@@ -193,7 +193,11 @@ class QwenLocalEvalReport {
     return profiles
         .map((profile) {
           final profileResults = results
-              .where((result) => result.profile.name == profile.name)
+              .where(
+                (result) =>
+                    result.profile.name == profile.name &&
+                    result.profile.providerModelId == profile.providerModelId,
+              )
               .toList(growable: false);
           final toolScenarios = profileResults.where(
             (result) => result.scenario.expectsToolCall,

@@ -59,6 +59,27 @@ void main() {
     );
   });
 
+  test('parseQwenLocalEvalProfile trims name and model id', () {
+    final parsed = parseQwenLocalEvalProfile(
+      '  qwen local  =  Qwen3.6-35B-A3B-4bit  ',
+    );
+
+    expect(parsed.name, 'qwen local');
+    expect(parsed.providerModelId, 'Qwen3.6-35B-A3B-4bit');
+    expect(parsed.modelClass, 'qwen local');
+  });
+
+  test('parseQwenLocalEvalProfile rejects blank trimmed parts', () {
+    expect(
+      () => parseQwenLocalEvalProfile('qwen =   '),
+      throwsFormatException,
+    );
+    expect(
+      () => parseQwenLocalEvalProfile('   = Qwen3.6-35B-A3B-4bit'),
+      throwsFormatException,
+    );
+  });
+
   test(
     'runner records provenance, latency, usage, and matching tool calls',
     () async {
@@ -222,6 +243,30 @@ void main() {
     expect(report.results.single.passed, isTrue);
   });
 
+  test('runner preserves function names streamed after arguments', () async {
+    final repository = _FakeInferenceRepository([
+      _toolCallChunk(id: 'call-1', argumentsJson: '{"title":'),
+      _toolCallChunk(
+        name: TaskAgentToolNames.setTaskTitle,
+        argumentsJson: '"Submit expense report"}',
+      ),
+    ]);
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultQwenLocalEvalScenarios.first],
+    );
+
+    final toolCall = report.results.single.toolCalls.single;
+    expect(toolCall.name, TaskAgentToolNames.setTaskTitle);
+    expect(toolCall.argumentsJson, '{"title":"Submit expense report"}');
+    expect(report.results.single.passed, isTrue);
+  });
+
   test('runner classifies a different tool as wrong tool call', () async {
     final repository = _FakeInferenceRepository([
       _toolCall(
@@ -321,6 +366,50 @@ void main() {
     expect(report.toMarkdown(), contains('| qwen-test |'));
     expect(report.toMarkdown(), contains('| Arg match |'));
     expect(report.toMarkdown(), isNot(contains('Task id task-2')));
+  });
+
+  test('report summaries keep duplicate profile names isolated', () {
+    const secondProfile = QwenLocalEvalProfile(
+      name: 'qwen-test',
+      providerModelId: qwen36A35bA3bMlx4BitModelId,
+      modelClass: 'qwen36-a35b-a3b-omlx',
+    );
+    final scenario = defaultQwenLocalEvalScenarios.first;
+    final report = QwenLocalEvalReport(
+      provider: provider,
+      scenarios: [scenario],
+      profiles: const [profile, secondProfile],
+      results: [
+        QwenLocalEvalCaseResult(
+          profile: profile,
+          scenario: scenario,
+          provider: provider,
+          latencyMs: 10,
+          contentLength: 1,
+          toolCalls: const [],
+          failureCategory: QwenLocalEvalFailureCategory.none,
+        ),
+        QwenLocalEvalCaseResult(
+          profile: secondProfile,
+          scenario: scenario,
+          provider: provider,
+          latencyMs: 20,
+          contentLength: 1,
+          toolCalls: const [],
+          failureCategory: QwenLocalEvalFailureCategory.missingToolCall,
+        ),
+      ],
+    );
+
+    expect(report.summaries, hasLength(2));
+    expect(report.summaries[0].totalScenarios, 1);
+    expect(report.summaries[0].passedScenarios, 1);
+    expect(report.summaries[0].failureCounts, isEmpty);
+    expect(report.summaries[1].totalScenarios, 1);
+    expect(report.summaries[1].passedScenarios, 0);
+    expect(report.summaries[1].failureCounts, {
+      QwenLocalEvalFailureCategory.missingToolCall: 1,
+    });
   });
 }
 

@@ -167,8 +167,14 @@ QwenLocalEvalProfile parseQwenLocalEvalProfile(String value) {
       value,
     );
   }
-  final name = value.substring(0, separator);
-  final model = value.substring(separator + 1);
+  final name = value.substring(0, separator).trim();
+  final model = value.substring(separator + 1).trim();
+  if (name.isEmpty || model.isEmpty) {
+    throw FormatException(
+      'Expected profile as name=model, got "$value".',
+      value,
+    );
+  }
   return QwenLocalEvalProfile(
     name: name,
     providerModelId: model,

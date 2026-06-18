@@ -54,12 +54,13 @@ void main() {
         scenarios: scenarios,
       );
 
+      final tempDir = Directory.systemTemp.path;
       final jsonPath =
           Platform.environment['QWEN_EVAL_JSON'] ??
-          '/private/tmp/lotti-qwen-local-eval.json';
+          '$tempDir/lotti-qwen-local-eval.json';
       final markdownPath =
           Platform.environment['QWEN_EVAL_MARKDOWN'] ??
-          '/private/tmp/lotti-qwen-local-eval.md';
+          '$tempDir/lotti-qwen-local-eval.md';
       _write(jsonPath, report.toPrettyJson());
       _write(markdownPath, report.toMarkdown());
 
@@ -91,12 +92,14 @@ List<String> _envList(String name) {
 
 double? _envDouble(String name) {
   final value = Platform.environment[name];
-  return value == null || value.isEmpty ? null : double.parse(value);
+  if (value == null || value.trim().isEmpty) return null;
+  return double.tryParse(value.trim());
 }
 
 int? _envInt(String name) {
   final value = Platform.environment[name];
-  return value == null || value.isEmpty ? null : int.parse(value);
+  if (value == null || value.trim().isEmpty) return null;
+  return int.tryParse(value.trim());
 }
 
 void _write(String path, String content) {

@@ -144,6 +144,7 @@ void _accumulateToolCallChunks({
 
     if (existingIndex >= 0) {
       final existing = toolCalls[existingIndex];
+      final updatedName = chunk.function?.name;
       final buffer =
           argumentBuffers[existing.id] ??
           StringBuffer(existing.function.arguments);
@@ -153,7 +154,9 @@ void _accumulateToolCallChunks({
         id: existing.id,
         type: existing.type,
         function: ChatCompletionMessageFunctionCall(
-          name: existing.function.name,
+          name: updatedName != null && updatedName.isNotEmpty
+              ? updatedName
+              : existing.function.name,
           arguments: buffer.toString(),
         ),
       );

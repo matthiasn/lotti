@@ -47,7 +47,7 @@ Future<bool> _defaultOllamaProbe({
         .getUrl(Uri.parse('http://127.0.0.1:11434/api/version'))
         .timeout(timeout);
     final response = await request.close().timeout(timeout);
-    await response.drain<void>();
+    await response.drain<void>().timeout(timeout);
     return response.statusCode >= 200 && response.statusCode < 300;
   } catch (_) {
     // Refused, DNS failure, timeout, parse error — all "Ollama not here".
@@ -67,7 +67,7 @@ Future<bool> _defaultOmlxProbe({
         .getUrl(Uri.parse('$baseUrl/models'))
         .timeout(timeout);
     final response = await request.close().timeout(timeout);
-    await response.drain<void>();
+    await response.drain<void>().timeout(timeout);
     return (response.statusCode >= 200 && response.statusCode < 300) ||
         response.statusCode == HttpStatus.unauthorized ||
         response.statusCode == HttpStatus.forbidden;
