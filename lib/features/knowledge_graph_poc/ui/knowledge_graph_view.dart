@@ -19,6 +19,7 @@ import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_scenarios.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_painter.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/node_inspector_panel.dart';
 
 class KnowledgeGraphView extends StatefulWidget {
   const KnowledgeGraphView({
@@ -341,6 +342,23 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     if (hit != null) _walkTo(hit);
   }
 
+  /// Direct-neighbor count per node type for [id] — the inspector turns this
+  /// into a "linked" breakdown (e.g. "3 Note · 1 AI summary").
+  Map<GraphNodeType, int> _neighborCountsFor(String id) {
+    final typeById = {for (final n in _scenario.nodes) n.id: n.type};
+    final counts = <GraphNodeType, int>{};
+    for (final e in _scenario.edges) {
+      final otherId = e.fromId == id
+          ? e.toId
+          : (e.toId == id ? e.fromId : null);
+      if (otherId == null) continue;
+      final type = typeById[otherId];
+      if (type == null) continue;
+      counts[type] = (counts[type] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -428,24 +446,22 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                   ),
                 if (inspectorVisible)
                   Positioned(
-                    top: 0,
-                    bottom: 0,
+                    top: tokens.spacing.step5,
+                    bottom: tokens.spacing.step5,
                     right: tokens.spacing.step5,
-                    child: Center(
-                      child: SizedBox(
-                        width: 296,
-                        child: _InspectorCard(
-                          node: _scenario.nodeById(_focusId),
-                          links: _degrees[_focusId] ?? 0,
-                          createdLabel: _relativeAge(
-                            _scenario.now.difference(
-                              _scenario.nodeById(_focusId).createdAt,
-                            ),
+                    child: SizedBox(
+                      width: (size.width * 0.30).clamp(320.0, 400.0),
+                      child: NodeInspectorPanel(
+                        node: _scenario.nodeById(_focusId),
+                        neighborCounts: _neighborCountsFor(_focusId),
+                        createdLabel: relativeAge(
+                          _scenario.now.difference(
+                            _scenario.nodeById(_focusId).createdAt,
                           ),
-                          categoryNames: widget.categoryNames,
-                          style: style,
-                          tokens: tokens,
                         ),
+                        categoryNames: widget.categoryNames,
+                        style: style,
+                        tokens: tokens,
                       ),
                     ),
                   ),
@@ -650,183 +666,6 @@ class _DotsSwatch extends StatelessWidget {
             ),
           ),
       ],
-    );
-  }
-}
-
-String _relativeAge(Duration d) {
-  if (d.inHours < 24) return 'today';
-  final days = d.inDays;
-  if (days == 1) return 'yesterday';
-  if (days < 14) return '$days days ago';
-  if (days < 60) return '${(days / 7).round()} weeks ago';
-  return '${(days / 30).round()} months ago';
-}
-
-/// Flattens a markdown summary into a compact plain-text preview for the
-/// inspector card: drops heading markers, list bullets, and emphasis/quote
-/// punctuation, and collapses blank lines so the few lines we show read
-/// cleanly rather than as raw markdown.
-String _previewFromMarkdown(String md) {
-  final cleaned = md
-      .replaceAll(RegExp(r'^\s*#{1,6}\s*', multiLine: true), '')
-      .replaceAll(RegExp(r'^\s*[-*+]\s+', multiLine: true), '')
-      .replaceAll(RegExp('[*_`>]'), '')
-      .replaceAll(RegExp(r'\n{2,}'), '\n')
-      .trim();
-  return cleaned.isEmpty ? md.trim() : cleaned;
-}
-
-String _tldrFor(GraphNode node, int links, String cat) {
-  switch (node.type) {
-    case GraphNodeType.task:
-      return 'A $cat task with $links linked entries. '
-          'Tap a neighbor to follow a thread.';
-    case GraphNodeType.project:
-      return 'A $cat project. Walk into it to explore its tasks.';
-    case GraphNodeType.aiResponse:
-      return 'An AI-generated summary derived from the linked task.';
-    case GraphNodeType.rating:
-      return 'Your rating of the linked task.';
-    case GraphNodeType.checklist:
-      return 'A checklist — its items branch off from here.';
-    case GraphNodeType.checklistItem:
-      return 'One item on a checklist.';
-    case GraphNodeType.audioEntry:
-      return 'A voice note captured against this task.';
-    case GraphNodeType.imageEntry:
-      return 'An image attached to this task.';
-    case GraphNodeType.textEntry:
-      return 'A text log entry on this task.';
-  }
-}
-
-/// Inspector card for the focus node — the "what is this?" preview.
-class _InspectorCard extends StatelessWidget {
-  const _InspectorCard({
-    required this.node,
-    required this.links,
-    required this.createdLabel,
-    required this.categoryNames,
-    required this.style,
-    required this.tokens,
-  });
-
-  final GraphNode node;
-  final int links;
-  final String createdLabel;
-  final Map<String, String> categoryNames;
-  final GraphStyle style;
-  final DsTokens tokens;
-
-  @override
-  Widget build(BuildContext context) {
-    final cat = style.categoryColor(node.categoryId);
-    final categoryLabel = categoryNames[node.categoryId] ?? node.categoryId;
-    // Prefer a task's cover art, then an image entry's own photo.
-    final coverPath = node.coverImagePath ?? node.imagePath;
-    final summary = node.tldr == null || node.tldr!.trim().isEmpty
-        ? _tldrFor(node, links, categoryLabel)
-        : _previewFromMarkdown(node.tldr!);
-    final catHsl = HSLColor.fromColor(cat);
-    final coverDark = catHsl
-        .withLightness((catHsl.lightness * 0.45).clamp(0.0, 1.0))
-        .toColor();
-    final gradientCover = DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [cat, coverDark],
-        ),
-      ),
-      child: Center(
-        child: Icon(glyphForType(node.type), size: 38, color: style.glyphColor),
-      ),
-    );
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(tokens.radii.l),
-      child: ColoredBox(
-        color: tokens.colors.background.level02.withValues(alpha: 0.94),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Cover banner — the real photo for image nodes, the task's cover
-            // art for task nodes, else a category gradient + the node's glyph.
-            SizedBox(
-              height: 92,
-              width: double.infinity,
-              child: coverPath != null
-                  ? Image.file(
-                      File(coverPath),
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => gradientCover,
-                    )
-                  : gradientCover,
-            ),
-            Padding(
-              padding: EdgeInsets.all(tokens.spacing.step4),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    node.label,
-                    maxLines: 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                      color: tokens.colors.text.highEmphasis,
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacing.step2),
-                  Row(
-                    children: [
-                      Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(
-                          color: cat,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      SizedBox(width: tokens.spacing.step2),
-                      Flexible(
-                        child: Text(
-                          '${typeLabel(node.type)} · $categoryLabel',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: tokens.spacing.step3),
-                  Text(
-                    'Created $createdLabel · $links links',
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  ),
-                  SizedBox(height: tokens.spacing.step3),
-                  Text(
-                    summary,
-                    maxLines: 6,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

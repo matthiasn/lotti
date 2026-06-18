@@ -7,6 +7,7 @@ import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_scenarios.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_view.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/node_inspector_panel.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -183,8 +184,16 @@ void main() {
     });
   });
 
+  /// Matches text [t] that lives inside the [NodeInspectorPanel] (not the
+  /// legend, title chip, or graph overlay) — the inspector cases assert here so
+  /// a stray match elsewhere can't satisfy the expectation.
+  Finder inspectorText(String t) => find.descendant(
+    of: find.byType(NodeInspectorPanel),
+    matching: find.text(t),
+  );
+
   group('inspector preview content (desktop)', () {
-    testWidgets('resolves the category NAME, type label and links count', (
+    testWidgets('resolves the category NAME, type label and links breakdown', (
       tester,
     ) async {
       final scenario = taskEgoNetworkScenario();
@@ -195,13 +204,22 @@ void main() {
         categoryNames: const {catWork: 'Work projects'},
       );
 
-      // Title.
-      expect(find.text('Ship v2.3 release'), findsWidgets);
-      // type · category — Task + the RESOLVED category name (not the raw id).
-      expect(find.text('Task · Work projects'), findsOneWidget);
-      // Seed degree: 1 containment + 3 linked + 5 logs + 2 AI + 1 rating + 1
-      // checklist = 13 links.
-      expect(find.textContaining('13 links'), findsOneWidget);
+      // The inspector panel is the right-rail dossier.
+      expect(find.byType(NodeInspectorPanel), findsOneWidget);
+      // Title (node label) as the heading inside the panel.
+      expect(inspectorText('Ship v2.3 release'), findsOneWidget);
+      // Kicker: "TYPE · CATEGORY" uppercased, with the RESOLVED category name
+      // (not the raw id).
+      expect(inspectorText('TASK · WORK PROJECTS'), findsOneWidget);
+      // LINKED breakdown: a "LINKED" section plus a chip per neighbor type. The
+      // seed's neighbors are 3 tasks, 2 notes, 2 audio notes, 1 photo, 1
+      // project, 2 AI summaries, 1 rating and 1 checklist (13 links total).
+      expect(inspectorText('LINKED'), findsOneWidget);
+      expect(inspectorText('3  Task'), findsOneWidget);
+      expect(inspectorText('2  Note'), findsOneWidget);
+      expect(inspectorText('2  Audio note'), findsOneWidget);
+      expect(inspectorText('1  Project'), findsOneWidget);
+      expect(inspectorText('2  AI summary'), findsOneWidget);
     });
 
     testWidgets('falls back to the raw category id when no name is provided', (
@@ -209,31 +227,26 @@ void main() {
     ) async {
       await pumpView(tester, scenario: taskEgoNetworkScenario());
 
-      // categoryNames is empty -> the inspector shows the raw id `work`.
-      expect(find.text('Task · work'), findsOneWidget);
+      // categoryNames is empty -> the kicker resolves to the raw id `work`,
+      // uppercased.
+      expect(inspectorText('TASK · WORK'), findsOneWidget);
     });
 
-    testWidgets('shows the generic type-based fallback when tldr is absent', (
+    testWidgets('shows the type-based lede fallback when tldr is absent', (
       tester,
     ) async {
       // The ego scenario's seed has no tldr, so the inspector renders the
-      // task-type fallback line built from the link count + category label.
+      // task-type fallback lede (`tldrFallback`).
       await pumpView(
         tester,
         scenario: taskEgoNetworkScenario(),
         categoryNames: const {catWork: 'Work'},
       );
 
-      expect(
-        find.text(
-          'A Work task with 13 linked entries. '
-          'Tap a neighbor to follow a thread.',
-        ),
-        findsOneWidget,
-      );
+      expect(inspectorText('A Work task in your graph.'), findsOneWidget);
     });
 
-    testWidgets('shows the node tldr (flattened from markdown) when present', (
+    testWidgets('shows the node tldr (split into a lede) when present', (
       tester,
     ) async {
       // Build a tiny scenario whose seed carries a markdown tldr; the inspector
@@ -266,13 +279,17 @@ void main() {
 
       await pumpView(tester, scenario: scenario);
 
-      // Markdown punctuation flattened; the generic fallback must NOT appear.
+      // The tldr is split into a one-liner lede (first line) + a SUMMARY body
+      // (the remainder), with markdown punctuation flattened.
+      expect(inspectorText('TL;DR'), findsOneWidget);
+      expect(inspectorText('SUMMARY'), findsOneWidget);
       expect(
-        find.text('TL;DR\nShip the build\nverify smoke tests'),
+        inspectorText('• Ship the build\n• verify smoke tests'),
         findsOneWidget,
       );
+      // Since a real tldr is present, the type-based fallback lede must NOT show.
       expect(
-        find.textContaining('Tap a neighbor to follow a thread'),
+        inspectorText('A Work task in your graph.'),
         findsNothing,
       );
     });
@@ -338,10 +355,12 @@ void main() {
         categoryNames: const {catWork: 'Work'},
       );
 
-      // Inspector content present (its 'Created … · N links' line is
-      // inspector-only; the legend's 'more links' entry must not be confused
-      // for it, hence the 'Created' anchor).
-      expect(find.textContaining('Created'), findsOneWidget);
+      // The inspector panel (right rail) is shown, naming the focus node and
+      // its relative age in the footer ('12 days ago' for the seed, created
+      // _daysAgo(12)). These are inspector-only readouts.
+      expect(find.byType(NodeInspectorPanel), findsOneWidget);
+      expect(inspectorText('Ship v2.3 release'), findsOneWidget);
+      expect(inspectorText('12 days ago'), findsOneWidget);
       // The floating title chip's caption ('Tap a node to walk · N nodes' or
       // 'N nodes') must be absent when the inspector is visible.
       expect(find.textContaining(' nodes'), findsNothing);
@@ -357,8 +376,8 @@ void main() {
         size: phoneSize,
       );
 
-      // Inspector-only line is gone (width < 720 suppresses it).
-      expect(find.textContaining('Created'), findsNothing);
+      // The inspector panel is suppressed (width < 720).
+      expect(find.byType(NodeInspectorPanel), findsNothing);
       // The title chip names the focus and the node count. The ego scenario is
       // not explorable (<= 40 nodes) -> caption is just 'N nodes'.
       expect(find.text('Ship v2.3 release'), findsWidgets);
@@ -377,7 +396,7 @@ void main() {
 
         // No inspector -> the chip is shown even on a wide viewport.
         expect(find.text('${scenario.nodes.length} nodes'), findsOneWidget);
-        expect(find.textContaining('Created'), findsNothing);
+        expect(find.byType(NodeInspectorPanel), findsNothing);
       },
     );
 
@@ -560,9 +579,10 @@ void main() {
 
       // Focus walked to the tapped node.
       expect(painterFocusId(tester), targetId);
-      // The inspector now describes the project node.
-      expect(find.text('Lotti 2.x'), findsWidgets);
-      expect(find.text('Project · work'), findsOneWidget);
+      // The inspector now describes the project node: its label as the heading
+      // and the uppercased "PROJECT · WORK" kicker.
+      expect(inspectorText('Lotti 2.x'), findsOneWidget);
+      expect(inspectorText('PROJECT · WORK'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 

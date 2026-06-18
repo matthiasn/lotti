@@ -6,6 +6,17 @@ import 'package:flutter/widgets.dart';
 import 'package:path/path.dart' as p;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
+/// Sanitizes an untrusted dropped-file name down to a safe basename.
+///
+/// Drag payload metadata is untrusted, so [rawName] may contain path
+/// separators or traversal tokens (`../`, `..\\`, absolute paths) that could
+/// redirect a write outside the temp dir. Keeping only [p.basename] strips
+/// those; a `null` or empty result falls back to `'dropped_file'`.
+String sanitizeDropFileName(String? rawName) {
+  final base = p.basename(rawName ?? '');
+  return base.isEmpty ? 'dropped_file' : base;
+}
+
 /// Drop target for media files, built on `super_drag_and_drop` on every
 /// platform.
 ///
@@ -53,8 +64,7 @@ class MediaDropTarget extends StatelessWidget {
                 // Drag payload metadata is untrusted — keep only the basename
                 // so path separators / traversal tokens in `fileName` can't
                 // redirect the write outside the temp dir.
-                final base = p.basename(file.fileName ?? '');
-                final name = base.isEmpty ? 'dropped_file' : base;
+                final name = sanitizeDropFileName(file.fileName);
                 final dir = await Directory.systemTemp.createTemp(
                   'lotti_drop_',
                 );
