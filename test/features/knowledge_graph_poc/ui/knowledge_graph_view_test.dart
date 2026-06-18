@@ -45,6 +45,7 @@ void main() {
     bool showTitle = true,
     bool showLegend = true,
     bool disableAnimations = false,
+    void Function(String taskId, String previousFocusId)? onTaskFocusChanged,
     Size size = desktopSize,
     List<Override> extraOverrides = const [],
   }) async {
@@ -62,6 +63,7 @@ void main() {
           initialFocusId: initialFocusId,
           initialPreviousFocusId: initialPreviousFocusId,
           layout: layout,
+          onTaskFocusChanged: onTaskFocusChanged,
           showInspector: showInspector,
           showTitle: showTitle,
           showLegend: showLegend,
@@ -982,6 +984,30 @@ void main() {
       expect(afterTime.scale, jumped.scale);
       expect(afterTime.pan, jumped.pan);
       expect(afterTime.wake, 0);
+    });
+
+    testWidgets('walking to a task reports the task focus change', (
+      tester,
+    ) async {
+      final scenario = taskEgoNetworkScenario();
+      final calls = <({String taskId, String previousFocusId})>[];
+      await pumpView(
+        tester,
+        scenario: scenario,
+        onTaskFocusChanged: (taskId, previousFocusId) {
+          calls.add((taskId: taskId, previousFocusId: previousFocusId));
+        },
+      );
+
+      await tester.ensureVisible(inspectorText('Fix sync race condition'));
+      await tester.pump();
+      await tester.tap(inspectorText('Fix sync race condition'));
+      await tester.pump();
+
+      expect(calls, [
+        (taskId: 't1', previousFocusId: scenario.seedId),
+      ]);
+      expect(painterFocusId(tester), 't1');
     });
 
     testWidgets('tapping empty space leaves the focus unchanged', (

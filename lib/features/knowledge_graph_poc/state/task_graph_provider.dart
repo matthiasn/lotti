@@ -131,7 +131,7 @@ bool _isLive(EntryLink link) => link.hidden != true && link.deletedAt == null;
 /// (rather than an inline closure in the provider) so the isolate entry point
 /// captures only [scenario] — an inline closure would capture the whole
 /// provider body, including the unsendable riverpod `Ref`/`Future`.
-Future<GraphLayout> _layoutOffThread(GraphScenario scenario) =>
+Future<GraphLayout> layoutTaskGraphOffThread(GraphScenario scenario) =>
     Isolate.run(() => computeLayoutForScenario(scenario));
 
 /// Loads the knowledge graph around a task (focus) — its links (depth 2),
@@ -357,7 +357,7 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
       // of iterations for world-scale graphs) — run it on a background isolate
       // so opening the page never blocks the UI thread. The scenario is plain
       // sendable data and the layout is pure/deterministic.
-      final layout = await _layoutOffThread(scenario);
+      final layout = await layoutTaskGraphOffThread(scenario);
 
       return TaskGraphData(
         scenario: scenario,
