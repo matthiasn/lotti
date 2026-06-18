@@ -73,7 +73,7 @@ class HabitsChartCard extends ConsumerWidget {
                 ),
               ],
             ),
-            SizedBox(height: tokens.spacing.step3),
+            SizedBox(height: tokens.spacing.step4),
             const HabitCompletionRateChart(),
           ],
         ),

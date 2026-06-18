@@ -2522,14 +2522,7 @@
   "habitLogOtherDayHint": "Hold to log another day",
   "habitNotRecordedLabel": "Not recorded",
   "habitPriorityLabel": "Priority",
-  "habitsAboveGoal": "On track, above {target}%",
-  "@habitsAboveGoal": {
-    "placeholders": {
-      "target": {
-        "type": "int"
-      }
-    }
-  },
+  "habitsAboveGoal": "On track",
   "habitsActiveHabitsCount": "{count} active habits",
   "@habitsActiveHabitsCount": {
     "placeholders": {
@@ -2549,6 +2542,7 @@
   "habitsFilterCompleted": "done",
   "habitsFilterOpenNow": "due",
   "habitsFilterPendingLater": "later",
+  "habitsGoalLineLabel": "Goal",
   "habitsHeatmapEmpty": "Add a habit to start building your consistency",
   "habitsHeatmapLess": "Less",
   "habitsHeatmapMore": "More",
@@ -2570,13 +2564,10 @@
   },
   "habitsOpenHeader": "Due now",
   "habitsPendingLaterHeader": "Later today",
-  "habitsPointsToGoal": "{points} points from your {target}% goal",
+  "habitsPointsToGoal": "{points} pts to goal",
   "@habitsPointsToGoal": {
     "placeholders": {
       "points": {
-        "type": "int"
-      },
-      "target": {
         "type": "int"
       }
     }

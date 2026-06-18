@@ -4942,9 +4942,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitPriorityLabel => 'Prioritate';
 
   @override
-  String habitsAboveGoal(int target) {
-    return 'Conform planului, peste $target%';
-  }
+  String get habitsAboveGoal => 'Conform planului';
 
   @override
   String habitsActiveHabitsCount(int count) {
@@ -4985,6 +4983,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsFilterPendingLater => 'mai târziu';
 
   @override
+  String get habitsGoalLineLabel => 'Obiectiv';
+
+  @override
   String get habitsHeatmapEmpty =>
       'Adăugați un obicei pentru a începe să vă urmăriți consecvența';
 
@@ -5012,8 +5013,8 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsPendingLaterHeader => 'Mai târziu astăzi';
 
   @override
-  String habitsPointsToGoal(int points, int target) {
-    return '$points puncte până la obiectivul de $target%';
+  String habitsPointsToGoal(int points) {
+    return '$points pct. până la obiectiv';
   }
 
   @override

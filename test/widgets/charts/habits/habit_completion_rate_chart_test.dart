@@ -113,8 +113,9 @@ void main() {
       await pumpChart(tester);
 
       expect(find.byType(LineChart), findsOneWidget);
-      expect(find.text('7-day avg'), findsOneWidget);
-      expect(find.textContaining('on track'), findsOneWidget);
+      expect(find.textContaining('7-day avg'), findsOneWidget);
+      // Empty data → the forward-looking goal line, not a pass/fail count.
+      expect(find.textContaining('goal'), findsOneWidget);
     });
 
     testWidgets('shows average, on-track count, trend and laggard nudge', (
@@ -122,15 +123,16 @@ void main() {
     ) async {
       await pumpChart(tester, state: _fourteenDayState());
 
-      // 7-day average of a flat 50% daily rate.
-      expect(find.text('50%'), findsOneWidget);
-      expect(find.text('7-day avg'), findsOneWidget);
-      // None of the 14 days clears the 80% target.
-      expect(find.textContaining('0 of 14'), findsOneWidget);
+      // The rate and its unit read as one inline group "50%  7-day avg".
+      expect(find.textContaining('50%'), findsOneWidget);
+      expect(find.textContaining('7-day avg'), findsOneWidget);
+      // 50% average → 30 pts to the 80% goal (gain-framed, not pass/fail).
+      expect(find.textContaining('30 pts to goal'), findsOneWidget);
       // A full prior week exists and is identical → flat trend.
       expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget);
-      // The never-kept habit is named as the laggard.
+      // The never-kept habit is named as the laggard, gain-framed.
       expect(find.textContaining(habitFlossingDueLater.name), findsOneWidget);
+      expect(find.textContaining('kept 0 of 14'), findsOneWidget);
     });
 
     testWidgets('hides the trend chip on the short 7-day window', (

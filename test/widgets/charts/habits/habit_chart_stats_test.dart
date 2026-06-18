@@ -138,9 +138,9 @@ void main() {
     });
   });
 
-  group('habitChartStats — days on track', () {
-    test('counts days at or above the 80% target', () {
-      final days = ['2024-03-13', '2024-03-14', '2024-03-15'];
+  group('habitChartStats — points to goal', () {
+    test('reports whole points below the 80% target', () {
+      final days = ['2024-03-13', '2024-03-14'];
       final stats = habitChartStats(
         stateWith(
           days: days,
@@ -148,41 +148,63 @@ void main() {
             for (final day in days) day: <String>{'h1', 'h2'},
           },
           successfulByDay: {
-            '2024-03-13': {'h1', 'h2'}, // 100 → on track
-            '2024-03-14': {'h1'}, // 50 → off
-            '2024-03-15': {'h1', 'h2'}, // 100 → on track
+            for (final day in days) day: {'h1'}, // 50% → 30 points to 80
           },
         ),
       );
 
-      expect(stats.daysOnTrack, 2);
-      expect(stats.windowDays, 3);
-      expect(stats.target, 80);
+      expect(stats.currentAverage, 50.0);
+      expect(stats.isAtGoal, isFalse);
+      expect(stats.pointsToGoal, 30);
+    });
+
+    test('reports zero points and isAtGoal once the average clears target', () {
+      final days = ['2024-03-13', '2024-03-14'];
+      final stats = habitChartStats(
+        stateWith(
+          days: days,
+          allByDay: {
+            for (final day in days) day: <String>{'h1', 'h2'},
+          },
+          successfulByDay: {
+            for (final day in days) day: {'h1', 'h2'}, // 100%
+          },
+        ),
+      );
+
+      expect(stats.isAtGoal, isTrue);
+      expect(stats.pointsToGoal, 0);
     });
   });
 
   group('habitChartStats — laggard habit', () {
     final days = ['2024-03-13', '2024-03-14', '2024-03-15'];
 
-    test('names the worst below-target habit and its missed count', () {
-      final stats = habitChartStats(
-        stateWith(
-          days: days,
-          habitDefinitions: [habitFlossing, habitFlossingDueLater],
-          allByDay: {
-            for (final day in days)
-              day: {habitFlossing.id, habitFlossingDueLater.id},
-          },
-          // Flossing kept every day; the other kept none.
-          successfulByDay: {
-            for (final day in days) day: {habitFlossing.id},
-          },
-        ),
-      );
+    test(
+      'names the worst below-target habit, gain-framed (kept of active)',
+      () {
+        final stats = habitChartStats(
+          stateWith(
+            days: days,
+            habitDefinitions: [habitFlossing, habitFlossingDueLater],
+            allByDay: {
+              for (final day in days)
+                day: {habitFlossing.id, habitFlossingDueLater.id},
+            },
+            // Flossing kept every day; the other kept once.
+            successfulByDay: {
+              '2024-03-13': {habitFlossing.id, habitFlossingDueLater.id},
+              '2024-03-14': {habitFlossing.id},
+              '2024-03-15': {habitFlossing.id},
+            },
+          ),
+        );
 
-      expect(stats.laggardName, habitFlossingDueLater.name);
-      expect(stats.laggardMissed, 3);
-    });
+        expect(stats.laggardName, habitFlossingDueLater.name);
+        expect(stats.laggardKept, 1);
+        expect(stats.laggardActive, 3);
+      },
+    );
 
     test('no laggard when every habit is at or above target', () {
       final stats = habitChartStats(
@@ -201,8 +223,40 @@ void main() {
       );
 
       expect(stats.laggardName, isNull);
-      expect(stats.laggardMissed, 0);
+      expect(stats.laggardKept, 0);
+      expect(stats.laggardActive, 0);
     });
+
+    test(
+      'a habit active for less than half the window is never the laggard',
+      () {
+        final days = [
+          for (var d = 1; d <= 10; d++)
+            '2024-03-${d.toString().padLeft(2, '0')}',
+        ];
+        // The lagging habit was only active on 3 of 10 days — below the half
+        // window threshold — so it must not be singled out.
+        final stats = habitChartStats(
+          stateWith(
+            days: days,
+            habitDefinitions: [habitFlossing, habitFlossingDueLater],
+            allByDay: {
+              for (var i = 0; i < days.length; i++)
+                days[i]: i < 3
+                    ? {habitFlossing.id, habitFlossingDueLater.id}
+                    : {habitFlossing.id},
+            },
+            // Flossing kept every day (so it's never the laggard); the sparse
+            // habit kept none but is active too few days to be singled out.
+            successfulByDay: {
+              for (final day in days) day: {habitFlossing.id},
+            },
+          ),
+        );
+
+        expect(stats.laggardName, isNull);
+      },
+    );
   });
 
   group('habitChartStats — empty', () {
@@ -213,8 +267,8 @@ void main() {
       expect(stats.rollingAverage, isEmpty);
       expect(stats.currentAverage, 0.0);
       expect(stats.trendDelta, 0.0);
-      expect(stats.daysOnTrack, 0);
       expect(stats.windowDays, 0);
+      expect(stats.pointsToGoal, 80);
       expect(stats.laggardName, isNull);
     });
   });

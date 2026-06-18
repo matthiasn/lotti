@@ -305,18 +305,25 @@ That is easy to miss if you only read the state shape. The controller stores `se
 
 ## Chart and Day Breakdown
 
-The completion-rate chart now lives inside `HabitsChartCard` at the bottom of the page — a titled, bordered `dsCardSurface` card. The card supplies the title (`habitsCompletionRateTitle`), the time-span switch, and the zero-baseline toggle; the chart itself keeps its live per-day breakdown caption.
+The completion-rate chart lives inside `HabitsChartCard` at the bottom of the page — a titled, bordered `dsCardSurface` card. The card supplies the title (`habitsCompletionRateTitle`), the time-span switch, and the zero-baseline toggle; the chart (`HabitCompletionRateChart`) supplies a headline, a single trend line, and — when a day is tapped — that day's breakdown.
 
-- **Time span** is a `TimeSpanSegmentedControl` over `[7, 14, 30]` days, always visible in the card header (no longer hidden behind a calendar toggle). Selecting a span calls `setTimeSpan`, which refetches the range and recomputes. `HabitsChartCard.timeSpans` is the single source for the offered windows. The chart also drives the day window for each row's history strip via the page's shared `rangeStart` / `rangeEnd`.
+- **Time span** is a `TimeSpanSegmentedControl` over `[7, 14, 30]` days, always visible in the card header (no longer hidden behind a calendar toggle). Selecting a span calls `setTimeSpan`, which refetches the range and recomputes. `HabitsChartCard.timeSpans` is the single source for the offered windows. The chart also drives the day window for each dashboard row's history strip via the page's shared `rangeStart` / `rangeEnd`.
 - **Zero-baseline toggle** only appears when `state.minY > 20` (i.e. the lowest day clears the 20% floor, where cropping the axis is actually meaningful). It flips `zeroBased`, switching between a zero-based Y axis and the cropped minimum.
 
-`HabitCompletionRateChart` is driven entirely from `HabitsState` and renders three layered series:
+### Headline, trend line, and stats
 
-- successful
-- successful + skipped
-- successful + skipped + failed
+`HabitCompletionRateChart` is driven entirely from `HabitsState` through the pure `habitChartStats(state)` aggregator (`habit_chart_stats.dart`, unit-tested directly). From the per-day `successfulByDay` / `allByDay` maps it derives:
 
-Tapping the chart sets `selectedInfoYmd`, which updates the breakdown caption with success / skipped / recorded-fail percentages for that day. Those percentages are computed by the pure `dayPercentages` helper, which clamps the failed band to the remaining headroom (`100 - success - skipped`) so the three bands never sum above 100. The selected day clears on a 15-second debounce in the controller — interactive, but intentionally not sticky forever.
+- **`dailyRates`** — each day's completion rate, `success / totalForDay`, clamped to 100 (the same `totalForDay` denominator the heatmap uses, so the two surfaces can't disagree);
+- **`rollingAverage`** — the trailing 7-day mean of `dailyRates` (a partial window on the early days), the chart's hero line;
+- **`currentAverage`** — the latest rolling value, shown as the big headline number;
+- **`trendDelta`** — the last-7-days mean minus the prior 7, rendered as a tinted ±% chip and only once ≥14 days of data exist;
+- **`pointsToGoal` / `isAtGoal`** — how far `currentAverage` is below the 80% target; the headline reads "`N` points from your 80% goal" (or "On track, above 80%"). This is a forward-looking, gain-framed companion to the average — deliberately **not** a pass/fail day count, which would contradict a healthy, climbing average;
+- **laggard** (`laggardName` / `laggardKept` / `laggardActive`) — the single below-target habit that was active for at least half the window, gain-framed as "kept K of A". The half-window gate keeps a sparse or brand-new habit from being singled out.
+
+The plot is one hero **rolling-average** line (`successColor`, curved, with a green→transparent gradient fill) over the raw daily rates drawn as faint same-green dots (so they read as the un-smoothed values the line averages), with the ≥80% "on track" zone shaded via a `HorizontalRangeAnnotation` and a dashed target line at 80%. The Y axis runs 0–100% (cropped to `state.minY` when the zero-baseline toggle is off); the X axis labels 3–4 dates inset from the edges; vertical gridlines are dropped. Above the plot sits the headline (big average + `7-day avg` label + points-to-goal + trend chip); the laggard "opportunity" line is a quiet `💡`-prefixed footnote **below** the chart, so the lowest performer never sits next to and undercuts the hero number.
+
+Tapping the chart sets `selectedInfoYmd`, which swaps the headline for that day's success / skipped / recorded-fail percentages — computed by the pure `dayPercentages` helper, which clamps the failed band to the remaining headroom (`100 - success - skipped`) so the three never sum above 100. The selected day clears on a 15-second debounce in the controller — interactive, but intentionally not sticky forever.
 
 ## Consistency Heatmap
 

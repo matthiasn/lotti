@@ -30,6 +30,7 @@ class HabitCompletionRateChart extends ConsumerWidget
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    final messages = context.messages;
     final state = ref.watch(habitsControllerProvider);
     final controller = ref.read(habitsControllerProvider.notifier);
     final stats = habitChartStats(state);
@@ -76,10 +77,10 @@ class HabitCompletionRateChart extends ConsumerWidget
     return Column(
       children: [
         SizedBox(
-          // Tall enough for the two-line headline (big number + on-track count
-          // + laggard nudge); the one-line day breakdown centres within it, so
-          // selecting/clearing a day doesn't shift the chart below.
-          height: 64,
+          // Holds the single headline row (rate + unit · goal chip · trend
+          // chip); the day breakdown centres within it, so selecting/clearing a
+          // day doesn't shift the chart below.
+          height: 44,
           child: state.selectedInfoYmd.isNotEmpty
               ? Center(
                   // A selected day swaps the headline for its split; it
@@ -98,6 +99,7 @@ class HabitCompletionRateChart extends ConsumerWidget
                 )
               : _ChartHeadline(stats: stats),
         ),
+        SizedBox(height: tokens.spacing.step2),
         SizedBox(
           height: 150,
           width: double.infinity,
@@ -140,14 +142,37 @@ class HabitCompletionRateChart extends ConsumerWidget
                   drawVerticalLine: false,
                   getDrawingHorizontalLine: (value) {
                     if (value == stats.target) {
-                      // The target line — the floor of the on-track band, tinted
-                      // to match it rather than a neutral hairline.
-                      return chartEmphasisLine(
-                        successColor.withValues(alpha: 0.5),
+                      // The target sits on a labelled extra line (below), so
+                      // skip the gridline here to avoid doubling it.
+                      return const FlLine(
+                        color: Colors.transparent,
+                        strokeWidth: 0,
                       );
                     }
                     return chartGridLine(context);
                   },
+                ),
+                extraLinesData: ExtraLinesData(
+                  horizontalLines: [
+                    // The goal line, drawn where it lives and labelled "Goal"
+                    // at the right so the dashed target reads as the goal, not
+                    // just another gridline.
+                    HorizontalLine(
+                      y: stats.target,
+                      color: successColor.withValues(alpha: 0.5),
+                      strokeWidth: 1,
+                      dashArray: const [5, 3],
+                      label: HorizontalLineLabel(
+                        show: true,
+                        alignment: Alignment.topRight,
+                        padding: const EdgeInsets.only(right: 2, bottom: 2),
+                        labelResolver: (_) => messages.habitsGoalLineLabel,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: successColor.withValues(alpha: 0.9),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
                 titlesData: FlTitlesData(
                   rightTitles: const AxisTitles(),
@@ -193,8 +218,7 @@ class HabitCompletionRateChart extends ConsumerWidget
                       getDotPainter: (spot, percent, bar, index) =>
                           FlDotCirclePainter(
                             radius: 2,
-                            color: Color.lerp(successColor, Colors.white, 0.5)!
-                                .withValues(alpha: 0.6),
+                            color: successColor.withValues(alpha: 0.5),
                           ),
                     ),
                   ),
@@ -227,14 +251,19 @@ class HabitCompletionRateChart extends ConsumerWidget
             ),
           ),
         ),
+        if (stats.laggardName != null) ...[
+          SizedBox(height: tokens.spacing.step3),
+          _LaggardFootnote(stats: stats),
+        ],
       ],
     );
   }
 }
 
-/// The headline above the trend line: the current 7-day average as the lead
-/// number, the on-track day count, the trend chip vs the previous week, and a
-/// single-laggard nudge — additive, non-punitive framing for "how am I doing?".
+/// The single headline row: the rate + its `7-day avg` unit as one inline group
+/// on the left, then the goal-status chip and the week-over-week trend chip on
+/// the right. The laggard "opportunity" line lives separately, below the chart
+/// (see [_LaggardFootnote]).
 class _ChartHeadline extends StatelessWidget {
   const _ChartHeadline({required this.stats});
 
@@ -245,85 +274,130 @@ class _ChartHeadline extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final avg = stats.currentAverage.round();
+    final bodySmall = tokens.typography.styles.body.bodySmall;
     // Only compare to "last week" once a full prior 7-day window exists; on the
     // 7-day span there's nothing meaningful to trend against.
     final showTrend = stats.windowDays >= 14;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          children: [
-            Text(
-              '$avg%',
-              style: tokens.typography.styles.heading.heading2.copyWith(
-                color: tokens.colors.text.highEmphasis,
-              ),
+        // Group A: the rate and its unit read as one block — the big number
+        // with a small "7-day avg" set just to its right on the same baseline.
+        Text.rich(
+          TextSpan(
+            style: tokens.typography.styles.heading.heading2.copyWith(
+              color: tokens.colors.text.highEmphasis,
             ),
-            SizedBox(width: tokens.spacing.step2),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    messages.habitsRollingAverageLabel,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                  if (stats.windowDays > 0)
-                    Text(
-                      messages.habitsDaysOnTrack(
-                        stats.daysOnTrack,
-                        stats.windowDays,
-                      ),
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (showTrend) _TrendChip(delta: stats.trendDelta.round()),
-          ],
-        ),
-        if (stats.laggardName != null)
-          Padding(
-            padding: EdgeInsets.only(top: tokens.spacing.step1),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.error_outline_rounded,
-                  size: tokens.spacing.step4,
+            children: [
+              TextSpan(text: '$avg%'),
+              TextSpan(
+                text: '  ${messages.habitsRollingAverageLabel}',
+                style: bodySmall.copyWith(
                   color: tokens.colors.text.mediumEmphasis,
                 ),
-                SizedBox(width: tokens.spacing.step1),
-                Flexible(
-                  child: Text(
-                    messages.habitsLaggardHint(
-                      stats.laggardName!,
-                      stats.laggardMissed,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
+        ),
+        const Spacer(),
+        // Group B: distance to goal, a step apart and warning-tinted when below
+        // target (a calm amber, not alarm red).
+        if (stats.windowDays > 0) _GoalChip(stats: stats),
+        if (stats.windowDays > 0 && showTrend)
+          SizedBox(width: tokens.spacing.step2),
+        if (showTrend) _TrendChip(delta: stats.trendDelta.round()),
       ],
     );
   }
 }
 
-/// The trend pill: a direction arrow + the absolute week-over-week delta. A
-/// rise is the success colour; a dip stays neutral (not alarm red) so a quiet
-/// week reads as information, not a scolding.
+/// The goal-status pill: how far the average is from the target. Below target
+/// it's a calm amber "warning" (e.g. "9% to goal"); at/above it flips to the
+/// success colour and "On track". Separate from the trend chip — one answers
+/// "where am I against the goal", the other "which way am I moving".
+class _GoalChip extends StatelessWidget {
+  const _GoalChip({required this.stats});
+
+  final HabitChartStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final atGoal = stats.isAtGoal;
+    final color = atGoal
+        ? tokens.colors.alert.success.defaultColor
+        : tokens.colors.alert.warning.defaultColor;
+    final text = atGoal
+        ? messages.habitsAboveGoal
+        : messages.habitsPointsToGoal(stats.pointsToGoal);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step3,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+      ),
+      child: Text(
+        text,
+        style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+          color: color,
+        ),
+      ),
+    );
+  }
+}
+
+/// The single-laggard "opportunity" line, rendered as a quiet footnote *below*
+/// the chart rather than in the headline — so the lowest-performing habit never
+/// sits next to (and undercuts) the hero number. Gain-framed ("kept K of A")
+/// with an opportunity glyph; only built when [HabitChartStats.laggardName] is
+/// set (a below-target habit active at least half the window).
+class _LaggardFootnote extends StatelessWidget {
+  const _LaggardFootnote({required this.stats});
+
+  final HabitChartStats stats;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    return Row(
+      children: [
+        Icon(
+          Icons.lightbulb_outline_rounded,
+          size: tokens.spacing.step4,
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+        SizedBox(width: tokens.spacing.step1),
+        Flexible(
+          child: Text(
+            messages.habitsLaggardHint(
+              stats.laggardName!,
+              stats.laggardKept,
+              stats.laggardActive,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// The trend pill: a tinted rounded chip carrying a direction arrow + the
+/// absolute week-over-week delta. A rise is the success colour; a dip stays
+/// neutral (not alarm red) so a quiet week reads as information, not a scolding.
+/// The filled chip gives the positive signal enough weight to balance the
+/// headline number on the opposite side of the row.
 class _TrendChip extends StatelessWidget {
   const _TrendChip({required this.delta});
 
@@ -347,18 +421,28 @@ class _TrendChip extends StatelessWidget {
       label: '$sign${delta.abs()}% ${messages.habitsVsPreviousWeek}',
       child: Tooltip(
         message: messages.habitsVsPreviousWeek,
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: tokens.spacing.step4, color: color),
-            SizedBox(width: tokens.spacing.step1),
-            Text(
-              '${delta.abs()}%',
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: color,
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step2,
+            vertical: tokens.spacing.step1,
+          ),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.14),
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: tokens.spacing.step4, color: color),
+              SizedBox(width: tokens.spacing.step1),
+              Text(
+                '${delta.abs()}%',
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: color,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

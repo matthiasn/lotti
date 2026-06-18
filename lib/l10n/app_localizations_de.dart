@@ -4904,9 +4904,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitPriorityLabel => 'Priorität';
 
   @override
-  String habitsAboveGoal(int target) {
-    return 'Im Plan, über $target%';
-  }
+  String get habitsAboveGoal => 'Im Plan';
 
   @override
   String habitsActiveHabitsCount(int count) {
@@ -4947,6 +4945,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitsFilterPendingLater => 'später';
 
   @override
+  String get habitsGoalLineLabel => 'Ziel';
+
+  @override
   String get habitsHeatmapEmpty =>
       'Füge eine Gewohnheit hinzu, um deine Beständigkeit aufzubauen';
 
@@ -4974,8 +4975,8 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitsPendingLaterHeader => 'Später heute';
 
   @override
-  String habitsPointsToGoal(int points, int target) {
-    return '$points Punkte bis zu deinem Ziel von $target%';
+  String habitsPointsToGoal(int points) {
+    return '$points Pkt. bis zum Ziel';
   }
 
   @override

@@ -8487,8 +8487,8 @@ abstract class AppLocalizations {
   /// No description provided for @habitsAboveGoal.
   ///
   /// In en, this message translates to:
-  /// **'On track, above {target}%'**
-  String habitsAboveGoal(int target);
+  /// **'On track'**
+  String get habitsAboveGoal;
 
   /// No description provided for @habitsActiveHabitsCount.
   ///
@@ -8562,6 +8562,12 @@ abstract class AppLocalizations {
   /// **'later'**
   String get habitsFilterPendingLater;
 
+  /// No description provided for @habitsGoalLineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get habitsGoalLineLabel;
+
   /// No description provided for @habitsHeatmapEmpty.
   ///
   /// In en, this message translates to:
@@ -8613,8 +8619,8 @@ abstract class AppLocalizations {
   /// No description provided for @habitsPointsToGoal.
   ///
   /// In en, this message translates to:
-  /// **'{points} points from your {target}% goal'**
-  String habitsPointsToGoal(int points, int target);
+  /// **'{points} pts to goal'**
+  String habitsPointsToGoal(int points);
 
   /// No description provided for @habitsRecordButton.
   ///
