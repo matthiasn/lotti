@@ -266,5 +266,98 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(CompletionBurst), findsNothing);
     });
+
+    testWidgets(
+      'renders centred on the anchor inside a nested/offset overlay',
+      (
+        tester,
+      ) async {
+        const anchorKey = Key('burst-anchor');
+        // A nested Overlay pushed to the right of a 400px spacer — mimics the
+        // desktop task-detail pane, whose overlay origin is offset from the
+        // screen. The burst must still land on the anchor, not be flung further
+        // right by the overlay's own offset.
+        await tester.pumpWidget(
+          makeTestableWidget(
+            Center(
+              child: SizedBox(
+                width: 800,
+                height: 400,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 400),
+                    Expanded(
+                      child: Overlay(
+                        initialEntries: [
+                          OverlayEntry(
+                            builder: (_) => const Center(
+                              child: SizedBox(
+                                key: anchorKey,
+                                width: 40,
+                                height: 40,
+                                child: _BurstOnMount(),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump(); // run the anchor's post-frame spawn
+        await tester.pump(const Duration(milliseconds: 100)); // build + start
+        await tester.pump(const Duration(milliseconds: 300)); // into the window
+
+        expect(find.byType(CompletionBurst), findsOneWidget);
+        final anchorRect = tester.getRect(find.byKey(anchorKey));
+        final burstRect = tester.getRect(find.byType(CompletionBurst));
+        // The burst box is centred on the anchor (pre-fix it was offset by the
+        // overlay's 400px origin, flinging it off to the right).
+        expect(
+          burstRect.center.dx,
+          moreOrLessEquals(anchorRect.center.dx, epsilon: 1),
+        );
+        expect(
+          burstRect.center.dy,
+          moreOrLessEquals(anchorRect.center.dy, epsilon: 1),
+        );
+
+        await tester.pumpAndSettle();
+      },
+    );
   });
+}
+
+/// Fires a [spawnCompletionBurst] from its own context once after first layout.
+/// A `StatefulWidget` (not an inline `Builder`) so it spawns exactly once,
+/// rather than re-firing every time the overlay rebuilds.
+class _BurstOnMount extends StatefulWidget {
+  const _BurstOnMount();
+
+  @override
+  State<_BurstOnMount> createState() => _BurstOnMountState();
+}
+
+class _BurstOnMountState extends State<_BurstOnMount> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        spawnCompletionBurst(
+          context,
+          count: 16,
+          duration: const Duration(milliseconds: 850),
+        );
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox.expand();
 }

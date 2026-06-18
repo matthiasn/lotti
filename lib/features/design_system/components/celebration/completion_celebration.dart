@@ -232,7 +232,18 @@ void spawnCompletionBurst(
   final box = context.findRenderObject() as RenderBox?;
   if (overlay == null || box == null || !box.hasSize) return;
   final size = box.size;
-  final center = box.localToGlobal(origin.alongSize(size));
+  // Anchor in the overlay's own coordinate space, not the screen's. The
+  // nearest Overlay may be a nested one — e.g. the desktop task-detail pane,
+  // offset to the right of the sidebar — and the burst is positioned inside
+  // *that* overlay. Plain global coords would double-count the overlay's
+  // offset and fling the burst off to the side (only a stray spark drifting
+  // back into view). Passing the overlay's render box as `ancestor` makes
+  // [RenderBox.localToGlobal] stop there, yielding overlay-local coordinates.
+  final overlayBox = overlay.context.findRenderObject() as RenderBox?;
+  final center = box.localToGlobal(
+    origin.alongSize(size),
+    ancestor: overlayBox,
+  );
   final reach = size.height * reachFactor;
   WidgetsBinding.instance.addPostFrameCallback((_) {
     if (!overlay.mounted) return;
