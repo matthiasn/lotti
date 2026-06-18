@@ -11,6 +11,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
+import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
 
 /// History-first review home for standalone soul evolution sessions.
 class SoulEvolutionReviewPage extends ConsumerWidget {
@@ -97,7 +98,9 @@ class SoulEvolutionReviewPage extends ConsumerWidget {
   }
 
   void _openChat(BuildContext context) {
-    Navigator.of(context).push(
+    // Root navigator on mobile so the chat's message input clears the
+    // floating bottom nav (this push keeps the review route's URL).
+    bottomNavSafeNavigatorOf(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SoulEvolutionChatPage(soulId: soulId),
       ),

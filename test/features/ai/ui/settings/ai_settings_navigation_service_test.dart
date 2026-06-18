@@ -48,6 +48,10 @@ void main() {
       // registration error — register a no-op mock for both arms.
       mockNavService = MockNavService();
       when(() => mockNavService.beamToNamed(any())).thenReturn(null);
+      // The provider create/edit forms push onto the root navigator on
+      // mobile so they clear the floating bottom nav — default the tests
+      // to mobile mode.
+      when(() => mockNavService.isDesktopMode).thenReturn(false);
       await setUpTestGetIt(
         additionalSetup: () {
           getIt.registerSingleton<NavService>(mockNavService);
@@ -101,6 +105,41 @@ void main() {
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
               body: child ?? const Center(child: Text('home')),
+            ),
+          ),
+        );
+      }
+
+      // Harness with a nested [Navigator] beneath the root MaterialApp
+      // navigator. Mirrors the production layout where the AI settings
+      // page lives inside a per-tab nested navigator while the bottom
+      // nav (and the form that must clear it) belong to the root. The
+      // two observers let a test prove WHICH navigator a push landed on.
+      Widget nestedHarness({
+        required NavigatorObserver rootObserver,
+        required NavigatorObserver nestedObserver,
+      }) {
+        return ProviderScope(
+          child: MaterialApp(
+            navigatorObservers: [rootObserver],
+            theme: ThemeData(
+              useMaterial3: true,
+              extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+            ),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Navigator(
+              observers: [nestedObserver],
+              onGenerateRoute: (_) => MaterialPageRoute<void>(
+                builder: (_) => const Scaffold(
+                  body: Center(child: Text('nested home')),
+                ),
+              ),
             ),
           ),
         );
@@ -228,6 +267,64 @@ void main() {
           );
           expect(pushedPage.configId, 'gemini-2');
           expect(pushedPage.focusApiKey, isTrue);
+        },
+      );
+
+      testWidgets(
+        'navigateToCreateProvider pushes the form onto the ROOT navigator on '
+        'mobile — lifts it above the shell so the sticky save bar clears the '
+        'floating bottom nav (the original "can\'t save the provider" bug)',
+        (tester) async {
+          when(() => mockNavService.isDesktopMode).thenReturn(false);
+          final rootSpy = _PushSpy();
+          final nestedSpy = _PushSpy();
+          await tester.pumpWidget(
+            nestedHarness(rootObserver: rootSpy, nestedObserver: nestedSpy),
+          );
+          final ctx = tester.element(find.text('nested home'));
+          final rootBefore = rootSpy.pushed.length;
+          final nestedBefore = nestedSpy.pushed.length;
+
+          unawaited(
+            service.navigateToCreateProvider(
+              ctx,
+              preselectedType: InferenceProviderType.gemini,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(InferenceProviderEditPage), findsOneWidget);
+          // The form landed on the root navigator, not the nested one.
+          expect(rootSpy.pushed.length, rootBefore + 1);
+          expect(nestedSpy.pushed.length, nestedBefore);
+        },
+      );
+
+      testWidgets(
+        'navigateToProviderEdit pushes onto the NESTED navigator on desktop — '
+        'the form overlays only the settings panel, since there is no bottom '
+        'nav to escape there',
+        (tester) async {
+          when(() => mockNavService.isDesktopMode).thenReturn(true);
+          final rootSpy = _PushSpy();
+          final nestedSpy = _PushSpy();
+          await tester.pumpWidget(
+            nestedHarness(rootObserver: rootSpy, nestedObserver: nestedSpy),
+          );
+          final ctx = tester.element(find.text('nested home'));
+          final rootBefore = rootSpy.pushed.length;
+          final nestedBefore = nestedSpy.pushed.length;
+
+          unawaited(
+            service.navigateToProviderEdit(ctx, providerId: 'gemini-desktop'),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.byType(InferenceProviderEditPage), findsOneWidget);
+          // The form stayed on the nested navigator, leaving the root
+          // (the rest of the desktop window) untouched.
+          expect(nestedSpy.pushed.length, nestedBefore + 1);
+          expect(rootSpy.pushed.length, rootBefore);
         },
       );
 

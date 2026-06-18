@@ -303,6 +303,26 @@ final navigationService = AiSettingsNavigationService();
 await navigationService.navigateToConfigEdit(context, config);
 ```
 
+**Provider form placement (root navigator on mobile):**
+`navigateToCreateProvider` and `navigateToProviderEdit` push the
+`InferenceProviderEditPage` onto the **root** navigator on mobile via the
+shared `bottomNavSafeNavigatorOf`
+(`lib/widgets/nav_bar/bottom_nav_safe_navigator.dart`, gated by
+`NavService.isDesktopMode`). The app shell paints its bottom navigation bar
+as a floating overlay on top of each tab's page stack, so a form pushed onto
+the nested tab navigator would have its sticky save bar hidden behind that
+pill — the form would mount but the user couldn't reach "Save". Lifting it
+above the whole shell keeps the save action reachable. On desktop there is no
+bottom nav (a sidebar drives navigation) and the form is meant to overlay only
+the settings panel, so the nested push is kept there. The form's footer is
+wrapped in a bottom-only `SafeArea` so the save action clears the home
+indicator once it owns the bottom edge.
+
+The same helper backs the agent template/soul editors and the evolution chat
+(pushed from review pages); the route-driven counterpart for editors that
+*are* their own settings routes is `settingsRouteHidesBottomNav` in
+`lib/beamer/beamer_app.dart`.
+
 #### `AiConfigDeleteService`
 Single entry point for deleting any `AiConfig` variant. Pairs a
 confirmation modal with a design-system warning toast that carries a

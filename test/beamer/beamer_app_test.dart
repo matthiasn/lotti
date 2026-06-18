@@ -147,7 +147,7 @@ class _AppScreenLocation extends BeamLocation<BeamState> {
 }
 
 /// A [SettingsLocation] whose pages are inert stubs: route matching (and
-/// therefore [isSettingsEntityDefinitionRoute]) behaves exactly like
+/// therefore [settingsRouteHidesBottomNav]) behaves exactly like
 /// production, but no real settings page — with its getIt dependency
 /// fan-out — is ever built.
 class _TestSettingsLocation extends SettingsLocation {
@@ -1543,14 +1543,14 @@ void main() {
     });
   });
 
-  group('isSettingsEntityDefinitionRoute', () {
+  group('settingsRouteHidesBottomNav', () {
     SettingsLocation settingsLocationFor(String path) =>
         SettingsLocation(RouteInformation(uri: Uri.parse(path)));
 
     test('returns false for null and non-settings locations', () {
-      expect(isSettingsEntityDefinitionRoute(null), isFalse);
+      expect(settingsRouteHidesBottomNav(null), isFalse);
       expect(
-        isSettingsEntityDefinitionRoute(
+        settingsRouteHidesBottomNav(
           _ArbitraryLocation(
             RouteInformation(uri: Uri.parse('/settings/categories/abc')),
           ),
@@ -1559,7 +1559,7 @@ void main() {
       );
     });
 
-    test('returns true on entity-definition detail and create pages', () {
+    test('returns true on detail/editor pages that dock a bottom bar', () {
       for (final path in <String>[
         '/settings/categories/some-category-id',
         '/settings/categories/create',
@@ -1572,16 +1572,23 @@ void main() {
         '/settings/habits/by_id/some-habit-id',
         '/settings/habits/create',
         '/settings/projects/some-project-id',
+        // Agent template & soul editors dock a FormBottomBar.
+        '/settings/agents/templates/some-template-id',
+        '/settings/agents/templates/create',
+        '/settings/agents/souls/some-soul-id',
+        '/settings/agents/souls/create',
+        // Sync conflict resolver detail docks a ConflictFooter.
+        '/settings/advanced/conflicts/some-conflict-id',
       ]) {
         expect(
-          isSettingsEntityDefinitionRoute(settingsLocationFor(path)),
+          settingsRouteHidesBottomNav(settingsLocationFor(path)),
           isTrue,
           reason: path,
         );
       }
     });
 
-    test('returns false for list pages, the root, and non-definition '
+    test('returns false for list pages, the root, and non-editor '
         'settings pages', () {
       for (final path in <String>[
         '/settings',
@@ -1590,8 +1597,25 @@ void main() {
         '/settings/theming',
         '/settings/advanced/maintenance',
         '/settings/sync',
+        // AI provider/model/profile surfaces keep the bar: the detail pages
+        // save via the app bar and the connect form escapes the nav by
+        // pushing onto the root navigator instead.
         '/settings/ai/provider/some-provider-id',
-        '/settings/agents/templates/some-template-id',
+        '/settings/ai/model/some-model-id',
+        '/settings/ai/profile/some-profile-id',
+        // Agents landing + per-tab list landings are browse surfaces.
+        '/settings/agents',
+        '/settings/agents/templates',
+        '/settings/agents/souls',
+        '/settings/agents/instances/some-agent-id',
+        // Evolution review history is a browse surface — the chat pushed
+        // from it escapes the nav via the root navigator, not by route.
+        '/settings/agents/templates/some-template-id/review',
+        '/settings/agents/souls/some-soul-id/review',
+        // Conflicts list keeps the bar; the manual-merge entry editor
+        // (`/edit`) manages its own bottom inset.
+        '/settings/advanced/conflicts',
+        '/settings/advanced/conflicts/some-conflict-id/edit',
         // List pages are browse surfaces — the bar stays; only the
         // detail/create editors slide it away.
         '/settings/categories',
@@ -1610,7 +1634,7 @@ void main() {
         '/settings/projects/create',
       ]) {
         expect(
-          isSettingsEntityDefinitionRoute(settingsLocationFor(path)),
+          settingsRouteHidesBottomNav(settingsLocationFor(path)),
           isFalse,
           reason: path,
         );

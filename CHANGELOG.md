@@ -33,6 +33,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   modals), the AI settings screens (error/retry states, provider setup, and
   delete dialogs), health import, the agent editors, and habit completion.
 
+### Fixed
+- On phones, save and action buttons on several settings detail screens were
+  hidden behind the bottom navigation bar, so the action couldn't be tapped —
+  most visibly the Save button on the AI provider setup screen (for example
+  after pasting a Gemini API key). These screens now keep the whole bottom edge:
+  the AI provider connect/edit form, the agent template and soul editors, the
+  sync conflict resolver, and the agent evolution chat input all stay clear of
+  the navigation bar, so their actions are reachable.
+
 ## [0.9.1025]
 ### Added
 - Experimental on-device text-to-speech is now available on Linux too (in
