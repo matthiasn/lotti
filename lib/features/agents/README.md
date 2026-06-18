@@ -984,6 +984,18 @@ and the latest proposal is the only actionable row. `AiSummaryCard` also
 defensively renders only the newest pending running-timer update so historical
 duplicate data does not produce multiple accept buttons.
 
+The `AiSummaryCard` presentation is tuned for both quick action and a sense of
+craft. The surface carries a directional accent gradient + glow anchored on the
+sparkle badge so it reads as a distinct "assistant" zone, and it renders *below*
+the task's checklists so the user's own work comes first. Each proposal is a
+colour-coded row keyed by change kind (add / update / priority / estimate /
+status / label / due). On narrow viewports the row stacks the kind chip + visible
+✕ / ✓ buttons above full-width text, and the whole row stays swipeable (right =
+confirm, left = dismiss). "Confirm all" is an accent pill; pressing it cascades a
+top-to-bottom pop across the rows (per-row 45 ms stagger + a throttled selection
+haptic) so a batch confirm reads as a satisfying sweep. All of this honours the
+system reduce-motion setting.
+
 ```mermaid
 sequenceDiagram
   participant Agent as TaskAgentStrategy

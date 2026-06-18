@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -927,6 +928,98 @@ void main() {
         completer.complete(const []);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
+      },
+    );
+  });
+
+  group('AiSummaryCard – Confirm-all cascade', () {
+    testWidgets(
+      'pressing Confirm all fires a staggered selection haptic across rows',
+      (tester) async {
+        final haptics = <String>[];
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (call) async {
+            if (call.method == 'HapticFeedback.vibrate') {
+              haptics.add(call.arguments as String? ?? '');
+            }
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+            SystemChannels.platform,
+            null,
+          ),
+        );
+
+        final csA = makeTestChangeSet(
+          id: 'cs-cascade-a',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'GROOMED'},
+              humanSummary: 'Set status to GROOMED',
+            ),
+          ],
+        );
+        final csB = makeTestChangeSet(
+          id: 'cs-cascade-b',
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P1'},
+              humanSummary: 'Raise priority to P1',
+            ),
+          ],
+        );
+        // Hold the confirm so the rows stay mounted across the cascade window.
+        final completer = Completer<List<ToolExecutionResult>>();
+        final service = MockChangeSetConfirmationService();
+        when(
+          () => service.confirmAll(any()),
+        ).thenAnswer((_) => completer.future);
+        final bench = AgentTestBench(
+          confirmationService: service,
+          updateNotifications: MockUpdateNotifications(),
+          suggestions: UnifiedSuggestionList(
+            open: [
+              PendingSuggestion(
+                changeSet: csA,
+                itemIndex: 0,
+                item: csA.items.first,
+                fingerprint: 'fp-cascade-a',
+              ),
+              PendingSuggestion(
+                changeSet: csB,
+                itemIndex: 0,
+                item: csB.items.first,
+                fingerprint: 'fp-cascade-b',
+              ),
+            ],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Confirm all'));
+        await tester.pump();
+        // Row 0 pops immediately; row 1 after its ~45ms stagger — let both fire.
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(
+          haptics
+              .where((h) => h == 'HapticFeedbackType.selectionClick')
+              .length,
+          greaterThanOrEqualTo(2),
+        );
+
+        completer.complete(const []);
+        await tester.pump();
+        await tester.pumpAndSettle();
       },
     );
   });

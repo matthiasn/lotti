@@ -111,11 +111,18 @@ class _BurstPainter extends CustomPainter {
       final dir = Offset(math.cos(angle), math.sin(angle));
       final head = center + dir * dist + Offset(0, gravity);
 
+      // Two depth tiers so the burst layers instead of reading uniform: a
+      // third of the sparks are brighter, larger "lead" motes in front, the
+      // rest dimmer and smaller behind them.
+      final isLead = i % 3 == 0;
+      final tierScale = isLead ? 1.25 : 0.82;
+      final tierAlpha = isLead ? 1.0 : 0.72;
       // A big comet head that fades slowly (1 - lt², concave) so the burst
       // lingers long enough to watch, with a tapered trail behind it that's long
       // while the spark is fast and shrinks as it drifts.
-      final opacity = (1 - lt * lt).clamp(0.0, 1.0);
-      final headR = (2.6 + ((i * 3) % 4) / 3 * 2.6) * (1 - 0.32 * lt) * sizeScale;
+      final opacity = ((1 - lt * lt) * tierAlpha).clamp(0.0, 1.0);
+      final headR =
+          (2.6 + ((i * 3) % 4) / 3 * 2.6) * (1 - 0.32 * lt) * sizeScale * tierScale;
       if (headR <= 0.3) continue;
       final isGold = i % 5 == 0;
       final base = isGold ? gold : accent;

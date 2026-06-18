@@ -97,6 +97,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   bool _expanded = false;
   bool _historyOpen = false;
   bool _confirmAllBusy = false;
+  int _confirmAllPulse = 0;
   bool _cancelledManually = false;
   UnifiedSuggestionList? _lastVisibleSuggestions;
   ProviderSubscription<AsyncValue<UnifiedSuggestionList>>?
@@ -185,7 +186,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
   Future<void> _confirmAll(List<PendingSuggestion> pending) async {
     if (_confirmAllBusy || pending.isEmpty) return;
-    setState(() => _confirmAllBusy = true);
+    // Bump the pulse so the proposal rows cascade their confirm pop while the
+    // batch confirm runs.
+    setState(() {
+      _confirmAllBusy = true;
+      _confirmAllPulse++;
+    });
 
     final service = ref.read(changeSetConfirmationServiceProvider);
     final notifier = ref.read(updateNotificationsProvider);
@@ -350,14 +356,17 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final cardRadius = BorderRadius.circular(tokens.radii.l);
     return DecoratedBox(
       decoration: BoxDecoration(
-        // A faint top-down accent wash lifts the AI surface off the page
-        // background so it reads as a crafted "intelligence" panel rather
-        // than a flat dark box, while staying within the aiCard palette.
+        // A directional accent wash anchored at the top-left (where the
+        // sparkle badge sits) leads the eye to the AI identity, then falls off
+        // to the flat background — a crafted "intelligence" panel that stays
+        // within the aiCard palette and the design system's flat aesthetic.
         gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          stops: const [0, 0.55, 1],
           colors: [
-            Color.alphaBlend(ai.accent.withValues(alpha: 0.05), ai.background),
+            Color.alphaBlend(ai.accent.withValues(alpha: 0.09), ai.background),
+            ai.background,
             ai.background,
           ],
         ),
@@ -417,6 +426,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                 onToggleHistory: () =>
                     setState(() => _historyOpen = !_historyOpen),
                 confirmAllBusy: _confirmAllBusy,
+                confirmAllPulse: _confirmAllPulse,
                 onConfirmAll: list.open.length > 1
                     ? () => _confirmAll(list.open)
                     : null,

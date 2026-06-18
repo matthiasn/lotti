@@ -18,6 +18,7 @@ class ProposalsSection extends StatelessWidget {
     required this.onToggleHistory,
     required this.confirmAllBusy,
     required this.onConfirmAll,
+    required this.confirmAllPulse,
     super.key,
   });
 
@@ -27,6 +28,10 @@ class ProposalsSection extends StatelessWidget {
   final VoidCallback onToggleHistory;
   final bool confirmAllBusy;
   final Future<void> Function()? onConfirmAll;
+
+  /// Bumped by the shell on each "Confirm all" press; forwarded to the rows so
+  /// they cascade their confirm pop top-to-bottom.
+  final int confirmAllPulse;
 
   @override
   Widget build(BuildContext context) {
@@ -95,6 +100,8 @@ class ProposalsSection extends StatelessWidget {
                   // wiggle hint so the page doesn't pulse with every
                   // visible row.
                   isFirst: i == 0,
+                  confirmAllPulse: confirmAllPulse,
+                  cascadeIndex: i,
                 ),
               ),
           if (resolved.isNotEmpty) ...[
