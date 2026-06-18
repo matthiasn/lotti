@@ -88,6 +88,48 @@ void main() {
         expect(result.tasks, isTrue);
       },
     );
+
+    test(
+      'toggling one switch before hydration completes still hydrates the rest',
+      () async {
+        container.dispose();
+        await tearDownTestGetIt();
+        final mocks = await setUpTestGetIt();
+        when(
+          () => mocks.settingsDb.saveSettingsItem(any(), any()),
+        ).thenAnswer((_) async => 1);
+        // Habits + tasks were previously turned off and persisted.
+        when(
+          () => mocks.settingsDb.itemByKey('CELEBRATE_HABITS'),
+        ).thenAnswer((_) async => 'false');
+        when(
+          () => mocks.settingsDb.itemByKey('CELEBRATE_TASKS'),
+        ).thenAnswer((_) async => 'false');
+        container = ProviderContainer();
+
+        // build() schedules hydration; toggle checklist items before its
+        // async reads resolve.
+        final notifier = container.read(
+          celebrationPreferencesControllerProvider.notifier,
+        );
+        final completer = Completer<CelebrationPreferences>();
+        container.listen(celebrationPreferencesControllerProvider, (_, next) {
+          // Hydration has landed once the persisted habits=off is reflected.
+          if (!completer.isCompleted && !next.habits) completer.complete(next);
+        });
+        await notifier.setChecklistItems(enabled: false);
+
+        final result = await completer.future.timeout(
+          const Duration(seconds: 1),
+        );
+        // The in-session toggle stuck …
+        expect(result.checklistItems, isFalse);
+        // … and it did NOT block the other two from hydrating their saved
+        // values (the bug the per-field guard fixes).
+        expect(result.habits, isFalse);
+        expect(result.tasks, isFalse);
+      },
+    );
   });
 
   group('setters', () {

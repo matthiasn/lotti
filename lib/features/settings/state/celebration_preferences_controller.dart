@@ -75,9 +75,11 @@ class CelebrationPreferences {
 @Riverpod(keepAlive: true)
 class CelebrationPreferencesController
     extends _$CelebrationPreferencesController {
-  /// True once the user has toggled a switch, so a late-arriving hydration
-  /// can't clobber a fresh interaction (same race guard as `ZoomController`).
-  bool _userAdjusted = false;
+  /// Keys the user has toggled this session. A late-arriving hydration skips
+  /// only these fields, so toggling one switch before hydration completes
+  /// doesn't clobber that choice — *and* doesn't block the other (untouched)
+  /// switches from loading their persisted values.
+  final _adjusted = <String>{};
 
   @override
   CelebrationPreferences build() {
@@ -87,18 +89,27 @@ class CelebrationPreferencesController
 
   Future<void> _hydrate() async {
     if (!getIt.isRegistered<SettingsDb>()) return;
-    final db = getIt<SettingsDb>();
-    final habits = await db.itemByKey(_celebrateHabitsKey);
-    final checklistItems = await db.itemByKey(_celebrateChecklistItemsKey);
-    final tasks = await db.itemByKey(_celebrateTasksKey);
-    // Bail if the user already toggled (don't clobber a fresh choice) or the
-    // provider was disposed while the reads were in flight.
-    if (_userAdjusted || !ref.mounted) return;
-    state = CelebrationPreferences(
-      habits: habits != 'false',
-      checklistItems: checklistItems != 'false',
-      tasks: tasks != 'false',
-    );
+    try {
+      final db = getIt<SettingsDb>();
+      final habits = await db.itemByKey(_celebrateHabitsKey);
+      final checklistItems = await db.itemByKey(_celebrateChecklistItemsKey);
+      final tasks = await db.itemByKey(_celebrateTasksKey);
+      // The provider may have been disposed while the reads were in flight.
+      if (!ref.mounted) return;
+      // `copyWith(field: null)` keeps the current value, so a field the user
+      // already toggled this session is left as-is while the rest hydrate.
+      state = state.copyWith(
+        habits: _adjusted.contains(_celebrateHabitsKey)
+            ? null
+            : habits != 'false',
+        checklistItems: _adjusted.contains(_celebrateChecklistItemsKey)
+            ? null
+            : checklistItems != 'false',
+        tasks: _adjusted.contains(_celebrateTasksKey) ? null : tasks != 'false',
+      );
+    } catch (_) {
+      // A failed read leaves the all-enabled default (set in build) in place.
+    }
   }
 
   /// Enables or disables the habit-completion celebration.
@@ -121,10 +132,15 @@ class CelebrationPreferencesController
     String key,
     bool value,
   ) async {
-    _userAdjusted = true;
+    _adjusted.add(key);
     state = next;
     if (getIt.isRegistered<SettingsDb>()) {
-      await getIt<SettingsDb>().saveSettingsItem(key, value.toString());
+      try {
+        await getIt<SettingsDb>().saveSettingsItem(key, value.toString());
+      } catch (_) {
+        // The in-memory state still reflects the toggle; persistence will be
+        // retried on the next change. Swallow so a DB hiccup can't crash a tap.
+      }
     }
   }
 }

@@ -159,6 +159,7 @@ void main() {
         '/settings/speech',
         '/settings/definitions',
         '/settings/advanced',
+        '/settings/advanced/animations',
         '/settings/advanced/logging_domains',
         '/settings/advanced/conflicts/:conflictId',
         '/settings/advanced/conflicts/:conflictId/edit',
