@@ -29,6 +29,10 @@ class HabitHeatmapController extends _$HabitHeatmapController {
   StreamSubscription<List<HabitDefinition>>? _definitionsSubscription;
   StreamSubscription<Set<String>>? _updateSubscription;
 
+  /// Debounces the completion-triggered recompute so a burst of completions
+  /// coalesces and the heavy refetch lands off the tap's animation frames.
+  Timer? _refreshDebounce;
+
   late HabitsRepository _repository;
   List<HabitDefinition> _habitDefinitions = [];
   List<JournalEntity> _habitCompletions = [];
@@ -79,15 +83,25 @@ class HabitHeatmapController extends _$HabitHeatmapController {
   }
 
   void _cleanup() {
+    _refreshDebounce?.cancel();
     _definitionsSubscription?.cancel();
     _updateSubscription?.cancel();
   }
 
   Future<void> _startWatching() async {
     if (!ref.mounted) return;
-    _updateSubscription = _repository.updateStream.listen((affectedIds) async {
+    _updateSubscription = _repository.updateStream.listen((affectedIds) {
       if (affectedIds.contains(habitCompletionNotification)) {
-        await _refreshAndRecompute();
+        // Debounce the recompute. The heatmap is a background "seeing" surface,
+        // and refetching a year+ of completions and rebuilding it on every
+        // completion blocks the completion frame — which janked the tap's
+        // celebration on mobile. Coalesce rapid completions and let the heavy
+        // work land after the tap, off the animation's critical frames.
+        _refreshDebounce?.cancel();
+        _refreshDebounce = Timer(
+          const Duration(milliseconds: 350),
+          _refreshAndRecompute,
+        );
       }
     });
   }

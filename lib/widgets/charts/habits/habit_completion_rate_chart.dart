@@ -187,9 +187,11 @@ class HabitCompletionRateChart extends ConsumerWidget
                 ),
                 extraLinesData: ExtraLinesData(
                   horizontalLines: [
-                    // The goal line, drawn where it lives and labelled "Goal"
-                    // at the right so the dashed target reads as the goal, not
-                    // just another gridline.
+                    // The goal line, drawn where it lives and labelled "Goal".
+                    // The label sits at the *left* end: an improving line climbs
+                    // toward the right, so a right-aligned label collides with
+                    // it once the rate clears target (visible on the 90-day
+                    // span); the left end stays clear.
                     HorizontalLine(
                       y: stats.target,
                       color: successColor.withValues(alpha: 0.5),
@@ -197,8 +199,9 @@ class HabitCompletionRateChart extends ConsumerWidget
                       dashArray: const [5, 3],
                       label: HorizontalLineLabel(
                         show: true,
-                        alignment: Alignment.topRight,
-                        padding: const EdgeInsets.only(right: 2, bottom: 2),
+                        // alignment defaults to topLeft — the clear end for a
+                        // line that climbs toward the right.
+                        padding: const EdgeInsets.only(left: 2, bottom: 2),
                         labelResolver: (_) => messages.habitsGoalLineLabel,
                         style: tokens.typography.styles.body.bodySmall.copyWith(
                           color: successColor.withValues(alpha: 0.9),

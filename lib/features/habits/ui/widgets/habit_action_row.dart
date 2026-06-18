@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -83,6 +85,11 @@ class _HabitActionRowState extends State<HabitActionRow>
   /// time [dispose] runs — even for a missing habit whose `build` returns early.
   late final AnimationController _celebrate;
 
+  /// True between an optimistic (tap-time) celebration and the matching
+  /// data-driven `completedToday` flip, so the flip doesn't restart the
+  /// animation that's already playing.
+  bool _optimisticCelebration = false;
+
   @override
   void initState() {
     super.initState();
@@ -96,10 +103,16 @@ class _HabitActionRowState extends State<HabitActionRow>
   void didUpdateWidget(HabitActionRow oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.completedToday && widget.completedToday) {
-      // Always run the timeline; the builders decide what it *looks* like. Under
-      // reduced motion that's an opacity-only glow with no particles (see
-      // [build]); otherwise the full staged celebration.
-      _celebrate.forward(from: 0);
+      if (_optimisticCelebration) {
+        // A tap on this row already started the timeline; the provider just
+        // caught up. Don't restart it — let the in-flight animation continue.
+        _optimisticCelebration = false;
+      } else {
+        // Completed from elsewhere (the dialog, a sync). Run the timeline; the
+        // builders decide what it *looks* like — an opacity-only glow under
+        // reduced motion, the full staged celebration otherwise.
+        _celebrate.forward(from: 0);
+      }
     }
   }
 
@@ -155,9 +168,20 @@ class _HabitActionRowState extends State<HabitActionRow>
     HabitCompletionType completionType,
     HabitDefinition habitDefinition,
   ) async {
+    // Fire the celebration first, the instant the tap lands, then persist +
+    // recompute afterwards. Gating the animation behind the provider round-trip
+    // made the burst feel laggy on mobile ("the UI blocks, then particles fly
+    // later"). Only a fresh success flips the row to done, so only that case
+    // celebrates; [didUpdateWidget] won't double-fire it (see
+    // [_optimisticCelebration]).
+    if (completionType == HabitCompletionType.success &&
+        !widget.completedToday) {
+      _optimisticCelebration = true;
+      unawaited(_celebrate.forward(from: 0));
+    }
     await HapticFeedback.lightImpact();
     final now = DateTime.now();
-    await getIt<PersistenceLogic>().createHabitCompletionEntry(
+    final saved = await getIt<PersistenceLogic>().createHabitCompletionEntry(
       data: HabitCompletionData(
         habitId: habitDefinition.id,
         dateFrom: now,
@@ -168,6 +192,15 @@ class _HabitActionRowState extends State<HabitActionRow>
       habitDefinition: habitDefinition,
     );
     if (!mounted) return;
+    if (saved == null) {
+      // The write didn't commit (PersistenceLogic logs the cause and returns
+      // null); the `completedToday` flip that consumes the optimistic flag will
+      // never arrive, so clear it here or a later real completion — and its
+      // celebration — would be suppressed. No success SnackBar either, since
+      // nothing was recorded.
+      _optimisticCelebration = false;
+      return;
+    }
     final tokens = context.designTokens;
     ScaffoldMessenger.maybeOf(context)
       ?..hideCurrentSnackBar()
@@ -284,13 +317,30 @@ class _HabitActionRowState extends State<HabitActionRow>
           if (!reduceMotion)
             Positioned.fill(
               child: IgnorePointer(
-                child: AnimatedBuilder(
-                  animation: _celebrate,
-                  builder: (context, _) {
-                    final p = _stageProgress(_celebrate.value, 0.12, 0.96);
-                    return p == null
-                        ? const SizedBox.shrink()
-                        : CompletionBurst(progress: p);
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Centre the burst on the trailing complete button. It sits
+                    // one card padding (step4) plus half a button (step9) in
+                    // from the right edge, so the fractional origin has to track
+                    // the real card width — a fixed value drifts left of the
+                    // button on wide dashboard cards.
+                    final inset =
+                        tokens.spacing.step4 + tokens.spacing.step9 / 2;
+                    final originX = constraints.maxWidth > 0
+                        ? (1 - 2 * inset / constraints.maxWidth).clamp(0.0, 1.0)
+                        : 0.82;
+                    return AnimatedBuilder(
+                      animation: _celebrate,
+                      builder: (context, _) {
+                        final p = _stageProgress(_celebrate.value, 0.12, 0.96);
+                        return p == null
+                            ? const SizedBox.shrink()
+                            : CompletionBurst(
+                                progress: p,
+                                origin: Alignment(originX, 0),
+                              );
+                      },
+                    );
                   },
                 ),
               ),

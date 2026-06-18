@@ -21,9 +21,9 @@ class HabitsChartCard extends ConsumerWidget {
   const HabitsChartCard({super.key});
 
   /// Time spans offered for the habits chart and the per-row history strips —
-  /// short, habit-scale windows, unlike the months/quarters the Insights
-  /// surface uses.
-  static const List<int> timeSpans = [7, 14, 30];
+  /// fortnight-to-quarter, habit-scale windows. (7 days was dropped: it's too
+  /// short to read a trend, and the rolling average needs a week just to fill.)
+  static const List<int> timeSpans = [14, 30, 90];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

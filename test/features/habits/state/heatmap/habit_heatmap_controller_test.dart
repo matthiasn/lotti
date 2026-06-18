@@ -262,7 +262,27 @@ void main() {
       );
 
       updateController.add({habitCompletionNotification});
+      // The completion-triggered recompute is debounced (350ms) so it lands off
+      // the tap frame. Pin both edges: nothing fires synchronously, nothing
+      // fires just shy of the window, and exactly one refetch fires once it's
+      // crossed — so a regression that dropped the debounce would fail here.
       async.flushMicrotasks();
+      verifyNever(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      );
+      async
+        ..elapse(const Duration(milliseconds: 349))
+        ..flushMicrotasks();
+      verifyNever(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      );
+      async
+        ..elapse(const Duration(milliseconds: 1))
+        ..flushMicrotasks();
 
       verify(
         () => mockRepository.getHabitCompletionsInRange(

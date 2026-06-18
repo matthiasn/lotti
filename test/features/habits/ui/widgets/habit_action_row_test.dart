@@ -51,7 +51,7 @@ void main() {
             comment: any(named: 'comment'),
             habitDefinition: any(named: 'habitDefinition'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => testHabitCompletionEntry);
 
         getIt
           ..unregister<JournalDb>()
@@ -242,6 +242,48 @@ void main() {
       expect(flash, findsNothing);
     });
 
+    testWidgets('spark burst origin tracks card width to stay on the button', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      Future<double> burstOriginX(double width) async {
+        Widget rowAt({required bool done}) => makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: width,
+            child: HabitActionRow(
+              habitId: habitFlossing.id,
+              completedToday: done,
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(rowAt(done: false));
+        await tester.pump();
+        await tester.pumpWidget(rowAt(done: true)); // flip → celebration starts
+        await tester.pump(const Duration(milliseconds: 220)); // burst window
+        final burst = tester.widget<CompletionBurst>(
+          find.byType(CompletionBurst),
+        );
+        expect(burst.origin.y, 0);
+        await tester.pump(const Duration(milliseconds: 1400)); // settle
+        return burst.origin.x;
+      }
+
+      final narrow = await burstOriginX(500);
+      final wide = await burstOriginX(1000);
+
+      // A wider card pushes the trailing button toward the edge, so the burst
+      // origin shifts right to stay on it — never past the edge, and clearly
+      // rightward of the old fixed 0.82 on a wide card.
+      expect(wide, greaterThan(narrow));
+      expect(wide, lessThanOrEqualTo(1.0));
+      expect(wide, greaterThan(0.9));
+    });
+
     testWidgets('reduced motion: static glow, but no spark burst', (
       tester,
     ) async {
@@ -284,6 +326,58 @@ void main() {
         ),
         findsOneWidget,
       );
+    });
+
+    testWidgets(
+      'tapping complete fires the celebration before the data flips',
+      (
+        tester,
+      ) async {
+        await pumpRow(tester); // not done
+        expect(find.byType(CompletionBurst), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.add_rounded));
+        await tester.pump(); // establish the animation start
+        // Into the burst window while completedToday is STILL false — the
+        // celebration is optimistic (driven by the tap), not gated on the
+        // provider catching up after the persist + recompute.
+        await tester.pump(const Duration(milliseconds: 220));
+        expect(find.byType(CompletionBurst), findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 1400)); // settle
+      },
+    );
+
+    testWidgets('a failed persist clears the flag so a later one celebrates', (
+      tester,
+    ) async {
+      // PersistenceLogic returns null when the write doesn't commit (it logs the
+      // cause itself), so the `completedToday` flip that would consume the
+      // optimistic flag never arrives — the row must clear it on its own.
+      when(
+        () => mockPersistenceLogic.createHabitCompletionEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: any(named: 'habitDefinition'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      await pumpRow(tester); // not done
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump(); // haptic + the (failing) persist resolve
+      await tester.pump(const Duration(milliseconds: 1400)); // settle the burst
+
+      // A failed write records nothing, so no success SnackBar is shown.
+      expect(find.byType(SnackBar), findsNothing);
+
+      // The flag was cleared, so a later real completion (from the dialog / a
+      // sync) must still celebrate — it isn't suppressed.
+      await pumpRow(tester, completedToday: true);
+      await tester.pump(); // establish
+      await tester.pump(const Duration(milliseconds: 220)); // burst window
+      expect(find.byType(CompletionBurst), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 1400)); // settle
     });
 
     testWidgets('the icon swap is driven through an AnimatedSwitcher (pop)', (
