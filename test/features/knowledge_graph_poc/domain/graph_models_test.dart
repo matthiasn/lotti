@@ -12,6 +12,7 @@ void main() {
     DateTime? createdAt,
     String? imagePath,
     String? coverImagePath,
+    String? oneLiner,
     String? tldr,
   }) => GraphNode(
     id: id,
@@ -21,6 +22,7 @@ void main() {
     createdAt: createdAt ?? now,
     imagePath: imagePath,
     coverImagePath: coverImagePath,
+    oneLiner: oneLiner,
     tldr: tldr,
   );
 
@@ -35,6 +37,7 @@ void main() {
         createdAt: created,
         imagePath: '/abs/sunset.jpg',
         coverImagePath: '/abs/cover.jpg',
+        oneLiner: 'Golden hour over the bay',
         tldr: 'A nice sunset',
       );
 
@@ -45,6 +48,7 @@ void main() {
       expect(n.createdAt, created);
       expect(n.imagePath, '/abs/sunset.jpg');
       expect(n.coverImagePath, '/abs/cover.jpg');
+      expect(n.oneLiner, 'Golden hour over the bay');
       expect(n.tldr, 'A nice sunset');
     });
 
@@ -52,6 +56,7 @@ void main() {
       final n = node();
       expect(n.imagePath, isNull);
       expect(n.coverImagePath, isNull);
+      expect(n.oneLiner, isNull);
       expect(n.tldr, isNull);
     });
   });

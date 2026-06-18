@@ -23,6 +23,7 @@ void main() {
     String label = 'Focus task',
     String categoryId = 'work',
     DateTime? createdAt,
+    String? oneLiner,
     String? tldr,
     String? coverImagePath,
     String? imagePath,
@@ -32,6 +33,7 @@ void main() {
     label: label,
     categoryId: categoryId,
     createdAt: createdAt ?? created,
+    oneLiner: oneLiner,
     tldr: tldr,
     coverImagePath: coverImagePath,
     imagePath: imagePath,
@@ -162,6 +164,84 @@ void main() {
     });
   });
 
+  group('resolveInspectorSummary', () {
+    // Deterministic created time — no `DateTime.now()` in tests.
+    final summaryCreated = DateTime(2026, 6, 15, 12);
+
+    GraphNode summaryNode({String? oneLiner, String? tldr}) => GraphNode(
+      id: 'n1',
+      type: GraphNodeType.task,
+      label: 'Focus task',
+      categoryId: 'work',
+      createdAt: summaryCreated,
+      oneLiner: oneLiner,
+      tldr: tldr,
+    );
+
+    test('oneLiner + tldr → deck is the oneLiner, body is the preview of '
+        'tldr', () {
+      const oneLiner = 'Ship the inspector panel';
+      const tldr = '## Heading\nThe longer body explanation.';
+      final result = resolveInspectorSummary(
+        summaryNode(oneLiner: oneLiner, tldr: tldr),
+      );
+      expect(result.deck, oneLiner);
+      // The body is the markdown preview of the whole tldr — not split.
+      expect(result.body, previewFromMarkdown(tldr));
+    });
+
+    test('oneLiner only → deck is the oneLiner, body is null', () {
+      const oneLiner = 'Just a tagline';
+      final result = resolveInspectorSummary(summaryNode(oneLiner: oneLiner));
+      expect(result.deck, oneLiner);
+      expect(result.body, isNull);
+    });
+
+    test('tldr only (multi-line) → deck/body come from splitTldr', () {
+      const tldr = 'A crisp lede line\nThe longer body explanation.';
+      final result = resolveInspectorSummary(summaryNode(tldr: tldr));
+      final split = splitTldr(tldr);
+      expect(result.deck, split.lede);
+      expect(result.body, split.body);
+      // Sanity: the multi-line tldr really does produce both a lede and a body.
+      expect(result.deck, 'A crisp lede line');
+      expect(result.body, 'The longer body explanation.');
+    });
+
+    test('tldr only (single sentence) → deck is the lede, body is null', () {
+      // splitTldr returns an empty body for a single sentence, which
+      // resolveInspectorSummary maps to null.
+      final result = resolveInspectorSummary(
+        summaryNode(tldr: 'Only one sentence here.'),
+      );
+      expect(result.deck, 'Only one sentence here.');
+      expect(result.body, isNull);
+    });
+
+    test('neither oneLiner nor tldr → both deck and body are null', () {
+      final result = resolveInspectorSummary(summaryNode());
+      expect(result.deck, isNull);
+      expect(result.body, isNull);
+    });
+
+    test('blank-string oneLiner and tldr are treated as null', () {
+      // Whitespace-only fields trim to empty → treated as absent.
+      final result = resolveInspectorSummary(
+        summaryNode(oneLiner: '   ', tldr: '  \n  '),
+      );
+      expect(result.deck, isNull);
+      expect(result.body, isNull);
+    });
+
+    test('non-blank oneLiner with blank tldr → deck only, body null', () {
+      final result = resolveInspectorSummary(
+        summaryNode(oneLiner: 'Tagline', tldr: '   '),
+      );
+      expect(result.deck, 'Tagline');
+      expect(result.body, isNull);
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // Widget
   // ---------------------------------------------------------------------------
@@ -175,6 +255,9 @@ void main() {
       String createdLabel = '2 days ago',
       Map<String, String> categoryNames = const {},
       void Function(String id)? onNeighborTap,
+      bool canGoBack = false,
+      VoidCallback? onBack,
+      VoidCallback? onRecenter,
     }) async {
       tester.view
         ..physicalSize = const Size(420, 900)
@@ -201,6 +284,9 @@ void main() {
                   style: style,
                   tokens: tokens,
                   onNeighborTap: onNeighborTap,
+                  canGoBack: canGoBack,
+                  onBack: onBack,
+                  onRecenter: onRecenter,
                 ),
               ),
             ),
@@ -244,8 +330,10 @@ void main() {
       expect(find.text('PROJECT · HEALTH'), findsOneWidget);
     });
 
-    testWidgets('renders both lede and body and the SUMMARY label for a '
+    testWidgets('renders both the deck and the SUMMARY body for a '
         'multi-line tldr', (tester) async {
+      // tldr-only node → resolveInspectorSummary routes through splitTldr, so
+      // the first line is the deck and the remainder is the SUMMARY body.
       await pumpPanel(
         tester,
         node: node(tldr: 'A crisp lede line\nThe longer body explanation.'),
@@ -255,25 +343,51 @@ void main() {
       expect(find.text('The longer body explanation.'), findsOneWidget);
     });
 
-    testWidgets('shows the lede but no SUMMARY body for a single-sentence '
+    testWidgets('shows the deck but no SUMMARY body for a single-sentence '
         'tldr', (tester) async {
       await pumpPanel(tester, node: node(tldr: 'Just one sentence.'));
-      // SUMMARY label appears whenever a tldr exists; the lede renders, and
-      // there is no separate body line for a single sentence.
-      expect(find.text('SUMMARY'), findsOneWidget);
+      // A single-sentence tldr yields a deck (the lede) but an empty body, so
+      // the SUMMARY section is omitted while the deck still renders.
       expect(find.text('Just one sentence.'), findsOneWidget);
+      expect(find.text('SUMMARY'), findsNothing);
     });
 
-    testWidgets('shows no SUMMARY label and no fallback text when tldr is '
-        'null', (tester) async {
-      // node() defaults to a task node in category 'work' with no tldr.
+    testWidgets('renders the oneLiner as the deck under the title', (
+      tester,
+    ) async {
+      // A oneLiner with no tldr → the deck (one-liner) renders and there is no
+      // SUMMARY body.
+      await pumpPanel(tester, node: node(oneLiner: 'Ship the inspector panel'));
+      expect(find.text('Ship the inspector panel'), findsOneWidget);
+      expect(find.text('SUMMARY'), findsNothing);
+    });
+
+    testWidgets('renders both the oneLiner deck and the SUMMARY body when a '
+        'oneLiner and a multi-line tldr are present', (tester) async {
+      const oneLiner = 'Ship the inspector panel';
+      const tldr = 'A crisp lede line\nThe longer body explanation.';
+      await pumpPanel(
+        tester,
+        node: node(oneLiner: oneLiner, tldr: tldr),
+      );
+      // The deck is the one-liner verbatim (the tldr is NOT split out for the
+      // deck here); the body is the full markdown preview of the tldr.
+      expect(find.text(oneLiner), findsOneWidget);
+      expect(find.text('SUMMARY'), findsOneWidget);
+      expect(find.text(previewFromMarkdown(tldr)), findsOneWidget);
+    });
+
+    testWidgets('shows no deck and no SUMMARY when there is neither a '
+        'oneLiner nor a tldr', (tester) async {
+      // node() defaults to a task node in category 'work' with no oneLiner and
+      // no tldr.
       await pumpPanel(
         tester,
         node: node(),
         categoryNames: const {'work': 'Work'},
       );
-      // No tldr → the SUMMARY section is omitted entirely. The old generic
-      // type-based fallback line no longer exists.
+      // No summary fields → the SUMMARY section is omitted entirely. The old
+      // generic type-based fallback line no longer exists.
       expect(find.text('SUMMARY'), findsNothing);
     });
 
@@ -492,6 +606,65 @@ void main() {
       // Advance past the 220ms cross-fade without risking a pumpAndSettle hang.
       await tester.pump(const Duration(milliseconds: 250));
       expect(find.text('Second node'), findsOneWidget);
+    });
+
+    testWidgets('renders both nav buttons and fires their callbacks when '
+        'enabled (canGoBack)', (tester) async {
+      var backTaps = 0;
+      var recenterTaps = 0;
+      await pumpPanel(
+        tester,
+        node: node(),
+        canGoBack: true,
+        onBack: () => backTaps++,
+        onRecenter: () => recenterTaps++,
+      );
+
+      final backIcon = find.byIcon(Icons.arrow_back_rounded);
+      final recenterIcon = find.byIcon(Icons.center_focus_strong_rounded);
+      expect(backIcon, findsOneWidget);
+      expect(recenterIcon, findsOneWidget);
+
+      // canGoBack → the back button is enabled and invokes onBack.
+      await tester.tap(backIcon);
+      await tester.pump();
+      expect(backTaps, 1);
+      expect(recenterTaps, 0);
+
+      // The recenter button is always wired when onRecenter is provided.
+      await tester.tap(recenterIcon);
+      await tester.pump();
+      expect(recenterTaps, 1);
+      expect(backTaps, 1);
+    });
+
+    testWidgets('renders the back button but does not fire onBack when '
+        'canGoBack is false', (tester) async {
+      var backTaps = 0;
+      await pumpPanel(
+        tester,
+        node: node(),
+        onBack: () => backTaps++,
+        onRecenter: () {},
+      );
+
+      final backIcon = find.byIcon(Icons.arrow_back_rounded);
+      // The disabled back button still renders (so the control doesn't pop in
+      // and out as history changes).
+      expect(backIcon, findsOneWidget);
+
+      // canGoBack is false → the InkWell's onTap is null, so tapping is a no-op.
+      await tester.tap(backIcon);
+      await tester.pump();
+      expect(backTaps, 0);
+    });
+
+    testWidgets('renders no nav buttons when both onBack and onRecenter are '
+        'null', (tester) async {
+      // node() with the default pumpPanel nav params (all null/false).
+      await pumpPanel(tester, node: node());
+      expect(find.byIcon(Icons.arrow_back_rounded), findsNothing);
+      expect(find.byIcon(Icons.center_focus_strong_rounded), findsNothing);
     });
   });
 

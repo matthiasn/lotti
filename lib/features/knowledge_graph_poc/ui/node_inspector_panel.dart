@@ -24,6 +24,9 @@ class NodeInspectorPanel extends StatelessWidget {
     required this.style,
     required this.tokens,
     this.onNeighborTap,
+    this.canGoBack = false,
+    this.onBack,
+    this.onRecenter,
     super.key,
   });
 
@@ -44,6 +47,15 @@ class NodeInspectorPanel extends StatelessWidget {
 
   /// Called with a neighbor's id when its timeline row is tapped.
   final void Function(String id)? onNeighborTap;
+
+  /// Whether a "back" step is available (the walk history is non-empty).
+  final bool canGoBack;
+
+  /// Pops one step of the walk history (back to the previously focused node).
+  final VoidCallback? onBack;
+
+  /// Re-frames the camera on the current focus node.
+  final VoidCallback? onRecenter;
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +132,76 @@ class NodeInspectorPanel extends StatelessWidget {
                     child: ColoredBox(color: cat.withValues(alpha: 0.9)),
                   ),
                 ),
+                // Walk navigation — overlaid on the hero, stable across the
+                // content cross-fade so the controls don't flicker on each step.
+                if (onBack != null || onRecenter != null)
+                  Positioned(
+                    top: tokens.spacing.step3,
+                    left: tokens.spacing.step3 + 2,
+                    child: Row(
+                      children: [
+                        if (onBack != null)
+                          _NavButton(
+                            icon: Icons.arrow_back_rounded,
+                            tooltip: 'Back',
+                            onTap: canGoBack ? onBack : null,
+                            tokens: tokens,
+                          ),
+                        if (onRecenter != null) ...[
+                          SizedBox(width: tokens.spacing.step2),
+                          _NavButton(
+                            icon: Icons.center_focus_strong_rounded,
+                            tooltip: 'Recenter',
+                            onTap: onRecenter,
+                            tokens: tokens,
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Small circular glass control for the panel's walk navigation. Disabled
+/// (dimmed, non-interactive) when [onTap] is null.
+class _NavButton extends StatelessWidget {
+  const _NavButton({
+    required this.icon,
+    required this.tooltip,
+    required this.onTap,
+    required this.tokens,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onTap;
+  final DsTokens tokens;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onTap != null;
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: tokens.colors.background.level02.withValues(alpha: 0.7),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.all(tokens.spacing.step2),
+            child: Icon(
+              icon,
+              size: 18,
+              color: enabled
+                  ? tokens.colors.text.highEmphasis
+                  : tokens.colors.text.lowEmphasis,
             ),
           ),
         ),
@@ -157,9 +238,7 @@ class _InspectorContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final summary = node.tldr != null && node.tldr!.trim().isNotEmpty
-        ? splitTldr(node.tldr!)
-        : null;
+    final summary = resolveInspectorSummary(node);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,29 +265,28 @@ class _InspectorContent extends StatelessWidget {
                         color: tokens.colors.text.highEmphasis,
                       ),
                     ),
-                    if (summary != null) ...[
+                    // One-liner deck — the assigned agent's tagline (or the
+                    // first line of a summary), sat right under the title.
+                    if (summary.deck != null) ...[
+                      SizedBox(height: tokens.spacing.step3),
+                      Text(
+                        summary.deck!,
+                        style: tokens.typography.styles.body.bodyLarge.copyWith(
+                          color: tokens.colors.text.highEmphasis,
+                        ),
+                      ),
+                    ],
+                    if (summary.body != null) ...[
                       SizedBox(height: tokens.spacing.sectionGap),
                       _SectionLabel(label: 'SUMMARY', cat: cat, tokens: tokens),
                       SizedBox(height: tokens.spacing.step3),
-                      if (summary.lede.isNotEmpty)
-                        Text(
-                          summary.lede,
-                          style: tokens.typography.styles.body.bodyLarge
-                              .copyWith(
-                                color: tokens.colors.text.highEmphasis,
-                              ),
+                      Text(
+                        summary.body!,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                          height: 1.5,
                         ),
-                      if (summary.body.isNotEmpty) ...[
-                        SizedBox(height: tokens.spacing.step3),
-                        Text(
-                          summary.body,
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                                height: 1.5,
-                              ),
-                        ),
-                      ],
+                      ),
                     ],
                     if (neighbors.isNotEmpty) ...[
                       SizedBox(height: tokens.spacing.sectionGap),
@@ -548,6 +626,27 @@ class _Footer extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Resolves a node's inspector summary into a one-liner `deck` + a longer
+/// `body` (pure; unit-tested). Prefers the assigned agent's `oneLiner`/`tldr`
+/// (task nodes); otherwise splits a single summary blob (e.g. an AI-response
+/// node's text) into a lede + body. Either field may be null.
+({String? deck, String? body}) resolveInspectorSummary(GraphNode node) {
+  final oneLiner = node.oneLiner?.trim();
+  final tldr = node.tldr?.trim();
+  if (oneLiner != null && oneLiner.isNotEmpty) {
+    final hasBody = tldr != null && tldr.isNotEmpty;
+    return (deck: oneLiner, body: hasBody ? previewFromMarkdown(tldr) : null);
+  }
+  if (tldr != null && tldr.isNotEmpty) {
+    final s = splitTldr(tldr);
+    return (
+      deck: s.lede.isEmpty ? null : s.lede,
+      body: s.body.isEmpty ? null : s.body,
+    );
+  }
+  return (deck: null, body: null);
 }
 
 /// Relative-age label for the footer/timeline (pure; unit-tested).

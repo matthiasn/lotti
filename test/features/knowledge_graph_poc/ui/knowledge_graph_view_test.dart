@@ -694,6 +694,101 @@ void main() {
     );
   });
 
+  group('panel back navigation (desktop)', () {
+    testWidgets(
+      'panel renders nav buttons, back disabled until a walk, then back '
+      'returns to the seed',
+      (tester) async {
+        // Desktop so the inspector (and its overlaid nav buttons) are visible.
+        // The ego scenario's seed `t0` ("Ship v2.3 release") has direct
+        // neighbors rendered as a tappable timeline; `t1`
+        // ("Fix sync race condition") is one of them.
+        final scenario = taskEgoNetworkScenario();
+        await pumpView(tester, scenario: scenario);
+
+        // The panel's recenter button is always present...
+        expect(
+          find.descendant(
+            of: find.byType(NodeInspectorPanel),
+            matching: find.byIcon(Icons.center_focus_strong_rounded),
+          ),
+          findsOneWidget,
+        );
+        // ...and the back button is present but DISABLED (no walk history yet,
+        // so `canGoBack` is false → the _NavButton's InkWell has a null onTap).
+        final backFinder = find.descendant(
+          of: find.byType(NodeInspectorPanel),
+          matching: find.byIcon(Icons.arrow_back_rounded),
+        );
+        expect(backFinder, findsOneWidget);
+        final backInk = tester.widget<InkWell>(
+          find.ancestor(of: backFinder, matching: find.byType(InkWell)),
+        );
+        expect(backInk.onTap, isNull);
+
+        // Focus starts on the seed.
+        expect(painterFocusId(tester), scenario.seedId);
+
+        // Walk to the neighbor by tapping its timeline row inside the panel
+        // (the snippet text is wrapped in the row's InkWell → `onNeighborTap`).
+        // The timeline scrolls, and `t1` is an older neighbor that may sit below
+        // the fold, so scroll it into view first.
+        await tester.ensureVisible(inspectorText('Fix sync race condition'));
+        await tester.pump();
+        await tester.tap(inspectorText('Fix sync race condition'));
+        // Drive the bounded camera glide (760ms); never settle (the wake
+        // controller ticks indefinitely).
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+
+        // The walk landed on the neighbor, seeding `_history` with the seed.
+        expect(painterFocusId(tester), 't1');
+        // The inspector now describes the neighbor (its label as the heading).
+        expect(inspectorText('Fix sync race condition'), findsOneWidget);
+
+        // Back is now ENABLED (history is non-empty).
+        final backInkAfter = tester.widget<InkWell>(
+          find.ancestor(
+            of: find.descendant(
+              of: find.byType(NodeInspectorPanel),
+              matching: find.byIcon(Icons.arrow_back_rounded),
+            ),
+            matching: find.byType(InkWell),
+          ),
+        );
+        expect(backInkAfter.onTap, isNotNull);
+
+        // Tap the panel back button → `_back()` pops the seed and walks to it.
+        await tester.tap(
+          find.descendant(
+            of: find.byType(NodeInspectorPanel),
+            matching: find.byIcon(Icons.arrow_back_rounded),
+          ),
+        );
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+
+        // Focus returned to the seed.
+        expect(painterFocusId(tester), scenario.seedId);
+        expect(inspectorText('Ship v2.3 release'), findsOneWidget);
+        // History was emptied by the pop, so back is disabled again.
+        final backInkFinal = tester.widget<InkWell>(
+          find.ancestor(
+            of: find.descendant(
+              of: find.byType(NodeInspectorPanel),
+              matching: find.byIcon(Icons.arrow_back_rounded),
+            ),
+            matching: find.byType(InkWell),
+          ),
+        );
+        expect(backInkFinal.onTap, isNull);
+        expect(tester.takeException(), isNull);
+      },
+    );
+  });
+
   group('walk history via initial focus', () {
     testWidgets(
       'starting walked-to a node makes back available and frames that node',

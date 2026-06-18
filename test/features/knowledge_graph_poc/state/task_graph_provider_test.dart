@@ -11,6 +11,8 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/state/task_graph_provider.dart';
 import 'package:lotti/get_it.dart';
@@ -127,106 +129,11 @@ void main() {
     });
   });
 
-  group('taskSummaryTextByTask', () {
-    AiResponseEntry summary({
-      required String id,
-      required String response,
-      required DateTime createdAt,
-    }) => AiResponseEntry(
-      meta: TestMetadataFactory.create(id: id, createdAt: createdAt),
-      data: AiResponseData(
-        model: '',
-        systemMessage: '',
-        prompt: '',
-        thoughts: '',
-        response: response,
-      ),
-    );
-
-    test('maps a task to its linked AI response text (trimmed)', () {
-      final task = TestTaskFactory.create(id: 'task');
-      final sum = summary(
-        id: 'sum',
-        response: '  ## TL;DR\nShip it  ',
-        createdAt: date,
-      );
-      final entities = <String, JournalEntity>{task.id: task, sum.id: sum};
-      final edges = [
-        GraphEdge(
-          fromId: task.id,
-          toId: sum.id,
-          kind: GraphEdgeKind.provenance,
-        ),
-      ];
-
-      // Trimmed only — markdown cleanup happens in the view, not here.
-      expect(taskSummaryTextByTask(edges, entities), {
-        task.id: '## TL;DR\nShip it',
-      });
-    });
-
-    test('picks the most recent linked AI response when several exist', () {
-      final task = TestTaskFactory.create(id: 'task');
-      final older = summary(
-        id: 'old',
-        response: 'Older summary',
-        createdAt: DateTime(2026, 6, 10),
-      );
-      final newer = summary(
-        id: 'new',
-        response: 'Newer summary',
-        createdAt: DateTime(2026, 6, 14),
-      );
-      final entities = <String, JournalEntity>{
-        task.id: task,
-        older.id: older,
-        newer.id: newer,
-      };
-      // The newer response sits on the `from` side to prove both endpoints are
-      // inspected regardless of edge direction.
-      final edges = [
-        GraphEdge(
-          fromId: task.id,
-          toId: older.id,
-          kind: GraphEdgeKind.provenance,
-        ),
-        GraphEdge(
-          fromId: newer.id,
-          toId: task.id,
-          kind: GraphEdgeKind.provenance,
-        ),
-      ];
-
-      expect(taskSummaryTextByTask(edges, entities), {
-        task.id: 'Newer summary',
-      });
-    });
-
-    test('skips empty responses and tasks with no linked AI response', () {
-      final task = TestTaskFactory.create(id: 'task');
-      final lonely = TestTaskFactory.create(id: 'lonely');
-      final empty = summary(id: 'empty', response: '   ', createdAt: date);
-      final entities = <String, JournalEntity>{
-        task.id: task,
-        lonely.id: lonely,
-        empty.id: empty,
-      };
-      final edges = [
-        GraphEdge(
-          fromId: task.id,
-          toId: empty.id,
-          kind: GraphEdgeKind.provenance,
-        ),
-      ];
-
-      expect(taskSummaryTextByTask(edges, entities), isEmpty);
-    });
-  });
-
   group('taskGraphProvider (FutureProvider body)', () {
     late MockJournalDb db;
     late MockEntitiesCacheService cache;
     late MockUpdateNotifications notifications;
+    late MockAgentRepository agentRepo;
     late StreamController<Set<String>> updates;
 
     setUpAll(registerAllFallbackValues);
@@ -235,6 +142,7 @@ void main() {
       db = MockJournalDb();
       cache = MockEntitiesCacheService();
       notifications = MockUpdateNotifications();
+      agentRepo = MockAgentRepository();
       updates = StreamController<Set<String>>.broadcast();
 
       // Sensible empty defaults — individual tests override what they care
@@ -249,6 +157,11 @@ void main() {
         () => db.getTasksForProject(any()),
       ).thenAnswer((_) async => <Task>[]);
       when(() => cache.getCategoryById(any())).thenReturn(null);
+      // No assigned-agent reports by default — tests that care about the
+      // inspector summary override this for the task ids they exercise.
+      when(
+        () => agentRepo.getLatestTaskReportsForTaskIds(any()),
+      ).thenAnswer((_) async => const <String, AgentReportEntity>{});
 
       await getIt.reset();
       getIt
@@ -265,9 +178,46 @@ void main() {
     });
 
     ProviderContainer makeContainer() {
-      final container = ProviderContainer();
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(agentRepo),
+        ],
+      );
       addTearDown(container.dispose);
       return container;
+    }
+
+    // Builds an assigned-agent report; trimmed-blank handling is exercised in
+    // the provider, so callers pass raw oneLiner/tldr/content text here.
+    AgentReportEntity report({
+      required String id,
+      String? oneLiner,
+      String? tldr,
+      String content = '',
+    }) =>
+        AgentDomainEntity.agentReport(
+              id: id,
+              agentId: 'agent-$id',
+              scope: 'task',
+              createdAt: date,
+              vectorClock: null,
+              oneLiner: oneLiner,
+              tldr: tldr,
+              content: content,
+            )
+            as AgentReportEntity;
+
+    // Stub the bulk task-report lookup so each task id resolves to its report.
+    void stubReports(Map<String, AgentReportEntity> byTaskId) {
+      when(() => agentRepo.getLatestTaskReportsForTaskIds(any())).thenAnswer((
+        invocation,
+      ) async {
+        final ids = invocation.positionalArguments.first as List<String>;
+        return {
+          for (final id in ids)
+            if (byTaskId[id] != null) id: byTaskId[id]!,
+        };
+      });
     }
 
     // Stub a bidirectional links lookup keyed on the ids the BFS passes in,
@@ -473,6 +423,15 @@ void main() {
         when(
           () => cache.getCategoryById('cat'),
         ).thenReturn(category(id: 'cat', name: 'Lotti', color: '#00FF00'));
+        // The focus task's assigned-agent report drives its inspector summary;
+        // leading/trailing whitespace must be trimmed off.
+        stubReports({
+          'task': report(
+            id: 'rep',
+            oneLiner: '  Ship the release  ',
+            tldr: '  All checks green  ',
+          ),
+        });
 
         final data = await makeContainer().read(
           taskGraphProvider('task').future,
@@ -516,17 +475,47 @@ void main() {
         final imgNode = scenario.nodes.firstWhere((n) => n.id == 'img');
         expect(imgNode.imagePath, '/docs/images/img.jpg');
 
-        // Task cover art resolves to the linked image's path; tldr comes from
-        // the linked AI response.
+        // Task cover art resolves to the linked image's path; the inspector
+        // summary (oneLiner + tldr) comes from the assigned-agent report,
+        // trimmed.
         final taskNode = scenario.nodes.firstWhere((n) => n.id == 'task');
         expect(taskNode.coverImagePath, '/docs/images/cover.jpg');
-        expect(taskNode.tldr, '## TL;DR\nShip it');
+        expect(taskNode.oneLiner, 'Ship the release');
+        expect(taskNode.tldr, 'All checks green');
 
-        // The AI node exposes its own response as tldr.
+        // A task without a report carries no inspector summary.
+        final siblingNode = scenario.nodes.firstWhere((n) => n.id == 'sibling');
+        expect(siblingNode.oneLiner, isNull);
+        expect(siblingNode.tldr, isNull);
+
+        // The AI node exposes its own response as tldr; oneLiner is task-only.
         final aiNode = scenario.nodes.firstWhere((n) => n.id == 'ai');
         expect(aiNode.tldr, '## TL;DR\nShip it');
+        expect(aiNode.oneLiner, isNull);
       },
     );
+
+    test('task tldr falls back to report content when tldr is blank', () async {
+      final focus = TestTaskFactory.create(id: 'task', title: 'Focus');
+      stubEntities({'task': focus});
+      stubReports({
+        'task': report(
+          id: 'rep',
+          oneLiner: '  ',
+          tldr: '   ',
+          content: 'Full report body',
+        ),
+      });
+
+      final data = await makeContainer().read(
+        taskGraphProvider('task').future,
+      );
+
+      final taskNode = data!.scenario.nodes.firstWhere((n) => n.id == 'task');
+      // Blank oneLiner trims to null; blank tldr falls through to content.
+      expect(taskNode.oneLiner, isNull);
+      expect(taskNode.tldr, 'Full report body');
+    });
 
     test('returns null when the focus id is not a journal entity', () async {
       // journalEntityById defaults to null for every id.
@@ -546,8 +535,12 @@ void main() {
 
       expect(data, isNotNull);
       expect(data!.scenario.nodes, hasLength(1));
-      expect(data.scenario.nodes.single.id, 'lonely');
+      final node = data.scenario.nodes.single;
+      expect(node.id, 'lonely');
       expect(data.scenario.edges, isEmpty);
+      // No assigned-agent report -> no inspector summary.
+      expect(node.oneLiner, isNull);
+      expect(node.tldr, isNull);
       // No category stubbed -> uncategorized node -> no colors/names.
       expect(data.categoryColors, isEmpty);
       expect(data.categoryNames, isEmpty);

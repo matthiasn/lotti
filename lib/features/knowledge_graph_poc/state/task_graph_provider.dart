@@ -10,6 +10,8 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/get_it.dart';
@@ -99,35 +101,11 @@ GraphEdgeKind edgeKindFor(EntryLink link, JournalEntity a, JournalEntity b) {
   };
 }
 
-/// Maps a task id → its linked AI summary text, derived from already-loaded
-/// [entities] and [edges] (pure; unit-tested). Drives the inspector preview's
-/// TL;DR for task nodes: an edge between a [Task] and an [AiResponseEntry]
-/// contributes that response's text, and when a task has several linked AI
-/// responses in view the most recently created (non-empty) one wins. Keyed on
-/// the entity type rather than a specific AI response type so it covers both
-/// legacy summaries and current agent-era responses.
-Map<String, String> taskSummaryTextByTask(
-  Iterable<GraphEdge> edges,
-  Map<String, JournalEntity> entities,
-) {
-  final latestByTask = <String, AiResponseEntry>{};
-  for (final edge in edges) {
-    final a = entities[edge.fromId];
-    final b = entities[edge.toId];
-    final task = a is Task ? a : (b is Task ? b : null);
-    final resp = a is AiResponseEntry ? a : (b is AiResponseEntry ? b : null);
-    if (task == null || resp == null) continue;
-    if (resp.data.response.trim().isEmpty) continue;
-    final current = latestByTask[task.id];
-    if (current == null ||
-        resp.meta.createdAt.isAfter(current.meta.createdAt)) {
-      latestByTask[task.id] = resp;
-    }
-  }
-  return {
-    for (final entry in latestByTask.entries)
-      entry.key: entry.value.data.response.trim(),
-  };
+/// Trims [s] and returns null when it is null or blank (so empty agent fields
+/// fall through to the next source / the inspector's generic treatment).
+String? _clean(String? s) {
+  final t = s?.trim() ?? '';
+  return t.isEmpty ? null : t;
 }
 
 String? _firstLine(String? s) {
@@ -298,8 +276,17 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
         }
       }
 
-      // Real TL;DR text per task (from its linked AI task-summary).
-      final tldrByTask = taskSummaryTextByTask(edges, entities);
+      // Latest assigned-agent report per task — drives the inspector's
+      // one-liner + TL;DR. One batched query for every task in the graph.
+      final taskIds = [
+        for (final e in entities.values)
+          if (e is Task) e.id,
+      ];
+      final reportsByTask = taskIds.isEmpty
+          ? const <String, AgentReportEntity>{}
+          : await ref
+                .read(agentRepositoryProvider)
+                .getLatestTaskReportsForTaskIds(taskIds);
 
       final now = DateTime.now();
       final nodes = <GraphNode>[
@@ -312,10 +299,12 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
             createdAt: e.meta.createdAt,
             imagePath: e is JournalImage ? getFullImagePath(e) : null,
             coverImagePath: e is Task ? coverPathById[e.data.coverArtId] : null,
+            oneLiner: e is Task ? _clean(reportsByTask[e.id]?.oneLiner) : null,
             tldr: switch (e) {
-              Task() => tldrByTask[e.id],
-              AiResponseEntry() =>
-                e.data.response.trim().isEmpty ? null : e.data.response.trim(),
+              Task() =>
+                _clean(reportsByTask[e.id]?.tldr) ??
+                    _clean(reportsByTask[e.id]?.content),
+              AiResponseEntry() => _clean(e.data.response),
               _ => null,
             },
           ),

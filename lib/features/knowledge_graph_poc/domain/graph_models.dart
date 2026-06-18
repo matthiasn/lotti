@@ -52,6 +52,7 @@ class GraphNode {
     required this.createdAt,
     this.imagePath,
     this.coverImagePath,
+    this.oneLiner,
     this.tldr,
   });
 
@@ -74,10 +75,13 @@ class GraphNode {
   /// cover art or the node is not a task.
   final String? coverImagePath;
 
-  /// Real summary text for the inspector preview — a task's most recent linked
-  /// AI-response text, or an AI-response node's own text. Null when there is no
-  /// summary to show (the inspector then falls back to a generic, type-based
-  /// description).
+  /// Compact one-line tagline for the inspector — a task's assigned-agent
+  /// `oneLiner`. Null when the node has no agent one-liner.
+  final String? oneLiner;
+
+  /// Summary text for the inspector preview — a task's latest assigned-agent
+  /// TL;DR (or full report), or an AI-response node's own text. Null when there
+  /// is no summary to show.
   final String? tldr;
 }
 
