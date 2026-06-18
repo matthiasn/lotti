@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/health.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 
 /// Glados generators for entry-tools property tests.
@@ -256,6 +257,68 @@ void main() {
       );
       expect(result, contains('Dec 1, 2024'));
       expect(result, contains('2:05'));
+    });
+  });
+
+  group('humanHealthTypeName', () {
+    test('uses the curated display name for a known type', () {
+      expect(
+        humanHealthTypeName('HealthDataType.BLOOD_PRESSURE_SYSTOLIC'),
+        'Systolic Blood Pressure',
+      );
+    });
+
+    test('falls back to a title-cased name for an unknown type', () {
+      expect(
+        humanHealthTypeName('HealthDataType.SOME_NEW_METRIC'),
+        'Some New Metric',
+      );
+    });
+
+    test('title-cases a single-character token', () {
+      expect(humanHealthTypeName('HealthDataType.X'), 'X');
+    });
+  });
+
+  group('humanHealthUnit', () {
+    QuantitativeData data(String dataType, String unit) =>
+        QuantitativeData.discreteQuantityData(
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          value: 1,
+          dataType: dataType,
+          unit: unit,
+        );
+
+    test('uses the curated unit for a known type', () {
+      expect(
+        humanHealthUnit(
+          data('HealthDataType.BLOOD_PRESSURE_SYSTOLIC', 'whatever'),
+        ),
+        'mmHg',
+      );
+    });
+
+    test('falls back to a cleaned, lower-cased unit for an unknown type', () {
+      expect(
+        humanHealthUnit(
+          data('HealthDataType.SOME_NEW_METRIC', 'HealthDataUnit.SOME_UNIT'),
+        ),
+        'some unit',
+      );
+    });
+  });
+
+  group('humanWorkoutType', () {
+    test('title-cases a simple type', () {
+      expect(humanWorkoutType('running'), 'Running');
+    });
+
+    test('splits camelCase into title-cased words', () {
+      expect(
+        humanWorkoutType('functionalStrengthTraining'),
+        'Functional Strength Training',
+      );
     });
   });
 }

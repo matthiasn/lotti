@@ -62,6 +62,7 @@ void main() {
   late RecordingMockNavService mockNavService;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockTimeService mockTimeService;
+  late MockJournalDb mockJournalDb;
 
   setUp(() {
     mockNavService = RecordingMockNavService();
@@ -75,7 +76,7 @@ void main() {
       p.join(Directory.systemTemp.path, 'journal_card_test'),
     );
 
-    final mockJournalDb = MockJournalDb();
+    mockJournalDb = MockJournalDb();
     when(
       () => mockJournalDb.getHabitById(any()),
     ).thenAnswer((_) async => habitFlossing);
@@ -1268,5 +1269,257 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  group('Branch coverage — edge cases', () {
+    final testDate = DateTime(2024, 3, 15, 10, 30);
+    Metadata meta(String id) => Metadata(
+      id: id,
+      createdAt: testDate,
+      updatedAt: testDate,
+      dateFrom: testDate,
+      dateTo: testDate.add(const Duration(hours: 1)),
+      categoryId: 'test-category-id',
+    );
+
+    testWidgets('event with an empty title falls back to the type label', (
+      tester,
+    ) async {
+      final event = JournalEvent(
+        meta: meta('e-empty'),
+        data: const EventData(title: '', status: EventStatus.planned, stars: 0),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: event)),
+      );
+
+      final context = tester.element(find.byType(ModernJournalCard));
+      expect(
+        find.text(context.messages.entryTypeLabelJournalEvent),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('text entry with empty text falls back to the type label', (
+      tester,
+    ) async {
+      final entry = JournalEntry(
+        meta: meta('t-empty'),
+        entryText: const EntryText(plainText: '', markdown: ''),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: entry)),
+      );
+
+      final context = tester.element(find.byType(ModernJournalCard));
+      expect(
+        find.text(context.messages.entryTypeLabelJournalEntry),
+        findsOneWidget,
+      );
+    });
+
+    for (final (sport, icon) in [
+      ('walking', Icons.directions_walk_rounded),
+      ('swimming', Icons.pool_rounded),
+      ('cycling', Icons.directions_bike_rounded),
+    ]) {
+      testWidgets('workout "$sport" leads with its sport glyph', (
+        tester,
+      ) async {
+        final workout = WorkoutEntry(
+          meta: meta('w-$sport'),
+          data: WorkoutData(
+            dateFrom: testDate,
+            dateTo: testDate.add(const Duration(minutes: 20)),
+            id: 'w-$sport',
+            workoutType: sport,
+            energy: 100,
+            distance: null,
+            source: null,
+          ),
+        );
+        await tester.pumpWidget(
+          makeTestableWidget(ModernJournalCard(item: workout)),
+        );
+
+        expect(find.byIcon(icon), findsOneWidget);
+      });
+    }
+
+    testWidgets('workout distance under 1 km renders metres', (tester) async {
+      final workout = WorkoutEntry(
+        meta: meta('w-short'),
+        data: WorkoutData(
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(minutes: 5)),
+          id: 'w-short',
+          workoutType: 'running',
+          energy: null,
+          distance: 800,
+          source: null,
+        ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: workout)),
+      );
+
+      expect(find.text('800 m'), findsOneWidget);
+    });
+
+    testWidgets('CFQ11 survey shows its instrument name', (tester) async {
+      final survey = SurveyEntry(
+        meta: meta('s-cfq'),
+        data: SurveyData(
+          taskResult: RPTaskResult(identifier: 'cfq11SurveyTask'),
+          scoreDefinitions: const {},
+          calculatedScores: const {'Score': 12},
+        ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: survey)),
+      );
+
+      expect(find.text('CFQ 11'), findsOneWidget);
+    });
+
+    testWidgets('survey with an unknown id falls back to the type label', (
+      tester,
+    ) async {
+      final survey = SurveyEntry(
+        meta: meta('s-unknown'),
+        data: SurveyData(
+          taskResult: RPTaskResult(identifier: 'somethingElse'),
+          scoreDefinitions: const {},
+          calculatedScores: const {},
+        ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: survey)),
+      );
+
+      final context = tester.element(find.byType(ModernJournalCard));
+      expect(
+        find.text(context.messages.entryTypeLabelSurveyEntry),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('audio under an hour shows a m:ss duration chip', (
+      tester,
+    ) async {
+      final audio = testAudioEntry.copyWith(
+        meta: testAudioEntry.meta.copyWith(id: 'a-short'),
+        data: testAudioEntry.data.copyWith(
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(minutes: 2, seconds: 5)),
+        ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: audio)),
+      );
+
+      expect(find.text('2:05'), findsOneWidget);
+    });
+
+    for (final completion in [
+      HabitCompletionType.skip,
+      HabitCompletionType.fail,
+      HabitCompletionType.open,
+    ]) {
+      testWidgets('habit completion (${completion.name}) shows its state', (
+        tester,
+      ) async {
+        final habit = HabitCompletionEntry(
+          meta: meta('h-${completion.name}'),
+          data: HabitCompletionData(
+            dateFrom: testDate,
+            dateTo: testDate,
+            habitId: 'habit-1',
+            completionType: completion,
+          ),
+        );
+        await tester.pumpWidget(
+          makeTestableWidget(ModernJournalCard(item: habit)),
+        );
+
+        final context = tester.element(find.byType(ModernJournalCard));
+        final label = switch (completion) {
+          HabitCompletionType.skip =>
+            context.messages.habitCompletionStatusSkipped,
+          HabitCompletionType.fail =>
+            context.messages.habitCompletionStatusFailed,
+          HabitCompletionType.open =>
+            context.messages.habitCompletionStatusOpen,
+          HabitCompletionType.success =>
+            context.messages.habitCompletionStatusCompleted,
+        };
+        expect(find.text(label), findsOneWidget);
+      });
+    }
+
+    testWidgets('habit card re-subscribes when the habit id changes', (
+      tester,
+    ) async {
+      HabitCompletionEntry habit(String id, HabitCompletionType type) =>
+          HabitCompletionEntry(
+            meta: meta('hc-shared'),
+            data: HabitCompletionData(
+              dateFrom: testDate,
+              dateTo: testDate,
+              habitId: id,
+              completionType: type,
+            ),
+          );
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(
+            item: habit('habit-a', HabitCompletionType.success),
+          ),
+        ),
+      );
+      final context = tester.element(find.byType(ModernJournalCard));
+      final completed = context.messages.habitCompletionStatusCompleted;
+      final failed = context.messages.habitCompletionStatusFailed;
+      expect(find.text(completed), findsOneWidget);
+
+      // Re-pump a different habit (id + outcome) in the same position so
+      // didUpdateWidget fires and the stream is re-created.
+      await tester.pumpWidget(
+        makeTestableWidget(
+          ModernJournalCard(item: habit('habit-b', HabitCompletionType.fail)),
+        ),
+      );
+      expect(find.text(failed), findsOneWidget);
+      expect(find.text(completed), findsNothing);
+    });
+
+    testWidgets('habit tile is tinted by its resolved category colour', (
+      tester,
+    ) async {
+      // Resolve the habit to a definition that carries a category so
+      // `_habitColor` takes the `colorFromCssHex(category.color)` branch rather
+      // than the primary fallback.
+      when(
+        () => mockJournalDb.getHabitById(any()),
+      ).thenAnswer((_) async => habitFlossing.copyWith(categoryId: 'cat-id'));
+
+      final habit = HabitCompletionEntry(
+        meta: meta('h-cat'),
+        data: HabitCompletionData(
+          dateFrom: testDate,
+          dateTo: testDate,
+          habitId: 'habit-1',
+        ),
+      );
+      await tester.pumpWidget(
+        makeTestableWidget(ModernJournalCard(item: habit)),
+      );
+      // Resolve the habit via the stream so `_habitColor` runs with a non-null
+      // habit + category.
+      await tester.pump();
+
+      expect(find.text(habitFlossing.name), findsOneWidget);
+    });
   });
 }
