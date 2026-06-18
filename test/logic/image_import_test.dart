@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:cross_file/cross_file.dart';
+import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -649,6 +649,54 @@ void main() {
             enqueueSync: any(named: 'enqueueSync'),
           ),
         ).called(1);
+      });
+    });
+
+    group('importImagePickerFiles', () {
+      test(
+        'imports the files returned by the desktop file picker',
+        () async {
+          final testFile = await createTestImageFile('picked.jpg', 1024);
+
+          final original = FileSelectorPlatform.instance;
+          final fakeSelector = FakeFileSelectorPlatform()
+            ..filesToReturn = [XFile(testFile.path)];
+          FileSelectorPlatform.instance = fakeSelector;
+          addTearDown(() => FileSelectorPlatform.instance = original);
+
+          await importImagePickerFiles(
+            linkedId: 'parent-123',
+            categoryId: 'cat-456',
+          );
+
+          // A non-empty picker result must flow through importImageXFiles,
+          // creating the linked image entry with the passed ids.
+          verify(
+            () => mockPersistenceLogic.createDbEntity(
+              any(that: isA<JournalImage>()),
+              linkedId: 'parent-123',
+              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+              enqueueSync: any(named: 'enqueueSync'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('does nothing when the picker returns no files', () async {
+        final original = FileSelectorPlatform.instance;
+        FileSelectorPlatform.instance = FakeFileSelectorPlatform();
+        addTearDown(() => FileSelectorPlatform.instance = original);
+
+        await importImagePickerFiles();
+
+        verifyNever(
+          () => mockPersistenceLogic.createDbEntity(
+            any(that: isA<JournalImage>()),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        );
       });
     });
 

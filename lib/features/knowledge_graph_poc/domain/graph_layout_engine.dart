@@ -52,7 +52,9 @@ double _baseSector(GraphScenario scenario, GraphNode node) {
     case GraphEdgeKind.checklist:
       return 0.95; // lower-right
     case GraphEdgeKind.association:
-    case null:
+    // Defensive: a 1-hop node reached by the BFS always has a known edge kind,
+    // so `null` never arrives here — kept only for switch exhaustiveness.
+    case null: // coverage:ignore-line
       switch (node.type) {
         case GraphNodeType.task:
           return 0.15; // right — linked tasks
@@ -229,8 +231,13 @@ void _relax(
         var delta = pos[a]! - pos[b]!;
         var dist = delta.distance;
         if (dist < 0.01) {
+          // Defensive jitter to separate exactly-coincident nodes (avoids a
+          // divide-by-zero force). The deterministic seeding never places two
+          // nodes at the same point, so this guard isn't reachable in tests.
+          // coverage:ignore-start
           delta = Offset(rng.nextDouble() - 0.5, rng.nextDouble() - 0.5);
           dist = delta.distance.clamp(0.01, double.infinity);
+          // coverage:ignore-end
         }
         final force = repulsion / (dist * dist);
         final dir = delta / dist;

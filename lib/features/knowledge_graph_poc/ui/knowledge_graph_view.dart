@@ -142,11 +142,16 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         final frame = await codec.getNextFrame();
         codec.dispose();
         if (!mounted) {
+          // Disposed mid-decode — release what we decoded and bail. Only fires
+          // when the view is torn down between async frames, which the test
+          // harness can't trigger deterministically.
+          // coverage:ignore-start
           frame.image.dispose();
           for (final image in loaded.values) {
             image.dispose();
           }
           return;
+          // coverage:ignore-end
         }
         loaded[node.id] = frame.image;
       } on Object {

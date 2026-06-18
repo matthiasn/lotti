@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -182,6 +184,102 @@ void main() {
       expect(find.text('Lonely task'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('deferred image loading', () {
+    testWidgets(
+      'decodes a node image from disk and hands it to the painter',
+      (tester) async {
+        // _loadImages only runs for nodes whose `imagePath` is a readable image
+        // file, so write a real (tiny) PNG to a temp dir and point the seed at
+        // it. Encoding + decoding both touch the platform's image pipeline, so
+        // they must run inside `tester.runAsync` to actually complete.
+        late final Directory tempDir;
+        late final String pngPath;
+        await tester.runAsync(() async {
+          tempDir = Directory.systemTemp.createTempSync('lotti_kg_img_test');
+          pngPath = '${tempDir.path}/seed_thumb.png';
+          final recorder = ui.PictureRecorder();
+          Canvas(recorder).drawRect(
+            const Rect.fromLTWH(0, 0, 4, 4),
+            Paint()..color = const Color(0xFF4285F4),
+          );
+          final picture = recorder.endRecording();
+          final image = await picture.toImage(4, 4);
+          final bytes = await image.toByteData(
+            format: ui.ImageByteFormat.png,
+          );
+          image.dispose();
+          await File(pngPath).writeAsBytes(bytes!.buffer.asUint8List());
+        });
+        addTearDown(() => tempDir.deleteSync(recursive: true));
+
+        final scenario = GraphScenario(
+          name: 'Image',
+          seedId: 's',
+          nodes: [
+            GraphNode(
+              id: 's',
+              type: GraphNodeType.imageEntry,
+              label: 'Photo entry',
+              categoryId: catWork,
+              createdAt: fixedNow,
+              imagePath: pngPath,
+            ),
+            GraphNode(
+              id: 'n',
+              type: GraphNodeType.textEntry,
+              label: 'Note',
+              categoryId: catWork,
+              createdAt: fixedNow,
+            ),
+          ],
+          edges: const [
+            GraphEdge(fromId: 's', toId: 'n', kind: GraphEdgeKind.association),
+          ],
+          now: fixedNow,
+        );
+
+        // Pump inside runAsync so the async decode chain
+        // (File.readAsBytes → instantiateImageCodec → getNextFrame), which
+        // `initState` kicks off fire-and-forget, can actually complete against
+        // the real event loop. The load isn't awaitable from here, so poll the
+        // painter (bounded) until the decoded image is published. Real I/O
+        // justifies the real-time yield (see test/README.md fake-time exception).
+        await tester.runAsync(() async {
+          tester.view
+            ..physicalSize = desktopSize
+            ..devicePixelRatio = 1.0;
+          addTearDown(tester.view.resetPhysicalSize);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              KnowledgeGraphView(scenario: scenario),
+              mediaQueryData: const MediaQueryData(size: desktopSize),
+            ),
+          );
+          for (var i = 0; i < 50; i++) {
+            await tester.pump();
+            if (painterOf(tester).images.containsKey('s')) break;
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+          }
+        });
+        // Apply the setState that publishes the freshly decoded image.
+        await tester.pump();
+
+        // The painter now carries the decoded thumbnail under the node id —
+        // proving the load completed and was published (not just attempted).
+        final images = painterOf(tester).images;
+        expect(images.keys, contains('s'));
+        expect(images['s'], isA<ui.Image>());
+        expect(images['s']!.width, 4);
+        expect(images['s']!.height, 4);
+        // The node without an imagePath is not loaded.
+        expect(images.keys, isNot(contains('n')));
+        // Disposal of the loaded image happens when the widget tears down at the
+        // end of the test (covers the dispose loop with a real entry).
+      },
+    );
   });
 
   /// Matches text [t] that lives inside the [NodeInspectorPanel] (not the
@@ -495,6 +593,65 @@ void main() {
       }
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets(
+      'tapping back after a walk returns the focus to the previous node',
+      (tester) async {
+        // Explorable world so the back/recenter controls render. Walk to a real
+        // neighbor first (so `_history` is non-empty), then tap the back control
+        // to exercise the non-empty-history branch of `_back()`.
+        final scenario = exploreWorldScenario();
+        // The view uses `computeWorldLayout` for explorable (>40 node) worlds,
+        // so the tap target must be computed from the same (deterministic)
+        // layout, not the smaller-graph layout.
+        final layout = computeWorldLayout(scenario);
+        await pumpView(tester, scenario: scenario, size: phoneSize);
+
+        // Seed is P0T0; its project P0 is a direct (containment) neighbor, so it
+        // sits inside the initial frame and is a clean tap target.
+        expect(painterFocusId(tester), 'P0T0');
+        const neighborId = 'P0';
+        final (scale, pan) = framedTransform(
+          scenario,
+          layout,
+          phoneSize,
+          'P0T0',
+        );
+        final neighborScreen = layout.positions[neighborId]! * scale + pan;
+        await tester.tapAt(neighborScreen);
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+        // The walk landed on the neighbor, seeding `_history` with the seed.
+        expect(painterFocusId(tester), neighborId);
+
+        // Back is now enabled (history is non-empty).
+        final backInk = tester.widget<InkWell>(
+          find.ancestor(
+            of: find.byIcon(Icons.arrow_back),
+            matching: find.byType(InkWell),
+          ),
+        );
+        expect(backInk.onTap, isNotNull);
+
+        // Tap back → `_back()` pops the seed off history and walks to it.
+        await tester.tap(find.byIcon(Icons.arrow_back));
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+
+        expect(painterFocusId(tester), 'P0T0');
+        // History was emptied by the pop, so back is disabled again.
+        final backInkAfter = tester.widget<InkWell>(
+          find.ancestor(
+            of: find.byIcon(Icons.arrow_back),
+            matching: find.byType(InkWell),
+          ),
+        );
+        expect(backInkAfter.onTap, isNull);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets(
       'controls are absent for a non-explorable (small) scenario',

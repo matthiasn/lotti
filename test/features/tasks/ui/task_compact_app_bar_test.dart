@@ -6,6 +6,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/knowledge_graph_poc/state/task_graph_provider.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/task_knowledge_graph_page.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/task_compact_app_bar.dart';
 import 'package:lotti/get_it.dart';
@@ -137,6 +139,33 @@ void main() {
 
       expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
     });
+
+    testWidgets(
+      'tapping the knowledge-graph hub button navigates to the graph page',
+      (tester) async {
+        final task = buildTask();
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            task,
+            enableGraph: true,
+            overrides: [
+              // Null graph data renders the empty state, so the pushed page
+              // builds without touching getIt<LoggingService> (only used in
+              // the error listener) or any real graph computation.
+              taskGraphProvider(task.id).overrideWith((ref) async => null),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.hub_outlined));
+        await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+        expect(find.byType(TaskKnowledgeGraphPage), findsOneWidget);
+      },
+    );
 
     testWidgets('SliverAppBar is pinned', (tester) async {
       final task = buildTask();

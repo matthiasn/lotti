@@ -281,12 +281,16 @@ class ImportImageItem extends ConsumerWidget {
             analysisTrigger: trigger,
           );
         } else {
+          // Native gallery picker (photo_manager) — macOS/mobile only; the
+          // headless Linux CI runner always takes the file-dialog branch above.
+          // coverage:ignore-start
           await importImageAssets(
             context,
             linkedId: linkedFromId,
             categoryId: categoryId,
             analysisTrigger: trigger,
           );
+          // coverage:ignore-end
         }
         if (context.mounted) {
           Navigator.of(context).pop();

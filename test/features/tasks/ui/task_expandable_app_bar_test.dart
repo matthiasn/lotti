@@ -8,6 +8,8 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/knowledge_graph_poc/state/task_graph_provider.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/task_knowledge_graph_page.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/features/tasks/ui/task_expandable_app_bar.dart';
@@ -97,6 +99,11 @@ void main() {
         configFlagProvider(
           enableKnowledgeGraphFlag,
         ).overrideWith((ref) => Stream<bool>.value(enableGraph)),
+        // Harmless when the graph isn't opened; when it is, null data renders
+        // the empty state so the pushed page builds without real graph
+        // computation or getIt<LoggingService> (only the error listener uses
+        // it).
+        taskGraphProvider(task.id).overrideWith((ref) async => null),
         if (initialOffset != null)
           taskAppBarControllerProvider(id: task.id).overrideWith(
             () => _FixedOffsetTaskAppBarController(initialOffset),
@@ -194,6 +201,24 @@ void main() {
         // Back + knowledge-graph hub + more menu.
         expect(find.byType(GlassActionButton), findsNWidgets(3));
         expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping the knowledge-graph hub button navigates to the graph page',
+      (tester) async {
+        final task = buildTask();
+
+        await pumpMobile(
+          tester,
+          buildTestWidget(task, 'image-1', enableGraph: true),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byIcon(Icons.hub_outlined));
+        await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+        expect(find.byType(TaskKnowledgeGraphPage), findsOneWidget);
       },
     );
 

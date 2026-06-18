@@ -295,6 +295,67 @@ void main() {
       expect(find.byType(Image), findsOneWidget);
     });
 
+    testWidgets('falls back to the gradient hero when the cover fails to load', (
+      tester,
+    ) async {
+      // A cover path that does not exist on disk: Image.file builds, the decode
+      // fails, and its errorBuilder swaps in `_gradientHero()` — which paints
+      // the type glyph. Pumping inside runAsync lets the (failing) FileImage
+      // resolve so the errorBuilder actually fires.
+      final coverNode = node(
+        type: GraphNodeType.imageEntry,
+        coverImagePath: '/nonexistent/cover_xyz.png',
+      );
+      // The hero glyph rendered *inside* the Image is the errorBuilder's
+      // `_gradientHero()` output (the kicker glyph lives elsewhere in the tree).
+      final heroGlyph = find.descendant(
+        of: find.byType(Image),
+        matching: find.byIcon(glyphForType(GraphNodeType.imageEntry)),
+      );
+
+      await tester.runAsync(() async {
+        tester.view
+          ..physicalSize = const Size(420, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Center(
+              child: SizedBox(
+                width: 360,
+                height: 860,
+                child: NodeInspectorPanel(
+                  node: coverNode,
+                  createdLabel: 'today',
+                  neighborCounts: const {},
+                  categoryNames: const {},
+                  style: style,
+                  tokens: tokens,
+                ),
+              ),
+            ),
+          ),
+        );
+        // The FileImage load fails asynchronously against the real event loop;
+        // pump (bounded) until the errorBuilder swaps in the gradient hero. Real
+        // file I/O justifies the real-time yield (test/README.md fake-time
+        // exception).
+        for (var i = 0; i < 50; i++) {
+          await tester.pump();
+          if (heroGlyph.evaluate().isNotEmpty) break;
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+      });
+      await tester.pump();
+
+      expect(
+        heroGlyph,
+        findsOneWidget,
+        reason: 'errorBuilder should render the gradient hero glyph',
+      );
+    });
+
     testWidgets('shows the gradient hero glyph and no Image when there is no '
         'cover', (tester) async {
       // node() defaults to a task node.

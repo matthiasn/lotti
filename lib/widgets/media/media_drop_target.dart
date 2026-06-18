@@ -46,6 +46,12 @@ class MediaDropTarget extends StatelessWidget {
     return DropRegion(
       formats: Formats.standardFormats,
       hitTestBehavior: HitTestBehavior.translucent,
+      // The drop callbacks are driven by super_native_extensions' real GTK/OS
+      // drag session — a DropEvent/DataReader can't be synthesized under the
+      // headless test binding, so this native-gated handling is exercised
+      // manually rather than in widget tests. The pure parts it relies on
+      // (sanitizeDropFileName) and the widget's build are unit-tested.
+      // coverage:ignore-start
       onDropOver: (event) {
         final ops = event.session.allowedOperations;
         if (ops.contains(DropOperation.copy)) return DropOperation.copy;
@@ -114,6 +120,7 @@ class MediaDropTarget extends StatelessWidget {
           }
         }
       },
+      // coverage:ignore-end
       child: child,
     );
   }
