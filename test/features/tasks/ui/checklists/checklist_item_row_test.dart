@@ -8,6 +8,7 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
@@ -506,6 +507,27 @@ void main() {
       // …and settles back to its natural scale.
       await tester.pumpAndSettle();
       expect(popScale(), moreOrLessEquals(1, epsilon: 0.01));
+    });
+
+    testWidgets('checking an item fires a spark burst at the checkbox', (
+      tester,
+    ) async {
+      await _pumpWithControllers(tester);
+      await tester.pump();
+
+      // No celebration at rest.
+      expect(find.byType(CompletionBurst), findsNothing);
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pump();
+      // Sample mid-burst (the item celebration runs ~850ms; the spark window
+      // is 0.12–0.96 of it).
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(CompletionBurst), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      // The burst clears once the timeline completes.
+      expect(find.byType(CompletionBurst), findsNothing);
     });
 
     testWidgets('checkbox is disabled when item is archived', (tester) async {

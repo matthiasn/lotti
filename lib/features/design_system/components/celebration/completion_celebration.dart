@@ -26,7 +26,12 @@ class CompletionCelebration extends StatefulWidget {
     required this.child,
     this.burstOrigin = const Alignment(0, -0.6),
     this.showBurst = true,
+    this.glow = true,
     this.anchorScale = false,
+    this.duration = const Duration(milliseconds: 1400),
+    this.burstCount = 50,
+    this.burstSizeScale = 0.8,
+    this.burstClearCenter = 0.45,
     this.onCelebrate,
     super.key,
   });
@@ -44,6 +49,22 @@ class CompletionCelebration extends StatefulWidget {
   /// When false, only the glow plays (for high-frequency moments that don't
   /// warrant flying sparks).
   final bool showBurst;
+
+  /// When false, the glow halo is skipped — useful for a small, localized
+  /// burst (e.g. over a checklist checkbox) where an edge halo around a wide
+  /// row would read oddly.
+  final bool glow;
+
+  /// Length of the celebration timeline. The glow/burst windows scale with it,
+  /// so a shorter duration yields a quicker, lighter celebration (the right
+  /// fit for high-frequency moments like checking a list item).
+  final Duration duration;
+
+  /// Spark count, size multiplier, and the cleared centre ring for the burst —
+  /// dialled down for small/frequent moments, full for the big ones.
+  final int burstCount;
+  final double burstSizeScale;
+  final double burstClearCenter;
 
   /// When true, the [child] itself pops — a single overshoot scale (1 → 1.12 →
   /// 1) in the first quarter of the timeline, landing with the glow bloom — so
@@ -70,10 +91,7 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1400),
-    );
+    _controller = AnimationController(vsync: this, duration: widget.duration);
   }
 
   @override
@@ -133,19 +151,20 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
         // Glow blooms behind the (opaque) child — outside any clip so the halo
         // shows around the edges. Starts ~80ms in so it reads as caused by the
         // completion landing, not co-fired with it.
-        Positioned.fill(
-          child: IgnorePointer(
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, _) {
-                final v = _stage(_controller.value, 0.08, 0.78);
-                return v == null
-                    ? const SizedBox.shrink()
-                    : CompletionGlow(value: v, staticGlow: reduceMotion);
-              },
+        if (widget.glow)
+          Positioned.fill(
+            child: IgnorePointer(
+              child: AnimatedBuilder(
+                animation: _controller,
+                builder: (context, _) {
+                  final v = _stage(_controller.value, 0.08, 0.78);
+                  return v == null
+                      ? const SizedBox.shrink()
+                      : CompletionGlow(value: v, staticGlow: reduceMotion);
+                },
+              ),
             ),
           ),
-        ),
         content,
         // Sparks fly over the child, free to leave its bounds. Launches ~135ms
         // in so they read as thrown by the completion. Suppressed under reduced
@@ -159,18 +178,14 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
                   final p = _stage(_controller.value, 0.12, 0.96);
                   return p == null
                       ? const SizedBox.shrink()
-                      // Denser + finer than the default so the task surfaces'
-                      // bursts read rich; habits keeps the default via its own
-                      // direct CompletionBurst.
                       : CompletionBurst(
                           progress: p,
                           origin: widget.burstOrigin,
-                          count: 50,
-                          sizeScale: 0.8,
-                          // Ring the sparks around the celebrated label (status
-                          // pill / progress ring) rather than over it, so the
-                          // "Done" / "N/N" text stays readable at peak.
-                          clearCenter: 0.45,
+                          count: widget.burstCount,
+                          sizeScale: widget.burstSizeScale,
+                          // Ring the sparks around the celebrated element rather
+                          // than over it, so any label stays readable at peak.
+                          clearCenter: widget.burstClearCenter,
                         );
                 },
               ),

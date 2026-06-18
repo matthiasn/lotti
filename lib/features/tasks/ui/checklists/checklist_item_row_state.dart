@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
 import 'package:lotti/features/design_system/components/motion/strikethrough_wipe.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -285,39 +286,55 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     ),
                     SizedBox(width: tokens.spacing.step3),
                     // Checkbox
-                    SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: ScaleTransition(
-                        scale: _checkPopScale,
-                        child: Checkbox(
-                          value: item.data.isChecked,
-                          onChanged: item.data.isArchived
-                              ? null
-                              : (value) {
-                                  itemNotifier.updateChecked(
-                                    checked: value ?? false,
-                                  );
-                                  if (suggestion != null) {
-                                    ref
-                                        .read(
-                                          checklistCompletionServiceProvider
-                                              .notifier,
-                                        )
-                                        .clearSuggestion(widget.itemId);
-                                  }
-                                },
-                          activeColor: tokens.colors.interactive.enabled,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
+                    // Checking an item off earns a small spark burst at the
+                    // checkbox — the same celebration language as habits, but
+                    // dialled down (no glow, fewer/finer sparks, quicker) so
+                    // rapid check-offs read as a cascade of little pops rather
+                    // than visual chaos. Fires only on the not-checked → checked
+                    // edge; reduced motion suppresses the sparks (haptic + pop
+                    // still fire from the row state).
+                    CompletionCelebration(
+                      completed: item.data.isChecked,
+                      glow: false,
+                      burstOrigin: Alignment.center,
+                      burstCount: 16,
+                      burstSizeScale: 0.7,
+                      burstClearCenter: 0.3,
+                      duration: const Duration(milliseconds: 850),
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: ScaleTransition(
+                          scale: _checkPopScale,
+                          child: Checkbox(
+                            value: item.data.isChecked,
+                            onChanged: item.data.isArchived
+                                ? null
+                                : (value) {
+                                    itemNotifier.updateChecked(
+                                      checked: value ?? false,
+                                    );
+                                    if (suggestion != null) {
+                                      ref
+                                          .read(
+                                            checklistCompletionServiceProvider
+                                                .notifier,
+                                          )
+                                          .clearSuggestion(widget.itemId);
+                                    }
+                                  },
+                            activeColor: tokens.colors.interactive.enabled,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            side: BorderSide(
+                              color: tokens.colors.text.lowEmphasis,
+                              width: 1.5,
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
                           ),
-                          side: BorderSide(
-                            color: tokens.colors.text.lowEmphasis,
-                            width: 1.5,
-                          ),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
                         ),
                       ),
                     ),
