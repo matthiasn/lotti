@@ -284,13 +284,30 @@ class _HabitActionRowState extends State<HabitActionRow>
           if (!reduceMotion)
             Positioned.fill(
               child: IgnorePointer(
-                child: AnimatedBuilder(
-                  animation: _celebrate,
-                  builder: (context, _) {
-                    final p = _stageProgress(_celebrate.value, 0.12, 0.96);
-                    return p == null
-                        ? const SizedBox.shrink()
-                        : CompletionBurst(progress: p);
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    // Centre the burst on the trailing complete button. It sits
+                    // one card padding (step4) plus half a button (step9) in
+                    // from the right edge, so the fractional origin has to track
+                    // the real card width — a fixed value drifts left of the
+                    // button on wide dashboard cards.
+                    final inset =
+                        tokens.spacing.step4 + tokens.spacing.step9 / 2;
+                    final originX = constraints.maxWidth > 0
+                        ? (1 - 2 * inset / constraints.maxWidth).clamp(0.0, 1.0)
+                        : 0.82;
+                    return AnimatedBuilder(
+                      animation: _celebrate,
+                      builder: (context, _) {
+                        final p = _stageProgress(_celebrate.value, 0.12, 0.96);
+                        return p == null
+                            ? const SizedBox.shrink()
+                            : CompletionBurst(
+                                progress: p,
+                                origin: Alignment(originX, 0),
+                              );
+                      },
+                    );
                   },
                 ),
               ),

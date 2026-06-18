@@ -242,6 +242,48 @@ void main() {
       expect(flash, findsNothing);
     });
 
+    testWidgets('spark burst origin tracks card width to stay on the button', (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(1400, 1000);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      Future<double> burstOriginX(double width) async {
+        Widget rowAt({required bool done}) => makeTestableWidgetWithScaffold(
+          SizedBox(
+            width: width,
+            child: HabitActionRow(
+              habitId: habitFlossing.id,
+              completedToday: done,
+            ),
+          ),
+        );
+
+        await tester.pumpWidget(rowAt(done: false));
+        await tester.pump();
+        await tester.pumpWidget(rowAt(done: true)); // flip → celebration starts
+        await tester.pump(const Duration(milliseconds: 220)); // burst window
+        final burst = tester.widget<CompletionBurst>(
+          find.byType(CompletionBurst),
+        );
+        expect(burst.origin.y, 0);
+        await tester.pump(const Duration(milliseconds: 1400)); // settle
+        return burst.origin.x;
+      }
+
+      final narrow = await burstOriginX(500);
+      final wide = await burstOriginX(1000);
+
+      // A wider card pushes the trailing button toward the edge, so the burst
+      // origin shifts right to stay on it — never past the edge, and clearly
+      // rightward of the old fixed 0.82 on a wide card.
+      expect(wide, greaterThan(narrow));
+      expect(wide, lessThanOrEqualTo(1.0));
+      expect(wide, greaterThan(0.9));
+    });
+
     testWidgets('reduced motion: static glow, but no spark burst', (
       tester,
     ) async {
