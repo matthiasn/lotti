@@ -181,7 +181,7 @@ class _HabitActionRowState extends State<HabitActionRow>
     }
     await HapticFeedback.lightImpact();
     final now = DateTime.now();
-    await getIt<PersistenceLogic>().createHabitCompletionEntry(
+    final saved = await getIt<PersistenceLogic>().createHabitCompletionEntry(
       data: HabitCompletionData(
         habitId: habitDefinition.id,
         dateFrom: now,
@@ -192,6 +192,15 @@ class _HabitActionRowState extends State<HabitActionRow>
       habitDefinition: habitDefinition,
     );
     if (!mounted) return;
+    if (saved == null) {
+      // The write didn't commit (PersistenceLogic logs the cause and returns
+      // null); the `completedToday` flip that consumes the optimistic flag will
+      // never arrive, so clear it here or a later real completion — and its
+      // celebration — would be suppressed. No success SnackBar either, since
+      // nothing was recorded.
+      _optimisticCelebration = false;
+      return;
+    }
     final tokens = context.designTokens;
     ScaffoldMessenger.maybeOf(context)
       ?..hideCurrentSnackBar()

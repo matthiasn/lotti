@@ -51,7 +51,7 @@ void main() {
             comment: any(named: 'comment'),
             habitDefinition: any(named: 'habitDefinition'),
           ),
-        ).thenAnswer((_) async => null);
+        ).thenAnswer((_) async => testHabitCompletionEntry);
 
         getIt
           ..unregister<JournalDb>()
@@ -347,6 +347,38 @@ void main() {
         await tester.pump(const Duration(milliseconds: 1400)); // settle
       },
     );
+
+    testWidgets('a failed persist clears the flag so a later one celebrates', (
+      tester,
+    ) async {
+      // PersistenceLogic returns null when the write doesn't commit (it logs the
+      // cause itself), so the `completedToday` flip that would consume the
+      // optimistic flag never arrives — the row must clear it on its own.
+      when(
+        () => mockPersistenceLogic.createHabitCompletionEntry(
+          data: any(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: any(named: 'habitDefinition'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      await pumpRow(tester); // not done
+      await tester.tap(find.byIcon(Icons.add_rounded));
+      await tester.pump(); // haptic + the (failing) persist resolve
+      await tester.pump(const Duration(milliseconds: 1400)); // settle the burst
+
+      // A failed write records nothing, so no success SnackBar is shown.
+      expect(find.byType(SnackBar), findsNothing);
+
+      // The flag was cleared, so a later real completion (from the dialog / a
+      // sync) must still celebrate — it isn't suppressed.
+      await pumpRow(tester, completedToday: true);
+      await tester.pump(); // establish
+      await tester.pump(const Duration(milliseconds: 220)); // burst window
+      expect(find.byType(CompletionBurst), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 1400)); // settle
+    });
 
     testWidgets('the icon swap is driven through an AnimatedSwitcher (pop)', (
       tester,

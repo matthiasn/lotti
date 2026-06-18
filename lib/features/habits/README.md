@@ -425,6 +425,8 @@ Completions can be captured three ways from a `HabitActionRow` (the shared row u
 
 The quick paths (swipe + button) fire light haptic feedback and confirm with a brief floating outcome `SnackBar` (the habit name plus a check/cancel icon) so the action is acknowledged instantly, before the provider round-trips and the tab re-renders (the habit moves between buckets / the heatmap recolours).
 
+A **fresh success** also fires the completion celebration **optimistically** — `_recordQuickCompletion` starts the `_celebrate` timeline (the `CompletionBurst`) the instant the tap lands, *before* the persist + recompute, because gating the animation behind the provider round-trip made the burst feel laggy on mobile ("the UI blocks, then particles fly later"). An `_optimisticCelebration` guard then stops `didUpdateWidget` from re-firing the timeline when the `completedToday` flip finally arrives. `PersistenceLogic.createHabitCompletionEntry` logs its own failures and returns `null` rather than throwing; on that `null` the row clears `_optimisticCelebration` (so a later real completion can still celebrate) and skips the success `SnackBar`, since nothing was recorded.
+
 ```mermaid
 flowchart TD
   Row["HabitActionRow"]
