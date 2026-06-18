@@ -20,6 +20,7 @@ import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
+import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/maintenance_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
@@ -115,6 +116,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/speech',
     '/settings/definitions',
     '/settings/advanced',
+    '/settings/advanced/animations',
     '/settings/advanced/logging_domains',
     '/settings/advanced/conflicts/:conflictId',
     '/settings/advanced/conflicts/:conflictId/edit',
@@ -585,6 +587,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-health_import'),
           child: HealthImportPage(),
+        ),
+
+      if (pathContains('advanced/animations'))
+        const BeamPage(
+          key: ValueKey('settings-animations'),
+          child: CelebrationSettingsPage(),
         ),
 
       if (pathContains('advanced/logging_domains'))

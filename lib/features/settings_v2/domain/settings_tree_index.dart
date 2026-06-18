@@ -64,6 +64,7 @@ const Map<String, String> settingsNodeUrls = {
   // stays `/settings/flags` for deep-link compatibility.
   'advanced/flags': '/settings/flags',
   'advanced': '/settings/advanced',
+  'advanced/animations': '/settings/advanced/animations',
   'advanced/logging': '/settings/advanced/logging_domains',
   // Mobile-only Health import leaf; the flat route is unchanged.
   'advanced/health-import': '/settings/health_import',

@@ -213,12 +213,20 @@ Representative composite or feature-shaped components:
   fires once on the `false → true` edge of a `completed` flag, with an optional
   `anchorScale` pop of the wrapped child, an `onCelebrate` hook for haptics, and
   full reduced-motion handling. Habits and Tasks share these so completing a
-  habit, a checklist, or a task all speak one motion language
+  habit, a checklist, or a task all speak one motion language. An `animate`
+  flag gates only the *visual* beats (glow / burst / pop) while still firing
+  `onCelebrate`, so a caller can honour the user's "celebratory animations off"
+  preference (`CelebrationPreferencesController`, Settings → Advanced →
+  Animations) and keep the completion haptic. `spawnCompletionBurst(context,…)`
+  fires a burst imperatively into the app `Overlay`, anchored to a render box —
+  it captures geometry synchronously so the burst survives its anchor being
+  torn down in the same frame (e.g. completing the last checklist item)
 - motion primitives (`components/motion/`) — `StaggeredEntrance` (a one-time
   fade-and-rise cascade over a list of sections that does *not* replay on
   background rebuilds) and `StrikethroughWipe` (reveals a struck text layer
   left→right over an un-struck base, for animating a checklist item's
-  strike-through on completion); both no-op under reduced motion
+  strike-through on completion; its `animate` flag, like reduced motion,
+  applies the strike instantly with no wipe); both no-op under reduced motion
 
 #### Desktop navigation sidebar collapse state
 

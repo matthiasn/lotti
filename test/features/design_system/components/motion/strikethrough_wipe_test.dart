@@ -11,8 +11,9 @@ void main() {
     decoration: TextDecoration.lineThrough,
   );
 
-  Widget wipe({required bool done}) => StrikethroughWipe(
+  Widget wipe({required bool done, bool animate = true}) => StrikethroughWipe(
     done: done,
+    animate: animate,
     text: 'Buy milk',
     baseStyle: baseStyle,
     struckStyle: struckStyle,
@@ -59,6 +60,19 @@ void main() {
     );
     await tester.pumpWidget(tree(done: false));
     await tester.pumpWidget(tree(done: true));
+    await tester.pump();
+    expect(decorations(tester), contains(TextDecoration.lineThrough));
+  });
+
+  testWidgets('animate: false applies the struck state instantly', (
+    tester,
+  ) async {
+    await tester.pumpWidget(makeTestableWidget(wipe(done: false)));
+    await tester.pumpWidget(
+      makeTestableWidget(wipe(done: true, animate: false)),
+    );
+    // No wipe to wait out: a single frame already shows the struck overlay
+    // (an animated wipe would still be at value 0 here).
     await tester.pump();
     expect(decorations(tester), contains(TextDecoration.lineThrough));
   });

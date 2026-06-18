@@ -154,6 +154,33 @@ void main() {
     await tester.pumpAndSettle();
   });
 
+  testWidgets('animate: false fires onCelebrate but skips the visuals', (
+    tester,
+  ) async {
+    var celebrateCount = 0;
+    Widget tree({required bool completed}) => makeTestableWidget(
+      CompletionCelebration(
+        completed: completed,
+        animate: false,
+        onCelebrate: () => celebrateCount++,
+        child: child(),
+      ),
+    );
+
+    await tester.pumpWidget(tree(completed: false));
+    await tester.pumpWidget(tree(completed: true));
+
+    // The haptic hook still fires — only the visual beats are gated.
+    expect(celebrateCount, 1);
+
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(CompletionGlow), findsNothing);
+    expect(find.byType(CompletionBurst), findsNothing);
+
+    await tester.pumpAndSettle();
+  });
+
   group('spawnCompletionBurst', () {
     // Renders an anchor whose context is captured, plus a toggle to remove it —
     // so a test can fire a burst from the anchor and then unmount it, the way

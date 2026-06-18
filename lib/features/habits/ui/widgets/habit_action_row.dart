@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/design_system/components/celebration/completion_b
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -38,7 +40,7 @@ double? _stageProgress(double c, double start, double end) {
 /// card injects its strip. [completedToday] is supplied by the caller too — the
 /// tab derives it from the controller's `successfulToday` bucket, the dashboard
 /// card from its latest in-range result — so the row stays presentational.
-class HabitActionRow extends StatefulWidget {
+class HabitActionRow extends ConsumerStatefulWidget {
   const HabitActionRow({
     required this.habitId,
     required this.completedToday,
@@ -69,10 +71,10 @@ class HabitActionRow extends StatefulWidget {
   final bool showLinkedDashboard;
 
   @override
-  State<HabitActionRow> createState() => _HabitActionRowState();
+  ConsumerState<HabitActionRow> createState() => _HabitActionRowState();
 }
 
-class _HabitActionRowState extends State<HabitActionRow>
+class _HabitActionRowState extends ConsumerState<HabitActionRow>
     with SingleTickerProviderStateMixin {
   /// Drives the staged completion celebration as one timeline (0→1 over ~950ms);
   /// the beats read off windowed slices of it so they *cascade* — glow bloom,
@@ -107,10 +109,11 @@ class _HabitActionRowState extends State<HabitActionRow>
         // A tap on this row already started the timeline; the provider just
         // caught up. Don't restart it — let the in-flight animation continue.
         _optimisticCelebration = false;
-      } else {
+      } else if (ref.read(celebrationPreferencesProvider).habits) {
         // Completed from elsewhere (the dialog, a sync). Run the timeline; the
         // builders decide what it *looks* like — an opacity-only glow under
-        // reduced motion, the full staged celebration otherwise.
+        // reduced motion, the full staged celebration otherwise. Skipped when
+        // the user turned habit celebrations off.
         _celebrate.forward(from: 0);
       }
     }
@@ -175,7 +178,8 @@ class _HabitActionRowState extends State<HabitActionRow>
     // celebrates; [didUpdateWidget] won't double-fire it (see
     // [_optimisticCelebration]).
     if (completionType == HabitCompletionType.success &&
-        !widget.completedToday) {
+        !widget.completedToday &&
+        ref.read(celebrationPreferencesProvider).habits) {
       _optimisticCelebration = true;
       unawaited(_celebrate.forward(from: 0));
     }
@@ -239,6 +243,11 @@ class _HabitActionRowState extends State<HabitActionRow>
     final doneColor = habitCompletionColor(HabitCompletionType.success);
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    // The user's "celebrate habit completion" switch. Off → no glow/burst/
+    // streak pop (the glow/burst controller is simply never started above; the
+    // burst builder and the streak pop also check this so a late rebuild can't
+    // re-introduce them). The completion haptic is unaffected.
+    final celebrate = ref.watch(celebrationPreferencesProvider).habits;
 
     return Padding(
       padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
@@ -301,6 +310,7 @@ class _HabitActionRowState extends State<HabitActionRow>
                 completedToday: widget.completedToday,
                 currentStreak: widget.currentStreak,
                 doneColor: doneColor,
+                celebrate: celebrate,
                 history: widget.history,
                 onTapAdd: onTapAdd,
                 onQuickComplete: () => _recordQuickCompletion(
@@ -313,8 +323,8 @@ class _HabitActionRowState extends State<HabitActionRow>
           // Sparks flying out of the completed check — over the card and free to
           // leave the rounded rect (the Stack does not clip). Launches ~135ms in
           // so the sparks read as thrown by the check as it lands. Suppressed
-          // entirely under reduced motion (the glow alone acknowledges it).
-          if (!reduceMotion)
+          // under reduced motion or when habit celebrations are switched off.
+          if (!reduceMotion && celebrate)
             Positioned.fill(
               child: IgnorePointer(
                 child: LayoutBuilder(
@@ -360,6 +370,7 @@ class _HabitCardBody extends StatelessWidget {
     required this.completedToday,
     required this.currentStreak,
     required this.doneColor,
+    required this.celebrate,
     required this.onTapAdd,
     required this.onQuickComplete,
     this.history,
@@ -369,6 +380,10 @@ class _HabitCardBody extends StatelessWidget {
   final bool completedToday;
   final int currentStreak;
   final Color doneColor;
+
+  /// Whether habit-completion celebrations are enabled — gates the streak
+  /// chain's grow-in pop when a kept day extends the chain.
+  final bool celebrate;
   final Widget? history;
   final void Function({String? dateString}) onTapAdd;
 
@@ -438,7 +453,7 @@ class _HabitCardBody extends StatelessWidget {
                       // run going.
                       if (currentStreak >= 1) ...[
                         SizedBox(height: tokens.spacing.step3),
-                        _StreakChain(count: currentStreak),
+                        _StreakChain(count: currentStreak, animate: celebrate),
                       ],
                       if (history != null) ...[
                         SizedBox(height: tokens.spacing.step3),
@@ -489,9 +504,13 @@ class _HabitCardBody extends StatelessWidget {
 /// fade), so extending the chain on completion reads as a small reward; the rest
 /// of the chain is static. Reduced motion skips the pop.
 class _StreakChain extends StatefulWidget {
-  const _StreakChain({required this.count});
+  const _StreakChain({required this.count, this.animate = true});
 
   final int count;
+
+  /// Whether the newest box pops in when the streak grows. False mirrors
+  /// reduced motion (the chain still updates, just without the pop).
+  final bool animate;
 
   @override
   State<_StreakChain> createState() => _StreakChainState();
@@ -512,6 +531,7 @@ class _StreakChainState extends State<_StreakChain>
   void didUpdateWidget(_StreakChain oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.count > oldWidget.count &&
+        widget.animate &&
         !(MediaQuery.maybeOf(context)?.disableAnimations ?? false)) {
       _grow.forward(from: 0);
     }

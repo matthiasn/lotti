@@ -3,6 +3,8 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -11,25 +13,33 @@ import 'package:lotti/features/design_system/components/celebration/completion_b
 import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
 
-Widget _desktopHost(Widget child, {ThemeData? theme}) {
-  return MaterialApp(
-    theme: resolveTestTheme(theme),
-    localizationsDelegates: const [
-      AppLocalizations.delegate,
-      FormBuilderLocalizations.delegate,
-      GlobalMaterialLocalizations.delegate,
-      GlobalWidgetsLocalizations.delegate,
-      GlobalCupertinoLocalizations.delegate,
-    ],
-    supportedLocales: AppLocalizations.supportedLocales,
-    home: Scaffold(
-      body: Align(alignment: Alignment.topLeft, child: child),
+Widget _desktopHost(
+  Widget child, {
+  ThemeData? theme,
+  List<Override> overrides = const [],
+}) {
+  return ProviderScope(
+    overrides: overrides,
+    child: MaterialApp(
+      theme: resolveTestTheme(theme),
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        FormBuilderLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: Align(alignment: Alignment.topLeft, child: child),
+      ),
     ),
   );
 }
@@ -39,6 +49,7 @@ Future<void> _pumpDesktop(
   Widget child, {
   Size size = const Size(1280, 720),
   ThemeData? theme,
+  List<Override> overrides = const [],
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -49,6 +60,7 @@ Future<void> _pumpDesktop(
     _desktopHost(
       SizedBox(width: size.width, child: child),
       theme: theme,
+      overrides: overrides,
     ),
   );
   await tester.pump();
@@ -1383,6 +1395,28 @@ void main() {
       await tester.pump(const Duration(milliseconds: 560));
       expect(find.byType(CompletionGlow), findsNothing);
       expect(find.byType(CompletionBurst), findsNothing);
+    });
+
+    testWidgets('stays silent when task celebrations are switched off', (
+      tester,
+    ) async {
+      final overrides = [
+        celebrationPreferencesProvider.overrideWithValue(
+          const CelebrationPreferences(
+            habits: true,
+            checklistItems: true,
+            tasks: false,
+          ),
+        ),
+      ];
+      await _pumpDesktop(tester, header(open()), overrides: overrides);
+      // Transition into Done with the task switch off → no glow, no burst.
+      await _pumpDesktop(tester, header(done()), overrides: overrides);
+      await tester.pump(const Duration(milliseconds: 560));
+      expect(find.byType(CompletionGlow), findsNothing);
+      expect(find.byType(CompletionBurst), findsNothing);
+
+      await tester.pumpAndSettle();
     });
   });
 }

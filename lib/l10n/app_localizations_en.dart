@@ -6885,6 +6885,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsCategoriesTitle => 'Categories';
 
   @override
+  String get settingsCelebrationsChecklistDescription =>
+      'A pop and sparks when you check an item off';
+
+  @override
+  String get settingsCelebrationsChecklistTitle => 'Checklist items';
+
+  @override
+  String get settingsCelebrationsHabitsDescription =>
+      'Glow and sparks when you complete a habit';
+
+  @override
+  String get settingsCelebrationsHabitsTitle => 'Habits';
+
+  @override
+  String get settingsCelebrationsSectionDescription =>
+      'Play a flourish when you finish something. Switching one off keeps the completion and its haptic — it just skips the animation.';
+
+  @override
+  String get settingsCelebrationsSectionTitle => 'Completion celebrations';
+
+  @override
+  String get settingsCelebrationsSubtitle => 'Completion celebrations';
+
+  @override
+  String get settingsCelebrationsTasksDescription =>
+      'Glow and sparks when you move a task to Done';
+
+  @override
+  String get settingsCelebrationsTasksTitle => 'Tasks';
+
+  @override
+  String get settingsCelebrationsTitle => 'Animations';
+
+  @override
   String get settingsConflictsTitle => 'Sync Conflicts';
 
   @override

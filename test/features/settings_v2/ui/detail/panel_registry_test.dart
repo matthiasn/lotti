@@ -60,6 +60,7 @@ void main() {
       'advanced-about',
       'advanced-maintenance',
       'advanced-logging',
+      'advanced-animations',
       'sync-provisioned',
       'sync-node-profile',
       'sync-backfill',

@@ -7074,6 +7074,40 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsCategoriesTitle => 'Catégories';
 
   @override
+  String get settingsCelebrationsChecklistDescription =>
+      'Un pop et des étincelles quand tu coches un élément';
+
+  @override
+  String get settingsCelebrationsChecklistTitle => 'Éléments de liste';
+
+  @override
+  String get settingsCelebrationsHabitsDescription =>
+      'Lueur et étincelles quand tu accomplis une habitude';
+
+  @override
+  String get settingsCelebrationsHabitsTitle => 'Habitudes';
+
+  @override
+  String get settingsCelebrationsSectionDescription =>
+      'Une petite touche festive quand tu termines quelque chose. Si tu en désactives une, l\'achèvement et son retour haptique restent — seule l\'animation est ignorée.';
+
+  @override
+  String get settingsCelebrationsSectionTitle => 'Célébrations de fin';
+
+  @override
+  String get settingsCelebrationsSubtitle => 'Célébrations de fin';
+
+  @override
+  String get settingsCelebrationsTasksDescription =>
+      'Lueur et étincelles quand tu passes une tâche à Terminé';
+
+  @override
+  String get settingsCelebrationsTasksTitle => 'Tâches';
+
+  @override
+  String get settingsCelebrationsTitle => 'Animations';
+
+  @override
   String get settingsConflictsTitle => 'Conflits de synchronisation';
 
   @override

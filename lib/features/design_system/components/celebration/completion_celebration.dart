@@ -31,6 +31,7 @@ class CompletionCelebration extends StatefulWidget {
     this.glow = true,
     this.glowIntensity = 1.0,
     this.anchorScale = false,
+    this.animate = true,
     this.duration = const Duration(milliseconds: 1400),
     this.burstCount = 50,
     this.burstSizeScale = 0.8,
@@ -81,6 +82,12 @@ class CompletionCelebration extends StatefulWidget {
   /// Runs even under reduced motion, since a haptic is feedback, not motion.
   final VoidCallback? onCelebrate;
 
+  /// Master gate for the *visual* celebration (glow, spark burst, anchor pop).
+  /// When false the visuals are skipped entirely but [onCelebrate] still fires,
+  /// so a user who turned celebratory animations off in Settings keeps the
+  /// completion haptic without the flash. Defaults to true.
+  final bool animate;
+
   @override
   State<CompletionCelebration> createState() => _CompletionCelebrationState();
 }
@@ -111,20 +118,23 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
       _controller.duration = widget.duration;
     }
     if (!oldWidget.completed && widget.completed) {
+      // The haptic fires regardless; only the visual beats honour [animate].
       widget.onCelebrate?.call();
-      _controller.forward(from: 0);
-      if (widget.showBurst) {
-        // Capture the anchor geometry now, while still mounted, and render the
-        // burst in the overlay — see [spawnCompletionBurst].
-        spawnCompletionBurst(
-          context,
-          origin: widget.burstOrigin,
-          count: widget.burstCount,
-          sizeScale: widget.burstSizeScale,
-          clearCenter: widget.burstClearCenter,
-          reachFactor: widget.burstReach,
-          duration: widget.duration,
-        );
+      if (widget.animate) {
+        _controller.forward(from: 0);
+        if (widget.showBurst) {
+          // Capture the anchor geometry now, while still mounted, and render
+          // the burst in the overlay — see [spawnCompletionBurst].
+          spawnCompletionBurst(
+            context,
+            origin: widget.burstOrigin,
+            count: widget.burstCount,
+            sizeScale: widget.burstSizeScale,
+            clearCenter: widget.burstClearCenter,
+            reachFactor: widget.burstReach,
+            duration: widget.duration,
+          );
+        }
       }
     }
   }

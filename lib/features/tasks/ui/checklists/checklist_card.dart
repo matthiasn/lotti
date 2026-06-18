@@ -2,7 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_celebration.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_body.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_components.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
@@ -23,7 +25,7 @@ import 'package:lotti/services/app_prefs_service.dart';
 /// - Local item-ids list (optimistic reorder before persistence)
 ///
 /// The parent is responsible for providing real callbacks that persist changes.
-class ChecklistCard extends StatefulWidget {
+class ChecklistCard extends ConsumerStatefulWidget {
   const ChecklistCard({
     required this.id,
     required this.taskId,
@@ -78,10 +80,10 @@ class ChecklistCard extends StatefulWidget {
   final ValueChanged<bool>? onExpansionChanged;
 
   @override
-  State<ChecklistCard> createState() => _ChecklistCardState();
+  ConsumerState<ChecklistCard> createState() => _ChecklistCardState();
 }
 
-class _ChecklistCardState extends State<ChecklistCard> {
+class _ChecklistCardState extends ConsumerState<ChecklistCard> {
   late List<String> _itemIds;
   late bool _isExpanded;
   ChecklistFilter _filter = ChecklistFilter.openOnly;
@@ -207,6 +209,8 @@ class _ChecklistCardState extends State<ChecklistCard> {
       completed: total > 0 && widget.completionRate >= 1.0,
       showBurst: false,
       glowIntensity: 0.1,
+      // The medium haptic still fires; the glow honours the checklist switch.
+      animate: ref.watch(celebrationPreferencesProvider).checklistItems,
       onCelebrate: () => unawaited(HapticFeedback.mediumImpact()),
       child: Material(
         color: Colors.transparent,

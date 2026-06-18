@@ -427,6 +427,8 @@ The quick paths (swipe + button) fire light haptic feedback and confirm with a b
 
 A **fresh success** also fires the completion celebration **optimistically** — `_recordQuickCompletion` starts the `_celebrate` timeline (the `CompletionBurst`) the instant the tap lands, *before* the persist + recompute, because gating the animation behind the provider round-trip made the burst feel laggy on mobile ("the UI blocks, then particles fly later"). An `_optimisticCelebration` guard then stops `didUpdateWidget` from re-firing the timeline when the `completedToday` flip finally arrives. `PersistenceLogic.createHabitCompletionEntry` logs its own failures and returns `null` rather than throwing; on that `null` the row clears `_optimisticCelebration` (so a later real completion can still celebrate) and skips the success `SnackBar`, since nothing was recorded.
 
+The visual celebration (glow, spark burst, and the streak-chain grow-in pop) is gated on `celebrationPreferencesProvider.habits` (Settings → Advanced → Animations); when off, the row reads `HabitActionRow` as a `ConsumerStatefulWidget` and simply never starts the timeline. The completion **haptic still fires** — it is shared with the non-celebratory "missed" swipe, and the switch turns off animations, not feedback. The all-habits-done bloom on the summary card honours the same switch.
+
 ```mermaid
 flowchart TD
   Row["HabitActionRow"]

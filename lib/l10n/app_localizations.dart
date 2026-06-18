@@ -11932,6 +11932,66 @@ abstract class AppLocalizations {
   /// **'Categories'**
   String get settingsCategoriesTitle;
 
+  /// No description provided for @settingsCelebrationsChecklistDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'A pop and sparks when you check an item off'**
+  String get settingsCelebrationsChecklistDescription;
+
+  /// No description provided for @settingsCelebrationsChecklistTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Checklist items'**
+  String get settingsCelebrationsChecklistTitle;
+
+  /// No description provided for @settingsCelebrationsHabitsDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Glow and sparks when you complete a habit'**
+  String get settingsCelebrationsHabitsDescription;
+
+  /// No description provided for @settingsCelebrationsHabitsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Habits'**
+  String get settingsCelebrationsHabitsTitle;
+
+  /// No description provided for @settingsCelebrationsSectionDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Play a flourish when you finish something. Switching one off keeps the completion and its haptic — it just skips the animation.'**
+  String get settingsCelebrationsSectionDescription;
+
+  /// No description provided for @settingsCelebrationsSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion celebrations'**
+  String get settingsCelebrationsSectionTitle;
+
+  /// No description provided for @settingsCelebrationsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion celebrations'**
+  String get settingsCelebrationsSubtitle;
+
+  /// No description provided for @settingsCelebrationsTasksDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Glow and sparks when you move a task to Done'**
+  String get settingsCelebrationsTasksDescription;
+
+  /// No description provided for @settingsCelebrationsTasksTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get settingsCelebrationsTasksTitle;
+
+  /// No description provided for @settingsCelebrationsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Animations'**
+  String get settingsCelebrationsTitle;
+
   /// No description provided for @settingsConflictsTitle.
   ///
   /// In en, this message translates to:

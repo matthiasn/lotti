@@ -3,12 +3,14 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
 import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
@@ -226,6 +228,7 @@ _pumpWithControllers(
   bool hideIfChecked = false,
   bool hideIfUnchecked = false,
   List<ChecklistCompletionSuggestion> suggestions = const [],
+  List<Override> extraOverrides = const [],
 }) async {
   final testItem = item ?? _makeItem();
   final itemCtrl = FakeChecklistItemController(testItem);
@@ -245,6 +248,7 @@ _pumpWithControllers(
         checklistCompletionServiceProvider.overrideWith(
           () => completionSvc,
         ),
+        ...extraOverrides,
       ],
       child: makeTestableWidgetWithScaffold(
         ChecklistItemRow(
@@ -533,6 +537,33 @@ void main() {
       await tester.pumpAndSettle();
       // The burst clears once the timeline completes.
       expect(find.byType(CompletionBurst), findsNothing);
+    });
+
+    testWidgets('no spark burst when checklist celebrations are off', (
+      tester,
+    ) async {
+      await _pumpWithControllers(
+        tester,
+        extraOverrides: [
+          celebrationPreferencesProvider.overrideWithValue(
+            const CelebrationPreferences(
+              habits: true,
+              checklistItems: false,
+              tasks: true,
+            ),
+          ),
+        ],
+      );
+      await tester.pump();
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 300));
+      // The item still checks (the controller was called) but no sparks fly.
+      expect(find.byType(CompletionBurst), findsNothing);
+
+      await tester.pumpAndSettle();
     });
 
     testWidgets('checkbox is disabled when item is archived', (tester) async {

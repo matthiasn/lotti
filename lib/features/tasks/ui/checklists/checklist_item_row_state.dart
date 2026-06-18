@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/components/motion/strikethrough_wip
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
@@ -118,6 +119,9 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   /// haptic still fires, since it is feedback, not motion.
   void _celebrateInteractiveCheck() {
     unawaited(HapticFeedback.lightImpact());
+    // The haptic always fires; the visual pop + spark burst honour the user's
+    // "celebrate checklist items" switch and the system reduced-motion setting.
+    if (!ref.read(celebrationPreferencesProvider).checklistItems) return;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     if (reduceMotion) return;
@@ -376,6 +380,11 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                             )
                           : StrikethroughWipe(
                               done: isStrikethrough,
+                              // Off → the strike-through still shows, but
+                              // applies instantly with no left-to-right wipe.
+                              animate: ref
+                                  .watch(celebrationPreferencesProvider)
+                                  .checklistItems,
                               text: item.data.title,
                               baseStyle: tokens.typography.styles.body.bodySmall
                                   .copyWith(
