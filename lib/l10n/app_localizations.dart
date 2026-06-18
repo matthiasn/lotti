@@ -4552,7 +4552,7 @@ abstract class AppLocalizations {
   /// No description provided for @completeHabitFailButton.
   ///
   /// In en, this message translates to:
-  /// **'Fail'**
+  /// **'Missed'**
   String get completeHabitFailButton;
 
   /// No description provided for @completeHabitSkipButton.
@@ -8424,6 +8424,18 @@ abstract class AppLocalizations {
   /// **'Category'**
   String get habitCategoryLabel;
 
+  /// No description provided for @habitCloseCompletionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Close habit completion'**
+  String get habitCloseCompletionLabel;
+
+  /// No description provided for @habitCompleteSemanticLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Record {habit}'**
+  String habitCompleteSemanticLabel(String habit);
+
   /// No description provided for @habitDashboardHint.
   ///
   /// In en, this message translates to:
@@ -8435,6 +8447,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dashboard (optional)'**
   String get habitDashboardLabel;
+
+  /// No description provided for @habitDayStatusSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'{habit}, {status}'**
+  String habitDayStatusSemantic(String habit, String status);
 
   /// No description provided for @habitDeleteConfirm.
   ///
@@ -8448,17 +8466,89 @@ abstract class AppLocalizations {
   /// **'Do you want to delete this habit?'**
   String get habitDeleteQuestion;
 
+  /// No description provided for @habitHeatmapDaySemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'{date}, {done} of {total} done'**
+  String habitHeatmapDaySemantic(String date, int done, int total);
+
+  /// No description provided for @habitLogOtherDayHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold to log another day'**
+  String get habitLogOtherDayHint;
+
+  /// No description provided for @habitNotRecordedLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not recorded'**
+  String get habitNotRecordedLabel;
+
   /// No description provided for @habitPriorityLabel.
   ///
   /// In en, this message translates to:
   /// **'Priority'**
   String get habitPriorityLabel;
 
+  /// No description provided for @habitsAboveGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'On track'**
+  String get habitsAboveGoal;
+
+  /// No description provided for @habitsActiveHabitsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 active habit} other{{count} active habits}}'**
+  String habitsActiveHabitsCount(int count);
+
+  /// No description provided for @habitsAllDoneToday.
+  ///
+  /// In en, this message translates to:
+  /// **'All done today'**
+  String get habitsAllDoneToday;
+
   /// No description provided for @habitsCompletedHeader.
   ///
   /// In en, this message translates to:
   /// **'Completed'**
   String get habitsCompletedHeader;
+
+  /// No description provided for @habitsCompletionRateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Completion rate'**
+  String get habitsCompletionRateTitle;
+
+  /// No description provided for @habitsConsistencyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Consistency'**
+  String get habitsConsistencyTitle;
+
+  /// No description provided for @habitsDayFailedPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% recorded fails'**
+  String habitsDayFailedPercent(int percent);
+
+  /// No description provided for @habitsDaySkippedPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% skipped'**
+  String habitsDaySkippedPercent(int percent);
+
+  /// No description provided for @habitsDaySuccessfulPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% successful'**
+  String habitsDaySuccessfulPercent(int percent);
+
+  /// No description provided for @habitsDoneTodayLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Done today'**
+  String get habitsDoneTodayLabel;
 
   /// No description provided for @habitSectionOptionsTitle.
   ///
@@ -8496,6 +8586,30 @@ abstract class AppLocalizations {
   /// **'later'**
   String get habitsFilterPendingLater;
 
+  /// No description provided for @habitsGoalLineLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal'**
+  String get habitsGoalLineLabel;
+
+  /// No description provided for @habitsHeatmapEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a habit to start building your consistency'**
+  String get habitsHeatmapEmpty;
+
+  /// No description provided for @habitsHeatmapLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Less'**
+  String get habitsHeatmapLess;
+
+  /// No description provided for @habitsHeatmapMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get habitsHeatmapMore;
+
   /// No description provided for @habitShowAlertAtLabel.
   ///
   /// In en, this message translates to:
@@ -8508,6 +8622,12 @@ abstract class AppLocalizations {
   /// **'Show from'**
   String get habitShowFromLabel;
 
+  /// No description provided for @habitsLaggardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'{habit} — kept {kept} of {active}'**
+  String habitsLaggardHint(String habit, int kept, int active);
+
   /// No description provided for @habitsOpenHeader.
   ///
   /// In en, this message translates to:
@@ -8519,6 +8639,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Later today'**
   String get habitsPendingLaterHeader;
+
+  /// No description provided for @habitsPointsToGoal.
+  ///
+  /// In en, this message translates to:
+  /// **'{points, plural, one{1 pt to goal} other{{points} pts to goal}}'**
+  String habitsPointsToGoal(int points);
+
+  /// No description provided for @habitsRecordButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Record'**
+  String get habitsRecordButton;
+
+  /// No description provided for @habitsRollingAverageLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'7-day avg'**
+  String get habitsRollingAverageLabel;
+
+  /// No description provided for @habitsStartStreakToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a streak today'**
+  String get habitsStartStreakToday;
+
+  /// No description provided for @habitsStreakLongCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} on a 7-day streak'**
+  String habitsStreakLongCount(int count);
+
+  /// No description provided for @habitsStreakShortCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} on a 3-day streak'**
+  String habitsStreakShortCount(int count);
+
+  /// No description provided for @habitsTapForBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap a day for the breakdown'**
+  String get habitsTapForBreakdown;
+
+  /// No description provided for @habitsToGoCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} to go'**
+  String habitsToGoCount(int count);
+
+  /// No description provided for @habitStreakDaysSemantic.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}-day streak'**
+  String habitStreakDaysSemantic(int count);
+
+  /// No description provided for @habitsVsPreviousWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'vs previous week'**
+  String get habitsVsPreviousWeek;
 
   /// No description provided for @imageGenerationError.
   ///

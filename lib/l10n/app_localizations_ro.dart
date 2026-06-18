@@ -2674,7 +2674,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get commonUnknown => 'Necunoscut';
 
   @override
-  String get completeHabitFailButton => 'Eșec';
+  String get completeHabitFailButton => 'Ratat';
 
   @override
   String get completeHabitSkipButton => 'Sari peste';
@@ -4905,10 +4905,23 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitCategoryLabel => 'Categorie';
 
   @override
+  String get habitCloseCompletionLabel => 'Închide înregistrarea obiceiului';
+
+  @override
+  String habitCompleteSemanticLabel(String habit) {
+    return 'Înregistrează $habit';
+  }
+
+  @override
   String get habitDashboardHint => 'Selectați un panou de bord';
 
   @override
   String get habitDashboardLabel => 'Panou de bord (opțional)';
+
+  @override
+  String habitDayStatusSemantic(String habit, String status) {
+    return '$habit, $status';
+  }
 
   @override
   String get habitDeleteConfirm => 'DA, ȘTERGEȚI ACEST OBICEI';
@@ -4917,10 +4930,71 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitDeleteQuestion => 'Doriți să ștergeți acest obicei?';
 
   @override
+  String habitHeatmapDaySemantic(String date, int done, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total realizate',
+      few: '$total realizate',
+      one: '1 realizat',
+    );
+    return '$date, $done din $_temp0';
+  }
+
+  @override
+  String get habitLogOtherDayHint =>
+      'Țineți apăsat pentru a înregistra altă zi';
+
+  @override
+  String get habitNotRecordedLabel => 'Neînregistrat';
+
+  @override
   String get habitPriorityLabel => 'Prioritate';
 
   @override
+  String get habitsAboveGoal => 'Conform planului';
+
+  @override
+  String habitsActiveHabitsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de obiceiuri active',
+      few: '$count obiceiuri active',
+      one: '1 obicei activ',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitsAllDoneToday => 'Tot finalizat azi';
+
+  @override
   String get habitsCompletedHeader => 'Finalizate';
+
+  @override
+  String get habitsCompletionRateTitle => 'Rata de finalizare';
+
+  @override
+  String get habitsConsistencyTitle => 'Consecvență';
+
+  @override
+  String habitsDayFailedPercent(int percent) {
+    return '$percent% înregistrate ca ratate';
+  }
+
+  @override
+  String habitsDaySkippedPercent(int percent) {
+    return '$percent% omise';
+  }
+
+  @override
+  String habitsDaySuccessfulPercent(int percent) {
+    return '$percent% reușite';
+  }
+
+  @override
+  String get habitsDoneTodayLabel => 'Finalizate azi';
 
   @override
   String get habitSectionOptionsTitle => 'Opțiuni';
@@ -4941,16 +5015,88 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsFilterPendingLater => 'mai târziu';
 
   @override
+  String get habitsGoalLineLabel => 'Obiectiv';
+
+  @override
+  String get habitsHeatmapEmpty =>
+      'Adăugați un obicei pentru a începe să vă urmăriți consecvența';
+
+  @override
+  String get habitsHeatmapLess => 'Mai puțin';
+
+  @override
+  String get habitsHeatmapMore => 'Mai mult';
+
+  @override
   String get habitShowAlertAtLabel => 'Afișați alerta la';
 
   @override
   String get habitShowFromLabel => 'Afișați de la';
 
   @override
+  String habitsLaggardHint(String habit, int kept, int active) {
+    return '$habit — $kept din $active realizate';
+  }
+
+  @override
   String get habitsOpenHeader => 'Scadente acum';
 
   @override
   String get habitsPendingLaterHeader => 'Mai târziu astăzi';
+
+  @override
+  String habitsPointsToGoal(int points) {
+    return '$points pct. până la obiectiv';
+  }
+
+  @override
+  String get habitsRecordButton => 'Înregistrați';
+
+  @override
+  String get habitsRollingAverageLabel => 'media pe 7 zile';
+
+  @override
+  String get habitsStartStreakToday => 'Începeți o serie astăzi';
+
+  @override
+  String habitsStreakLongCount(int count) {
+    return '$count cu serie de 7 zile';
+  }
+
+  @override
+  String habitsStreakShortCount(int count) {
+    return '$count cu serie de 3 zile';
+  }
+
+  @override
+  String get habitsTapForBreakdown => 'Atingeți o zi pentru detalii';
+
+  @override
+  String habitsToGoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count rămase',
+      few: '$count rămase',
+      one: '1 rămasă',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile la rând',
+      few: '$count zile la rând',
+      one: '1 zi la rând',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitsVsPreviousWeek => 'față de săptămâna trecută';
 
   @override
   String get imageGenerationError => 'Generarea imaginii a eșuat';

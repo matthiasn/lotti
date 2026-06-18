@@ -2,20 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
-import 'package:lotti/get_it.dart';
+import 'package:lotti/features/habits/ui/widgets/habits_tool_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/themes/theme.dart';
-import 'package:lotti/utils/color.dart';
-import 'package:pie_chart/pie_chart.dart';
 
-/// Category filter button for the habits tab.
-///
-/// The icon is a ring [PieChart] whose slices are the categories of the
-/// currently-due habits (`state.openNow`), one count per category coloured by
-/// the category's own colour — giving an at-a-glance breakdown of what's open.
-/// When nothing is due it falls back to a "filter off" icon. Tapping opens the
-/// multi-category picker and commits the chosen set via
+/// Category filter button for the habits tab — a plain filter glyph in the
+/// header tool cluster (active when a category subset is selected). Tapping
+/// opens the multi-category picker and commits the chosen set via
 /// [HabitsController.setSelectedCategoryIds] (only when the selection changed).
 class HabitsFilter extends ConsumerWidget {
   const HabitsFilter({super.key});
@@ -23,44 +15,13 @@ class HabitsFilter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(habitsControllerProvider);
+    final isFiltering = state.selectedCategoryIds.isNotEmpty;
 
-    final dataMap = <String, double>{};
-
-    for (final habit in state.openNow) {
-      final categoryId = habit.categoryId ?? 'undefined';
-      dataMap[categoryId] = (dataMap[categoryId] ?? 0) + 1;
-    }
-
-    final colorList = dataMap.keys.map((categoryId) {
-      final category = getIt<EntitiesCacheService>().getCategoryById(
-        categoryId,
-      );
-
-      return category != null ? colorFromCssHex(category.color) : Colors.grey;
-    }).toList();
-
-    return IconButton(
+    return HabitsToolButton(
       key: const Key('habit_category_filter'),
-      padding: const EdgeInsets.all(5),
-      icon: dataMap.isEmpty
-          ? Icon(
-              Icons.filter_alt_off_outlined,
-              color: context.colorScheme.outline,
-            )
-          : PieChart(
-              dataMap: dataMap,
-              animationDuration: const Duration(milliseconds: 800),
-              chartRadius: 25,
-              colorList: colorList,
-              initialAngleInDegree: 0,
-              chartType: ChartType.ring,
-              ringStrokeWidth: 10,
-              legendOptions: const LegendOptions(showLegends: false),
-              chartValuesOptions: const ChartValuesOptions(
-                showChartValueBackground: false,
-                showChartValues: false,
-              ),
-            ),
+      icon: isFiltering ? Icons.filter_alt : Icons.filter_alt_outlined,
+      active: isFiltering,
+      semanticLabel: context.messages.habitCategoryLabel,
       onPressed: () async {
         final controller = ref.read(habitsControllerProvider.notifier);
         final result = await showCategoryMultiPicker(

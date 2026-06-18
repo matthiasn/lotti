@@ -1,4 +1,5 @@
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -6,10 +7,12 @@ import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
 // Minimal TitleMeta for testing title widget callbacks.
@@ -25,8 +28,7 @@ TitleMeta _makeMeta() => TitleMeta(
   rotationQuarterTurns: 0,
 );
 
-/// Returns the canned [HabitsState] instead of loading from the database —
-/// replaces the five former one-off controller subclasses.
+/// Returns the canned [HabitsState] instead of loading from the database.
 class _FixedStateController extends HabitsController {
   _FixedStateController(this._state);
 
@@ -34,6 +36,26 @@ class _FixedStateController extends HabitsController {
 
   @override
   HabitsState build() => _state;
+}
+
+/// A 14-day window with two habits; [habitFlossing] is kept every day and
+/// [habitFlossingDueLater] is never kept, so the daily rate is a flat 50% and
+/// the second habit is the laggard.
+HabitsState _fourteenDayState() {
+  final days = [
+    for (var d = 1; d <= 14; d++) '2024-03-${d.toString().padLeft(2, '0')}',
+  ];
+  return HabitsState.initial().copyWith(
+    days: days,
+    timeSpanDays: 14,
+    habitDefinitions: [habitFlossing, habitFlossingDueLater],
+    allByDay: {
+      for (final day in days) day: {habitFlossing.id, habitFlossingDueLater.id},
+    },
+    successfulByDay: {
+      for (final day in days) day: {habitFlossing.id},
+    },
+  );
 }
 
 void main() {
@@ -67,13 +89,7 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  /// Pumps the chart, optionally pinning the habits state to [state] instead
-  /// of letting the real controller load from the (mocked) database.
-  ///
-  /// Uses [makeTestableWidgetNoScroll] so the active theme carries the DsTokens
-  /// extension (the chart now reads `context.designTokens` for its tokenized
-  /// gridlines and border) and the AppLocalizations delegates are present for
-  /// the info-label strings.
+  /// Pumps the chart, optionally pinning the habits state to [state].
   Future<void> pumpChart(WidgetTester tester, {HabitsState? state}) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -91,42 +107,132 @@ void main() {
     await tester.pump();
   }
 
-  group('HabitCompletionRateChart', () {
-    testWidgets('displays default info label when no day selected', (
+  group('HabitCompletionRateChart headline', () {
+    testWidgets('shows the rolling-average label when no day is selected', (
       tester,
     ) async {
       await pumpChart(tester);
 
       expect(find.byType(LineChart), findsOneWidget);
-      expect(find.textContaining('active habits'), findsOneWidget);
-      expect(find.textContaining('Tap chart'), findsOneWidget);
+      expect(find.textContaining('7-day avg'), findsOneWidget);
+      // Empty data → the forward-looking goal line, not a pass/fail count.
+      expect(find.textContaining('goal'), findsOneWidget);
     });
 
+    testWidgets('shows average, on-track count, trend and laggard nudge', (
+      tester,
+    ) async {
+      await pumpChart(tester, state: _fourteenDayState());
+
+      // The rate and its unit read as one inline group "50%  7-day avg".
+      expect(find.textContaining('50%'), findsOneWidget);
+      expect(find.textContaining('7-day avg'), findsOneWidget);
+      // 50% average → 30 pts to the 80% goal (gain-framed, not pass/fail).
+      expect(find.textContaining('30 pts to goal'), findsOneWidget);
+      // A full prior week exists and is identical → flat trend.
+      expect(find.byIcon(Icons.trending_flat_rounded), findsOneWidget);
+      // The never-kept habit is named as the laggard, gain-framed.
+      expect(find.textContaining(habitFlossingDueLater.name), findsOneWidget);
+      expect(find.textContaining('kept 0 of 14'), findsOneWidget);
+    });
+
+    testWidgets('the goal chip flips to "On track" at/above target', (
+      tester,
+    ) async {
+      final days = [
+        for (var d = 1; d <= 14; d++) '2024-03-${d.toString().padLeft(2, '0')}',
+      ];
+      await pumpChart(
+        tester,
+        state: HabitsState.initial().copyWith(
+          days: days,
+          timeSpanDays: 14,
+          allByDay: {
+            for (final day in days) day: const {'h1'},
+          },
+          // Every day kept → 100% average, at/above the 80% goal.
+          successfulByDay: {
+            for (final day in days) day: const {'h1'},
+          },
+        ),
+      );
+
+      expect(find.text('On track'), findsOneWidget);
+      expect(find.textContaining('to goal'), findsNothing);
+    });
+
+    testWidgets('hides the trend chip on the short 7-day window', (
+      tester,
+    ) async {
+      final days = [
+        for (var d = 8; d <= 14; d++) '2024-03-${d.toString().padLeft(2, '0')}',
+      ];
+      await pumpChart(
+        tester,
+        state: HabitsState.initial().copyWith(days: days, timeSpanDays: 7),
+      );
+
+      expect(find.byIcon(Icons.trending_flat_rounded), findsNothing);
+      expect(find.byIcon(Icons.arrow_upward_rounded), findsNothing);
+      expect(find.byIcon(Icons.arrow_downward_rounded), findsNothing);
+    });
+  });
+
+  group('HabitCompletionRateChart line data', () {
+    testWidgets('plots a daily scatter and a curved rolling-average hero', (
+      tester,
+    ) async {
+      await pumpChart(tester, state: _fourteenDayState());
+
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      final bars = chart.data.lineBarsData;
+      expect(bars, hasLength(2));
+
+      // Daily scatter: an invisible line carrying faint dots.
+      expect(bars[0].color, Colors.transparent);
+      expect(bars[0].dotData.show, isTrue);
+
+      // Hero: a curved success-coloured average line, no dots of its own.
+      expect(bars[1].isCurved, isTrue);
+      expect(bars[1].barWidth, 3);
+      expect(bars[1].color, successColor);
+      expect(bars[1].dotData.show, isFalse);
+    });
+
+    testWidgets('shades the on-track band and drops vertical gridlines', (
+      tester,
+    ) async {
+      await pumpChart(tester, state: _fourteenDayState());
+
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      final bands = chart.data.rangeAnnotations.horizontalRangeAnnotations;
+      expect(bands, hasLength(1));
+      expect(bands.first.y1, 80);
+      expect(bands.first.y2, 100);
+
+      expect(chart.data.gridData.drawVerticalLine, isFalse);
+      // No dead right margin: the last spot sits at maxX.
+      expect(chart.data.maxX, chart.data.lineBarsData[1].spots.last.x);
+    });
+  });
+
+  group('HabitCompletionRateChart day breakdown', () {
     testWidgets('chart tap triggers setInfoYmd on next frame', (tester) async {
       await pumpChart(tester);
 
-      // Find the LineChart
       final chartFinder = find.byType(LineChart);
       expect(chartFinder, findsOneWidget);
 
-      // Tap the center of the chart
       await tester.tapAt(tester.getCenter(chartFinder));
-
-      // Pump to allow addPostFrameCallback to execute. The original bug
-      // modified provider state during paint (setState/markNeedsBuild while
-      // painting), which throws a FlutterError. setInfoYmd is now deferred
-      // via addPostFrameCallback, so draining the post-frame callback here
-      // must not surface any exception.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Regression guard: no exception was thrown while the deferred
-      // paint-time callback ran, and the chart is still mounted.
+      // The deferred paint-time callback must not throw.
       expect(tester.takeException(), isNull);
       expect(find.byType(LineChart), findsOneWidget);
     });
 
-    testWidgets('displays percentage info when day is selected', (
+    testWidgets('shows the per-day split when a day is selected', (
       tester,
     ) async {
       await pumpChart(
@@ -139,11 +245,29 @@ void main() {
         ),
       );
 
-      // The pinned state sets selectedInfoYmd, so we should see percentages
       expect(find.textContaining('2025-12-30'), findsOneWidget);
       expect(find.textContaining('% successful'), findsOneWidget);
       expect(find.textContaining('% skipped'), findsOneWidget);
       expect(find.textContaining('% recorded fails'), findsOneWidget);
+    });
+
+    testWidgets('a pointer-exit is wired and a no-op with no selection', (
+      tester,
+    ) async {
+      await pumpChart(tester);
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      // The hover/scrub-exit clear is wired (so the breakdown snaps back to the
+      // headline on pointer-exit rather than waiting out the idle debounce).
+      expect(chart.data.lineTouchData.touchCallback, isNotNull);
+
+      // With nothing selected the guard short-circuits: no clear is scheduled
+      // and nothing throws.
+      chart.data.lineTouchData.touchCallback!(
+        const FlPointerExitEvent(PointerExitEvent()),
+        null,
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
 
     for (final edgeCase in [
@@ -158,15 +282,10 @@ void main() {
           timeSpanDays: 7,
         ),
       ),
-      (
-        description: 'renders with zeroBased mode',
-        state: HabitsState.initial().copyWith(zeroBased: true, minY: 50),
-      ),
     ]) {
       testWidgets(edgeCase.description, (tester) async {
         await pumpChart(tester, state: edgeCase.state);
 
-        // Renders without errors — bounds checks prevent RangeError.
         expect(tester.takeException(), isNull);
         expect(find.byType(LineChart), findsOneWidget);
       });
@@ -200,8 +319,7 @@ void main() {
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
       final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
 
-      final items = tooltipData.getTooltipItems([]);
-      expect(items, isEmpty);
+      expect(tooltipData.getTooltipItems([]), isEmpty);
     });
 
     testWidgets('does not throw when spot index is out of bounds', (
@@ -212,11 +330,9 @@ void main() {
       final lineChart = tester.widget<LineChart>(find.byType(LineChart));
       final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
 
-      // Use an x value far beyond the days list length
       final barDataObj = LineChartBarData(spots: const [FlSpot(999, 50)]);
       final spots = [LineBarSpot(barDataObj, 0, const FlSpot(999, 50))];
 
-      // Must not throw; returns one null per spot
       final items = tooltipData.getTooltipItems(spots);
       expect(items, hasLength(1));
       expect(items.first, isNull);
@@ -225,8 +341,6 @@ void main() {
 
   group('leftTitleWidgets', () {
     Future<void> pumpTitleWidget(WidgetTester tester, double value) async {
-      // Labelled values render a ChartLabel, which reads context.designTokens,
-      // so the active theme must carry the DsTokens extension.
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           Scaffold(body: leftTitleWidgets(value, _makeMeta())),
@@ -254,7 +368,6 @@ void main() {
     testWidgets('returns empty Container for non-labelled values', (
       tester,
     ) async {
-      // Values like 0, 10, 30, 50 are not labelled.
       for (final value in [0.0, 10.0, 30.0, 50.0, 70.0, 90.0]) {
         await pumpTitleWidget(tester, value);
         expect(find.byType(Container), findsWidgets);
@@ -264,178 +377,6 @@ void main() {
           reason: 'No label expected for value $value',
         );
       }
-    });
-  });
-
-  group('barData pure function', () {
-    HabitsState makeState({
-      List<HabitDefinition> habitDefinitions = const [],
-      Map<String, Set<String>> allByDay = const {},
-      Map<String, Set<String>> successfulByDay = const {},
-      Map<String, Set<String>> skippedByDay = const {},
-      Map<String, Set<String>> failedByDay = const {},
-    }) {
-      return HabitsState.initial().copyWith(
-        habitDefinitions: habitDefinitions,
-        allByDay: allByDay,
-        successfulByDay: successfulByDay,
-        skippedByDay: skippedByDay,
-        failedByDay: failedByDay,
-      );
-    }
-
-    test('produces zero y-value when habitCount is 0', () {
-      const day = '2024-03-15';
-      final state = makeState(); // no habits, no allByDay entries
-      final result = barData(
-        days: [day],
-        habitDefinitions: [],
-        successfulByDay: {},
-        skippedByDay: {},
-        failedByDay: {},
-        state: state,
-        showSuccessful: true,
-        showSkipped: true,
-        showFailed: true,
-        color: Colors.blue,
-      );
-
-      expect(result.spots, hasLength(1));
-      expect(result.spots.first.y, 0.0);
-    });
-
-    test('computes correct rate when showSuccessful only', () {
-      const day = '2024-03-15';
-      final state = makeState(
-        allByDay: {
-          day: {'h1', 'h2', 'h3', 'h4'},
-        },
-        successfulByDay: {
-          day: {'h1', 'h2'},
-        },
-        skippedByDay: {
-          day: {'h3'},
-        },
-        failedByDay: {
-          day: {'h4'},
-        },
-      );
-
-      final result = barData(
-        days: [day],
-        habitDefinitions: [],
-        successfulByDay: {
-          day: {'h1', 'h2'},
-        },
-        skippedByDay: {
-          day: {'h3'},
-        },
-        failedByDay: {
-          day: {'h4'},
-        },
-        state: state,
-        showSuccessful: true,
-        showSkipped: false,
-        showFailed: false,
-        color: Colors.green,
-      );
-
-      // 2 successful out of 4 total → 50 %
-      expect(result.spots, hasLength(1));
-      expect(result.spots.first.y, closeTo(50.0, 0.001));
-    });
-
-    test('computes correct rate when showSuccessful + showSkipped', () {
-      const day = '2024-03-15';
-      final state = makeState(
-        allByDay: {
-          day: {'h1', 'h2', 'h3', 'h4'},
-        },
-        successfulByDay: {
-          day: {'h1', 'h2'},
-        },
-        skippedByDay: {
-          day: {'h3'},
-        },
-        failedByDay: {
-          day: {'h4'},
-        },
-      );
-
-      final result = barData(
-        days: [day],
-        habitDefinitions: [],
-        successfulByDay: {
-          day: {'h1', 'h2'},
-        },
-        skippedByDay: {
-          day: {'h3'},
-        },
-        failedByDay: {
-          day: {'h4'},
-        },
-        state: state,
-        showSuccessful: true,
-        showSkipped: true,
-        showFailed: false,
-        color: Colors.orange,
-      );
-
-      // 2 successful + 1 skipped = 3 out of 4 → 75 %
-      expect(result.spots.first.y, closeTo(75.0, 0.001));
-    });
-
-    test('clamps rate to 100 when value exceeds total', () {
-      const day = '2024-03-15';
-      // 5 successful out of only 4 total would exceed 100 — must be capped.
-      final state = makeState(
-        allByDay: {
-          day: {'h1', 'h2', 'h3', 'h4'},
-        },
-        successfulByDay: {
-          day: {'h1', 'h2', 'h3', 'h4', 'h5'},
-        },
-      );
-
-      final result = barData(
-        days: [day],
-        habitDefinitions: [],
-        successfulByDay: {
-          day: {'h1', 'h2', 'h3', 'h4', 'h5'},
-        },
-        skippedByDay: {},
-        failedByDay: {},
-        state: state,
-        showSuccessful: true,
-        showSkipped: false,
-        showFailed: false,
-        color: Colors.teal,
-      );
-
-      expect(result.spots.first.y, 100.0);
-    });
-
-    test('aboveColor is applied when provided', () {
-      const day = '2024-03-15';
-      final state = makeState();
-      const aboveColor = Colors.red;
-
-      final result = barData(
-        days: [day],
-        habitDefinitions: [],
-        successfulByDay: {},
-        skippedByDay: {},
-        failedByDay: {},
-        state: state,
-        showSuccessful: true,
-        showSkipped: false,
-        showFailed: false,
-        color: Colors.blue,
-        aboveColor: aboveColor,
-      );
-
-      expect(result.aboveBarData, isNotNull);
-      expect(result.aboveBarData.show, isTrue);
     });
   });
 }

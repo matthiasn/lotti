@@ -2669,13 +2669,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get commonUnknown => 'Inconnu';
 
   @override
-  String get completeHabitFailButton => 'Échec';
+  String get completeHabitFailButton => 'Manqué';
 
   @override
-  String get completeHabitSkipButton => 'Ignorer';
+  String get completeHabitSkipButton => 'Ignoré';
 
   @override
-  String get completeHabitSuccessButton => 'Succès';
+  String get completeHabitSuccessButton => 'Réussi';
 
   @override
   String get configFlagAttemptEmbeddingDescription =>
@@ -4907,10 +4907,23 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitCategoryLabel => 'Catégorie';
 
   @override
+  String get habitCloseCompletionLabel => 'Fermer la saisie d\'habitude';
+
+  @override
+  String habitCompleteSemanticLabel(String habit) {
+    return 'Enregistrer $habit';
+  }
+
+  @override
   String get habitDashboardHint => 'Choisir un tableau de bord';
 
   @override
   String get habitDashboardLabel => 'Tableau de bord (facultatif)';
+
+  @override
+  String habitDayStatusSemantic(String habit, String status) {
+    return '$habit, $status';
+  }
 
   @override
   String get habitDeleteConfirm => 'OUI, SUPPRIMER CETTE HABITUDE';
@@ -4919,10 +4932,69 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitDeleteQuestion => 'Veux-tu supprimer cette habitude ?';
 
   @override
+  String habitHeatmapDaySemantic(String date, int done, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total faits',
+      one: '1 fait',
+    );
+    return '$date, $done sur $_temp0';
+  }
+
+  @override
+  String get habitLogOtherDayHint =>
+      'Maintiens appuyé pour enregistrer un autre jour';
+
+  @override
+  String get habitNotRecordedLabel => 'Non enregistré';
+
+  @override
   String get habitPriorityLabel => 'Priorité';
 
   @override
+  String get habitsAboveGoal => 'Dans les clous';
+
+  @override
+  String habitsActiveHabitsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count habitudes actives',
+      one: '1 habitude active',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitsAllDoneToday => 'Tout est fait aujourd\'hui';
+
+  @override
   String get habitsCompletedHeader => 'Terminées';
+
+  @override
+  String get habitsCompletionRateTitle => 'Taux de réussite';
+
+  @override
+  String get habitsConsistencyTitle => 'Régularité';
+
+  @override
+  String habitsDayFailedPercent(int percent) {
+    return '$percent% marqués manqués';
+  }
+
+  @override
+  String habitsDaySkippedPercent(int percent) {
+    return '$percent% ignorés';
+  }
+
+  @override
+  String habitsDaySuccessfulPercent(int percent) {
+    return '$percent% réussis';
+  }
+
+  @override
+  String get habitsDoneTodayLabel => 'Fait aujourd\'hui';
 
   @override
   String get habitSectionOptionsTitle => 'Options';
@@ -4943,16 +5015,86 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitsFilterPendingLater => 'plus tard';
 
   @override
+  String get habitsGoalLineLabel => 'Objectif';
+
+  @override
+  String get habitsHeatmapEmpty =>
+      'Ajoute une habitude pour commencer à suivre ta régularité';
+
+  @override
+  String get habitsHeatmapLess => 'Moins';
+
+  @override
+  String get habitsHeatmapMore => 'Plus';
+
+  @override
   String get habitShowAlertAtLabel => 'Afficher l\'alerte à';
 
   @override
   String get habitShowFromLabel => 'Afficher à partir de';
 
   @override
+  String habitsLaggardHint(String habit, int kept, int active) {
+    return '$habit — $kept sur $active réussis';
+  }
+
+  @override
   String get habitsOpenHeader => 'Dues maintenant';
 
   @override
   String get habitsPendingLaterHeader => 'Plus tard dans la journée';
+
+  @override
+  String habitsPointsToGoal(int points) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '$points pts avant l\'\'objectif',
+      one: '1 pt avant l\'\'objectif',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitsRecordButton => 'Enregistrer';
+
+  @override
+  String get habitsRollingAverageLabel => 'moyenne sur 7 jours';
+
+  @override
+  String get habitsStartStreakToday => 'Commence une série aujourd\'hui';
+
+  @override
+  String habitsStreakLongCount(int count) {
+    return '$count sur une série de 7 jours';
+  }
+
+  @override
+  String habitsStreakShortCount(int count) {
+    return '$count sur une série de 3 jours';
+  }
+
+  @override
+  String get habitsTapForBreakdown => 'Touche un jour pour le détail';
+
+  @override
+  String habitsToGoCount(int count) {
+    return 'encore $count';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count jours d\'\'affilée',
+      one: '1 jour d\'\'affilée',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitsVsPreviousWeek => 'vs semaine précédente';
 
   @override
   String get imageGenerationError => 'Échec de la génération d\'image';

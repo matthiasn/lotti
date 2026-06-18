@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -48,6 +50,11 @@ class _HabitDialogState extends State<HabitDialog> {
   final _formKey = GlobalKey<FormBuilderState>();
 
   bool _startReset = false;
+
+  /// The outcome the [DsSegmentedToggle] currently selects; the Record button
+  /// (and the Cmd+S shortcut) persist with this. Defaults to success — the
+  /// overwhelmingly common case — so the happy path is a single tap.
+  HabitCompletionType _outcome = HabitCompletionType.success;
 
   final hotkeyCmdS = HotKey(
     key: LogicalKeyboardKey.keyS,
@@ -97,7 +104,7 @@ class _HabitDialogState extends State<HabitDialog> {
     if (isDesktop) {
       hotKeyManager.register(
         hotkeyCmdS,
-        keyDownHandler: (hotKey) => saveHabit(HabitCompletionType.success),
+        keyDownHandler: (hotKey) => saveHabit(_outcome),
       );
     }
   }
@@ -142,185 +149,199 @@ class _HabitDialogState extends State<HabitDialog> {
     final showLinkedDashboard =
         widget.showLinkedDashboard && habitDefinition.dashboardId != null;
 
+    final form = _CompletionForm(
+      formKey: _formKey,
+      habitDefinition: habitDefinition,
+      started: _started,
+      outcome: _outcome,
+      onOutcomeChanged: (value) => setState(() => _outcome = value),
+      onPickDate: (picked) {
+        setState(() {
+          _startReset = true;
+          _started = picked;
+        });
+      },
+      onClose: () => Navigator.pop(context),
+      onRecord: () => saveHabit(_outcome),
+    );
+
     return Theme(
       data: widget.themeData,
       child: Padding(
         padding: EdgeInsets.only(
           bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        child: Stack(
-          children: [
-            if (showLinkedDashboard)
-              SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 280),
-                  child: DashboardWidget(
-                    rangeStart: rangeStart,
-                    rangeEnd: rangeEnd,
-                    dashboardId: habitDefinition.dashboardId!,
+        child: showLinkedDashboard
+            ? SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DashboardWidget(
+                      rangeStart: rangeStart,
+                      rangeEnd: rangeEnd,
+                      dashboardId: habitDefinition.dashboardId!,
+                    ),
+                    form,
+                  ],
+                ),
+              )
+            : GestureDetector(
+                // The form floats on a transparent sheet; make a tap on the
+                // empty space around it close the dialog (the scrim above the
+                // sheet isn't reachable here), as is conventional in the app.
+                behavior: HitTestBehavior.opaque,
+                onTap: () => Navigator.of(context).maybePop(),
+                child: Align(
+                  alignment: Alignment.bottomCenter,
+                  // Swallow taps on the form itself so they don't bubble up and
+                  // dismiss it.
+                  child: GestureDetector(
+                    onTap: () {},
+                    child: form,
                   ),
                 ),
               ),
-            Align(
-              alignment: Alignment.bottomCenter,
-              heightFactor: showLinkedDashboard ? 10 : 1,
-              child: Card(
-                margin: EdgeInsets.zero,
-                elevation: 10,
-                shape: RoundedRectangleBorder(
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(30),
-                    topRight: Radius.circular(30),
-                  ),
-                  side: BorderSide(
-                    color: (context.textTheme.titleLarge?.color ?? Colors.black)
-                        .withAlpha(127),
-                  ),
-                ),
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxWidth: 500,
-                    minWidth: isMobile
-                        ? MediaQuery.of(context).size.width
-                        : 250,
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.only(
-                      left: 30,
-                      top: 5,
-                      right: 10,
-                      bottom: 5,
-                    ),
-                    child: FormBuilder(
-                      key: _formKey,
-                      autovalidateMode: AutovalidateMode.onUserInteraction,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  habitDefinition.name,
-                                  style: habitCompletionHeaderStyle,
-                                ),
-                              ),
-                              IconButton(
-                                padding: const EdgeInsets.all(10),
-                                icon: Semantics(
-                                  label: 'close habit completion',
-                                  child: const Icon(Icons.close_rounded),
-                                ),
-                                onPressed: () => Navigator.pop(context),
-                              ),
-                            ],
-                          ),
-                          if (habitDefinition.description.isNotEmpty)
-                            HabitDescription(habitDefinition),
-                          Padding(
-                            padding: const EdgeInsets.only(right: 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                inputSpacerSmall,
-                                DateTimeField(
-                                  dateTime: _started,
-                                  labelText: context.messages.addHabitDateLabel,
-                                  setDateTime: (picked) {
-                                    setState(() {
-                                      _startReset = true;
-                                      _started = picked;
-                                    });
-                                  },
-                                ),
-                                inputSpacerSmall,
-                                FormBuilderTextField(
-                                  initialValue: '',
-                                  key: const Key('habit_comment_field'),
-                                  decoration: createDialogInputDecoration(
-                                    labelText:
-                                        context.messages.addHabitCommentLabel,
-                                    themeData: Theme.of(context),
-                                  ),
-                                  minLines: 1,
-                                  maxLines: 10,
-                                  keyboardAppearance: Theme.of(
-                                    context,
-                                  ).brightness,
-                                  name: 'comment',
-                                ),
-                              ],
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              left: 20,
-                              right: 20,
-                              top: 5,
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Flexible(
-                                  child: DesignSystemButton(
-                                    key: const Key('habit_fail'),
-                                    onPressed: () =>
-                                        saveHabit(HabitCompletionType.fail),
-                                    label: context
-                                        .messages
-                                        .completeHabitFailButton,
-                                    variant: DesignSystemButtonVariant.tertiary,
-                                    size: DesignSystemButtonSize.large,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child: DesignSystemButton(
-                                    key: const Key('habit_skip'),
-                                    onPressed: () =>
-                                        saveHabit(HabitCompletionType.skip),
-                                    label: context
-                                        .messages
-                                        .completeHabitSkipButton,
-                                    variant: DesignSystemButtonVariant.tertiary,
-                                    size: DesignSystemButtonSize.large,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                Flexible(
-                                  child:
-                                      DesignSystemButton(
-                                            key: const Key('habit_save'),
-                                            onPressed: () => saveHabit(
-                                              HabitCompletionType.success,
-                                            ),
-                                            label: context
-                                                .messages
-                                                .completeHabitSuccessButton,
-                                            variant: DesignSystemButtonVariant
-                                                .tertiary,
-                                            size: DesignSystemButtonSize.large,
-                                          )
-                                          .animate(autoPlay: true)
-                                          .shimmer(
-                                            delay: 1.seconds,
-                                            duration: .7.seconds,
-                                            color: Theme.of(context).cardColor,
-                                          ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+      ),
+    );
+  }
+}
+
+/// The completion-capture card: habit name, optional description, the date
+/// being recorded, an optional note, the outcome segmented picker, and the
+/// primary Record action. Split from [HabitDialog] so the form layout reads on
+/// its own and the dialog keeps only the state/persistence wiring.
+class _CompletionForm extends StatelessWidget {
+  const _CompletionForm({
+    required this.formKey,
+    required this.habitDefinition,
+    required this.started,
+    required this.outcome,
+    required this.onOutcomeChanged,
+    required this.onPickDate,
+    required this.onClose,
+    required this.onRecord,
+  });
+
+  final GlobalKey<FormBuilderState> formKey;
+  final HabitDefinition habitDefinition;
+  final DateTime started;
+  final HabitCompletionType outcome;
+  final ValueChanged<HabitCompletionType> onOutcomeChanged;
+  final ValueChanged<DateTime> onPickDate;
+  final VoidCallback onClose;
+  final VoidCallback onRecord;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+
+    return Card(
+      margin: EdgeInsets.zero,
+      elevation: 0,
+      color: dsCardSurface(context),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(tokens.radii.xl),
+        ),
+        side: BorderSide(color: tokens.colors.decorative.level01),
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 500,
+          minWidth: isMobile ? MediaQuery.of(context).size.width : 250,
+        ),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step6,
+            tokens.spacing.step4,
+            tokens.spacing.step4,
+            tokens.spacing.step5,
+          ),
+          child: FormBuilder(
+            key: formKey,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        habitDefinition.name,
+                        style: tokens.typography.styles.subtitle.subtitle1
+                            .copyWith(color: tokens.colors.text.highEmphasis),
                       ),
                     ),
+                    IconButton(
+                      padding: EdgeInsets.all(tokens.spacing.step3),
+                      icon: Semantics(
+                        label: messages.habitCloseCompletionLabel,
+                        child: const Icon(Icons.close_rounded),
+                      ),
+                      onPressed: onClose,
+                    ),
+                  ],
+                ),
+                if (habitDefinition.description.isNotEmpty)
+                  HabitDescription(habitDefinition),
+                SizedBox(height: tokens.spacing.step4),
+                DateTimeField(
+                  dateTime: started,
+                  labelText: messages.addHabitDateLabel,
+                  setDateTime: onPickDate,
+                ),
+                SizedBox(height: tokens.spacing.step4),
+                FormBuilderTextField(
+                  initialValue: '',
+                  key: const Key('habit_comment_field'),
+                  decoration: createDialogInputDecoration(
+                    labelText: messages.addHabitCommentLabel,
+                    themeData: Theme.of(context),
+                  ),
+                  minLines: 1,
+                  maxLines: 10,
+                  keyboardAppearance: Theme.of(context).brightness,
+                  name: 'comment',
+                ),
+                SizedBox(height: tokens.spacing.step5),
+                SizedBox(
+                  width: double.infinity,
+                  child: DsSegmentedToggle<HabitCompletionType>(
+                    expand: true,
+                    selected: outcome,
+                    onChanged: onOutcomeChanged,
+                    // Positive-first reading order: the pre-selected Success
+                    // leads, the negative "Missed" is tucked last, so the
+                    // common, encouraging outcome is what the eye meets first.
+                    segments: [
+                      DsSegment(
+                        HabitCompletionType.success,
+                        messages.completeHabitSuccessButton,
+                      ),
+                      DsSegment(
+                        HabitCompletionType.skip,
+                        messages.completeHabitSkipButton,
+                      ),
+                      DsSegment(
+                        HabitCompletionType.fail,
+                        messages.completeHabitFailButton,
+                      ),
+                    ],
                   ),
                 ),
-              ),
+                SizedBox(height: tokens.spacing.step4),
+                DesignSystemButton(
+                  key: const Key('habit_save'),
+                  label: messages.habitsRecordButton,
+                  onPressed: onRecord,
+                  fullWidth: true,
+                  size: DesignSystemButtonSize.large,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

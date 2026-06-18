@@ -1461,7 +1461,7 @@
   "commonError": "Error",
   "commonLoading": "Loading...",
   "commonUnknown": "Unknown",
-  "completeHabitFailButton": "Fail",
+  "completeHabitFailButton": "Missed",
   "completeHabitSkipButton": "Skip",
   "completeHabitSuccessButton": "Success",
   "configFlagAttemptEmbeddingDescription": "When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.",
@@ -2482,22 +2482,158 @@
   "habitArchivedLabel": "Archived",
   "habitCategoryHint": "Select a category",
   "habitCategoryLabel": "Category",
+  "habitCloseCompletionLabel": "Close habit completion",
+  "habitCompleteSemanticLabel": "Record {habit}",
+  "@habitCompleteSemanticLabel": {
+    "placeholders": {
+      "habit": {
+        "type": "String"
+      }
+    }
+  },
   "habitDashboardHint": "Select a dashboard",
   "habitDashboardLabel": "Dashboard (optional)",
+  "habitDayStatusSemantic": "{habit}, {status}",
+  "@habitDayStatusSemantic": {
+    "placeholders": {
+      "habit": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "habitDeleteConfirm": "YES, DELETE THIS HABIT",
   "habitDeleteQuestion": "Do you want to delete this habit?",
+  "habitHeatmapDaySemantic": "{date}, {done} of {total} done",
+  "@habitHeatmapDaySemantic": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "habitLogOtherDayHint": "Hold to log another day",
+  "habitNotRecordedLabel": "Not recorded",
   "habitPriorityLabel": "Priority",
+  "habitsAboveGoal": "On track",
+  "habitsActiveHabitsCount": "{count, plural, one{1 active habit} other{{count} active habits}}",
+  "@habitsActiveHabitsCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsAllDoneToday": "All done today",
   "habitsCompletedHeader": "Completed",
+  "habitsCompletionRateTitle": "Completion rate",
+  "habitsConsistencyTitle": "Consistency",
+  "habitsDayFailedPercent": "{percent}% recorded fails",
+  "@habitsDayFailedPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsDaySkippedPercent": "{percent}% skipped",
+  "@habitsDaySkippedPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsDaySuccessfulPercent": "{percent}% successful",
+  "@habitsDaySuccessfulPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsDoneTodayLabel": "Done today",
   "habitSectionOptionsTitle": "Options",
   "habitSectionScheduleTitle": "Schedule",
   "habitsFilterAll": "all",
   "habitsFilterCompleted": "done",
   "habitsFilterOpenNow": "due",
   "habitsFilterPendingLater": "later",
+  "habitsGoalLineLabel": "Goal",
+  "habitsHeatmapEmpty": "Add a habit to start building your consistency",
+  "habitsHeatmapLess": "Less",
+  "habitsHeatmapMore": "More",
   "habitShowAlertAtLabel": "Show alert at",
   "habitShowFromLabel": "Show from",
+  "habitsLaggardHint": "{habit} — kept {kept} of {active}",
+  "@habitsLaggardHint": {
+    "placeholders": {
+      "habit": {
+        "type": "String"
+      },
+      "kept": {
+        "type": "int"
+      },
+      "active": {
+        "type": "int"
+      }
+    }
+  },
   "habitsOpenHeader": "Due now",
   "habitsPendingLaterHeader": "Later today",
+  "habitsPointsToGoal": "{points, plural, one{1 pt to goal} other{{points} pts to goal}}",
+  "@habitsPointsToGoal": {
+    "placeholders": {
+      "points": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsRecordButton": "Record",
+  "habitsRollingAverageLabel": "7-day avg",
+  "habitsStartStreakToday": "Start a streak today",
+  "habitsStreakLongCount": "{count} on a 7-day streak",
+  "@habitsStreakLongCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsStreakShortCount": "{count} on a 3-day streak",
+  "@habitsStreakShortCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsTapForBreakdown": "Tap a day for the breakdown",
+  "habitsToGoCount": "{count} to go",
+  "@habitsToGoCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitStreakDaysSemantic": "{count}-day streak",
+  "@habitStreakDaysSemantic": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsVsPreviousWeek": "vs previous week",
   "imageGenerationError": "Failed to generate image",
   "imageGenerationGenerating": "Generating image...",
   "imageGenerationProviderRejectedTitle": "The image provider rejected this request",

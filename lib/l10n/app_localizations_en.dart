@@ -2618,7 +2618,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get commonUnknown => 'Unknown';
 
   @override
-  String get completeHabitFailButton => 'Fail';
+  String get completeHabitFailButton => 'Missed';
 
   @override
   String get completeHabitSkipButton => 'Skip';
@@ -4807,10 +4807,23 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitCategoryLabel => 'Category';
 
   @override
+  String get habitCloseCompletionLabel => 'Close habit completion';
+
+  @override
+  String habitCompleteSemanticLabel(String habit) {
+    return 'Record $habit';
+  }
+
+  @override
   String get habitDashboardHint => 'Select a dashboard';
 
   @override
   String get habitDashboardLabel => 'Dashboard (optional)';
+
+  @override
+  String habitDayStatusSemantic(String habit, String status) {
+    return '$habit, $status';
+  }
 
   @override
   String get habitDeleteConfirm => 'YES, DELETE THIS HABIT';
@@ -4819,10 +4832,62 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitDeleteQuestion => 'Do you want to delete this habit?';
 
   @override
+  String habitHeatmapDaySemantic(String date, int done, int total) {
+    return '$date, $done of $total done';
+  }
+
+  @override
+  String get habitLogOtherDayHint => 'Hold to log another day';
+
+  @override
+  String get habitNotRecordedLabel => 'Not recorded';
+
+  @override
   String get habitPriorityLabel => 'Priority';
 
   @override
+  String get habitsAboveGoal => 'On track';
+
+  @override
+  String habitsActiveHabitsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count active habits',
+      one: '1 active habit',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitsAllDoneToday => 'All done today';
+
+  @override
   String get habitsCompletedHeader => 'Completed';
+
+  @override
+  String get habitsCompletionRateTitle => 'Completion rate';
+
+  @override
+  String get habitsConsistencyTitle => 'Consistency';
+
+  @override
+  String habitsDayFailedPercent(int percent) {
+    return '$percent% recorded fails';
+  }
+
+  @override
+  String habitsDaySkippedPercent(int percent) {
+    return '$percent% skipped';
+  }
+
+  @override
+  String habitsDaySuccessfulPercent(int percent) {
+    return '$percent% successful';
+  }
+
+  @override
+  String get habitsDoneTodayLabel => 'Done today';
 
   @override
   String get habitSectionOptionsTitle => 'Options';
@@ -4843,16 +4908,80 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitsFilterPendingLater => 'later';
 
   @override
+  String get habitsGoalLineLabel => 'Goal';
+
+  @override
+  String get habitsHeatmapEmpty =>
+      'Add a habit to start building your consistency';
+
+  @override
+  String get habitsHeatmapLess => 'Less';
+
+  @override
+  String get habitsHeatmapMore => 'More';
+
+  @override
   String get habitShowAlertAtLabel => 'Show alert at';
 
   @override
   String get habitShowFromLabel => 'Show from';
 
   @override
+  String habitsLaggardHint(String habit, int kept, int active) {
+    return '$habit — kept $kept of $active';
+  }
+
+  @override
   String get habitsOpenHeader => 'Due now';
 
   @override
   String get habitsPendingLaterHeader => 'Later today';
+
+  @override
+  String habitsPointsToGoal(int points) {
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '$points pts to goal',
+      one: '1 pt to goal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitsRecordButton => 'Record';
+
+  @override
+  String get habitsRollingAverageLabel => '7-day avg';
+
+  @override
+  String get habitsStartStreakToday => 'Start a streak today';
+
+  @override
+  String habitsStreakLongCount(int count) {
+    return '$count on a 7-day streak';
+  }
+
+  @override
+  String habitsStreakShortCount(int count) {
+    return '$count on a 3-day streak';
+  }
+
+  @override
+  String get habitsTapForBreakdown => 'Tap a day for the breakdown';
+
+  @override
+  String habitsToGoCount(int count) {
+    return '$count to go';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    return '$count-day streak';
+  }
+
+  @override
+  String get habitsVsPreviousWeek => 'vs previous week';
 
   @override
   String get imageGenerationError => 'Failed to generate image';

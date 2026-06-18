@@ -59,6 +59,15 @@ void main() {
       WidgetTester tester, {
       bool showLinkedDashboard = true,
     }) async {
+      // The dialog's completion form is taller than the default 800x600 test
+      // view, so the bottom-aligned Record button lands off-screen and can't
+      // be hit-tested. Give the view enough height to fit the whole form (and
+      // reset it afterwards so other tests keep the default surface).
+      tester.view.physicalSize = const Size(800, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       final delegate = BeamerDelegate(
         locationBuilder: RoutesLocationBuilder(
           routes: {
@@ -129,59 +138,83 @@ void main() {
       expect(completion.completionType, HabitCompletionType.success);
     });
 
-    testWidgets('Fail button records a failed completion', (tester) async {
-      when(
-        () => mockPersistenceLogic.createHabitCompletionEntry(
-          data: any(named: 'data'),
-          comment: any(named: 'comment'),
-          habitDefinition: habitFlossing,
-        ),
-      ).thenAnswer((_) async => null);
+    testWidgets(
+      'selecting the Missed segment then Record persists a failed completion',
+      (tester) async {
+        when(
+          () => mockPersistenceLogic.createHabitCompletionEntry(
+            data: any(named: 'data'),
+            comment: any(named: 'comment'),
+            habitDefinition: habitFlossing,
+          ),
+        ).thenAnswer((_) async => null);
 
-      await pumpHabitDialog(tester);
+        await pumpHabitDialog(tester);
 
-      await tester.tap(find.byKey(const Key('habit_fail')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        // The outcome is now chosen via the DsSegmentedToggle. Each segment
+        // renders its label twice (an invisible ghost reserving the bold
+        // width plus the visible label), so find.text matches two widgets —
+        // tap the visible one so the InkWell's onTap flips the selection.
+        final missedSegment = find.text('Missed');
+        expect(missedSegment, findsNWidgets(2));
+        await tester.tap(missedSegment.last);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
 
-      final captured = verify(
-        () => mockPersistenceLogic.createHabitCompletionEntry(
-          data: captureAny(named: 'data'),
-          comment: any(named: 'comment'),
-          habitDefinition: habitFlossing,
-        ),
-      ).captured;
+        await tester.tap(find.byKey(const Key('habit_save')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      final completion = captured.single as HabitCompletionData;
-      expect(completion.completionType, HabitCompletionType.fail);
-    });
+        // The recorded outcome is fail, proving the segment tap actually
+        // changed the selection away from the default success.
+        final captured = verify(
+          () => mockPersistenceLogic.createHabitCompletionEntry(
+            data: captureAny(named: 'data'),
+            comment: any(named: 'comment'),
+            habitDefinition: habitFlossing,
+          ),
+        ).captured;
 
-    testWidgets('Skip button records a skipped completion', (tester) async {
-      when(
-        () => mockPersistenceLogic.createHabitCompletionEntry(
-          data: any(named: 'data'),
-          comment: any(named: 'comment'),
-          habitDefinition: habitFlossing,
-        ),
-      ).thenAnswer((_) async => null);
+        final completion = captured.single as HabitCompletionData;
+        expect(completion.completionType, HabitCompletionType.fail);
+      },
+    );
 
-      await pumpHabitDialog(tester);
+    testWidgets(
+      'selecting the Skip segment then Record persists a skipped completion',
+      (tester) async {
+        when(
+          () => mockPersistenceLogic.createHabitCompletionEntry(
+            data: any(named: 'data'),
+            comment: any(named: 'comment'),
+            habitDefinition: habitFlossing,
+          ),
+        ).thenAnswer((_) async => null);
 
-      await tester.tap(find.byKey(const Key('habit_skip')));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+        await pumpHabitDialog(tester);
 
-      final captured = verify(
-        () => mockPersistenceLogic.createHabitCompletionEntry(
-          data: captureAny(named: 'data'),
-          comment: any(named: 'comment'),
-          habitDefinition: habitFlossing,
-        ),
-      ).captured;
+        final skipSegment = find.text('Skip');
+        expect(skipSegment, findsNWidgets(2));
+        await tester.tap(skipSegment.last);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 120));
 
-      final completion = captured.single as HabitCompletionData;
-      expect(completion.completionType, HabitCompletionType.skip);
-    });
+        await tester.tap(find.byKey(const Key('habit_save')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final captured = verify(
+          () => mockPersistenceLogic.createHabitCompletionEntry(
+            data: captureAny(named: 'data'),
+            comment: any(named: 'comment'),
+            habitDefinition: habitFlossing,
+          ),
+        ).captured;
+
+        final completion = captured.single as HabitCompletionData;
+        expect(completion.completionType, HabitCompletionType.skip);
+      },
+    );
 
     testWidgets('Shows dashboard preview when habit has dashboard id', (
       tester,
@@ -239,6 +272,27 @@ void main() {
     );
 
     testWidgets(
+      'without a dashboard, the scrim handles taps and the form swallows them',
+      (tester) async {
+        await pumpHabitDialog(tester, showLinkedDashboard: false);
+
+        // Tapping the empty space above the bottom-aligned form routes through
+        // the dismissal scrim (maybePop) without throwing; the form stays put
+        // since there is no route to pop in this harness.
+        await tester.tapAt(const Offset(400, 24));
+        await tester.pump();
+        expect(find.byType(HabitDialog), findsOneWidget);
+
+        // A tap on the form itself is swallowed (it does not bubble to the
+        // scrim) — the dialog remains.
+        await tester.tap(find.text(habitFlossing.name));
+        await tester.pump();
+        expect(find.byType(HabitDialog), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
       'desktop registers the Cmd+S hotkey on init and unregisters on '
       'dispose',
       (tester) async {
@@ -280,7 +334,7 @@ void main() {
       final closeButton = find.byWidgetPredicate(
         (widget) =>
             widget is Semantics &&
-            widget.properties.label == 'close habit completion',
+            widget.properties.label == 'Close habit completion',
       );
       expect(closeButton, findsOneWidget);
 
@@ -505,7 +559,7 @@ void main() {
       // When habitDefinition is null, the widget returns SizedBox.shrink()
       // so none of the dialog content should be present.
       expect(find.byKey(const Key('habit_save')), findsNothing);
-      expect(find.byKey(const Key('habit_fail')), findsNothing);
+      expect(find.byKey(const Key('habit_comment_field')), findsNothing);
     });
   });
 

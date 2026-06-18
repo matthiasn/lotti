@@ -1,33 +1,27 @@
-import 'dart:core';
-import 'package:clock/clock.dart';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intersperse/intersperse.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/categories/domain/category_icon.dart';
-import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/habits/state/habit_completion_controller.dart';
+import 'package:lotti/features/habits/ui/widgets/habit_action_row.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/pages/create/complete_habit_dialog.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/themes/colors.dart';
-import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/charts/habits/dashboard_habits_data.dart';
 import 'package:lotti/widgets/charts/utils.dart';
-import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// One row in the habits list: the habit's name plus a horizontal strip of
-/// daily completion squares for `[rangeStart, rangeEnd]`.
+/// A habit row that carries its own per-day completion history strip — used by
+/// the dashboard habit chart, where seeing the chain over the dashboard's range
+/// is the point.
 ///
-/// Watches [HabitCompletionController] keyed by `(habitId, rangeStart,
-/// rangeEnd)` and colours each day's square via `habitCompletionColor`. The
-/// last loaded results are retained (stale-while-revalidate) so changing the
-/// time span doesn't blink the card empty while the new range-keyed provider
-/// loads. Tapping a square or the trailing check button opens the completion
-/// dialog (`HabitDialog`) for that day; the card dims and strikes through its
-/// title once today's entry is a success or skip.
+/// Wraps the shared [HabitActionRow] (swipe + quick-complete + dialog), adding
+/// the range-keyed [habitCompletionControllerProvider] watch that feeds the
+/// [_HistoryStrip] and derives the done-state from the latest in-range result.
+/// The habits tab does NOT use this card — it renders [HabitActionRow] directly
+/// (history lives in the consistency heatmap).
 class HabitCompletionCard extends ConsumerStatefulWidget {
   const HabitCompletionCard({
     required this.habitId,
@@ -72,48 +66,6 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
     }
   }
 
-  /// Opens the completion dialog for this habit in a bottom sheet.
-  ///
-  /// [dateString] back-dates the completion to a tapped history square; when
-  /// omitted it defaults to today. The habit's linked dashboard is only
-  /// embedded (and the sheet given a solid background) when
-  /// [HabitCompletionCard.showLinkedDashboard] is set and the habit actually
-  /// has a `dashboardId`; otherwise the form floats on a transparent sheet.
-  void onTapAdd({String? dateString}) {
-    final height = MediaQuery.of(context).size.height;
-    final maxHeight = height * 0.8;
-    final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
-      widget.habitId,
-    );
-
-    if (habitDefinition == null) {
-      return;
-    }
-
-    // Mirror the dialog's gate: the linked dashboard only fills the sheet when
-    // it will actually be shown, otherwise the form floats on a transparent
-    // background.
-    final showLinkedDashboard =
-        widget.showLinkedDashboard && habitDefinition.dashboardId != null;
-
-    ModalUtils.showBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      constraints: BoxConstraints(maxHeight: maxHeight),
-      backgroundColor: showLinkedDashboard
-          ? Theme.of(context).bottomSheetTheme.backgroundColor
-          : Colors.transparent,
-      builder: (BuildContext context) {
-        return HabitDialog(
-          habitId: habitDefinition.id,
-          themeData: Theme.of(context),
-          dateString: dateString,
-          showLinkedDashboard: widget.showLinkedDashboard,
-        );
-      },
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
@@ -147,128 +99,201 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
           HabitCompletionType.skip,
         }.contains(results.last.completionType);
 
-    final days = widget.rangeEnd.difference(widget.rangeStart).inDays;
-    final tokens = context.designTokens;
-    final titleStyle = tokens.typography.styles.subtitle.subtitle1.copyWith(
-      color: tokens.colors.text.highEmphasis,
+    return HabitActionRow(
+      habitId: habitDefinition.id,
+      completedToday: completedToday,
+      showLinkedDashboard: widget.showLinkedDashboard,
+      history: _HistoryStrip(
+        results: results,
+        showGaps: widget.showGaps,
+        habitName: habitDefinition.name,
+      ),
     );
+  }
+}
 
-    return Opacity(
-      opacity: completedToday ? 0.75 : 1,
-      child: Material(
-        color: tokens.colors.background.level02,
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          side: BorderSide(color: tokens.colors.decorative.level01),
-        ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.only(
-            left: 10,
-            right: 10,
-          ),
-          title: Column(
-            children: [
-              Row(
-                children: [
-                  Visibility(
-                    visible: habitDefinition.priority ?? false,
-                    child: const Padding(
-                      padding: EdgeInsets.only(right: 5),
-                      child: Icon(
-                        Icons.star,
-                        color: starredGold,
-                      ),
-                    ),
-                  ),
-                  Flexible(
-                    child: Text(
-                      habitDefinition.name,
-                      style: completedToday
-                          ? titleStyle.copyWith(
-                              decoration: TextDecoration.lineThrough,
-                              decorationColor: tokens.colors.text.highEmphasis,
-                              decorationThickness: 2,
-                            )
-                          : titleStyle,
-                      overflow: TextOverflow.fade,
-                      softWrap: false,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ...intersperse(
-                    widget.showGaps
-                        ? SizedBox(
-                            width: days < 20
-                                ? 6
-                                : days < 40
-                                ? 4
-                                : 1,
-                          )
-                        : const SizedBox.shrink(),
-                    results.map((res) {
-                      final daysAgo = clock
-                          .now()
-                          .difference(DateTime.parse(res.dayString))
-                          .inDays;
+/// The per-day completion history strip — a compact "don't break the chain"
+/// calendar, one rounded cell per day in range. Each cell is coloured by
+/// outcome AND carries a glyph (✓ / – / ✕), so state never depends on colour
+/// alone.
+///
+/// The strip is read-only: it's a glanceable record, not a control. Tapping
+/// anywhere on the row (or the complete button) opens the dialog, where any
+/// past day can be backfilled via the date field — so the strip needs no tiny,
+/// swipe-conflicting per-cell tap targets. Each cell still exposes its date +
+/// outcome to screen readers. Cells are fixed-size squares (never the stretchy
+/// "pill bars" of the old layout); they shrink toward a legibility floor as the
+/// range grows, and once the range is longer than the width can hold even at
+/// that floor, the strip keeps the most recent days and drops the oldest.
+class _HistoryStrip extends StatelessWidget {
+  const _HistoryStrip({
+    required this.results,
+    required this.showGaps,
+    required this.habitName,
+  });
 
-                      return Flexible(
-                        child: Tooltip(
-                          excludeFromSemantics: true,
-                          message: chartDateFormatter(res.dayString),
-                          child: GestureDetector(
-                            onTap: () {
-                              onTapAdd(
-                                dateString: clock.now().ymd != res.dayString
-                                    ? res.dayString
-                                    : clock.now().ymd,
-                              );
-                            },
-                            child: Semantics(
-                              label:
-                                  'Complete ${habitDefinition.name} -$daysAgo',
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(
-                                  widget.showGaps ? 2 : 0,
-                                ),
-                                child: Container(
-                                  height: 14,
-                                  color: habitCompletionColor(
-                                    res.completionType,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-                  ),
-                ],
-              ),
+  final List<HabitResult> results;
+  final bool showGaps;
+  final String habitName;
+
+  /// Data-viz dimensions (not layout spacing): cells are square, never larger
+  /// than [_maxCell] nor smaller than [_minCell] (below which the colour + shape
+  /// stop reading), and the outcome glyph is only drawn once a cell clears the
+  /// [_glyphFloor]. When the range holds more days than fit at [_minCell], the
+  /// oldest are dropped so the strip shows the most recent chain (see build).
+  static const double _maxCell = 24;
+  static const double _minCell = 6;
+  static const double _glyphFloor = 14;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final surface = dsCardSurface(context);
+    final n = results.length;
+    if (n == 0) return const SizedBox.shrink();
+    final gap = showGaps ? tokens.spacing.step1 : 0.0;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxWidth = constraints.maxWidth;
+        // How many fixed-size cells fit at the smallest legible size. When the
+        // range is longer than that, render the most recent days that fit and
+        // drop the oldest (left edge) rather than overflow — fixed cells can't
+        // shrink past [_minCell], and the deep chain lives in the heatmap now.
+        final fits = maxWidth.isFinite
+            ? ((maxWidth + gap) / (_minCell + gap)).floor()
+            : n;
+        final count = fits < n ? (fits < 0 ? 0 : fits) : n;
+        if (count == 0) return const SizedBox.shrink();
+        final visible = results.sublist(n - count);
+
+        final raw = (maxWidth - gap * (count - 1)) / count;
+        final size = raw.clamp(_minCell, _maxCell);
+        final showGlyph = size >= _glyphFloor;
+
+        return Row(
+          children: [
+            for (var i = 0; i < count; i++) ...[
+              if (i > 0) SizedBox(width: gap),
+              _cell(tokens, messages, surface, visible[i], size, showGlyph),
             ],
-          ),
-          leading: CategoryIconCompact(
-            habitDefinition.categoryId,
-            size: CategoryIconConstants.iconSizeMedium,
-          ),
-          trailing: IconButton(
-            padding: EdgeInsets.zero,
-            onPressed: onTapAdd,
-            icon: Icon(
-              Icons.check_circle_outline,
-              color: tokens.colors.interactive.enabled,
-              size: 30,
-              semanticLabel: 'Complete ${habitDefinition.name}',
-            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _cell(
+    DsTokens tokens,
+    AppLocalizations messages,
+    Color surface,
+    HabitResult res,
+    double size,
+    bool showGlyph,
+  ) {
+    final appearance = _cellAppearance(res.completionType, tokens, surface);
+    final statusWord = _statusWord(res.completionType, messages);
+
+    return Tooltip(
+      excludeFromSemantics: true,
+      message: chartDateFormatter(res.dayString),
+      child: Semantics(
+        label: messages.habitDayStatusSemantic(habitName, statusWord),
+        // The date distinguishes same-status cells for screen readers (the
+        // visual tooltip is excluded from semantics above).
+        value: chartDateFormatter(res.dayString),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(showGaps ? tokens.radii.xs : 0),
+          child: Container(
+            width: size,
+            height: size,
+            alignment: Alignment.center,
+            color: appearance.background,
+            child: showGlyph && appearance.glyph != null
+                ? Icon(
+                    appearance.glyph,
+                    size: size * 0.68,
+                    color: appearance.ink,
+                  )
+                : null,
           ),
         ),
       ),
     );
+  }
+}
+
+/// The localized outcome word for a strip cell's screen-reader label, so the
+/// glyph's meaning is conveyed non-visually too.
+String _statusWord(HabitCompletionType type, AppLocalizations messages) {
+  switch (type) {
+    case HabitCompletionType.success:
+      return messages.completeHabitSuccessButton;
+    case HabitCompletionType.skip:
+      return messages.completeHabitSkipButton;
+    case HabitCompletionType.fail:
+      return messages.completeHabitFailButton;
+    case HabitCompletionType.open:
+      return messages.habitNotRecordedLabel;
+  }
+}
+
+/// The higher-contrast ink (near-black or white) for a glyph drawn on [bg],
+/// chosen by actual WCAG contrast ratio rather than a luminance threshold — the
+/// outcome fills are mid-tones where a naive `luminance > 0.5` test picks the
+/// *wrong* (low-contrast) ink. Callers pass the fill already composited over the
+/// card surface so translucent fills resolve to their true on-screen colour.
+Color _glyphInk(Color bg) {
+  double ratio(double a, double b) {
+    final hi = a > b ? a : b;
+    final lo = a > b ? b : a;
+    return (hi + 0.05) / (lo + 0.05);
+  }
+
+  final l = bg.computeLuminance();
+  return ratio(0, l) >= ratio(1, l) ? Colors.black87 : Colors.white;
+}
+
+/// Resolves a per-day strip cell's fill, optional glyph, and on-fill ink.
+///
+/// The palette is deliberately calm so the chain reads as "mostly done with a
+/// few quiet gaps", not a battlefield:
+/// - success is the only saturated fill (the win should be visible);
+/// - a miss is a *light tint*, never a solid red block, so it registers without
+///   shouting;
+/// - skip is a neutral grey; an empty (not-yet-recorded) day is the faintest
+///   neutral and carries no glyph — "not done yet" must never read as "failed".
+///
+/// Every recorded outcome also carries a distinct glyph (✓ / – / ✕) so state is
+/// never colour-only (colour-blind + low-vision support). [surface] is the card
+/// colour the cell sits on, so the ink contrast is computed against the real
+/// composited fill.
+({Color background, IconData? glyph, Color ink}) _cellAppearance(
+  HabitCompletionType type,
+  DsTokens tokens,
+  Color surface,
+) {
+  Color inkOn(Color fill) => _glyphInk(Color.alphaBlend(fill, surface));
+
+  switch (type) {
+    case HabitCompletionType.success:
+      return (
+        background: successColor,
+        glyph: Icons.check_rounded,
+        ink: inkOn(successColor),
+      );
+    case HabitCompletionType.skip:
+      final fill = tokens.colors.background.level03;
+      return (background: fill, glyph: Icons.remove_rounded, ink: inkOn(fill));
+    case HabitCompletionType.fail:
+      final fill = alarm.withValues(alpha: 0.32);
+      return (background: fill, glyph: Icons.close_rounded, ink: inkOn(fill));
+    case HabitCompletionType.open:
+      return (
+        background: tokens.colors.decorative.level01,
+        glyph: null,
+        ink: Colors.transparent,
+      );
   }
 }

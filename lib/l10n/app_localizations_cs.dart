@@ -2659,7 +2659,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get commonUnknown => 'Neznámé';
 
   @override
-  String get completeHabitFailButton => 'Neúspěch';
+  String get completeHabitFailButton => 'Zmeškáno';
 
   @override
   String get completeHabitSkipButton => 'Přeskočit';
@@ -4867,10 +4867,23 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitCategoryLabel => 'Kategorie';
 
   @override
+  String get habitCloseCompletionLabel => 'Zavřít záznam návyku';
+
+  @override
+  String habitCompleteSemanticLabel(String habit) {
+    return 'Zaznamenat $habit';
+  }
+
+  @override
   String get habitDashboardHint => 'Vyberte panel';
 
   @override
   String get habitDashboardLabel => 'Panel (volitelné)';
+
+  @override
+  String habitDayStatusSemantic(String habit, String status) {
+    return '$habit, $status';
+  }
 
   @override
   String get habitDeleteConfirm => 'ANO, SMAŽ TENTO ZVYK';
@@ -4879,10 +4892,63 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitDeleteQuestion => 'Chcete tento zvyk smazat?';
 
   @override
+  String habitHeatmapDaySemantic(String date, int done, int total) {
+    return '$date, $done z $total splněno';
+  }
+
+  @override
+  String get habitLogOtherDayHint => 'Podržením zaznamenáš jiný den';
+
+  @override
+  String get habitNotRecordedLabel => 'Nezaznamenáno';
+
+  @override
   String get habitPriorityLabel => 'Priorita';
 
   @override
+  String get habitsAboveGoal => 'Podle plánu';
+
+  @override
+  String habitsActiveHabitsCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count aktivních návyků',
+      few: '$count aktivní návyky',
+      one: '1 aktivní návyk',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitsAllDoneToday => 'Dnes hotovo vše';
+
+  @override
   String get habitsCompletedHeader => 'Dokončeno';
+
+  @override
+  String get habitsCompletionRateTitle => 'Míra plnění';
+
+  @override
+  String get habitsConsistencyTitle => 'Důslednost';
+
+  @override
+  String habitsDayFailedPercent(int percent) {
+    return '$percent% zaznamenáno jako zmeškané';
+  }
+
+  @override
+  String habitsDaySkippedPercent(int percent) {
+    return '$percent% přeskočeno';
+  }
+
+  @override
+  String habitsDaySuccessfulPercent(int percent) {
+    return '$percent% úspěšně';
+  }
+
+  @override
+  String get habitsDoneTodayLabel => 'Hotovo dnes';
 
   @override
   String get habitSectionOptionsTitle => 'Možnosti';
@@ -4903,16 +4969,88 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitsFilterPendingLater => 'později';
 
   @override
+  String get habitsGoalLineLabel => 'Cíl';
+
+  @override
+  String get habitsHeatmapEmpty =>
+      'Přidej návyk a začni budovat svou důslednost';
+
+  @override
+  String get habitsHeatmapLess => 'Méně';
+
+  @override
+  String get habitsHeatmapMore => 'Více';
+
+  @override
   String get habitShowAlertAtLabel => 'Zobrazit upozornění v';
 
   @override
   String get habitShowFromLabel => 'Zobrazit od';
 
   @override
+  String habitsLaggardHint(String habit, int kept, int active) {
+    return '$habit — splněno $kept z $active';
+  }
+
+  @override
   String get habitsOpenHeader => 'K splnění';
 
   @override
   String get habitsPendingLaterHeader => 'Později dnes';
+
+  @override
+  String habitsPointsToGoal(int points) {
+    return '$points b. k cíli';
+  }
+
+  @override
+  String get habitsRecordButton => 'Zaznamenat';
+
+  @override
+  String get habitsRollingAverageLabel => '7denní průměr';
+
+  @override
+  String get habitsStartStreakToday => 'Začni sérii ještě dnes';
+
+  @override
+  String habitsStreakLongCount(int count) {
+    return '$count se sérií 7 dnů';
+  }
+
+  @override
+  String habitsStreakShortCount(int count) {
+    return '$count se sérií 3 dnů';
+  }
+
+  @override
+  String get habitsTapForBreakdown => 'Klepnutím na den zobrazíš rozpis';
+
+  @override
+  String habitsToGoCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'zbývá $count',
+      few: 'zbývají $count',
+      one: 'zbývá 1',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dní v řadě',
+      few: '$count dny v řadě',
+      one: '1 den v řadě',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get habitsVsPreviousWeek => 'vs. minulý týden';
 
   @override
   String get imageGenerationError => 'Nepodařilo se vygenerovat obrázek';
