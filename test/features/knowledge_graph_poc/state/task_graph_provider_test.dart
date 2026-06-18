@@ -544,6 +544,10 @@ void main() {
       // No category stubbed -> uncategorized node -> no colors/names.
       expect(data.categoryColors, isEmpty);
       expect(data.categoryNames, isEmpty);
+      // The layout is relaxed off the main thread (Isolate.run) and handed to
+      // the view; it must carry a position for the node.
+      expect(data.layout, isNotNull);
+      expect(data.layout!.positions.containsKey('lonely'), isTrue);
     });
 
     test(

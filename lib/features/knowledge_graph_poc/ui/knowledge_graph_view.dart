@@ -29,6 +29,7 @@ class KnowledgeGraphView extends StatefulWidget {
     this.categoryNames = const {},
     this.initialFocusId,
     this.initialPreviousFocusId,
+    this.layout,
     this.showTitle = true,
     this.showLegend = true,
     this.showInspector = true,
@@ -52,6 +53,11 @@ class KnowledgeGraphView extends StatefulWidget {
   /// Optional node walked from — renders the persistent trail + ghost so a
   /// capture can show a mid-journey state.
   final String? initialPreviousFocusId;
+
+  /// Pre-computed layout (e.g. relaxed off the main thread by
+  /// `taskGraphProvider`). When null the view computes it synchronously in
+  /// `initState` — fine for the small synthetic scenarios and tests.
+  final GraphLayout? layout;
   final bool showTitle;
   final bool showLegend;
   final bool showInspector;
@@ -99,10 +105,10 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   void initState() {
     super.initState();
     _scenario = widget.scenario ?? exploreWorldScenario();
-    _world = _scenario.nodes.length > 40;
-    _layout = _world
-        ? computeWorldLayout(_scenario)
-        : computeGraphLayout(_scenario);
+    _world = _scenario.nodes.length > kWorldScaleThreshold;
+    // Prefer a layout relaxed off the main thread (provider path); otherwise
+    // compute it here — cheap for the small synthetic scenarios and tests.
+    _layout = widget.layout ?? computeLayoutForScenario(_scenario);
     _degrees = degreeMap(_scenario.edges);
     _adjacency = {for (final n in _scenario.nodes) n.id: <String>[]};
     for (final e in _scenario.edges) {

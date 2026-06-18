@@ -40,6 +40,7 @@ void main() {
     Map<String, String> categoryNames = const {},
     String? initialFocusId,
     String? initialPreviousFocusId,
+    GraphLayout? layout,
     bool showInspector = true,
     bool showTitle = true,
     bool showLegend = true,
@@ -59,6 +60,7 @@ void main() {
           categoryNames: categoryNames,
           initialFocusId: initialFocusId,
           initialPreviousFocusId: initialPreviousFocusId,
+          layout: layout,
           showInspector: showInspector,
           showTitle: showTitle,
           showLegend: showLegend,
@@ -109,6 +111,45 @@ void main() {
       expect(painterFocusId(tester), scenario.seedId);
       // The seed's label is surfaced (inspector on desktop).
       expect(find.text('Ship v2.3 release'), findsWidgets);
+    });
+
+    testWidgets('paints from a provided layout instead of recomputing', (
+      tester,
+    ) async {
+      // The provider relaxes the layout off the main thread and hands it in;
+      // the view must paint from exactly those positions, not recompute its own.
+      final scenario = GraphScenario(
+        name: 'provided',
+        seedId: 'a',
+        nodes: [
+          GraphNode(
+            id: 'a',
+            type: GraphNodeType.task,
+            label: 'A',
+            categoryId: catWork,
+            createdAt: fixedNow,
+          ),
+          GraphNode(
+            id: 'b',
+            type: GraphNodeType.textEntry,
+            label: 'B',
+            categoryId: catWork,
+            createdAt: fixedNow,
+          ),
+        ],
+        edges: const [
+          GraphEdge(fromId: 'a', toId: 'b', kind: GraphEdgeKind.association),
+        ],
+        now: fixedNow,
+      );
+      const positions = {'a': Offset(12, 34), 'b': Offset(56, 78)};
+      await pumpView(
+        tester,
+        scenario: scenario,
+        layout: const GraphLayout(positions),
+      );
+
+      expect(painterOf(tester).positions, positions);
     });
 
     testWidgets('a single-node scenario still renders without throwing', (

@@ -41,6 +41,51 @@ void main() {
     });
   });
 
+  group('computeLayoutForScenario', () {
+    test('dispatches to the ego layout at/below the world-scale threshold', () {
+      final nodes = [
+        node(id: 'focus', type: GraphNodeType.task),
+        for (var i = 0; i < 5; i++) node(id: 'n$i'),
+      ];
+      final edges = [
+        for (var i = 0; i < 5; i++)
+          GraphEdge(
+            fromId: 'focus',
+            toId: 'n$i',
+            kind: GraphEdgeKind.association,
+          ),
+      ];
+      final s = scenario(nodes: nodes, edges: edges);
+      expect(nodes.length, lessThanOrEqualTo(kWorldScaleThreshold));
+      // Same deterministic positions as calling the ego layout directly.
+      expect(
+        computeLayoutForScenario(s).positions,
+        computeGraphLayout(s).positions,
+      );
+    });
+
+    test('dispatches to the world layout past the threshold', () {
+      final nodes = [
+        node(id: 'focus', type: GraphNodeType.task),
+        for (var i = 0; i < kWorldScaleThreshold; i++) node(id: 'n$i'),
+      ];
+      final edges = [
+        for (var i = 0; i < kWorldScaleThreshold; i++)
+          GraphEdge(
+            fromId: 'focus',
+            toId: 'n$i',
+            kind: GraphEdgeKind.association,
+          ),
+      ];
+      final s = scenario(nodes: nodes, edges: edges);
+      expect(nodes.length, greaterThan(kWorldScaleThreshold));
+      expect(
+        computeLayoutForScenario(s).positions,
+        computeWorldLayout(s).positions,
+      );
+    });
+  });
+
   group('computeGraphLayout', () {
     test('pins the focus node at the origin', () {
       final s = scenario(

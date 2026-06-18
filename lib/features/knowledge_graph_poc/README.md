@@ -55,11 +55,11 @@ renders cleanly outside a `Scaffold`.
 |------|------|
 | `domain/graph_models.dart` | `GraphNode` / `GraphEdge` / `GraphScenario`, type enums, `degreeMap`. |
 | `domain/graph_scenarios.dart` | Deterministic scenarios: `exploreWorldScenario` (~120 nodes) + the task ego-views (`taskEgoNetworkScenario`, `busyTaskScenario`, `lightTaskScenario`). |
-| `domain/graph_layout_engine.dart` | `computeGraphLayout` (ego sector seed + FR relax) and `computeWorldLayout` (world-scale FR). Deterministic, seeded. |
+| `domain/graph_layout_engine.dart` | `computeGraphLayout` (ego sector seed + FR relax) and `computeWorldLayout` (world-scale FR). Deterministic, seeded. `computeLayoutForScenario` dispatches between them at `kWorldScaleThreshold` (the single source of truth shared with the view). |
 | `ui/graph_style.dart` | Token-backed `GraphStyle`, node glyphs, type labels, and the relation-class → `EdgeVisual` mapping. |
 | `ui/knowledge_graph_painter.dart` | The `CustomPainter`: atmosphere, biome haze, edges, walk trail, lit nodes, ghost ring, labels. |
-| `ui/knowledge_graph_view.dart` | Host: layout choice, fit/walk camera, pan/zoom/tap, history, title + controls + inspector + legend. |
-| `state/task_graph_provider.dart` | **Real-data adapter** (Phase 1): `taskGraphProvider` loads a task's real `linked_entries` (depth-2 BFS + project + checklists), maps entities→node types and links→relation kinds, resolves real category colors. Pure helpers `graphNodeTypeFor` / `graphNodeLabelFor` / `edgeKindFor` are unit-tested. |
+| `ui/knowledge_graph_view.dart` | Host: layout choice, fit/walk camera, pan/zoom/tap, history, title + controls + inspector + legend. Uses a pre-computed `layout` when given (provider path) and only relaxes the graph itself as a fallback (synthetic scenarios / tests). |
+| `state/task_graph_provider.dart` | **Real-data adapter** (Phase 1): `taskGraphProvider` loads a task's real `linked_entries` (depth-2 BFS + project + checklists), maps entities→node types and links→relation kinds, resolves real category colors, and relaxes the layout **on a background isolate** (`Isolate.run`) so opening the page never blocks the UI thread — the result rides in `TaskGraphData.layout`. Pure helpers `graphNodeTypeFor` / `graphNodeLabelFor` / `edgeKindFor` are unit-tested. |
 | `ui/task_knowledge_graph_page.dart` | **In-app page** (Phase 1): hosts the view full-bleed in a `Stack` with a compact, transparent top-left header (back + "Knowledge graph" title) floated over the graph — no banded app-bar row. Reserves the header's height in the view's `MediaQuery` top padding (so the view's own top-left chrome clears it) rather than a full-width bar that would swallow taps over the inspector. Loading / empty / error states; reached from a hub icon on the task app bar. |
 | `dev_main.dart` | Standalone dev entrypoint to explore the synthetic worlds interactively. |
 
@@ -133,9 +133,10 @@ default.
 
 The view (interaction + looks) and the app integration are both panel-approved.
 Still a Phase-0/1 spike in scope: the data load is a bounded depth-2 BFS with
-per-id (coalesced) fetches — fine for a task neighborhood, but the eventual perf
-spike (Barnes–Hut layout in an isolate, `drawRawAtlas` batching, viewport
-culling, batched DB reads) is needed before scaling past the local
+per-id (coalesced) fetches — fine for a task neighborhood. The layout already
+runs off the main thread (`Isolate.run` in the provider); the remaining perf
+spike (Barnes–Hut to drop the relax from O(N²), `drawRawAtlas` batching,
+viewport culling, batched DB reads) is needed before scaling past the local
 neighborhood. Non-blocking polish the panel flagged: biome haze legibility at
 the pulled-back zoom, a touch more ghost-ring contrast, larger control hit
 targets, and a phone bottom-sheet inspector (the detail panel is desktop-only

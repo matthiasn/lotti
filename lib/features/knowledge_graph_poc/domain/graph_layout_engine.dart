@@ -25,6 +25,21 @@ class GraphLayout {
   final Map<String, Offset> positions;
 }
 
+/// Above this node count a scenario is laid out at "world" scale (the
+/// large-graph FR relax) rather than as a focused ego network. Single source of
+/// truth shared by the view and the provider so both agree on which layout (and
+/// label density) a scenario gets.
+const int kWorldScaleThreshold = 40;
+
+/// Picks the right layout for [scenario] by size — the ego layout for a small
+/// neighborhood, the world layout past [kWorldScaleThreshold]. Pure and
+/// deterministic, so it is safe to run off the main thread (e.g. `Isolate.run`)
+/// and hand the result to `KnowledgeGraphView`.
+GraphLayout computeLayoutForScenario(GraphScenario scenario) =>
+    scenario.nodes.length > kWorldScaleThreshold
+    ? computeWorldLayout(scenario)
+    : computeGraphLayout(scenario);
+
 const double _ring1 = 225; // focus → 1-hop neighbor distance
 const double _ring2 = 104; // parent → child (e.g. checklist → item)
 

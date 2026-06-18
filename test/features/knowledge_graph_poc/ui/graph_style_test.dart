@@ -347,8 +347,22 @@ void main() {
       });
 
       test('every relation style resolves to a distinct visual', () {
-        final visuals = RelStyle.values.map(style.edgeVisual).toList();
-        expect(visuals.length, RelStyle.values.length);
+        // Build a comparable signature per visual and assert the SET size
+        // equals the enum count — i.e. no two relation styles collapse to the
+        // same colour/width/dash/direction. (A plain length check is
+        // tautological: map() yields one item per enum value regardless of
+        // duplicates.) `dash` is value-compared via join since List has no
+        // structural `==`.
+        final signatures = RelStyle.values.map((relStyle) {
+          final visual = style.edgeVisual(relStyle);
+          return (
+            visual.color,
+            visual.width,
+            visual.directional,
+            visual.dash?.join(','),
+          );
+        }).toSet();
+        expect(signatures.length, RelStyle.values.length);
       });
     });
 

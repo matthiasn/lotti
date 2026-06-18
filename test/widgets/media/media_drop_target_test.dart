@@ -26,11 +26,16 @@ void main() {
       expect(sanitizeDropFileName('../../etc/passwd'), 'passwd');
     });
 
-    test('matches p.basename for a path with separators and tokens', () {
-      // The helper delegates to the host platform's path context, so a single
-      // assertion that mirrors `p.basename` documents that a backslash payload
-      // resolves the same way the production write path would on this OS.
-      expect(sanitizeDropFileName(r'..\x.png'), p.basename(r'..\x.png'));
+    test('normalizes Windows-style backslash separators on every platform', () {
+      // `package:path`'s POSIX context (Linux/macOS) does not treat `\` as a
+      // separator, so the helper normalizes backslashes to `/` first — a
+      // Windows-style or malicious backslash payload is reduced to its basename
+      // here too, not passed through verbatim.
+      expect(sanitizeDropFileName(r'..\x.png'), 'x.png');
+      expect(sanitizeDropFileName(r'..\..\evil.png'), 'evil.png');
+      expect(sanitizeDropFileName(r'C:\Users\me\secret.png'), 'secret.png');
+      // Mixed separators collapse and resolve the same way.
+      expect(sanitizeDropFileName(r'a\b/../x.png'), 'x.png');
       expect(sanitizeDropFileName('a/b/../x.png'), 'x.png');
     });
 

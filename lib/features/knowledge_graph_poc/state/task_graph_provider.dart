@@ -4,6 +4,8 @@
 /// classified into relation kinds and colored by real category colors.
 library;
 
+import 'dart:isolate';
+
 import 'package:flutter/material.dart' show Color;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -13,6 +15,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/knowledge_graph_poc/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -35,6 +38,7 @@ class TaskGraphData {
     required this.scenario,
     required this.categoryColors,
     this.categoryNames = const {},
+    this.layout,
   });
 
   final GraphScenario scenario;
@@ -43,6 +47,11 @@ class TaskGraphData {
   /// Real category id → display name (so the inspector/legend show "Lotti",
   /// not a UUID).
   final Map<String, String> categoryNames;
+
+  /// Layout computed off the main thread (see [taskGraphProvider]); the view
+  /// renders the first frame from it instead of relaxing the graph on the UI
+  /// thread. Null only when a caller builds the data without a layout pass.
+  final GraphLayout? layout;
 }
 
 /// Node type for a journal entity (pure; unit-tested).
@@ -117,6 +126,13 @@ String? _firstLine(String? s) {
 }
 
 bool _isLive(EntryLink link) => link.hidden != true && link.deletedAt == null;
+
+/// Relaxes [scenario] into a layout on a background isolate. Kept at top level
+/// (rather than an inline closure in the provider) so the isolate entry point
+/// captures only [scenario] — an inline closure would capture the whole
+/// provider body, including the unsendable riverpod `Ref`/`Future`.
+Future<GraphLayout> _layoutOffThread(GraphScenario scenario) =>
+    Isolate.run(() => computeLayoutForScenario(scenario));
 
 /// Loads the knowledge graph around a task (focus) — its links (depth 2),
 /// project and checklists — and the real category colors. Null if the id is
@@ -329,15 +345,24 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
         }
       }
 
+      final scenario = GraphScenario(
+        name: graphNodeLabelFor(focus),
+        seedId: focus.id,
+        nodes: nodes,
+        edges: keptEdges,
+        now: now,
+      );
+
+      // The force-directed relax is O(N²) over up to _maxNodes nodes (hundreds
+      // of iterations for world-scale graphs) — run it on a background isolate
+      // so opening the page never blocks the UI thread. The scenario is plain
+      // sendable data and the layout is pure/deterministic.
+      final layout = await _layoutOffThread(scenario);
+
       return TaskGraphData(
-        scenario: GraphScenario(
-          name: graphNodeLabelFor(focus),
-          seedId: focus.id,
-          nodes: nodes,
-          edges: keptEdges,
-          now: now,
-        ),
+        scenario: scenario,
         categoryColors: categoryColors,
         categoryNames: categoryNames,
+        layout: layout,
       );
     });

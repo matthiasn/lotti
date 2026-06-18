@@ -53,6 +53,9 @@ class TaskKnowledgeGraphPage extends ConsumerWidget {
           scenario: data.scenario,
           categoryColors: data.categoryColors,
           categoryNames: data.categoryNames,
+          // Relaxed off the main thread in the provider so the first frame
+          // renders without a layout pass on the UI thread.
+          layout: data.layout,
         );
       },
       loading: () => const Center(child: CircularProgressIndicator()),

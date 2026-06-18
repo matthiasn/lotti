@@ -10,10 +10,14 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 ///
 /// Drag payload metadata is untrusted, so [rawName] may contain path
 /// separators or traversal tokens (`../`, `..\\`, absolute paths) that could
-/// redirect a write outside the temp dir. Keeping only [p.basename] strips
-/// those; a `null` or empty result falls back to `'dropped_file'`.
+/// redirect a write outside the temp dir. Backslashes are normalized to `/`
+/// first because `package:path`'s POSIX context (Linux/macOS) does not treat
+/// `\\` as a separator — so a Windows-style or malicious `..\\..\\evil` payload
+/// would otherwise survive [p.basename]. A `null`/empty result falls back to
+/// `'dropped_file'`.
 String sanitizeDropFileName(String? rawName) {
-  final base = p.basename(rawName ?? '');
+  final normalized = (rawName ?? '').replaceAll(r'\', '/');
+  final base = p.basename(normalized);
   return base.isEmpty ? 'dropped_file' : base;
 }
 
@@ -95,7 +99,14 @@ class MediaDropTarget extends StatelessWidget {
             },
           );
           if (progress == null) completer.complete(null);
-          futures.add(completer.future);
+          // Defend against a native reader that never fires success/onError, so
+          // a stuck channel call can't hang `Future.wait` (and the drop) forever.
+          futures.add(
+            completer.future.timeout(
+              const Duration(seconds: 15),
+              onTimeout: () => null,
+            ),
+          );
         }
         final files = (await Future.wait(futures)).whereType<XFile>().toList();
         if (files.isEmpty) return;
