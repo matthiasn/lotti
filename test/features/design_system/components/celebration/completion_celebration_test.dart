@@ -42,13 +42,17 @@ void main() {
       await tester.pumpWidget(tree(completed: true));
       expect(celebrateCount, 1);
 
-      // ~0.4 into the 1400ms timeline both beats are live (glow window
-      // 0.08–0.78, burst 0.12–0.96).
-      await tester.pump(const Duration(milliseconds: 560));
+      // The glow is inline and live immediately; the spark burst spawns into
+      // the app overlay on the next frame and runs its own timeline. Pump into
+      // the window where both beats are simultaneously on screen (glow window
+      // 0.08–0.78, burst 0.12–0.96 of 1400ms).
+      await tester.pump(const Duration(milliseconds: 200)); // build the overlay
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byType(CompletionGlow), findsOneWidget);
       expect(find.byType(CompletionBurst), findsOneWidget);
 
-      // After the timeline completes both beats clear themselves.
+      // After the timeline completes both beats clear themselves (the overlay
+      // burst removes its own entry).
       await tester.pumpAndSettle();
       expect(find.byType(CompletionGlow), findsNothing);
       expect(find.byType(CompletionBurst), findsNothing);

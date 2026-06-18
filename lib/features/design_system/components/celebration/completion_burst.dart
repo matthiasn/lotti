@@ -21,6 +21,7 @@ class CompletionBurst extends StatelessWidget {
     this.sizeScale = 1.0,
     this.clearCenter = 0.0,
     this.reachFactor = 2.1,
+    this.reachOverride,
     super.key,
   });
 
@@ -35,6 +36,11 @@ class CompletionBurst extends StatelessWidget {
   /// adjacent text or off-screen); higher gives a wider spray for a standalone
   /// card.
   final double reachFactor;
+
+  /// Absolute reach in pixels. When set it overrides [reachFactor] × height —
+  /// used when the burst paints in a roomy overlay box (so it isn't clipped)
+  /// but the spread must stay sized to a small anchor (a checkbox, a pill).
+  final double? reachOverride;
 
   /// Multiplier on each spark's head/trail size. Below 1 yields finer sparks —
   /// pair a denser [count] with a sub-1 scale so the burst reads rich, not
@@ -64,6 +70,7 @@ class CompletionBurst extends StatelessWidget {
         sizeScale: sizeScale,
         clearCenter: clearCenter,
         reachFactor: reachFactor,
+        reachOverride: reachOverride,
       ),
     );
   }
@@ -79,6 +86,7 @@ class _BurstPainter extends CustomPainter {
     required this.sizeScale,
     required this.clearCenter,
     required this.reachFactor,
+    required this.reachOverride,
   });
 
   final double progress;
@@ -93,11 +101,12 @@ class _BurstPainter extends CustomPainter {
   final double sizeScale;
   final double clearCenter;
   final double reachFactor;
+  final double? reachOverride;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = origin.alongSize(size);
-    final reach = size.height * reachFactor;
+    final reach = reachOverride ?? (size.height * reachFactor);
     final clearRadius = reach * clearCenter;
 
     for (var i = 0; i < count; i++) {
@@ -176,5 +185,6 @@ class _BurstPainter extends CustomPainter {
       oldDelegate.count != count ||
       oldDelegate.sizeScale != sizeScale ||
       oldDelegate.clearCenter != clearCenter ||
-      oldDelegate.reachFactor != reachFactor;
+      oldDelegate.reachFactor != reachFactor ||
+      oldDelegate.reachOverride != reachOverride;
 }

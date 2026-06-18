@@ -519,10 +519,15 @@ void main() {
       expect(find.byType(CompletionBurst), findsNothing);
 
       await tester.tap(find.byType(Checkbox));
-      await tester.pump();
-      // Sample mid-burst (the item celebration runs ~850ms; the spark window
-      // is 0.12–0.96 of it).
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(); // process the check → schedule the overlay burst
+      // The burst spawns into the app overlay a frame later and runs its own
+      // ~850ms timeline; pump into its spark window (0.12–0.96 of it).
+      await tester.pump(
+        const Duration(milliseconds: 100),
+      ); // build + start burst
+      await tester.pump(
+        const Duration(milliseconds: 300),
+      ); // advance into window
       expect(find.byType(CompletionBurst), findsOneWidget);
 
       await tester.pumpAndSettle();
