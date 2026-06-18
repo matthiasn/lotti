@@ -151,7 +151,10 @@ class DsPill extends StatelessWidget {
       DsPillVariant.filled => tokens.colors.text.highEmphasis,
       DsPillVariant.tinted => color!,
       DsPillVariant.outline => color!,
-      DsPillVariant.muted => tokens.colors.text.lowEmphasis,
+      // Medium (not low) emphasis: a placeholder/empty pill must stay legible
+      // for low-vision users — the dashed border + italic already mark it as
+      // unset, so it reads as secondary without becoming invisible grey.
+      DsPillVariant.muted => tokens.colors.text.mediumEmphasis,
     };
   }
 }

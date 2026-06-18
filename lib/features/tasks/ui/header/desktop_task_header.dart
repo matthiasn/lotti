@@ -316,10 +316,11 @@ class _HeroCrumb extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: crumbStyle.copyWith(
-                      // An unset category recedes to low emphasis so it reads
-                      // as a quiet placeholder, not a populated value.
+                      // An unset category reads as a quiet placeholder via
+                      // italics + medium (not low) emphasis — secondary to a
+                      // set value, but still legible for low-vision users.
                       color: category == null
-                          ? TaskShowcasePalette.lowText(context)
+                          ? TaskShowcasePalette.mediumText(context)
                           : TaskShowcasePalette.highText(context),
                       fontStyle: category == null
                           ? FontStyle.italic
@@ -347,9 +348,9 @@ class _HeroCrumb extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: crumbStyle.copyWith(
-                color: project == null
-                    ? TaskShowcasePalette.lowText(context)
-                    : TaskShowcasePalette.mediumText(context),
+                // Keep an unset project legible (medium emphasis) for
+                // low-vision users rather than fading it to near-invisible.
+                color: TaskShowcasePalette.mediumText(context),
               ),
             ),
           ),

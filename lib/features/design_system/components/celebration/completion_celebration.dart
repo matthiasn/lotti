@@ -167,6 +167,10 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
                           origin: widget.burstOrigin,
                           count: 50,
                           sizeScale: 0.8,
+                          // Ring the sparks around the celebrated label (status
+                          // pill / progress ring) rather than over it, so the
+                          // "Done" / "N/N" text stays readable at peak.
+                          clearCenter: 0.45,
                         );
                 },
               ),

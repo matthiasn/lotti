@@ -19,6 +19,7 @@ class CompletionBurst extends StatelessWidget {
     this.origin = const Alignment(0.82, 0),
     this.count = 30,
     this.sizeScale = 1.0,
+    this.clearCenter = 0.0,
     super.key,
   });
 
@@ -32,6 +33,13 @@ class CompletionBurst extends StatelessWidget {
   /// pair a denser [count] with a sub-1 scale so the burst reads rich, not
   /// heavy.
   final double sizeScale;
+
+  /// Fraction of the burst's reach kept clear around [origin] — sparks emit
+  /// from a ring at this radius rather than the exact centre, so they radiate
+  /// *around* the thing being celebrated (a status pill, a progress ring)
+  /// instead of obscuring its label. `0` emits from the centre (the default,
+  /// e.g. over a complete button with no text under it).
+  final double clearCenter;
 
   @override
   Widget build(BuildContext context) {
@@ -47,6 +55,7 @@ class CompletionBurst extends StatelessWidget {
         gold: starredGold,
         count: count,
         sizeScale: sizeScale,
+        clearCenter: clearCenter,
       ),
     );
   }
@@ -60,6 +69,7 @@ class _BurstPainter extends CustomPainter {
     required this.gold,
     required this.count,
     required this.sizeScale,
+    required this.clearCenter,
   });
 
   final double progress;
@@ -72,11 +82,13 @@ class _BurstPainter extends CustomPainter {
   // alive rather than a sparse handful of identical dots.
   final int count;
   final double sizeScale;
+  final double clearCenter;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = origin.alongSize(size);
     final reach = size.height * 2.1;
+    final clearRadius = reach * clearCenter;
 
     for (var i = 0; i < count; i++) {
       // An even radial spread with a small per-spark jitter so it reads organic,
@@ -94,7 +106,7 @@ class _BurstPainter extends CustomPainter {
       // sparks keep *drifting* outward through their life instead of snapping to
       // a stop right after the burst.
       final ease = 0.5 * Curves.easeOutCubic.transform(lt) + 0.5 * lt;
-      final dist = reach * speed * ease;
+      final dist = clearRadius + reach * speed * ease;
       final gravity = size.height * 0.16 * lt * lt; // a faint floaty droop
       final dir = Offset(math.cos(angle), math.sin(angle));
       final head = center + dir * dist + Offset(0, gravity);
@@ -109,7 +121,10 @@ class _BurstPainter extends CustomPainter {
       final base = isGold ? gold : accent;
 
       final trailLen = reach * speed * 0.2 * (1 - ease);
-      final tail = head - dir * trailLen;
+      // Stop the trail at the clear-centre ring so it never streaks back over
+      // the celebrated label.
+      final tailDist = (dist - trailLen).clamp(clearRadius, dist);
+      final tail = center + dir * tailDist + Offset(0, gravity);
       canvas
         // A faint halo so each spark reads as a glowing mote, not a flat dot.
         ..drawCircle(
@@ -142,5 +157,6 @@ class _BurstPainter extends CustomPainter {
       oldDelegate.accent != accent ||
       oldDelegate.gold != gold ||
       oldDelegate.count != count ||
-      oldDelegate.sizeScale != sizeScale;
+      oldDelegate.sizeScale != sizeScale ||
+      oldDelegate.clearCenter != clearCenter;
 }
