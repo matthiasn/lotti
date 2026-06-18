@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:exif/exif.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/geohash.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:path/path.dart' as p;
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
@@ -69,6 +71,16 @@ Future<void> importImageAssets(
   String? categoryId,
   AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
+  // Linux/Windows have no gallery picker — use a native file dialog instead.
+  if (isLinux || isWindows) {
+    await importImagePickerFiles(
+      linkedId: linkedId,
+      categoryId: categoryId,
+      analysisTrigger: analysisTrigger,
+    );
+    return;
+  }
+
   final ps = await PhotoManager.requestPermissionExtend();
   if (!ps.isAuth) {
     return;
@@ -168,8 +180,47 @@ Future<void> importDroppedImages({
   String? linkedId,
   String? categoryId,
   AutomaticImageAnalysisTrigger? analysisTrigger,
+}) {
+  return importImageXFiles(
+    data.files,
+    linkedId: linkedId,
+    categoryId: categoryId,
+    analysisTrigger: analysisTrigger,
+  );
+}
+
+/// Imports image files picked from a desktop file dialog (Linux/Windows),
+/// where the gallery picker (`importImageAssets`) is unavailable.
+Future<void> importImagePickerFiles({
+  String? linkedId,
+  String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
-  for (final file in data.files) {
+  const group = XTypeGroup(
+    label: 'Images',
+    extensions: ['jpg', 'jpeg', 'png'],
+  );
+  final files = await openFiles(acceptedTypeGroups: const [group]);
+  if (files.isEmpty) return;
+  await importImageXFiles(
+    files,
+    linkedId: linkedId,
+    categoryId: categoryId,
+    analysisTrigger: analysisTrigger,
+  );
+}
+
+/// Shared importer for a list of image [files] — used by both drag-and-drop
+/// and the desktop file picker. Validates extension + size, copies into the
+/// app's image directory, and creates a linked image entry. Per-file failures
+/// are logged and skipped so one bad file doesn't abort the batch.
+Future<void> importImageXFiles(
+  List<XFile> files, {
+  String? linkedId,
+  String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
+}) async {
+  for (final file in files) {
     try {
       final lastModified = await file.lastModified();
       final id = uuid.v1();
@@ -187,7 +238,7 @@ Future<void> importDroppedImages({
         getIt<DomainLogger>().error(
           LogDomain.ai,
           'Image file too large: $fileSize bytes',
-          subDomain: 'importDroppedImages',
+          subDomain: 'importImageXFiles',
         );
         continue;
       }
@@ -223,7 +274,7 @@ Future<void> importDroppedImages({
         LogDomain.ai,
         exception,
         stackTrace: stackTrace,
-        subDomain: 'importDroppedImages',
+        subDomain: 'importImageXFiles',
       );
       // Continue processing other files even if one fails
     }
