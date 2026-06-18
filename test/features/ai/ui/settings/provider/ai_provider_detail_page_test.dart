@@ -102,6 +102,11 @@ void main() {
       () => mockNavService.desktopSelectedSettingsRoute,
     ).thenReturn(ValueNotifier<DesktopSettingsRoute?>(null));
     when(() => mockNavService.beamToNamed(any())).thenReturn(null);
+    // The edit-form push routes through `bottomNavSafeNavigatorOf`, which
+    // reads `isDesktopMode` to pick the root (mobile) vs nested (desktop)
+    // navigator. Default to mobile so the form lands on the MaterialApp's
+    // root navigator the push spy observes.
+    when(() => mockNavService.isDesktopMode).thenReturn(false);
     getIt.registerSingleton<NavService>(mockNavService);
 
     modelsController = StreamController<List<AiConfig>>.broadcast();
