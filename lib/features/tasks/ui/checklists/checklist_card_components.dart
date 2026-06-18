@@ -256,8 +256,12 @@ class _ProgressRow extends StatelessWidget {
         SizedBox(width: tokens.spacing.step3),
         Text(
           context.messages.checklistCompletedShort(completedCount, totalCount),
+          // Tabular figures so the "N/M done" label keeps a constant width as
+          // the counts change (e.g. 6/11 → 7/11) instead of the header
+          // breathing horizontally with each check-off.
           style: tokens.typography.styles.body.bodySmall.copyWith(
             color: tokens.colors.text.lowEmphasis,
+            fontFeatures: numericBadgeFontFeatures,
           ),
         ),
       ],

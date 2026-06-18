@@ -104,11 +104,18 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
     if (!oldWidget.completed && widget.completed) {
       widget.onCelebrate?.call();
       _controller.forward(from: 0);
-      final reduceMotion =
-          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-      if (widget.showBurst && !reduceMotion) {
-        // Spawn after layout so the anchor's on-screen rect is current.
-        WidgetsBinding.instance.addPostFrameCallback((_) => _spawnBurst());
+      if (widget.showBurst) {
+        // Capture the anchor geometry now, while still mounted, and render the
+        // burst in the overlay — see [spawnCompletionBurst].
+        spawnCompletionBurst(
+          context,
+          origin: widget.burstOrigin,
+          count: widget.burstCount,
+          sizeScale: widget.burstSizeScale,
+          clearCenter: widget.burstClearCenter,
+          reachFactor: widget.burstReach,
+          duration: widget.duration,
+        );
       }
     }
   }
@@ -117,31 +124,6 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  void _spawnBurst() {
-    if (!mounted) return;
-    final overlay = Overlay.maybeOf(context);
-    final box = context.findRenderObject() as RenderBox?;
-    if (overlay == null || box == null || !box.hasSize) return;
-    final size = box.size;
-    final center = box.localToGlobal(widget.burstOrigin.alongSize(size));
-    final reach = size.height * widget.burstReach;
-    late OverlayEntry entry;
-    entry = OverlayEntry(
-      builder: (_) => _OverlayBurst(
-        center: center,
-        reach: reach,
-        count: widget.burstCount,
-        sizeScale: widget.burstSizeScale,
-        clearCenter: widget.burstClearCenter,
-        duration: widget.duration,
-        onDone: () => entry
-          ..remove()
-          ..dispose(),
-      ),
-    );
-    overlay.insert(entry);
   }
 
   /// The anchor's pop scale at timeline value [c]: a single 1 → 1.12 → 1
@@ -194,6 +176,59 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
       ],
     );
   }
+}
+
+/// Fires a self-contained completion spark burst in the app [Overlay], anchored
+/// to the render box of [context].
+///
+/// The geometry is read here — synchronously, while [context] is still mounted
+/// — and the burst then lives in the overlay with its own controller. That is
+/// what lets it survive the anchor being torn down in the *same* frame: e.g.
+/// completing the last open checklist item collapses the whole list (the card
+/// swaps the row list for an "all done" line) on the very next build, so a
+/// celebration tied to the row's widget lifecycle would be unmounted before it
+/// could paint. Firing it imperatively from the tap, then rendering in the
+/// overlay, sidesteps that entirely — and keeps the sparks unclipped by the
+/// row / card / scroll viewport.
+///
+/// No-op under reduced motion, or when there is no overlay / laid-out render
+/// box. [origin] is the burst centre within the anchor; [reachFactor]
+/// multiplies the anchor height to set how far the sparks fly.
+void spawnCompletionBurst(
+  BuildContext context, {
+  Alignment origin = Alignment.center,
+  int count = 50,
+  double sizeScale = 0.8,
+  double clearCenter = 0.45,
+  double reachFactor = 2.2,
+  Duration duration = const Duration(milliseconds: 1400),
+}) {
+  final reduceMotion = MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+  if (reduceMotion) return;
+  final overlay = Overlay.maybeOf(context);
+  final box = context.findRenderObject() as RenderBox?;
+  if (overlay == null || box == null || !box.hasSize) return;
+  final size = box.size;
+  final center = box.localToGlobal(origin.alongSize(size));
+  final reach = size.height * reachFactor;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (!overlay.mounted) return;
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => _OverlayBurst(
+        center: center,
+        reach: reach,
+        count: count,
+        sizeScale: sizeScale,
+        clearCenter: clearCenter,
+        duration: duration,
+        onDone: () => entry
+          ..remove()
+          ..dispose(),
+      ),
+    );
+    overlay.insert(entry);
+  });
 }
 
 /// The spark burst, rendered in the app [Overlay] and centred on a global

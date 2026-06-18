@@ -43,6 +43,11 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   late AnimationController _checkPopController;
   late Animation<double> _checkPopScale;
 
+  /// Anchors the spark burst to the checkbox. Used to read the checkbox's
+  /// on-screen rect at tap time so the burst can be fired into the overlay
+  /// before the row is (potentially) torn down by the completion.
+  final GlobalKey _checkboxKey = GlobalKey();
+
   bool _lastIsChecked = false;
   bool _lastIsArchived = false;
   bool _receivedInitialData = false;
@@ -99,6 +104,36 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     super.dispose();
   }
 
+  /// The interactive check-off reward — a light haptic, the checkbox "pop", and
+  /// a spark burst at the checkbox. Fired straight from the tap (or the AI
+  /// "mark complete" action), so it runs while the row is still mounted and the
+  /// checkbox rect is still readable.
+  ///
+  /// This must NOT wait for a widget rebuild: completing the *last* open item
+  /// brings the checklist to 100%, and the card swaps the row list for an "all
+  /// done" line on the next build — unmounting this row before any
+  /// lifecycle-driven celebration could fire. [spawnCompletionBurst] captures
+  /// the geometry here and renders in the overlay, so the sparks survive the
+  /// row collapsing away. Burst + pop are suppressed under reduced motion; the
+  /// haptic still fires, since it is feedback, not motion.
+  void _celebrateInteractiveCheck() {
+    unawaited(HapticFeedback.lightImpact());
+    final reduceMotion =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    if (reduceMotion) return;
+    _checkPopController.forward(from: 0);
+    final checkboxContext = _checkboxKey.currentContext;
+    if (checkboxContext != null) {
+      spawnCompletionBurst(
+        checkboxContext,
+        count: 16,
+        sizeScale: 0.7,
+        clearCenter: 0.3,
+        duration: const Duration(milliseconds: 850),
+      );
+    }
+  }
+
   bool get _shouldHide {
     // Archived items count as "done" for filtering purposes.
     final isCompleted = _lastIsChecked || _lastIsArchived;
@@ -130,16 +165,6 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
 
     _lastIsChecked = newIsChecked;
     _lastIsArchived = newIsArchived;
-
-    // Celebrate an interactive check-off: a light haptic + a brief check
-    // "pop". Only on the not-checked → checked edge (never on archive, filter
-    // toggles, or the first data load — none of which pass animate: true here).
-    if (animate && !wasChecked && newIsChecked && !newIsArchived) {
-      unawaited(HapticFeedback.lightImpact());
-      final reduceMotion =
-          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-      if (!reduceMotion) _checkPopController.forward(from: 0);
-    }
 
     final isCompleted = newIsChecked || newIsArchived;
 
@@ -290,51 +315,45 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     // checkbox — the same celebration language as habits, but
                     // dialled down (no glow, fewer/finer sparks, quicker) so
                     // rapid check-offs read as a cascade of little pops rather
-                    // than visual chaos. Fires only on the not-checked → checked
-                    // edge; reduced motion suppresses the sparks (haptic + pop
-                    // still fire from the row state).
-                    CompletionCelebration(
-                      completed: item.data.isChecked,
-                      glow: false,
-                      burstOrigin: Alignment.center,
-                      burstCount: 16,
-                      burstSizeScale: 0.7,
-                      burstClearCenter: 0.3,
-                      duration: const Duration(milliseconds: 850),
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: ScaleTransition(
-                          scale: _checkPopScale,
-                          child: Checkbox(
-                            value: item.data.isChecked,
-                            onChanged: item.data.isArchived
-                                ? null
-                                : (value) {
-                                    itemNotifier.updateChecked(
-                                      checked: value ?? false,
-                                    );
-                                    if (suggestion != null) {
-                                      ref
-                                          .read(
-                                            checklistCompletionServiceProvider
-                                                .notifier,
-                                          )
-                                          .clearSuggestion(widget.itemId);
-                                    }
-                                  },
-                            activeColor: tokens.colors.interactive.enabled,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            side: BorderSide(
-                              color: tokens.colors.text.lowEmphasis,
-                              width: 1.5,
-                            ),
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            visualDensity: VisualDensity.compact,
+                    // than visual chaos. Fired imperatively from the tap (see
+                    // [_celebrateInteractiveCheck]) rather than from a widget
+                    // edge, so it also fires when checking the LAST item
+                    // collapses the row. Reduced motion suppresses the sparks
+                    // and pop (the haptic still fires).
+                    SizedBox(
+                      key: _checkboxKey,
+                      width: 20,
+                      height: 20,
+                      child: ScaleTransition(
+                        scale: _checkPopScale,
+                        child: Checkbox(
+                          value: item.data.isChecked,
+                          onChanged: item.data.isArchived
+                              ? null
+                              : (value) {
+                                  final checked = value ?? false;
+                                  itemNotifier.updateChecked(checked: checked);
+                                  if (checked) _celebrateInteractiveCheck();
+                                  if (suggestion != null) {
+                                    ref
+                                        .read(
+                                          checklistCompletionServiceProvider
+                                              .notifier,
+                                        )
+                                        .clearSuggestion(widget.itemId);
+                                  }
+                                },
+                          activeColor: tokens.colors.interactive.enabled,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
                           ),
+                          side: BorderSide(
+                            color: tokens.colors.text.lowEmphasis,
+                            width: 1.5,
+                          ),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
                         ),
                       ),
                     ),
@@ -637,6 +656,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     )).notifier,
                   )
                   .updateChecked(checked: true);
+              _celebrateInteractiveCheck();
               ref
                   .read(checklistCompletionServiceProvider.notifier)
                   .clearSuggestion(widget.itemId);

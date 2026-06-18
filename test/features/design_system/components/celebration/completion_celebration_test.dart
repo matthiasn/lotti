@@ -153,4 +153,91 @@ void main() {
 
     await tester.pumpAndSettle();
   });
+
+  group('spawnCompletionBurst', () {
+    // Renders an anchor whose context is captured, plus a toggle to remove it —
+    // so a test can fire a burst from the anchor and then unmount it, the way
+    // completing the last checklist item collapses its row in the same frame.
+    Future<void Function({required bool show})> pumpAnchor(
+      WidgetTester tester, {
+      required void Function(BuildContext) onContext,
+      bool disableAnimations = false,
+    }) async {
+      late void Function(void Function()) setOuter;
+      var show = true;
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(disableAnimations: disableAnimations),
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  setOuter = setState;
+                  return SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: show
+                        ? Builder(
+                            builder: (c) {
+                              onContext(c);
+                              return const SizedBox.expand();
+                            },
+                          )
+                        : const SizedBox.expand(),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      );
+      return ({required bool show}) => setOuter(() => show = show);
+    }
+
+    testWidgets('fires into the overlay and survives the anchor unmounting', (
+      tester,
+    ) async {
+      late BuildContext anchorContext;
+      final toggle = await pumpAnchor(
+        tester,
+        onContext: (c) => anchorContext = c,
+      );
+
+      // Fire from the anchor, then remove it in the same frame.
+      spawnCompletionBurst(
+        anchorContext,
+        count: 16,
+        duration: const Duration(milliseconds: 850),
+      );
+      toggle(show: false);
+
+      await tester.pump(); // run post-frame spawn + remove the anchor
+      await tester.pump(const Duration(milliseconds: 100)); // build + start
+      await tester.pump(const Duration(milliseconds: 300)); // into the window
+
+      // The burst is live in the overlay even though its anchor is long gone.
+      expect(find.byType(CompletionBurst), findsOneWidget);
+
+      // It removes its own overlay entry once the timeline completes.
+      await tester.pumpAndSettle();
+      expect(find.byType(CompletionBurst), findsNothing);
+    });
+
+    testWidgets('is suppressed under reduced motion', (tester) async {
+      late BuildContext anchorContext;
+      await pumpAnchor(
+        tester,
+        onContext: (c) => anchorContext = c,
+        disableAnimations: true,
+      );
+
+      spawnCompletionBurst(anchorContext);
+
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(CompletionBurst), findsNothing);
+    });
+  });
 }
