@@ -460,4 +460,23 @@ void main() {
       expect(find.text('Second node'), findsOneWidget);
     });
   });
+
+  group('relStyleForNeighborType', () {
+    test('maps every node type to its graph relation class (exhaustive)', () {
+      const expected = <GraphNodeType, RelStyle>{
+        GraphNodeType.project: RelStyle.containment,
+        GraphNodeType.aiResponse: RelStyle.provenance,
+        GraphNodeType.rating: RelStyle.evaluation,
+        GraphNodeType.checklist: RelStyle.checklist,
+        GraphNodeType.checklistItem: RelStyle.checklist,
+        GraphNodeType.task: RelStyle.linkedTask,
+        GraphNodeType.textEntry: RelStyle.note,
+        GraphNodeType.audioEntry: RelStyle.note,
+        GraphNodeType.imageEntry: RelStyle.note,
+      };
+      for (final type in GraphNodeType.values) {
+        expect(relStyleForNeighborType(type), expected[type], reason: '$type');
+      }
+    });
+  });
 }

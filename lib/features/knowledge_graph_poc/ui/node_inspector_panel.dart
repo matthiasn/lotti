@@ -164,6 +164,7 @@ class _InspectorContent extends StatelessWidget {
             body: summary.body,
             neighborCounts: neighborCounts,
             cat: cat,
+            style: style,
             tokens: tokens,
           ),
         ),
@@ -363,6 +364,7 @@ class _Body extends StatelessWidget {
     required this.body,
     required this.neighborCounts,
     required this.cat,
+    required this.style,
     required this.tokens,
   });
 
@@ -370,6 +372,7 @@ class _Body extends StatelessWidget {
   final String body;
   final Map<GraphNodeType, int> neighborCounts;
   final Color cat;
+  final GraphStyle style;
   final DsTokens tokens;
 
   @override
@@ -427,7 +430,12 @@ class _Body extends StatelessWidget {
                     _LinkChip(
                       type: e.key,
                       count: e.value,
-                      cat: cat,
+                      // Colour each chip with the graph's own relation hue for
+                      // that neighbour type, so the breakdown reads as the same
+                      // system as the edges/legend on the canvas.
+                      color: style
+                          .edgeVisual(relStyleForNeighborType(e.key))
+                          .color,
                       tokens: tokens,
                     ),
                 ],
@@ -494,11 +502,9 @@ class _Footer extends StatelessWidget {
           SizedBox(height: tokens.spacing.step4),
           Row(
             children: [
-              Icon(
-                Icons.schedule_rounded,
-                size: 14,
-                color: tokens.colors.text.lowEmphasis,
-              ),
+              // Category-hued so the panel's accent terminates on content, not
+              // on the divider line above.
+              Icon(Icons.schedule_rounded, size: 14, color: cat),
               SizedBox(width: tokens.spacing.step2),
               Text(
                 createdLabel,
@@ -518,13 +524,13 @@ class _LinkChip extends StatelessWidget {
   const _LinkChip({
     required this.type,
     required this.count,
-    required this.cat,
+    required this.color,
     required this.tokens,
   });
 
   final GraphNodeType type;
   final int count;
-  final Color cat;
+  final Color color;
   final DsTokens tokens;
 
   @override
@@ -537,12 +543,12 @@ class _LinkChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: tokens.colors.background.level02.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(tokens.radii.smallChips),
-        border: Border.all(color: cat.withValues(alpha: 0.25)),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(glyphForType(type), size: 12, color: cat),
+          Icon(glyphForType(type), size: 12, color: color),
           SizedBox(width: tokens.spacing.step2),
           Text(
             '$count  ${typeLabel(type)}',
@@ -609,6 +615,31 @@ String previewFromMarkdown(String md) {
   }
   lede = lede.replaceFirst(RegExp(r'^•\s*'), '');
   return (lede: lede, body: body);
+}
+
+/// The graph relation class whose colour best represents a neighbour of the
+/// given node type, so the inspector's "linked" chips reuse the graph's edge
+/// palette (pure; unit-tested). Mirrors the relation a focus task has to each
+/// neighbour kind: project→containment, AI→provenance, rating→evaluation,
+/// checklist(item)→checklist, task→linkedTask, entries→note.
+RelStyle relStyleForNeighborType(GraphNodeType type) {
+  switch (type) {
+    case GraphNodeType.project:
+      return RelStyle.containment;
+    case GraphNodeType.aiResponse:
+      return RelStyle.provenance;
+    case GraphNodeType.rating:
+      return RelStyle.evaluation;
+    case GraphNodeType.checklist:
+    case GraphNodeType.checklistItem:
+      return RelStyle.checklist;
+    case GraphNodeType.task:
+      return RelStyle.linkedTask;
+    case GraphNodeType.textEntry:
+    case GraphNodeType.audioEntry:
+    case GraphNodeType.imageEntry:
+      return RelStyle.note;
+  }
 }
 
 /// A short, type-specific descriptor for nodes that have no real summary — used
