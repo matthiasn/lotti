@@ -502,7 +502,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                 if (inspectorVisible && _detailsOpen)
                   Positioned(
                     top: tokens.spacing.step5,
-                    bottom: tokens.spacing.step5,
+                    bottom: 0,
                     right: tokens.spacing.step5,
                     child: SizedBox(
                       width: (size.width * 0.34).clamp(360.0, 460.0),
@@ -517,13 +517,18 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                 if (widget.showLegend)
                   Positioned(
                     left: tokens.spacing.step5,
-                    right: tokens.spacing.step5,
                     bottom: tokens.spacing.step5,
-                    child: _LegendBar(
-                      scenario: _scenario,
-                      style: style,
-                      categoryNames: widget.categoryNames,
-                      tokens: tokens,
+                    // Narrow, left-aligned block that wraps to multiple rows so
+                    // it stays clear of the right-hand panel instead of spanning
+                    // the full width under it.
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 260),
+                      child: _LegendBar(
+                        scenario: _scenario,
+                        style: style,
+                        categoryNames: widget.categoryNames,
+                        tokens: tokens,
+                      ),
                     ),
                   ),
               ],

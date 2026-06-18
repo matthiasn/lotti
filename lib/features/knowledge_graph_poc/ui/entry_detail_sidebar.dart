@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Right-side overlay that opens the focused graph node's FULL details by
 /// embedding the app's actual detail page — [TaskDetailsPage] for tasks,
@@ -31,7 +33,9 @@ class EntryDetailSidebar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(entryControllerProvider(id: entryId));
-    final radius = BorderRadius.circular(tokens.radii.l);
+    // Round only the top — the panel reaches the window bottom so the embedded
+    // page's bottom action bar sits flush instead of being clipped by a curve.
+    final radius = BorderRadius.vertical(top: Radius.circular(tokens.radii.l));
     return DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: radius,
@@ -155,11 +159,21 @@ class _EmbeddedDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // coverage:ignore-start
-    return Navigator(
-      onGenerateRoute: (_) => MaterialPageRoute<void>(
-        builder: (_) => item is Task
-            ? TaskDetailsPage(taskId: entryId)
-            : EntryDetailsPage(itemId: entryId),
+    // Force the knowledge-graph flag off for the embedded page so its task app
+    // bar hides the graph (hub) button — we're already inside the graph, and
+    // opening another from here would recurse.
+    return ProviderScope(
+      overrides: [
+        configFlagProvider(
+          enableKnowledgeGraphFlag,
+        ).overrideWith((ref) => Stream<bool>.value(false)),
+      ],
+      child: Navigator(
+        onGenerateRoute: (_) => MaterialPageRoute<void>(
+          builder: (_) => item is Task
+              ? TaskDetailsPage(taskId: entryId)
+              : EntryDetailsPage(itemId: entryId),
+        ),
       ),
     );
     // coverage:ignore-end
