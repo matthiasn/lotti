@@ -673,7 +673,7 @@ class _MetaRow extends StatelessWidget {
 
 /// Habit completions resolve the habit definition via a notification-driven
 /// stream so the card live-updates when the habit (or privacy) changes.
-class _HabitCompletionContent extends StatelessWidget {
+class _HabitCompletionContent extends StatefulWidget {
   const _HabitCompletionContent({
     required this.habitCompletion,
     required this.dateLabel,
@@ -687,22 +687,51 @@ class _HabitCompletionContent extends StatelessWidget {
   final List<String>? labelIds;
 
   @override
+  State<_HabitCompletionContent> createState() =>
+      _HabitCompletionContentState();
+}
+
+class _HabitCompletionContentState extends State<_HabitCompletionContent> {
+  late Stream<HabitDefinition?> _habitStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _habitStream = _createStream();
+  }
+
+  @override
+  void didUpdateWidget(covariant _HabitCompletionContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Only re-subscribe when the habit actually changes; a plain parent
+    // rebuild must not recreate the stream (which would refetch every frame).
+    if (oldWidget.habitCompletion.data.habitId !=
+        widget.habitCompletion.data.habitId) {
+      _habitStream = _createStream();
+    }
+  }
+
+  Stream<HabitDefinition?> _createStream() => notificationDrivenItemStream(
+    notifications: getIt<UpdateNotifications>(),
+    notificationKeys: {habitsNotification, privateToggleNotification},
+    fetcher: () =>
+        getIt<JournalDb>().getHabitById(widget.habitCompletion.data.habitId),
+  );
+
+  @override
   Widget build(BuildContext context) {
-    final data = habitCompletion.data;
-    final completion = data.completionType ?? HabitCompletionType.success;
+    final completion =
+        widget.habitCompletion.data.completionType ??
+        HabitCompletionType.success;
 
     return StreamBuilder<HabitDefinition?>(
-      stream: notificationDrivenItemStream(
-        notifications: getIt<UpdateNotifications>(),
-        notificationKeys: {habitsNotification, privateToggleNotification},
-        fetcher: () => getIt<JournalDb>().getHabitById(data.habitId),
-      ),
+      stream: _habitStream,
       builder: (context, snapshot) {
         final habit = snapshot.data;
         final name =
             habit?.name ?? context.messages.entryTypeLabelHabitCompletionEntry;
         final categoryColor = _habitColor(context, habit);
-        final note = habitCompletion.entryText?.plainText.trim() ?? '';
+        final note = widget.habitCompletion.entryText?.plainText.trim() ?? '';
 
         return _EntryCardScaffold(
           icon: _completionIcon(completion),
@@ -714,7 +743,7 @@ class _HabitCompletionContent extends StatelessWidget {
             style: context.designTokens.typography.styles.subtitle.subtitle1
                 .copyWith(color: context.colorScheme.onSurface),
           ),
-          dateLabel: dateLabel,
+          dateLabel: widget.dateLabel,
           metaChips: [_statusChip(context, completion)],
           secondary: note.isEmpty
               ? null
@@ -725,8 +754,8 @@ class _HabitCompletionContent extends StatelessWidget {
                   style: context.designTokens.typography.styles.body.bodyMedium
                       .copyWith(color: context.colorScheme.onSurfaceVariant),
                 ),
-          trailing: trailing,
-          labelIds: labelIds,
+          trailing: widget.trailing,
+          labelIds: widget.labelIds,
         );
       },
     );

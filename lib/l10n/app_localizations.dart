@@ -9504,11 +9504,29 @@ abstract class AppLocalizations {
   /// **'Entry types'**
   String get journalFilterEntryTypesTitle;
 
+  /// No description provided for @journalFilterFlagged.
+  ///
+  /// In en, this message translates to:
+  /// **'Flagged'**
+  String get journalFilterFlagged;
+
+  /// No description provided for @journalFilterPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get journalFilterPrivate;
+
   /// No description provided for @journalFilterShowTitle.
   ///
   /// In en, this message translates to:
   /// **'Show'**
   String get journalFilterShowTitle;
+
+  /// No description provided for @journalFilterStarred.
+  ///
+  /// In en, this message translates to:
+  /// **'Starred'**
+  String get journalFilterStarred;
 
   /// No description provided for @journalFlaggedTooltip.
   ///

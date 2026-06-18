@@ -5530,7 +5530,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalFilterEntryTypesTitle => 'Tipos de entrada';
 
   @override
+  String get journalFilterFlagged => 'Marcados';
+
+  @override
+  String get journalFilterPrivate => 'Privados';
+
+  @override
   String get journalFilterShowTitle => 'Mostrar';
+
+  @override
+  String get journalFilterStarred => 'Destacados';
 
   @override
   String get journalFlaggedTooltip => 'solo marcados';

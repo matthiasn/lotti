@@ -5489,7 +5489,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalFilterEntryTypesTitle => 'Typy záznamů';
 
   @override
+  String get journalFilterFlagged => 'Označené';
+
+  @override
+  String get journalFilterPrivate => 'Soukromé';
+
+  @override
   String get journalFilterShowTitle => 'Zobrazit';
+
+  @override
+  String get journalFilterStarred => 'Oblíbené';
 
   @override
   String get journalFlaggedTooltip => 'pouze označené';

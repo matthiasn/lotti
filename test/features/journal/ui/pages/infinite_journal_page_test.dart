@@ -337,7 +337,7 @@ void main() {
         find.text(
           entryDateLabel(
             tester.element(find.byType(InfiniteJournalPage)),
-            testMeasurementChocolateEntry.meta.dateFrom,
+            testMeasuredCoverageEntry.meta.dateFrom,
           ),
         ),
         findsOneWidget,

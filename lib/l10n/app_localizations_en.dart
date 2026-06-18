@@ -5418,7 +5418,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get journalFilterEntryTypesTitle => 'Entry types';
 
   @override
+  String get journalFilterFlagged => 'Flagged';
+
+  @override
+  String get journalFilterPrivate => 'Private';
+
+  @override
   String get journalFilterShowTitle => 'Show';
+
+  @override
+  String get journalFilterStarred => 'Starred';
 
   @override
   String get journalFlaggedTooltip => 'flagged only';

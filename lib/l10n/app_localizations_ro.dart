@@ -5543,7 +5543,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalFilterEntryTypesTitle => 'Tipuri de intrare';
 
   @override
+  String get journalFilterFlagged => 'Marcate';
+
+  @override
+  String get journalFilterPrivate => 'Private';
+
+  @override
   String get journalFilterShowTitle => 'Afișează';
+
+  @override
+  String get journalFilterStarred => 'Favorite';
 
   @override
   String get journalFlaggedTooltip => 'Marcat';

@@ -179,10 +179,6 @@ class JournalFilter extends ConsumerWidget {
     final palette = DesignSystemFilterPalette.fromTokens(tokens);
     final textStyle = tokens.typography.styles.body.bodyMedium;
 
-    String capitalize(String value) => value.isEmpty
-        ? value
-        : '${value[0].toUpperCase()}${value.substring(1)}';
-
     Widget pill({
       required DisplayFilter filter,
       required IconData icon,
@@ -190,7 +186,7 @@ class JournalFilter extends ConsumerWidget {
     }) {
       final active = state.filters.contains(filter);
       return DesignSystemFilterChoicePill(
-        label: capitalize(label),
+        label: label,
         selected: active,
         palette: palette,
         textStyle: textStyle,
@@ -218,17 +214,17 @@ class JournalFilter extends ConsumerWidget {
         pill(
           filter: DisplayFilter.starredEntriesOnly,
           icon: Icons.star_rounded,
-          label: context.messages.journalFavoriteTooltip,
+          label: context.messages.journalFilterStarred,
         ),
         pill(
           filter: DisplayFilter.flaggedEntriesOnly,
           icon: Icons.flag_rounded,
-          label: context.messages.journalFlaggedTooltip,
+          label: context.messages.journalFilterFlagged,
         ),
         pill(
           filter: DisplayFilter.privateEntriesOnly,
           icon: Icons.shield_rounded,
-          label: context.messages.journalPrivateTooltip,
+          label: context.messages.journalFilterPrivate,
         ),
       ],
     );
