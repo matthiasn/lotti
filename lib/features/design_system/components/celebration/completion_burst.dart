@@ -20,6 +20,7 @@ class CompletionBurst extends StatelessWidget {
     this.count = 30,
     this.sizeScale = 1.0,
     this.clearCenter = 0.0,
+    this.reachFactor = 2.1,
     super.key,
   });
 
@@ -28,6 +29,12 @@ class CompletionBurst extends StatelessWidget {
 
   /// Number of sparks. Higher reads as a denser, richer burst.
   final int count;
+
+  /// How far the sparks fly, as a multiple of the paint area's height. Lower
+  /// keeps the burst a tight ring hugging its anchor (so it doesn't splash into
+  /// adjacent text or off-screen); higher gives a wider spray for a standalone
+  /// card.
+  final double reachFactor;
 
   /// Multiplier on each spark's head/trail size. Below 1 yields finer sparks —
   /// pair a denser [count] with a sub-1 scale so the burst reads rich, not
@@ -56,6 +63,7 @@ class CompletionBurst extends StatelessWidget {
         count: count,
         sizeScale: sizeScale,
         clearCenter: clearCenter,
+        reachFactor: reachFactor,
       ),
     );
   }
@@ -70,6 +78,7 @@ class _BurstPainter extends CustomPainter {
     required this.count,
     required this.sizeScale,
     required this.clearCenter,
+    required this.reachFactor,
   });
 
   final double progress;
@@ -83,11 +92,12 @@ class _BurstPainter extends CustomPainter {
   final int count;
   final double sizeScale;
   final double clearCenter;
+  final double reachFactor;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = origin.alongSize(size);
-    final reach = size.height * 2.1;
+    final reach = size.height * reachFactor;
     final clearRadius = reach * clearCenter;
 
     for (var i = 0; i < count; i++) {
@@ -165,5 +175,6 @@ class _BurstPainter extends CustomPainter {
       oldDelegate.gold != gold ||
       oldDelegate.count != count ||
       oldDelegate.sizeScale != sizeScale ||
-      oldDelegate.clearCenter != clearCenter;
+      oldDelegate.clearCenter != clearCenter ||
+      oldDelegate.reachFactor != reachFactor;
 }

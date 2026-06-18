@@ -193,13 +193,15 @@ class _ChecklistCardState extends State<ChecklistCard> {
         ? checklistChevronRotationDuration
         : Duration.zero;
 
-    // Celebrate the moment the checklist reaches 100%: a soft accent glow
-    // blooms around the card and a short spark burst fires over the header
-    // (where the progress ring lives), with a medium haptic. Fires only on the
-    // transition to complete, never on a card that was already done.
+    // Celebrate the moment the checklist reaches 100% with a soft accent glow
+    // bloom around the card + a medium haptic — but NO card-spanning spark
+    // burst: the last item's own checkbox burst already fires the sparks, and a
+    // second burst painted across the whole section read as chaotic particle
+    // flashes. The glow halo is the "whole checklist done" beat; the checkbox
+    // sparks are the "this item done" beat. Fires only on the transition.
     return CompletionCelebration(
       completed: total > 0 && widget.completionRate >= 1.0,
-      burstOrigin: const Alignment(0, -0.85),
+      showBurst: false,
       onCelebrate: () => unawaited(HapticFeedback.mediumImpact()),
       child: Material(
         color: Colors.transparent,

@@ -32,6 +32,7 @@ class CompletionCelebration extends StatefulWidget {
     this.burstCount = 50,
     this.burstSizeScale = 0.8,
     this.burstClearCenter = 0.45,
+    this.burstReach = 2.2,
     this.onCelebrate,
     super.key,
   });
@@ -60,11 +61,14 @@ class CompletionCelebration extends StatefulWidget {
   /// fit for high-frequency moments like checking a list item).
   final Duration duration;
 
-  /// Spark count, size multiplier, and the cleared centre ring for the burst —
-  /// dialled down for small/frequent moments, full for the big ones.
+  /// Spark count, size multiplier, the cleared centre ring, and how far the
+  /// sparks fly ([burstReach], a multiple of the paint-area height). The sparks
+  /// fly out and wither naturally over the timeline; a higher reach lets them
+  /// spread freely, a lower one keeps them tighter to the anchor.
   final int burstCount;
   final double burstSizeScale;
   final double burstClearCenter;
+  final double burstReach;
 
   /// When true, the [child] itself pops — a single overshoot scale (1 → 1.12 →
   /// 1) in the first quarter of the timeline, landing with the glow bloom — so
@@ -186,6 +190,7 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
                           // Ring the sparks around the celebrated element rather
                           // than over it, so any label stays readable at peak.
                           clearCenter: widget.burstClearCenter,
+                          reachFactor: widget.burstReach,
                         );
                 },
               ),

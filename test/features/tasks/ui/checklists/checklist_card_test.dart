@@ -1218,12 +1218,14 @@ void main() {
         initiallyExpanded: false,
       );
       await tester.pump(const Duration(milliseconds: 560));
+      // The whole-checklist 100% beat is a glow bloom only — the sparks come
+      // from the completing item's own checkbox burst, so the card-level
+      // celebration never paints a burst across the section.
       expect(find.byType(CompletionGlow), findsOneWidget);
-      expect(find.byType(CompletionBurst), findsOneWidget);
+      expect(find.byType(CompletionBurst), findsNothing);
 
       await tester.pumpAndSettle();
       expect(find.byType(CompletionGlow), findsNothing);
-      expect(find.byType(CompletionBurst), findsNothing);
     });
 
     testWidgets('does not celebrate a checklist that was already complete', (
