@@ -107,6 +107,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   modals), the AI settings screens (error/retry states, provider setup, and
   delete dialogs), health import, the agent editors, and habit completion.
 
+### Added
+- On Linux and Windows you can now import images from a native file dialog via
+  the "+" create menu → "Import image". Previously image import was only offered
+  on macOS and mobile.
+
 ### Fixed
 - On phones, save and action buttons on several settings detail screens were
   hidden behind the bottom navigation bar, so the action couldn't be tapped —
@@ -115,6 +120,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the AI provider connect/edit form, the agent template and soul editors, the
   sync conflict resolver, and the agent evolution chat input all stay clear of
   the navigation bar, so their actions are reachable.
+- Dragging an image or audio file onto a task or journal entry now works on
+  Linux. Two drag-and-drop plugins were both claiming the drop and the wrong one
+  silently swallowed every drop; Lotti now uses a single drag-and-drop system on
+  every platform.
 
 ## [0.9.1025]
 ### Added
