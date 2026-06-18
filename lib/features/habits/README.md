@@ -307,7 +307,7 @@ That is easy to miss if you only read the state shape. The controller stores `se
 
 The completion-rate chart lives inside `HabitsChartCard` at the bottom of the page — a titled, bordered `dsCardSurface` card. The card supplies the title (`habitsCompletionRateTitle`), the time-span switch, and the zero-baseline toggle; the chart (`HabitCompletionRateChart`) supplies a headline, a single trend line, and — when a day is tapped — that day's breakdown.
 
-- **Time span** is a `TimeSpanSegmentedControl` over `[7, 14, 30]` days, always visible in the card header (no longer hidden behind a calendar toggle). Selecting a span calls `setTimeSpan`, which refetches the range and recomputes. `HabitsChartCard.timeSpans` is the single source for the offered windows. The chart also drives the day window for each dashboard row's history strip via the page's shared `rangeStart` / `rangeEnd`.
+- **Time span** is a `TimeSpanSegmentedControl` over `[7, 14, 30, 90]` days, always visible in the card header (no longer hidden behind a calendar toggle). Selecting a span calls `setTimeSpan`, which refetches the range and recomputes. `HabitsChartCard.timeSpans` is the single source for the offered windows. The chart also drives the day window for each dashboard row's history strip via the page's shared `rangeStart` / `rangeEnd`.
 - **Zero-baseline toggle** only appears when `state.minY > 20` (i.e. the lowest day clears the 20% floor, where cropping the axis is actually meaningful). It flips `zeroBased`, switching between a zero-based Y axis and the cropped minimum.
 
 ### Headline, trend line, and stats
@@ -515,7 +515,7 @@ Delete is a soft delete via `deletedAt`, not a hard remove.
 - Streaks **are now displayed**: `shortStreakCount` / `longStreakCount` surface in `HabitsSummaryCard`'s streak badge. (Previously these were computed but never rendered.)
 - The tab's per-day history is the combined **consistency heatmap**; the per-row history strip now exists only on the **dashboard** habit chart. Both are **read-only** — backfilling a past day is done through the dialog's date field, not by tapping a cell.
 - The heatmap shades by **success only** and uses the same `activeBy` ∪ recorded denominator as the chart. Weekly/monthly per-period targets (`requiredCompletions`) are still not surfaced — the heatmap measures daily success, not cadence.
-- The chart **time span** lives in the chart card's header (`TimeSpanSegmentedControl`, `[7, 14, 30]`), not behind a calendar/visibility toggle. `state.showTimeSpan` is still in the state but no longer gates the switch.
+- The chart **time span** lives in the chart card's header (`TimeSpanSegmentedControl`, `[7, 14, 30, 90]`), not behind a calendar/visibility toggle. `state.showTimeSpan` is still in the state but no longer gates the switch.
 - Text search is local page filtering (only when `showSearch` is on), not repository querying.
 - The "due now" split is based only on daily `showFrom` and current clock time.
 

@@ -48,7 +48,7 @@ void main() {
   });
 
   testWidgets(
-    'renders the time-span control with 7d / 14d / 30d segments',
+    'renders the time-span control with 7d / 14d / 30d / 90d segments',
     (tester) async {
       await pump(tester, HabitsState.initial());
 
@@ -58,6 +58,7 @@ void main() {
       expect(find.text('7d'), findsNWidgets(2));
       expect(find.text('14d'), findsNWidgets(2));
       expect(find.text('30d'), findsNWidgets(2));
+      expect(find.text('90d'), findsNWidgets(2));
     },
   );
 
