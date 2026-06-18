@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings_v2/ui/settings_v2_constants.dart';
+import 'package:lotti/features/settings_v2/ui/tree/settings_node_indicators.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
 
 /// Per-row selector computed once per path mutation so the enclosing
@@ -60,6 +61,7 @@ class SettingsTreeNodeWidget extends ConsumerWidget {
           depth: depth,
           onActivePath: onActivePath,
           isExpanded: isExpanded,
+          trailing: settingsNodeIndicatorFor(node.id),
           onTap: handleTap,
         ),
         if (node.hasChildren)

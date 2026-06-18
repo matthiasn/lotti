@@ -43,8 +43,8 @@ import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dar
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
 import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
-import 'package:lotti/features/sync/ui/sync_settings_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
+import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
 import 'package:lotti/features/tts/ui/speech_settings_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -257,18 +257,27 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: InferenceProfilePage(),
         ),
 
-      // Sync Settings (exact matches for robustness)
+      // Sync Settings — the list, ordering, copy, and feature-flag gating
+      // all come from the shared settings tree (`buildSettingsTree`), so
+      // mobile renders the exact same `sync` branch the desktop V2 sidebar
+      // does, including the provisioned-sync QR card as its landing-panel
+      // header. `SyncFeatureGate` preserves the deep-link bounce back to
+      // `/settings` when Matrix sync is disabled.
       if (path == '/settings/sync')
         const BeamPage(
           key: ValueKey('settings-sync'),
           title: 'Sync Settings',
-          child: SyncSettingsPage(),
+          child: SyncFeatureGate(
+            child: SettingsMobileBranchPage(branchId: 'sync'),
+          ),
         ),
       if (path != '/settings/sync' && path.startsWith('/settings/sync/'))
         const BeamPage(
           key: ValueKey('settings-sync-base'),
           title: 'Sync Settings',
-          child: SyncSettingsPage(),
+          child: SyncFeatureGate(
+            child: SettingsMobileBranchPage(branchId: 'sync'),
+          ),
         ),
 
       if (path == '/settings/sync/matrix/maintenance')

@@ -50,6 +50,7 @@
     <release version="0.9.1025" date="2026-06-15">
       <description>
           <p>Experimental on-device text-to-speech is now available on Linux too: with the "Enable local AI summary playback" flag on, the AI summary card's play button reads a task's TL;DR aloud, synthesized locally with the Supertonic model — no cloud. Still off by default; the model (~400 MB) downloads once on first use.</p>
+          <p>On phones, the Sync settings list now follows the same order and layout as the desktop settings tree, so the two surfaces no longer disagree. The provisioned-sync QR pairing entry stays at the top, and the Outbox row shows the live count of items still waiting to sync — now on desktop too, not just mobile.</p>
       </description>
     </release>
     <release version="0.9.1024" date="2026-06-15">

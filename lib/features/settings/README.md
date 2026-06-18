@@ -190,7 +190,7 @@ Concrete examples from the current implementation:
   -> [SettingsMobileRootPage, SettingsMobileBranchPage(advanced), AboutPage]
 
 /settings/sync/stats
-  -> [SettingsMobileRootPage, SyncSettingsPage, SyncStatsPage]
+  -> [SettingsMobileRootPage, SettingsMobileBranchPage(sync), SyncStatsPage]
 
 /settings/dashboards/:dashboardId
   -> [SettingsMobileRootPage, SettingsMobileBranchPage(definitions),
@@ -208,9 +208,19 @@ namespaced under `definitions/` in the tree but keep their flat Beamer URLs
 (`/settings/categories`, …) via `settingsNodeUrls`, so `_inDefinitionsBranch`
 in the location matches them and pushes the hub underneath.
 
-Branches that carry their own landing page (`panel != null`: AI, Agents, Sync)
-skip the hub and open that page directly, so e.g. `/settings/sync/stats` stacks
-`SyncSettingsPage` under `SyncStatsPage` with no intermediate hub.
+AI and Agents keep their own rich mobile pages (tabbed `AiSettingsPage` /
+`AgentSettingsPage`) and open directly, so e.g. `/settings/ai/...` stacks that
+page rather than a hub.
+
+Sync is also a branch with `panel != null`, but its landing panel is just the
+provisioned-sync QR card, so it drills into the same `SettingsMobileBranchPage`
+hub as Definitions/Advanced — the hub renders the branch's landing panel
+(`panelSpecFor(node.panel)`) as a header above the child rows. The sync child
+list, ordering, and copy therefore come from `buildSettingsTree`, shared with
+the desktop sidebar, so the two surfaces can no longer drift. `/settings/sync`
+and `/settings/sync/...` stack `SettingsMobileBranchPage(sync)` (wrapped in
+`SyncFeatureGate` so the route bounces back to `/settings` when Matrix sync is
+disabled).
 
 That stacked model is why detail pages feel like descendants of a section instead of random teleports. Beamer is doing real work here, which is nice for once.
 
@@ -493,7 +503,8 @@ Key facts:
 
 - the `/settings` landing page only shows Sync when `enableMatrixFlag` is on
 - [`lib/features/sync/ui/widgets/sync_feature_gate.dart`](../sync/ui/widgets/sync_feature_gate.dart) guards sync pages and redirects back to `/settings` if sync is disabled
-- the sync landing page is [`lib/features/sync/ui/sync_settings_page.dart`](../sync/ui/sync_settings_page.dart)
+- the sync landing page is the shared `SettingsMobileBranchPage(branchId: 'sync')` hub: it lists the `sync` branch's children from `buildSettingsTree` and renders the branch's landing panel (the provisioned-sync QR card) as a header, so mobile and desktop V2 share one definition
+- the `sync/outbox` row carries a live pending-count indicator (`OutboxCountIndicator`, registered in `settings_node_indicators.dart` and rendered through `SettingsTreeRow.trailing`); because the row is shared, the count now shows on the desktop V2 sidebar too, not just mobile
 - sync maintenance, node profile, outbox, stats, and backfill each get their own leaf routes
 
 This split keeps app-wide maintenance in Advanced and sync-specific maintenance with Sync, which is the correct kind of boring.

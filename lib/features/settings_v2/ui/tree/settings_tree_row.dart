@@ -17,6 +17,7 @@ class SettingsTreeRow extends StatelessWidget {
     required this.onActivePath,
     required this.isExpanded,
     required this.onTap,
+    this.trailing,
     this.showLeafChevron = false,
     this.descMaxLines = 1,
     this.showActiveRail = true,
@@ -25,6 +26,12 @@ class SettingsTreeRow extends StatelessWidget {
 
   final SettingsNode node;
   final int depth;
+
+  /// Optional live trailing widget (e.g. the `sync/outbox` pending count),
+  /// rendered between the static [NodeBadge] and the chevron. Supplied by
+  /// the build sites via `settingsNodeIndicatorFor(node.id)` so the row
+  /// stays presentational and the indicator owns its own (reactive) state.
+  final Widget? trailing;
 
   /// When `true`, leaf rows (no children) also render a static trailing
   /// chevron. Branches always show their (rotating) chevron regardless.
@@ -169,6 +176,11 @@ class SettingsTreeRow extends StatelessWidget {
                 if (node.badge case final badge?) ...[
                   SizedBox(width: tokens.spacing.step3),
                   _NodeBadgeChip(badge: badge, tokens: tokens),
+                ],
+                // Optional live indicator (e.g. outbox pending count).
+                if (trailing case final trailing?) ...[
+                  SizedBox(width: tokens.spacing.step3),
+                  trailing,
                 ],
                 // Chevron — rotates for branches; static right-pointing
                 // for leaves when [showLeafChevron] is set (mobile
