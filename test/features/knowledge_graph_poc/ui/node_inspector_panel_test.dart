@@ -258,6 +258,7 @@ void main() {
       bool canGoBack = false,
       VoidCallback? onBack,
       VoidCallback? onRecenter,
+      VoidCallback? onOpen,
     }) async {
       tester.view
         ..physicalSize = const Size(420, 900)
@@ -287,6 +288,7 @@ void main() {
                   canGoBack: canGoBack,
                   onBack: onBack,
                   onRecenter: onRecenter,
+                  onOpen: onOpen,
                 ),
               ),
             ),
@@ -665,6 +667,27 @@ void main() {
       await pumpPanel(tester, node: node());
       expect(find.byIcon(Icons.arrow_back_rounded), findsNothing);
       expect(find.byIcon(Icons.center_focus_strong_rounded), findsNothing);
+    });
+
+    testWidgets('renders the open-details button and fires onOpen on tap when '
+        'onOpen is provided', (tester) async {
+      var openTaps = 0;
+      await pumpPanel(tester, node: node(), onOpen: () => openTaps++);
+
+      final openIcon = find.byIcon(Icons.open_in_full_rounded);
+      expect(openIcon, findsOneWidget);
+
+      await tester.tap(openIcon);
+      await tester.pump();
+      expect(openTaps, 1);
+    });
+
+    testWidgets('renders no open-details button when onOpen is null', (
+      tester,
+    ) async {
+      // node() with the default pumpPanel nav params (onOpen null).
+      await pumpPanel(tester, node: node());
+      expect(find.byIcon(Icons.open_in_full_rounded), findsNothing);
     });
   });
 

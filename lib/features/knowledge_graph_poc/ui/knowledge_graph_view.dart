@@ -17,6 +17,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_scenarios.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/entry_detail_sidebar.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/node_inspector_panel.dart';
@@ -72,6 +73,10 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   late String _focusId;
   late Map<String, int> _hops;
   final List<String> _history = [];
+
+  /// Whether the focused entry's full-details side panel is open (overlaying
+  /// the navigational inspector).
+  bool _detailsOpen = false;
   String? _previousFocusId;
   List<String> _walkPath = const [];
   Offset _focusWorld = Offset.zero;
@@ -237,6 +242,14 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     });
   }
 
+  /// Whether the docked inspector panel is shown (desktop-width only).
+  bool _inspectorVisible(Size size) =>
+      widget.showInspector && size.width >= 720;
+
+  /// Width of the docked inspector / detail panel — a fraction of the viewport,
+  /// clamped to a comfortable range.
+  double _inspectorWidth(double width) => (width * 0.30).clamp(320.0, 400.0);
+
   /// Transform that frames [focusId]'s 2-hop neighborhood in [size].
   (double, Offset) _framedTransform(Size size, String focusId) {
     final hops = _bfs(focusId);
@@ -263,13 +276,18 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     const margin = 60;
     final topReserve = widget.showTitle ? 84 : margin;
     final bottomReserve = widget.showLegend ? 104 : margin;
-    final availW = math.max(size.width - margin * 2, 80);
+    // Reserve the inspector's footprint on the right (panel width + insets) so
+    // the focus frames in the visible area rather than centred under the panel.
+    final rightReserve = _inspectorVisible(size)
+        ? _inspectorWidth(size.width) + 32
+        : 0.0;
+    final availW = math.max(size.width - margin * 2 - rightReserve, 80);
     final availH = math.max(size.height - topReserve - bottomReserve, 80);
     final scale = math.min(availW / bw, availH / bh).clamp(0.45, 1.5);
     // Center the focus a touch above middle so its neighbors fan below.
     final cx = (minX + maxX) / 2;
     final cy = (minY + maxY) / 2 * 0.4 + focusPos.dy * 0.6;
-    final viewportCenter = Offset(size.width / 2, topReserve + availH / 2);
+    final viewportCenter = Offset(margin + availW / 2, topReserve + availH / 2);
     final pan = viewportCenter - Offset(cx, cy) * scale;
     return (scale, pan);
   }
@@ -385,7 +403,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
           // detail, and the page AppBar names the view — so the floating title
           // chip is only shown when the inspector is absent (phone), avoiding a
           // redundant/contradictory second identity.
-          final inspectorVisible = widget.showInspector && size.width >= 720;
+          final inspectorVisible = _inspectorVisible(size);
           if (!_initialized && size.isFinite && !size.isEmpty) {
             final (s, p) = _framedTransform(size, _focusId);
             _scale = s;
@@ -458,7 +476,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                     bottom: tokens.spacing.step5,
                     right: tokens.spacing.step5,
                     child: SizedBox(
-                      width: (size.width * 0.30).clamp(320.0, 400.0),
+                      width: _inspectorWidth(size.width),
                       child: NodeInspectorPanel(
                         node: _scenario.nodeById(_focusId),
                         neighbors: _neighborsOf(_focusId),
@@ -475,6 +493,24 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                         canGoBack: _history.isNotEmpty,
                         onBack: _back,
                         onRecenter: _recenter,
+                        onOpen: () => setState(() => _detailsOpen = true),
+                      ),
+                    ),
+                  ),
+                // Full-details overlay — renders above the inspector when an
+                // entry is opened, tracking the current focus.
+                if (inspectorVisible && _detailsOpen)
+                  Positioned(
+                    top: tokens.spacing.step5,
+                    bottom: tokens.spacing.step5,
+                    right: tokens.spacing.step5,
+                    child: SizedBox(
+                      width: (size.width * 0.34).clamp(360.0, 460.0),
+                      child: EntryDetailSidebar(
+                        key: ValueKey(_focusId),
+                        entryId: _focusId,
+                        onClose: () => setState(() => _detailsOpen = false),
+                        tokens: tokens,
                       ),
                     ),
                   ),

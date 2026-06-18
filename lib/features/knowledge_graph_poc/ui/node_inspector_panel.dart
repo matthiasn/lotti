@@ -27,6 +27,7 @@ class NodeInspectorPanel extends StatelessWidget {
     this.canGoBack = false,
     this.onBack,
     this.onRecenter,
+    this.onOpen,
     super.key,
   });
 
@@ -56,6 +57,9 @@ class NodeInspectorPanel extends StatelessWidget {
 
   /// Re-frames the camera on the current focus node.
   final VoidCallback? onRecenter;
+
+  /// Opens the focused node's full details in a side panel.
+  final VoidCallback? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +161,18 @@ class NodeInspectorPanel extends StatelessWidget {
                           ),
                         ],
                       ],
+                    ),
+                  ),
+                // Open the focused entry's full details in the side panel.
+                if (onOpen != null)
+                  Positioned(
+                    top: tokens.spacing.step3,
+                    right: tokens.spacing.step3,
+                    child: _NavButton(
+                      icon: Icons.open_in_full_rounded,
+                      tooltip: 'Open details',
+                      onTap: onOpen,
+                      tokens: tokens,
                     ),
                   ),
               ],

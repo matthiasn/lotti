@@ -49,6 +49,11 @@ ignore:
   # (`flutter run -t .../dev_main.dart`): a `runApp` harness with no logic to
   # unit-test, not shipped in the app.
   - "lib/features/knowledge_graph_poc/dev_main.dart"
+  # Integration glue that embeds the app's real task/entry detail widgets
+  # (TaskForm / EntryDetailsWidget) in the graph's side panel. Those widgets
+  # carry their own extensive tests and pull the whole app's provider/getIt
+  # graph, so the embedding shell isn't meaningfully unit-testable here.
+  - "lib/features/knowledge_graph_poc/ui/entry_detail_sidebar.dart"
   # Drift table DSL: the column getters in this part file are compile-time
   # markers consumed by the drift code generator. At runtime the generated
   # `$...Table` classes override every getter (invoking the originals would

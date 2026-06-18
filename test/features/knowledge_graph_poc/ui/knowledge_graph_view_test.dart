@@ -1,16 +1,22 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_scenarios.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/entry_detail_sidebar.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_view.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/node_inspector_panel.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/editor_state_service.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -38,6 +44,7 @@ void main() {
     bool showTitle = true,
     bool showLegend = true,
     Size size = desktopSize,
+    List<Override> extraOverrides = const [],
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -57,75 +64,11 @@ void main() {
           showLegend: showLegend,
         ),
         mediaQueryData: MediaQueryData(size: size),
+        overrides: extraOverrides,
       ),
     );
     // Let the deferred image load (`_loadImages`) settle without animation.
     await tester.pump();
-  }
-
-  // ---------------------------------------------------------------------------
-  // Pure replica of the view's `_framedTransform` so a neighbor's on-screen
-  // position can be computed deterministically for tap-to-walk. This mirrors the
-  // private method exactly (same constants, same reserves) — when it drifts the
-  // tap-to-walk test fails loudly, which is the intended early-warning.
-  // ---------------------------------------------------------------------------
-  (double, Offset) framedTransform(
-    GraphScenario scenario,
-    GraphLayout layout,
-    Size size,
-    String focusId, {
-    bool showTitle = true,
-    bool showLegend = true,
-  }) {
-    final adjacency = {for (final n in scenario.nodes) n.id: <String>[]};
-    for (final e in scenario.edges) {
-      adjacency[e.fromId]?.add(e.toId);
-      adjacency[e.toId]?.add(e.fromId);
-    }
-    final hops = <String, int>{focusId: 0};
-    final queue = <String>[focusId];
-    var head = 0;
-    while (head < queue.length) {
-      final cur = queue[head++];
-      for (final nb in adjacency[cur] ?? const <String>[]) {
-        if (!hops.containsKey(nb)) {
-          hops[nb] = hops[cur]! + 1;
-          queue.add(nb);
-        }
-      }
-    }
-    final region = scenario.nodes
-        .where((n) => (hops[n.id] ?? 99) <= 2)
-        .map((n) => layout.positions[n.id])
-        .whereType<Offset>()
-        .toList();
-    final focusPos = layout.positions[focusId] ?? Offset.zero;
-    if (region.isEmpty) {
-      return (1, Offset(size.width / 2, size.height / 2));
-    }
-    var minX = double.infinity;
-    var minY = double.infinity;
-    var maxX = double.negativeInfinity;
-    var maxY = double.negativeInfinity;
-    for (final p in region) {
-      minX = math.min(minX, p.dx);
-      minY = math.min(minY, p.dy);
-      maxX = math.max(maxX, p.dx);
-      maxY = math.max(maxY, p.dy);
-    }
-    final bw = math.max(maxX - minX, 1);
-    final bh = math.max(maxY - minY, 1);
-    const margin = 60;
-    final topReserve = showTitle ? 84 : margin;
-    final bottomReserve = showLegend ? 104 : margin;
-    final availW = math.max(size.width - margin * 2, 80);
-    final availH = math.max(size.height - topReserve - bottomReserve, 80);
-    final scale = math.min(availW / bw, availH / bh).clamp(0.45, 1.5);
-    final cx = (minX + maxX) / 2;
-    final cy = (minY + maxY) / 2 * 0.4 + focusPos.dy * 0.6;
-    final viewportCenter = Offset(size.width / 2, topReserve + availH / 2);
-    final pan = viewportCenter - Offset(cx, cy) * scale;
-    return (scale, pan);
   }
 
   /// The single [KnowledgeGraphPainter] the view paints with — the canonical
@@ -143,6 +86,17 @@ void main() {
   }
 
   String painterFocusId(WidgetTester tester) => painterOf(tester).focusId;
+
+  /// On-screen position of a node given its [worldPos] (its layout position),
+  /// using the painter's ACTUAL applied transform. Reading the live
+  /// `scale`/`pan` (rather than replicating the view's private framing formula)
+  /// makes tap targets correct regardless of how `_framedTransform` frames the
+  /// focus — call it only after the relevant frame has settled. The result must
+  /// land within the view's 30px tap-hit radius for a tap to walk to that node.
+  Offset screenPosOf(WidgetTester tester, Offset worldPos) {
+    final p = painterOf(tester);
+    return worldPos * p.scale + p.pan;
+  }
 
   group('rendering', () {
     testWidgets('renders a CustomPaint with the seed as the focus node', (
@@ -634,16 +588,14 @@ void main() {
         await pumpView(tester, scenario: scenario, size: phoneSize);
 
         // Seed is P0T0; its project P0 is a direct (containment) neighbor, so it
-        // sits inside the initial frame and is a clean tap target.
+        // sits inside the initial frame and is a clean tap target. Read the
+        // painter's live transform (after the initial frame) to place the tap.
         expect(painterFocusId(tester), 'P0T0');
         const neighborId = 'P0';
-        final (scale, pan) = framedTransform(
-          scenario,
-          layout,
-          phoneSize,
-          'P0T0',
+        final neighborScreen = screenPosOf(
+          tester,
+          layout.positions[neighborId]!,
         );
-        final neighborScreen = layout.positions[neighborId]! * scale + pan;
         await tester.tapAt(neighborScreen);
         for (var i = 0; i < 5; i++) {
           await tester.pump(const Duration(milliseconds: 200));
@@ -837,15 +789,10 @@ void main() {
 
       // Pick the project neighbor 'p0' (1 hop, distinct sector -> well
       // separated from siblings, so the 30px hit radius lands on it cleanly).
+      // Place the tap from the painter's live transform (after the initial
+      // frame settled), so it stays correct regardless of the framing formula.
       const targetId = 'p0';
-      final (scale, pan) = framedTransform(
-        scenario,
-        layout,
-        desktopSize,
-        scenario.seedId,
-      );
-      final worldPos = layout.positions[targetId]!;
-      final screenPos = worldPos * scale + pan;
+      final screenPos = screenPosOf(tester, layout.positions[targetId]!);
 
       expect(painterFocusId(tester), scenario.seedId);
 
@@ -891,14 +838,9 @@ void main() {
         // tapping the seed's screen position.
         await pumpView(tester, scenario: scenario);
 
-        final (scale, pan) = framedTransform(
-          scenario,
-          layout,
-          desktopSize,
-          scenario.seedId,
-        );
-        // Walk to project 'p0'.
-        final p0Screen = layout.positions['p0']! * scale + pan;
+        // Walk to project 'p0' — tap where it renders under the initial frame
+        // (read from the painter's live transform).
+        final p0Screen = screenPosOf(tester, layout.positions['p0']!);
         await tester.tapAt(p0Screen);
         for (var i = 0; i < 5; i++) {
           await tester.pump(const Duration(milliseconds: 200));
@@ -906,15 +848,13 @@ void main() {
         expect(painterFocusId(tester), 'p0');
 
         // From p0, the seed is its only 1-hop neighbor (containment edge), so
-        // it must be visible in p0's frame. Recompute the frame for focus p0
-        // and tap the seed.
-        final (scale2, pan2) = framedTransform(
-          scenario,
-          layout,
-          desktopSize,
-          'p0',
+        // it must be visible in p0's frame. The camera has settled on p0, so
+        // the painter's transform now frames p0 — read it to place the tap on
+        // the seed.
+        final seedScreen = screenPosOf(
+          tester,
+          layout.positions[scenario.seedId]!,
         );
-        final seedScreen = layout.positions[scenario.seedId]! * scale2 + pan2;
         await tester.tapAt(seedScreen);
         for (var i = 0; i < 5; i++) {
           await tester.pump(const Duration(milliseconds: 200));
@@ -949,4 +889,77 @@ void main() {
       expect(after.focusId, scenario.seedId);
     });
   });
+
+  group('full-details overlay (desktop)', () {
+    // The overlay's [EntryDetailSidebar] is a ConsumerWidget that watches
+    // `entryControllerProvider(id: focusId)`. Building it for real would pull in
+    // the app's full provider/getIt graph and the heavy TaskForm/details
+    // widgets. Instead, the focus entry's controller is overridden with one
+    // whose `build` resolves to `null` (no entry) — so the sidebar renders its
+    // cheap "Entry not found" shell and never builds `_DetailBody`. The base
+    // [EntryController]'s field initializers still touch getIt, so a minimal
+    // get_it (setUpTestGetIt + a mock EditorStateService) is registered just for
+    // these cases.
+    setUp(() async {
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<EditorStateService>(
+            MockEditorStateService(),
+          );
+        },
+      );
+    });
+    tearDown(tearDownTestGetIt);
+
+    testWidgets(
+      'tapping Open shows the EntryDetailSidebar; closing it hides it again',
+      (tester) async {
+        final scenario = taskEgoNetworkScenario();
+        await pumpView(
+          tester,
+          scenario: scenario,
+          extraOverrides: [
+            // The focus at open time is the scenario seed (`t0`).
+            entryControllerProvider(id: scenario.seedId).overrideWith(
+              _NullEntryController.new,
+            ),
+          ],
+        );
+
+        // The inspector is docked (desktop), the overlay is not open yet.
+        expect(find.byType(NodeInspectorPanel), findsOneWidget);
+        expect(find.byType(EntryDetailSidebar), findsNothing);
+
+        // Tap the inspector's Open button → `_detailsOpen = true`.
+        await tester.tap(find.byIcon(Icons.open_in_full_rounded));
+        // One frame mounts the overlay; a second lets the (async) controller
+        // build resolve to its null value so the sidebar swaps its initial
+        // spinner for the data shell.
+        await tester.pump();
+        await tester.pump();
+
+        // The full-details overlay is now rendered above the inspector. With the
+        // controller resolved to a null entry it shows the "Entry not found"
+        // shell (proving the cheap path, not the heavy `_DetailBody`).
+        expect(find.byType(EntryDetailSidebar), findsOneWidget);
+        expect(find.text('Entry not found'), findsOneWidget);
+
+        // Tap the overlay's close button → `_detailsOpen = false`.
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.pump();
+
+        // The overlay is gone; the inspector remains.
+        expect(find.byType(EntryDetailSidebar), findsNothing);
+        expect(find.byType(NodeInspectorPanel), findsOneWidget);
+      },
+    );
+  });
+}
+
+/// Minimal [EntryController] whose `build` resolves to `null` (no entry), so the
+/// [EntryDetailSidebar] renders its "Entry not found" shell without building the
+/// heavy real detail widgets — and without the app's provider/getIt graph.
+class _NullEntryController extends EntryController {
+  @override
+  Future<EntryState?> build({required String id}) async => null;
 }
