@@ -164,7 +164,7 @@ void main() {
       bool disableAnimations = false,
     }) async {
       late void Function(void Function()) setOuter;
-      var show = true;
+      var visible = true;
       await tester.pumpWidget(
         makeTestableWidget(
           Builder(
@@ -178,7 +178,7 @@ void main() {
                   return SizedBox(
                     width: 40,
                     height: 40,
-                    child: show
+                    child: visible
                         ? Builder(
                             builder: (c) {
                               onContext(c);
@@ -193,7 +193,7 @@ void main() {
           ),
         ),
       );
-      return ({required bool show}) => setOuter(() => show = show);
+      return ({required bool show}) => setOuter(() => visible = show);
     }
 
     testWidgets('fires into the overlay and survives the anchor unmounting', (
