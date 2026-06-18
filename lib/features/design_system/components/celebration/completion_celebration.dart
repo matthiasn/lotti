@@ -107,6 +107,9 @@ class _CompletionCelebrationState extends State<CompletionCelebration>
   @override
   void didUpdateWidget(CompletionCelebration oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = widget.duration;
+    }
     if (!oldWidget.completed && widget.completed) {
       widget.onCelebrate?.call();
       _controller.forward(from: 0);
@@ -232,9 +235,12 @@ void spawnCompletionBurst(
         sizeScale: sizeScale,
         clearCenter: clearCenter,
         duration: duration,
-        onDone: () => entry
-          ..remove()
-          ..dispose(),
+        // Guard remove(): the entry may already be gone if the overlay was
+        // torn down (e.g. the route popped) before the burst finished.
+        onDone: () {
+          if (entry.mounted) entry.remove();
+          entry.dispose();
+        },
       ),
     );
     overlay.insert(entry);

@@ -109,6 +109,13 @@ class _BurstPainter extends CustomPainter {
     final reach = reachOverride ?? (size.height * reachFactor);
     final clearRadius = reach * clearCenter;
 
+    // One Paint reused across every spark and draw — the burst repaints each
+    // frame for the whole timeline, and allocating ~3 Paints per spark per
+    // frame churned the GC. drawLine always strokes regardless of style, and
+    // the fill draws don't read strokeWidth, so mutating the shared instance is
+    // safe without resetting the style between draws.
+    final paint = Paint();
+
     for (var i = 0; i < count; i++) {
       // An even radial spread with a small per-spark jitter so it reads organic,
       // not mechanical.
@@ -141,7 +148,10 @@ class _BurstPainter extends CustomPainter {
       // while the spark is fast and shrinks as it drifts.
       final opacity = ((1 - lt * lt) * tierAlpha).clamp(0.0, 1.0);
       final headR =
-          (2.6 + ((i * 3) % 4) / 3 * 2.6) * (1 - 0.32 * lt) * sizeScale * tierScale;
+          (2.6 + ((i * 3) % 4) / 3 * 2.6) *
+          (1 - 0.32 * lt) *
+          sizeScale *
+          tierScale;
       if (headR <= 0.3) continue;
       final isGold = i % 5 == 0;
       final base = isGold ? gold : accent;
@@ -151,28 +161,24 @@ class _BurstPainter extends CustomPainter {
       // the celebrated label.
       final tailDist = (dist - trailLen).clamp(clearRadius, dist);
       final tail = center + dir * tailDist + Offset(0, gravity);
-      canvas
-        // A faint halo so each spark reads as a glowing mote, not a flat dot.
-        ..drawCircle(
-          head,
-          headR * 2.2,
-          Paint()
-            ..color = base.withValues(alpha: (opacity * 0.18).clamp(0.0, 1.0)),
-        )
-        ..drawLine(
-          tail,
-          head,
-          Paint()
-            ..color = base.withValues(alpha: (opacity * 0.4).clamp(0.0, 1.0))
-            ..strokeWidth = headR * 0.9
-            ..strokeCap = StrokeCap.round,
-        )
-        ..drawCircle(
-          head,
-          headR,
-          Paint()
-            ..color = base.withValues(alpha: (opacity * 0.95).clamp(0.0, 1.0)),
-        );
+      // A faint halo so each spark reads as a glowing mote, not a flat dot.
+      paint
+        ..color = base.withValues(alpha: (opacity * 0.18).clamp(0.0, 1.0))
+        ..strokeWidth = 0
+        ..strokeCap = StrokeCap.butt;
+      canvas.drawCircle(head, headR * 2.2, paint);
+
+      paint
+        ..color = base.withValues(alpha: (opacity * 0.4).clamp(0.0, 1.0))
+        ..strokeWidth = headR * 0.9
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(tail, head, paint);
+
+      paint
+        ..color = base.withValues(alpha: (opacity * 0.95).clamp(0.0, 1.0))
+        ..strokeWidth = 0
+        ..strokeCap = StrokeCap.butt;
+      canvas.drawCircle(head, headR, paint);
     }
   }
 

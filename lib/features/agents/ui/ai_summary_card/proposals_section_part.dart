@@ -93,8 +93,17 @@ class ProposalsSection extends StatelessWidget {
               Padding(
                 // A clear gap between proposals (step4) against the tighter
                 // step3 rhythm inside each row, so each reads as its own unit.
-                padding: EdgeInsets.only(top: i == 0 ? 0 : tokens.spacing.step4),
+                padding: EdgeInsets.only(
+                  top: i == 0 ? 0 : tokens.spacing.step4,
+                ),
                 child: ProposalRow(
+                  // Stable identity (set id + item index) so the row's
+                  // timer/animation/busy state stays bound to its suggestion
+                  // when the open list mutates (e.g. confirm-all), instead of
+                  // index-based element reuse transferring it to a sibling.
+                  key: ValueKey(
+                    'open-${open[i].changeSet.id}-${open[i].itemIndex}',
+                  ),
                   suggestion: open[i],
                   // Only the first pending row gets the swipe-affordance
                   // wiggle hint so the page doesn't pulse with every
@@ -116,7 +125,12 @@ class ProposalsSection extends StatelessWidget {
               for (var i = 0; i < resolved.length; i++)
                 Padding(
                   padding: EdgeInsets.only(top: i == 0 ? 0 : 6),
-                  child: ProposalRow.fromLedger(entry: resolved[i]),
+                  child: ProposalRow.fromLedger(
+                    key: ValueKey(
+                      'resolved-${resolved[i].changeSetId}-${resolved[i].itemIndex}',
+                    ),
+                    entry: resolved[i],
+                  ),
                 ),
             ],
           ],

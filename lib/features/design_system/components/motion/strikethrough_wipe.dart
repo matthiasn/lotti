@@ -42,15 +42,24 @@ class StrikethroughWipe extends StatefulWidget {
 
 class _StrikethroughWipeState extends State<StrikethroughWipe>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _controller = AnimationController(
-    vsync: this,
-    duration: widget.duration,
-    value: widget.done ? 1 : 0,
-  );
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.duration,
+      value: widget.done ? 1 : 0,
+    );
+  }
 
   @override
   void didUpdateWidget(StrikethroughWipe oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.duration != widget.duration) {
+      _controller.duration = widget.duration;
+    }
     if (oldWidget.done == widget.done) return;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
