@@ -86,7 +86,9 @@ class ProposalsSection extends StatelessWidget {
           else
             for (var i = 0; i < open.length; i++)
               Padding(
-                padding: EdgeInsets.only(top: i == 0 ? 0 : 6),
+                // A clear gap between proposals (step4) against the tighter
+                // step3 rhythm inside each row, so each reads as its own unit.
+                padding: EdgeInsets.only(top: i == 0 ? 0 : tokens.spacing.step4),
                 child: ProposalRow(
                   suggestion: open[i],
                   // Only the first pending row gets the swipe-affordance
@@ -157,33 +159,52 @@ class _ConfirmAllButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
-    return TextButton.icon(
-      onPressed: busy ? null : onPressed.call,
-      icon: busy
-          ? SizedBox(
-              width: 14,
-              height: 14,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: ai.accent,
+    // The card's primary action: a filled tonal accent pill (was a plain
+    // text link), so the eye lands on it. Mirrors the header pills' chrome
+    // — an accentSoft fill with an accent-tinted border — but reads as the
+    // hero affordance via the leading double-check glyph.
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: busy ? null : onPressed.call,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 32),
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step3,
+            vertical: tokens.spacing.step2,
+          ),
+          decoration: BoxDecoration(
+            color: ai.accentSoft,
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            border: Border.all(color: ai.accent.withValues(alpha: 0.35)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (busy)
+                SizedBox(
+                  width: 14,
+                  height: 14,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: ai.accent,
+                  ),
+                )
+              else
+                Icon(Icons.done_all_rounded, size: 16, color: ai.accent),
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                context.messages.changeSetConfirmAll,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: ai.accent,
+                  fontWeight: FontWeight.w600,
+                  height: 1.1,
+                ),
               ),
-            )
-          : Icon(Icons.done_all_rounded, size: 16, color: ai.accent),
-      label: Text(
-        context.messages.changeSetConfirmAll,
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: ai.accent,
-          fontWeight: FontWeight.w600,
-          height: 1.1,
+            ],
+          ),
         ),
-      ),
-      style: TextButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        // Keep the visual chrome compact while honoring the Material
-        // 48dp minimum hit target — the button's inner padding stays
-        // tight, but the inkwell expands to a 48dp touch zone.
-        minimumSize: const Size(48, 48),
-        foregroundColor: ai.accent,
       ),
     );
   }

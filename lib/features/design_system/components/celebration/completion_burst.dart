@@ -17,11 +17,21 @@ class CompletionBurst extends StatelessWidget {
   const CompletionBurst({
     required this.progress,
     this.origin = const Alignment(0.82, 0),
+    this.count = 30,
+    this.sizeScale = 1.0,
     super.key,
   });
 
   final double progress;
   final Alignment origin;
+
+  /// Number of sparks. Higher reads as a denser, richer burst.
+  final int count;
+
+  /// Multiplier on each spark's head/trail size. Below 1 yields finer sparks —
+  /// pair a denser [count] with a sub-1 scale so the burst reads rich, not
+  /// heavy.
+  final double sizeScale;
 
   @override
   Widget build(BuildContext context) {
@@ -35,6 +45,8 @@ class CompletionBurst extends StatelessWidget {
         origin: origin,
         accent: tokens.colors.interactive.enabled,
         gold: starredGold,
+        count: count,
+        sizeScale: sizeScale,
       ),
     );
   }
@@ -46,6 +58,8 @@ class _BurstPainter extends CustomPainter {
     required this.origin,
     required this.accent,
     required this.gold,
+    required this.count,
+    required this.sizeScale,
   });
 
   final double progress;
@@ -56,17 +70,18 @@ class _BurstPainter extends CustomPainter {
   // A full spread of sparks — enough to feel like a real burst, drawn as
   // trailed "comets" with varied size, speed and lifetime so it reads rich and
   // alive rather than a sparse handful of identical dots.
-  static const _count = 30;
+  final int count;
+  final double sizeScale;
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = origin.alongSize(size);
     final reach = size.height * 2.1;
 
-    for (var i = 0; i < _count; i++) {
+    for (var i = 0; i < count; i++) {
       // An even radial spread with a small per-spark jitter so it reads organic,
       // not mechanical.
-      final angle = (i / _count) * math.pi * 2 + (((i * 13) % 7) - 3) * 0.05;
+      final angle = (i / count) * math.pi * 2 + (((i * 13) % 7) - 3) * 0.05;
       // Varied speed → some sparks shoot far, some stay close (a sense of depth)
       final speed = 0.5 + ((i * 7) % 9) / 9 * 0.8; // 0.5 … 1.3
       // Varied lifetime → the tail dies in a long staggered spread, not all at
@@ -88,7 +103,7 @@ class _BurstPainter extends CustomPainter {
       // lingers long enough to watch, with a tapered trail behind it that's long
       // while the spark is fast and shrinks as it drifts.
       final opacity = (1 - lt * lt).clamp(0.0, 1.0);
-      final headR = (2.6 + ((i * 3) % 4) / 3 * 2.6) * (1 - 0.32 * lt);
+      final headR = (2.6 + ((i * 3) % 4) / 3 * 2.6) * (1 - 0.32 * lt) * sizeScale;
       if (headR <= 0.3) continue;
       final isGold = i % 5 == 0;
       final base = isGold ? gold : accent;
@@ -96,6 +111,13 @@ class _BurstPainter extends CustomPainter {
       final trailLen = reach * speed * 0.2 * (1 - ease);
       final tail = head - dir * trailLen;
       canvas
+        // A faint halo so each spark reads as a glowing mote, not a flat dot.
+        ..drawCircle(
+          head,
+          headR * 2.2,
+          Paint()
+            ..color = base.withValues(alpha: (opacity * 0.18).clamp(0.0, 1.0)),
+        )
         ..drawLine(
           tail,
           head,
@@ -118,5 +140,7 @@ class _BurstPainter extends CustomPainter {
       oldDelegate.progress != progress ||
       oldDelegate.origin != origin ||
       oldDelegate.accent != accent ||
-      oldDelegate.gold != gold;
+      oldDelegate.gold != gold ||
+      oldDelegate.count != count ||
+      oldDelegate.sizeScale != sizeScale;
 }

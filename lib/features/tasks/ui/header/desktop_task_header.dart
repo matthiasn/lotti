@@ -215,7 +215,9 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
           ),
           SizedBox(height: rowGap),
           _buildTitleLine(context),
-          SizedBox(height: rowGap),
+          // The heavier heading2 title gets a touch more leading room before
+          // the supporting metadata strip than the breadcrumb→title gap.
+          SizedBox(height: tokens.spacing.step4),
           MetaRow(
             priority: widget.data.priority,
             status: widget.data.status,
@@ -235,7 +237,10 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
 
   Widget _buildTitleLine(BuildContext context) {
     final tokens = context.designTokens;
-    final style = tokens.typography.styles.heading.heading3.copyWith(
+    // The task title is the page's primary focal point, so it sits a clear
+    // step above the card/section headers (subtitle2) rather than one notch
+    // up — heading2 gives an unambiguous title → section → body cascade.
+    final style = tokens.typography.styles.heading.heading2.copyWith(
       color: TaskShowcasePalette.highText(context),
     );
     if (_isEditing) {
@@ -311,7 +316,11 @@ class _HeroCrumb extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: crumbStyle.copyWith(
-                      color: TaskShowcasePalette.highText(context),
+                      // An unset category recedes to low emphasis so it reads
+                      // as a quiet placeholder, not a populated value.
+                      color: category == null
+                          ? TaskShowcasePalette.lowText(context)
+                          : TaskShowcasePalette.highText(context),
                       fontStyle: category == null
                           ? FontStyle.italic
                           : FontStyle.normal,
@@ -338,7 +347,9 @@ class _HeroCrumb extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: crumbStyle.copyWith(
-                color: TaskShowcasePalette.mediumText(context),
+                color: project == null
+                    ? TaskShowcasePalette.lowText(context)
+                    : TaskShowcasePalette.mediumText(context),
               ),
             ),
           ),

@@ -266,7 +266,7 @@ void main() {
     );
 
     testWidgets(
-      'hides the action buttons and confirms via a right swipe',
+      'shows the action buttons and still confirms via a right swipe',
       (tester) async {
         final pending = makePending(
           id: 'p1',
@@ -292,13 +292,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The compact branch replaces `_RowActions` with SizedBox.shrink,
-        // so neither tap-confirm nor tap-reject buttons are rendered.
-        expect(find.byIcon(Icons.check_rounded), findsNothing);
-        expect(find.byIcon(Icons.close_rounded), findsNothing);
+        // The compact branch now shows the confirm/reject buttons as a
+        // visible affordance (in addition to swipe).
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
 
-        // Swiping the row right past the trigger still confirms, proving
-        // the gesture path is the only affordance on narrow viewports.
+        // Swiping the row right past the trigger still confirms too — the
+        // gesture remains available alongside the buttons.
         await tester.drag(find.text('Status'), const Offset(150, 0));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -341,6 +341,95 @@ void main() {
 
         verify(() => service.rejectItem(pending.changeSet, 0)).called(1);
         verify(() => notifier.notify(any())).called(1);
+      },
+    );
+  });
+  group('AiSummaryCard – proposal row adaptive layout', () {
+    PendingSuggestion addPending() => makePending(
+      id: 'p1',
+      toolName: 'add_checklist_item',
+      humanSummary: 'Add checklist item: Write integration tests',
+    );
+
+    const chipLabel = 'Add';
+    const bodyText = 'checklist item: Write integration tests';
+
+    testWidgets(
+      'stacks the kind chip above full-width text on a narrow viewport',
+      (tester) async {
+        final bench = AgentTestBench(
+          mediaQueryData: const MediaQueryData(
+            size: Size(420, 800),
+            disableAnimations: true,
+          ),
+          suggestions: UnifiedSuggestionList(
+            open: [addPending()],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final chip = find.text(chipLabel);
+        final body = find.text(bodyText);
+        expect(chip, findsOneWidget);
+        expect(body, findsOneWidget);
+
+        // Column layout: the body text sits clearly below the chip and is
+        // NOT indented to the right of it — a clean full-width block
+        // starting at the row's left edge, not text squished into a ragged
+        // column beside the chip.
+        expect(
+          tester.getTopLeft(body).dy,
+          greaterThan(tester.getTopLeft(chip).dy + 10),
+        );
+        expect(
+          tester.getTopLeft(body).dx,
+          lessThanOrEqualTo(tester.getTopLeft(chip).dx),
+        );
+      },
+    );
+
+    testWidgets(
+      'keeps the chip inline with the text and shows actions when wide',
+      (tester) async {
+        final bench = AgentTestBench(
+          mediaQueryData: const MediaQueryData(
+            size: Size(900, 800),
+            disableAnimations: true,
+          ),
+          suggestions: UnifiedSuggestionList(
+            open: [addPending()],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final chip = find.text(chipLabel);
+        final body = find.text(bodyText);
+        expect(chip, findsOneWidget);
+        expect(body, findsOneWidget);
+
+        // Row layout: chip and first text line share roughly the same top,
+        // and the text sits to the right of the chip rather than below it.
+        expect(
+          tester.getTopLeft(body).dy,
+          moreOrLessEquals(tester.getTopLeft(chip).dy, epsilon: 6),
+        );
+        expect(
+          tester.getTopLeft(body).dx,
+          greaterThan(tester.getTopLeft(chip).dx),
+        );
+
+        // Explicit confirm/reject actions are present on the comfortable
+        // layout (hidden on the narrow swipe-only layout).
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
       },
     );
   });

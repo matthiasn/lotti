@@ -364,7 +364,17 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
             decoration: BoxDecoration(
               color: widget.isResolved ? ai.subtleWash : ai.row,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: ai.rowBorder),
+              // Pending rows pick up a faint tint of their kind color so
+              // the frame reinforces the proposal type at a glance;
+              // resolved rows stay neutral.
+              border: Border.all(
+                color: widget.isResolved
+                    ? ai.rowBorder
+                    : Color.alphaBlend(
+                        meta.color.withValues(alpha: 0.55),
+                        ai.rowBorder,
+                      ),
+              ),
             ),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: GestureDetector(
@@ -375,41 +385,15 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
               onHorizontalDragCancel: _onHorizontalDragCancel,
               child: Opacity(
                 opacity: dimmed ? 0.45 : 1,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    KindChip(meta: meta),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        cleanText,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: ai.bodyText,
-                          height: 1.5,
-                          decoration: lineThrough
-                              ? TextDecoration.lineThrough
-                              : null,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    if (widget.isResolved)
-                      ResolvedTag(status: _resolvedStatus)
-                    else if (isCompactWidth(context))
-                      // On narrow viewports the buttons take up too
-                      // much horizontal space — rely on swipe alone
-                      // (the `GestureDetector` above accepts a swipe
-                      // anywhere on the row, and the gradient backdrop
-                      // surfaces the "Confirm" / "Dismiss" intent past
-                      // the swipe threshold).
-                      const SizedBox.shrink()
-                    else
-                      RowActions(
-                        busy: _busy,
-                        onReject: _reject,
-                        onConfirm: _confirm,
-                      ),
-                  ],
+                child: ProposalRowContent(
+                  meta: meta,
+                  text: cleanText,
+                  lineThrough: lineThrough,
+                  isResolved: widget.isResolved,
+                  resolvedStatus: _resolvedStatus,
+                  busy: _busy,
+                  onReject: _reject,
+                  onConfirm: _confirm,
                 ),
               ),
             ),
@@ -442,5 +426,96 @@ class _ProposalRowState extends ConsumerState<ProposalRow>
     _cachedCleanInputKey = key;
     _cachedCleanText = result;
     return result;
+  }
+}
+
+/// The inner content of a proposal row: the kind chip, the human summary
+/// text, and the trailing actions / resolved tag.
+///
+/// Layout adapts to width:
+/// * **Narrow viewports** stack the kind chip *above* full-width text, so
+///   the summary reads as one clean rectangular block instead of text
+///   squished into a ragged column beside the chip. Action buttons stay
+///   hidden here — the whole row is swipeable (right = confirm, left =
+///   dismiss) — so only resolved rows show a trailing status tag, pinned
+///   to the chip line.
+/// * **Comfortable viewports** keep the chip, text, and trailing actions
+///   on a single row.
+class ProposalRowContent extends StatelessWidget {
+  const ProposalRowContent({
+    required this.meta,
+    required this.text,
+    required this.lineThrough,
+    required this.isResolved,
+    required this.resolvedStatus,
+    required this.busy,
+    required this.onReject,
+    required this.onConfirm,
+    super.key,
+  });
+
+  final KindMeta meta;
+  final String text;
+  final bool lineThrough;
+  final bool isResolved;
+  final ChangeItemStatus? resolvedStatus;
+  final bool busy;
+  final Future<void> Function() onReject;
+  final Future<void> Function() onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    final textWidget = Text(
+      text,
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        color: ai.bodyText,
+        height: 1.5,
+        decoration: lineThrough ? TextDecoration.lineThrough : null,
+      ),
+    );
+
+    if (isCompactWidth(context)) {
+      // Narrow viewports: kind chip + trailing actions on the first line, then
+      // full-width text below. The whole row also stays swipeable (right =
+      // confirm, left = dismiss) — the buttons are an additional, visible
+      // affordance so the action isn't swipe-only-and-hidden.
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              KindChip(meta: meta),
+              const Spacer(),
+              if (isResolved)
+                ResolvedTag(status: resolvedStatus)
+              else
+                RowActions(
+                  busy: busy,
+                  onReject: onReject,
+                  onConfirm: onConfirm,
+                ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          textWidget,
+        ],
+      );
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        KindChip(meta: meta),
+        SizedBox(width: tokens.spacing.step3),
+        Expanded(child: textWidget),
+        SizedBox(width: tokens.spacing.step3),
+        if (isResolved)
+          ResolvedTag(status: resolvedStatus)
+        else
+          RowActions(busy: busy, onReject: onReject, onConfirm: onConfirm),
+      ],
+    );
   }
 }

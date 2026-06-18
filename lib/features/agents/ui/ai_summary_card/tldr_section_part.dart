@@ -74,7 +74,7 @@ class TldrHeader extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const _SparkleBadge(),
-          const SizedBox(width: 10),
+          SizedBox(width: tokens.spacing.step3),
           // Cap the title column so an unusually long agent name softWraps
           // inside the column instead of pushing the whole leading block
           // wider than the card.
@@ -106,14 +106,11 @@ class TldrHeader extends StatelessWidget {
                         child: Text(
                           agentName!.trim(),
                           softWrap: true,
+                          // No underline — it read as a broken link. The
+                          // muted tone plus the click cursor carry the
+                          // "tap to open" affordance.
                           style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: ai.metaText,
-                                decoration: TextDecoration.underline,
-                                decorationColor: ai.metaText.withValues(
-                                  alpha: 0.40,
-                                ),
-                              ),
+                              .copyWith(color: ai.metaText),
                         ),
                       ),
                     ),
@@ -179,9 +176,9 @@ class TldrHeader extends StatelessWidget {
           // Previously a fixed 360 px threshold dropped the controls
           // even when there was clearly room for them inline.
           final compact = constraints.maxWidth < _compactCountdownWidth;
-          // 22 px badge + 10 px gap inside leadingBlock — leave the
+          // 34 px badge + step3 (8) gap inside leadingBlock — leave the
           // rest of the card width for the title column.
-          final maxColumnWidth = (constraints.maxWidth - 32).clamp(
+          final maxColumnWidth = (constraints.maxWidth - 42).clamp(
             0.0,
             double.infinity,
           );
@@ -221,16 +218,33 @@ class _SparkleBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ai = context.designTokens.colors.aiCard;
+    final tokens = context.designTokens;
+    final ai = tokens.colors.aiCard;
+    // The badge is the AI surface's identity anchor, so it reads as a crafted
+    // emblem: an accent gradient fill with a soft accent glow, not a flat chip.
     return Container(
-      width: 22,
-      height: 22,
+      width: 34,
+      height: 34,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: ai.accentSoft,
-        borderRadius: BorderRadius.circular(6),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.alphaBlend(ai.accent.withValues(alpha: 0.32), ai.accentSoft),
+            ai.accentSoft,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        boxShadow: [
+          BoxShadow(
+            color: ai.accent.withValues(alpha: 0.30),
+            blurRadius: 10,
+            spreadRadius: -2,
+          ),
+        ],
       ),
-      child: Icon(Icons.auto_awesome_rounded, size: 14, color: ai.accent),
+      child: Icon(Icons.auto_awesome_rounded, size: 18, color: ai.accent),
     );
   }
 }

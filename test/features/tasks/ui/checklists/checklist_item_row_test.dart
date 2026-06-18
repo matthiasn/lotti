@@ -303,9 +303,14 @@ void main() {
 
     testWidgets('checked item shows strikethrough text style', (tester) async {
       await _pump(tester, item: _makeItem(title: 'Done item', isChecked: true));
-
-      final textWidget = tester.widget<Text>(find.text('Done item'));
-      expect(textWidget.style?.decoration, TextDecoration.lineThrough);
+      // The title is rendered by StrikethroughWipe as two glyph-aligned layers
+      // (an un-struck base and a struck overlay). A checked item reveals the
+      // struck layer, so a lineThrough decoration is present among them.
+      final decorations = tester
+          .widgetList<Text>(find.text('Done item'))
+          .map((t) => t.style?.decoration)
+          .toList();
+      expect(decorations, contains(TextDecoration.lineThrough));
     });
 
     testWidgets('unchecked item does not show strikethrough', (tester) async {
@@ -452,6 +457,55 @@ void main() {
       await tester.pump();
 
       expect(ctrls.itemController.checkedValue, isTrue);
+    });
+
+    testWidgets('checking an item fires a light haptic and pops the checkbox', (
+      tester,
+    ) async {
+      final haptics = <String>[];
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        (call) async {
+          if (call.method == 'HapticFeedback.vibrate') {
+            haptics.add(call.arguments as String? ?? '');
+          }
+          return null;
+        },
+      );
+      addTearDown(
+        () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          null,
+        ),
+      );
+
+      final popFinder = find.ancestor(
+        of: find.byType(Checkbox),
+        matching: find.byType(ScaleTransition),
+      );
+
+      await _pumpWithControllers(tester);
+      await tester.pump();
+
+      double popScale() =>
+          tester.widget<ScaleTransition>(popFinder).scale.value;
+
+      // At rest the checkbox sits at its natural scale.
+      expect(popScale(), moreOrLessEquals(1, epsilon: 0.001));
+
+      await tester.tap(find.byType(Checkbox));
+      await tester.pump();
+
+      // A light-impact haptic fired on the not-checked → checked edge.
+      expect(haptics, contains('HapticFeedbackType.lightImpact'));
+
+      // The check "pop" is mid-flight: the checkbox has scaled past rest.
+      await tester.pump(const Duration(milliseconds: 150));
+      expect(popScale(), greaterThan(1.05));
+
+      // …and settles back to its natural scale.
+      await tester.pumpAndSettle();
+      expect(popScale(), moreOrLessEquals(1, epsilon: 0.01));
     });
 
     testWidgets('checkbox is disabled when item is archived', (tester) async {

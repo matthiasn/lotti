@@ -3,6 +3,8 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/design_system/components/celebration/completion_burst.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_components.dart';
@@ -1194,5 +1196,48 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  group('ChecklistCard – completion celebration', () {
+    testWidgets('celebrates when completion crosses to 100%', (tester) async {
+      // Below 100%: no celebration on screen.
+      await _pump(
+        tester,
+        completionRate: 0.5,
+        totalCount: 3,
+        initiallyExpanded: false,
+      );
+      expect(find.byType(CompletionGlow), findsNothing);
+      expect(find.byType(CompletionBurst), findsNothing);
+
+      // Crossing to 100% fires the staged glow + spark burst.
+      await _pump(
+        tester,
+        completionRate: 1,
+        totalCount: 3,
+        initiallyExpanded: false,
+      );
+      await tester.pump(const Duration(milliseconds: 560));
+      expect(find.byType(CompletionGlow), findsOneWidget);
+      expect(find.byType(CompletionBurst), findsOneWidget);
+
+      await tester.pumpAndSettle();
+      expect(find.byType(CompletionGlow), findsNothing);
+      expect(find.byType(CompletionBurst), findsNothing);
+    });
+
+    testWidgets('does not celebrate a checklist that was already complete', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        completionRate: 1,
+        totalCount: 3,
+        initiallyExpanded: false,
+      );
+      await tester.pump(const Duration(milliseconds: 560));
+      expect(find.byType(CompletionGlow), findsNothing);
+      expect(find.byType(CompletionBurst), findsNothing);
+    });
   });
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/habits/ui/widgets/completion_glow.dart';
+import 'package:lotti/features/design_system/components/celebration/completion_glow.dart';
 
 import '../../../../widget_test_utils.dart';
 

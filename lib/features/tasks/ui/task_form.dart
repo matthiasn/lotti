@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/design_system/components/motion/staggered_entrance.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
@@ -38,22 +40,47 @@ class TaskForm extends ConsumerWidget {
 
     // only show editor for legacy entries where there is text already
     final plainText = entryState?.entry?.entryText?.plainText.trim() ?? '';
+    final hasBody =
+        entryState?.entry?.entryText != null && plainText.isNotEmpty;
+    final tokens = context.designTokens;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    // Reading zones top-to-bottom: identity (header), the legacy body, the
+    // user's WORK (checklists + linked tasks), then the AI assistant. The work
+    // comes before the AI card so "what's left to do" is visible without
+    // scrolling past the suggestions; a sectionGap sets the AI zone apart from
+    // the work above it. Inter-section spacing is baked into each section's
+    // leading padding so the staggered entrance cascades evenly.
+    return StaggeredEntrance(
       children: [
         DesktopTaskHeaderConnector(taskId: taskId),
-        const SizedBox(height: 8),
-        if (entryState?.entry?.entryText != null && plainText.isNotEmpty) ...[
-          EditorWidget(entryId: taskId, margin: EdgeInsets.zero),
-          const SizedBox(height: 10),
-        ],
-        AiSummaryCard(
-          taskId: taskId,
-          proposalsFocusKey: suggestionsFocusKey,
-        ),
-        LinkedTasksWidget(taskId: taskId),
+        if (hasBody)
+          Padding(
+            padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
+            // A faint top rule marks the body as its own band between the
+            // identity header and the work below, so the sections read as
+            // even, anchored regions rather than one floating bullet line.
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: tokens.colors.decorative.level01,
+                ),
+                SizedBox(height: tokens.spacing.step4),
+                EditorWidget(entryId: taskId, margin: EdgeInsets.zero),
+              ],
+            ),
+          ),
         ChecklistsWidget(entryId: taskId, task: task),
+        LinkedTasksWidget(taskId: taskId),
+        Padding(
+          padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
+          child: AiSummaryCard(
+            taskId: taskId,
+            proposalsFocusKey: suggestionsFocusKey,
+          ),
+        ),
       ],
     );
   }

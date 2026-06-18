@@ -917,16 +917,11 @@ void main() {
         // Don't settle — drain the tap and rebuild only.
         await tester.pump();
 
-        // The Confirm all button now shows a spinner in place of the
-        // done-all icon.
+        // The Confirm all button (a tonal accent pill) now shows a spinner
+        // in place of the done-all icon. No proposal row is busy here, so the
+        // only spinner in the tree is the Confirm-all one.
         expect(find.byIcon(Icons.done_all_rounded), findsNothing);
-        expect(
-          find.descendant(
-            of: find.byType(TextButton),
-            matching: find.byType(CircularProgressIndicator),
-          ),
-          findsOneWidget,
-        );
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
         // Release the future so the test tear-down doesn't hang.
         completer.complete(const []);

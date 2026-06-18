@@ -182,43 +182,56 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
           slivers: [
             TaskSliverAppBar(taskId: widget.taskId),
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  left: 15,
-                  right: 15,
-                  top: 10,
-                ),
-                child: TaskForm(
-                  taskId: widget.taskId,
-                  suggestionsFocusKey: _suggestionsKey,
+              child: Center(
+                child: ConstrainedBox(
+                  // Cap the content measure on wide windows so the task reads
+                  // as a centered column rather than full-bleed text; this is
+                  // non-binding at phone / narrow-pane widths.
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      left: 15,
+                      right: 15,
+                      top: 10,
+                    ),
+                    child: TaskForm(
+                      taskId: widget.taskId,
+                      suggestionsFocusKey: _suggestionsKey,
+                    ),
+                  ),
                 ),
               ),
             ),
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  top: 8,
-                  left: 10,
-                  right: 10,
-                ),
-                child:
-                    Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: <Widget>[
-                        LinkedEntriesWithTimer(
-                          item: task,
-                          entryKeyBuilder: _getEntryKey,
-                          highlightedEntryId: highlightedEntryId,
-                          hideTaskEntries: true,
-                        ),
-                        LinkedFromEntriesWidget(
-                          task,
-                          hideTaskEntries: true,
-                        ),
-                      ],
-                    ).animate().fadeIn(
-                      duration: const Duration(milliseconds: 100),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 760),
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      top: 8,
+                      left: 10,
+                      right: 10,
                     ),
+                    child:
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: <Widget>[
+                            LinkedEntriesWithTimer(
+                              item: task,
+                              entryKeyBuilder: _getEntryKey,
+                              highlightedEntryId: highlightedEntryId,
+                              hideTaskEntries: true,
+                            ),
+                            LinkedFromEntriesWidget(
+                              task,
+                              hideTaskEntries: true,
+                            ),
+                          ],
+                        ).animate().fadeIn(
+                          duration: const Duration(milliseconds: 100),
+                        ),
+                  ),
+                ),
               ),
             ),
             SliverPadding(

@@ -109,21 +109,21 @@ class EntryDetailsWidget extends ConsumerWidget {
       );
     }
 
-    const cardMargin = EdgeInsets.only(
-      left: AppTheme.spacingXSmall,
-      right: AppTheme.spacingXSmall,
-      bottom: AppTheme.spacingMedium,
+    final tokens = context.designTokens;
+    final cardMargin = EdgeInsets.only(
+      left: tokens.spacing.step2,
+      right: tokens.spacing.step2,
+      bottom: tokens.spacing.step4,
     );
 
-    final tokens = context.designTokens;
     final card = TaskDetailSectionCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
-      padding: EdgeInsets.only(
-        left: tokens.spacing.step4,
-        right: tokens.spacing.step4,
-        top: tokens.spacing.step2,
-        bottom: tokens.spacing.step1,
+      // Even vertical padding (was a cramped top 4 / bottom 2) so the entry
+      // content sits balanced inside the card.
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step4,
+        vertical: tokens.spacing.step3,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -347,21 +347,33 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     final showCountdown =
         !isRunning && remainingSeconds > 0 && !_cancelledManually;
 
+    final cardRadius = BorderRadius.circular(tokens.radii.l);
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: ai.background,
-        borderRadius: BorderRadius.circular(14),
+        // A faint top-down accent wash lifts the AI surface off the page
+        // background so it reads as a crafted "intelligence" panel rather
+        // than a flat dark box, while staying within the aiCard palette.
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color.alphaBlend(ai.accent.withValues(alpha: 0.05), ai.background),
+            ai.background,
+          ],
+        ),
+        borderRadius: cardRadius,
         border: Border.all(color: ai.border),
         boxShadow: [
           BoxShadow(
-            color: ai.accent.withValues(alpha: 0.10),
-            blurRadius: 6,
-            spreadRadius: -2,
+            color: ai.accent.withValues(alpha: 0.16),
+            blurRadius: 22,
+            spreadRadius: -4,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: cardRadius,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

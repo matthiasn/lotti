@@ -2,10 +2,12 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
+import 'package:lotti/features/design_system/components/motion/strikethrough_wipe.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -25,7 +27,7 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 /// suggestion targets this item. Tracks the item's last checked/archived
 /// state to decide visibility on data updates.
 class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool _isEditing = false;
   bool _showRow = true;
   Timer? _holdTimer;
@@ -33,6 +35,12 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
 
   late AnimationController _suggestionController;
   late Animation<double> _suggestionPulse;
+
+  /// Drives the brief "pop" of the checkbox when an item is checked off — the
+  /// per-item reward beat (a light haptic fires alongside it). Scales up with
+  /// an overshoot and settles back, so the tap lands with a small bounce.
+  late AnimationController _checkPopController;
+  late Animation<double> _checkPopScale;
 
   bool _lastIsChecked = false;
   bool _lastIsArchived = false;
@@ -48,6 +56,24 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     _suggestionPulse = Tween<double>(begin: 1, end: 1.2).animate(
       CurvedAnimation(parent: _suggestionController, curve: Curves.easeInOut),
     );
+    _checkPopController = AnimationController(
+      duration: const Duration(milliseconds: 320),
+      vsync: this,
+    );
+    _checkPopScale = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1, end: 1.28).chain(
+          CurveTween(curve: Curves.easeOut),
+        ),
+        weight: 45,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.28, end: 1).chain(
+          CurveTween(curve: Curves.easeIn),
+        ),
+        weight: 55,
+      ),
+    ]).animate(_checkPopController);
   }
 
   @override
@@ -68,6 +94,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     _holdTimer?.cancel();
     _deleteTimer?.cancel();
     _suggestionController.dispose();
+    _checkPopController.dispose();
     super.dispose();
   }
 
@@ -102,6 +129,16 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
 
     _lastIsChecked = newIsChecked;
     _lastIsArchived = newIsArchived;
+
+    // Celebrate an interactive check-off: a light haptic + a brief check
+    // "pop". Only on the not-checked → checked edge (never on archive, filter
+    // toggles, or the first data load — none of which pass animate: true here).
+    if (animate && !wasChecked && newIsChecked && !newIsArchived) {
+      unawaited(HapticFeedback.lightImpact());
+      final reduceMotion =
+          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      if (!reduceMotion) _checkPopController.forward(from: 0);
+    }
 
     final isCompleted = newIsChecked || newIsArchived;
 
@@ -200,9 +237,16 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
           ),
         );
 
-        if (suggestion != null && !_suggestionController.isAnimating) {
+        // The suggestion pulse loops forever, so it must yield to reduced
+        // motion: freeze it at rest (scale 1.0) rather than pulsing.
+        final reduceMotion =
+            MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+        if (suggestion != null &&
+            !reduceMotion &&
+            !_suggestionController.isAnimating) {
           _suggestionController.repeat(reverse: true);
-        } else if (suggestion == null && _suggestionController.isAnimating) {
+        } else if ((suggestion == null || reduceMotion) &&
+            _suggestionController.isAnimating) {
           _suggestionController
             ..stop()
             ..reset();
@@ -244,33 +288,37 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     SizedBox(
                       width: 20,
                       height: 20,
-                      child: Checkbox(
-                        value: item.data.isChecked,
-                        onChanged: item.data.isArchived
-                            ? null
-                            : (value) {
-                                itemNotifier.updateChecked(
-                                  checked: value ?? false,
-                                );
-                                if (suggestion != null) {
-                                  ref
-                                      .read(
-                                        checklistCompletionServiceProvider
-                                            .notifier,
-                                      )
-                                      .clearSuggestion(widget.itemId);
-                                }
-                              },
-                        activeColor: tokens.colors.interactive.enabled,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4),
+                      child: ScaleTransition(
+                        scale: _checkPopScale,
+                        child: Checkbox(
+                          value: item.data.isChecked,
+                          onChanged: item.data.isArchived
+                              ? null
+                              : (value) {
+                                  itemNotifier.updateChecked(
+                                    checked: value ?? false,
+                                  );
+                                  if (suggestion != null) {
+                                    ref
+                                        .read(
+                                          checklistCompletionServiceProvider
+                                              .notifier,
+                                        )
+                                        .clearSuggestion(widget.itemId);
+                                  }
+                                },
+                          activeColor: tokens.colors.interactive.enabled,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          side: BorderSide(
+                            color: tokens.colors.text.lowEmphasis,
+                            width: 1.5,
+                          ),
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          visualDensity: VisualDensity.compact,
                         ),
-                        side: BorderSide(
-                          color: tokens.colors.text.lowEmphasis,
-                          width: 1.5,
-                        ),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
                       ),
                     ),
                     SizedBox(width: tokens.spacing.step3),
@@ -290,16 +338,21 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                               onCancel: () =>
                                   setState(() => _isEditing = false),
                             )
-                          : Text(
-                              item.data.title,
-                              style: tokens.typography.styles.body.bodySmall
+                          : StrikethroughWipe(
+                              done: isStrikethrough,
+                              text: item.data.title,
+                              baseStyle: tokens.typography.styles.body.bodySmall
                                   .copyWith(
-                                    color: isStrikethrough
-                                        ? tokens.colors.text.lowEmphasis
-                                        : tokens.colors.text.highEmphasis,
-                                    decoration: isStrikethrough
-                                        ? TextDecoration.lineThrough
-                                        : null,
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                              struckStyle: tokens
+                                  .typography
+                                  .styles
+                                  .body
+                                  .bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.lowEmphasis,
+                                    decoration: TextDecoration.lineThrough,
                                   ),
                               maxLines: 4,
                               overflow: TextOverflow.fade,
