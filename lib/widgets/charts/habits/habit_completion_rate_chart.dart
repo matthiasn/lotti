@@ -354,14 +354,11 @@ class _GoalChip extends StatelessWidget {
         ? messages.habitsAboveGoal
         : messages.habitsPointsToGoal(stats.pointsToGoal);
 
-    return Container(
+    return _ChartPill(
+      color: color,
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step3,
         vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.14),
-        borderRadius: BorderRadius.circular(tokens.radii.m),
       ),
       child: Text(
         text,
@@ -369,6 +366,33 @@ class _GoalChip extends StatelessWidget {
           color: color,
         ),
       ),
+    );
+  }
+}
+
+/// The shared tinted-pill shell for the headline chips (goal + trend): a rounded
+/// `radii.m` box filled with [color] at 14% alpha. Only the padding and child
+/// differ between the two.
+class _ChartPill extends StatelessWidget {
+  const _ChartPill({
+    required this.color,
+    required this.padding,
+    required this.child,
+  });
+
+  final Color color;
+  final EdgeInsetsGeometry padding;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(context.designTokens.radii.m),
+      ),
+      child: child,
     );
   }
 }
@@ -443,14 +467,11 @@ class _TrendChip extends StatelessWidget {
       label: '$sign${delta.abs()}% ${messages.habitsVsPreviousWeek}',
       child: Tooltip(
         message: messages.habitsVsPreviousWeek,
-        child: Container(
+        child: _ChartPill(
+          color: color,
           padding: EdgeInsets.symmetric(
             horizontal: tokens.spacing.step2,
             vertical: tokens.spacing.step1,
-          ),
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.14),
-            borderRadius: BorderRadius.circular(tokens.radii.m),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

@@ -59,40 +59,46 @@ class HabitChartStats {
   bool get isAtGoal => currentAverage >= target;
 }
 
+/// Completion rate (0–100) for a single day: the day's `success` count over its
+/// active-habit total, clamped (a back-dated completion can't push it past 100).
+double _dailyRate(String day, HabitsState state) {
+  final total = totalForDay(day, state);
+  final success = state.successfulByDay[day]?.length ?? 0;
+  return total > 0 ? (success * 100 / total).clamp(0.0, 100.0) : 0.0;
+}
+
+/// Mean of `values[start, end)`, with the bounds clamped into range; 0 for an
+/// empty (or inverted) span. The single averaging primitive used for the
+/// rolling window and the current/prior-week trend.
+double _mean(List<double> values, int start, int end) {
+  final lo = start.clamp(0, values.length);
+  final hi = end.clamp(0, values.length);
+  if (lo >= hi) return 0;
+  var sum = 0.0;
+  for (var i = lo; i < hi; i++) {
+    sum += values[i];
+  }
+  return sum / (hi - lo);
+}
+
 /// Builds [HabitChartStats] from [state] over its `days` window.
 HabitChartStats habitChartStats(HabitsState state, {double target = 80}) {
   final days = state.days;
   final dailyRates = <double>[
-    for (final day in days)
-      () {
-        final total = totalForDay(day, state);
-        final success = state.successfulByDay[day]?.length ?? 0;
-        return total > 0 ? (success * 100 / total).clamp(0.0, 100.0) : 0.0;
-      }(),
+    for (final day in days) _dailyRate(day, state),
   ];
 
   const window = 7;
   final rolling = <double>[
     for (var i = 0; i < dailyRates.length; i++)
-      () {
-        final start = (i - window + 1).clamp(0, dailyRates.length);
-        final slice = dailyRates.sublist(start, i + 1);
-        return slice.reduce((a, b) => a + b) / slice.length;
-      }(),
+      _mean(dailyRates, i - window + 1, i + 1),
   ];
 
   final n = dailyRates.length;
-  double avgOf(int start, int end) {
-    if (start >= end) return 0;
-    final slice = dailyRates.sublist(start.clamp(0, n), end.clamp(0, n));
-    if (slice.isEmpty) return 0;
-    return slice.reduce((a, b) => a + b) / slice.length;
-  }
-
-  final currentAverage = n == 0 ? 0.0 : avgOf(n - window, n);
+  final currentAverage = _mean(dailyRates, n - window, n);
   final priorAverage = n <= window
       ? currentAverage
-      : avgOf(n - 2 * window, n - window);
+      : _mean(dailyRates, n - 2 * window, n - window);
   final trendDelta = currentAverage - priorAverage;
 
   // The single habit most worth a focus: lowest in-window completion below
