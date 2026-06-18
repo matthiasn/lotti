@@ -78,6 +78,18 @@ void main() {
     expect(find.byType(HabitHeatmapGrid), findsOneWidget);
   });
 
+  testWidgets('an all-null week column carries no month label nor cells', (
+    tester,
+  ) async {
+    // A fully null-padded column has no first day, so the month-label pass
+    // skips it; the real week still renders its cells.
+    await pump(tester, cols: [List<HeatmapDay?>.filled(7, null), ...columns()]);
+
+    expect(find.byType(HabitHeatmapGrid), findsOneWidget);
+    expect(cell('2024-06-14'), findsOneWidget); // today, from the real week
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('in-range days expose a date + count semantics label', (
     tester,
   ) async {

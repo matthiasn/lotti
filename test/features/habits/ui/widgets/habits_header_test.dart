@@ -139,4 +139,35 @@ void main() {
     expect(find.byType(HabitsFilter), findsOneWidget);
     expect(find.byKey(const Key('habit_category_filter')), findsOneWidget);
   });
+
+  testWidgets('narrow width stacks the status filter below the title row', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        // < 520 forces the two-row phone layout (title + tools, then the
+        // four-segment filter in its own horizontal scroller beneath).
+        const SizedBox(width: 400, child: HabitsHeader()),
+        overrides: [
+          habitsControllerProvider.overrideWith(
+            () => FakeHabitsController(stateWith()),
+          ),
+        ],
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Habits'), findsOneWidget);
+    expect(find.byType(HabitStatusSegmentedControl), findsOneWidget);
+    expect(find.widgetWithIcon(HabitsToolButton, Icons.search), findsOneWidget);
+
+    // The filter dropped to its own row: it sits below the search tool.
+    final filterTop = tester
+        .getTopLeft(find.byType(HabitStatusSegmentedControl))
+        .dy;
+    final searchTop = tester
+        .getTopLeft(find.widgetWithIcon(HabitsToolButton, Icons.search))
+        .dy;
+    expect(filterTop, greaterThan(searchTop));
+  });
 }

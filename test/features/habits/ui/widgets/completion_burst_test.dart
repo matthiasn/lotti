@@ -27,4 +27,26 @@ void main() {
     await pump(tester, 1);
     expect(burstPaint(), findsNothing);
   });
+
+  testWidgets('repaints across rebuilds (shouldRepaint compares every input)', (
+    tester,
+  ) async {
+    Widget burst({
+      double progress = 0.5,
+      Alignment origin = const Alignment(0.82, 0),
+    }) => makeTestableWidget(
+      CompletionBurst(progress: progress, origin: origin),
+    );
+
+    await tester.pumpWidget(burst());
+    // A fresh widget with identical inputs forces a painter swap; shouldRepaint
+    // evaluates progress/origin/accent/gold (all equal → every branch runs).
+    await tester.pumpWidget(burst());
+    expect(burstPaint(), findsOneWidget);
+
+    // A changed origin (same progress) exercises the origin comparison branch.
+    await tester.pumpWidget(burst(origin: const Alignment(0.1, 0)));
+    expect(burstPaint(), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

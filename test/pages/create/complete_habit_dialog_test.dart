@@ -272,6 +272,27 @@ void main() {
     );
 
     testWidgets(
+      'without a dashboard, the scrim handles taps and the form swallows them',
+      (tester) async {
+        await pumpHabitDialog(tester, showLinkedDashboard: false);
+
+        // Tapping the empty space above the bottom-aligned form routes through
+        // the dismissal scrim (maybePop) without throwing; the form stays put
+        // since there is no route to pop in this harness.
+        await tester.tapAt(const Offset(400, 24));
+        await tester.pump();
+        expect(find.byType(HabitDialog), findsOneWidget);
+
+        // A tap on the form itself is swallowed (it does not bubble to the
+        // scrim) — the dialog remains.
+        await tester.tap(find.text(habitFlossing.name));
+        await tester.pump();
+        expect(find.byType(HabitDialog), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
       'desktop registers the Cmd+S hotkey on init and unregisters on '
       'dispose',
       (tester) async {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_data.dart';
@@ -81,6 +82,36 @@ void main() {
     expect(find.byType(HabitHeatmapGrid), findsOneWidget);
     expect(find.text('Less'), findsOneWidget);
     expect(find.text('More'), findsOneWidget);
+  });
+
+  testWidgets('narrow width stacks the legend below the title', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        // < 460 forces the header into a Column (title above legend).
+        const SizedBox(width: 400, child: HabitHeatmapCard()),
+        overrides: [
+          habitHeatmapControllerProvider.overrideWith(
+            () => _FakeHeatmapController(
+              const HabitHeatmapData(
+                days: sampleDays,
+                hasHabits: true,
+                isLoading: false,
+              ),
+            ),
+          ),
+          firstDayOfWeekIndexProvider.overrideWith((ref) => 1),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Consistency'), findsOneWidget);
+    expect(find.text('Less'), findsOneWidget);
+    // The legend dropped below the title instead of sitting beside it.
+    expect(
+      tester.getTopLeft(find.text('Less')).dy,
+      greaterThan(tester.getTopLeft(find.text('Consistency')).dy),
+    );
   });
 
   testWidgets('shows the empty placeholder and no grid when no habits exist', (

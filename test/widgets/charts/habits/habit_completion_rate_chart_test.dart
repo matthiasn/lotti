@@ -136,6 +136,31 @@ void main() {
       expect(find.textContaining('kept 0 of 14'), findsOneWidget);
     });
 
+    testWidgets('the goal chip flips to "On track" at/above target', (
+      tester,
+    ) async {
+      final days = [
+        for (var d = 1; d <= 14; d++) '2024-03-${d.toString().padLeft(2, '0')}',
+      ];
+      await pumpChart(
+        tester,
+        state: HabitsState.initial().copyWith(
+          days: days,
+          timeSpanDays: 14,
+          allByDay: {
+            for (final day in days) day: const {'h1'},
+          },
+          // Every day kept → 100% average, at/above the 80% goal.
+          successfulByDay: {
+            for (final day in days) day: const {'h1'},
+          },
+        ),
+      );
+
+      expect(find.text('On track'), findsOneWidget);
+      expect(find.textContaining('to goal'), findsNothing);
+    });
+
     testWidgets('hides the trend chip on the short 7-day window', (
       tester,
     ) async {

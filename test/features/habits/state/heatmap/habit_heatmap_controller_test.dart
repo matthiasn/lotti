@@ -212,6 +212,22 @@ void main() {
       }, initialTime: fixedNow);
     });
 
+    test('range start uses the earliest activeFrom across habits', () {
+      fakeAsync((async) {
+        final container = makeContainer();
+        addTearDown(container.dispose);
+        container.read(habitHeatmapControllerProvider);
+        async.flushMicrotasks();
+        // h1 seeds `earliest`; h2 is earlier, so it wins via from.isBefore().
+        definitionsController.add([
+          habit(id: 'h1', activeFrom: DateTime(2024, 6)),
+          habit(id: 'h2', activeFrom: DateTime(2023, 3)),
+        ]);
+        async.flushMicrotasks();
+        expect(capturedRangeStart(), DateTime(2023, 3));
+      }, initialTime: fixedNow);
+    });
+
     test('ancient habit → clamped to the five-year cap', () {
       fakeAsync((async) {
         final container = makeContainer();
