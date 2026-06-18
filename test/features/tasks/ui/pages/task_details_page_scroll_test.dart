@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +10,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
+import 'package:lotti/widgets/media/media_drop_target.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -290,106 +290,42 @@ void main() {
   });
 
   // ---------------------------------------------------------------------------
-  // Group: DropTarget onDragDone callback (lines 237-242)
+  // Group: MediaDropTarget wiring + drop import error path
   // ---------------------------------------------------------------------------
-  group('TaskDetailsPage DropTarget onDragDone - ', () {
+  group('TaskDetailsPage media drop - ', () {
     setUpAll(registerTaskDetailsFallbacks);
 
     setUp(registerTaskDetailsServices);
     tearDown(getIt.reset);
 
-    testWidgets(
-      'onDragDone callback invokes handleDroppedMedia with task ids',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            TaskDetailsPage(taskId: testTask.id),
-            overrides: hTaskDetailsPageOverrides(),
-          ),
-        );
+    testWidgets('wraps the body in a MediaDropTarget wired to onFiles', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          TaskDetailsPage(taskId: testTask.id),
+          overrides: hTaskDetailsPageOverrides(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.pump();
+      final finder = find.descendant(
+        of: find.byType(TaskDetailsPage),
+        matching: find.byType(MediaDropTarget),
+      );
+      expect(finder, findsOneWidget);
 
-        await tester.pump(const Duration(milliseconds: 300));
-
-        // Locate the DropTarget that wraps the task detail body.
-        final dropTargetFinder = find.descendant(
-          of: find.byType(TaskDetailsPage),
-          matching: find.byType(DropTarget),
-        );
-        expect(dropTargetFinder, findsOneWidget);
-
-        final dropTarget = tester.widget<DropTarget>(dropTargetFinder);
-        expect(dropTarget.onDragDone, isNotNull);
-
-        // Invoke the callback with an empty file list so no real import
-        // logic runs (no matching extension → handleDroppedMedia returns
-        // immediately).  The important thing is that the callback body
-        // (lines 234-239) executes without throwing.
-        const emptyDrop = DropDoneDetails(
-          files: [],
-          localPosition: Offset.zero,
-          globalPosition: Offset.zero,
-        );
-
-        expect(
-          () => dropTarget.onDragDone!.call(emptyDrop),
-          returnsNormally,
-        );
-
-        // Pump to let any async work settle without error.
-        await tester.pump();
-      },
-    );
-
-    testWidgets(
-      'onDragDone callback passes task.meta.id and task.meta.categoryId to '
-      'handleDroppedMedia',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            TaskDetailsPage(taskId: testTask.id),
-            overrides: hTaskDetailsPageOverrides(),
-          ),
-        );
-
-        await tester.pump();
-
-        await tester.pump(const Duration(milliseconds: 300));
-
-        final dropTargetFinder = find.descendant(
-          of: find.byType(TaskDetailsPage),
-          matching: find.byType(DropTarget),
-        );
-        final dropTarget = tester.widget<DropTarget>(dropTargetFinder);
-
-        // Simulate dropping an unsupported file type (e.g. .txt) so that
-        // importDroppedImages / importDroppedAudio are NOT called — we just
-        // want to confirm the DropTarget wraps the correct task.
-        final unsupportedFile = TaskDetailsFakeDropItem(XFile('/tmp/note.txt'));
-        final dropDetails = DropDoneDetails(
-          files: [unsupportedFile],
-          localPosition: Offset.zero,
-          globalPosition: Offset.zero,
-        );
-
-        // Calling onDragDone must not throw, meaning the body reached
-        // handleDroppedMedia with the task's linked/category IDs.
-        expect(
-          () => dropTarget.onDragDone!.call(dropDetails),
-          returnsNormally,
-        );
-
-        await tester.pump();
-      },
-    );
+      // An empty drop routes through onFiles without throwing (no matching
+      // extensions -> nothing imported).
+      final dropTarget = tester.widget<MediaDropTarget>(finder);
+      expect(() => dropTarget.onFiles(const []), returnsNormally);
+      await tester.pump();
+    });
 
     testWidgets(
       'an image drop whose file cannot be read is logged and swallowed',
       (tester) async {
-        // The per-file try/catch in importDroppedImages must log the read
-        // failure (lastModified/length on a nonexistent path) and continue
-        // instead of letting the exception escape the drop handler.
         final mockLogger = MockDomainLogger();
         when(
           () => mockLogger.error(
@@ -413,23 +349,13 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The DropTarget wiring itself is pinned by the adjacent tests;
-        // here we drive handleDroppedMedia (the drop handler's body)
-        // directly so the real-IO failure path is reachable via runAsync.
-        expect(find.byType(DropTarget), findsOneWidget);
+        expect(find.byType(MediaDropTarget), findsOneWidget);
 
-        final unreadableImage = TaskDetailsFakeDropItem(
-          XFile('/nonexistent/missing.jpg'),
-        );
-        // The import loop does real file I/O (lastModified/length), which
-        // never completes inside the fake-async test zone — run it for real.
+        // Drive the drop handler directly: real file I/O on a missing path
+        // must be logged and swallowed, not thrown.
         await tester.runAsync(() async {
-          await handleDroppedMedia(
-            data: DropDoneDetails(
-              files: [unreadableImage],
-              localPosition: Offset.zero,
-              globalPosition: Offset.zero,
-            ),
+          await handleDroppedMediaFiles(
+            [XFile('/nonexistent/missing.jpg')],
             linkedId: testTask.id,
             categoryId: testTask.meta.categoryId,
           );

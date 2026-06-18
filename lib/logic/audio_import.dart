@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_selector/file_selector.dart' show XFile;
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
@@ -25,27 +24,14 @@ class AudioImportConstants {
   static const String loggingDomain = 'audio_import';
 }
 
-/// Imports dropped audio files and creates audio journal entries.
+/// Imports audio [files] (from a media drop) and creates audio journal
+/// entries.
 ///
 /// Validates file extensions, size limits, and extracts audio duration before
 /// importing. Only processes files with supported audio extensions.
 ///
 /// If duration extraction fails, continues with zero duration which can be
 /// updated later. If journal entry creation fails, cleans up the copied file.
-Future<void> importDroppedAudio({
-  required DropDoneDetails data,
-  String? linkedId,
-  String? categoryId,
-}) {
-  return importAudioXFiles(
-    data.files,
-    linkedId: linkedId,
-    categoryId: categoryId,
-  );
-}
-
-/// Shared importer for a list of audio [files] — used by both drag-and-drop
-/// and the Linux super_drag_and_drop path.
 Future<void> importAudioXFiles(
   List<XFile> files, {
   String? linkedId,

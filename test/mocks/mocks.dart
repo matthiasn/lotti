@@ -1,8 +1,6 @@
 import 'dart:async';
 
 import 'package:beamer/beamer.dart';
-import 'package:cross_file/cross_file.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
@@ -822,23 +820,6 @@ class FakeDiscreteQuantityData extends Fake implements DiscreteQuantityData {}
 class FakeWorkoutData extends Fake implements WorkoutData {}
 
 class FakeJournalImage extends Fake implements JournalImage {}
-
-/// Drop-item fake backed by an [XFile], for desktop drag-and-drop import
-/// tests.
-class FakeDropItem extends Fake implements DropItem {
-  FakeDropItem(this._xFile);
-
-  final XFile _xFile;
-
-  @override
-  String get name => _xFile.name;
-
-  @override
-  String get path => _xFile.path;
-
-  @override
-  Future<DateTime> lastModified() => _xFile.lastModified();
-}
 
 // --- Repository mocks (frequently duplicated inline) ---
 

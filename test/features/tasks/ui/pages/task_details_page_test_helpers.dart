@@ -1,7 +1,4 @@
-import 'package:cross_file/cross_file.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter_riverpod/misc.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
@@ -14,23 +11,6 @@ import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../agents/test_data/change_set_factories.dart';
 import '../../../agents/test_data/entity_factories.dart';
-
-/// Minimal [DropItem] implementation for widget tests that invoke
-/// the [DropTarget.onDragDone] callback directly.
-class TaskDetailsFakeDropItem extends Fake implements DropItem {
-  TaskDetailsFakeDropItem(this._xFile);
-
-  final XFile _xFile;
-
-  @override
-  String get name => _xFile.name;
-
-  @override
-  String get path => _xFile.path;
-
-  @override
-  Future<DateTime> lastModified() => _xFile.lastModified();
-}
 
 List<Override> hTaskDetailsPageOverrides() => [
   audioRecorderControllerProvider.overrideWith(

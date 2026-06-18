@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -136,14 +135,7 @@ void main() {
     return file;
   }
 
-  DropDoneDetails createDropDetails(List<XFile> xfiles) {
-    final dropItems = xfiles.map(FakeDropItem.new).toList();
-    return DropDoneDetails(
-      files: dropItems,
-      localPosition: Offset.zero,
-      globalPosition: Offset.zero,
-    );
-  }
+  List<XFile> createDropDetails(List<XFile> xfiles) => xfiles;
 
   group('AudioImportConstants', () {
     test('defines supported extensions', () {
@@ -169,7 +161,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importDroppedAudio(data: dropDetails);
+      await importAudioXFiles(dropDetails);
 
       verify(
         () => mockPersistenceLogic.createDbEntity(
@@ -186,7 +178,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importDroppedAudio(data: dropDetails);
+      await importAudioXFiles(dropDetails);
 
       verifyNever(
         () => mockPersistenceLogic.createDbEntity(
@@ -203,7 +195,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importDroppedAudio(data: dropDetails);
+      await importAudioXFiles(dropDetails);
 
       verify(
         () => mockDomainLogger.error(
@@ -220,7 +212,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importDroppedAudio(data: dropDetails);
+      await importAudioXFiles(dropDetails);
 
       verify(
         () => mockDomainLogger.error(
@@ -236,8 +228,8 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importDroppedAudio(
-        data: dropDetails,
+      await importAudioXFiles(
+        dropDetails,
         linkedId: 'parent-123',
         categoryId: 'cat-456',
       );
@@ -269,7 +261,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importDroppedAudio(data: dropDetails);
+      await importAudioXFiles(dropDetails);
 
       // Entry creation was attempted (and failed)
       verify(
@@ -303,7 +295,7 @@ void main() {
       ]);
 
       // Should not throw
-      await importDroppedAudio(data: dropDetails);
+      await importAudioXFiles(dropDetails);
 
       // Should log the error for the bad file
       verify(
@@ -339,7 +331,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importDroppedAudio(data: dropDetails);
+      await importAudioXFiles(dropDetails);
 
       // The duration-extraction failure is logged under its own subdomain.
       verify(
@@ -393,7 +385,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importDroppedAudio(data: dropDetails);
+      await importAudioXFiles(dropDetails);
 
       // The failed delete is logged under the cleanup subdomain.
       verify(
@@ -414,7 +406,7 @@ void main() {
       final xFile = XFile(testFile.path);
       final dropDetails = createDropDetails([xFile]);
 
-      await importDroppedAudio(data: dropDetails);
+      await importAudioXFiles(dropDetails);
 
       final captured =
           verify(

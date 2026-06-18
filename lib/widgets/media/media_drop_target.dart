@@ -2,23 +2,23 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:desktop_drop/desktop_drop.dart' as dd;
 import 'package:file_selector/file_selector.dart' show XFile;
 import 'package:flutter/widgets.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:path/path.dart' as p;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
-/// Drop target for media files.
+/// Drop target for media files, built on `super_drag_and_drop` on every
+/// platform.
 ///
-/// On Linux it uses `super_drag_and_drop` (over `super_native_extensions`,
-/// which the app already bundles): plain `desktop_drop` drop events never
-/// arrive on Linux because the two drag stacks conflict over the GTK
-/// drag-dest. Everywhere else it keeps the verified `desktop_drop` path so
-/// macOS/Windows behavior is unchanged.
+/// The app already bundles `super_native_extensions`, which registers a GTK
+/// drag-dest on the Flutter view at startup. `desktop_drop` did the same
+/// (`gtk_drag_dest_set(GTK_DEST_DEFAULT_ALL)`) the moment its plugin
+/// registered, so on Linux the two fought over the single GTK drag
+/// destination and drops were silently swallowed. Standardizing on one drag
+/// stack removes that conflict.
 ///
-/// Dropped items are normalized to a list of [XFile]s (Linux reads the dropped
-/// file stream into a temp file) and handed to [onFiles].
+/// Dropped items are normalized to a list of [XFile]s (each dropped file's
+/// stream is read into a temp file) and handed to [onFiles].
 class MediaDropTarget extends StatelessWidget {
   const MediaDropTarget({
     required this.onFiles,
@@ -31,13 +31,6 @@ class MediaDropTarget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!isLinux) {
-      return dd.DropTarget(
-        onDragDone: (details) => onFiles(details.files),
-        child: child,
-      );
-    }
-
     return DropRegion(
       formats: Formats.standardFormats,
       hitTestBehavior: HitTestBehavior.translucent,

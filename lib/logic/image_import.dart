@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:exif/exif.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/widgets.dart';
@@ -154,28 +153,6 @@ Future<void> importImageAssets(
       }
     }
   }
-}
-
-/// Imports dropped image files and creates journal entries.
-///
-/// Validates file extensions and size limits before importing.
-/// Only processes files with supported image extensions.
-/// If [analysisTrigger] is provided, triggers automatic image analysis
-/// for each imported image (fire-and-forget, doesn't block import).
-///
-/// Throws exceptions on file system errors which should be handled by caller.
-Future<void> importDroppedImages({
-  required DropDoneDetails data,
-  String? linkedId,
-  String? categoryId,
-  AutomaticImageAnalysisTrigger? analysisTrigger,
-}) {
-  return importImageXFiles(
-    data.files,
-    linkedId: linkedId,
-    categoryId: categoryId,
-    analysisTrigger: analysisTrigger,
-  );
 }
 
 /// Imports image files picked from a desktop file dialog (Linux/Windows),

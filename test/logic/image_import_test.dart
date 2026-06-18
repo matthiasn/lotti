@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -406,14 +405,7 @@ void main() {
       return file;
     }
 
-    DropDoneDetails createDropDetails(List<XFile> xfiles) {
-      final dropItems = xfiles.map(FakeDropItem.new).toList();
-      return DropDoneDetails(
-        files: dropItems,
-        localPosition: Offset.zero,
-        globalPosition: Offset.zero,
-      );
-    }
+    List<XFile> createDropDetails(List<XFile> xfiles) => xfiles;
 
     group('ImageImportConstants', () {
       test('defines supported extensions', () {
@@ -529,7 +521,7 @@ void main() {
         final testFile = await createTestImageFile('test.jpg', 1024);
         final dropDetails = createDropDetails([XFile(testFile.path)]);
 
-        await importDroppedImages(data: dropDetails);
+        await importImageXFiles(dropDetails);
 
         verify(
           () => mockPersistenceLogic.createDbEntity(
@@ -545,7 +537,7 @@ void main() {
         final testFile = await createTestImageFile('test.png', 1024);
         final dropDetails = createDropDetails([XFile(testFile.path)]);
 
-        await importDroppedImages(data: dropDetails);
+        await importImageXFiles(dropDetails);
 
         verify(
           () => mockPersistenceLogic.createDbEntity(
@@ -561,7 +553,7 @@ void main() {
         final testFile = await createTestImageFile('test.txt', 1024);
         final dropDetails = createDropDetails([XFile(testFile.path)]);
 
-        await importDroppedImages(data: dropDetails);
+        await importImageXFiles(dropDetails);
 
         verifyNever(
           () => mockPersistenceLogic.createDbEntity(
@@ -578,7 +570,7 @@ void main() {
         final testFile = await createTestImageFile('large.jpg', largeSize);
         final dropDetails = createDropDetails([XFile(testFile.path)]);
 
-        await importDroppedImages(data: dropDetails);
+        await importImageXFiles(dropDetails);
 
         verify(
           () => mockDomainLogger.error(
@@ -593,8 +585,8 @@ void main() {
         final testFile = await createTestImageFile('test.jpg', 1024);
         final dropDetails = createDropDetails([XFile(testFile.path)]);
 
-        await importDroppedImages(
-          data: dropDetails,
+        await importImageXFiles(
+          dropDetails,
           linkedId: 'parent-123',
           categoryId: 'cat-456',
         );
@@ -617,7 +609,7 @@ void main() {
           XFile(file2.path),
         ]);
 
-        await importDroppedImages(data: dropDetails);
+        await importImageXFiles(dropDetails);
 
         verify(
           () => mockPersistenceLogic.createDbEntity(
@@ -637,7 +629,7 @@ void main() {
           XFile(validFile.path),
         ]);
 
-        await importDroppedImages(data: dropDetails);
+        await importImageXFiles(dropDetails);
 
         // The bad file causes an error, but the good file still gets imported
         verify(
