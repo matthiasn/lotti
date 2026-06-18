@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:beamer/beamer.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_onnxruntime/flutter_onnxruntime.dart';
 import 'package:flutter_quill/flutter_quill.dart';
@@ -1154,6 +1155,23 @@ class MockQueryExecutor extends Mock implements drift.QueryExecutor {}
 class MockPathProviderPlatform extends Mock
     with MockPlatformInterfaceMixin
     implements PathProviderPlatform {}
+
+/// Fake [FileSelectorPlatform] for tests that exercise the desktop file
+/// picker (`openFiles`) without hitting the native plugin. Defaults to
+/// returning no files (as if the user cancelled the dialog); set
+/// [filesToReturn] to simulate a selection.
+class FakeFileSelectorPlatform extends Fake
+    with MockPlatformInterfaceMixin
+    implements FileSelectorPlatform {
+  List<XFile> filesToReturn = const [];
+
+  @override
+  Future<List<XFile>> openFiles({
+    List<XTypeGroup>? acceptedTypeGroups,
+    String? initialDirectory,
+    String? confirmButtonText,
+  }) async => filesToReturn;
+}
 
 /// Mocks for the Supertonic TTS engine's native boundary
 /// (`flutter_onnxruntime`) so the engine/session orchestration — caching,

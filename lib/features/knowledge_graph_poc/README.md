@@ -84,11 +84,16 @@ Interactive (pan / pinch-zoom / tap-to-walk, with a scenario + theme switcher):
 fvm flutter run -t lib/features/knowledge_graph_poc/dev_main.dart -d linux   # or macos / a device
 ```
 
-Deterministic screenshots (mobile + desktop), via the screenshot harness:
+Deterministic screenshots (mobile + desktop) are produced with the screenshot
+harness (`test/test_utils/screenshot_harness.dart`). `captureInApp` writes via
+`matchesGoldenFile`, so it only emits PNGs under `--update-goldens` and would
+fail a normal CI run with no committed baseline — it is a **throwaway** tool, not
+a committed test. To regenerate previews, write a short capture test that calls
+`captureInApp` for each scenario, run it with `--update-goldens`, view the PNGs,
+then delete the test:
 
 ```bash
-fvm flutter test \
-  test/features/knowledge_graph_poc/ui/knowledge_graph_screenshots_test.dart \
+fvm flutter test test/features/knowledge_graph_poc/ui/<throwaway>_test.dart \
   --update-goldens
 # PNGs → test/features/knowledge_graph_poc/ui/screenshots/ (gitignored)
 ```

@@ -159,7 +159,7 @@ void main() {
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     });
 
-    testWidgets('renders GlassActionButtons for back and more menu', (
+    testWidgets('renders GlassActionButtons for back, graph and more menu', (
       tester,
     ) async {
       final task = buildTask();
@@ -167,8 +167,18 @@ void main() {
       await pumpMobile(tester, buildTestWidget(task, 'image-1'));
       await tester.pump();
 
-      // GlassBackButton uses GlassActionButton internally, plus one for more menu
-      expect(find.byType(GlassActionButton), findsNWidgets(2));
+      // GlassBackButton uses GlassActionButton internally, plus one each for
+      // the knowledge graph and the more menu.
+      expect(find.byType(GlassActionButton), findsNWidgets(3));
+    });
+
+    testWidgets('renders knowledge graph hub icon', (tester) async {
+      final task = buildTask();
+
+      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
+      await tester.pump();
+
+      expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
     });
 
     testWidgets('renders more_horiz icon', (tester) async {
