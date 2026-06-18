@@ -18,6 +18,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   rebuilt to match the Tasks page: each entry type is a labelled pill carrying its
   own icon, the starred / flagged / private toggles are clearer multi-select pills,
   and category pills show their colour.
+- The Task details page got a high-end, celebratory rework. The task title is
+  now the clear focal point, with the breadcrumb and unset fields quietly
+  de-emphasised but still legible. The AI "Proposed changes" read as clean,
+  colour-coded cards — on a phone each shows its change type above full-width
+  text with visible accept / reject buttons (and you can still swipe right to
+  confirm, left to dismiss), and the AI card itself now feels like a crafted
+  assistant surface with a glowing sparkle badge and a clear "Confirm all"
+  button. Your actual work — the checklists — now sits above the AI
+  suggestions. Completing things is celebrated: checking a checklist item gives
+  a gentle pop and a left-to-right strike-through, and finishing a whole
+  checklist or marking the task Done blooms a soft glow with a ring of sparks
+  around the progress ring / status pill (plus a haptic), tuned so it never
+  covers the text it's celebrating. Sections fade in gently as the page opens.
+  Everything honours the system "reduce motion" setting — the celebrations
+  become a quiet static acknowledgement with no flying particles — and on wide
+  screens the content sits in a comfortable centred reading column.
 - The Habits tab was reworked to match the rest of the app. It now uses the same
   calm, light-on-canvas surfaces as Tasks and Time Analysis instead of the old
   near-black background, with a Time-Analysis-style header. A new summary card
