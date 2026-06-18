@@ -85,16 +85,32 @@ class HabitCompletionRateChart extends ConsumerWidget
               ? Center(
                   // A selected day swaps the headline for its split; it
                   // auto-clears back to the headline after the controller's
-                  // idle debounce.
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      InfoLabel('${state.selectedInfoYmd}:'),
-                      InfoLabel('${state.successPercentage}% successful'),
-                      InfoLabel('${state.skippedPercentage}% skipped'),
-                      InfoLabel('${state.failedPercentage}% recorded fails'),
-                    ],
+                  // idle debounce. FittedBox scales the row down rather than
+                  // overflowing on a narrow width or a longer-locale label.
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        InfoLabel('${state.selectedInfoYmd}:'),
+                        InfoLabel(
+                          messages.habitsDaySuccessfulPercent(
+                            state.successPercentage,
+                          ),
+                        ),
+                        InfoLabel(
+                          messages.habitsDaySkippedPercent(
+                            state.skippedPercentage,
+                          ),
+                        ),
+                        InfoLabel(
+                          messages.habitsDayFailedPercent(
+                            state.failedPercentage,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : _ChartHeadline(stats: stats),

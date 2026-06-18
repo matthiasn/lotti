@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1026]
+## [0.9.1027]
 ### Changed
 - The Habits tab was reworked to match the rest of the app. It now uses the same
   calm, light-on-canvas surfaces as Tasks and Time Analysis instead of the old
@@ -29,12 +29,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   through a shaded "on track" band, with the raw daily rates as light dots
   behind it and a quiet, encouraging pointer below to the one habit most worth a
   focus ("kept 5 of 30"). Logging a habit is now a small, staged celebration:
-  the check pops in, a soft accent
-  glow blooms on the row, a burst of sparks flies from the check, its streak
-  flame pulses and ticks up, the done count counts up and the progress bar eases
-  forward, and finishing the last habit of the day lights the summary card with
-  an all-done glow. The whole celebration respects the system "reduce motion"
-  setting and announces completion to screen readers.
+  the check pops in, a soft accent glow blooms on the row, a burst of sparks
+  flies from the check, its streak flame pulses and ticks up, the done count
+  counts up and the progress bar eases forward, and finishing the last habit of
+  the day lights the summary card with an all-done glow. The whole celebration
+  respects the system "reduce motion" setting and announces completion to screen
+  readers.
+
+## [0.9.1026]
+### Changed
 - Editing an entry's start and end time is simpler: you set the date once and
   the start/end times separately, instead of picking the full date on both
   pickers. One date wheel sits above paired start/end time wheels, with a live

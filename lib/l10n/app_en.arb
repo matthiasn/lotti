@@ -2536,6 +2536,30 @@
   "habitsCompletedHeader": "Completed",
   "habitsCompletionRateTitle": "Completion rate",
   "habitsConsistencyTitle": "Consistency",
+  "habitsDayFailedPercent": "{percent}% recorded fails",
+  "@habitsDayFailedPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsDaySkippedPercent": "{percent}% skipped",
+  "@habitsDaySkippedPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "habitsDaySuccessfulPercent": "{percent}% successful",
+  "@habitsDaySuccessfulPercent": {
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
   "habitsDoneTodayLabel": "Done today",
   "habitSectionOptionsTitle": "Options",
   "habitSectionScheduleTitle": "Schedule",
@@ -2565,7 +2589,7 @@
   },
   "habitsOpenHeader": "Due now",
   "habitsPendingLaterHeader": "Later today",
-  "habitsPointsToGoal": "{points} pts to goal",
+  "habitsPointsToGoal": "{points, plural, one{1 pt to goal} other{{points} pts to goal}}",
   "@habitsPointsToGoal": {
     "placeholders": {
       "points": {

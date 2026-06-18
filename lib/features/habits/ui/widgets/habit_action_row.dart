@@ -110,7 +110,7 @@ class _HabitActionRowState extends State<HabitActionRow>
   }
 
   void onTapAdd({String? dateString}) {
-    final height = MediaQuery.of(context).size.height;
+    final height = MediaQuery.sizeOf(context).height;
     final maxHeight = height * 0.9;
     final habitDefinition = getIt<EntitiesCacheService>().getHabitById(
       widget.habitId,

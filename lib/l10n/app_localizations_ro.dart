@@ -4979,6 +4979,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsConsistencyTitle => 'Consecvență';
 
   @override
+  String habitsDayFailedPercent(int percent) {
+    return '$percent% înregistrate ca ratate';
+  }
+
+  @override
+  String habitsDaySkippedPercent(int percent) {
+    return '$percent% omise';
+  }
+
+  @override
+  String habitsDaySuccessfulPercent(int percent) {
+    return '$percent% reușite';
+  }
+
+  @override
   String get habitsDoneTodayLabel => 'Finalizate azi';
 
   @override

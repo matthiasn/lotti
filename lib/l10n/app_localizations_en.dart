@@ -4872,6 +4872,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get habitsConsistencyTitle => 'Consistency';
 
   @override
+  String habitsDayFailedPercent(int percent) {
+    return '$percent% recorded fails';
+  }
+
+  @override
+  String habitsDaySkippedPercent(int percent) {
+    return '$percent% skipped';
+  }
+
+  @override
+  String habitsDaySuccessfulPercent(int percent) {
+    return '$percent% successful';
+  }
+
+  @override
   String get habitsDoneTodayLabel => 'Done today';
 
   @override
@@ -4924,7 +4939,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String habitsPointsToGoal(int points) {
-    return '$points pts to goal';
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '$points pts to goal',
+      one: '1 pt to goal',
+    );
+    return '$_temp0';
   }
 
   @override

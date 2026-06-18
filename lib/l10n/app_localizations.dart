@@ -8526,6 +8526,24 @@ abstract class AppLocalizations {
   /// **'Consistency'**
   String get habitsConsistencyTitle;
 
+  /// No description provided for @habitsDayFailedPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% recorded fails'**
+  String habitsDayFailedPercent(int percent);
+
+  /// No description provided for @habitsDaySkippedPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% skipped'**
+  String habitsDaySkippedPercent(int percent);
+
+  /// No description provided for @habitsDaySuccessfulPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% successful'**
+  String habitsDaySuccessfulPercent(int percent);
+
   /// No description provided for @habitsDoneTodayLabel.
   ///
   /// In en, this message translates to:
@@ -8625,7 +8643,7 @@ abstract class AppLocalizations {
   /// No description provided for @habitsPointsToGoal.
   ///
   /// In en, this message translates to:
-  /// **'{points} pts to goal'**
+  /// **'{points, plural, one{1 pt to goal} other{{points} pts to goal}}'**
   String habitsPointsToGoal(int points);
 
   /// No description provided for @habitsRecordButton.

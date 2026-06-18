@@ -4933,6 +4933,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get habitsConsistencyTitle => 'Důslednost';
 
   @override
+  String habitsDayFailedPercent(int percent) {
+    return '$percent% zaznamenáno jako zmeškané';
+  }
+
+  @override
+  String habitsDaySkippedPercent(int percent) {
+    return '$percent% přeskočeno';
+  }
+
+  @override
+  String habitsDaySuccessfulPercent(int percent) {
+    return '$percent% úspěšně';
+  }
+
+  @override
   String get habitsDoneTodayLabel => 'Hotovo dnes';
 
   @override

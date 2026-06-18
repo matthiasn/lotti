@@ -4979,6 +4979,21 @@ class AppLocalizationsFr extends AppLocalizations {
   String get habitsConsistencyTitle => 'Régularité';
 
   @override
+  String habitsDayFailedPercent(int percent) {
+    return '$percent% marqués manqués';
+  }
+
+  @override
+  String habitsDaySkippedPercent(int percent) {
+    return '$percent% ignorés';
+  }
+
+  @override
+  String habitsDaySuccessfulPercent(int percent) {
+    return '$percent% réussis';
+  }
+
+  @override
   String get habitsDoneTodayLabel => 'Fait aujourd\'hui';
 
   @override
@@ -5031,7 +5046,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String habitsPointsToGoal(int points) {
-    return '$points pts avant l\'objectif';
+    String _temp0 = intl.Intl.pluralLogic(
+      points,
+      locale: localeName,
+      other: '$points pts avant l\'\'objectif',
+      one: '1 pt avant l\'\'objectif',
+    );
+    return '$_temp0';
   }
 
   @override

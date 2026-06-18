@@ -110,7 +110,13 @@ class HabitHeatmapController extends _$HabitHeatmapController {
   /// [_maxHistoryYears].
   DateTime _rangeStart(DateTime now) {
     final today = now.dayAtMidnight;
-    final oneYearFloor = today.subtract(const Duration(days: _minHistoryDays));
+    // Calendar-day arithmetic (not a fixed 24h Duration) so a DST transition
+    // can't shift the floor onto the previous day. Matches the streak walk.
+    final oneYearFloor = DateTime(
+      today.year,
+      today.month,
+      today.day - _minHistoryDays,
+    );
     final maxCap = DateTime(
       today.year - _maxHistoryYears,
       today.month,

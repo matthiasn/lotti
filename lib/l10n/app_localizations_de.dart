@@ -4933,6 +4933,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get habitsConsistencyTitle => 'Beständigkeit';
 
   @override
+  String habitsDayFailedPercent(int percent) {
+    return '$percent% als verpasst erfasst';
+  }
+
+  @override
+  String habitsDaySkippedPercent(int percent) {
+    return '$percent% übersprungen';
+  }
+
+  @override
+  String habitsDaySuccessfulPercent(int percent) {
+    return '$percent% erfolgreich';
+  }
+
+  @override
   String get habitsDoneTodayLabel => 'Heute erledigt';
 
   @override
