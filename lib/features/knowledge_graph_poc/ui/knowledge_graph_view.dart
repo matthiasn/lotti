@@ -18,6 +18,7 @@ import 'package:lotti/features/knowledge_graph_poc/domain/graph_layout_engine.da
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_scenarios.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/entry_detail_sidebar.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/graph_motion_controller.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/node_inspector_panel.dart';
@@ -68,6 +69,8 @@ class KnowledgeGraphView extends StatefulWidget {
 
 class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     with TickerProviderStateMixin {
+  static const int _maxMotionNodes = 52;
+
   late final GraphScenario _scenario;
   late final GraphLayout _layout;
   late final Map<String, int> _degrees;
@@ -75,6 +78,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   late final bool _world;
   late final AnimationController _cam;
   late final AnimationController _wakeCtl;
+  late final GraphMotionController _motion;
 
   late String _focusId;
   late Map<String, int> _hops;
@@ -83,6 +87,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   /// Whether the focused entry's full-details side panel is open (overlaying
   /// the navigational inspector).
   bool _detailsOpen = false;
+  bool _disableAnimations = false;
   String? _previousFocusId;
   List<String> _walkPath = const [];
   Offset _focusWorld = Offset.zero;
@@ -122,6 +127,8 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         : _scenario.seedId;
     _hops = _bfs(_focusId);
     _focusWorld = _layout.positions[_focusId] ?? Offset.zero;
+    _motion = GraphMotionController(vsync: this);
+    _syncMotionWindow(_focusId);
     final prev = widget.initialPreviousFocusId;
     if (prev != null && _scenario.nodes.any((n) => n.id == prev)) {
       _previousFocusId = prev;
@@ -139,6 +146,20 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       value: 1,
     )..addListener(() => setState(() {}));
     unawaited(_loadImages());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _disableAnimations =
+        MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+    _motion.reduceMotion = _disableAnimations;
+    if (_disableAnimations) {
+      _cam.stop();
+      _wakeCtl
+        ..stop()
+        ..value = 1;
+    }
   }
 
   /// Decode image-entry thumbnails off the main work and repaint when ready.
@@ -183,6 +204,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   void dispose() {
     _cam.dispose();
     _wakeCtl.dispose();
+    _motion.dispose();
     for (final image in _images.values) {
       image.dispose();
     }
@@ -300,17 +322,31 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
 
   void _walkTo(String id, {bool record = true}) {
     if (id == _focusId) return;
-    if (record) _history.add(_focusId);
-    _previousFocusId = _focusId;
-    _walkPath = _path(_focusId, id);
+    final fromId = _focusId;
+    if (record) _history.add(fromId);
+    _previousFocusId = fromId;
+    _walkPath = _path(fromId, id);
     _focusId = id;
     _hops = _bfs(id);
+    _syncMotionWindow(id);
+    _kickWalkMotion(fromId, id);
     _focusWorld = _layout.positions[id] ?? Offset.zero;
     final (ts, tp) = _framedTransform(_lastSize, id);
     _fromScale = _scale;
     _fromPan = _pan;
     _toScale = ts;
     _toPan = tp;
+    if (_disableAnimations) {
+      _cam.stop();
+      _wakeCtl
+        ..stop()
+        ..value = 1;
+      setState(() {
+        _scale = ts;
+        _pan = tp;
+      });
+      return;
+    }
     _cam.forward(from: 0);
     _wakeCtl.forward(from: 0);
     setState(() {});
@@ -328,7 +364,137 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     _fromPan = _pan;
     _toScale = ts;
     _toPan = tp;
+    if (_disableAnimations) {
+      _cam.stop();
+      _wakeCtl
+        ..stop()
+        ..value = 1;
+      setState(() {
+        _scale = ts;
+        _pan = tp;
+      });
+      return;
+    }
     _cam.forward(from: 0);
+  }
+
+  Offset? _displayWorldPosition(String id) {
+    final rest = _layout.positions[id];
+    if (rest == null) return null;
+    return _motion.displayPosition(id, rest);
+  }
+
+  void _syncMotionWindow(String focusId) {
+    final hops = _bfs(focusId);
+    final ids = [..._scenario.nodes]
+      ..sort((a, b) {
+        final hop = (hops[a.id] ?? 99).compareTo(hops[b.id] ?? 99);
+        if (hop != 0) return hop;
+        return (_degrees[b.id] ?? 0).compareTo(_degrees[a.id] ?? 0);
+      });
+    _motion.configureForceIsland(
+      restPositions: _layout.positions,
+      edges: _scenario.edges,
+      activeIds: ids
+          .where((node) => (hops[node.id] ?? 99) <= 2)
+          .take(_maxMotionNodes)
+          .map((node) => node.id),
+    );
+  }
+
+  double _worldPixels(double px) => px / math.max(_scale, 0.45);
+
+  void _kickWalkMotion(String fromId, String toId) {
+    final from = _layout.positions[fromId];
+    final to = _layout.positions[toId];
+    final direction = from == null || to == null ? Offset.zero : to - from;
+    _motion
+      ..kick(
+        toId,
+        direction: direction,
+        distance: _worldPixels(28),
+        velocity: _worldPixels(260),
+        dampingScale: 0.48,
+      )
+      ..kick(
+        fromId,
+        direction: -direction,
+        distance: _worldPixels(7),
+        velocity: _worldPixels(65),
+      );
+    _kickNeighborMotion(
+      toId,
+      exclude: {fromId, toId},
+      distancePx: 6,
+      velocityPx: 58,
+    );
+  }
+
+  void _kickTouchMotion(
+    String id, {
+    Offset? localPosition,
+    Offset? direction,
+  }) {
+    final rest = _layout.positions[id];
+    if (rest == null) return;
+    final screenCenter = (_displayWorldPosition(id) ?? rest) * _scale + _pan;
+    final push =
+        direction ??
+        (localPosition == null ? Offset.zero : screenCenter - localPosition);
+    _motion.kick(
+      id,
+      direction: push,
+      distance: _worldPixels(10),
+      velocity: _worldPixels(90),
+    );
+    _kickNeighborMotion(
+      id,
+      exclude: {id},
+      distancePx: 3.5,
+      velocityPx: 28,
+    );
+  }
+
+  void _kickPanMotion(Offset screenVelocity) {
+    if (screenVelocity.distance < 120) return;
+    final strength = (screenVelocity.distance / 1400).clamp(0.25, 1).toDouble();
+    _motion.kick(
+      _focusId,
+      direction: screenVelocity,
+      distance: _worldPixels(6 * strength),
+      velocity: _worldPixels(70 * strength),
+    );
+    _kickNeighborMotion(
+      _focusId,
+      exclude: {_focusId},
+      distancePx: 2.5 * strength,
+      velocityPx: 28 * strength,
+    );
+  }
+
+  void _kickNeighborMotion(
+    String id, {
+    required Set<String> exclude,
+    required double distancePx,
+    required double velocityPx,
+  }) {
+    final origin = _layout.positions[id];
+    if (origin == null) return;
+
+    var count = 0;
+    for (final neighborId in _adjacency[id] ?? const <String>[]) {
+      if (exclude.contains(neighborId)) continue;
+      final neighbor = _layout.positions[neighborId];
+      if (neighbor == null) continue;
+      _motion.kick(
+        neighborId,
+        direction: neighbor - origin,
+        distance: _worldPixels(distancePx),
+        velocity: _worldPixels(velocityPx),
+      );
+      count++;
+      if (count >= 16) break;
+    }
   }
 
   void _onScaleStart(ScaleStartDetails d) {
@@ -354,12 +520,16 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     });
   }
 
+  void _onScaleEnd(ScaleEndDetails d) {
+    _kickPanMotion(d.velocity.pixelsPerSecond);
+  }
+
   void _onTapUp(TapUpDetails d) {
     final local = d.localPosition;
     String? hit;
     var best = double.infinity;
     for (final node in _scenario.nodes) {
-      final world = _layout.positions[node.id];
+      final world = _displayWorldPosition(node.id);
       if (world == null) continue;
       final screen = world * _scale + _pan;
       final dist = (local - screen).distance;
@@ -368,7 +538,12 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         hit = node.id;
       }
     }
-    if (hit != null) _walkTo(hit);
+    if (hit == null) return;
+    if (hit == _focusId) {
+      _kickTouchMotion(hit, localPosition: local);
+    } else {
+      _walkTo(hit);
+    }
   }
 
   /// Direct neighbors of [id] (the other endpoint of every edge touching it),
@@ -430,8 +605,10 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                 Positioned.fill(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
+                    trackpadScrollCausesScale: true,
                     onScaleStart: _onScaleStart,
                     onScaleUpdate: _onScaleUpdate,
+                    onScaleEnd: _onScaleEnd,
                     onTapUp: _onTapUp,
                     child: CustomPaint(
                       painter: KnowledgeGraphPainter(
@@ -449,6 +626,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                         walkPath: _walkPath,
                         wake: _wake,
                         labelMaxHop: _world ? 1 : 2,
+                        motion: _motion,
                       ),
                       size: Size.infinite,
                     ),

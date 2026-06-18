@@ -44,6 +44,7 @@ void main() {
     bool showInspector = true,
     bool showTitle = true,
     bool showLegend = true,
+    bool disableAnimations = false,
     Size size = desktopSize,
     List<Override> extraOverrides = const [],
   }) async {
@@ -65,7 +66,10 @@ void main() {
           showTitle: showTitle,
           showLegend: showLegend,
         ),
-        mediaQueryData: MediaQueryData(size: size),
+        mediaQueryData: MediaQueryData(
+          size: size,
+          disableAnimations: disableAnimations,
+        ),
         overrides: extraOverrides,
       ),
     );
@@ -615,6 +619,42 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('reduced motion recenter jumps without a camera glide', (
+      tester,
+    ) async {
+      await pumpView(
+        tester,
+        scenario: exploreWorldScenario(),
+        size: phoneSize,
+        disableAnimations: true,
+      );
+
+      final initial = painterOf(tester);
+      await tester.drag(
+        find.byType(KnowledgeGraphView),
+        const Offset(84, 36),
+      );
+      await tester.pump();
+
+      final panned = painterOf(tester);
+      expect(panned.pan, isNot(initial.pan));
+
+      await tester.tap(find.byIcon(Icons.center_focus_strong));
+      await tester.pump();
+
+      final jumped = painterOf(tester);
+      expect(jumped.wake, 0);
+      expect(jumped.pan, isNot(panned.pan));
+
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final afterTime = painterOf(tester);
+      expect(afterTime.scale, jumped.scale);
+      expect(afterTime.pan, jumped.pan);
+      expect(afterTime.wake, 0);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets(
       'tapping back after a walk returns the focus to the previous node',
       (tester) async {
@@ -729,6 +769,16 @@ void main() {
         await tester.ensureVisible(inspectorText('Fix sync race condition'));
         await tester.pump();
         await tester.tap(inspectorText('Fix sync race condition'));
+        await tester.pump();
+
+        final motionAfterPanelWalk = painterOf(tester).motion!;
+        expect(
+          motionAfterPanelWalk.offsetFor('t1').distance,
+          greaterThan(
+            motionAfterPanelWalk.offsetFor(scenario.seedId).distance,
+          ),
+        );
+
         // Drive the bounded camera glide (760ms); never settle (the wake
         // controller ticks indefinitely).
         for (var i = 0; i < 5; i++) {
@@ -820,6 +870,59 @@ void main() {
     });
   });
 
+  group('node motion', () {
+    testWidgets('tapping the focused node kicks it without changing focus', (
+      tester,
+    ) async {
+      final scenario = taskEgoNetworkScenario();
+      final layout = computeGraphLayout(scenario);
+      await pumpView(tester, scenario: scenario);
+
+      final seedScreen = screenPosOf(
+        tester,
+        layout.positions[scenario.seedId]!,
+      );
+      await tester.tapAt(seedScreen);
+      await tester.pump();
+
+      final painter = painterOf(tester);
+      expect(painter.focusId, scenario.seedId);
+      expect(painter.motion, isNotNull);
+      expect(
+        painter.motion!.offsetFor(scenario.seedId).distance,
+        greaterThan(0),
+      );
+      expect(painter.motion!.activeNodeCount, greaterThan(1));
+
+      painter.motion!.settle();
+      await tester.pump();
+    });
+
+    testWidgets('system reduce motion suppresses node spring kicks', (
+      tester,
+    ) async {
+      final scenario = taskEgoNetworkScenario();
+      final layout = computeGraphLayout(scenario);
+      await pumpView(
+        tester,
+        scenario: scenario,
+        disableAnimations: true,
+      );
+
+      final seedScreen = screenPosOf(
+        tester,
+        layout.positions[scenario.seedId]!,
+      );
+      await tester.tapAt(seedScreen);
+      await tester.pump();
+
+      final motion = painterOf(tester).motion;
+      expect(motion, isNotNull);
+      expect(motion!.hasActiveMotion, isFalse);
+      expect(motion.offsetFor(scenario.seedId), Offset.zero);
+    });
+  });
+
   group('tap-to-walk', () {
     testWidgets('tapping a neighbor node changes the focus', (tester) async {
       // Use the ego scenario (deterministic layout). Compute where a 1-hop
@@ -850,6 +953,35 @@ void main() {
       expect(inspectorText('Lotti 2.x'), findsOneWidget);
       expect(inspectorText('PROJECT · WORK'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('reduced motion walks without camera or wake animation', (
+      tester,
+    ) async {
+      final scenario = taskEgoNetworkScenario();
+      final layout = computeGraphLayout(scenario);
+      await pumpView(
+        tester,
+        scenario: scenario,
+        disableAnimations: true,
+      );
+
+      const targetId = 'p0';
+      await tester.tapAt(screenPosOf(tester, layout.positions[targetId]!));
+      await tester.pump();
+
+      final jumped = painterOf(tester);
+      expect(jumped.focusId, targetId);
+      expect(jumped.wake, 0);
+      expect(jumped.motion, isNotNull);
+      expect(jumped.motion!.hasActiveMotion, isFalse);
+
+      await tester.pump(const Duration(milliseconds: 200));
+
+      final afterTime = painterOf(tester);
+      expect(afterTime.scale, jumped.scale);
+      expect(afterTime.pan, jumped.pan);
+      expect(afterTime.wake, 0);
     });
 
     testWidgets('tapping empty space leaves the focus unchanged', (
@@ -927,6 +1059,49 @@ void main() {
 
       // The pan moved; the focus did not.
       expect(after.pan, isNot(panBefore));
+      expect(after.focusId, scenario.seedId);
+    });
+
+    testWidgets('a fast drag release kicks the focused node and neighbors', (
+      tester,
+    ) async {
+      final scenario = taskEgoNetworkScenario();
+      await pumpView(tester, scenario: scenario);
+
+      await tester.fling(
+        find.byType(KnowledgeGraphView),
+        const Offset(260, 80),
+        1800,
+      );
+      await tester.pump();
+
+      final after = painterOf(tester);
+      final motion = after.motion;
+      expect(after.focusId, scenario.seedId);
+      expect(motion, isNotNull);
+      expect(motion!.offsetFor(scenario.seedId).distance, greaterThan(0));
+      expect(motion.activeNodeCount, greaterThan(1));
+    });
+
+    testWidgets('trackpad scroll zooms the graph', (tester) async {
+      final scenario = taskEgoNetworkScenario();
+      await pumpView(tester, scenario: scenario);
+
+      final scaleBefore = painterOf(tester).scale;
+      final pointer = TestPointer(1, ui.PointerDeviceKind.trackpad);
+      final center = tester.getCenter(find.byType(KnowledgeGraphView));
+
+      await tester.sendEventToBinding(pointer.panZoomStart(center));
+      await tester.pump();
+      await tester.sendEventToBinding(
+        pointer.panZoomUpdate(center, pan: const Offset(0, -80)),
+      );
+      await tester.pump();
+      await tester.sendEventToBinding(pointer.panZoomEnd());
+      await tester.pump();
+
+      final after = painterOf(tester);
+      expect(after.scale, greaterThan(scaleBefore));
       expect(after.focusId, scenario.seedId);
     });
   });

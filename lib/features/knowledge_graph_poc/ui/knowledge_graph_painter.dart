@@ -23,6 +23,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/graph_motion_controller.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
 
 class KnowledgeGraphPainter extends CustomPainter {
@@ -41,7 +42,8 @@ class KnowledgeGraphPainter extends CustomPainter {
     this.walkPath = const [],
     this.wake = 0,
     this.labelMaxHop = 2,
-  });
+    this.motion,
+  }) : super(repaint: motion);
 
   /// Preloaded thumbnails for image nodes (node id → decoded image).
   final Map<String, ui.Image> images;
@@ -70,10 +72,16 @@ class KnowledgeGraphPainter extends CustomPainter {
   /// 1 → 0 over the walk: brightens the trail to read the traversal as travel.
   final double wake;
   final int labelMaxHop;
+  final GraphMotionController? motion;
 
   static const double _maxAgeDays = 32;
 
-  Offset _screen(String id) => positions[id]! * scale + pan;
+  Offset _world(String id) {
+    final rest = positions[id]!;
+    return motion?.displayPosition(id, rest) ?? rest;
+  }
+
+  Offset _screen(String id) => _world(id) * scale + pan;
 
   double _fade(GraphNode node) =>
       (scenario.ageDays(node) / _maxAgeDays).clamp(0.0, 1.0);
@@ -191,10 +199,12 @@ class KnowledgeGraphPainter extends CustomPainter {
       ..color = style.focusRing.withValues(alpha: alpha)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2);
     for (var i = 0; i < walkPath.length - 1; i++) {
-      final a = positions[walkPath[i]];
-      final b = positions[walkPath[i + 1]];
+      final a = positions[walkPath[i]] == null ? null : _screen(walkPath[i]);
+      final b = positions[walkPath[i + 1]] == null
+          ? null
+          : _screen(walkPath[i + 1]);
       if (a == null || b == null) continue;
-      canvas.drawLine(a * scale + pan, b * scale + pan, paint);
+      canvas.drawLine(a, b, paint);
     }
   }
 
@@ -615,6 +625,7 @@ class KnowledgeGraphPainter extends CustomPainter {
         old.previousFocusId != previousFocusId ||
         old.walkPath != walkPath ||
         old.wake != wake ||
-        old.labelMaxHop != labelMaxHop;
+        old.labelMaxHop != labelMaxHop ||
+        old.motion != motion;
   }
 }
