@@ -2691,6 +2691,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Show the Habits page in the main navigation. Track and manage your daily habits here.';
 
   @override
+  String get configFlagEnableKnowledgeGraph => 'Knowledge Graph';
+
+  @override
+  String get configFlagEnableKnowledgeGraphDescription =>
+      'Show the experimental knowledge graph explorer on tasks — a visual map of links between tasks, entries, and projects.';
+
+  @override
   String get configFlagEnableLogging => 'Enable logging';
 
   @override
@@ -5524,6 +5531,18 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get journalUnlinkQuestion =>
       'Are you sure you want to unlink this entry?';
+
+  @override
+  String get knowledgeGraphEmpty => 'No links to explore yet';
+
+  @override
+  String get knowledgeGraphError => 'Couldn\'t load the knowledge graph';
+
+  @override
+  String get knowledgeGraphTitle => 'Knowledge graph';
+
+  @override
+  String get knowledgeGraphTooltip => 'Explore links';
 
   @override
   String get linkedFromCaption => 'from';

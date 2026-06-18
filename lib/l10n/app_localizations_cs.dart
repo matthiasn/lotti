@@ -2732,6 +2732,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zobrazit stránku Návyky v hlavní navigaci. Zde sledujte a spravujte své denní návyky.';
 
   @override
+  String get configFlagEnableKnowledgeGraph => 'Znalostní graf';
+
+  @override
+  String get configFlagEnableKnowledgeGraphDescription =>
+      'Zobrazit experimentální průzkumník znalostního grafu u úkolů — vizuální mapu propojení mezi úkoly, záznamy a projekty.';
+
+  @override
   String get configFlagEnableLogging => 'Povolit protokolování';
 
   @override
@@ -5595,6 +5602,18 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get journalUnlinkQuestion => 'Opravdu chcete tento záznam odepnout?';
+
+  @override
+  String get knowledgeGraphEmpty => 'Zatím žádné odkazy k prozkoumání';
+
+  @override
+  String get knowledgeGraphError => 'Znalostní graf se nepodařilo načíst';
+
+  @override
+  String get knowledgeGraphTitle => 'Graf znalostí';
+
+  @override
+  String get knowledgeGraphTooltip => 'Prozkoumat odkazy';
 
   @override
   String get linkedFromCaption => 'z';

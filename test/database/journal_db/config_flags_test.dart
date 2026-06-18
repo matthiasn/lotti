@@ -81,6 +81,7 @@ void main() {
         enableSessionRatingsFlag: false,
         enableSyncActorFlag: false,
         enableProjectsFlag: false,
+        enableKnowledgeGraphFlag: false,
         logSlowQueriesFlag: false,
         enableEmbeddingsFlag: false,
         enableVectorSearchFlag: false,

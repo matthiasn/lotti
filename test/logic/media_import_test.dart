@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
@@ -238,22 +237,15 @@ void main() {
     return file;
   }
 
-  DropDoneDetails createDropDetails(List<XFile> xfiles) {
-    final dropItems = xfiles.map(FakeDropItem.new).toList();
-    return DropDoneDetails(
-      files: dropItems,
-      localPosition: Offset.zero,
-      globalPosition: Offset.zero,
-    );
-  }
+  List<XFile> createDropDetails(List<XFile> xfiles) => xfiles;
 
   group('handleDroppedMedia', () {
     test('dispatches image files to importDroppedImages', () async {
       final imageFile = await createTestFile('test.jpg', 1024);
       final dropDetails = createDropDetails([XFile(imageFile.path)]);
 
-      await handleDroppedMedia(
-        data: dropDetails,
+      await handleDroppedMediaFiles(
+        dropDetails,
         linkedId: 'linked-123',
       );
 
@@ -271,8 +263,8 @@ void main() {
       final audioFile = await createTestFile('test.m4a', 1024);
       final dropDetails = createDropDetails([XFile(audioFile.path)]);
 
-      await handleDroppedMedia(
-        data: dropDetails,
+      await handleDroppedMediaFiles(
+        dropDetails,
         linkedId: 'linked-123',
       );
 
@@ -294,8 +286,8 @@ void main() {
         XFile(audioFile.path),
       ]);
 
-      await handleDroppedMedia(
-        data: dropDetails,
+      await handleDroppedMediaFiles(
+        dropDetails,
         linkedId: 'linked-123',
       );
 
@@ -321,8 +313,8 @@ void main() {
       final textFile = await createTestFile('readme.txt', 100);
       final dropDetails = createDropDetails([XFile(textFile.path)]);
 
-      await handleDroppedMedia(
-        data: dropDetails,
+      await handleDroppedMediaFiles(
+        dropDetails,
         linkedId: 'linked-123',
       );
 
@@ -344,8 +336,8 @@ void main() {
         XFile(audioFile.path),
       ]);
 
-      await handleDroppedMedia(
-        data: dropDetails,
+      await handleDroppedMediaFiles(
+        dropDetails,
         linkedId: 'linked-123',
         categoryId: 'cat-456',
       );
@@ -399,8 +391,8 @@ void main() {
         xFiles.add(XFile(file.path));
       }
 
-      await handleDroppedMedia(
-        data: createDropDetails(xFiles),
+      await handleDroppedMediaFiles(
+        createDropDetails(xFiles),
         linkedId: 'linked-generated',
         categoryId: 'category-generated',
       );

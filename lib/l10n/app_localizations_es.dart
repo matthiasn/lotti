@@ -2741,6 +2741,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Mostrar la página Hábitos en la navegación principal. Rastrea y administra tus hábitos diarios aquí.';
 
   @override
+  String get configFlagEnableKnowledgeGraph => 'Grafo de conocimiento';
+
+  @override
+  String get configFlagEnableKnowledgeGraphDescription =>
+      'Muestra el explorador experimental de grafo de conocimiento en las tareas — un mapa visual de los vínculos entre tareas, entradas y proyectos.';
+
+  @override
   String get configFlagEnableLogging => 'Habilitar registro';
 
   @override
@@ -5637,6 +5644,19 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get journalUnlinkQuestion =>
       '¿Estás seguro de que quieres desvincular esta entrada?';
+
+  @override
+  String get knowledgeGraphEmpty => 'Aún no hay enlaces para explorar';
+
+  @override
+  String get knowledgeGraphError =>
+      'No se pudo cargar el grafo de conocimiento';
+
+  @override
+  String get knowledgeGraphTitle => 'Grafo de conocimiento';
+
+  @override
+  String get knowledgeGraphTooltip => 'Explorar enlaces';
 
   @override
   String get linkedFromCaption => 'desde';

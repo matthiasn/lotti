@@ -56,3 +56,4 @@ Each ADR should contain:
 - [`0026-author-time-memory-links.md`](./0026-author-time-memory-links.md)
 - [`0027-wake-notification-propagation-and-storm-prevention.md`](./0027-wake-notification-propagation-and-storm-prevention.md)
 - [`0028-tagged-plaintext-payload-and-day-summaries.md`](./0028-tagged-plaintext-payload-and-day-summaries.md)
+- [`0029-knowledge-graph-explorer.md`](./0029-knowledge-graph-explorer.md)

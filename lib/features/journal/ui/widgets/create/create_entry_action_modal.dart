@@ -65,7 +65,7 @@ class _CreateEntryMenuList extends ConsumerWidget {
       CreateAudioItem(linkedFromId, categoryId: categoryId),
       if (linkedFromId != null) CreateTimerItem(linkedFromId!),
       CreateTextItem(linkedFromId, categoryId: categoryId),
-      if (isMacOS || isMobile)
+      if (isMacOS || isMobile || isLinux || isWindows)
         ImportImageItem(linkedFromId, categoryId: categoryId),
       if (isMacOS || isLinux)
         CreateScreenshotItem(linkedFromId, categoryId: categoryId),

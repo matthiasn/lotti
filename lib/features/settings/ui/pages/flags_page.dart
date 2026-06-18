@@ -106,6 +106,7 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableEventsFlag,
     enableSessionRatingsFlag,
     enableProjectsFlag,
+    enableKnowledgeGraphFlag,
     enableEmbeddingsFlag,
     enableVectorSearchFlag,
     enableSyncedAlertsFlag,
@@ -162,6 +163,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.star_rate_rounded;
       case enableProjectsFlag:
         return Icons.folder_outlined;
+      case enableKnowledgeGraphFlag:
+        return Icons.bubble_chart_outlined;
       case enableEmbeddingsFlag:
         return Icons.hub_outlined;
       case enableVectorSearchFlag:
@@ -215,6 +218,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableSessionRatingsDescription;
       case enableProjectsFlag:
         return context.messages.configFlagEnableProjectsDescription;
+      case enableKnowledgeGraphFlag:
+        return context.messages.configFlagEnableKnowledgeGraphDescription;
       case enableEmbeddingsFlag:
         return context.messages.configFlagAttemptEmbeddingDescription;
       case enableVectorSearchFlag:
@@ -268,6 +273,8 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableSessionRatings;
       case enableProjectsFlag:
         return context.messages.configFlagEnableProjects;
+      case enableKnowledgeGraphFlag:
+        return context.messages.configFlagEnableKnowledgeGraph;
       case enableEmbeddingsFlag:
         return context.messages.configFlagEnableEmbeddings;
       case enableVectorSearchFlag:

@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:exif/exif.dart';
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -155,21 +155,37 @@ Future<void> importImageAssets(
   }
 }
 
-/// Imports dropped image files and creates journal entries.
-///
-/// Validates file extensions and size limits before importing.
-/// Only processes files with supported image extensions.
-/// If [analysisTrigger] is provided, triggers automatic image analysis
-/// for each imported image (fire-and-forget, doesn't block import).
-///
-/// Throws exceptions on file system errors which should be handled by caller.
-Future<void> importDroppedImages({
-  required DropDoneDetails data,
+/// Imports image files picked from a desktop file dialog (Linux/Windows),
+/// where the gallery picker (`importImageAssets`) is unavailable.
+Future<void> importImagePickerFiles({
   String? linkedId,
   String? categoryId,
   AutomaticImageAnalysisTrigger? analysisTrigger,
 }) async {
-  for (final file in data.files) {
+  const group = XTypeGroup(
+    extensions: ['jpg', 'jpeg', 'png'],
+  );
+  final files = await openFiles(acceptedTypeGroups: const [group]);
+  if (files.isEmpty) return;
+  await importImageXFiles(
+    files,
+    linkedId: linkedId,
+    categoryId: categoryId,
+    analysisTrigger: analysisTrigger,
+  );
+}
+
+/// Shared importer for a list of image [files] — used by both drag-and-drop
+/// and the desktop file picker. Validates extension + size, copies into the
+/// app's image directory, and creates a linked image entry. Per-file failures
+/// are logged and skipped so one bad file doesn't abort the batch.
+Future<void> importImageXFiles(
+  List<XFile> files, {
+  String? linkedId,
+  String? categoryId,
+  AutomaticImageAnalysisTrigger? analysisTrigger,
+}) async {
+  for (final file in files) {
     try {
       final lastModified = await file.lastModified();
       final id = uuid.v1();

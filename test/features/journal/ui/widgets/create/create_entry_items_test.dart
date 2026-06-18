@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:file_selector_platform_interface/file_selector_platform_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -766,13 +767,21 @@ void main() {
     }
 
     testWidgets(
-      'tapping ImportImageItem calls importImageAssets and pops the sheet',
+      'tapping ImportImageItem runs the importer and pops the sheet',
       (tester) async {
         const linkedId = 'import-image-linked-id';
         const categoryId = 'import-image-cat-id';
 
+        // The importer is platform-dependent: on Linux/Windows it opens a
+        // desktop file dialog (`openFiles`), elsewhere the gallery picker
+        // (`importImageAssets`). Stub both to a no-op (cancelled dialog /
+        // denied permissions) so the importer returns early and the sheet
+        // pops on any host platform.
         mockPhotoManagerDenied();
         addTearDown(clearPhotoManagerMock);
+        final originalFileSelector = FileSelectorPlatform.instance;
+        FileSelectorPlatform.instance = FakeFileSelectorPlatform();
+        addTearDown(() => FileSelectorPlatform.instance = originalFileSelector);
 
         final mockTrigger = MockAutomaticImageAnalysisTrigger();
 
@@ -814,9 +823,9 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
         await tester.pumpAndSettle();
 
-        // After tap, the bottom sheet should be dismissed (importImageAssets
-        // returned early due to denied permissions, then context.mounted was
-        // true so Navigator.pop() ran).
+        // After tap, the bottom sheet should be dismissed (the importer
+        // returned early — cancelled dialog / denied permissions — then
+        // context.mounted was true so Navigator.pop() ran).
         expect(find.byType(CreateMenuListItem), findsNothing);
       },
     );

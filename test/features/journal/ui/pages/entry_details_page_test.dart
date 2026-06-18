@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:cross_file/cross_file.dart';
-import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -27,6 +26,7 @@ import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:lotti/widgets/media/media_drop_target.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
@@ -37,22 +37,6 @@ import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
-
-// Minimal fake DropItem for invoking the onDragDone callback directly.
-class _FakeDropItem extends Fake implements DropItem {
-  _FakeDropItem(this._xFile);
-
-  final XFile _xFile;
-
-  @override
-  String get name => _xFile.name;
-
-  @override
-  String get path => _xFile.path;
-
-  @override
-  Future<DateTime> lastModified() => _xFile.lastModified();
-}
 
 void main() {
   // setUpTestGetIt pre-registers core services (JournalDb,
@@ -339,28 +323,17 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Find the DropTarget wrapping the entry page body.
+        // Find the MediaDropTarget wrapping the entry page body.
         final dropTargetFinder = find.descendant(
           of: find.byType(EntryDetailsPage),
-          matching: find.byType(DropTarget),
+          matching: find.byType(MediaDropTarget),
         );
         expect(dropTargetFinder, findsOneWidget);
 
-        final dropTarget = tester.widget<DropTarget>(dropTargetFinder);
-        expect(dropTarget.onDragDone, isNotNull);
+        final dropTarget = tester.widget<MediaDropTarget>(dropTargetFinder);
 
-        // Invoke with empty file list — no import logic runs, callback body
-        // (lines 115-120) executes without throwing.
-        const emptyDrop = DropDoneDetails(
-          files: [],
-          localPosition: Offset.zero,
-          globalPosition: Offset.zero,
-        );
-
-        expect(
-          () => dropTarget.onDragDone!.call(emptyDrop),
-          returnsNormally,
-        );
+        // An empty drop runs the callback body without reaching any import.
+        expect(() => dropTarget.onFiles(const []), returnsNormally);
 
         await tester.pump();
 
@@ -433,11 +406,11 @@ void main() {
 
         final dropTargetFinder = find.descendant(
           of: find.byType(EntryDetailsPage),
-          matching: find.byType(DropTarget),
+          matching: find.byType(MediaDropTarget),
         );
-        final dropTarget = tester.widget<DropTarget>(dropTargetFinder);
+        final dropTarget = tester.widget<MediaDropTarget>(dropTargetFinder);
 
-        // onDragDone forwards to handleDroppedMedia (fire-and-forget). The whole
+        // onFiles forwards to handleDroppedMediaFiles (fire-and-forget). The
         // pipeline performs real file IO (creating the temp source, copying it
         // into the assets dir), so everything that touches dart:io must run
         // inside runAsync; under the test's fake-async zone real IO never
@@ -450,13 +423,7 @@ void main() {
           final imageFile = File(p.join(tempDir.path, 'dropped.png'));
           await imageFile.writeAsBytes(List<int>.filled(64, 0));
 
-          final dropDetails = DropDoneDetails(
-            files: [_FakeDropItem(XFile(imageFile.path))],
-            localPosition: Offset.zero,
-            globalPosition: Offset.zero,
-          );
-
-          dropTarget.onDragDone!.call(dropDetails);
+          unawaited(dropTarget.onFiles([XFile(imageFile.path)]));
 
           // Yield to the event loop (not just microtasks) so the real file
           // copy and the async persistence chain can run to completion. Bounded
@@ -514,9 +481,9 @@ void main() {
         );
         await tester.pump();
 
-        // The DropTarget (and thus the full page body) is still present,
+        // The MediaDropTarget (and thus the full page body) is still present,
         // confirming the widget survived the scroll without error.
-        expect(find.byType(DropTarget), findsOneWidget);
+        expect(find.byType(MediaDropTarget), findsOneWidget);
       },
     );
   });

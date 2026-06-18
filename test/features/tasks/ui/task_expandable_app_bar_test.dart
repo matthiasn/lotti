@@ -6,7 +6,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/knowledge_graph_poc/state/task_graph_provider.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/task_knowledge_graph_page.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/features/tasks/ui/task_expandable_app_bar.dart';
@@ -16,6 +19,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_back_button.dart';
 import 'package:mocktail/mocktail.dart';
@@ -88,9 +92,18 @@ void main() {
     Task task,
     String coverArtId, {
     double? initialOffset,
+    bool enableGraph = false,
   }) {
     return ProviderScope(
       overrides: [
+        configFlagProvider(
+          enableKnowledgeGraphFlag,
+        ).overrideWith((ref) => Stream<bool>.value(enableGraph)),
+        // Harmless when the graph isn't opened; when it is, null data renders
+        // the empty state so the pushed page builds without real graph
+        // computation or getIt<LoggingService> (only the error listener uses
+        // it).
+        taskGraphProvider(task.id).overrideWith((ref) async => null),
         if (initialOffset != null)
           taskAppBarControllerProvider(id: task.id).overrideWith(
             () => _FixedOffsetTaskAppBarController(initialOffset),
@@ -159,17 +172,55 @@ void main() {
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     });
 
-    testWidgets('renders GlassActionButtons for back and more menu', (
-      tester,
-    ) async {
-      final task = buildTask();
+    testWidgets(
+      'with the knowledge-graph flag off renders only back and more menu',
+      (tester) async {
+        final task = buildTask();
 
-      await pumpMobile(tester, buildTestWidget(task, 'image-1'));
-      await tester.pump();
+        await pumpMobile(tester, buildTestWidget(task, 'image-1'));
+        await tester.pump();
 
-      // GlassBackButton uses GlassActionButton internally, plus one for more menu
-      expect(find.byType(GlassActionButton), findsNWidgets(2));
-    });
+        // GlassBackButton uses GlassActionButton internally, plus one for the
+        // more menu. The knowledge-graph hub button is gated behind the flag.
+        expect(find.byType(GlassActionButton), findsNWidgets(2));
+        expect(find.byIcon(Icons.hub_outlined), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'with the knowledge-graph flag on renders the hub button too',
+      (tester) async {
+        final task = buildTask();
+
+        await pumpMobile(
+          tester,
+          buildTestWidget(task, 'image-1', enableGraph: true),
+        );
+        await tester.pump();
+
+        // Back + knowledge-graph hub + more menu.
+        expect(find.byType(GlassActionButton), findsNWidgets(3));
+        expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tapping the knowledge-graph hub button navigates to the graph page',
+      (tester) async {
+        final task = buildTask();
+
+        await pumpMobile(
+          tester,
+          buildTestWidget(task, 'image-1', enableGraph: true),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byIcon(Icons.hub_outlined));
+        await tester.pumpAndSettle(const Duration(milliseconds: 500));
+
+        expect(find.byType(TaskKnowledgeGraphPage), findsOneWidget);
+      },
+    );
 
     testWidgets('renders more_horiz icon', (tester) async {
       final task = buildTask();
