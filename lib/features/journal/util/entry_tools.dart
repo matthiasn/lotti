@@ -131,40 +131,16 @@ String _titleCaseTokens(String raw) {
       .join(' ');
 }
 
-/// A locale-aware, de-emphasized date label for list cards. Keeps the feed
-/// scannable by showing only what's needed: the time for today, a weekday for
-/// the past/coming week, `MMM d` within the current year, and `MMM d, y` for
-/// anything older. [now] is injected so the logic stays deterministic in tests.
-String relativeEntryDateLabel(
-  DateTime date,
-  DateTime now, {
-  String? locale,
-}) {
-  final local = date.toLocal();
-  final startOfToday = DateTime(now.year, now.month, now.day);
-  final startOfThatDay = DateTime(local.year, local.month, local.day);
-  final dayDelta = startOfThatDay.difference(startOfToday).inDays;
-  final time = DateFormat.jm(locale).format(local);
-
-  if (dayDelta == 0) {
-    return time;
-  }
-  if (dayDelta.abs() < 7) {
-    return '${DateFormat.E(locale).format(local)} $time';
-  }
-  if (local.year == now.year) {
-    return DateFormat.MMMd(locale).format(local);
-  }
-  return DateFormat.yMMMd(locale).format(local);
+/// A full, locale-aware timestamp (date + time) for list cards, e.g.
+/// `Mar 15, 2024 10:30 AM`. Deterministic given a date and locale.
+String formatEntryTimestamp(DateTime date, {String? locale}) {
+  return DateFormat.yMMMd(locale).add_jm().format(date.toLocal());
 }
 
-/// [relativeEntryDateLabel] resolved against the current wall clock and the
-/// active locale. Used by list cards; the underlying pure function is unit
-/// tested with a fixed `now`.
+/// [formatEntryTimestamp] resolved against the active locale. Used by list cards.
 String entryDateLabel(BuildContext context, DateTime date) {
-  return relativeEntryDateLabel(
+  return formatEntryTimestamp(
     date,
-    DateTime.now(),
     locale: Localizations.localeOf(context).toString(),
   );
 }

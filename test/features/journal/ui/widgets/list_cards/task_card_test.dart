@@ -28,6 +28,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/task_progress_test_controller.dart';
 import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -95,6 +96,9 @@ void main() {
       ProviderScope(
         overrides: overrides,
         child: MaterialApp(
+          // ModernTaskCard now reads the DsTokens theme extension (for the
+          // card-on-canvas surface), so the harness must provide it.
+          theme: resolveTestTheme(),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: Scaffold(body: card),
@@ -104,19 +108,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
   }
 
-  testWidgets('renders category icon after status chip', (tester) async {
+  testWidgets('status row keeps priority + status, drops the category badge', (
+    tester,
+  ) async {
     final task = buildTask();
 
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: SizedBox.shrink(),
-          ),
-        ),
-      ),
-    );
-    // Rebuild with the real widget under test to ensure ProviderScope is present
     await pumpTaskCard(tester, ModernTaskCard(task: task));
 
     // Find the Row that contains the chips (priority/status row)

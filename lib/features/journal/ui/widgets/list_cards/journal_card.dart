@@ -9,6 +9,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
@@ -72,6 +73,7 @@ class ModernJournalCard extends StatelessWidget {
 
     return ModernBaseCard(
       onTap: onTap,
+      backgroundColor: dsCardSurface(context),
       margin: EdgeInsets.symmetric(
         horizontal: removeHorizontalMargin ? 0 : AppTheme.spacingLarge,
         vertical: AppTheme.cardSpacing / 2,

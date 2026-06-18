@@ -817,7 +817,7 @@ void main() {
         expect(find.text('AI'), findsOneWidget);
       });
 
-      testWidgets('renders the relative date label, not a raw timestamp', (
+      testWidgets('renders a full date+time label, not a raw ISO timestamp', (
         tester,
       ) async {
         await tester.pumpWidget(
@@ -826,8 +826,19 @@ void main() {
           ),
         );
 
-        // The de-emphasized meta row never shows the raw 'yyyy-MM-dd HH:mm'
-        // format anymore.
+        // The meta row shows a full, humanised timestamp (e.g.
+        // "Mar 15, 2024 10:30 AM") — resolved via the same code path so the
+        // locale matches the rendered card…
+        final BuildContext context = tester.element(
+          find.byType(ModernJournalCard),
+        );
+        expect(
+          find.text(
+            entry_tools.entryDateLabel(context, testEvent.meta.dateFrom),
+          ),
+          findsOneWidget,
+        );
+        // …and never the raw 'yyyy-MM-dd HH:mm' ISO format.
         expect(
           find.text(
             entry_tools.dfShorter.format(testEvent.meta.dateFrom),

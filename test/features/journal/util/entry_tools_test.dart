@@ -237,4 +237,25 @@ void main() {
       expect(formatUnit('KILOCALORIE'), 'KILOCALORIE');
     });
   });
+
+  group('formatEntryTimestamp', () {
+    test('renders the full date and time for the locale', () {
+      final result = formatEntryTimestamp(
+        DateTime(2024, 3, 15, 10, 30),
+        locale: 'en_US',
+      );
+      // A full timestamp keeps both the date and the time of day.
+      expect(result, contains('Mar 15, 2024'));
+      expect(result, contains('10:30'));
+    });
+
+    test('keeps the date and time for an afternoon timestamp', () {
+      final result = formatEntryTimestamp(
+        DateTime(2024, 12, 1, 14, 5),
+        locale: 'en_US',
+      );
+      expect(result, contains('Dec 1, 2024'));
+      expect(result, contains('2:05'));
+    });
+  });
 }

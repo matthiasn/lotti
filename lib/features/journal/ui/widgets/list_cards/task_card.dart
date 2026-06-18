@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/compact_task_progress.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
@@ -46,6 +47,7 @@ class ModernTaskCard extends StatelessWidget {
 
     return ModernBaseCard(
       onTap: onTap,
+      backgroundColor: dsCardSurface(context),
       margin: const EdgeInsets.symmetric(
         horizontal: 12,
         vertical: AppTheme.cardSpacing / 2,

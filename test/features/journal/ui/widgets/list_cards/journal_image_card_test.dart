@@ -8,6 +8,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_image_card.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -221,26 +222,28 @@ void main() {
       );
     });
 
-    testWidgets('shows a time-of-day date label for a same-day entry', (
+    testWidgets('shows a full date + time label in the meta row', (
       tester,
     ) async {
-      // An entry dated "today" renders its relative date label as the time
-      // (HH:MM via DateFormat.jm), so the meta row reads as a clock time.
-      final todayEntry = testImageEntry.copyWith(
+      final entry = testImageEntry.copyWith(
         meta: testImageEntry.meta.copyWith(
-          dateFrom: DateTime.now(),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
         ),
       );
 
       await tester.pumpWidget(
         makeTestableWidget(
-          ModernJournalImageCard(item: todayEntry),
+          ModernJournalImageCard(item: entry),
         ),
       );
 
-      // The relative label for today is a wall-clock time like "3:30 PM".
+      // The meta row shows the full humanised timestamp (date + time), resolved
+      // via the same code path so the locale matches the rendered card.
+      final BuildContext context = tester.element(
+        find.byType(ModernJournalImageCard),
+      );
       expect(
-        find.textContaining(RegExp(r'\d{1,2}:\d{2}')),
+        find.text(entryDateLabel(context, entry.meta.dateFrom)),
         findsOneWidget,
       );
     });

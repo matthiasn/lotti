@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_image_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -38,6 +39,7 @@ class ModernJournalImageCard extends StatelessWidget {
 
     return ModernBaseCard(
       onTap: onTap,
+      backgroundColor: dsCardSurface(context),
       margin: const EdgeInsets.symmetric(
         horizontal: AppTheme.spacingLarge,
         vertical: AppTheme.cardSpacing / 2,
