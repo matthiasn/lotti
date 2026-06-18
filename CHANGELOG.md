@@ -28,8 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   it is from your goal — above a smooth 7-day-average trend line that climbs
   through a shaded "on track" band, with the raw daily rates as light dots
   behind it and a quiet, encouraging pointer below to the one habit most worth a
-  focus ("kept 5 of 30"). You can switch the chart between 7-, 14-, 30-, and
-  90-day windows to see anything from this week to a full quarter of progress.
+  focus ("kept 5 of 30"). You can switch the chart between 14-, 30-, and 90-day
+  windows to see anything from a fortnight to a full quarter of progress.
   Logging a habit is now a small, staged celebration:
   the check pops in, a soft accent glow blooms on the row, a burst of sparks
   flies from the check, its streak flame pulses and ticks up, the done count

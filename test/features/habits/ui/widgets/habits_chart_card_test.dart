@@ -48,17 +48,18 @@ void main() {
   });
 
   testWidgets(
-    'renders the time-span control with 7d / 14d / 30d / 90d segments',
+    'renders the time-span control with 14d / 30d / 90d segments',
     (tester) async {
       await pump(tester, HabitsState.initial());
 
       expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
       // Each segment label is rendered twice (a hidden width-reserving ghost
       // plus the visible label), so assert two matches per span.
-      expect(find.text('7d'), findsNWidgets(2));
       expect(find.text('14d'), findsNWidgets(2));
       expect(find.text('30d'), findsNWidgets(2));
       expect(find.text('90d'), findsNWidgets(2));
+      // 7d was dropped.
+      expect(find.text('7d'), findsNothing);
     },
   );
 

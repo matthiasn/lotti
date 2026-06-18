@@ -5,7 +5,6 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
-import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
 part 'habits_state.freezed.dart';
@@ -70,7 +69,7 @@ abstract class HabitsState with _$HabitsState {
     openNow: [],
     pendingLater: [],
     completed: [],
-    days: getHabitDays(isDesktop ? 14 : 7),
+    days: getHabitDays(14),
     successfulToday: <String>{},
     successfulByDay: <String, Set<String>>{},
     skippedByDay: <String, Set<String>>{},
@@ -82,7 +81,7 @@ abstract class HabitsState with _$HabitsState {
     failedPercentage: 0,
     shortStreakCount: 0,
     longStreakCount: 0,
-    timeSpanDays: isDesktop ? 14 : 7,
+    timeSpanDays: 14,
     zeroBased: true,
     minY: 0,
     displayFilter: HabitDisplayFilter.openNow,

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -83,6 +85,11 @@ class _HabitActionRowState extends State<HabitActionRow>
   /// time [dispose] runs — even for a missing habit whose `build` returns early.
   late final AnimationController _celebrate;
 
+  /// True between an optimistic (tap-time) celebration and the matching
+  /// data-driven `completedToday` flip, so the flip doesn't restart the
+  /// animation that's already playing.
+  bool _optimisticCelebration = false;
+
   @override
   void initState() {
     super.initState();
@@ -96,10 +103,16 @@ class _HabitActionRowState extends State<HabitActionRow>
   void didUpdateWidget(HabitActionRow oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.completedToday && widget.completedToday) {
-      // Always run the timeline; the builders decide what it *looks* like. Under
-      // reduced motion that's an opacity-only glow with no particles (see
-      // [build]); otherwise the full staged celebration.
-      _celebrate.forward(from: 0);
+      if (_optimisticCelebration) {
+        // A tap on this row already started the timeline; the provider just
+        // caught up. Don't restart it — let the in-flight animation continue.
+        _optimisticCelebration = false;
+      } else {
+        // Completed from elsewhere (the dialog, a sync). Run the timeline; the
+        // builders decide what it *looks* like — an opacity-only glow under
+        // reduced motion, the full staged celebration otherwise.
+        _celebrate.forward(from: 0);
+      }
     }
   }
 
@@ -155,6 +168,17 @@ class _HabitActionRowState extends State<HabitActionRow>
     HabitCompletionType completionType,
     HabitDefinition habitDefinition,
   ) async {
+    // Fire the celebration first, the instant the tap lands, then persist +
+    // recompute afterwards. Gating the animation behind the provider round-trip
+    // made the burst feel laggy on mobile ("the UI blocks, then particles fly
+    // later"). Only a fresh success flips the row to done, so only that case
+    // celebrates; [didUpdateWidget] won't double-fire it (see
+    // [_optimisticCelebration]).
+    if (completionType == HabitCompletionType.success &&
+        !widget.completedToday) {
+      _optimisticCelebration = true;
+      unawaited(_celebrate.forward(from: 0));
+    }
     await HapticFeedback.lightImpact();
     final now = DateTime.now();
     await getIt<PersistenceLogic>().createHabitCompletionEntry(

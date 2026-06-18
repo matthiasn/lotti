@@ -262,7 +262,11 @@ void main() {
       );
 
       updateController.add({habitCompletionNotification});
-      async.flushMicrotasks();
+      // The completion-triggered recompute is debounced (350ms) so it lands
+      // off the tap frame; advance past it.
+      async
+        ..elapse(const Duration(milliseconds: 350))
+        ..flushMicrotasks();
 
       verify(
         () => mockRepository.getHabitCompletionsInRange(

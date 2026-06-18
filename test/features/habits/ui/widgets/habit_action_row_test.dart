@@ -328,6 +328,26 @@ void main() {
       );
     });
 
+    testWidgets(
+      'tapping complete fires the celebration before the data flips',
+      (
+        tester,
+      ) async {
+        await pumpRow(tester); // not done
+        expect(find.byType(CompletionBurst), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.add_rounded));
+        await tester.pump(); // establish the animation start
+        // Into the burst window while completedToday is STILL false — the
+        // celebration is optimistic (driven by the tap), not gated on the
+        // provider catching up after the persist + recompute.
+        await tester.pump(const Duration(milliseconds: 220));
+        expect(find.byType(CompletionBurst), findsOneWidget);
+
+        await tester.pump(const Duration(milliseconds: 1400)); // settle
+      },
+    );
+
     testWidgets('the icon swap is driven through an AnimatedSwitcher (pop)', (
       tester,
     ) async {
