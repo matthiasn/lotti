@@ -7,7 +7,10 @@
 /// Pan / pinch-zoom free-look is always available.
 library;
 
+import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -21,6 +24,7 @@ class KnowledgeGraphView extends StatefulWidget {
   const KnowledgeGraphView({
     this.scenario,
     this.categoryColors,
+    this.categoryNames = const {},
     this.initialFocusId,
     this.initialPreviousFocusId,
     this.showTitle = true,
@@ -34,6 +38,10 @@ class KnowledgeGraphView extends StatefulWidget {
   /// Real category id → color (from `CategoryDefinition`s). When null the
   /// synthetic palette is used (the standalone POC scenarios).
   final Map<String, Color>? categoryColors;
+
+  /// Real category id → display name (so the inspector/legend show names, not
+  /// UUIDs). Falls back to the id when absent.
+  final Map<String, String> categoryNames;
 
   /// Optional starting focus (defaults to the scenario seed) — lets a capture
   /// show a "walked-to" state deterministically.
@@ -66,6 +74,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   String? _previousFocusId;
   List<String> _walkPath = const [];
   Offset _focusWorld = Offset.zero;
+  final Map<String, ui.Image> _images = {};
 
   double _scale = 1;
   Offset _pan = Offset.zero;
@@ -117,12 +126,38 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       duration: const Duration(milliseconds: 1200),
       value: 1,
     )..addListener(() => setState(() {}));
+    unawaited(_loadImages());
+  }
+
+  /// Decode image-entry thumbnails off the main work and repaint when ready.
+  Future<void> _loadImages() async {
+    for (final node in _scenario.nodes) {
+      final path = node.imagePath;
+      if (path == null || path.isEmpty) continue;
+      try {
+        final bytes = await File(path).readAsBytes();
+        final codec = await ui.instantiateImageCodec(bytes);
+        final frame = await codec.getNextFrame();
+        codec.dispose();
+        if (!mounted) {
+          frame.image.dispose();
+          return;
+        }
+        _images[node.id] = frame.image;
+      } on Object {
+        // Missing/unreadable file — fall back to the type glyph.
+      }
+    }
+    if (mounted && _images.isNotEmpty) setState(() {});
   }
 
   @override
   void dispose() {
     _cam.dispose();
     _wakeCtl.dispose();
+    for (final image in _images.values) {
+      image.dispose();
+    }
     super.dispose();
   }
 
@@ -344,6 +379,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                         hops: _hops,
                         selectedId: _focusId,
                         style: style,
+                        images: _images,
                         previousFocusId: _previousFocusId,
                         walkPath: _walkPath,
                         wake: _wake,
@@ -395,6 +431,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                               _scenario.nodeById(_focusId).createdAt,
                             ),
                           ),
+                          categoryNames: widget.categoryNames,
                           style: style,
                           tokens: tokens,
                         ),
@@ -409,6 +446,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                     child: _LegendBar(
                       scenario: _scenario,
                       style: style,
+                      categoryNames: widget.categoryNames,
                       tokens: tokens,
                     ),
                   ),
@@ -472,11 +510,13 @@ class _LegendBar extends StatelessWidget {
   const _LegendBar({
     required this.scenario,
     required this.style,
+    required this.categoryNames,
     required this.tokens,
   });
 
   final GraphScenario scenario;
   final GraphStyle style;
+  final Map<String, String> categoryNames;
   final DsTokens tokens;
 
   @override
@@ -521,7 +561,7 @@ class _LegendBar extends StatelessWidget {
             ),
           for (final cat in categories)
             _LegendItem(
-              label: cat,
+              label: categoryNames[cat] ?? cat,
               tokens: tokens,
               swatch: Container(
                 width: 11,
@@ -612,8 +652,7 @@ String _relativeAge(Duration d) {
   return '${(days / 30).round()} months ago';
 }
 
-String _tldrFor(GraphNode node, int links) {
-  final cat = node.categoryId;
+String _tldrFor(GraphNode node, int links, String cat) {
   switch (node.type) {
     case GraphNodeType.task:
       return 'A $cat task with $links linked entries. '
@@ -643,6 +682,7 @@ class _InspectorCard extends StatelessWidget {
     required this.node,
     required this.links,
     required this.createdLabel,
+    required this.categoryNames,
     required this.style,
     required this.tokens,
   });
@@ -650,16 +690,30 @@ class _InspectorCard extends StatelessWidget {
   final GraphNode node;
   final int links;
   final String createdLabel;
+  final Map<String, String> categoryNames;
   final GraphStyle style;
   final DsTokens tokens;
 
   @override
   Widget build(BuildContext context) {
     final cat = style.categoryColor(node.categoryId);
+    final categoryLabel = categoryNames[node.categoryId] ?? node.categoryId;
     final catHsl = HSLColor.fromColor(cat);
     final coverDark = catHsl
         .withLightness((catHsl.lightness * 0.45).clamp(0.0, 1.0))
         .toColor();
+    final gradientCover = DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [cat, coverDark],
+        ),
+      ),
+      child: Center(
+        child: Icon(glyphForType(node.type), size: 38, color: style.glyphColor),
+      ),
+    );
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -669,25 +723,18 @@ class _InspectorCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Cover banner — category gradient + the node's glyph.
+            // Cover banner — the real photo for image nodes, else a category
+            // gradient + the node's glyph.
             SizedBox(
               height: 92,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [cat, coverDark],
-                  ),
-                ),
-                child: Center(
-                  child: Icon(
-                    glyphForType(node.type),
-                    size: 38,
-                    color: style.glyphColor,
-                  ),
-                ),
-              ),
+              width: double.infinity,
+              child: node.imagePath != null
+                  ? Image.file(
+                      File(node.imagePath!),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => gradientCover,
+                    )
+                  : gradientCover,
             ),
             Padding(
               padding: EdgeInsets.all(tokens.spacing.step4),
@@ -715,10 +762,15 @@ class _InspectorCard extends StatelessWidget {
                         ),
                       ),
                       SizedBox(width: tokens.spacing.step2),
-                      Text(
-                        '${typeLabel(node.type)} · ${node.categoryId}',
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
+                      Flexible(
+                        child: Text(
+                          '${typeLabel(node.type)} · $categoryLabel',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
                         ),
                       ),
                     ],
@@ -732,7 +784,7 @@ class _InspectorCard extends StatelessWidget {
                   ),
                   SizedBox(height: tokens.spacing.step3),
                   Text(
-                    _tldrFor(node, links),
+                    _tldrFor(node, links, categoryLabel),
                     style: tokens.typography.styles.body.bodySmall.copyWith(
                       color: tokens.colors.text.mediumEmphasis,
                     ),

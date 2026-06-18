@@ -35,6 +35,7 @@ class TaskKnowledgeGraphPage extends ConsumerWidget {
           return KnowledgeGraphView(
             scenario: data.scenario,
             categoryColors: data.categoryColors,
+            categoryNames: data.categoryNames,
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),

@@ -33,8 +33,21 @@ void main() {
     catAdmin: categoryColorFromHex('#5F6368'),
   };
 
-  TaskGraphData data(GraphScenario scenario) =>
-      TaskGraphData(scenario: scenario, categoryColors: categoryColors);
+  // Real category display names (the dev DB's category is "Lotti").
+  final categoryNames = {
+    catWork: 'Lotti',
+    catWriting: 'Docs',
+    catHealth: 'Health',
+    catLearning: 'Learning',
+    catHome: 'Home',
+    catAdmin: 'Admin',
+  };
+
+  TaskGraphData data(GraphScenario scenario) => TaskGraphData(
+    scenario: scenario,
+    categoryColors: categoryColors,
+    categoryNames: categoryNames,
+  );
 
   testWidgets('task graph page — desktop dark', (tester) async {
     await captureInApp(

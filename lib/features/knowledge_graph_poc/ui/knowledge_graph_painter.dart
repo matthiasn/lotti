@@ -19,6 +19,7 @@
 library;
 
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
@@ -35,11 +36,15 @@ class KnowledgeGraphPainter extends CustomPainter {
     required this.hops,
     required this.selectedId,
     required this.style,
+    this.images = const {},
     this.previousFocusId,
     this.walkPath = const [],
     this.wake = 0,
     this.labelMaxHop = 2,
   });
+
+  /// Preloaded thumbnails for image nodes (node id → decoded image).
+  final Map<String, ui.Image> images;
 
   final GraphScenario scenario;
   final Map<String, Offset> positions;
@@ -325,10 +330,25 @@ class KnowledgeGraphPainter extends CustomPainter {
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.5),
     );
 
-    // Lit sphere + opaque delineating ring (the ring hides the edge/node seam).
+    // Body: a real thumbnail for image nodes, otherwise a lit sphere. Always
+    // topped with an opaque delineating ring (hides the edge/node seam).
     final rect = Rect.fromCircle(center: center, radius: r);
-    canvas
-      ..drawCircle(
+    final thumb = images[node.id];
+    if (thumb != null) {
+      canvas
+        ..save()
+        ..clipPath(Path()..addOval(rect))
+        ..drawImageRect(
+          thumb,
+          _coverSrc(thumb.width.toDouble(), thumb.height.toDouble(), rect),
+          rect,
+          Paint()
+            ..filterQuality = FilterQuality.medium
+            ..color = const Color(0xFFFFFFFF).withValues(alpha: 1 - fade * 0.4),
+        )
+        ..restore();
+    } else {
+      canvas.drawCircle(
         center,
         r,
         Paint()
@@ -338,15 +358,16 @@ class KnowledgeGraphPainter extends CustomPainter {
             colors: [core, fill, rim],
             stops: const [0, 0.6, 1],
           ).createShader(rect),
-      )
-      ..drawCircle(
-        center,
-        r,
-        Paint()
-          ..color = rim
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = (r * 0.09).clamp(0.8, 1.6),
       );
+    }
+    canvas.drawCircle(
+      center,
+      r,
+      Paint()
+        ..color = rim
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = (r * 0.09).clamp(0.8, 1.6),
+    );
 
     if (isFocus) {
       canvas
@@ -389,8 +410,11 @@ class KnowledgeGraphPainter extends CustomPainter {
       );
     }
 
-    // Far horizon stars are too small to carry a glyph.
-    if (r >= 8) _drawGlyph(canvas, center, r, node, fade, emph);
+    // Far horizon stars are too small to carry a glyph; image nodes show the
+    // photo itself instead of a glyph.
+    if (thumb == null && r >= 8) {
+      _drawGlyph(canvas, center, r, node, fade, emph);
+    }
   }
 
   void _drawGlyph(
@@ -499,6 +523,15 @@ class KnowledgeGraphPainter extends CustomPainter {
     }
   }
 
+  /// Center-crop source rect so the image covers the circular [dst]
+  /// (BoxFit.cover).
+  Rect _coverSrc(double iw, double ih, Rect dst) {
+    final scale = math.max(dst.width / iw, dst.height / ih);
+    final w = dst.width / scale;
+    final h = dst.height / scale;
+    return Rect.fromLTWH((iw - w) / 2, (ih - h) / 2, w, h);
+  }
+
   List<Offset> _bezier(Offset p0, Offset c, Offset p2, int steps) {
     final out = <Offset>[];
     for (var i = 0; i <= steps; i++) {
@@ -565,6 +598,7 @@ class KnowledgeGraphPainter extends CustomPainter {
   bool shouldRepaint(KnowledgeGraphPainter old) {
     return old.scenario != scenario ||
         old.positions != positions ||
+        old.images != images ||
         old.scale != scale ||
         old.pan != pan ||
         old.focusId != focusId ||

@@ -50,6 +50,7 @@ class GraphNode {
     required this.label,
     required this.categoryId,
     required this.createdAt,
+    this.imagePath,
   });
 
   final String id;
@@ -61,6 +62,10 @@ class GraphNode {
 
   /// Authoring time — drives recency-as-luminance.
   final DateTime createdAt;
+
+  /// Absolute file path for image entries — rendered as a real thumbnail in the
+  /// node and the inspector cover. Null for non-image nodes.
+  final String? imagePath;
 }
 
 /// A directed, typed edge.

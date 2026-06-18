@@ -15,6 +15,7 @@ import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/image_utils.dart';
 
 /// Synthetic category id used when an entry has no category.
 const String kUncategorized = 'uncategorized';
@@ -22,12 +23,24 @@ const String kUncategorized = 'uncategorized';
 const int _maxDepth = 2;
 const int _maxNodes = 140;
 
-/// The graph for a task plus the real category colors to render it with.
+/// Cap on sibling tasks pulled in per project, so a huge project can't swamp
+/// the local view.
+const int _maxSiblingsPerProject = 24;
+
+/// The graph for a task plus the real category colors + names to render it.
 class TaskGraphData {
-  const TaskGraphData({required this.scenario, required this.categoryColors});
+  const TaskGraphData({
+    required this.scenario,
+    required this.categoryColors,
+    this.categoryNames = const {},
+  });
 
   final GraphScenario scenario;
   final Map<String, Color> categoryColors;
+
+  /// Real category id → display name (so the inspector/legend show "Lotti",
+  /// not a UUID).
+  final Map<String, String> categoryNames;
 }
 
 /// Node type for a journal entity (pure; unit-tested).
@@ -128,6 +141,7 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
         }
       }
 
+      final expandedProjects = <String>{};
       var frontier = <String>{focus.id};
       var level = 0;
       while (frontier.isNotEmpty &&
@@ -151,6 +165,16 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
             if (proj != null) {
               projectByTask[id] = proj;
               entities[proj.id] = proj;
+              // Fan the project out into its sibling tasks (once per project)
+              // so the view shows the project's task web, not just this task.
+              if (expandedProjects.add(proj.id) &&
+                  entities.length < _maxNodes) {
+                final siblings = await db.getTasksForProject(proj.id);
+                for (final s in siblings.take(_maxSiblingsPerProject)) {
+                  entities[s.id] = s;
+                  addEdge(proj.id, s.id, GraphEdgeKind.containment);
+                }
+              }
             }
             final cids = e.data.checklistIds ?? const [];
             checklistIdsByTask[id] = cids;
@@ -224,6 +248,7 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
             label: graphNodeLabelFor(e),
             categoryId: e.categoryId ?? kUncategorized,
             createdAt: e.meta.createdAt,
+            imagePath: e is JournalImage ? getFullImagePath(e) : null,
           ),
       ];
       final nodeIds = nodes.map((n) => n.id).toSet();
@@ -232,11 +257,16 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
           .toList();
 
       final categoryColors = <String, Color>{};
+      final categoryNames = <String, String>{};
       for (final n in nodes) {
         if (categoryColors.containsKey(n.categoryId)) continue;
-        final hex = cache.getCategoryById(n.categoryId)?.color;
+        final cat = cache.getCategoryById(n.categoryId);
+        final hex = cat?.color;
         if (hex != null && hex.isNotEmpty) {
           categoryColors[n.categoryId] = categoryColorFromHex(hex);
+        }
+        if (cat?.name != null && cat!.name.isNotEmpty) {
+          categoryNames[n.categoryId] = cat.name;
         }
       }
 
@@ -249,5 +279,6 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
           now: now,
         ),
         categoryColors: categoryColors,
+        categoryNames: categoryNames,
       );
     });
