@@ -6257,6 +6257,22 @@ class AppLocalizationsCs extends AppLocalizations {
   String get optionalCategoryLabel => 'Kategorie (volitelné)';
 
   @override
+  String get outboxActionRemove => 'Odebrat';
+
+  @override
+  String get outboxActionRetry => 'Zkusit znovu';
+
+  @override
+  String get outboxFailedReassurance =>
+      'Stále uloženo v tomto zařízení – synchronizace proběhne, jakmile se problém vyřeší.';
+
+  @override
+  String get outboxFilterFailed => 'Selhalo';
+
+  @override
+  String get outboxFilterWaiting => 'Čeká';
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Příloha';
 
   @override
@@ -6333,6 +6349,89 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get outboxMonitorVolumeChartTitle => 'Denní objem synchronizace';
+
+  @override
+  String get outboxRemoveConfirmMessage =>
+      'Tato změna ještě nebyla synchronizována. Když ji zde odeberete, nedostane se na vaše ostatní zařízení. V tomto zařízení zůstane.';
+
+  @override
+  String get outboxRemoveConfirmTitle => 'Odebrat z fronty?';
+
+  @override
+  String get outboxRetryAll => 'Zkusit vše znovu';
+
+  @override
+  String get outboxShowDetails => 'Zobrazit technické podrobnosti';
+
+  @override
+  String get outboxStatusFailed => 'Nepodařilo se odeslat';
+
+  @override
+  String get outboxStatusSending => 'Odesílá se';
+
+  @override
+  String get outboxStatusSent => 'Odesláno';
+
+  @override
+  String get outboxStatusWaiting => 'Čeká na odeslání';
+
+  @override
+  String outboxSummaryFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count položek se nepodařilo odeslat',
+      one: '1 položku se nepodařilo odeslat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummaryOffline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count položek se odešle po opětovném připojení',
+      one: '1 položka se odešle po opětovném připojení',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummarySending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Odesílá se $count položek…',
+      one: 'Odesílá se 1 položka…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get outboxSummarySynced => 'Vše synchronizováno';
+
+  @override
+  String outboxSummaryWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count položek čeká na odeslání',
+      one: '1 položka čeká na odeslání',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxTriedTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Zkusil $count×',
+      one: 'Zkusil jednou',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get privateLabel => 'Soukromé';

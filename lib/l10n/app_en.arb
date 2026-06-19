@@ -3120,6 +3120,11 @@
     }
   },
   "optionalCategoryLabel": "Category (optional)",
+  "outboxActionRemove": "Remove",
+  "outboxActionRetry": "Retry",
+  "outboxFailedReassurance": "Still saved on this device — it'll sync once the problem clears.",
+  "outboxFilterFailed": "Failed",
+  "outboxFilterWaiting": "Waiting",
   "outboxMonitorAttachmentLabel": "Attachment",
   "outboxMonitorDelete": "delete",
   "outboxMonitorDeleteConfirmLabel": "Delete",
@@ -3144,6 +3149,60 @@
   "outboxMonitorRetryQueued": "Retry scheduled",
   "outboxMonitorSubjectLabel": "Subject",
   "outboxMonitorVolumeChartTitle": "Daily sync volume",
+  "outboxRemoveConfirmMessage": "This change hasn't synced yet. Removing it here means it won't reach your other devices. It stays on this device.",
+  "outboxRemoveConfirmTitle": "Remove from queue?",
+  "outboxRetryAll": "Retry all",
+  "outboxShowDetails": "Show technical details",
+  "outboxStatusFailed": "Couldn't send",
+  "outboxStatusSending": "Sending",
+  "outboxStatusSent": "Sent",
+  "outboxStatusWaiting": "Waiting to send",
+  "outboxSummaryFailed": "{count, plural, =1{1 item couldn't send} other{{count} items couldn't send}}",
+  "@outboxSummaryFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "outboxSummaryOffline": "{count, plural, =1{1 item will send when you reconnect} other{{count} items will send when you reconnect}}",
+  "@outboxSummaryOffline": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "outboxSummarySending": "{count, plural, =1{Sending 1 item…} other{Sending {count} items…}}",
+  "@outboxSummarySending": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "outboxSummarySynced": "Everything's synced",
+  "outboxSummaryWaiting": "{count, plural, =1{1 item waiting to send} other{{count} items waiting to send}}",
+  "@outboxSummaryWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "outboxTriedTimes": "{count, plural, =1{Tried once} other{Tried {count} times}}",
+  "@outboxTriedTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
   "privateLabel": "Private",
   "privateSwitchDescription": "Only visible when private entries are shown",
   "projectAgentNotProvisioned": "No project agent has been provisioned for this project yet.",

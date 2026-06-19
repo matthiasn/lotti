@@ -6310,6 +6310,22 @@ class AppLocalizationsFr extends AppLocalizations {
   String get optionalCategoryLabel => 'Catégorie (facultatif)';
 
   @override
+  String get outboxActionRemove => 'Retirer';
+
+  @override
+  String get outboxActionRetry => 'Réessayer';
+
+  @override
+  String get outboxFailedReassurance =>
+      'Toujours enregistré sur cet appareil — la synchro reprendra une fois le problème résolu.';
+
+  @override
+  String get outboxFilterFailed => 'Échec';
+
+  @override
+  String get outboxFilterWaiting => 'En attente';
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Pièce jointe';
 
   @override
@@ -6387,6 +6403,89 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get outboxMonitorVolumeChartTitle =>
       'Volume de synchronisation quotidien';
+
+  @override
+  String get outboxRemoveConfirmMessage =>
+      'Cette modification n\'est pas encore synchronisée. La retirer ici l\'empêchera d\'atteindre tes autres appareils. Elle reste sur cet appareil.';
+
+  @override
+  String get outboxRemoveConfirmTitle => 'Retirer de la file ?';
+
+  @override
+  String get outboxRetryAll => 'Tout réessayer';
+
+  @override
+  String get outboxShowDetails => 'Afficher les détails techniques';
+
+  @override
+  String get outboxStatusFailed => 'Échec de l\'envoi';
+
+  @override
+  String get outboxStatusSending => 'Envoi en cours';
+
+  @override
+  String get outboxStatusSent => 'Envoyé';
+
+  @override
+  String get outboxStatusWaiting => 'En attente d\'envoi';
+
+  @override
+  String outboxSummaryFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count éléments n\'ont pas pu être envoyés',
+      one: '1 élément n\'a pas pu être envoyé',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummaryOffline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count éléments seront envoyés une fois reconnecté',
+      one: '1 élément sera envoyé une fois reconnecté',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummarySending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Envoi de $count éléments…',
+      one: 'Envoi d\'1 élément…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get outboxSummarySynced => 'Tout est synchronisé';
+
+  @override
+  String outboxSummaryWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count éléments en attente d\'envoi',
+      one: '1 élément en attente d\'envoi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxTriedTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Essayé $count fois',
+      one: 'Essayé une fois',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get privateLabel => 'Privé';

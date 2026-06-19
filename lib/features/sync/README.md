@@ -506,6 +506,48 @@ In this feature, vector clocks describe causal knowledge.
 can, enriches sequence-aware payloads with covered clocks, and nudges a
 `ClientRunner`-driven `OutboxProcessor`.
 
+### Outbox Monitor (UI)
+
+`OutboxMonitorPage` (`ui/pages/outbox/outbox_monitor_page.dart`) is the
+user-facing view of the send queue, reached from **Settings → Sync → Outbox**.
+It reads a one-shot snapshot (`getOutboxItems`, deliberately not a live
+`watch()` — the queue churns hundreds of rows per minute during sync) with
+pull-to-refresh.
+
+The page opens with a plain-language **summary header** (`OutboxSummaryHeader`)
+driven by the pure `summarizeOutbox()`
+(`ui/view_models/outbox_status_presentation.dart` → `QueueSummary`):
+"Everything's synced", "Sending N…", "N waiting to send", "N couldn't send"
+(with a one-tap **Retry all**), or — when sync is off — "N will send when you
+reconnect", so an offline user is reassured rather than alarmed.
+
+Each row is an `OutboxMessageCard`: a token-driven card matching the conflicts
+surface, with a `DesignSystemBadge` status pill
+(waiting / sending / failed / sent → warning / info / error / success tones via
+`presentationStatusOf`), the human payload kind, and — for **failed** items — a
+reassurance ("still saved on this device") plus **Retry** (a safe one-tap
+re-queue, no confirmation) and **Remove** (guarded by a confirmation that spells
+out the data-loss risk — the change won't reach other devices). A "show
+technical details" toggle reveals the per-row diagnostics (retries, size,
+subject, attachment) and the daily-volume chart, keeping the default view clean.
+Filters are plain-language — **Waiting** (pending + sending), **Failed**
+(error), **Sent** — with design-system alert-tone accents.
+
+The item lifecycle the page reflects (manual actions write straight to
+`SyncDatabase`):
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: enqueued
+    pending --> sending: claimed by OutboxProcessor
+    sending --> sent: delivered
+    sending --> pending: recoverable failure (markRetry, retries++)
+    pending --> error: retries reach maxRetries (10)
+    error --> pending: manual Retry / Retry all (re-queue)
+    sent --> [*]: pruned after 7 days
+    error --> [*]: Remove (won't sync)
+```
+
 ### Agent Wake-Cycle Sync
 
 Agent wake execution does **not** install any wake-scoped sync interceptor.

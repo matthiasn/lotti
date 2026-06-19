@@ -10774,6 +10774,36 @@ abstract class AppLocalizations {
   /// **'Category (optional)'**
   String get optionalCategoryLabel;
 
+  /// No description provided for @outboxActionRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get outboxActionRemove;
+
+  /// No description provided for @outboxActionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get outboxActionRetry;
+
+  /// No description provided for @outboxFailedReassurance.
+  ///
+  /// In en, this message translates to:
+  /// **'Still saved on this device — it\'ll sync once the problem clears.'**
+  String get outboxFailedReassurance;
+
+  /// No description provided for @outboxFilterFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get outboxFilterFailed;
+
+  /// No description provided for @outboxFilterWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get outboxFilterWaiting;
+
   /// No description provided for @outboxMonitorAttachmentLabel.
   ///
   /// In en, this message translates to:
@@ -10917,6 +10947,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Daily sync volume'**
   String get outboxMonitorVolumeChartTitle;
+
+  /// No description provided for @outboxRemoveConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This change hasn\'t synced yet. Removing it here means it won\'t reach your other devices. It stays on this device.'**
+  String get outboxRemoveConfirmMessage;
+
+  /// No description provided for @outboxRemoveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from queue?'**
+  String get outboxRemoveConfirmTitle;
+
+  /// No description provided for @outboxRetryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry all'**
+  String get outboxRetryAll;
+
+  /// No description provided for @outboxShowDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show technical details'**
+  String get outboxShowDetails;
+
+  /// No description provided for @outboxStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send'**
+  String get outboxStatusFailed;
+
+  /// No description provided for @outboxStatusSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending'**
+  String get outboxStatusSending;
+
+  /// No description provided for @outboxStatusSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get outboxStatusSent;
+
+  /// No description provided for @outboxStatusWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to send'**
+  String get outboxStatusWaiting;
+
+  /// No description provided for @outboxSummaryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item couldn\'t send} other{{count} items couldn\'t send}}'**
+  String outboxSummaryFailed(int count);
+
+  /// No description provided for @outboxSummaryOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item will send when you reconnect} other{{count} items will send when you reconnect}}'**
+  String outboxSummaryOffline(int count);
+
+  /// No description provided for @outboxSummarySending.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Sending 1 item…} other{Sending {count} items…}}'**
+  String outboxSummarySending(int count);
+
+  /// No description provided for @outboxSummarySynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything\'s synced'**
+  String get outboxSummarySynced;
+
+  /// No description provided for @outboxSummaryWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item waiting to send} other{{count} items waiting to send}}'**
+  String outboxSummaryWaiting(int count);
+
+  /// No description provided for @outboxTriedTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Tried once} other{Tried {count} times}}'**
+  String outboxTriedTimes(int count);
 
   /// No description provided for @privateLabel.
   ///

@@ -85,6 +85,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   another" clash is shown as a clear, safe choice rather than a confusing diff.
   And new conflicts now raise a notification, so you find out right away instead
   of having to dig through settings.
+- The sync outbox page (Settings → Sync → Outbox) was redesigned to be clear
+  instead of cryptic. It now opens with a plain-language summary — "Everything's
+  synced", "Sending 3…", or "2 couldn't send" — and items that failed to send
+  finally explain themselves and reassure you they're still saved on this
+  device. You can retry a single item or retry everything at once, and the
+  technical details (sizes, retry counts, the volume chart) tuck behind a "show
+  technical details" toggle so the everyday view stays calm. Removing a queued
+  item now clearly warns that the change won't reach your other devices.
 
 ## [0.9.1028]
 ### Changed

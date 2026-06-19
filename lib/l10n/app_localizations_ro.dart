@@ -6303,6 +6303,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get optionalCategoryLabel => 'Categorie (opțional)';
 
   @override
+  String get outboxActionRemove => 'Eliminați';
+
+  @override
+  String get outboxActionRetry => 'Reîncearcă';
+
+  @override
+  String get outboxFailedReassurance =>
+      'Rămâne salvat pe acest dispozitiv – se va sincroniza după ce problema se rezolvă.';
+
+  @override
+  String get outboxFilterFailed => 'Eșuat';
+
+  @override
+  String get outboxFilterWaiting => 'În așteptare';
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Atașament';
 
   @override
@@ -6379,6 +6395,89 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get outboxMonitorVolumeChartTitle => 'Volum de sincronizare zilnic';
+
+  @override
+  String get outboxRemoveConfirmMessage =>
+      'Această modificare nu a fost încă sincronizată. Dacă o eliminați aici, nu va ajunge pe celelalte dispozitive. Rămâne pe acest dispozitiv.';
+
+  @override
+  String get outboxRemoveConfirmTitle => 'Eliminați din coadă?';
+
+  @override
+  String get outboxRetryAll => 'Reîncearcă tot';
+
+  @override
+  String get outboxShowDetails => 'Afișați detaliile tehnice';
+
+  @override
+  String get outboxStatusFailed => 'Nu s-a putut trimite';
+
+  @override
+  String get outboxStatusSending => 'Se trimite';
+
+  @override
+  String get outboxStatusSent => 'Trimis';
+
+  @override
+  String get outboxStatusWaiting => 'În așteptarea trimiterii';
+
+  @override
+  String outboxSummaryFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elemente nu au putut fi trimise',
+      one: '1 element nu a putut fi trimis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummaryOffline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elemente vor fi trimise la reconectare',
+      one: '1 element va fi trimis la reconectare',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummarySending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se trimit $count elemente…',
+      one: 'Se trimite 1 element…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get outboxSummarySynced => 'Totul este sincronizat';
+
+  @override
+  String outboxSummaryWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elemente în așteptarea trimiterii',
+      one: '1 element în așteptarea trimiterii',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxTriedTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Încercat de $count ori',
+      one: 'Încercat o dată',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get privateLabel => 'Privat';

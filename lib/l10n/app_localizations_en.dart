@@ -6153,6 +6153,22 @@ class AppLocalizationsEn extends AppLocalizations {
   String get optionalCategoryLabel => 'Category (optional)';
 
   @override
+  String get outboxActionRemove => 'Remove';
+
+  @override
+  String get outboxActionRetry => 'Retry';
+
+  @override
+  String get outboxFailedReassurance =>
+      'Still saved on this device — it\'ll sync once the problem clears.';
+
+  @override
+  String get outboxFilterFailed => 'Failed';
+
+  @override
+  String get outboxFilterWaiting => 'Waiting';
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Attachment';
 
   @override
@@ -6226,6 +6242,89 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get outboxMonitorVolumeChartTitle => 'Daily sync volume';
+
+  @override
+  String get outboxRemoveConfirmMessage =>
+      'This change hasn\'t synced yet. Removing it here means it won\'t reach your other devices. It stays on this device.';
+
+  @override
+  String get outboxRemoveConfirmTitle => 'Remove from queue?';
+
+  @override
+  String get outboxRetryAll => 'Retry all';
+
+  @override
+  String get outboxShowDetails => 'Show technical details';
+
+  @override
+  String get outboxStatusFailed => 'Couldn\'t send';
+
+  @override
+  String get outboxStatusSending => 'Sending';
+
+  @override
+  String get outboxStatusSent => 'Sent';
+
+  @override
+  String get outboxStatusWaiting => 'Waiting to send';
+
+  @override
+  String outboxSummaryFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items couldn\'t send',
+      one: '1 item couldn\'t send',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummaryOffline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items will send when you reconnect',
+      one: '1 item will send when you reconnect',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummarySending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Sending $count items…',
+      one: 'Sending 1 item…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get outboxSummarySynced => 'Everything\'s synced';
+
+  @override
+  String outboxSummaryWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items waiting to send',
+      one: '1 item waiting to send',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxTriedTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Tried $count times',
+      one: 'Tried once',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get privateLabel => 'Private';
