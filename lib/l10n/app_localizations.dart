@@ -13495,6 +13495,30 @@ abstract class AppLocalizations {
   /// **'Estimate:'**
   String get taskEstimateLabel;
 
+  /// No description provided for @taskEstimateProgressLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'{tracked} of {estimate}'**
+  String taskEstimateProgressLabel(String tracked, String estimate);
+
+  /// No description provided for @taskEstimateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Time tracked: {tracked} of {estimate} estimated'**
+  String taskEstimateTooltip(String tracked, String estimate);
+
+  /// No description provided for @taskLabelsMoreCount.
+  ///
+  /// In en, this message translates to:
+  /// **'+{count}'**
+  String taskLabelsMoreCount(int count);
+
+  /// No description provided for @taskLabelsShowFewer.
+  ///
+  /// In en, this message translates to:
+  /// **'Show fewer'**
+  String get taskLabelsShowFewer;
+
   /// No description provided for @taskLanguageArabic.
   ///
   /// In en, this message translates to:
@@ -13782,6 +13806,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Overdue by {days, plural, =1{1 day} other{{days} days}}'**
   String taskOverdueByDays(int days);
+
+  /// No description provided for @taskPriorityHigh.
+  ///
+  /// In en, this message translates to:
+  /// **'High'**
+  String get taskPriorityHigh;
+
+  /// No description provided for @taskPriorityLow.
+  ///
+  /// In en, this message translates to:
+  /// **'Low'**
+  String get taskPriorityLow;
+
+  /// No description provided for @taskPriorityMedium.
+  ///
+  /// In en, this message translates to:
+  /// **'Medium'**
+  String get taskPriorityMedium;
+
+  /// No description provided for @taskPriorityUrgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get taskPriorityUrgent;
 
   /// No description provided for @tasksAddLabelButton.
   ///

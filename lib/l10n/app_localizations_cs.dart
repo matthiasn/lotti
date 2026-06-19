@@ -7911,6 +7911,24 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskEstimateLabel => 'Odhad:';
 
   @override
+  String taskEstimateProgressLabel(String tracked, String estimate) {
+    return '$tracked z $estimate';
+  }
+
+  @override
+  String taskEstimateTooltip(String tracked, String estimate) {
+    return 'Zaznamenaný čas: $tracked z odhadovaných $estimate';
+  }
+
+  @override
+  String taskLabelsMoreCount(int count) {
+    return '+$count';
+  }
+
+  @override
+  String get taskLabelsShowFewer => 'Zobrazit méně';
+
+  @override
   String get taskLanguageArabic => 'Arabština';
 
   @override
@@ -8061,6 +8079,18 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return 'Po splatnosti o $_temp0';
   }
+
+  @override
+  String get taskPriorityHigh => 'Vysoká';
+
+  @override
+  String get taskPriorityLow => 'Nízká';
+
+  @override
+  String get taskPriorityMedium => 'Střední';
+
+  @override
+  String get taskPriorityUrgent => 'Naléhavá';
 
   @override
   String get tasksAddLabelButton => 'Přidat štítek';

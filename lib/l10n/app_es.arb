@@ -3402,6 +3402,37 @@
   "taskDueYesterday": "Venció ayer",
   "taskEditTitleLabel": "Editar título de la tarea",
   "taskEstimateLabel": "Estimación:",
+  "taskEstimateProgressLabel": "{tracked} de {estimate}",
+  "@taskEstimateProgressLabel": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "taskEstimateTooltip": "Tiempo registrado: {tracked} de {estimate} estimado",
+  "@taskEstimateTooltip": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "taskLabelsMoreCount": "+{count}",
+  "@taskLabelsMoreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskLabelsShowFewer": "Mostrar menos",
   "taskLanguageArabic": "Árabe",
   "taskLanguageBengali": "Bengalí",
   "taskLanguageBulgarian": "Búlgaro",
@@ -3460,6 +3491,10 @@
       }
     }
   },
+  "taskPriorityHigh": "Alta",
+  "taskPriorityLow": "Baja",
+  "taskPriorityMedium": "Media",
+  "taskPriorityUrgent": "Urgente",
   "tasksAddLabelButton": "Añadir etiqueta",
   "tasksAgentFilterAll": "Todos",
   "tasksAgentFilterHasAgent": "Con agente",

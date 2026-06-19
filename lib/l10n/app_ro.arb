@@ -3402,6 +3402,37 @@
   "taskDueYesterday": "Scadent ieri",
   "taskEditTitleLabel": "Editați titlul sarcinii",
   "taskEstimateLabel": "Timp Estimat:",
+  "taskEstimateProgressLabel": "{tracked} din {estimate}",
+  "@taskEstimateProgressLabel": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "taskEstimateTooltip": "Timp înregistrat: {tracked} din {estimate} estimat",
+  "@taskEstimateTooltip": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "taskLabelsMoreCount": "+{count}",
+  "@taskLabelsMoreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskLabelsShowFewer": "Afișează mai puține",
   "taskLanguageArabic": "Arabă",
   "taskLanguageBengali": "Bengaleză",
   "taskLanguageBulgarian": "Bulgară",
@@ -3460,6 +3491,10 @@
       }
     }
   },
+  "taskPriorityHigh": "Ridicată",
+  "taskPriorityLow": "Scăzută",
+  "taskPriorityMedium": "Medie",
+  "taskPriorityUrgent": "Urgentă",
   "tasksAddLabelButton": "Adaugă etichetă",
   "tasksAgentFilterAll": "Toate",
   "tasksAgentFilterHasAgent": "Cu agent",

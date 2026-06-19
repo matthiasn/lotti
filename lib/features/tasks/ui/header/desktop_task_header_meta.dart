@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -24,12 +25,14 @@ import 'package:lotti/utils/color.dart';
 /// Status leads the attribute lane (rather than being pinned to a trailing
 /// edge) so it has one stable, predictable home that never opens a horizontal
 /// dead zone next to a short chip cluster and never gets marooned when the row
-/// wraps. The due date and time-estimate are bonded into one wrap unit (see
-/// [_timeGroup]) so the optional estimate can never strand alone on its own
-/// near-empty wrap row. Separating attributes from labels gives the eye an
+/// wraps. The due date and time-estimate are bonded into one wrap unit so the
+/// optional estimate can never strand alone on its own near-empty wrap row.
+/// Beyond a small cap the free-form labels collapse behind a tappable "+N"
+/// affordance so a long taxonomy never floods the lane. Separating attributes
+/// from labels gives the eye an
 /// instant "what state / when / how big" read distinct from the user's own
 /// taxonomy.
-class MetaRow extends StatelessWidget {
+class MetaRow extends StatefulWidget {
   const MetaRow({
     required this.priority,
     required this.status,
@@ -56,15 +59,39 @@ class MetaRow extends StatelessWidget {
   final VoidCallback? onAddLabelTap;
 
   @override
+  State<MetaRow> createState() => _MetaRowState();
+}
+
+class _MetaRowState extends State<MetaRow> {
+  /// How many label chips show before the remainder collapse behind a "+N"
+  /// affordance, so a long taxonomy never floods the lane with a wall of
+  /// equal-weight chips competing with the title (the dominant overwhelm cue
+  /// for attention-sensitive users).
+  static const int _maxVisibleLabels = 4;
+
+  /// Whether the user has expanded the collapsed label overflow.
+  bool _labelsExpanded = false;
+
+  @override
+  void didUpdateWidget(MetaRow oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A different task's labels start collapsed again.
+    if (!listEquals(oldWidget.labels, widget.labels)) {
+      _labelsExpanded = false;
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     // Inter-chip gap (step2 = 4) is kept deliberately tighter than each pill's
     // own internal horizontal padding (step3 = 8) so the chips read as one
     // anchored cluster rather than scattered tokens.
     final chipGap = tokens.spacing.step2;
+    final labels = widget.labels;
     final attributes = <Widget>[
-      TaskHeaderStatusPill(status: status, onTap: onStatusTap),
-      _PriorityPill(priority: priority, onTap: onPriorityTap),
+      TaskHeaderStatusPill(status: widget.status, onTap: widget.onStatusTap),
+      _PriorityPill(priority: widget.priority, onTap: widget.onPriorityTap),
       _timeGroup(chipGap),
       // With no labels yet, the "Add Label" affordance rides the END of the
       // attribute lane rather than orphaning on its own near-empty second
@@ -73,7 +100,7 @@ class MetaRow extends StatelessWidget {
       if (labels.isEmpty)
         DsGhostChip(
           label: context.messages.tasksAddLabelButton,
-          onTap: onAddLabelTap,
+          onTap: widget.onAddLabelTap,
         ),
     ];
     final attributeLane = Wrap(
@@ -84,17 +111,6 @@ class MetaRow extends StatelessWidget {
     );
     if (labels.isEmpty) return attributeLane;
 
-    final labelLane = Wrap(
-      spacing: chipGap,
-      runSpacing: chipGap,
-      children: <Widget>[
-        for (final label in labels)
-          _LabelPill(
-            label: label,
-            onTap: onLabelTap == null ? null : () => onLabelTap!(label),
-          ),
-      ],
-    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -107,7 +123,46 @@ class MetaRow extends StatelessWidget {
         // it (rather than leaning only on the chips' colour dots), without
         // needing a divider.
         SizedBox(height: tokens.spacing.step4),
-        labelLane,
+        _buildLabelLane(context, chipGap, labels),
+      ],
+    );
+  }
+
+  /// The free-form label lane. Beyond [_maxVisibleLabels] the remainder
+  /// collapse behind a tappable "+N" chip; expanding swaps in a "Show fewer"
+  /// chip so the lane can be re-collapsed.
+  Widget _buildLabelLane(
+    BuildContext context,
+    double chipGap,
+    List<LabelDefinition> labels,
+  ) {
+    final hasOverflow = labels.length > _maxVisibleLabels;
+    final collapsed = hasOverflow && !_labelsExpanded;
+    final visible = collapsed ? labels.take(_maxVisibleLabels) : labels;
+    return Wrap(
+      spacing: chipGap,
+      runSpacing: chipGap,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: <Widget>[
+        for (final label in visible)
+          _LabelPill(
+            label: label,
+            onTap: widget.onLabelTap == null
+                ? null
+                : () => widget.onLabelTap!(label),
+          ),
+        if (collapsed)
+          _LabelOverflowChip(
+            label: context.messages.taskLabelsMoreCount(
+              labels.length - _maxVisibleLabels,
+            ),
+            onTap: () => setState(() => _labelsExpanded = true),
+          )
+        else if (hasOverflow)
+          _LabelOverflowChip(
+            label: context.messages.taskLabelsShowFewer,
+            onTap: () => setState(() => _labelsExpanded = false),
+          ),
       ],
     );
   }
@@ -122,8 +177,8 @@ class MetaRow extends StatelessWidget {
   /// never overflows. With no estimate the group collapses to the bare due
   /// chip.
   Widget _timeGroup(double chipGap) {
-    final due = _DuePill(dueDate: dueDate, onTap: onDueDateTap);
-    final slot = estimateSlot;
+    final due = _DuePill(dueDate: widget.dueDate, onTap: widget.onDueDateTap);
+    final slot = widget.estimateSlot;
     if (slot == null) return due;
     return Wrap(
       spacing: chipGap,
@@ -179,7 +234,10 @@ class _PriorityPill extends StatelessWidget {
     // signal without a second out-shouting solid fill.
     return DsPill(
       variant: DsPillVariant.filled,
-      label: priority.short,
+      bordered: true,
+      // Spelled-out priority (Urgent / High / Medium / Low) instead of the
+      // opaque "P2" code, so the urgency direction reads without decoding.
+      label: priority.localizedLabel(context),
       labelColor: TaskShowcasePalette.mediumText(context),
       leading: TaskShowcasePriorityGlyph(priority: priority, size: 14),
       onTap: onTap,
@@ -223,6 +281,9 @@ class _DuePill extends StatelessWidget {
     };
     return DsPill(
       variant: urgent ? DsPillVariant.tinted : DsPillVariant.filled,
+      // The neutral filled due chip gets a quiet border for a clear low-vision
+      // boundary; the urgent tinted variant already reads via its accent fill.
+      bordered: !urgent,
       color: urgent ? accent : null,
       label: dueDate.label,
       // The due date is the most decision-relevant attribute after status, so
@@ -401,11 +462,34 @@ class _LabelPill extends StatelessWidget {
     // carried by the leading dot.
     return DsPill(
       variant: DsPillVariant.filled,
+      bordered: true,
       label: label.name,
       labelColor: TaskShowcasePalette.mediumText(context),
       leading: _LabelDot(color: label.color),
       onTap: onTap,
       onLongPress: _hasDescription ? () => _showDescription(context) : null,
+    );
+  }
+}
+
+/// The label-lane overflow control: a tappable "+N" chip (and, once expanded,
+/// a "Show fewer" chip). It shares the bordered filled shell with the label
+/// pills but carries no colour dot, so it reads as a control rather than a
+/// tag — collapsing a long taxonomy instead of letting it flood the lane.
+class _LabelOverflowChip extends StatelessWidget {
+  const _LabelOverflowChip({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return DsPill(
+      variant: DsPillVariant.filled,
+      bordered: true,
+      label: label,
+      labelColor: TaskShowcasePalette.mediumText(context),
+      onTap: onTap,
     );
   }
 }

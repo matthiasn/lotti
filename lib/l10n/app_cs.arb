@@ -3185,6 +3185,37 @@
   "taskDueYesterday": "Včera splatné",
   "taskEditTitleLabel": "Upravit název úkolu",
   "taskEstimateLabel": "Odhad:",
+  "taskEstimateProgressLabel": "{tracked} z {estimate}",
+  "@taskEstimateProgressLabel": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "taskEstimateTooltip": "Zaznamenaný čas: {tracked} z odhadovaných {estimate}",
+  "@taskEstimateTooltip": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "taskLabelsMoreCount": "+{count}",
+  "@taskLabelsMoreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskLabelsShowFewer": "Zobrazit méně",
   "taskLanguageArabic": "Arabština",
   "taskLanguageBengali": "Bengálština",
   "taskLanguageBulgarian": "Bulharština",
@@ -3243,6 +3274,10 @@
       }
     }
   },
+  "taskPriorityHigh": "Vysoká",
+  "taskPriorityLow": "Nízká",
+  "taskPriorityMedium": "Střední",
+  "taskPriorityUrgent": "Naléhavá",
   "tasksAddLabelButton": "Přidat štítek",
   "tasksAgentFilterAll": "Vše",
   "tasksAgentFilterHasAgent": "Má agenta",

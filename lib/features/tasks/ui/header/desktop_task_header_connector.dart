@@ -405,35 +405,43 @@ class _TaskEstimateChip extends ConsumerWidget {
             ),
           );
 
-    if (isOvertime) {
-      return DsPill(
-        variant: DsPillVariant.tinted,
-        color: TaskShowcasePalette.error(context),
-        label: '${_format(progress)} / ${_format(estimate)}',
-        leading: Icon(
-          Icons.timer_outlined,
-          size: 12,
-          color: iconColor,
-        ),
-        trailing: progressBar,
-        onTap: onTap,
-      );
-    }
-    return DsPill(
-      variant: DsPillVariant.filled,
-      label: '${_format(progress)} / ${_format(estimate)}',
-      // A set estimate carries real data, so it reads at the same
-      // medium-emphasis contrast as the due-date chip rather than the dim
-      // low-emphasis grey reserved for empty placeholders (which made an
-      // active estimate look disabled).
-      labelColor: TaskShowcasePalette.mediumText(context),
-      leading: Icon(
-        Icons.timer_outlined,
-        size: 12,
-        color: iconColor,
-      ),
-      trailing: progressBar,
-      onTap: onTap,
+    final trackedStr = _format(progress);
+    final estimateStr = _format(estimate);
+    // "X of Y" reads as tracked-of-estimated (part of a whole) instead of the
+    // ambiguous "X / Y" where users couldn't tell which number was which.
+    final progressLabel = context.messages.taskEstimateProgressLabel(
+      trackedStr,
+      estimateStr,
     );
+    // The tooltip spells it out fully on hover and for assistive tech, so the
+    // two numbers are never a guessing game.
+    final tooltip = context.messages.taskEstimateTooltip(
+      trackedStr,
+      estimateStr,
+    );
+    final pill = isOvertime
+        ? DsPill(
+            variant: DsPillVariant.tinted,
+            color: TaskShowcasePalette.error(context),
+            label: progressLabel,
+            leading: Icon(Icons.timer_outlined, size: 12, color: iconColor),
+            trailing: progressBar,
+            onTap: onTap,
+          )
+        : DsPill(
+            variant: DsPillVariant.filled,
+            // Quiet border gives low-vision users a clear chip boundary.
+            bordered: true,
+            label: progressLabel,
+            // A set estimate carries real data, so it reads at the same
+            // medium-emphasis contrast as the due-date chip rather than the dim
+            // low-emphasis grey reserved for empty placeholders (which made an
+            // active estimate look disabled).
+            labelColor: TaskShowcasePalette.mediumText(context),
+            leading: Icon(Icons.timer_outlined, size: 12, color: iconColor),
+            trailing: progressBar,
+            onTap: onTap,
+          );
+    return Tooltip(message: tooltip, child: pill);
   }
 }

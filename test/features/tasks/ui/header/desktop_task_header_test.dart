@@ -129,6 +129,15 @@ final _labelFixtures = <LabelDefinition>[
   _label(id: 'release-blocker', name: 'Release blocker', color: '#FA8C05'),
 ];
 
+/// English label the priority chip renders (TaskPriority.localizedLabel under
+/// the test's en locale) — the chip spells out the priority instead of "P2".
+String _priorityLabel(TaskPriority priority) => switch (priority) {
+  TaskPriority.p0Urgent => 'Urgent',
+  TaskPriority.p1High => 'High',
+  TaskPriority.p2Medium => 'Medium',
+  TaskPriority.p3Low => 'Low',
+};
+
 void main() {
   group('DesktopTaskHeader — content + layout', () {
     testWidgets(
@@ -160,7 +169,7 @@ void main() {
         // Metadata row
         expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
         expect(find.text('1h / 2h'), findsOneWidget);
-        expect(find.text('P1'), findsOneWidget);
+        expect(find.text('High'), findsOneWidget);
         expect(find.text('Open'), findsOneWidget);
         // No ellipsis in the header — lives in the app bar.
         expect(find.byIcon(Icons.more_vert_rounded), findsNothing);
@@ -464,7 +473,7 @@ void main() {
         );
         final titleBox = tester.getRect(find.text('Payment confirmation'));
         final status = tester.getTopLeft(find.text('Open'));
-        final priority = tester.getTopLeft(find.text('P1'));
+        final priority = tester.getTopLeft(find.text('High'));
         final due = tester.getTopLeft(find.text('Due: Apr 1, 2026'));
 
         // The metadata lane sits below the title (status is no longer on the
@@ -576,6 +585,117 @@ void main() {
     );
   });
 
+  group('DesktopTaskHeader — label overflow', () {
+    final manyLabels = <LabelDefinition>[
+      _label(id: 'l1', name: 'Design', color: '#1CA3E3'),
+      _label(id: 'l2', name: 'UX', color: '#A855F7'),
+      _label(id: 'l3', name: 'Backend', color: '#F97316'),
+      _label(id: 'l4', name: 'Frontend', color: '#22C55E'),
+      _label(id: 'l5', name: 'QA', color: '#EAB308'),
+      _label(id: 'l6', name: 'Research', color: '#EC4899'),
+    ];
+
+    testWidgets(
+      'caps the label lane at 4 chips and collapses the rest behind "+N"',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(labels: manyLabels),
+            onTitleSaved: (_) {},
+          ),
+        );
+        // First four labels visible; the 5th/6th are collapsed.
+        expect(find.text('Design'), findsOneWidget);
+        expect(find.text('Frontend'), findsOneWidget);
+        expect(find.text('QA'), findsNothing);
+        expect(find.text('Research'), findsNothing);
+        // The overflow affordance shows the hidden count.
+        expect(find.text('+2'), findsOneWidget);
+        expect(find.text('Show fewer'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'tapping "+N" reveals all labels and a "Show fewer" control that '
+      're-collapses',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(labels: manyLabels),
+            onTitleSaved: (_) {},
+          ),
+        );
+        await tester.tap(find.text('+2'));
+        await tester.pump();
+        // All labels now visible; the "+N" chip becomes "Show fewer".
+        expect(find.text('QA'), findsOneWidget);
+        expect(find.text('Research'), findsOneWidget);
+        expect(find.text('+2'), findsNothing);
+        expect(find.text('Show fewer'), findsOneWidget);
+
+        await tester.tap(find.text('Show fewer'));
+        await tester.pump();
+        // Collapsed again.
+        expect(find.text('Research'), findsNothing);
+        expect(find.text('+2'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'no overflow control when the labels fit under the cap',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(labels: _labelFixtures),
+            onTitleSaved: (_) {},
+          ),
+        );
+        expect(find.text('Bug fix'), findsOneWidget);
+        expect(find.text('Release blocker'), findsOneWidget);
+        expect(find.text('Show fewer'), findsNothing);
+        expect(find.textContaining('+'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'expanded label overflow re-collapses when the task labels change',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(labels: manyLabels),
+            onTitleSaved: (_) {},
+          ),
+        );
+        await tester.tap(find.text('+2'));
+        await tester.pump();
+        expect(find.text('Research'), findsOneWidget); // expanded
+
+        // A different task's labels arrive in the same header instance — the
+        // overflow collapses again (didUpdateWidget resets the expansion).
+        final otherLabels = <LabelDefinition>[
+          _label(id: 'o1', name: 'Alpha', color: '#1CA3E3'),
+          _label(id: 'o2', name: 'Beta', color: '#A855F7'),
+          _label(id: 'o3', name: 'Gamma', color: '#F97316'),
+          _label(id: 'o4', name: 'Delta', color: '#22C55E'),
+          _label(id: 'o5', name: 'Epsilon', color: '#EAB308'),
+        ];
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(labels: otherLabels),
+            onTitleSaved: (_) {},
+          ),
+        );
+        expect(find.text('Epsilon'), findsNothing);
+        expect(find.text('+1'), findsOneWidget);
+      },
+    );
+  });
+
   group('DesktopTaskHeader — callbacks', () {
     testWidgets('tapping priority / status fires callbacks', (tester) async {
       var priority = 0;
@@ -589,7 +709,7 @@ void main() {
           onStatusTap: () => status++,
         ),
       );
-      await tester.tap(find.text('P1'));
+      await tester.tap(find.text('High'));
       await tester.tap(find.text('Open'));
       await tester.pump();
       expect(priority, 1);
@@ -821,14 +941,18 @@ void main() {
               onTitleSaved: (_) {},
             ),
           );
-          expect(find.text(priority.short), findsOneWidget);
+          // The chip spells out the priority (Urgent/High/Medium/Low) instead
+          // of the opaque "P2" code.
+          final label = _priorityLabel(priority);
+          expect(find.text(label), findsOneWidget);
 
           // Priority shares the neutral filled shell with the other attribute
           // chips (the status pill is the lane's only tinted accent), so its
-          // pill carries no tint colour…
+          // pill carries no tint colour, and it gets the quiet low-vision
+          // border…
           final pill = tester.widget<DsPill>(
             find.ancestor(
-              of: find.text(priority.short),
+              of: find.text(label),
               matching: find.byType(DsPill),
             ),
           );
@@ -838,6 +962,7 @@ void main() {
             isNull,
             reason: '${priority.short} uses the neutral shell',
           );
+          expect(pill.bordered, isTrue, reason: priority.short);
 
           // …and the urgency signal is carried by the distinct per-priority
           // glyph (red P0 → green P3).

@@ -3858,6 +3858,37 @@
   "taskDueYesterday": "Due Yesterday",
   "taskEditTitleLabel": "Edit task title",
   "taskEstimateLabel": "Estimate:",
+  "taskEstimateProgressLabel": "{tracked} of {estimate}",
+  "@taskEstimateProgressLabel": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "taskEstimateTooltip": "Time tracked: {tracked} of {estimate} estimated",
+  "@taskEstimateTooltip": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "taskLabelsMoreCount": "+{count}",
+  "@taskLabelsMoreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskLabelsShowFewer": "Show fewer",
   "taskLanguageArabic": "Arabic",
   "taskLanguageBengali": "Bengali",
   "taskLanguageBulgarian": "Bulgarian",
@@ -3916,6 +3947,10 @@
       }
     }
   },
+  "taskPriorityHigh": "High",
+  "taskPriorityLow": "Low",
+  "taskPriorityMedium": "Medium",
+  "taskPriorityUrgent": "Urgent",
   "tasksAddLabelButton": "Add Label",
   "tasksAgentFilterAll": "All",
   "tasksAgentFilterHasAgent": "Has Agent",

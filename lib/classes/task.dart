@@ -37,8 +37,20 @@ TaskPriority taskPriorityFromString(
 }
 
 extension TaskPriorityExt on TaskPriority {
-  /// Short label used in compact UI, e.g., 'P0'.
+  /// Short label used in compact UI and AI context strings, e.g., 'P0'.
   String get short => 'P$rank';
+
+  /// Human-readable, localized priority label (Urgent / High / Medium / Low).
+  /// Used where the opaque 'P0'..'P3' code would leave users guessing the
+  /// urgency direction; [short] stays for compact badges and AI prompts.
+  String localizedLabel(BuildContext context) {
+    return switch (this) {
+      TaskPriority.p0Urgent => context.messages.taskPriorityUrgent,
+      TaskPriority.p1High => context.messages.taskPriorityHigh,
+      TaskPriority.p2Medium => context.messages.taskPriorityMedium,
+      TaskPriority.p3Low => context.messages.taskPriorityLow,
+    };
+  }
 
   /// Numerical rank used for ordering (lower is higher priority).
   int get rank => index; // 0..3

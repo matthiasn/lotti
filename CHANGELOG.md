@@ -21,8 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   tightly to its metadata. The title itself is now click-to-edit (no separate
   pencil button), and on narrow phone widths the due date and time-estimate
   stay paired on the same row instead of leaving a chip stranded by itself.
-  The header stays tidy across long wrapping titles, many labels, the
-  just-created (empty) state, narrow phone widths, and tasks with cover art.
+  The metadata chips are also clearer to read at a glance: priority is spelled
+  out as a word (Urgent / High / Medium / Low) instead of the cryptic "P2", the
+  time-estimate chip reads "tracked of estimate" (e.g. "00:00 of 01:00") with a
+  tooltip spelling it out, every chip has a defined outline so its edge stays
+  legible, and a long list of labels collapses behind a "+N" chip you can tap
+  to expand. The header stays tidy across long wrapping titles, many labels,
+  the just-created (empty) state, narrow phone widths, and tasks with cover art.
 
 ### Fixed
 - Accepting an AI suggestion that adds a to-do no longer makes the page jump:
