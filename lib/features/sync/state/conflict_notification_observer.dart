@@ -21,8 +21,10 @@ class ConflictNotificationObserver {
     NotificationService? notificationService,
     AppLocalizations Function()? messages,
   }) : _db = db ?? getIt<JournalDb>(),
-       _notificationService =
-           notificationService ?? getIt<NotificationService>(),
+       // Stored as-is (resolved lazily via `_notifications`); a private named
+       // initializing formal isn't valid Dart.
+       // ignore: prefer_initializing_formals
+       _notificationService = notificationService,
        _messages = messages ?? _deviceMessages;
 
   /// Resolves the user's locale for the OS banner copy, falling back to English
@@ -43,8 +45,14 @@ class ConflictNotificationObserver {
   static const String deepLink = '/settings/advanced/conflicts';
 
   final JournalDb _db;
-  final NotificationService _notificationService;
+  final NotificationService? _notificationService;
   final AppLocalizations Function() _messages;
+
+  /// Resolved lazily so the lazily-registered [NotificationService] is not
+  /// forced to instantiate during DI bootstrap — only when the first alert
+  /// actually needs to be raised.
+  NotificationService get _notifications =>
+      _notificationService ?? getIt<NotificationService>();
 
   final Set<String> _known = {};
   bool _primed = false;
@@ -73,7 +81,7 @@ class ConflictNotificationObserver {
     if (!hasNew) return;
 
     final messages = _messages();
-    _notificationService.showNotificationNow(
+    _notifications.showNotificationNow(
       title: messages.conflictNotificationTitle,
       body: messages.conflictNotificationBody(ids.length),
       notificationId: notificationId,

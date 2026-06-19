@@ -42,7 +42,15 @@ class _ConflictDetailRouteState extends State<ConflictDetailRoute> {
 
   Future<void> _resolve(Future<bool> Function() action) async {
     try {
-      await action();
+      final applied = await action();
+      if (!applied) {
+        if (!mounted) return;
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.conflictApplyFailedTitle,
+        );
+        return;
+      }
     } catch (e) {
       if (!mounted) return;
       context.showToast(

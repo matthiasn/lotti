@@ -2936,6 +2936,7 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count polí beze změny',
+      few: '$count pole beze změny',
       one: '1 pole beze změny',
     );
     return '$_temp0';
@@ -3055,6 +3056,7 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count položek bylo upraveno na dvou zařízeních',
+      few: '$count položky byly upraveny na dvou zařízeních',
       one: '1 položka byla upravena na dvou zařízeních',
     );
     return '$_temp0';
@@ -6381,6 +6383,7 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count položek se nepodařilo odeslat',
+      few: '$count položky se nepodařilo odeslat',
       one: '1 položku se nepodařilo odeslat',
     );
     return '$_temp0';
@@ -6392,6 +6395,7 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count položek se odešle po opětovném připojení',
+      few: '$count položky se odešlou po opětovném připojení',
       one: '1 položka se odešle po opětovném připojení',
     );
     return '$_temp0';
@@ -6403,6 +6407,7 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Odesílá se $count položek…',
+      few: 'Odesílají se $count položky…',
       one: 'Odesílá se 1 položka…',
     );
     return '$_temp0';
@@ -6417,6 +6422,7 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other: '$count položek čeká na odeslání',
+      few: '$count položky čekají na odeslání',
       one: '1 položka čeká na odeslání',
     );
     return '$_temp0';
@@ -6428,6 +6434,7 @@ class AppLocalizationsCs extends AppLocalizations {
       count,
       locale: localeName,
       other: 'Zkusil $count×',
+      few: 'Zkusil $count×',
       one: 'Zkusil jednou',
     );
     return '$_temp0';

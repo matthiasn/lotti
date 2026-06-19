@@ -23,7 +23,7 @@ void main() {
     final container = ProviderContainer();
     addTearDown(container.dispose);
     // Keep the autoDispose provider alive while we await the first value.
-    container.listen(unresolvedConflictCountProvider, (_, __) {});
+    container.listen(unresolvedConflictCountProvider, (_, _) {});
     return container.read(unresolvedConflictCountProvider.future);
   }
 

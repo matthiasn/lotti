@@ -1588,8 +1588,8 @@
     }
   },
   "conflictFieldBody": "Body",
-  "conflictFieldCategory": "category",
-  "conflictFieldDuration": "duration",
+  "conflictFieldCategory": "Category",
+  "conflictFieldDuration": "Duration",
   "conflictFieldEnd": "End",
   "conflictFieldFlag": "Flag",
   "conflictFieldOther": "Other details",

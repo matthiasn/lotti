@@ -130,6 +130,19 @@ void main() {
     });
   });
 
+  group('type change', () {
+    testWidgets('hides Combine and offers a binary choice', (tester) async {
+      await pump(tester, computeEntryDiff(entryOf(), taskOf()));
+
+      expect(
+        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+        findsNothing,
+      );
+      expect(find.text('Use this device'), findsOneWidget);
+      expect(find.text('Use from sync'), findsOneWidget);
+    });
+  });
+
   group('delete-vs-edit', () {
     testWidgets('keeps the edited (remote) side when local was deleted', (
       tester,

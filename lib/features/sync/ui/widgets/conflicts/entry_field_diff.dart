@@ -165,7 +165,9 @@ EntryDiff computeEntryDiff(JournalEntity local, JournalEntity remote) {
   for (final spec in _specs) {
     final l = spec.extract(local);
     final r = spec.extract(remote);
-    if (l == r) {
+    // `null` and `''` are both "absent", so don't report a field as changed
+    // when one side is null and the other is empty.
+    if (l == r || (!_present(l) && !_present(r))) {
       if (_present(l) || _present(r)) identical++;
       continue;
     }

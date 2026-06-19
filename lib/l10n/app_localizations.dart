@@ -4990,13 +4990,13 @@ abstract class AppLocalizations {
   /// No description provided for @conflictFieldCategory.
   ///
   /// In en, this message translates to:
-  /// **'category'**
+  /// **'Category'**
   String get conflictFieldCategory;
 
   /// No description provided for @conflictFieldDuration.
   ///
   /// In en, this message translates to:
-  /// **'duration'**
+  /// **'Duration'**
   String get conflictFieldDuration;
 
   /// No description provided for @conflictFieldEnd.

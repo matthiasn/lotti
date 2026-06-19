@@ -124,13 +124,17 @@ class _ConflictResolutionViewState extends State<ConflictResolutionView> {
           const _RecommendedLabel(),
           SizedBox(height: tokens.spacing.step2),
         ],
-        DesignSystemButton(
-          label: messages.conflictPickerCombine,
-          leadingIcon: Icons.merge_rounded,
-          fullWidth: true,
-          onPressed: _busy ? null : _enterCombine,
-        ),
-        SizedBox(height: tokens.spacing.step2),
+        // Different entity types cannot be field-merged, so Combine is only
+        // offered for same-type ("edited") divergences.
+        if (widget.diff.shape != ConflictShape.typeChanged) ...[
+          DesignSystemButton(
+            label: messages.conflictPickerCombine,
+            leadingIcon: Icons.merge_rounded,
+            fullWidth: true,
+            onPressed: _busy ? null : _enterCombine,
+          ),
+          SizedBox(height: tokens.spacing.step2),
+        ],
         Row(
           children: [
             Expanded(

@@ -112,6 +112,14 @@ void main() {
       expect(field.remoteValue, 'cat-1');
     });
 
+    test('null vs empty string is not reported as a change', () {
+      final diff = computeEntryDiff(entryOf(), entryOf(categoryId: ''));
+      expect(
+        diff.fields.where((f) => f.field == EntryField.category),
+        isEmpty,
+      );
+    });
+
     test('category changed between two values', () {
       final diff = computeEntryDiff(
         entryOf(categoryId: 'cat-a'),

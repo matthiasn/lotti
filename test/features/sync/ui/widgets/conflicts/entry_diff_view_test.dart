@@ -67,7 +67,7 @@ void main() {
 
     await _pump(tester, diff);
 
-    expect(find.text('duration'), findsOneWidget);
+    expect(find.text('Duration'), findsOneWidget);
     expect(find.text('1:00'), findsOneWidget);
     expect(find.text('1:30'), findsOneWidget);
   });

@@ -122,11 +122,14 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
   }
 
   /// Re-queues failed items by flipping them back to pending so the runner
-  /// picks them up again. Non-destructive, so no confirmation is needed.
+  /// picks them up again. Non-destructive and idempotent, so each row is
+  /// retried independently — one bad write doesn't strand the rest, and the
+  /// user can simply tap again. Reports overall success/failure.
   Future<void> _requeue(List<OutboxItem> items) async {
     if (items.isEmpty) return;
-    try {
-      for (final item in items) {
+    var failed = 0;
+    for (final item in items) {
+      try {
         await _db.updateOutboxItem(
           OutboxCompanion(
             id: drift.Value(item.id),
@@ -135,26 +138,26 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
             updatedAt: drift.Value(DateTime.now()),
           ),
         );
+      } catch (error, stackTrace) {
+        failed++;
+        getIt<DomainLogger>().error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'retry',
+        );
       }
-      await _fetch();
-      if (!mounted) return;
-      context.showToast(
-        tone: DesignSystemToastTone.success,
-        title: context.messages.outboxMonitorRetryQueued,
-      );
-    } catch (error, stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
-        error,
-        stackTrace: stackTrace,
-        subDomain: 'retry',
-      );
-      if (!mounted) return;
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.outboxMonitorRetryFailed,
-      );
     }
+    await _fetch();
+    if (!mounted) return;
+    context.showToast(
+      tone: failed == 0
+          ? DesignSystemToastTone.success
+          : DesignSystemToastTone.error,
+      title: failed == 0
+          ? context.messages.outboxMonitorRetryQueued
+          : context.messages.outboxMonitorRetryFailed,
+    );
   }
 
   Future<void> _removeItem(OutboxItem item) async {
@@ -199,8 +202,11 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         labelBuilder: (ctx) => ctx.messages.outboxFilterWaiting,
         predicate: (item) {
           final status = _statusFromIndex(item.status);
+          // Unknown/corrupt status indices fall here too, so a row is never
+          // invisible across every filter.
           return status == OutboxStatus.pending ||
-              status == OutboxStatus.sending;
+              status == OutboxStatus.sending ||
+              status == null;
         },
         icon: Icons.schedule_rounded,
         selectedColor: colors.alert.warning.defaultColor,

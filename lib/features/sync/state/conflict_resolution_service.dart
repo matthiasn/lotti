@@ -49,11 +49,15 @@ class ConflictResolutionService {
     if (conflict == null) return null;
     final local = await _db.journalEntityById(conflictId);
     if (local == null) return null;
-    return ConflictPair(
-      conflict: conflict,
-      local: local,
-      remote: fromSerialized(conflict.serialized),
-    );
+    final JournalEntity remote;
+    try {
+      remote = fromSerialized(conflict.serialized);
+    } catch (_) {
+      // A corrupt payload shouldn't crash the conflict-detail path; degrade
+      // to "not found" so the UI shows its not-found state instead.
+      return null;
+    }
+    return ConflictPair(conflict: conflict, local: local, remote: remote);
   }
 
   /// "Keep this device" / "Keep other device".

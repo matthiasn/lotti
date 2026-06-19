@@ -2901,10 +2901,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflictFieldBody => 'Body';
 
   @override
-  String get conflictFieldCategory => 'category';
+  String get conflictFieldCategory => 'Category';
 
   @override
-  String get conflictFieldDuration => 'duration';
+  String get conflictFieldDuration => 'Duration';
 
   @override
   String get conflictFieldEnd => 'End';

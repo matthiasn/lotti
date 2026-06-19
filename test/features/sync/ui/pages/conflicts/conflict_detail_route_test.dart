@@ -308,6 +308,26 @@ void main() {
       expect(toast.description, contains('network failure'));
     });
 
+    testWidgets('a non-applied write surfaces an error toast', (tester) async {
+      final local = _entry(title: 'Local title', clock: const {'a': 9});
+      final remote = _entry(title: 'Remote title', clock: const {'a': 13});
+      final conflict = _conflict(remote: remote);
+      final bench = await _Bench.create(localEntry: local, conflict: conflict);
+      addTearDown(bench.dispose);
+      when(
+        () => bench.persistence.updateJournalEntity(any(), any()),
+      ).thenAnswer((_) async => false);
+      await _showConflict(tester, bench, conflict);
+
+      await _tap(tester, l10n.conflictPickerUseThisDevice);
+
+      final toast = tester.widget<DesignSystemToast>(
+        find.byType(DesignSystemToast),
+      );
+      expect(toast.tone, DesignSystemToastTone.error);
+      expect(toast.title, l10n.conflictApplyFailedTitle);
+    });
+
     testWidgets('the local entry is read once and reused across ticks', (
       tester,
     ) async {

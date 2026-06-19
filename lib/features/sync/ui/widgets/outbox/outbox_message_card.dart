@@ -100,7 +100,9 @@ class OutboxMessageCard extends StatelessWidget {
             if (showDetails) _Details(vm: vm),
             if (onRetry != null || onRemove != null) ...[
               SizedBox(height: tokens.spacing.step3),
-              Row(
+              Wrap(
+                spacing: tokens.spacing.step2,
+                runSpacing: tokens.spacing.step2,
                 children: [
                   if (onRetry != null)
                     DesignSystemButton(
@@ -109,8 +111,6 @@ class OutboxMessageCard extends StatelessWidget {
                       variant: DesignSystemButtonVariant.secondary,
                       onPressed: onRetry,
                     ),
-                  if (onRetry != null && onRemove != null)
-                    SizedBox(width: tokens.spacing.step2),
                   if (onRemove != null)
                     DesignSystemButton(
                       label: messages.outboxActionRemove,

@@ -6306,7 +6306,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get outboxActionRemove => 'Eliminați';
 
   @override
-  String get outboxActionRetry => 'Reîncearcă';
+  String get outboxActionRetry => 'Reîncercați';
 
   @override
   String get outboxFailedReassurance =>
@@ -6404,7 +6404,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get outboxRemoveConfirmTitle => 'Eliminați din coadă?';
 
   @override
-  String get outboxRetryAll => 'Reîncearcă tot';
+  String get outboxRetryAll => 'Reîncercați tot';
 
   @override
   String get outboxShowDetails => 'Afișați detaliile tehnice';
