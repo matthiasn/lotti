@@ -107,6 +107,7 @@ class EventTimelineEntry {
   const EventTimelineEntry({
     required this.timeLabel,
     required this.kind,
+    this.entryId,
     this.text,
     this.photos = const [],
     this.durationLabel,
@@ -114,6 +115,11 @@ class EventTimelineEntry {
 
   final String timeLabel;
   final EventTimelineKind kind;
+
+  /// Id of the linked journal entry this beat was built from, so the detail
+  /// view can open its source. `null` when the source isn't navigable.
+  final String? entryId;
+
   final String? text;
   final List<EventPhoto> photos;
   final String? durationLabel;

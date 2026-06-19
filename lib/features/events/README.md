@@ -75,10 +75,16 @@ by year, newest first.
 ### Detail
 
 `EventDetailView` leads with a capped photographic hero (cover, title,
-when/where, category, rating over a strong scrim), then an AI summary card, a
+when/where, category, rating over a strong scrim), then an AI summary card (the
+newest linked `AiResponseEntry` by `meta.dateFrom`, else the event note), a
 vertical timeline of linked entries (lead photo + supporting cluster + caption,
 notes, voice notes), and a linked-tasks section. On wide screens the body splits
 into a main column (summary + timeline) and a tasks rail; on phones it stacks.
+
+Each timeline row carries the source entry's id and is tappable when the page
+wires `onOpenTimelineEntry` (it beams to `/journal/<entryId>`); the trailing
+"open" chevron renders only when that handler is present, so the affordance
+always matches the behavior.
 
 ## Files
 
@@ -105,7 +111,8 @@ Navigation is registered in `lib/beamer/locations/events_location.dart`
 User-visible strings are localized via `context.messages`: `navTabTitleEvents`,
 `eventsPageTitle`, `eventsSearchHint`, `eventsNewEvent`, `eventsFilterAll`,
 `eventsSectionUpcoming`, `eventsSummaryTitle`, `eventsTimelineSection`,
-`eventsTasksSection`, `eventsAddLabel`.
+`eventsTasksSection`, `eventsAddLabel`, `eventsRegenerateSummary`,
+`eventsVoiceNote`.
 
 ## Testing
 

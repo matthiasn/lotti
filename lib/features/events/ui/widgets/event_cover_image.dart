@@ -42,17 +42,22 @@ class EventCoverImage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final alignmentX = (cropX * 2) - 1;
+    // Clamp defensively so malformed crop data can't push the cover alignment
+    // outside the visible range.
+    final alignmentX = (cropX.clamp(0.0, 1.0) * 2) - 1;
 
     return Stack(
       fit: StackFit.expand,
       children: [
         if (image != null)
-          FittedBox(
+          Image(
+            image: image!,
             fit: BoxFit.cover,
-            clipBehavior: Clip.hardEdge,
             alignment: Alignment(alignmentX, 0),
-            child: Image(image: image!),
+            // A missing or corrupt cover file falls back to the calm gradient
+            // instead of throwing an unhandled image-load exception.
+            errorBuilder: (context, error, stackTrace) =>
+                _Fallback(color: fallbackColor, icon: icon),
           )
         else
           _Fallback(color: fallbackColor, icon: icon),

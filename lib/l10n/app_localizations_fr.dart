@@ -4974,10 +4974,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get eventsTasksSection => 'Tâches';
 
   @override
-  String get eventsTimelineSection => 'Chronologie';
+  String get eventsRegenerateSummary => 'Régénérer le résumé';
 
   @override
-  String get navTabTitleEvents => 'Événements';
+  String get eventsVoiceNote => 'Note vocale';
+
+  @override
+  String get eventsTimelineSection => 'Chronologie';
 
   @override
   String get favoriteLabel => 'Favori';
@@ -6248,6 +6251,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get navTabTitleCalendar => 'DailyOS';
+
+  @override
+  String get navTabTitleEvents => 'Événements';
 
   @override
   String get navTabTitleHabits => 'Habitudes';

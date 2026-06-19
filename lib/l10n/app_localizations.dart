@@ -8526,17 +8526,23 @@ abstract class AppLocalizations {
   /// **'Tasks'**
   String get eventsTasksSection;
 
+  /// No description provided for @eventsRegenerateSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate summary'**
+  String get eventsRegenerateSummary;
+
+  /// No description provided for @eventsVoiceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note'**
+  String get eventsVoiceNote;
+
   /// No description provided for @eventsTimelineSection.
   ///
   /// In en, this message translates to:
   /// **'Timeline'**
   String get eventsTimelineSection;
-
-  /// No description provided for @navTabTitleEvents.
-  ///
-  /// In en, this message translates to:
-  /// **'Events'**
-  String get navTabTitleEvents;
 
   /// No description provided for @favoriteLabel.
   ///
@@ -10707,6 +10713,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'DailyOS'**
   String get navTabTitleCalendar;
+
+  /// No description provided for @navTabTitleEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get navTabTitleEvents;
 
   /// No description provided for @navTabTitleHabits.
   ///

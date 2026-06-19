@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/painting.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -9,6 +11,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/events/state/events_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:mocktail/mocktail.dart';
@@ -61,6 +64,7 @@ JournalImage _image(String id) {
 void main() {
   late MockJournalDb db;
   late MockEntitiesCacheService cache;
+  late MockUpdateNotifications updateNotifications;
   late Directory docDir;
 
   setUpAll(() {
@@ -73,7 +77,12 @@ void main() {
     await getIt.reset();
     db = MockJournalDb();
     cache = MockEntitiesCacheService();
+    updateNotifications = MockUpdateNotifications();
     docDir = Directory.systemTemp;
+
+    when(
+      () => updateNotifications.updateStream,
+    ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
     when(() => cache.showPrivateEntries).thenReturn(true);
     when(() => cache.getCategoryById(any())).thenReturn(
@@ -92,6 +101,7 @@ void main() {
     getIt
       ..registerSingleton<JournalDb>(db)
       ..registerSingleton<EntitiesCacheService>(cache)
+      ..registerSingleton<UpdateNotifications>(updateNotifications)
       ..registerSingleton<Directory>(docDir);
   });
 
@@ -159,6 +169,27 @@ void main() {
     await loadResolvedEvents();
 
     verifyNever(() => db.getJournalEntitiesForIds(any()));
+  });
+
+  test('eventsStreamProvider emits resolved events on first listen', () async {
+    stubEvents([_event(id: 'e1')]);
+    when(() => db.getJournalEntitiesForIds(any())).thenAnswer((_) async => []);
+
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    final completer = Completer<List<ResolvedEvent>>();
+    final sub = container.listen(eventsStreamProvider, (_, next) {
+      if (next is AsyncData<List<ResolvedEvent>> && !completer.isCompleted) {
+        completer.complete(next.value);
+      }
+    });
+    addTearDown(sub.close);
+
+    final events = await completer.future.timeout(const Duration(seconds: 5));
+
+    expect(events.single.event.meta.id, 'e1');
+    expect(events.single.categoryName, 'Friends');
   });
 
   test(

@@ -75,17 +75,20 @@ EventDetailData buildEventDetailData({
           EventTimelineEntry(
             timeLabel: '20:15',
             kind: EventTimelineKind.photo,
+            entryId: 'photo-1',
             text: 'The reveal moment.',
             photos: [EventPhoto(testImage()), EventPhoto(testImage())],
           ),
           const EventTimelineEntry(
             timeLabel: '20:40',
             kind: EventTimelineKind.note,
+            entryId: 'note-1',
             text: "Anna's speech.",
           ),
           const EventTimelineEntry(
             timeLabel: '21:30',
             kind: EventTimelineKind.audio,
+            entryId: 'audio-1',
             durationLabel: 'Voice note · 0:42',
             text: 'Toast from Dad',
           ),

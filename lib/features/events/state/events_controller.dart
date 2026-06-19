@@ -39,9 +39,16 @@ final eventsStreamProvider = StreamProvider<List<ResolvedEvent>>((ref) {
   );
 });
 
-/// Loads every (non-deleted) event from the database and resolves each one's
-/// category styling and cover image. Pure-ish glue: all side effects go through
-/// `getIt`, so it is straightforward to test with mocked services.
+/// The most recent events loaded for the overview. A high safeguard cap (the
+/// query layer has no unbounded mode) — far above any realistic event count,
+/// since events are a curated, memory-forward surface rather than a firehose
+/// like the journal. Lazy pagination is a follow-up if this ceiling is ever hit.
+const eventsQueryLimit = 1000;
+
+/// Loads the (non-deleted) events for the overview — up to [eventsQueryLimit],
+/// newest first — and resolves each one's category styling and cover image.
+/// Pure-ish glue: all side effects go through `getIt`, so it is straightforward
+/// to test with mocked services.
 Future<List<ResolvedEvent>> loadResolvedEvents() async {
   final db = getIt<JournalDb>();
   final cache = getIt<EntitiesCacheService>();
@@ -53,7 +60,7 @@ Future<List<ResolvedEvent>> loadResolvedEvents() async {
     starredStatuses: const [true, false],
     privateStatuses: showPrivate ? const [true, false] : const [false],
     flaggedStatuses: const [1, 0],
-    limit: 1000,
+    limit: eventsQueryLimit,
   );
   final events = entities.whereType<JournalEvent>().toList();
 

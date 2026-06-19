@@ -1,8 +1,23 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 
 import '../../test_utils.dart';
+
+/// An [ImageProvider] whose load fails immediately, to exercise the cover
+/// image's error fallback.
+class _BrokenImage extends ImageProvider<_BrokenImage> {
+  @override
+  Future<_BrokenImage> obtainKey(ImageConfiguration configuration) =>
+      SynchronousFuture<_BrokenImage>(this);
+
+  @override
+  ImageStreamCompleter loadImage(
+    _BrokenImage key,
+    ImageDecoderCallback decode,
+  ) => OneFrameImageStreamCompleter(Future<ImageInfo>.error('broken'));
+}
 
 void main() {
   group('EventCoverImage', () {
@@ -32,9 +47,7 @@ void main() {
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
     });
 
-    testWidgets('maps cropX to the FittedBox horizontal alignment', (
-      tester,
-    ) async {
+    testWidgets('maps cropX to the cover image alignment', (tester) async {
       await pumpEventComponent(
         tester,
         EventCoverImage(
@@ -45,10 +58,47 @@ void main() {
         height: 120,
       );
 
-      final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
+      final image = tester.widget<Image>(find.byType(Image));
       // alignmentX = cropX * 2 - 1
-      expect(fittedBox.alignment, const Alignment(-0.5, 0));
-      expect(fittedBox.fit, BoxFit.cover);
+      expect(image.alignment, const Alignment(-0.5, 0));
+      expect(image.fit, BoxFit.cover);
+    });
+
+    testWidgets('clamps out-of-range cropX before computing alignment', (
+      tester,
+    ) async {
+      // Malformed crop data must not push alignment beyond the [-1, 1] span.
+      for (final (cropX, expected) in [(1.8, 1.0), (-0.5, -1.0)]) {
+        await pumpEventComponent(
+          tester,
+          EventCoverImage(
+            image: testImage(),
+            fallbackColor: Colors.blue,
+            cropX: cropX,
+          ),
+          height: 120,
+        );
+        final image = tester.widget<Image>(find.byType(Image));
+        expect(
+          image.alignment,
+          Alignment(expected, 0),
+          reason: 'cropX=$cropX',
+        );
+      }
+    });
+
+    testWidgets('falls back to the gradient when the image fails to load', (
+      tester,
+    ) async {
+      await pumpEventComponent(
+        tester,
+        EventCoverImage(image: _BrokenImage(), fallbackColor: Colors.blue),
+        height: 120,
+      );
+      await tester.pump();
+
+      // The error builder swaps the failed image for the fallback glyph.
+      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
     });
 
     testWidgets('hero scrim adds the global darken + two gradients', (

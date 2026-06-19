@@ -641,6 +641,7 @@ void main() {
           expect(navService.isDashboardsPageEnabled, isFalse);
           expect(navService.isDailyOsPageEnabled, isFalse);
           expect(navService.isProjectsPageEnabled, isFalse);
+          expect(navService.isEventsPageEnabled, isFalse);
         },
       );
     });

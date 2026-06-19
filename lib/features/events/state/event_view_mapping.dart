@@ -10,8 +10,11 @@ String? _trimmedNote(JournalEntity entity) {
 }
 
 String _formatDuration(Duration duration) {
-  final minutes = duration.inMinutes;
-  final seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
+  // A reversed audio range (dateTo before dateFrom) would otherwise format as a
+  // misleading negative `m:ss`; clamp to zero.
+  final safe = duration.isNegative ? Duration.zero : duration;
+  final minutes = safe.inMinutes;
+  final seconds = (safe.inSeconds % 60).toString().padLeft(2, '0');
   return '$minutes:$seconds';
 }
 
@@ -29,12 +32,14 @@ EventTimelineEntry? eventTimelineEntryFor(
     final JournalImage image => EventTimelineEntry(
       timeLabel: timeLabel,
       kind: EventTimelineKind.photo,
+      entryId: image.meta.id,
       text: _trimmedNote(image),
       photos: [EventPhoto(imageProviderFor(image))],
     ),
     final JournalAudio audio => EventTimelineEntry(
       timeLabel: timeLabel,
       kind: EventTimelineKind.audio,
+      entryId: audio.meta.id,
       durationLabel: _formatDuration(
         audio.data.dateTo.difference(audio.data.dateFrom),
       ),
@@ -43,6 +48,7 @@ EventTimelineEntry? eventTimelineEntryFor(
     final JournalEntry entry => EventTimelineEntry(
       timeLabel: timeLabel,
       kind: EventTimelineKind.note,
+      entryId: entry.meta.id,
       text: _trimmedNote(entry),
     ),
     _ => null,
@@ -58,6 +64,86 @@ EventTaskRef? eventTaskRefFor(JournalEntity entity, {String? dueLabel}) {
     title: entity.data.title,
     done: entity.data.status is TaskDone,
     dueLabel: dueLabel,
+  );
+}
+
+/// Builds the full [EventDetailData] for the detail page from a resolved event
+/// and its outgoing linked entries. Pure: the documents-directory-dependent
+/// image resolution is injected via [imageProviderFor].
+///
+/// - **Cover**: the linked image whose id matches the event's `coverArtId`,
+///   else the first linked photo, else none.
+/// - **Timeline**: linked photos/notes/audio, oldest first.
+/// - **Tasks**: linked tasks.
+/// - **Summary**: the latest linked AI response, falling back to the event's
+///   own note.
+EventDetailData eventDetailDataFromEntities({
+  required JournalEvent event,
+  required List<JournalEntity> linked,
+  required DateTime now,
+  required Color categoryColor,
+  required String fallbackTitle,
+  required ImageProvider Function(JournalImage image) imageProviderFor,
+  String? categoryName,
+}) {
+  final images = linked.whereType<JournalImage>().toList();
+  JournalImage? cover;
+  for (final image in images) {
+    if (image.meta.id == event.data.coverArtId) {
+      cover = image;
+      break;
+    }
+  }
+  cover ??= images.isEmpty ? null : images.first;
+
+  final card = eventCardDataFromEvent(
+    event,
+    dateLabel: eventDateLabel(event.meta.dateFrom, now),
+    categoryColor: categoryColor,
+    categoryName: categoryName,
+    fallbackTitle: fallbackTitle,
+    coverImage: cover == null ? null : imageProviderFor(cover),
+  );
+
+  final timeline = <EventTimelineEntry>[];
+  final sortedLinked = [...linked]
+    ..sort((a, b) => a.meta.dateFrom.compareTo(b.meta.dateFrom));
+  for (final entity in sortedLinked) {
+    final timelineEntry = eventTimelineEntryFor(
+      entity,
+      timeLabel: DateFormat('HH:mm').format(entity.meta.dateFrom),
+      imageProviderFor: imageProviderFor,
+    );
+    if (timelineEntry != null) timeline.add(timelineEntry);
+  }
+
+  final tasks = <EventTaskRef>[];
+  for (final entity in linked) {
+    final due = entity is Task ? entity.data.due : null;
+    final task = eventTaskRefFor(
+      entity,
+      dueLabel: due == null ? null : DateFormat('d MMM').format(due),
+    );
+    if (task != null) tasks.add(task);
+  }
+
+  final note = event.entryText?.plainText.trim();
+  // Sort by timestamp so the summary is the newest AI response regardless of the
+  // order the linked entries arrive in.
+  final aiResponses = linked.whereType<AiResponseEntry>().toList()
+    ..sort((a, b) => a.meta.dateFrom.compareTo(b.meta.dateFrom));
+  final summary = aiResponses.isNotEmpty
+      ? aiResponses.last.data.response.trim()
+      : (note != null && note.isNotEmpty ? note : null);
+
+  return EventDetailData(
+    card: card,
+    whenLabel: DateFormat(
+      'EEE, d MMM yyyy · HH:mm',
+    ).format(event.meta.dateFrom),
+    summary: summary,
+    timeline: timeline,
+    tasks: tasks,
   );
 }
 

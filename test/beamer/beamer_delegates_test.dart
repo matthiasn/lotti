@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_delegates.dart';
 import 'package:lotti/beamer/locations/calendar_location.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
+import 'package:lotti/beamer/locations/events_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
@@ -29,6 +30,40 @@ void main() {
       );
       expect(location, isA<DashboardsLocation>());
     });
+
+    test('eventsBeamerDelegate returns EventsLocation', () {
+      final routeInformation = RouteInformation(uri: Uri.parse('/events'));
+      final location = eventsBeamerDelegate.locationBuilder(
+        routeInformation,
+        null,
+      );
+      expect(location, isA<EventsLocation>());
+    });
+
+    test(
+      'eventsBeamerDelegate root-matches (not substring) the events path',
+      () {
+        // A nested event route still resolves.
+        expect(
+          eventsBeamerDelegate.locationBuilder(
+            RouteInformation(uri: Uri.parse('/events/abc')),
+            null,
+          ),
+          isA<EventsLocation>(),
+        );
+        // But unrelated paths that merely contain "events" do not.
+        for (final path in ['/settings/events', '/prevents']) {
+          expect(
+            eventsBeamerDelegate.locationBuilder(
+              RouteInformation(uri: Uri.parse(path)),
+              null,
+            ),
+            isA<NotFound>(),
+            reason: path,
+          );
+        }
+      },
+    );
 
     test('journalBeamerDelegate returns JournalLocation', () {
       final routeInformation = RouteInformation(uri: Uri.parse('/journal'));
@@ -89,6 +124,10 @@ void main() {
         routeInformation,
         null,
       );
+      final eventsLocation = eventsBeamerDelegate.locationBuilder(
+        routeInformation,
+        null,
+      );
       final tasksLocation = tasksBeamerDelegate.locationBuilder(
         routeInformation,
         null,
@@ -108,6 +147,7 @@ void main() {
       );
 
       expect(habitsLocation, isA<NotFound>());
+      expect(eventsLocation, isA<NotFound>());
       expect(projectsLocation, isA<NotFound>());
       expect(dashboardsLocation, isA<NotFound>());
       expect(journalLocation, isA<NotFound>());

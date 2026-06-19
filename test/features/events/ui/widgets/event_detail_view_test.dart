@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 
 import '../../test_utils.dart';
@@ -76,8 +77,6 @@ void main() {
       expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
       expect(find.text('Voice note · 0:42'), findsOneWidget);
       expect(find.text('Toast from Dad'), findsOneWidget);
-      // each timeline row has an "open" chevron
-      expect(find.byIcon(Icons.chevron_right), findsNWidgets(3));
     });
 
     testWidgets('renders tasks with done/undone states and due labels', (
@@ -94,6 +93,31 @@ void main() {
       expect(find.text('Due Fri'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle), findsOneWidget); // done
       expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget); // not
+    });
+
+    testWidgets('renders a task status label in its status colour', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            tasks: const [
+              EventTaskRef(
+                title: 'Confirm caterer',
+                done: false,
+                statusLabel: 'IN PROGRESS',
+                statusColor: Color(0xFF22C55E),
+              ),
+            ],
+          ),
+        ),
+        size: _tallMobile,
+      );
+
+      expect(find.text('Confirm caterer'), findsOneWidget);
+      final statusText = tester.widget<Text>(find.text('IN PROGRESS'));
+      expect(statusText.style?.color, const Color(0xFF22C55E));
     });
 
     testWidgets('renders tasks in both one- and two-column layouts', (
@@ -150,6 +174,40 @@ void main() {
       expect(regen, isTrue);
       expect(addTimeline, isTrue);
       expect(addTask, isTrue);
+    });
+
+    testWidgets('shows no row chevron when timeline rows are not openable', (
+      tester,
+    ) async {
+      // Without an onOpenTimelineEntry handler the rows are static, so the
+      // "open" chevron must not appear (no false affordance).
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: buildEventDetailData()),
+        size: _tallMobile,
+      );
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
+    });
+
+    testWidgets('tapping a timeline row opens its source entry', (
+      tester,
+    ) async {
+      final opened = <String>[];
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(),
+          onOpenTimelineEntry: opened.add,
+        ),
+        size: _tallMobile,
+      );
+
+      // Wired rows carry the chevron and are tappable.
+      expect(find.byIcon(Icons.chevron_right), findsNWidgets(3));
+      await tester.tap(find.text("Anna's speech."));
+      await tester.pump();
+
+      expect(opened, ['note-1']);
     });
 
     testWidgets('hides summary when none is provided', (tester) async {

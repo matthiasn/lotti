@@ -37,7 +37,10 @@ final eventsBeamerDelegate = BeamerDelegate(
   updateParent: false,
   updateFromParent: false,
   locationBuilder: (routeInformation, _) {
-    if (routeInformation.uri.path.contains('events')) {
+    // Root-path match (not a substring) so unrelated paths like
+    // `/settings/events` or `/prevents` don't get routed to EventsLocation.
+    final path = routeInformation.uri.path;
+    if (path == '/events' || path.startsWith('/events/')) {
       return EventsLocation(routeInformation);
     }
     return NotFound(path: routeInformation.uri.path);

@@ -4938,10 +4938,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsTasksSection => 'Úkoly';
 
   @override
-  String get eventsTimelineSection => 'Časová osa';
+  String get eventsRegenerateSummary => 'Znovu vytvořit shrnutí';
 
   @override
-  String get navTabTitleEvents => 'Události';
+  String get eventsVoiceNote => 'Hlasová poznámka';
+
+  @override
+  String get eventsTimelineSection => 'Časová osa';
 
   @override
   String get favoriteLabel => 'Oblíbené';
@@ -6196,6 +6199,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get navTabTitleCalendar => 'DailyOS';
+
+  @override
+  String get navTabTitleEvents => 'Události';
 
   @override
   String get navTabTitleHabits => 'Zvyky';

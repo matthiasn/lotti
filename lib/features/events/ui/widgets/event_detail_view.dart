@@ -27,6 +27,7 @@ class EventDetailView extends StatelessWidget {
     this.onRegenerateSummary,
     this.onAddToTimeline,
     this.onAddTask,
+    this.onOpenTimelineEntry,
     super.key,
   });
 
@@ -36,6 +37,11 @@ class EventDetailView extends StatelessWidget {
   final VoidCallback? onRegenerateSummary;
   final VoidCallback? onAddToTimeline;
   final VoidCallback? onAddTask;
+
+  /// Opens a timeline beat's source journal entry. When null, the rows render
+  /// as static (and drop the trailing "open" chevron) so the affordance always
+  /// matches the actual behavior.
+  final ValueChanged<String>? onOpenTimelineEntry;
 
   /// Content cap so the body doesn't sprawl on very wide screens.
   static const double _contentMaxWidth = 1080;
@@ -152,7 +158,7 @@ class EventDetailView extends StatelessWidget {
           count: data.timeline.length,
           onAdd: onAddToTimeline,
         ),
-        _Timeline(entries: data.timeline),
+        _Timeline(entries: data.timeline, onOpenEntry: onOpenTimelineEntry),
       ],
     ];
   }
@@ -357,7 +363,7 @@ class _SummaryCard extends StatelessWidget {
                 visualDensity: VisualDensity.compact,
                 iconSize: 18,
                 color: cs.onSurfaceVariant,
-                tooltip: 'Regenerate summary',
+                tooltip: context.messages.eventsRegenerateSummary,
                 icon: const Icon(Icons.refresh),
               ),
             ],
@@ -405,7 +411,7 @@ class _SectionHeader extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          _AddButton(onTap: onAdd),
+          if (onAdd != null) _AddButton(onTap: onAdd),
         ],
       ),
     );
@@ -455,26 +461,36 @@ class _AddButton extends StatelessWidget {
 }
 
 class _Timeline extends StatelessWidget {
-  const _Timeline({required this.entries});
+  const _Timeline({required this.entries, this.onOpenEntry});
 
   final List<EventTimelineEntry> entries;
+  final ValueChanged<String>? onOpenEntry;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         for (var i = 0; i < entries.length; i++)
-          _TimelineTile(entry: entries[i], isLast: i == entries.length - 1),
+          _TimelineTile(
+            entry: entries[i],
+            isLast: i == entries.length - 1,
+            onOpenEntry: onOpenEntry,
+          ),
       ],
     );
   }
 }
 
 class _TimelineTile extends StatelessWidget {
-  const _TimelineTile({required this.entry, required this.isLast});
+  const _TimelineTile({
+    required this.entry,
+    required this.isLast,
+    this.onOpenEntry,
+  });
 
   final EventTimelineEntry entry;
   final bool isLast;
+  final ValueChanged<String>? onOpenEntry;
 
   static const double _railWidth = 28;
   static const double _dotSize = 12;
@@ -483,8 +499,12 @@ class _TimelineTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final cs = context.colorScheme;
+    // Only interactive — and only carrying the "open" chevron — when there's a
+    // navigable source entry and a handler to open it.
+    final entryId = entry.entryId;
+    final canOpen = onOpenEntry != null && entryId != null;
 
-    return IntrinsicHeight(
+    final row = IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -529,18 +549,26 @@ class _TimelineTile extends StatelessWidget {
               ),
             ),
           ),
-          // Trailing chevron signals each entry opens its source entry. Pinned
-          // to the top (timestamp line) so it reads as a row-level "open"
+          // Trailing chevron signals the row opens its source entry. Pinned to
+          // the top (timestamp line) so it reads as a row-level "open"
           // affordance, not horizontal paging of the photo cluster below.
-          Padding(
-            padding: EdgeInsets.only(left: tokens.spacing.step2),
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: Icon(Icons.chevron_right, size: 20, color: cs.outline),
+          if (canOpen)
+            Padding(
+              padding: EdgeInsets.only(left: tokens.spacing.step2),
+              child: Align(
+                alignment: Alignment.topCenter,
+                child: Icon(Icons.chevron_right, size: 20, color: cs.outline),
+              ),
             ),
-          ),
         ],
       ),
+    );
+
+    if (!canOpen) return row;
+    return InkWell(
+      onTap: () => onOpenEntry!(entryId),
+      borderRadius: BorderRadius.circular(tokens.radii.s),
+      child: row,
     );
   }
 }
@@ -564,6 +592,16 @@ class _TimelineContent extends StatelessWidget {
         // A hero "lead" frame plus a small supporting cluster, with the caption
         // anchored beneath — a curated moment, not a flat contact strip.
         final photos = entry.photos;
+        // Degrade to the caption (or nothing) rather than crashing on a photo
+        // beat that arrived without any images.
+        if (photos.isEmpty) {
+          return Text(
+            entry.text ?? '',
+            style: styles.body.bodyMedium.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          );
+        }
         final lead = photos.first;
         final rest = photos.length > 1
             ? photos.sublist(1)
@@ -634,7 +672,7 @@ class _TimelineContent extends StatelessWidget {
             Icon(Icons.play_circle_outline, size: 22, color: cs.primary),
             SizedBox(width: tokens.spacing.step2),
             Text(
-              entry.durationLabel ?? 'Voice note',
+              entry.durationLabel ?? context.messages.eventsVoiceNote,
               style: styles.body.bodyMedium.copyWith(color: cs.onSurface),
             ),
             if (entry.text != null) ...[
