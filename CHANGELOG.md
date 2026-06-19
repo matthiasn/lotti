@@ -76,6 +76,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that task's own linked neighborhood, adds the new nodes and links to the graph
   already on screen, and recomputes the merged layout so the world stays
   explorable instead of turning sibling tasks into dead ends.
+- Sync conflicts got a ground-up redesign. When the same entry was edited on two
+  devices, you now see a full field-by-field comparison — title, body, category,
+  dates, flags and more — with the exact words that changed highlighted, so you
+  can tell what a choice would keep or discard instead of guessing. You can keep
+  either version or **combine** them field by field, and a "recommended" hint
+  points at the option that loses nothing. A "deleted on one device, edited on
+  another" clash is shown as a clear, safe choice rather than a confusing diff.
+  And new conflicts now raise a notification, so you find out right away instead
+  of having to dig through settings.
 
 ## [0.9.1028]
 ### Changed

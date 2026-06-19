@@ -2903,6 +2903,22 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get conflictCombineApply => 'Použít sloučené';
+
+  @override
+  String get conflictCombineStartFrom => 'Vyjít z';
+
+  @override
+  String get conflictConfirmDeletion => 'Potvrdit smazání';
+
+  @override
+  String get conflictDeleteVsEditDescription =>
+      'Tato položka byla na jednom zařízení upravena a na jiném smazána. Dokud se nerozhodneš, nic se neodstraní.';
+
+  @override
+  String get conflictDeleteVsEditTitle => 'Smazáno na jednom zařízení';
+
+  @override
   String get conflictDetailEntryNotFoundTitle => 'Záznam nenalezen';
 
   @override
@@ -2912,16 +2928,64 @@ class AppLocalizationsCs extends AppLocalizations {
   String get conflictDetailNotFoundTitle => 'Konflikt nenalezen';
 
   @override
+  String get conflictDiffRecommended => 'Doporučeno';
+
+  @override
+  String conflictDiffUnchanged(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count polí beze změny',
+      one: '1 pole beze změny',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictFieldBody => 'Text';
+
+  @override
   String get conflictFieldCategory => 'kategorie';
 
   @override
   String get conflictFieldDuration => 'trvání';
 
   @override
+  String get conflictFieldEnd => 'Konec';
+
+  @override
+  String get conflictFieldFlag => 'Označení';
+
+  @override
+  String get conflictFieldOther => 'Další podrobnosti';
+
+  @override
+  String get conflictFieldOtherDescription =>
+      'Tyto verze se liší v podrobnostech, které zde nejsou zobrazeny jednotlivě.';
+
+  @override
+  String get conflictFieldPrivate => 'Soukromé';
+
+  @override
+  String get conflictFieldStarred => 'Oblíbené';
+
+  @override
+  String get conflictFieldStart => 'Začátek';
+
+  @override
   String get conflictFieldTitle => 'Titulek';
 
   @override
   String get conflictFieldWordCount => 'počet slov';
+
+  @override
+  String get conflictFlagFollowUp => 'Vyžaduje pozornost';
+
+  @override
+  String get conflictFlagImport => 'Importováno';
+
+  @override
+  String get conflictFlagNone => 'Žádné';
 
   @override
   String get conflictFooterHelperLocalSelected =>
@@ -2959,6 +3023,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get conflictKeepEdited => 'Zachovat upravenou verzi';
+
+  @override
   String conflictListItemSemanticsLabel(
     String status,
     String timestamp,
@@ -2983,6 +3050,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get conflictMetaViaSync => 'přes synchronizaci';
 
   @override
+  String conflictNotificationBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count položek bylo upraveno na dvou zařízeních',
+      one: '1 položka byla upravena na dvou zařízeních',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictNotificationTitle =>
+      'Synchronizace vyžaduje tvou pozornost';
+
+  @override
   String get conflictPageLeadDesktop =>
       'Rozdíly jsou zvýrazněny v textu. Klikni na stranu, kterou chceš použít, nebo otevři Upravit a sloučit pro kombinaci.';
 
@@ -2994,6 +3076,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get conflictPageTitle => 'Konflikt synchronizace';
 
   @override
+  String get conflictPickerCombine => 'Sloučit…';
+
+  @override
   String get conflictPickerEditMerge => 'Upravit a sloučit…';
 
   @override
@@ -3001,6 +3086,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get conflictPickerUseThisDevice => 'Použít toto zařízení';
+
+  @override
+  String get conflictResolvedToast => 'Konflikt vyřešen';
 
   @override
   String get conflictsEmptyDescription =>
@@ -3020,6 +3108,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get conflictsUnresolved => 'nevyřešeno';
+
+  @override
+  String get conflictValueAbsent => 'Nenastaveno';
+
+  @override
+  String get conflictValueNo => 'Ne';
+
+  @override
+  String get conflictValueYes => 'Ano';
 
   @override
   String conflictWordCount(int count) {

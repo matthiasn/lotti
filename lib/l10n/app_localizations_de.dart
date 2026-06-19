@@ -2897,6 +2897,22 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get conflictCombineApply => 'Kombiniert übernehmen';
+
+  @override
+  String get conflictCombineStartFrom => 'Ausgehen von';
+
+  @override
+  String get conflictConfirmDeletion => 'Löschen bestätigen';
+
+  @override
+  String get conflictDeleteVsEditDescription =>
+      'Dieser Eintrag wurde auf einem Gerät bearbeitet und auf einem anderen gelöscht. Es wird nichts entfernt, bis du dich entscheidest.';
+
+  @override
+  String get conflictDeleteVsEditTitle => 'Auf einem Gerät gelöscht';
+
+  @override
   String get conflictDetailEntryNotFoundTitle => 'Eintrag nicht gefunden';
 
   @override
@@ -2907,16 +2923,64 @@ class AppLocalizationsDe extends AppLocalizations {
   String get conflictDetailNotFoundTitle => 'Konflikt nicht gefunden';
 
   @override
+  String get conflictDiffRecommended => 'Empfohlen';
+
+  @override
+  String conflictDiffUnchanged(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Felder unverändert',
+      one: '1 Feld unverändert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictFieldBody => 'Text';
+
+  @override
   String get conflictFieldCategory => 'Kategorie';
 
   @override
   String get conflictFieldDuration => 'Dauer';
 
   @override
+  String get conflictFieldEnd => 'Ende';
+
+  @override
+  String get conflictFieldFlag => 'Markierung';
+
+  @override
+  String get conflictFieldOther => 'Weitere Details';
+
+  @override
+  String get conflictFieldOtherDescription =>
+      'Diese Versionen unterscheiden sich in Details, die hier nicht einzeln angezeigt werden.';
+
+  @override
+  String get conflictFieldPrivate => 'Privat';
+
+  @override
+  String get conflictFieldStarred => 'Favorit';
+
+  @override
+  String get conflictFieldStart => 'Beginn';
+
+  @override
   String get conflictFieldTitle => 'Titel';
 
   @override
   String get conflictFieldWordCount => 'Wortanzahl';
+
+  @override
+  String get conflictFlagFollowUp => 'Nachverfolgung nötig';
+
+  @override
+  String get conflictFlagImport => 'Importiert';
+
+  @override
+  String get conflictFlagNone => 'Keine';
 
   @override
   String get conflictFooterHelperLocalSelected =>
@@ -2953,6 +3017,9 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get conflictKeepEdited => 'Bearbeitete Version behalten';
+
+  @override
   String conflictListItemSemanticsLabel(
     String status,
     String timestamp,
@@ -2977,6 +3044,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get conflictMetaViaSync => 'via Sync';
 
   @override
+  String conflictNotificationBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge wurden auf zwei Geräten bearbeitet',
+      one: '1 Eintrag wurde auf zwei Geräten bearbeitet',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictNotificationTitle => 'Sync braucht deine Aufmerksamkeit';
+
+  @override
   String get conflictPageLeadDesktop =>
       'Unterschiede sind inline hervorgehoben. Klick auf eine Seite, um diese Version zu verwenden, oder öffne Bearbeiten & zusammenführen, um sie zu kombinieren.';
 
@@ -2988,6 +3069,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get conflictPageTitle => 'Sync-Konflikt';
 
   @override
+  String get conflictPickerCombine => 'Kombinieren…';
+
+  @override
   String get conflictPickerEditMerge => 'Bearbeiten & zusammenführen…';
 
   @override
@@ -2995,6 +3079,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get conflictPickerUseThisDevice => 'Dieses Gerät verwenden';
+
+  @override
+  String get conflictResolvedToast => 'Konflikt gelöst';
 
   @override
   String get conflictsEmptyDescription =>
@@ -3014,6 +3101,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get conflictsUnresolved => 'ungelöst';
+
+  @override
+  String get conflictValueAbsent => 'Nicht gesetzt';
+
+  @override
+  String get conflictValueNo => 'Nein';
+
+  @override
+  String get conflictValueYes => 'Ja';
 
   @override
   String conflictWordCount(int count) {

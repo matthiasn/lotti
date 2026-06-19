@@ -1569,13 +1569,39 @@
       }
     }
   },
+  "conflictCombineApply": "Apply combined",
+  "conflictCombineStartFrom": "Start from",
+  "conflictConfirmDeletion": "Confirm deletion",
+  "conflictDeleteVsEditDescription": "This entry was edited on one device and deleted on another. Nothing is removed until you choose.",
+  "conflictDeleteVsEditTitle": "Deleted on one device",
   "conflictDetailEntryNotFoundTitle": "Entry not found",
   "conflictDetailLoadErrorTitle": "Couldn't load conflict",
   "conflictDetailNotFoundTitle": "Conflict not found",
+  "conflictDiffRecommended": "Recommended",
+  "conflictDiffUnchanged": "{count, plural, =1{1 field unchanged} other{{count} fields unchanged}}",
+  "@conflictDiffUnchanged": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "conflictFieldBody": "Body",
   "conflictFieldCategory": "category",
   "conflictFieldDuration": "duration",
+  "conflictFieldEnd": "End",
+  "conflictFieldFlag": "Flag",
+  "conflictFieldOther": "Other details",
+  "conflictFieldOtherDescription": "These versions differ in details not shown individually here.",
+  "conflictFieldPrivate": "Private",
+  "conflictFieldStarred": "Starred",
+  "conflictFieldStart": "Start",
   "conflictFieldTitle": "Title",
   "conflictFieldWordCount": "word count",
+  "conflictFlagFollowUp": "Follow-up needed",
+  "conflictFlagImport": "Imported",
+  "conflictFlagNone": "None",
   "conflictFooterHelperLocalSelected": "Will keep your local edit and discard the synced version.",
   "conflictFooterHelperPickASide": "Pick a side to apply.",
   "conflictFooterHelperRemoteSelected": "Will accept the synced version and discard your local edit.",
@@ -1597,6 +1623,7 @@
       }
     }
   },
+  "conflictKeepEdited": "Keep the edited version",
   "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, conflict {id}",
   "@conflictListItemSemanticsLabel": {
     "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
@@ -1632,18 +1659,33 @@
   "conflictMetaLocalEdit": "local edit",
   "conflictMetaVecPrefix": "vec",
   "conflictMetaViaSync": "via sync",
+  "conflictNotificationBody": "{count, plural, =1{1 entry was edited on two devices} other{{count} entries were edited on two devices}}",
+  "@conflictNotificationBody": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "conflictNotificationTitle": "Sync needs your review",
   "conflictPageLeadDesktop": "Differences highlighted inline. Click a side to use that version, or open Edit & merge to combine them.",
   "conflictPageLeadMobile": "Differences highlighted inline. Tap a side to use that version.",
   "conflictPageTitle": "Sync conflict",
+  "conflictPickerCombine": "Combine…",
   "conflictPickerEditMerge": "Edit & merge…",
   "conflictPickerUseFromSync": "Use from sync",
   "conflictPickerUseThisDevice": "Use this device",
+  "conflictResolvedToast": "Conflict resolved",
   "conflictsEmptyDescription": "Everything is in sync right now. Resolved items stay available in the other filter.",
   "conflictsEmptyTitle": "No conflicts detected",
   "conflictSideFromSync": "FROM SYNC",
   "conflictSideThisDevice": "THIS DEVICE",
   "conflictsResolved": "resolved",
   "conflictsUnresolved": "unresolved",
+  "conflictValueAbsent": "Not set",
+  "conflictValueNo": "No",
+  "conflictValueYes": "Yes",
   "conflictWordCount": "{count, plural, one{{count} word} other{{count} words}}",
   "@conflictWordCount": {
     "description": "Word count shown on the conflict detail meta row.",

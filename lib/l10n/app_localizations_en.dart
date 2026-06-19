@@ -2859,6 +2859,22 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get conflictCombineApply => 'Apply combined';
+
+  @override
+  String get conflictCombineStartFrom => 'Start from';
+
+  @override
+  String get conflictConfirmDeletion => 'Confirm deletion';
+
+  @override
+  String get conflictDeleteVsEditDescription =>
+      'This entry was edited on one device and deleted on another. Nothing is removed until you choose.';
+
+  @override
+  String get conflictDeleteVsEditTitle => 'Deleted on one device';
+
+  @override
   String get conflictDetailEntryNotFoundTitle => 'Entry not found';
 
   @override
@@ -2868,16 +2884,64 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflictDetailNotFoundTitle => 'Conflict not found';
 
   @override
+  String get conflictDiffRecommended => 'Recommended';
+
+  @override
+  String conflictDiffUnchanged(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fields unchanged',
+      one: '1 field unchanged',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictFieldBody => 'Body';
+
+  @override
   String get conflictFieldCategory => 'category';
 
   @override
   String get conflictFieldDuration => 'duration';
 
   @override
+  String get conflictFieldEnd => 'End';
+
+  @override
+  String get conflictFieldFlag => 'Flag';
+
+  @override
+  String get conflictFieldOther => 'Other details';
+
+  @override
+  String get conflictFieldOtherDescription =>
+      'These versions differ in details not shown individually here.';
+
+  @override
+  String get conflictFieldPrivate => 'Private';
+
+  @override
+  String get conflictFieldStarred => 'Starred';
+
+  @override
+  String get conflictFieldStart => 'Start';
+
+  @override
   String get conflictFieldTitle => 'Title';
 
   @override
   String get conflictFieldWordCount => 'word count';
+
+  @override
+  String get conflictFlagFollowUp => 'Follow-up needed';
+
+  @override
+  String get conflictFlagImport => 'Imported';
+
+  @override
+  String get conflictFlagNone => 'None';
 
   @override
   String get conflictFooterHelperLocalSelected =>
@@ -2913,6 +2977,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get conflictKeepEdited => 'Keep the edited version';
+
+  @override
   String conflictListItemSemanticsLabel(
     String status,
     String timestamp,
@@ -2937,6 +3004,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflictMetaViaSync => 'via sync';
 
   @override
+  String conflictNotificationBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries were edited on two devices',
+      one: '1 entry was edited on two devices',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictNotificationTitle => 'Sync needs your review';
+
+  @override
   String get conflictPageLeadDesktop =>
       'Differences highlighted inline. Click a side to use that version, or open Edit & merge to combine them.';
 
@@ -2948,6 +3029,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get conflictPageTitle => 'Sync conflict';
 
   @override
+  String get conflictPickerCombine => 'Combine…';
+
+  @override
   String get conflictPickerEditMerge => 'Edit & merge…';
 
   @override
@@ -2955,6 +3039,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get conflictPickerUseThisDevice => 'Use this device';
+
+  @override
+  String get conflictResolvedToast => 'Conflict resolved';
 
   @override
   String get conflictsEmptyDescription =>
@@ -2974,6 +3061,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get conflictsUnresolved => 'unresolved';
+
+  @override
+  String get conflictValueAbsent => 'Not set';
+
+  @override
+  String get conflictValueNo => 'No';
+
+  @override
+  String get conflictValueYes => 'Yes';
 
   @override
   String conflictWordCount(int count) {

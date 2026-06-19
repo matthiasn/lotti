@@ -2,12 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_list_item.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
-import 'package:lotti/themes/colors.dart';
 
 enum _ConflictListFilter {
   unresolved,
@@ -118,17 +118,22 @@ class _ConflictsPageState extends State<ConflictsPage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.designTokens.colors;
+    // The "diverged" semantic token is the design-system equivalent of the
+    // amber once hard-coded here; its foreground pairs with alert surfaces.
+    final divergedAccent = colors.conflict.diverged.color;
+    final divergedForeground = colors.text.onInteractiveAlert;
     final filters = <_ConflictListFilter, SyncFilterOption<Conflict>>{
       _ConflictListFilter.unresolved: SyncFilterOption<Conflict>(
         labelBuilder: (ctx) => ctx.messages.conflictsUnresolved,
         predicate: (conflict) =>
             _statusFromIndex(conflict.status) == ConflictStatus.unresolved,
         icon: Icons.report_problem_outlined,
-        selectedColor: syncAlertAccentColor,
-        selectedForegroundColor: syncAlertForegroundColor,
+        selectedColor: divergedAccent,
+        selectedForegroundColor: divergedForeground,
         hideCountWhenZero: true,
-        countAccentColor: syncAlertAccentColor,
-        countAccentForegroundColor: syncAlertForegroundColor,
+        countAccentColor: divergedAccent,
+        countAccentForegroundColor: divergedForeground,
       ),
       _ConflictListFilter.resolved: SyncFilterOption<Conflict>(
         labelBuilder: (ctx) => ctx.messages.conflictsResolved,

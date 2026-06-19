@@ -4921,6 +4921,36 @@ abstract class AppLocalizations {
   /// **'Differs in: {fields}'**
   String conflictBannerFieldsDifferList(String fields);
 
+  /// No description provided for @conflictCombineApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply combined'**
+  String get conflictCombineApply;
+
+  /// No description provided for @conflictCombineStartFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Start from'**
+  String get conflictCombineStartFrom;
+
+  /// No description provided for @conflictConfirmDeletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm deletion'**
+  String get conflictConfirmDeletion;
+
+  /// No description provided for @conflictDeleteVsEditDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This entry was edited on one device and deleted on another. Nothing is removed until you choose.'**
+  String get conflictDeleteVsEditDescription;
+
+  /// No description provided for @conflictDeleteVsEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted on one device'**
+  String get conflictDeleteVsEditTitle;
+
   /// No description provided for @conflictDetailEntryNotFoundTitle.
   ///
   /// In en, this message translates to:
@@ -4939,6 +4969,24 @@ abstract class AppLocalizations {
   /// **'Conflict not found'**
   String get conflictDetailNotFoundTitle;
 
+  /// No description provided for @conflictDiffRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get conflictDiffRecommended;
+
+  /// No description provided for @conflictDiffUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 field unchanged} other{{count} fields unchanged}}'**
+  String conflictDiffUnchanged(int count);
+
+  /// No description provided for @conflictFieldBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Body'**
+  String get conflictFieldBody;
+
   /// No description provided for @conflictFieldCategory.
   ///
   /// In en, this message translates to:
@@ -4951,6 +4999,48 @@ abstract class AppLocalizations {
   /// **'duration'**
   String get conflictFieldDuration;
 
+  /// No description provided for @conflictFieldEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get conflictFieldEnd;
+
+  /// No description provided for @conflictFieldFlag.
+  ///
+  /// In en, this message translates to:
+  /// **'Flag'**
+  String get conflictFieldFlag;
+
+  /// No description provided for @conflictFieldOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other details'**
+  String get conflictFieldOther;
+
+  /// No description provided for @conflictFieldOtherDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'These versions differ in details not shown individually here.'**
+  String get conflictFieldOtherDescription;
+
+  /// No description provided for @conflictFieldPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get conflictFieldPrivate;
+
+  /// No description provided for @conflictFieldStarred.
+  ///
+  /// In en, this message translates to:
+  /// **'Starred'**
+  String get conflictFieldStarred;
+
+  /// No description provided for @conflictFieldStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get conflictFieldStart;
+
   /// No description provided for @conflictFieldTitle.
   ///
   /// In en, this message translates to:
@@ -4962,6 +5052,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'word count'**
   String get conflictFieldWordCount;
+
+  /// No description provided for @conflictFlagFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up needed'**
+  String get conflictFlagFollowUp;
+
+  /// No description provided for @conflictFlagImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported'**
+  String get conflictFlagImport;
+
+  /// No description provided for @conflictFlagNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get conflictFlagNone;
 
   /// No description provided for @conflictFooterHelperLocalSelected.
   ///
@@ -4992,6 +5100,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 field differs} other{{count} fields differ}}'**
   String conflictHeaderPillFieldsDiffer(int count);
+
+  /// No description provided for @conflictKeepEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the edited version'**
+  String get conflictKeepEdited;
 
   /// Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.
   ///
@@ -5028,6 +5142,18 @@ abstract class AppLocalizations {
   /// **'via sync'**
   String get conflictMetaViaSync;
 
+  /// No description provided for @conflictNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 entry was edited on two devices} other{{count} entries were edited on two devices}}'**
+  String conflictNotificationBody(int count);
+
+  /// No description provided for @conflictNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync needs your review'**
+  String get conflictNotificationTitle;
+
   /// No description provided for @conflictPageLeadDesktop.
   ///
   /// In en, this message translates to:
@@ -5046,6 +5172,12 @@ abstract class AppLocalizations {
   /// **'Sync conflict'**
   String get conflictPageTitle;
 
+  /// No description provided for @conflictPickerCombine.
+  ///
+  /// In en, this message translates to:
+  /// **'Combine…'**
+  String get conflictPickerCombine;
+
   /// No description provided for @conflictPickerEditMerge.
   ///
   /// In en, this message translates to:
@@ -5063,6 +5195,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use this device'**
   String get conflictPickerUseThisDevice;
+
+  /// No description provided for @conflictResolvedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict resolved'**
+  String get conflictResolvedToast;
 
   /// No description provided for @conflictsEmptyDescription.
   ///
@@ -5099,6 +5237,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'unresolved'**
   String get conflictsUnresolved;
+
+  /// No description provided for @conflictValueAbsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get conflictValueAbsent;
+
+  /// No description provided for @conflictValueNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get conflictValueNo;
+
+  /// No description provided for @conflictValueYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get conflictValueYes;
 
   /// Word count shown on the conflict detail meta row.
   ///

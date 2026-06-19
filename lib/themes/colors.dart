@@ -60,9 +60,6 @@ const Color projectStatusOrange = taskStatusOrange;
 const Color projectStatusTeal = Colors.teal;
 
 // Sync filter colors
-const Color syncAlertAccentColor = Colors.amber;
-const Color syncAlertForegroundColor = Colors.black;
-
 const Color syncPendingAccentColor = Colors.orange;
 const Color syncPendingForegroundColor = Colors.white;
 
