@@ -284,6 +284,21 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
 
         final tokens = context.designTokens;
         final isStrikethrough = item.data.isChecked || item.data.isArchived;
+        final canToggle = !item.data.isArchived;
+
+        // Toggling the check — whether from the compact checkbox itself or
+        // from the enlarged tap target wrapped around it — routes here so the
+        // behaviour (persist + celebrate + clear any AI suggestion) lives in
+        // one place.
+        void applyCheck({required bool checked}) {
+          itemNotifier.updateChecked(checked: checked);
+          if (checked) _celebrateInteractiveCheck();
+          if (suggestion != null) {
+            ref
+                .read(checklistCompletionServiceProvider.notifier)
+                .clearSuggestion(widget.itemId);
+          }
+        }
 
         // Build the visual row content.
         Widget rowContent = Column(
@@ -324,40 +339,50 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     // edge, so it also fires when checking the LAST item
                     // collapses the row. Reduced motion suppresses the sparks
                     // and pop (the haptic still fires).
-                    SizedBox(
-                      key: _checkboxKey,
-                      width: 20,
-                      height: 20,
-                      child: ScaleTransition(
-                        scale: _checkPopScale,
-                        child: Checkbox(
-                          value: item.data.isChecked,
-                          onChanged: item.data.isArchived
-                              ? null
-                              : (value) {
-                                  final checked = value ?? false;
-                                  itemNotifier.updateChecked(checked: checked);
-                                  if (checked) _celebrateInteractiveCheck();
-                                  if (suggestion != null) {
-                                    ref
-                                        .read(
-                                          checklistCompletionServiceProvider
-                                              .notifier,
-                                        )
-                                        .clearSuggestion(widget.itemId);
-                                  }
-                                },
-                          activeColor: tokens.colors.interactive.enabled,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
+                    // The visual checkbox stays a compact 20×20, but a 44×44
+                    // InkWell around it provides a Material-compliant tap
+                    // target so users with reduced motor precision can hit it
+                    // without aiming at the tiny box. A centre tap lands on the
+                    // Checkbox itself (keeping its native gesture + a11y
+                    // semantics); the surrounding ring is caught by the
+                    // InkWell. Both route through [applyCheck].
+                    InkWell(
+                      onTap: canToggle
+                          ? () => applyCheck(checked: !item.data.isChecked)
+                          : null,
+                      borderRadius: BorderRadius.circular(
+                        tokens.radii.badgesPills,
+                      ),
+                      child: SizedBox(
+                        width: 44,
+                        height: 44,
+                        child: Center(
+                          child: SizedBox(
+                            key: _checkboxKey,
+                            width: 20,
+                            height: 20,
+                            child: ScaleTransition(
+                              scale: _checkPopScale,
+                              child: Checkbox(
+                                value: item.data.isChecked,
+                                onChanged: canToggle
+                                    ? (value) =>
+                                          applyCheck(checked: value ?? false)
+                                    : null,
+                                activeColor: tokens.colors.interactive.enabled,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                side: BorderSide(
+                                  color: tokens.colors.text.lowEmphasis,
+                                  width: 1.5,
+                                ),
+                                materialTapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                                visualDensity: VisualDensity.compact,
+                              ),
+                            ),
                           ),
-                          side: BorderSide(
-                            color: tokens.colors.text.lowEmphasis,
-                            width: 1.5,
-                          ),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
                         ),
                       ),
                     ),

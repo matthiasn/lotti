@@ -464,6 +464,29 @@ void main() {
       expect(ctrls.itemController.checkedValue, isTrue);
     });
 
+    testWidgets(
+      'tapping the enlarged tap target off the checkbox also toggles it',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        await tester.pump();
+
+        // The 20x20 checkbox is centred in a 44x44 InkWell. Tap the ring
+        // around the box (outside the central Checkbox) to exercise the
+        // enlarged motor-friendly hit target rather than the box itself.
+        final inkWell = find
+            .ancestor(
+              of: find.byType(Checkbox),
+              matching: find.byType(InkWell),
+            )
+            .first;
+        final rect = tester.getRect(inkWell);
+        await tester.tapAt(Offset(rect.left + 3, rect.center.dy));
+        await tester.pump();
+
+        expect(ctrls.itemController.checkedValue, isTrue);
+      },
+    );
+
     testWidgets('checking an item fires a light haptic and pops the checkbox', (
       tester,
     ) async {

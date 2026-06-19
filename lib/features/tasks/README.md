@@ -358,6 +358,14 @@ Settings → Advanced → Animations) and on the system reduce-motion setting. T
 haptics always fire (the switch turns off animations, not feedback). Every beat
 fires only on the not-done → done transition.
 
+Each row's checkbox keeps a compact 20×20 visual but is centred inside a 44×44
+`InkWell` tap target so it clears the Material / WCAG touch-target minimum
+without enlarging the box — users with reduced motor precision can hit the
+surrounding ring instead of aiming at the tiny square. A centre tap lands on
+the `Checkbox` itself (keeping its native gesture + a11y semantics); the ring
+is caught by the `InkWell`, and both route through the row's single
+`applyCheck` handler so the toggle behaviour stays in one place.
+
 ### Checklist runtime model
 
 `ChecklistController`:

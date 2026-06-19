@@ -17,6 +17,52 @@ void main() {
     registerFallbackValue(makeTestChangeSet());
     registerFallbackValue(<String>{});
   });
+
+  group('AiSummaryCard – action button separation (motor safety)', () {
+    testWidgets(
+      'reject and accept hit zones are separated by a dead band',
+      (tester) async {
+        final pending = makePending(
+          id: 'p1',
+          toolName: 'set_task_status',
+          humanSummary: 'Set status to GROOMED',
+        );
+        final bench = AgentTestBench(
+          suggestions: UnifiedSuggestionList(
+            open: [pending],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final rejectZone = tester.getRect(
+          find
+              .ancestor(
+                of: find.byIcon(Icons.close_rounded),
+                matching: find.byType(InkWell),
+              )
+              .first,
+        );
+        final acceptZone = tester.getRect(
+          find
+              .ancestor(
+                of: find.byIcon(Icons.check_rounded),
+                matching: find.byType(InkWell),
+              )
+              .first,
+        );
+
+        // The two 48x48 hit zones must NOT abut: a deliberate dead band sits
+        // between the destructive reject and accept so a near-miss can't land
+        // on the wrong control. (Adjacent zones would give a gap of 0.)
+        expect(acceptZone.left - rejectZone.right, greaterThan(4));
+      },
+    );
+  });
+
   group('AiSummaryCard – Proposal row error branches', () {
     testWidgets(
       'confirmItem returning success: false surfaces an error toast',

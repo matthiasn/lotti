@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   legible, and a long list of labels collapses behind a "+N" chip you can tap
   to expand. The header stays tidy across long wrapping titles, many labels,
   the just-created (empty) state, narrow phone widths, and tasks with cover art.
+- Two spots on the task page are now easier to hit precisely: the AI
+  suggestions' destructive reject control is clearly separated from accept so
+  a mis-tap can't trigger the wrong one, and each Todo checkbox now has a
+  larger 44px tap target (the box looks the same, but the whole row-height
+  area around it responds) so you no longer have to aim at the tiny square.
 
 ### Fixed
 - Accepting an AI suggestion that adds a to-do no longer makes the page jump:

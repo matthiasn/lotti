@@ -991,7 +991,11 @@ the task's checklists so the user's own work comes first. Each proposal is a
 colour-coded row keyed by change kind (add / update / priority / estimate /
 status / label / due). On narrow viewports the row stacks the kind chip + visible
 ✕ / ✓ buttons above full-width text, and the whole row stays swipeable (right =
-confirm, left = dismiss). "Confirm all" is an accent pill; pressing it cascades a
+confirm, left = dismiss). The per-row ✕ (reject) and ✓ (accept) each sit in a
+48×48 hit zone, and a `step4` dead band separates the two zones so the
+destructive reject is never flush against accept — a near-miss between adjacent
+zones is the failure users with reduced motor precision fear, and the gap
+removes it. "Confirm all" is an accent pill; pressing it cascades a
 top-to-bottom pop across the rows (per-row 45 ms stagger + a throttled selection
 haptic) so a batch confirm reads as a satisfying sweep. All of this honours the
 system reduce-motion setting.
