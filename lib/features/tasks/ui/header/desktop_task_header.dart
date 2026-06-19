@@ -7,8 +7,6 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header_title.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-export 'package:lotti/features/tasks/ui/header/desktop_task_header_render.dart';
-
 /// Project reference shown in the breadcrumb. When the task has no project,
 /// the connector passes `null` and the crumb renders the literal "No project"
 /// placeholder; the same `onProjectTap` callback still fires so users can
@@ -190,11 +188,13 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final isMobile = MediaQuery.sizeOf(context).width < 600;
-    final rowGap = tokens.spacing.step3;
-    // Step4 (12) horizontal on mobile leaves a touch-friendly gutter; on
-    // desktop the side panels already supply outer chrome so step3 (8) keeps
-    // the chip row visually anchored. Top is 0 — the host pane controls
-    // the space above the crumb.
+    // Proximity grouping: the breadcrumb is a separate ancestor-context unit,
+    // so it sits a full step (step4) above the title; the title then bonds
+    // DOWN to its own metadata with a tighter step (step3), matching the
+    // lane-to-lane gap inside the metadata block — so title + chips read as
+    // one identity unit rather than the title floating up toward the crumb.
+    final crumbGap = tokens.spacing.step4;
+    final metaGap = tokens.spacing.step3;
     final outerPadding = EdgeInsets.fromLTRB(
       isMobile ? tokens.spacing.step3 : tokens.spacing.step1,
       tokens.spacing.step2,
@@ -213,11 +213,9 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
             onCategoryTap: widget.onCategoryTap,
             onProjectTap: widget.onProjectTap,
           ),
-          SizedBox(height: rowGap),
+          SizedBox(height: crumbGap),
           _buildTitleLine(context),
-          // The heavier heading2 title gets a touch more leading room before
-          // the supporting metadata strip than the breadcrumb→title gap.
-          SizedBox(height: tokens.spacing.step4),
+          SizedBox(height: metaGap),
           MetaRow(
             priority: widget.data.priority,
             status: widget.data.status,
@@ -240,9 +238,15 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
     // The task title is the page's primary focal point, so it sits a clear
     // step above the card/section headers (subtitle2) rather than one notch
     // up — heading2 gives an unambiguous title → section → body cascade.
+    // A slightly looser line-height keeps a multi-line wrapping title reading
+    // as one cohesive block rather than two stacked lines.
     final style = tokens.typography.styles.heading.heading2.copyWith(
       color: TaskShowcasePalette.highText(context),
+      height: 1.15,
     );
+    // The title spans the full content width and wraps freely; the status
+    // control no longer rides this line, so a long title never leaves a void
+    // beside a marooned pill (it leads the metadata block below instead).
     if (_isEditing) {
       return TitleEditor(
         controller: _titleController,
@@ -286,8 +290,12 @@ class _HeroCrumb extends StatelessWidget {
         category?.label ?? context.messages.taskCategoryUnassignedLabel;
     final projectName =
         project?.label ?? context.messages.projectPickerUnassigned;
+    // The breadcrumb is an "eyebrow": a quiet, slightly tracked caption that
+    // reads as ancestor context one tier *below* the metadata chips, so it
+    // never competes with them for attention.
     final crumbStyle = tokens.typography.styles.others.caption.copyWith(
       height: 1,
+      letterSpacing: 0.4,
     );
 
     return Row(
@@ -316,12 +324,11 @@ class _HeroCrumb extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: crumbStyle.copyWith(
-                      // An unset category reads as a quiet placeholder via
-                      // italics + medium (not low) emphasis — secondary to a
-                      // set value, but still legible for low-vision users.
-                      color: category == null
-                          ? TaskShowcasePalette.mediumText(context)
-                          : TaskShowcasePalette.highText(context),
+                      // The breadcrumb is quiet ancestor context, so even a
+                      // set category sits at medium (not high) emphasis — a
+                      // tier below the metadata chips — while an unset one adds
+                      // italics. Both stay comfortably legible (~7:1).
+                      color: TaskShowcasePalette.mediumText(context),
                       fontStyle: category == null
                           ? FontStyle.italic
                           : FontStyle.normal,

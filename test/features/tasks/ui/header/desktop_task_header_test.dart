@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -15,6 +13,7 @@ import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/celebration_preferences_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_chips.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
@@ -53,9 +52,9 @@ Future<void> _pumpDesktop(
 }) async {
   await tester.binding.setSurfaceSize(size);
   addTearDown(() => tester.binding.setSurfaceSize(null));
-  // The header's space-between metadata row relies on its SizedBox getting
-  // a bounded max-width. Align shrink-wraps, so the tests pin the header
-  // to the surface width explicitly.
+  // The title line pins the status pill to the trailing edge, so the header
+  // needs a bounded max-width to resolve that anchor. Align shrink-wraps, so
+  // the tests pin the header to the surface width explicitly.
   await tester.pumpWidget(
     _desktopHost(
       SizedBox(width: size.width, child: child),
@@ -64,20 +63,6 @@ Future<void> _pumpDesktop(
     ),
   );
   await tester.pump();
-}
-
-/// Locates the private `_RenderTrailingAlignedWrap` that backs the meta row.
-/// The wrap is the only widget in the tree whose runtime type name contains
-/// `TrailingAlignedWrap`. It is a [RenderBox], which is all the intrinsic
-/// helpers need; the `spacing` / `runSpacing` getters are read via [dynamic]
-/// since the concrete type is private.
-RenderBox _trailingWrapRenderObject(WidgetTester tester) {
-  final element = tester.element(
-    find.byWidgetPredicate(
-      (widget) => widget.runtimeType.toString().contains('TrailingAlignedWrap'),
-    ),
-  );
-  return element.renderObject! as RenderBox;
 }
 
 LabelDefinition _label({
@@ -263,21 +248,27 @@ void main() {
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
 
-    testWidgets('read-only title renders a pencil edit affordance', (
-      tester,
-    ) async {
-      await _pumpDesktop(
-        tester,
-        DesktopTaskHeader(
-          data: _fixture(),
-          onTitleSaved: (_) {},
-        ),
-      );
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
-    });
+    testWidgets(
+      'read-only title shows no pencil glyph (the whole title is the edit '
+      'target)',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) {},
+          ),
+        );
+        // The persistent pencil was removed: it drifted into a dead gutter
+        // beside short / wrapping titles. The edit affordance is the whole
+        // title (covered by the tap / Semantics / keyboard tests).
+        expect(find.byIcon(Icons.edit_outlined), findsNothing);
+        expect(find.text('Payment confirmation'), findsOneWidget);
+      },
+    );
 
     testWidgets(
-      'empty title renders "No title" placeholder + pencil and opens editor on tap',
+      'empty title renders "No title" placeholder and opens editor on tap',
       (tester) async {
         await _pumpDesktop(
           tester,
@@ -288,7 +279,7 @@ void main() {
         );
 
         expect(find.text('No title'), findsOneWidget);
-        expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.edit_outlined), findsNothing);
         expect(find.byType(TextField), findsNothing);
 
         await tester.tap(find.text('No title'));
@@ -459,49 +450,128 @@ void main() {
   });
 
   group('DesktopTaskHeader — metadata layout', () {
-    testWidgets('wide viewport: right group sits far right of left group', (
-      tester,
-    ) async {
-      await _pumpDesktop(
-        tester,
-        DesktopTaskHeader(
-          data: _fixture(dueDate: _dueFixture),
-          onTitleSaved: (_) {},
-          estimateSlot: const Text('0h / 1h'),
-        ),
-      );
-      final dueLeft = tester.getTopLeft(find.text('Due: Apr 1, 2026')).dx;
-      final statusLeft = tester.getTopLeft(find.text('Open')).dx;
-      expect(
-        statusLeft > dueLeft + 300,
-        isTrue,
-        reason:
-            'Status should be well to the right of Due (space-between pushes '
-            'groups to opposite ends on a wide row)',
-      );
-    });
-
     testWidgets(
-      'narrow viewport: the right group wraps onto its own row below',
+      'status leads a left-aligned attribute lane below the title (no '
+      'right-anchored dead gutter)',
       (tester) async {
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
-            data: _fixture(dueDate: _dueFixture),
+            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
+            onTitleSaved: (_) {},
+            estimateSlot: const Text('0h / 1h'),
+          ),
+        );
+        final titleBox = tester.getRect(find.text('Payment confirmation'));
+        final status = tester.getTopLeft(find.text('Open'));
+        final priority = tester.getTopLeft(find.text('P1'));
+        final due = tester.getTopLeft(find.text('Due: Apr 1, 2026'));
+
+        // The metadata lane sits below the title (status is no longer on the
+        // title line — that anchor left a void beside short / wrapping titles).
+        expect(
+          status.dy,
+          greaterThan(titleBox.bottom - 4),
+          reason: 'the attribute lane drops below the title',
+        );
+        // Status leads the attribute lane: it is the left-most chip and the
+        // priority/due chips follow to its right on the same row.
+        expect(
+          status.dx,
+          lessThan(priority.dx),
+          reason: 'status is the leading chip',
+        );
+        expect(priority.dx, lessThan(due.dx));
+        expect(
+          (status.dy - priority.dy).abs(),
+          lessThan(8),
+          reason: 'status shares the attribute lane row with priority/due',
+        );
+        // The lane starts near the content's left edge — the cluster is
+        // left-aligned, never pushed to a far-right anchor that would leave a
+        // dead gutter (a right-pinned status on this 1280px surface would land
+        // ~1000px+ in). The small offset is the status pill's own leading
+        // glyph + padding before its label text.
+        expect(
+          status.dx,
+          lessThan(titleBox.left + 40),
+          reason: 'attribute lane is left-aligned under the title',
+        );
+      },
+    );
+
+    testWidgets(
+      'labels sit in their own lane below the attribute lane',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
+            onTitleSaved: (_) {},
+            estimateSlot: const Text('0h / 1h'),
+          ),
+        );
+        final statusBottom = tester.getBottomLeft(find.text('Open')).dy;
+        final labelTop = tester.getTopLeft(find.text('Bug fix')).dy;
+        expect(
+          labelTop,
+          greaterThan(statusBottom),
+          reason: 'the free-form label lane drops below the attribute lane',
+        );
+      },
+    );
+
+    testWidgets(
+      'narrow viewport: attribute lane wraps and labels remain a separate '
+      'lane below it',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
             onTitleSaved: (_) {},
             estimateSlot: const Text('0h / 1h'),
           ),
           size: const Size(360, 800),
         );
-        final dueTop = tester.getTopLeft(find.text('Due: Apr 1, 2026')).dy;
-        final statusTop = tester.getTopLeft(find.text('Open')).dy;
-        expect(
-          statusTop > dueTop + 10,
-          isTrue,
-          reason:
-              'On a narrow viewport the right group should wrap to its own '
-              'row, sitting below the left group',
+        final status = tester.getTopLeft(find.text('Open'));
+        final labelTop = tester.getTopLeft(find.text('Bug fix')).dy;
+        // Even at mobile width the label lane is below the status that leads
+        // the attribute lane.
+        expect(labelTop, greaterThan(status.dy));
+      },
+    );
+
+    testWidgets(
+      'narrow viewport: the time estimate stays bonded to the due chip on the '
+      'same wrap row (never orphaned on its own near-empty line)',
+      (tester) async {
+        // 420px is the real mobile header width. Here status+priority+due+
+        // estimate cannot all fit on one row, so without bonding the estimate
+        // would strand alone on a row beneath the due chip. The due+estimate
+        // group wraps as a unit instead: status+priority on the first row,
+        // due+estimate together on the second.
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
+            onTitleSaved: (_) {},
+            estimateSlot: const Text('0h / 1h'),
+          ),
+          size: const Size(420, 800),
         );
+        final due = tester.getTopLeft(find.text('Due: Apr 1, 2026')).dy;
+        final estimate = tester.getTopLeft(find.text('0h / 1h')).dy;
+        final labelTop = tester.getTopLeft(find.text('Bug fix')).dy;
+        expect(
+          (due - estimate).abs(),
+          lessThan(8),
+          reason:
+              'due + estimate share one wrap row — the estimate is bonded '
+              'to the due chip, not stranded on its own line',
+        );
+        // The label lane still sits below the bonded time row.
+        expect(labelTop, greaterThan(estimate));
       },
     );
   });
@@ -689,9 +759,12 @@ void main() {
         );
         expect(find.text(label), findsOneWidget);
 
-        // The whole point of the pill is the tint: the label text carries
-        // the status accent and the enclosing DecoratedBox the translucent
-        // background derived from it (see _statusTint in the meta part).
+        // The status's *colour* identity is carried by the translucent tinted
+        // background (a low-alpha wash of the status accent) plus the
+        // per-status glyph — NOT by the label text, which is kept at high
+        // contrast (accent-coloured text on its own accent tint is a WCAG
+        // contrast failure). So: background == accent@18%, label == the
+        // high-emphasis text colour (see _statusTint in the meta part).
         final context = tester.element(find.byType(DesktopTaskHeader));
         final accent = switch (label) {
           'In Progress' => TaskShowcasePalette.info(context),
@@ -699,7 +772,7 @@ void main() {
           'On Hold' => TaskShowcasePalette.warning(context),
           'Groomed' => context.designTokens.colors.interactive.enabled,
           'Done' => TaskShowcasePalette.success(context),
-          _ => null, // Rejected uses the low-emphasis text tint.
+          _ => null, // Rejected uses a neutral low-emphasis wash.
         };
         final text = tester.widget<Text>(find.text(label));
         final box = tester.widget<DecoratedBox>(
@@ -712,16 +785,24 @@ void main() {
         );
         final background = (box.decoration as BoxDecoration).color;
         if (accent != null) {
-          expect(text.style?.color, accent, reason: label);
+          // High-contrast label; tinted background carries the accent.
           expect(
-            background,
-            accent.withValues(alpha: 0.18),
+            text.style?.color,
+            TaskShowcasePalette.highText(context),
             reason: label,
           );
+          expect(background, accent.withValues(alpha: 0.18), reason: label);
         } else {
-          final low = TaskShowcasePalette.lowText(context);
-          expect(text.style?.color, low);
-          expect(background, low.withValues(alpha: 0.14));
+          // Rejected: medium-emphasis (still legible) struck text on a neutral
+          // low-emphasis wash.
+          expect(
+            text.style?.color,
+            TaskShowcasePalette.mediumText(context),
+          );
+          expect(
+            background,
+            TaskShowcasePalette.lowText(context).withValues(alpha: 0.14),
+          );
         }
       });
     }
@@ -729,34 +810,43 @@ void main() {
 
   group('DesktopTaskHeader — priority palette', () {
     for (final priority in TaskPriority.values) {
-      testWidgets('renders ${priority.short} pill with the correct accent', (
-        tester,
-      ) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(priority: priority),
-            onTitleSaved: (_) {},
-          ),
-        );
-        expect(find.text(priority.short), findsOneWidget);
+      testWidgets(
+        'renders ${priority.short} as a neutral filled chip with its priority '
+        'glyph carrying the colour',
+        (tester) async {
+          await _pumpDesktop(
+            tester,
+            DesktopTaskHeader(
+              data: _fixture(priority: priority),
+              onTitleSaved: (_) {},
+            ),
+          );
+          expect(find.text(priority.short), findsOneWidget);
 
-        // Verify the pill actually carries the palette accent.
-        final context = tester.element(find.byType(DesktopTaskHeader));
-        final expected = switch (priority) {
-          TaskPriority.p0Urgent => TaskShowcasePalette.error(context),
-          TaskPriority.p1High => TaskShowcasePalette.warning(context),
-          TaskPriority.p2Medium => TaskShowcasePalette.info(context),
-          TaskPriority.p3Low => TaskShowcasePalette.success(context),
-        };
-        final pill = tester.widget<DsPill>(
-          find.ancestor(
-            of: find.text(priority.short),
-            matching: find.byType(DsPill),
-          ),
-        );
-        expect(pill.color, expected, reason: priority.short);
-      });
+          // Priority shares the neutral filled shell with the other attribute
+          // chips (the status pill is the lane's only tinted accent), so its
+          // pill carries no tint colour…
+          final pill = tester.widget<DsPill>(
+            find.ancestor(
+              of: find.text(priority.short),
+              matching: find.byType(DsPill),
+            ),
+          );
+          expect(pill.variant, DsPillVariant.filled, reason: priority.short);
+          expect(
+            pill.color,
+            isNull,
+            reason: '${priority.short} uses the neutral shell',
+          );
+
+          // …and the urgency signal is carried by the distinct per-priority
+          // glyph (red P0 → green P3).
+          final glyph = tester.widget<TaskShowcasePriorityGlyph>(
+            find.byType(TaskShowcasePriorityGlyph),
+          );
+          expect(glyph.priority, priority, reason: priority.short);
+        },
+      );
     }
   });
 
@@ -1008,220 +1098,26 @@ void main() {
     );
   });
 
-  group('DesktopTaskHeader — render object layout branches', () {
-    testWidgets(
-      'spacing and runSpacing setters fire when tokens change between builds',
-      (tester) async {
-        // Build with the default (step3 = 8) spacing.
-        final wideTokens = dsTokensLight.copyWith(
-          spacing: dsTokensLight.spacing.copyWith(step3: 8),
-        );
-        final narrowTokens = dsTokensLight.copyWith(
-          spacing: dsTokensLight.spacing.copyWith(step3: 16),
-        );
-
-        ThemeData buildTheme(DsTokens tokens) =>
-            ThemeData(useMaterial3: true).copyWith(
-              extensions: <ThemeExtension<dynamic>>[tokens],
-            );
-
-        final header = DesktopTaskHeader(
-          data: _fixture(dueDate: _dueFixture),
-          onTitleSaved: (_) {},
-          estimateSlot: const Text('1h'),
-        );
-
-        await tester.binding.setSurfaceSize(const Size(1280, 720));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        // First pump with 8px spacing.
-        await tester.pumpWidget(
-          _desktopHost(
-            const SizedBox(width: 1280, child: SizedBox()),
-            theme: buildTheme(wideTokens),
-          ),
-        );
-        await tester.pumpWidget(
-          _desktopHost(
-            SizedBox(width: 1280, child: header),
-            theme: buildTheme(wideTokens),
-          ),
-        );
-        await tester.pump();
-
-        // Second pump with 16px spacing — triggers the setter body
-        // (markNeedsLayout) on _RenderTrailingAlignedWrap.
-        await tester.pumpWidget(
-          _desktopHost(
-            SizedBox(width: 1280, child: header),
-            theme: buildTheme(narrowTokens),
-          ),
-        );
-        await tester.pump();
-
-        // Verify the widget still renders correctly after the spacing change.
-        expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
-        expect(find.text('Open'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'intrinsic width is computed without error',
-      (tester) async {
-        // IntrinsicWidth forces the Flutter layout engine to call
-        // computeMinIntrinsicWidth and computeMaxIntrinsicWidth on all
-        // descendants, including _RenderTrailingAlignedWrap.
-        await tester.binding.setSurfaceSize(const Size(1280, 720));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        await tester.pumpWidget(
-          _desktopHost(
-            IntrinsicWidth(
-              child: DesktopTaskHeader(
-                data: _fixture(
-                  dueDate: _dueFixture,
-                  labels: _labelFixtures,
-                ),
-                onTitleSaved: (_) {},
-                estimateSlot: const Text('1h'),
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-
-        // The widget laid out correctly and shows its content.
-        expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
-        expect(find.text('Bug fix'), findsOneWidget);
-
-        // The size returned by tester.getSize is positive, confirming the
-        // intrinsic dimension methods returned meaningful non-zero values.
-        final size = tester.getSize(find.byType(DesktopTaskHeader));
-        expect(size.width, greaterThan(0));
-        expect(size.height, greaterThan(0));
-      },
-    );
-
-    testWidgets(
-      'intrinsic height is computed without error',
-      (tester) async {
-        // Row with CrossAxisAlignment.stretch forces the Flutter layout engine
-        // to call computeMinIntrinsicHeight and computeMaxIntrinsicHeight on
-        // its children, including _RenderTrailingAlignedWrap descendants.
-        await tester.binding.setSurfaceSize(const Size(1280, 720));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
-
-        await tester.pumpWidget(
-          _desktopHost(
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                SizedBox(
-                  width: 800,
-                  child: DesktopTaskHeader(
-                    data: _fixture(
-                      dueDate: _dueFixture,
-                      labels: _labelFixtures,
-                    ),
-                    onTitleSaved: (_) {},
-                    estimateSlot: const Text('1h'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-        await tester.pump();
-
-        // The widget laid out correctly and shows its content.
-        expect(find.text('Due: Apr 1, 2026'), findsOneWidget);
-        expect(find.text('Bug fix'), findsOneWidget);
-
-        final size = tester.getSize(find.byType(DesktopTaskHeader));
-        expect(size.width, greaterThan(0));
-        expect(size.height, greaterThan(0));
-      },
-    );
-  });
-
-  group('DesktopTaskHeader — render object getters + intrinsics', () {
-    testWidgets(
-      'spacing / runSpacing getters expose the configured token values',
-      (tester) async {
-        // step3 == 8 by default in dsTokensLight; the meta row feeds it into
-        // both spacing and runSpacing of the trailing-aligned wrap.
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(dueDate: _dueFixture),
-            onTitleSaved: (_) {},
-            estimateSlot: const Text('1h'),
-          ),
-        );
-
-        final render = _trailingWrapRenderObject(tester);
-        final expected = dsTokensLight.spacing.step3;
-        // `spacing` / `runSpacing` live on the private render-object subtype,
-        // so they have to be reached dynamically.
-        expect((render as dynamic).spacing, expected);
-        expect((render as dynamic).runSpacing, expected);
-      },
-    );
-
-    testWidgets(
-      'min intrinsic width equals the widest child; max width sums them',
-      (tester) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
-            onTitleSaved: (_) {},
-            estimateSlot: const Text('1h'),
-          ),
-        );
-
-        final render = _trailingWrapRenderObject(tester);
-        // computeMinIntrinsicWidth: max over children's own min widths.
-        final minWidth = render.getMinIntrinsicWidth(double.infinity);
-        // computeMaxIntrinsicWidth: sum of children's max widths.
-        final maxWidth = render.getMaxIntrinsicWidth(double.infinity);
-
-        expect(minWidth, greaterThan(0));
-        expect(maxWidth, greaterThan(0));
-        // The widest single child cannot exceed the sum of all children,
-        // and with multiple chips the sum is strictly larger.
-        expect(maxWidth, greaterThan(minWidth));
-      },
-    );
-
-    testWidgets(
-      'min intrinsic height equals max intrinsic height',
-      (tester) async {
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
-            onTitleSaved: (_) {},
-            estimateSlot: const Text('1h'),
-          ),
-        );
-
-        final render = _trailingWrapRenderObject(tester);
-        // _RenderTrailingAlignedWrap.computeMinIntrinsicHeight delegates to
-        // computeMaxIntrinsicHeight, so the two must be identical.
-        const probeWidth = 800.0;
-        final minHeight = render.getMinIntrinsicHeight(probeWidth);
-        final maxHeight = render.getMaxIntrinsicHeight(probeWidth);
-
-        expect(minHeight, greaterThan(0));
-        expect(minHeight, maxHeight);
-      },
-    );
-  });
-
   group('DesktopTaskHeader — due-date urgency styles', () {
-    testWidgets('overdue urgency renders the due pill in error color', (
+    DsPill dueChip(WidgetTester tester, String label) {
+      return tester.widget<DsPill>(
+        find
+            .ancestor(of: find.text(label), matching: find.byType(DsPill))
+            .first,
+      );
+    }
+
+    Color paletteError(WidgetTester tester) => TaskShowcasePalette.error(
+      tester.element(find.byType(DesktopTaskHeader)),
+    );
+    Color paletteWarning(WidgetTester tester) => TaskShowcasePalette.warning(
+      tester.element(find.byType(DesktopTaskHeader)),
+    );
+    Color paletteHigh(WidgetTester tester) => TaskShowcasePalette.highText(
+      tester.element(find.byType(DesktopTaskHeader)),
+    );
+
+    testWidgets('overdue urgency renders a tinted due pill in error color', (
       tester,
     ) async {
       await _pumpDesktop(
@@ -1236,10 +1132,12 @@ void main() {
           onTitleSaved: (_) {},
         ),
       );
-      expect(find.text('Overdue: Mar 1'), findsOneWidget);
+      final pill = dueChip(tester, 'Overdue: Mar 1');
+      expect(pill.variant, DsPillVariant.tinted);
+      expect(pill.color, paletteError(tester));
     });
 
-    testWidgets('today urgency renders the due pill in warning color', (
+    testWidgets('today urgency renders a tinted due pill in warning color', (
       tester,
     ) async {
       await _pumpDesktop(
@@ -1254,27 +1152,34 @@ void main() {
           onTitleSaved: (_) {},
         ),
       );
-      expect(find.text('Today'), findsOneWidget);
+      final pill = dueChip(tester, 'Today');
+      expect(pill.variant, DsPillVariant.tinted);
+      expect(pill.color, paletteWarning(tester));
     });
 
-    testWidgets('normal urgency renders the due pill in medium-text color', (
-      tester,
-    ) async {
-      await _pumpDesktop(
-        tester,
-        DesktopTaskHeader(
-          data: _fixture(
-            dueDate: const DesktopTaskHeaderDueDate(
-              label: 'Mar 15, 2026',
-              // ignore: avoid_redundant_argument_values
-              urgency: DesktopTaskHeaderDueUrgency.normal,
+    testWidgets(
+      'normal urgency renders a filled due pill in medium-text color (one '
+      'consistent chip grammar with the rest of the row)',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(
+              dueDate: const DesktopTaskHeaderDueDate(
+                label: 'Mar 15, 2026',
+                // ignore: avoid_redundant_argument_values
+                urgency: DesktopTaskHeaderDueUrgency.normal,
+              ),
             ),
+            onTitleSaved: (_) {},
           ),
-          onTitleSaved: (_) {},
-        ),
-      );
-      expect(find.text('Mar 15, 2026'), findsOneWidget);
-    });
+        );
+        final pill = dueChip(tester, 'Mar 15, 2026');
+        expect(pill.variant, DsPillVariant.filled);
+        // The due date carries high emphasis (a tier above priority/estimate).
+        expect(pill.labelColor, paletteHigh(tester));
+      },
+    );
   });
 
   group('DesktopTaskHeader — label pill without description', () {
@@ -1300,62 +1205,6 @@ void main() {
 
         // No dialog should appear for a label without a description.
         expect(find.byType(AlertDialog), findsNothing);
-      },
-    );
-  });
-
-  group('TrailingAlignedWrap — layout property', () {
-    testWidgets(
-      'the trailing child is always pinned to the right edge for random '
-      'child-width sequences (model-based, fixed seed)',
-      (tester) async {
-        final random = Random(11);
-        const trailingKey = Key('trailing');
-        const wrapKey = Key('wrap');
-
-        for (var run = 0; run < 25; run++) {
-          final maxWidth = 120.0 + random.nextInt(400);
-          final n = random.nextInt(7);
-          final widths = [
-            for (var i = 0; i < n; i++) 10.0 + random.nextInt(140),
-          ];
-          final trailingWidth = 10.0 + random.nextInt(100);
-
-          await tester.pumpWidget(
-            Directionality(
-              textDirection: TextDirection.ltr,
-              child: Align(
-                alignment: Alignment.topLeft,
-                child: SizedBox(
-                  width: maxWidth,
-                  child: TrailingAlignedWrap(
-                    key: wrapKey,
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      for (final w in widths) SizedBox(width: w, height: 12),
-                      SizedBox(
-                        key: trailingKey,
-                        width: trailingWidth,
-                        height: 16,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-
-          final wrapLeft = tester.getTopLeft(find.byKey(wrapKey)).dx;
-          final trailingTopLeft = tester.getTopLeft(find.byKey(trailingKey));
-          expect(
-            trailingTopLeft.dx - wrapLeft,
-            closeTo(maxWidth - trailingWidth, 0.001),
-            reason:
-                'run=$run maxWidth=$maxWidth widths=$widths '
-                'trailing=$trailingWidth',
-          );
-        }
       },
     );
   });

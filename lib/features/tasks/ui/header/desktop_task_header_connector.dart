@@ -422,7 +422,11 @@ class _TaskEstimateChip extends ConsumerWidget {
     return DsPill(
       variant: DsPillVariant.filled,
       label: '${_format(progress)} / ${_format(estimate)}',
-      labelColor: TaskShowcasePalette.lowText(context),
+      // A set estimate carries real data, so it reads at the same
+      // medium-emphasis contrast as the due-date chip rather than the dim
+      // low-emphasis grey reserved for empty placeholders (which made an
+      // active estimate look disabled).
+      labelColor: TaskShowcasePalette.mediumText(context),
       leading: Icon(
         Icons.timer_outlined,
         size: 12,

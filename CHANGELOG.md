@@ -11,6 +11,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that task's own linked neighborhood, adds the new nodes and links to the graph
   already on screen, and recomputes the merged layout so the world stays
   explorable instead of turning sibling tasks into dead ends.
+- The task details **header** was reworked for a calmer, more responsive
+  layout. The status control no longer strands itself in empty space — it now
+  leads a tidy two-lane metadata block (status · priority · due · time-estimate
+  on the first lane, your labels on the second), with the facts you scan for
+  first — status and the due date — given more weight while priority and time
+  tracked stay quiet. Every chip shares one consistent style and height, the
+  breadcrumb reads as a quiet eyebrow above the title, and the title bonds
+  tightly to its metadata. The title itself is now click-to-edit (no separate
+  pencil button), and on narrow phone widths the due date and time-estimate
+  stay paired on the same row instead of leaving a chip stranded by itself.
+  The header stays tidy across long wrapping titles, many labels, the
+  just-created (empty) state, narrow phone widths, and tasks with cover art.
+
+### Fixed
+- Accepting an AI suggestion that adds a to-do no longer makes the page jump:
+  the task detail view now holds the AI proposals in place when a confirmed
+  change grows the checklist above them, so the spot you were reading stays put.
 
 ## [0.9.1028]
 ### Changed

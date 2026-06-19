@@ -4,9 +4,13 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Static task title with a trailing edit pencil; the whole row is a button
-/// that fires [onTap] to open the editor. Renders the localized empty-title
-/// placeholder in italic medium-emphasis text when [title] is blank.
+/// Static task title presented as a click-to-edit region: the whole title is
+/// the edit target and fires [onTap] to open the editor. There is deliberately
+/// no trailing pencil glyph — a persistent pencil drifted into a dead gutter
+/// beside short or wrapping titles, so the affordance is carried instead by the
+/// hover click-cursor, an "Edit title" Semantics button, and keyboard
+/// activation. Renders the localized empty-title placeholder in italic
+/// medium-emphasis text when [title] is blank.
 class TitleReadOnly extends StatelessWidget {
   const TitleReadOnly({
     required this.title,
@@ -21,7 +25,6 @@ class TitleReadOnly extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
     final isEmpty = title.trim().isEmpty;
     final displayText = isEmpty ? context.messages.taskTitleEmpty : title;
     final effectiveStyle = isEmpty
@@ -47,26 +50,10 @@ class TitleReadOnly extends StatelessWidget {
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  displayText,
-                  softWrap: true,
-                  style: effectiveStyle,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Padding(
-                padding: EdgeInsets.only(top: tokens.spacing.step1),
-                child: Icon(
-                  Icons.edit_outlined,
-                  size: 14,
-                  color: TaskShowcasePalette.lowText(context),
-                ),
-              ),
-            ],
+          child: Text(
+            displayText,
+            softWrap: true,
+            style: effectiveStyle,
           ),
         ),
       ),
