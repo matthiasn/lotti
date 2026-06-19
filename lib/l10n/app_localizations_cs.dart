@@ -4914,6 +4914,36 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventNameLabel => 'Událost:';
 
   @override
+  String get eventsAddLabel => 'Přidat';
+
+  @override
+  String get eventsFilterAll => 'Vše';
+
+  @override
+  String get eventsNewEvent => 'Nová událost';
+
+  @override
+  String get eventsPageTitle => 'Události';
+
+  @override
+  String get eventsSearchHint => 'Hledat události';
+
+  @override
+  String get eventsSectionUpcoming => 'Nadcházející';
+
+  @override
+  String get eventsSummaryTitle => 'Souhrn';
+
+  @override
+  String get eventsTasksSection => 'Úkoly';
+
+  @override
+  String get eventsTimelineSection => 'Časová osa';
+
+  @override
+  String get navTabTitleEvents => 'Události';
+
+  @override
   String get favoriteLabel => 'Oblíbené';
 
   @override

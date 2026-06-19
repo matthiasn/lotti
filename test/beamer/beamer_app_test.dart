@@ -221,6 +221,7 @@ Future<void> _stubNavService(
   when(() => navService.isDashboardsPageEnabled).thenAnswer(
     (_) => isDashboardsEnabled(),
   );
+  when(() => navService.isEventsPageEnabled).thenReturn(false);
   when(() => navService.tapIndex(any())).thenReturn(null);
   when(() => navService.isDesktopMode).thenReturn(false);
   // The desktop tasks pane (`tasks_tab_page.dart`) reads

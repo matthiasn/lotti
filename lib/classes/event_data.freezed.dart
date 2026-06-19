@@ -15,7 +15,11 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$EventData {
 
- String get title; double get stars; EventStatus get status;
+ String get title; double get stars; EventStatus get status;/// Id of a linked [JournalImage] used as the event's cover art. New events
+/// have none until the user picks one (or one is derived from a linked
+/// photo); the UI falls back to a category-tinted card.
+ String? get coverArtId;/// Horizontal crop offset for the cover art (0.0 = left … 1.0 = right).
+ double get coverArtCropX;
 /// Create a copy of EventData
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +32,16 @@ $EventDataCopyWith<EventData> get copyWith => _$EventDataCopyWithImpl<EventData>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is EventData&&(identical(other.title, title) || other.title == title)&&(identical(other.stars, stars) || other.stars == stars)&&(identical(other.status, status) || other.status == status));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is EventData&&(identical(other.title, title) || other.title == title)&&(identical(other.stars, stars) || other.stars == stars)&&(identical(other.status, status) || other.status == status)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,stars,status);
+int get hashCode => Object.hash(runtimeType,title,stars,status,coverArtId,coverArtCropX);
 
 @override
 String toString() {
-  return 'EventData(title: $title, stars: $stars, status: $status)';
+  return 'EventData(title: $title, stars: $stars, status: $status, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX)';
 }
 
 
@@ -48,7 +52,7 @@ abstract mixin class $EventDataCopyWith<$Res>  {
   factory $EventDataCopyWith(EventData value, $Res Function(EventData) _then) = _$EventDataCopyWithImpl;
 @useResult
 $Res call({
- String title, double stars, EventStatus status
+ String title, double stars, EventStatus status, String? coverArtId, double coverArtCropX
 });
 
 
@@ -65,12 +69,14 @@ class _$EventDataCopyWithImpl<$Res>
 
 /// Create a copy of EventData
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? stars = null,Object? status = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? title = null,Object? stars = null,Object? status = null,Object? coverArtId = freezed,Object? coverArtCropX = null,}) {
   return _then(_self.copyWith(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,stars: null == stars ? _self.stars : stars // ignore: cast_nullable_to_non_nullable
 as double,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as EventStatus,
+as EventStatus,coverArtId: freezed == coverArtId ? _self.coverArtId : coverArtId // ignore: cast_nullable_to_non_nullable
+as String?,coverArtCropX: null == coverArtCropX ? _self.coverArtCropX : coverArtCropX // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 
@@ -155,10 +161,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  double stars,  EventStatus status)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String title,  double stars,  EventStatus status,  String? coverArtId,  double coverArtCropX)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _EventData() when $default != null:
-return $default(_that.title,_that.stars,_that.status);case _:
+return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.coverArtCropX);case _:
   return orElse();
 
 }
@@ -176,10 +182,10 @@ return $default(_that.title,_that.stars,_that.status);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  double stars,  EventStatus status)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String title,  double stars,  EventStatus status,  String? coverArtId,  double coverArtCropX)  $default,) {final _that = this;
 switch (_that) {
 case _EventData():
-return $default(_that.title,_that.stars,_that.status);case _:
+return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.coverArtCropX);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -196,10 +202,10 @@ return $default(_that.title,_that.stars,_that.status);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  double stars,  EventStatus status)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String title,  double stars,  EventStatus status,  String? coverArtId,  double coverArtCropX)?  $default,) {final _that = this;
 switch (_that) {
 case _EventData() when $default != null:
-return $default(_that.title,_that.stars,_that.status);case _:
+return $default(_that.title,_that.stars,_that.status,_that.coverArtId,_that.coverArtCropX);case _:
   return null;
 
 }
@@ -211,12 +217,18 @@ return $default(_that.title,_that.stars,_that.status);case _:
 @JsonSerializable()
 
 class _EventData implements EventData {
-  const _EventData({required this.title, required this.stars, required this.status});
+  const _EventData({required this.title, required this.stars, required this.status, this.coverArtId, this.coverArtCropX = 0.5});
   factory _EventData.fromJson(Map<String, dynamic> json) => _$EventDataFromJson(json);
 
 @override final  String title;
 @override final  double stars;
 @override final  EventStatus status;
+/// Id of a linked [JournalImage] used as the event's cover art. New events
+/// have none until the user picks one (or one is derived from a linked
+/// photo); the UI falls back to a category-tinted card.
+@override final  String? coverArtId;
+/// Horizontal crop offset for the cover art (0.0 = left … 1.0 = right).
+@override@JsonKey() final  double coverArtCropX;
 
 /// Create a copy of EventData
 /// with the given fields replaced by the non-null parameter values.
@@ -231,16 +243,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EventData&&(identical(other.title, title) || other.title == title)&&(identical(other.stars, stars) || other.stars == stars)&&(identical(other.status, status) || other.status == status));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _EventData&&(identical(other.title, title) || other.title == title)&&(identical(other.stars, stars) || other.stars == stars)&&(identical(other.status, status) || other.status == status)&&(identical(other.coverArtId, coverArtId) || other.coverArtId == coverArtId)&&(identical(other.coverArtCropX, coverArtCropX) || other.coverArtCropX == coverArtCropX));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,title,stars,status);
+int get hashCode => Object.hash(runtimeType,title,stars,status,coverArtId,coverArtCropX);
 
 @override
 String toString() {
-  return 'EventData(title: $title, stars: $stars, status: $status)';
+  return 'EventData(title: $title, stars: $stars, status: $status, coverArtId: $coverArtId, coverArtCropX: $coverArtCropX)';
 }
 
 
@@ -251,7 +263,7 @@ abstract mixin class _$EventDataCopyWith<$Res> implements $EventDataCopyWith<$Re
   factory _$EventDataCopyWith(_EventData value, $Res Function(_EventData) _then) = __$EventDataCopyWithImpl;
 @override @useResult
 $Res call({
- String title, double stars, EventStatus status
+ String title, double stars, EventStatus status, String? coverArtId, double coverArtCropX
 });
 
 
@@ -268,12 +280,14 @@ class __$EventDataCopyWithImpl<$Res>
 
 /// Create a copy of EventData
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? stars = null,Object? status = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? title = null,Object? stars = null,Object? status = null,Object? coverArtId = freezed,Object? coverArtCropX = null,}) {
   return _then(_EventData(
 title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
 as String,stars: null == stars ? _self.stars : stars // ignore: cast_nullable_to_non_nullable
 as double,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as EventStatus,
+as EventStatus,coverArtId: freezed == coverArtId ? _self.coverArtId : coverArtId // ignore: cast_nullable_to_non_nullable
+as String?,coverArtCropX: null == coverArtCropX ? _self.coverArtCropX : coverArtCropX // ignore: cast_nullable_to_non_nullable
+as double,
   ));
 }
 

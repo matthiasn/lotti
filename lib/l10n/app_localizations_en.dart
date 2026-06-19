@@ -4850,6 +4850,36 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventNameLabel => 'Event:';
 
   @override
+  String get eventsAddLabel => 'Add';
+
+  @override
+  String get eventsFilterAll => 'All';
+
+  @override
+  String get eventsNewEvent => 'New event';
+
+  @override
+  String get eventsPageTitle => 'Events';
+
+  @override
+  String get eventsSearchHint => 'Search events';
+
+  @override
+  String get eventsSectionUpcoming => 'Upcoming';
+
+  @override
+  String get eventsSummaryTitle => 'Summary';
+
+  @override
+  String get eventsTasksSection => 'Tasks';
+
+  @override
+  String get eventsTimelineSection => 'Timeline';
+
+  @override
+  String get navTabTitleEvents => 'Events';
+
+  @override
   String get favoriteLabel => 'Favorite';
 
   @override

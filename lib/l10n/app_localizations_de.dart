@@ -4909,6 +4909,36 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventNameLabel => 'Ereignis:';
 
   @override
+  String get eventsAddLabel => 'Hinzufügen';
+
+  @override
+  String get eventsFilterAll => 'Alle';
+
+  @override
+  String get eventsNewEvent => 'Neues Ereignis';
+
+  @override
+  String get eventsPageTitle => 'Ereignisse';
+
+  @override
+  String get eventsSearchHint => 'Ereignisse suchen';
+
+  @override
+  String get eventsSectionUpcoming => 'Bevorstehend';
+
+  @override
+  String get eventsSummaryTitle => 'Zusammenfassung';
+
+  @override
+  String get eventsTasksSection => 'Aufgaben';
+
+  @override
+  String get eventsTimelineSection => 'Zeitleiste';
+
+  @override
+  String get navTabTitleEvents => 'Ereignisse';
+
+  @override
   String get favoriteLabel => 'Favorit';
 
   @override

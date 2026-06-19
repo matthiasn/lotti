@@ -121,7 +121,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added a separate Local Gemma 4 (oMLX) profile backed by
   `gemma-4-26B-A4B-it-QAT-MLX-4bit` for both reasoning and image recognition,
   keeping the Qwen-backed Local Power profile available as its own option.
-
+- A first-class **Events** experience (behind the "Enable Events" flag in
+  Settings → Advanced → Flags). Events — birthdays, trips, milestones — now get
+  their own destination (under *More* on mobile, the sidebar on desktop) with a
+  photo-led overview that groups your moments by time and filters by category,
+  plus a redesigned detail page: a photographic header, an at-a-glance summary,
+  a timeline of the linked photos, notes and voice notes, and the prep/follow-up
+  tasks tied to the event.
 ### Changed
 - Task and project agents now send leaner, more cache-friendly prompts to local
   models: open proposal details are no longer repeated in the same wake, linked

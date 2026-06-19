@@ -8478,6 +8478,66 @@ abstract class AppLocalizations {
   /// **'Event:'**
   String get eventNameLabel;
 
+  /// No description provided for @eventsAddLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get eventsAddLabel;
+
+  /// No description provided for @eventsFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get eventsFilterAll;
+
+  /// No description provided for @eventsNewEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'New event'**
+  String get eventsNewEvent;
+
+  /// No description provided for @eventsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get eventsPageTitle;
+
+  /// No description provided for @eventsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search events'**
+  String get eventsSearchHint;
+
+  /// No description provided for @eventsSectionUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get eventsSectionUpcoming;
+
+  /// No description provided for @eventsSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get eventsSummaryTitle;
+
+  /// No description provided for @eventsTasksSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get eventsTasksSection;
+
+  /// No description provided for @eventsTimelineSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get eventsTimelineSection;
+
+  /// No description provided for @navTabTitleEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get navTabTitleEvents;
+
   /// No description provided for @favoriteLabel.
   ///
   /// In en, this message translates to:

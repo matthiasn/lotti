@@ -4948,6 +4948,36 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventNameLabel => 'Eveniment:';
 
   @override
+  String get eventsAddLabel => 'Adăugați';
+
+  @override
+  String get eventsFilterAll => 'Toate';
+
+  @override
+  String get eventsNewEvent => 'Eveniment nou';
+
+  @override
+  String get eventsPageTitle => 'Evenimente';
+
+  @override
+  String get eventsSearchHint => 'Căutați evenimente';
+
+  @override
+  String get eventsSectionUpcoming => 'Viitoare';
+
+  @override
+  String get eventsSummaryTitle => 'Rezumat';
+
+  @override
+  String get eventsTasksSection => 'Sarcini';
+
+  @override
+  String get eventsTimelineSection => 'Cronologie';
+
+  @override
+  String get navTabTitleEvents => 'Evenimente';
+
+  @override
   String get favoriteLabel => 'Favorit';
 
   @override
