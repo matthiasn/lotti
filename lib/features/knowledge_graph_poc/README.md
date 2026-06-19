@@ -67,16 +67,18 @@ renders cleanly outside a `Scaffold`.
 | `ui/graph_style.dart` | Token-backed `GraphStyle`, node glyphs, type labels, and the relation-class → `EdgeVisual` mapping. |
 | `ui/graph_motion_controller.dart` | Event-driven local force island: edge springs, local separation, damping, anchored offsets, graph-surface repaint ticker, and settle/stop logic. |
 | `ui/knowledge_graph_painter.dart` | The `CustomPainter`: atmosphere, biome haze, edges, walk trail, lit nodes, ghost ring, labels. |
-| `ui/knowledge_graph_view.dart` | Host: layout choice, fit/walk camera, pan/zoom/tap, history, title + controls + inspector + legend. Uses a pre-computed `layout` when given (provider path) and only relaxes the graph itself as a fallback (synthetic scenarios / tests). |
-| `state/task_graph_provider.dart` | **Real-data adapter** (Phase 1): `taskGraphProvider` loads a task's real `linked_entries` (depth-2 BFS + project + checklists), maps entities→node types and links→relation kinds, resolves real category colors, and relaxes the layout **on a background isolate** (`Isolate.run`) so opening the page never blocks the UI thread — the result rides in `TaskGraphData.layout`. Pure helpers `graphNodeTypeFor` / `graphNodeLabelFor` / `edgeKindFor` are unit-tested. |
-| `ui/task_knowledge_graph_page.dart` | **In-app page** (Phase 1): hosts the view full-bleed in a `Stack` with a compact, transparent top-left header (back + "Knowledge graph" title) floated over the graph — no banded app-bar row. Reserves the header's height in the view's `MediaQuery` top padding (so the view's own top-left chrome clears it) rather than a full-width bar that would swallow taps over the inspector. Loading / empty / error states; reached from a hub icon on the task app bar. |
+| `ui/knowledge_graph_view.dart` | Host: layout choice, fit/walk camera, pan/zoom/tap, history, title + controls + inspector + legend. Uses a pre-computed `layout` when given (provider path) and only relaxes the graph itself as a fallback (synthetic scenarios / tests). Reports walked-to task nodes to the page so real-data graphs can expand lazily. |
+| `state/task_graph_provider.dart` | **Real-data adapter** (Phase 1): `taskGraphProvider` loads a task's real `linked_entries` (depth-2 BFS + project + checklists), maps entities→node types and links→relation kinds, resolves real category colors, and relaxes the layout **on a background isolate** (`Isolate.run`) so opening the page never blocks the UI thread — the result rides in `TaskGraphData.layout`. The same off-thread layout entry point is reused after additive expansions. Pure helpers `graphNodeTypeFor` / `graphNodeLabelFor` / `edgeKindFor` are unit-tested. |
+| `ui/task_knowledge_graph_page.dart` | **In-app page** (Phase 1): hosts the view full-bleed in a `Stack` with a compact, transparent top-left header (back + "Knowledge graph" title) floated over the graph — no banded app-bar row. Reserves the header's height in the view's `MediaQuery` top padding (so the view's own top-left chrome clears it) rather than a full-width bar that would swallow taps over the inspector. Loading / empty / error states; reached from a hub icon on the task app bar. When the user walks onto a task that was only present as a project sibling, the page reads that task's graph, merges its nodes/edges into the graph already on screen, and swaps in a freshly relaxed merged layout. |
 | `dev_main.dart` | Standalone dev entrypoint to explore the synthetic worlds interactively. |
 
 ## Pipeline
 
 ```mermaid
 flowchart LR
-  S[GraphScenario] --> L{size > 40?}
+  P[taskGraphProvider(seed task)] --> D[TaskGraphData]
+  D --> S[GraphScenario]
+  S --> L{size > 40?}
   L -- yes --> W[computeWorldLayout]
   L -- no --> E[computeGraphLayout]
   W --> V[KnowledgeGraphView]
@@ -88,6 +90,11 @@ flowchart LR
   Y --> PA
   PA --> O["Canvas: vignette → biome haze → edges → trail → nodes → labels"]
   V -.->|tap| WK[walk: re-focus + glide + wake + spring kick] --> V
+  V -.->|walked-to task| X[TaskKnowledgeGraphPage expansion]
+  X --> XP[taskGraphProvider(walked task)]
+  XP --> XM[merge nodes + edges into current graph]
+  XM --> XR[layoutTaskGraphOffThread]
+  XR --> V
 ```
 
 ## Previewing
@@ -120,7 +127,13 @@ real `linked_entries` neighborhood via `taskGraphProvider` and renders it with
 real `CategoryDefinition` colors. The relation mapping is validated against the
 live `db.sqlite` schema (`BasicLink`→association/provenance, `ProjectLink`→
 containment, `RatingLink`→evaluation, plus embedded project + checklists). The
-expert panel scored the integration **9/10 in full app-scaffold screenshots**
+view is additive after the initial load: walking from a project to a sibling
+task triggers a second `taskGraphProvider` read for that task, deduplicates and
+merges the returned nodes/edges into the current scenario, then recomputes
+layout for the merged graph on the same background isolate path. The route does
+not switch to a new base task, so the already visible world stays on screen
+while new links become explorable. The expert panel scored the integration
+**9/10 in full app-scaffold screenshots**
 (every reviewer ≥ 9).
 
 ### Feature flag
@@ -143,12 +156,13 @@ default.
 ## Status & next steps
 
 The view (interaction + looks) and the app integration are both panel-approved.
-Still a Phase-0/1 spike in scope: the data load is a bounded depth-2 BFS with
-per-id (coalesced) fetches — fine for a task neighborhood. The layout already
-runs off the main thread (`Isolate.run` in the provider); the remaining perf
+Still a Phase-0/1 spike in scope: the initial data load is a bounded depth-2 BFS
+with per-id (coalesced) fetches, and walked-to tasks can lazily add another
+bounded task neighborhood to the visible graph. Layout already runs off the main
+thread (`Isolate.run` in the provider and expansion merge); the remaining perf
 spike (Barnes–Hut to drop the relax from O(N²), `drawRawAtlas` batching,
-viewport culling, batched DB reads) is needed before scaling past the local
-neighborhood. Non-blocking polish the panel flagged: biome haze legibility at
-the pulled-back zoom, a touch more ghost-ring contrast, larger control hit
-targets, and a phone bottom-sheet inspector (the detail panel is desktop-only
-today).
+viewport culling, batched DB reads, and pruning/compaction for long exploration
+sessions) is needed before scaling past a handful of local neighborhoods.
+Non-blocking polish the panel flagged: biome haze legibility at the pulled-back
+zoom, a touch more ghost-ring contrast, larger control hit targets, and a phone
+bottom-sheet inspector (the detail panel is desktop-only today).

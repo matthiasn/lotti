@@ -31,6 +31,7 @@ class KnowledgeGraphView extends StatefulWidget {
     this.initialFocusId,
     this.initialPreviousFocusId,
     this.layout,
+    this.onTaskFocusChanged,
     this.showTitle = true,
     this.showLegend = true,
     this.showInspector = true,
@@ -59,6 +60,12 @@ class KnowledgeGraphView extends StatefulWidget {
   /// `taskGraphProvider`). When null the view computes it synchronously in
   /// `initState` — fine for the small synthetic scenarios and tests.
   final GraphLayout? layout;
+
+  /// Called after walk navigation lands on a task node. The page-level real-data
+  /// host uses this to reload the graph around the newly focused task.
+  final void Function(String taskId, String previousFocusId)?
+  onTaskFocusChanged;
+
   final bool showTitle;
   final bool showLegend;
   final bool showInspector;
@@ -330,6 +337,9 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     _hops = _bfs(id);
     _syncMotionWindow(id);
     _kickWalkMotion(fromId, id);
+    if (_scenario.nodeById(id).type == GraphNodeType.task) {
+      widget.onTaskFocusChanged?.call(id, fromId);
+    }
     _focusWorld = _layout.positions[id] ?? Offset.zero;
     final (ts, tp) = _framedTransform(_lastSize, id);
     _fromScale = _scale;
