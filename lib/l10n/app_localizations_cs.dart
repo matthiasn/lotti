@@ -4926,6 +4926,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsFilterAll => 'Vše';
 
   @override
+  String eventsMetricPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fotek',
+      few: '$count fotky',
+      one: '1 fotka',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventsMetricTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů',
+      few: '$count úkoly',
+      one: '1 úkol',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get eventsNewEvent => 'Nová událost';
 
   @override
@@ -7981,12 +8005,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncActivityInboxLabel => 'Příchozí';
 
   @override
-  String get syncActivityOutboxLabel => 'Odchozí';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Aktivita synchronizace. Odchozí: $outbox. Příchozí: $inbox. Otevřít odchozí frontu synchronizace.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Odchozí';
 
   @override
   String get syncDeleteConfigConfirm => 'ANO, JSEM SI JISTÝ';

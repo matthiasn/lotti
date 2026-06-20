@@ -2039,6 +2039,8 @@
   "eventsAddLabel": "Přidat",
   "eventsDeleteEvent": "Smazat událost",
   "eventsFilterAll": "Vše",
+  "eventsMetricPhotos": "{count, plural, =1{1 fotka} few{{count} fotky} other{{count} fotek}}",
+  "eventsMetricTasks": "{count, plural, =1{1 úkol} few{{count} úkoly} other{{count} úkolů}}",
   "eventsNewEvent": "Nová událost",
   "eventsPageTitle": "Události",
   "eventsPhotosSection": "Fotky",

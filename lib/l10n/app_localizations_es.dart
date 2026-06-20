@@ -4951,6 +4951,28 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsFilterAll => 'Todos';
 
   @override
+  String eventsMetricPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fotos',
+      one: '1 foto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventsMetricTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tareas',
+      one: '1 tarea',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get eventsNewEvent => 'Nuevo evento';
 
   @override
@@ -8031,12 +8053,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncActivityInboxLabel => 'Entrada';
 
   @override
-  String get syncActivityOutboxLabel => 'Salida';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Actividad de sincronización. Bandeja de salida: $outbox. Bandeja de entrada: $inbox. Abrir bandeja de salida de sincronización.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Salida';
 
   @override
   String get syncDeleteConfigConfirm => 'SÍ, ESTOY SEGURO';

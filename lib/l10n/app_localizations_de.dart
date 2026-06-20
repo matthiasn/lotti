@@ -4921,6 +4921,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsFilterAll => 'Alle';
 
   @override
+  String eventsMetricPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Fotos',
+      one: '1 Foto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventsMetricTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufgaben',
+      one: '1 Aufgabe',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get eventsNewEvent => 'Neues Ereignis';
 
   @override
@@ -7929,12 +7951,12 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncActivityInboxLabel => 'Inbox';
 
   @override
-  String get syncActivityOutboxLabel => 'Outbox';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Sync-Aktivität. Outbox: $outbox. Inbox: $inbox. Sync-Outbox öffnen.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Outbox';
 
   @override
   String get syncDeleteConfigConfirm => 'JA, ICH BIN SICHER';

@@ -18,11 +18,14 @@ void main() {
       expect(find.textContaining('Friends'), findsOneWidget);
       expect(find.textContaining('Sat, 12 May'), findsOneWidget);
       expect(find.text('A surprise rooftop party.'), findsOneWidget);
-      // Metrics: rating (5), photos (24), tasks (2).
+      // Rating star + one-decimal value (top-right), then the contents counts
+      // as icon + localized word.
       expect(find.byIcon(Icons.star_rounded), findsOneWidget);
-      expect(find.text('5'), findsOneWidget);
-      expect(find.text('24'), findsOneWidget);
-      expect(find.text('2'), findsOneWidget);
+      expect(find.text('5.0'), findsOneWidget);
+      expect(find.byIcon(Icons.photo_library_rounded), findsOneWidget);
+      expect(find.text('24 photos'), findsOneWidget);
+      expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
+      expect(find.text('2 tasks'), findsOneWidget);
     });
 
     testWidgets('hides the status for a completed event', (tester) async {
@@ -47,7 +50,24 @@ void main() {
         ),
       );
       expect(find.textContaining('Planned'), findsOneWidget);
-      // A not-yet-happened, unrated event shows no rating metric.
+      // A not-yet-happened, unrated event shows no rating metric, but its
+      // prep-task count still surfaces.
+      expect(find.byIcon(Icons.star_rounded), findsNothing);
+      // The prep-task count still surfaces for an upcoming event.
+      expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
+      expect(find.text('2 tasks'), findsOneWidget);
+    });
+
+    testWidgets('shows no rating for a completed but unrated event', (
+      tester,
+    ) async {
+      await pumpEventComponent(
+        tester,
+        EventSummaryCard(
+          data: buildEventCardData(stars: 0, coverImage: testImage()),
+        ),
+      );
+      // A completed event with no rating must not read as "rated 0".
       expect(find.byIcon(Icons.star_rounded), findsNothing);
     });
 
@@ -57,6 +77,17 @@ void main() {
         EventSummaryCard(data: buildEventCardData(stars: 4.5)),
       );
       expect(find.text('4.5'), findsOneWidget);
+    });
+
+    testWidgets('uses localized singular/plural count words', (tester) async {
+      await pumpEventComponent(
+        tester,
+        EventSummaryCard(
+          data: buildEventCardData(photoCount: 1, taskCount: 24),
+        ),
+      );
+      expect(find.text('1 photo'), findsOneWidget);
+      expect(find.text('24 tasks'), findsOneWidget);
     });
 
     testWidgets('omits the metric row when there is nothing to show', (
@@ -74,8 +105,8 @@ void main() {
         ),
       );
       expect(find.byIcon(Icons.star_rounded), findsNothing);
-      expect(find.byIcon(Icons.photo_library_outlined), findsNothing);
-      expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+      expect(find.byIcon(Icons.photo_library_rounded), findsNothing);
+      expect(find.byIcon(Icons.task_alt_rounded), findsNothing);
     });
 
     testWidgets('falls back to the category glyph when there is no cover', (

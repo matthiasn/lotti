@@ -169,9 +169,10 @@ User-visible strings are localized via `context.messages`: `navTabTitleEvents`,
 `eventsSectionUpcoming`, `eventsSummaryTitle`, `eventsTimelineSection`,
 `eventsTasksSection`, `eventsAddLabel`, `eventsRegenerateSummary`,
 `eventsVoiceNote`, `eventsTitleHint`, `eventsAddCoverPhoto`, `eventsDeleteEvent`,
-`eventsTimelineEmpty`, `eventsTasksEmpty`, `eventsPhotosSection`. (The event
-status picker reuses `EventStatus.label`; the category picker reuses
-`habitCategoryLabel`.)
+`eventsTimelineEmpty`, `eventsTasksEmpty`, `eventsPhotosSection`,
+`eventsMetricPhotos`, `eventsMetricTasks` (the last two pluralized count words
+for the summary card's contents line). (The event status picker reuses
+`EventStatus.label`; the category picker reuses `habitCategoryLabel`.)
 
 ## Testing
 

@@ -8502,6 +8502,18 @@ abstract class AppLocalizations {
   /// **'All'**
   String get eventsFilterAll;
 
+  /// No description provided for @eventsMetricPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String eventsMetricPhotos(int count);
+
+  /// No description provided for @eventsMetricTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 task} other{{count} tasks}}'**
+  String eventsMetricTasks(int count);
+
   /// No description provided for @eventsNewEvent.
   ///
   /// In en, this message translates to:
@@ -13549,17 +13561,17 @@ abstract class AppLocalizations {
   /// **'Inbox'**
   String get syncActivityInboxLabel;
 
-  /// No description provided for @syncActivityOutboxLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Outbox'**
-  String get syncActivityOutboxLabel;
-
   /// No description provided for @syncActivityIndicatorSemantics.
   ///
   /// In en, this message translates to:
   /// **'Sync activity. Outbox: {outbox}. Inbox: {inbox}. Open sync outbox.'**
   String syncActivityIndicatorSemantics(int outbox, int inbox);
+
+  /// No description provided for @syncActivityOutboxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbox'**
+  String get syncActivityOutboxLabel;
 
   /// No description provided for @syncDeleteConfigConfirm.
   ///

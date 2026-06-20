@@ -2230,6 +2230,8 @@
   "eventsAddLabel": "Adăugați",
   "eventsDeleteEvent": "Ștergeți evenimentul",
   "eventsFilterAll": "Toate",
+  "eventsMetricPhotos": "{count, plural, one{1 fotografie} few{{count} fotografii} other{{count} de fotografii}}",
+  "eventsMetricTasks": "{count, plural, one{1 sarcină} few{{count} sarcini} other{{count} de sarcini}}",
   "eventsNewEvent": "Eveniment nou",
   "eventsPageTitle": "Evenimente",
   "eventsPhotosSection": "Fotografii",

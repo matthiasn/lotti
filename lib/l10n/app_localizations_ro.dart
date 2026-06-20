@@ -4960,6 +4960,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsFilterAll => 'Toate';
 
   @override
+  String eventsMetricPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de fotografii',
+      few: '$count fotografii',
+      one: '1 fotografie',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventsMetricTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sarcini',
+      few: '$count sarcini',
+      one: '1 sarcină',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get eventsNewEvent => 'Eveniment nou';
 
   @override
@@ -8032,12 +8056,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncActivityInboxLabel => 'Intrare';
 
   @override
-  String get syncActivityOutboxLabel => 'Ieșire';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Activitate sincronizare. Coadă de ieșire: $outbox. Coadă de intrare: $inbox. Deschide coada de ieșire pentru sincronizare.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Ieșire';
 
   @override
   String get syncDeleteConfigConfirm => 'DA, SUNT SIGUR';

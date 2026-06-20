@@ -2230,6 +2230,8 @@
   "eventsAddLabel": "Hinzufügen",
   "eventsDeleteEvent": "Event löschen",
   "eventsFilterAll": "Alle",
+  "eventsMetricPhotos": "{count, plural, =1{1 Foto} other{{count} Fotos}}",
+  "eventsMetricTasks": "{count, plural, =1{1 Aufgabe} other{{count} Aufgaben}}",
   "eventsNewEvent": "Neues Ereignis",
   "eventsPageTitle": "Ereignisse",
   "eventsPhotosSection": "Fotos",

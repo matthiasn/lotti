@@ -2511,6 +2511,22 @@
   "eventsAddLabel": "Add",
   "eventsDeleteEvent": "Delete event",
   "eventsFilterAll": "All",
+  "eventsMetricPhotos": "{count, plural, =1{1 photo} other{{count} photos}}",
+  "@eventsMetricPhotos": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventsMetricTasks": "{count, plural, =1{1 task} other{{count} tasks}}",
+  "@eventsMetricTasks": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "eventsNewEvent": "New event",
   "eventsPageTitle": "Events",
   "eventsPhotosSection": "Photos",
