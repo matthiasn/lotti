@@ -209,13 +209,29 @@ void main() {
     });
 
     testWidgets('DashboardChart height is 180', (tester) async {
+      // Real data so the chart renders at its configured height — an empty
+      // card now collapses and reserves no chart area.
+      final entries = <JournalEntity>[
+        hMakeSurveyEntry(
+          id: 'h180-1',
+          dateFrom: DateTime(2024, 3, 5),
+          scoreKey: 'CFQ11',
+          scoreValue: 12,
+        ),
+        hMakeSurveyEntry(
+          id: 'h180-2',
+          dateFrom: DateTime(2024, 3, 10),
+          scoreKey: 'CFQ11',
+          scoreValue: 18,
+        ),
+      ];
       when(
         () => mockJournalDb.getSurveyCompletionsByType(
           type: any(named: 'type'),
           rangeStart: any(named: 'rangeStart'),
           rangeEnd: any(named: 'rangeEnd'),
         ),
-      ).thenAnswer((_) async => []);
+      ).thenAnswer((_) async => entries);
 
       await hPumpSurveyChart(tester, chartConfig: chartConfig);
 

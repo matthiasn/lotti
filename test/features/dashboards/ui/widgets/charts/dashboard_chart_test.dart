@@ -160,6 +160,105 @@ void main() {
       expect(find.text('No data'), findsOneWidget);
       expect(find.text('Date Axis'), findsNothing);
     });
+
+    testWidgets(
+      'collapses an empty card so it never reserves the full chart height',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            const DashboardChart(
+              chart: Text('Chart'),
+              chartHeader: Text('Header'),
+              height: 240,
+              isEmpty: true,
+              emptyMessage: 'No data',
+              footer: Text('Legend'),
+            ),
+          ),
+        );
+
+        // The notice replaces the plot: the chart content and its legend never
+        // render, so an empty card adds no visual weight beyond the header.
+        expect(find.text('No data'), findsOneWidget);
+        expect(find.text('Chart'), findsNothing);
+        expect(find.text('Legend'), findsNothing);
+
+        // Critically, no SizedBox reserves the 240px chart area — that height
+        // is exactly the space the collapse reclaims for the charts that have
+        // data.
+        final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
+        expect(
+          sizedBoxes.any((b) => b.height == 240),
+          isFalse,
+          reason: 'An empty card must not reserve the full chart height',
+        );
+
+        // The collapsed card is far shorter than the reserved height it
+        // replaces.
+        expect(
+          tester.getSize(find.byType(DashboardChart)).height,
+          lessThan(240),
+        );
+      },
+    );
+
+    testWidgets(
+      'an empty card without a message collapses to just its header',
+      (tester) async {
+        Future<double> cardHeight({String? emptyMessage}) async {
+          await tester.pumpWidget(
+            makeTestableWidget(
+              DashboardChart(
+                chart: const Text('Chart'),
+                chartHeader: const Text('Header'),
+                height: 240,
+                isEmpty: true,
+                emptyMessage: emptyMessage,
+              ),
+            ),
+          );
+          return tester.getSize(find.byType(DashboardChart)).height;
+        }
+
+        final withMessage = await cardHeight(emptyMessage: 'No data');
+        final withoutMessage = await cardHeight();
+
+        // No stray gap under the header: dropping the message leaves only the
+        // header, so the card is strictly shorter than when a notice is shown.
+        expect(find.text('No data'), findsNothing);
+        expect(withoutMessage, lessThan(withMessage));
+      },
+    );
+
+    testWidgets(
+      'keeps the full chart height during the initial load even with no data',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            const DashboardChart(
+              chart: Text('Chart'),
+              chartHeader: Text('Header'),
+              height: 240,
+              isLoading: true,
+              isEmpty: true,
+              emptyMessage: 'No data',
+            ),
+          ),
+        );
+
+        // Loading wins over empty: the spinner sits where the chart will land,
+        // so the card does not first collapse and then jump back open.
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.text('No data'), findsNothing);
+
+        final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
+        expect(
+          sizedBoxes.any((b) => b.height == 240),
+          isTrue,
+          reason: 'The initial load keeps the full chart height reserved',
+        );
+      },
+    );
   });
 
   group('DashboardChartHeader', () {

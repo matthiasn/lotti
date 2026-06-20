@@ -260,6 +260,16 @@ that is fine.
   ourselves makes every bar and line card show identical, aligned dates at all
   widths. The date axis is only rendered when the chart is shown — never in the
   loading or empty states.
+- every chart card is the shared `DashboardChart` shell, which renders one of
+  three states for its body so a background fetch never masquerades as data:
+  `isLoading` (initial load only — never a stale-while-revalidate refresh) shows
+  a subtle spinner sized to the full chart `height`; a settled but empty card
+  (`isEmpty && !isLoading`) **collapses** to a one-line `emptyMessage` directly
+  under the header and reserves no chart `height` (and no date axis or footer
+  legend), so a dashboard full of empty cards does not bury the charts that have
+  data; otherwise the chart (optionally with an `overlay`) renders at `height`.
+  Loading wins over empty, so an initial load keeps the full height reserved and
+  the card does not first collapse and then jump open.
 - measurement charts resolve aggregation from either the dashboard item or the
   measurable type definition. The card caption is a single phrase that leads with
   the **unit** (`unitName`), to stay consistent with the health/workout cards

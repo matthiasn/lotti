@@ -17,6 +17,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// stale-while-revalidate refresh) shows a subtle progress affordance, and
 /// [isEmpty] shows [emptyMessage] so "no data in range" is never confused with
 /// a flat run of real zeros.
+///
+/// An empty card collapses to a compact, single-line notice directly under the
+/// header instead of reserving the full [height]: on a dashboard with many
+/// charts, the cards that have no data in range stay out of the way and give
+/// the room to the charts that actually have something to show.
 class DashboardChart extends StatelessWidget {
   const DashboardChart({
     required this.chart,
@@ -59,6 +64,12 @@ class DashboardChart extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
+    // A chart with no data in range never reserves the full [height]: it
+    // collapses to a one-line notice under the header. The initial load
+    // ([isLoading]) keeps the full height so the spinner sits where the chart
+    // will land — only a settled, genuinely-empty card shrinks.
+    final showEmpty = isEmpty && !isLoading;
+
     final Widget chartArea;
     if (isLoading) {
       chartArea = Center(
@@ -66,16 +77,6 @@ class DashboardChart extends StatelessWidget {
           dimension: tokens.spacing.sectionGap,
           child: CircularProgressIndicator(
             strokeWidth: 2,
-            color: tokens.colors.text.lowEmphasis,
-          ),
-        ),
-      );
-    } else if (isEmpty) {
-      chartArea = Center(
-        child: Text(
-          emptyMessage ?? '',
-          textAlign: TextAlign.center,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
             color: tokens.colors.text.lowEmphasis,
           ),
         ),
@@ -104,15 +105,30 @@ class DashboardChart extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             chartHeader,
-            SizedBox(height: tokens.spacing.step3),
-            SizedBox(height: height, child: chartArea),
-            if (dateAxis != null && !isLoading && !isEmpty) ...[
-              SizedBox(height: tokens.spacing.step2),
-              dateAxis!,
-            ],
-            if (footer != null) ...[
+            if (showEmpty) ...[
+              // Skip the gap + Text entirely when there's no message, so an
+              // empty card with no notice collapses to just its header rather
+              // than leaving a stray spacer hanging under it.
+              if (emptyMessage != null && emptyMessage!.isNotEmpty) ...[
+                SizedBox(height: tokens.spacing.step2),
+                Text(
+                  emptyMessage!,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ],
+            ] else ...[
               SizedBox(height: tokens.spacing.step3),
-              footer!,
+              SizedBox(height: height, child: chartArea),
+              if (dateAxis != null && !isLoading) ...[
+                SizedBox(height: tokens.spacing.step2),
+                dateAxis!,
+              ],
+              if (footer != null) ...[
+                SizedBox(height: tokens.spacing.step3),
+                footer!,
+              ],
             ],
           ],
         ),

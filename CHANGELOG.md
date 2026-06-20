@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Checking off a checklist item now plays the same little spark burst no matter
   how it happens — a direct tap, an accepted AI "check off" suggestion, or a
   sync from another device — so completing an item always feels rewarding.
+- Dashboard charts with no data in the selected range now collapse to a compact
+  one-line notice under their title instead of holding open a full-height empty
+  card. On a dashboard with several charts, the ones that actually have data get
+  the room, and you no longer scroll past tall blank panels to reach them.
 
 ## [0.9.1030]
 ### Changed
