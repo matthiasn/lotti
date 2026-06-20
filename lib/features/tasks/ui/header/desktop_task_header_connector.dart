@@ -203,14 +203,19 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
           for (final p in TaskPriority.values)
             Padding(
               // Inset each row so its hover/selection highlight is a rounded,
-              // contained shape rather than a sharp edge-to-edge band.
+              // contained shape rather than a sharp edge-to-edge band. Matches
+              // the shared EntityPickerSheet rows (inset step3, radii.l) so the
+              // status / priority / label pickers read as one family.
               padding: EdgeInsets.symmetric(
-                horizontal: ctx.designTokens.spacing.step2,
+                horizontal: ctx.designTokens.spacing.step3,
                 vertical: ctx.designTokens.spacing.step1,
               ),
               child: ListTile(
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: ctx.designTokens.spacing.step3,
+                ),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(ctx.designTokens.radii.s),
+                  borderRadius: BorderRadius.circular(ctx.designTokens.radii.l),
                 ),
                 leading: SizedBox(
                   width: 56,

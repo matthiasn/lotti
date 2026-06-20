@@ -53,9 +53,11 @@ class TaskStatusModalContent extends StatelessWidget {
 
         return Padding(
           // Inset each row so its hover/selection highlight is a rounded,
-          // contained shape rather than a sharp edge-to-edge band.
+          // contained shape rather than a sharp edge-to-edge band. Matches the
+          // shared EntityPickerSheet rows (inset step3, radii.l) so the status
+          // / priority / label pickers read as one consistent family.
           padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step2,
+            horizontal: tokens.spacing.step3,
             vertical: tokens.spacing.step1,
           ),
           child: Semantics(
@@ -64,9 +66,12 @@ class TaskStatusModalContent extends StatelessWidget {
             label: label,
             child: InkWell(
               onTap: () => Navigator.pop(context, status),
-              borderRadius: BorderRadius.circular(tokens.radii.s),
+              borderRadius: BorderRadius.circular(tokens.radii.l),
               child: Padding(
-                padding: EdgeInsets.all(tokens.spacing.step4),
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step3,
+                  vertical: tokens.spacing.step4,
+                ),
                 child: Row(
                   children: [
                     Icon(icon, color: statusColor, size: 20),
