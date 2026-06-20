@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -192,65 +193,144 @@ void main() {
 
   group('probeHttpReachability', () {
     test('returns true for accepted response statuses', () async {
-      final server = await _startProbeServer(statusCode: HttpStatus.forbidden);
-      addTearDown(() => server.close(force: true));
+      final uri = Uri.parse('http://127.0.0.1:8003/models');
+      final client = _FakeProbeHttpClient(
+        responseStatusCode: HttpStatus.forbidden,
+      );
 
-      final reachable = await probeHttpReachability(
-        uri: _serverUri(server, '/models'),
-        timeout: const Duration(seconds: 1),
-        acceptsStatusCode: (statusCode) => statusCode == HttpStatus.forbidden,
+      final reachable = await _runWithFakeHttpClient(
+        client: client,
+        probe: () => probeHttpReachability(
+          uri: uri,
+          timeout: const Duration(seconds: 1),
+          acceptsStatusCode: (statusCode) => statusCode == HttpStatus.forbidden,
+        ),
       );
 
       expect(reachable, isTrue);
+      expect(client.requestedUris, [uri]);
+      expect(client.connectionTimeout, const Duration(seconds: 1));
+      expect(client.closeForceValues, [true]);
     });
 
     test('returns false for rejected response statuses', () async {
-      final server = await _startProbeServer(
-        statusCode: HttpStatus.internalServerError,
+      final uri = Uri.parse('http://127.0.0.1:11434/api/version');
+      final client = _FakeProbeHttpClient(
+        responseStatusCode: HttpStatus.internalServerError,
       );
-      addTearDown(() => server.close(force: true));
 
-      final reachable = await probeHttpReachability(
-        uri: _serverUri(server, '/api/version'),
-        timeout: const Duration(seconds: 1),
-        acceptsStatusCode: (statusCode) =>
-            statusCode >= 200 && statusCode < 300,
+      final reachable = await _runWithFakeHttpClient(
+        client: client,
+        probe: () => probeHttpReachability(
+          uri: uri,
+          timeout: const Duration(seconds: 1),
+          acceptsStatusCode: (statusCode) =>
+              statusCode >= 200 && statusCode < 300,
+        ),
       );
 
       expect(reachable, isFalse);
+      expect(client.requestedUris, [uri]);
+      expect(client.closeForceValues, [true]);
     });
 
     test('returns false when the endpoint is unavailable', () async {
-      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-      final uri = _serverUri(server, '/closed');
-      await server.close(force: true);
+      final uri = Uri.parse('http://127.0.0.1:11434/api/version');
+      final client = _FakeProbeHttpClient(
+        exception: const SocketException('connection refused'),
+      );
 
-      final reachable = await probeHttpReachability(
-        uri: uri,
-        timeout: const Duration(milliseconds: 100),
-        acceptsStatusCode: (_) => true,
+      final reachable = await _runWithFakeHttpClient(
+        client: client,
+        probe: () => probeHttpReachability(
+          uri: uri,
+          timeout: const Duration(milliseconds: 100),
+          acceptsStatusCode: (_) => true,
+        ),
       );
 
       expect(reachable, isFalse);
+      expect(client.requestedUris, [uri]);
+      expect(client.closeForceValues, [true]);
     });
   });
 }
 
-Future<HttpServer> _startProbeServer({required int statusCode}) async {
-  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-  server.listen((request) async {
-    request.response.statusCode = statusCode;
-    request.response.write('probe');
-    await request.response.close();
-  });
-  return server;
+Future<bool> _runWithFakeHttpClient({
+  required _FakeProbeHttpClient client,
+  required Future<bool> Function() probe,
+}) {
+  return HttpOverrides.runZoned(
+    probe,
+    createHttpClient: (_) => client,
+  );
 }
 
-Uri _serverUri(HttpServer server, String path) {
-  return Uri(
-    scheme: 'http',
-    host: InternetAddress.loopbackIPv4.address,
-    port: server.port,
-    path: path,
-  );
+class _FakeProbeHttpClient implements HttpClient {
+  _FakeProbeHttpClient({this.responseStatusCode, this.exception});
+
+  final int? responseStatusCode;
+  final Exception? exception;
+  final requestedUris = <Uri>[];
+  final closeForceValues = <bool>[];
+
+  @override
+  Duration? connectionTimeout;
+
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) async {
+    requestedUris.add(url);
+    final exception = this.exception;
+    if (exception != null) throw exception;
+
+    return _FakeProbeHttpClientRequest(responseStatusCode!);
+  }
+
+  @override
+  void close({bool force = false}) {
+    closeForceValues.add(force);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeProbeHttpClientRequest implements HttpClientRequest {
+  _FakeProbeHttpClientRequest(this.statusCode);
+
+  final int statusCode;
+
+  @override
+  Future<HttpClientResponse> close() async {
+    return _FakeProbeHttpClientResponse(statusCode);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeProbeHttpClientResponse extends Stream<List<int>>
+    implements HttpClientResponse {
+  _FakeProbeHttpClientResponse(this.statusCode);
+
+  @override
+  final int statusCode;
+
+  @override
+  StreamSubscription<List<int>> listen(
+    void Function(List<int> event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    return const Stream<List<int>>.empty().listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
