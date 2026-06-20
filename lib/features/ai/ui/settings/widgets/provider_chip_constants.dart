@@ -79,6 +79,10 @@ class ProviderChipConstants {
       dark: Color(0xFFF06292),
       light: Color(0xFFE91E63), // Pink
     ),
+    InferenceProviderType.omlx: (
+      dark: Color(0xFF7DD3FC),
+      light: Color(0xFF0284C7), // Sky blue
+    ),
     InferenceProviderType.whisper: (
       dark: Color(0xFFFF8A65),
       light: Color(0xFFFF5722), // Deep Orange

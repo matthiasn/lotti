@@ -149,6 +149,7 @@ void main() {
         appVersion: '1.0.0+1',
         capabilities: const [
           NodeCapability.mlxAudio,
+          NodeCapability.omlxLlm,
           NodeCapability.ollamaLlm,
         ],
         updatedAt: updatedAt,
@@ -169,6 +170,7 @@ void main() {
       expect(decoded.appVersion, '1.0.0+1');
       expect(decoded.capabilities, [
         NodeCapability.mlxAudio,
+        NodeCapability.omlxLlm,
         NodeCapability.ollamaLlm,
       ]);
       expect(decoded.updatedAt, updatedAt);
@@ -181,6 +183,7 @@ void main() {
         platform: 'linux',
         capabilities: const [
           NodeCapability.whisper,
+          NodeCapability.omlxLlm,
           NodeCapability.ollamaLlm,
           NodeCapability.voxtral,
         ],
@@ -193,6 +196,7 @@ void main() {
 
       expect(decoded.capabilities, [
         NodeCapability.whisper,
+        NodeCapability.omlxLlm,
         NodeCapability.ollamaLlm,
         NodeCapability.voxtral,
       ]);

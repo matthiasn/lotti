@@ -224,7 +224,8 @@ class _InferenceProviderEditPageState
     // `invalidate()` bumps the generation guard inside the controller
     // without touching visible state, so the in-flight probe's
     // `myGen != _generation` check drops its result.
-    if (apiKey.trim().isEmpty && providerType != InferenceProviderType.ollama) {
+    if (apiKey.trim().isEmpty &&
+        !ProviderConfig.noApiKeyRequired.contains(providerType)) {
       // Empty key → reset the strip to idle so the previous probe's
       // outcome doesn't linger across a clear. `reset()` already bumps
       // the generation guard, so any in-flight probe is invalidated.

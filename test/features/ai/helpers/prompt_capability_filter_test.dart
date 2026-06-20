@@ -565,6 +565,15 @@ void main() {
         );
       });
 
+      test('returns true for oMLX', () {
+        expect(
+          PromptCapabilityFilter.isLocalOnlyProviderType(
+            InferenceProviderType.omlx,
+          ),
+          isTrue,
+        );
+      });
+
       test('returns false for cloud providers', () {
         expect(
           PromptCapabilityFilter.isLocalOnlyProviderType(
@@ -625,6 +634,7 @@ void main() {
         final expected = {
           InferenceProviderType.whisper,
           InferenceProviderType.ollama,
+          InferenceProviderType.omlx,
           InferenceProviderType.voxtral,
           InferenceProviderType.mlxAudio,
         }.contains(providerType);
@@ -1129,13 +1139,14 @@ void main() {
 
   // ---------------------------------------------------------------------------
   // Glados property test for PromptCapabilityFilter.isLocalOnlyProviderType
-  // A closed-enum property: exactly {whisper, ollama, voxtral, mlxAudio} are
-  // local-only; all other variants must return false.
+  // A closed-enum property: exactly {whisper, ollama, oMLX, voxtral, mlxAudio}
+  // are local-only; all other variants must return false.
   // ---------------------------------------------------------------------------
   group('isLocalOnlyProviderType — Glados property', () {
     const localOnlyTypes = {
       InferenceProviderType.whisper,
       InferenceProviderType.ollama,
+      InferenceProviderType.omlx,
       InferenceProviderType.voxtral,
       InferenceProviderType.mlxAudio,
     };

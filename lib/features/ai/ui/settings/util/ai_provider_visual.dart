@@ -169,6 +169,7 @@ IconData aiProviderIcon(InferenceProviderType? type) {
     InferenceProviderType.openAi => Icons.circle_rounded,
     InferenceProviderType.anthropic => Icons.psychology_rounded,
     InferenceProviderType.ollama => Icons.computer_rounded,
+    InferenceProviderType.omlx => Icons.developer_board_rounded,
     InferenceProviderType.mistral => Icons.air_rounded,
     InferenceProviderType.mlxAudio => Icons.memory_rounded,
     InferenceProviderType.alibaba => Icons.cloud_rounded,
@@ -192,6 +193,7 @@ String aiProviderDisplayName({
     InferenceProviderType.ollama => messages.aiProviderOllamaName,
     InferenceProviderType.mistral => messages.aiProviderMistralName,
     InferenceProviderType.mlxAudio => messages.aiProviderMlxAudioName,
+    InferenceProviderType.omlx => messages.aiProviderOmlxName,
     InferenceProviderType.alibaba => messages.aiProviderAlibabaName,
     InferenceProviderType.openRouter => messages.aiProviderOpenRouterName,
     InferenceProviderType.nebiusAiStudio =>
@@ -217,6 +219,7 @@ String aiProviderTagline({
     InferenceProviderType.anthropic => messages.aiProviderTaglineAnthropic,
     InferenceProviderType.ollama => messages.aiProviderTaglineOllama,
     InferenceProviderType.mlxAudio => messages.aiProviderTaglineMlxAudio,
+    InferenceProviderType.omlx => messages.aiProviderTaglineOmlx,
     InferenceProviderType.alibaba => messages.aiProviderTaglineAlibaba,
     _ => '',
   };

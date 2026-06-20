@@ -13,6 +13,7 @@ import '../../../mocks/mocks.dart';
 const _localProviderTypes = <InferenceProviderType>{
   InferenceProviderType.whisper,
   InferenceProviderType.ollama,
+  InferenceProviderType.omlx,
   InferenceProviderType.voxtral,
   InferenceProviderType.mlxAudio,
 };
@@ -282,7 +283,7 @@ void main() {
       );
       stubModelWithProvider(
         providerModelId: 'thinking-pro',
-        providerType: InferenceProviderType.ollama,
+        providerType: InferenceProviderType.omlx,
       );
       stubModelWithProvider(
         providerModelId: 'vision',
@@ -307,9 +308,13 @@ void main() {
       expect(await profileIsLocal(profile, repo), isTrue);
     });
 
-    test('voxtral and whisper count as local', () async {
+    test('oMLX, voxtral, and whisper count as local', () async {
       stubModelWithProvider(
         providerModelId: 'thinking-model',
+        providerType: InferenceProviderType.omlx,
+      );
+      stubModelWithProvider(
+        providerModelId: 'vision',
         providerType: InferenceProviderType.voxtral,
       );
       stubModelWithProvider(
@@ -317,7 +322,10 @@ void main() {
         providerType: InferenceProviderType.whisper,
       );
 
-      final profile = _profile(transcriptionModelId: 'asr');
+      final profile = _profile(
+        imageRecognitionModelId: 'vision',
+        transcriptionModelId: 'asr',
+      );
       expect(await profileIsLocal(profile, repo), isTrue);
     });
   });

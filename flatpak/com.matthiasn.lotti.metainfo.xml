@@ -16,7 +16,7 @@
     <ul>
       <li>Long-living AI agents (mission, soul, report directive) that read your logbook, propose changes, and only act after you approve</li>
       <li>Two-database architecture: a strict separation between your facts (the user database) and what the agents think (the agentic database), enforced on disk</li>
-      <li>Run reasoning-capable models locally via Ollama (e.g. Qwen 3.6 35B A3B, a Mixture-of-Experts model with ~3B active parameters) — or use Gemini Flash, OpenAI, Anthropic, Mistral, or any OpenAI-compatible cloud provider, on a per-category basis</li>
+      <li>Run reasoning-capable models locally via oMLX or Ollama (e.g. Qwen 3.6 35B A3B, a Mixture-of-Experts model with ~3B active parameters) — or use Gemini Flash, OpenAI, Anthropic, Mistral, or any OpenAI-compatible cloud provider, on a per-category basis</li>
       <li>Local voice transcription with Whisper or Voxtral; cloud transcription via Gemini, OpenAI, or Mistral</li>
       <li>AI-generated cover art for tasks via Nano Banana Pro on Gemini, OpenAI, or Qwen</li>
       <li>Both the logbook and the agentic state sync end-to-end encrypted</li>
@@ -42,6 +42,9 @@
     </release>
     <release version="0.9.1029" date="2026-06-19">
       <description>
+          <p>AI settings now include oMLX as a first-class local OpenAI-compatible provider. The Local Power profile defaults to Qwen 3.6 35B-A3B 4-bit via oMLX for both reasoning and image recognition. Sync-node capability detection also advertises reachable local oMLX instances for profile pinning.</p>
+          <p>AI settings also add a separate Local Gemma 4 (oMLX) profile backed by gemma-4-26B-A4B-it-QAT-MLX-4bit for both reasoning and image recognition, while keeping the Qwen-backed Local Power profile available as its own option.</p>
+          <p>Task and project agents now send leaner, more cache-friendly prompts to local models: open proposal details are no longer repeated in the same wake, linked task report timestamps are omitted, and trigger-token lists are rendered in a stable order.</p>
           <p>The experimental task knowledge graph now keeps expanding as you walk through project tasks. When you walk from a project to one of its tasks, Lotti loads that task's own linked neighbourhood, adds the new nodes and links to the graph already on screen, and recomputes the merged layout so the world stays explorable instead of turning sibling tasks into dead ends.</p>
       </description>
     </release>

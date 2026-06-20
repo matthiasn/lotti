@@ -57,7 +57,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   steps aside the instant you scroll.
 
 ## [0.9.1029]
+### Added
+- AI settings now include oMLX as a first-class local OpenAI-compatible
+  provider. The Local Power profile now defaults to Qwen 3.6 35B-A3B 4-bit via
+  oMLX for both reasoning and image recognition. Sync-node capability detection
+  also advertises reachable local oMLX instances for profile pinning.
+- Added a separate Local Gemma 4 (oMLX) profile backed by
+  `gemma-4-26B-A4B-it-QAT-MLX-4bit` for both reasoning and image recognition,
+  keeping the Qwen-backed Local Power profile available as its own option.
+
 ### Changed
+- Task and project agents now send leaner, more cache-friendly prompts to local
+  models: open proposal details are no longer repeated in the same wake, linked
+  task report timestamps are omitted, and trigger-token lists are rendered in a
+  stable order.
 - The experimental task knowledge graph now keeps expanding as you walk through
   project tasks. When you walk from a project to one of its tasks, Lotti loads
   that task's own linked neighborhood, adds the new nodes and links to the graph

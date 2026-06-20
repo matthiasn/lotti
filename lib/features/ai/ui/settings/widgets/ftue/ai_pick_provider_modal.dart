@@ -103,7 +103,7 @@ class AiPickProviderModal extends StatefulWidget {
 
   /// Default tile lineup matching the design: Gemini (RECOMMENDED) →
   /// OpenAI → Anthropic (NEW) → Alibaba (NEW) → MLX Audio (NEW) →
-  /// Ollama (DESKTOP ONLY) → Voxtral (DESKTOP ONLY).
+  /// oMLX (DESKTOP ONLY) → Ollama (DESKTOP ONLY) → Voxtral (DESKTOP ONLY).
   /// Alibaba lands before the local options so the embedded/desktop
   /// providers stay last in the list. Exposed as a static so tests can
   /// re-use the same spec the modal ships with without instantiating
@@ -126,6 +126,10 @@ class AiPickProviderModal extends StatefulWidget {
         AiPickProviderTileSpec(
           providerType: InferenceProviderType.mlxAudio,
           badge: AiPickProviderBadge.newcomer,
+        ),
+        AiPickProviderTileSpec(
+          providerType: InferenceProviderType.omlx,
+          badge: AiPickProviderBadge.desktopOnly,
         ),
         AiPickProviderTileSpec(
           providerType: InferenceProviderType.ollama,

@@ -58,51 +58,34 @@ extension _TaskAgentContextFormatters on TaskAgentContextBuilder {
   /// `retract_suggestions` with those fingerprints when a proposal is no
   /// longer relevant.
   ///
-  /// [includeResolved] selects the legacy full view (resolved verdicts
-  /// rendered here); with compaction on, resolved verdicts are
-  /// decision-tagged events in the task log instead, so this section carries
-  /// only the open (actionable) state.
+  /// [includeResolved] selects the legacy fallback view for resolved verdicts.
+  /// With compaction on, resolved verdicts are decision-tagged events in the
+  /// task log instead, and open proposal details render once in the guard near
+  /// the final instruction.
   String _formatProposalLedger(
     ProposalLedger ledger, {
     required bool includeResolved,
   }) {
     if (ledger.isEmpty) return '';
-    if (!includeResolved && ledger.open.isEmpty) return '';
+    if (!includeResolved) return '';
 
     final buffer = StringBuffer()
       ..writeln('## Proposal Ledger')
       ..writeln()
       ..writeln(
-        includeResolved
-            ? 'This is a complete record of suggestions you have produced '
-                  'for this task. Do not re-propose an identical OPEN item. '
-                  'If an OPEN item is no longer relevant (the current task '
-                  'state already matches it, or it duplicates another open '
-                  'proposal), call `retract_suggestions` with its '
-                  'fingerprint. For RESOLVED items, learn from the verdict: '
-                  'do not re-propose rejected items unless the task context '
-                  'has materially changed.'
-            : 'These are your OPEN suggestions for this task. Do not '
-                  're-propose an identical item. If one is no longer '
-                  'relevant (the current task state already matches it, or '
-                  'it duplicates another open proposal), call '
-                  '`retract_suggestions` with its fingerprint. Past '
-                  'verdicts appear as decision-tagged events in the Task Log: '
-                  'learn from them and do not re-propose rejected items '
-                  'unless the task context has materially changed.',
+        'This is a complete record of suggestions you have produced '
+        'for this task. Open proposal details are listed once in the '
+        '`## Open Proposal Guard` below. For RESOLVED items, learn from '
+        'the verdict: do not re-propose rejected items unless the task '
+        'context has materially changed.',
       )
       ..writeln()
       ..writeln('### Open (${ledger.open.length})')
       ..writeln(
         ledger.open.isEmpty
             ? '- (none)'
-            : ledger.open
-                  .map(
-                    (e) =>
-                        '- [fp=${e.fingerprint}] `${e.toolName}`: '
-                        '${e.humanSummary.trim()}',
-                  )
-                  .join('\n'),
+            : '- See `## Open Proposal Guard` below for open proposal '
+                  'fingerprints and summaries.',
       )
       ..writeln();
 

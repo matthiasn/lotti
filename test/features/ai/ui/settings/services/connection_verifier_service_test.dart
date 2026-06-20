@@ -665,6 +665,7 @@ void main() {
       InferenceProviderType.gemini,
       InferenceProviderType.openAi,
       InferenceProviderType.anthropic,
+      InferenceProviderType.omlx,
     ];
 
     glados.Glados3(
@@ -736,7 +737,7 @@ void main() {
     );
 
     test(
-      'OpenAI-compatible probe (OpenAI / OpenRouter / Mistral / Alibaba) '
+      'OpenAI-compatible probe (OpenAI / OpenRouter / Mistral / Alibaba / oMLX) '
       'targets `<baseUrl>/models` with a Bearer Authorization header',
       () async {
         http.BaseRequest? captured;
@@ -760,6 +761,36 @@ void main() {
         expect(captured, isNotNull);
         expect(captured!.url.path, '/v1/models');
         expect(captured!.headers['Authorization'], 'Bearer sk-test');
+      },
+    );
+
+    test(
+      'oMLX uses the OpenAI-compatible probe against the local default base',
+      () async {
+        http.BaseRequest? captured;
+        final container = _makeContainer(
+          client: MockClient((req) async {
+            captured = req;
+            return http.Response(jsonEncode({'data': <Object>[]}), 200);
+          }),
+        );
+        addTearDown(container.dispose);
+        await container
+            .read(
+              connectionVerifierControllerProvider(
+                InferenceProviderType.omlx,
+              ).notifier,
+            )
+            .verify(
+              baseUrl: 'http://127.0.0.1:8003/v1',
+              apiKey: 'omlx-local-key',
+            );
+        expect(captured, isNotNull);
+        expect(captured!.url.toString(), 'http://127.0.0.1:8003/v1/models');
+        expect(
+          captured!.headers['Authorization'],
+          'Bearer omlx-local-key',
+        );
       },
     );
 

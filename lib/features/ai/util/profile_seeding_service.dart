@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:meta/meta.dart';
 
 /// Well-known IDs for default inference profiles (idempotent seeding).
@@ -16,10 +17,15 @@ const profileAlibabaId = 'profile-alibaba-001';
 const profileAnthropicId = 'profile-anthropic-001';
 const profileLocalId = 'profile-local-001';
 const profileLocalPowerId = 'profile-local-power-001';
+const profileLocalGemmaOmlxId = 'profile-local-gemma-omlx-001';
 const profileLocalGemmaId = 'profile-local-gemma-001';
 const profileLocalGemmaPowerId = 'profile-local-gemma-power-001';
 
 const _logTag = 'ProfileSeedingService';
+const _localPowerName = 'Local Power (oMLX)';
+const _legacyLocalPowerName = 'Local Power (Ollama)';
+const _legacyLocalPowerThinkingModelId = 'qwen3.6:35b-a3b-coding-nvfp4';
+const _legacyLocalPowerImageModelId = 'qwen3.5:27b';
 
 /// Default skill assignments for profiles with transcription + image
 /// recognition model slots. Uses `skillTranscribeContextId` which has
@@ -40,9 +46,9 @@ const _mistralSkillAssignments = [
 /// Seeds default inference profiles into the AI config database.
 ///
 /// Strictly seed-on-create: each profile is checked by ID and only written
-/// when missing. Existing profiles are never overwritten — user edits to
-/// model slots, flags, names, and skill assignments survive across restarts
-/// and app upgrades.
+/// when missing. Existing profiles are not overwritten during seeding; targeted
+/// upgrade migrations live in [upgradeExisting] and preserve user-authored
+/// model slots, flags, names, and skill assignments.
 class ProfileSeedingService {
   const ProfileSeedingService({
     required AiConfigRepository aiConfigRepository,
@@ -77,8 +83,9 @@ class ProfileSeedingService {
   /// Upgrades existing profiles without overwriting user-authored choices.
   ///
   /// This migrates legacy provider-native profile slot values to
-  /// `AiConfigModel.id` when the match is unambiguous, then backfills default
-  /// skill assignments only for default profiles whose assignments are empty.
+  /// `AiConfigModel.id` when the match is unambiguous, migrates the untouched
+  /// old Local Power seed from Ollama to oMLX, then backfills default skill
+  /// assignments only for default profiles whose assignments are empty.
   Future<void> upgradeExisting() async {
     var upgradedCount = 0;
     final models = await _fetchModelRows();
@@ -88,7 +95,8 @@ class ProfileSeedingService {
     final configs = await _repo.getConfigsByType(AiConfigType.inferenceProfile);
 
     for (final config in configs.whereType<AiConfigInferenceProfile>()) {
-      var upgraded = _withResolvedModelConfigIds(config, models);
+      var upgraded = _withMigratedLegacyLocalPowerSeed(config, models);
+      upgraded = _withResolvedModelConfigIds(upgraded, models);
       final template = templatesById[config.id];
 
       // Only backfill default skill assignments for default profiles with
@@ -120,6 +128,57 @@ class ProfileSeedingService {
         name: _logTag,
       );
     }
+  }
+
+  static AiConfigInferenceProfile _withMigratedLegacyLocalPowerSeed(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    if (!_isUntouchedLegacyLocalPowerSeed(profile, models)) return profile;
+
+    return profile.copyWith(
+      name: _localPowerName,
+      thinkingModelId: omlxRecommendedMultimodalModelId,
+      imageRecognitionModelId: omlxRecommendedMultimodalModelId,
+    );
+  }
+
+  static bool _isUntouchedLegacyLocalPowerSeed(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    return profile.id == profileLocalPowerId &&
+        profile.name == _legacyLocalPowerName &&
+        profile.description == null &&
+        profile.thinkingHighEndModelId == null &&
+        _slotMatchesProviderModelId(
+          profile.thinkingModelId,
+          _legacyLocalPowerThinkingModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.imageRecognitionModelId,
+          _legacyLocalPowerImageModelId,
+          models,
+        ) &&
+        profile.transcriptionModelId == null &&
+        profile.imageGenerationModelId == null &&
+        !profile.isDefault &&
+        profile.desktopOnly &&
+        profile.skillAssignments.isEmpty &&
+        profile.pinnedHostId == null;
+  }
+
+  static bool _slotMatchesProviderModelId(
+    String? slotValue,
+    String providerModelId,
+    List<AiConfigModel> models,
+  ) {
+    if (slotValue == providerModelId) return true;
+    return models.any(
+      (model) =>
+          model.id == slotValue && model.providerModelId == providerModelId,
+    );
   }
 
   Future<List<AiConfigModel>> _fetchModelRows() async {
@@ -322,9 +381,17 @@ class ProfileSeedingService {
     ),
     AiConfigInferenceProfile(
       id: profileLocalPowerId,
-      name: 'Local Power (Ollama)',
-      thinkingModelId: 'qwen3.6:35b-a3b-coding-nvfp4',
-      imageRecognitionModelId: 'qwen3.5:27b',
+      name: _localPowerName,
+      thinkingModelId: omlxRecommendedMultimodalModelId,
+      imageRecognitionModelId: omlxRecommendedMultimodalModelId,
+      desktopOnly: true,
+      createdAt: DateTime(2026),
+    ),
+    AiConfigInferenceProfile(
+      id: profileLocalGemmaOmlxId,
+      name: 'Local Gemma 4 (oMLX)',
+      thinkingModelId: omlxGemma426BA4BItQatMlx4BitModelId,
+      imageRecognitionModelId: omlxGemma426BA4BItQatMlx4BitModelId,
       desktopOnly: true,
       createdAt: DateTime(2026),
     ),

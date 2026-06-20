@@ -188,6 +188,13 @@ void main() {
       );
       expect(
         aiProviderDisplayName(
+          type: InferenceProviderType.omlx,
+          messages: messages,
+        ),
+        equals('oMLX (local)'),
+      );
+      expect(
+        aiProviderDisplayName(
           type: InferenceProviderType.mlxAudio,
           messages: messages,
         ),
@@ -205,6 +212,7 @@ void main() {
           InferenceProviderType.openAi,
           InferenceProviderType.anthropic,
           InferenceProviderType.ollama,
+          InferenceProviderType.omlx,
           InferenceProviderType.alibaba,
           InferenceProviderType.mlxAudio,
         };
@@ -250,12 +258,13 @@ void main() {
         aiProviderIcon(InferenceProviderType.openAi),
         aiProviderIcon(InferenceProviderType.anthropic),
         aiProviderIcon(InferenceProviderType.ollama),
+        aiProviderIcon(InferenceProviderType.omlx),
         aiProviderIcon(InferenceProviderType.mistral),
         aiProviderIcon(InferenceProviderType.alibaba),
       };
       expect(
         icons.length,
-        equals(6),
+        equals(7),
         reason: 'Each named provider should have a distinct icon glyph',
       );
     });
@@ -336,12 +345,13 @@ void main() {
     );
 
     test(
-      'local-only providers (Ollama / Whisper / Voxtral), generic OpenAI '
+      'local-only providers (Ollama / oMLX / Whisper / Voxtral), generic OpenAI '
       '(arbitrary user-supplied endpoint), and a null type resolve to null '
       '— there is no public console URL to link to.',
       () {
         for (final type in const [
           InferenceProviderType.ollama,
+          InferenceProviderType.omlx,
           InferenceProviderType.mlxAudio,
           InferenceProviderType.whisper,
           InferenceProviderType.voxtral,

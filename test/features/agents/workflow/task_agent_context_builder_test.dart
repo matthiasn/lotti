@@ -288,6 +288,7 @@ void main() {
       expect(row['taskAgentId'], 'agent-child');
       expect(row['latestTaskAgentReportOneLiner'], 'On track.');
       expect(row['latestTaskAgentReportTldr'], 'Done with phase 1.');
+      expect(row.containsKey('latestTaskAgentReportCreatedAt'), isFalse);
     });
   });
 
@@ -391,18 +392,21 @@ void main() {
       expect(result.text, contains('## Linked Tasks'));
     });
 
-    test('adds first-wake notice and trigger tokens', () async {
+    test('adds first-wake notice and sorted trigger tokens', () async {
       final result = await build(
         hasReport: false,
-        triggerTokens: const {'tok-1'},
+        triggerTokens: const {'tok-2', 'tok-1'},
       );
 
       expect(result.text, contains('## First Wake'));
       expect(result.text, contains('## Changed Since Last Wake'));
-      expect(result.text, contains('tok-1'));
+      expect(
+        result.text,
+        contains('The following entity IDs changed: tok-1, tok-2'),
+      );
     });
 
-    test('renders open proposals and the open-proposal guard', () async {
+    test('renders each open proposal detail only in the guard', () async {
       final ledger = makeProposalLedger(
         open: [makeLedgerEntry(humanSummary: 'Bump priority to P1')],
       );
@@ -410,9 +414,32 @@ void main() {
       final result = await build(ledger: ledger);
 
       expect(result.text, contains('## Proposal Ledger'));
-      expect(result.text, contains('Bump priority to P1'));
+      expect(result.text, contains('### Open (1)'));
+      expect(
+        result.text,
+        contains('See `## Open Proposal Guard` below'),
+      );
       expect(result.text, contains('## Open Proposal Guard'));
+      expect(_countOccurrences(result.text, 'Bump priority to P1'), 1);
     });
+
+    test(
+      'omits the proposal ledger when the compacted log has verdicts',
+      () async {
+        final ledger = makeProposalLedger(
+          open: [makeLedgerEntry(humanSummary: 'Bump priority to P1')],
+        );
+
+        final result = await build(
+          compactedTaskLog: '- [decision] user rejected old proposal',
+          ledger: ledger,
+        );
+
+        expect(result.text, isNot(contains('## Proposal Ledger')));
+        expect(result.text, contains('## Open Proposal Guard'));
+        expect(_countOccurrences(result.text, 'Bump priority to P1'), 1);
+      },
+    );
 
     test('surfaces prior critical grievance observations', () async {
       final observation = makeTestMessage(contentEntryId: 'p1');
@@ -481,4 +508,15 @@ void main() {
       expect(result.text, contains('current text: "Working on it"'));
     });
   });
+}
+
+int _countOccurrences(String haystack, String needle) {
+  if (needle.isEmpty) return 0;
+  var count = 0;
+  var index = haystack.indexOf(needle);
+  while (index != -1) {
+    count++;
+    index = haystack.indexOf(needle, index + needle.length);
+  }
+  return count;
 }

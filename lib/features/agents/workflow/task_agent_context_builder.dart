@@ -199,7 +199,6 @@ class TaskAgentContextBuilder {
               agentId: link.fromId,
               oneLiner: report.oneLiner,
               tldr: report.tldr,
-              createdAt: report.createdAt,
             );
             break;
           }
@@ -226,8 +225,6 @@ class TaskAgentContextBuilder {
         row['taskAgentId'] = linkedReport.agentId;
         row['latestTaskAgentReportOneLiner'] = linkedReport.oneLiner;
         row['latestTaskAgentReportTldr'] = linkedReport.tldr;
-        row['latestTaskAgentReportCreatedAt'] = linkedReport.createdAt
-            .toIso8601String();
       }
 
       return const JsonEncoder.withIndent('    ').convert(<String, dynamic>{
@@ -545,11 +542,11 @@ class TaskAgentContextBuilder {
     // header above to keep that header byte-identical and prefix-cacheable. ---
 
     // Parent-project and linked-task summaries embed OTHER agents' latest
-    // reports (their oneLiner / tldr / createdAt), which change out-of-band
-    // with this task's wakes (ADR 0027). They live here in the volatile tail —
-    // never in the stable prefix — so a neighbor's republish cannot void this
-    // task's warm log/prefix cache. Placed ahead of the ticking task-state so
-    // they remain cacheable within the tail on wakes where no neighbor changed.
+    // reports (their oneLiner / tldr), which change out-of-band with this
+    // task's wakes (ADR 0027). They live here in the volatile tail — never in
+    // the stable prefix — so a neighbor's republish cannot void this task's
+    // warm log/prefix cache. Placed ahead of the ticking task-state so they
+    // remain cacheable within the tail on wakes where no neighbor changed.
     if (projectContextJson.isNotEmpty && projectContextJson != '{}') {
       buffer
         ..writeln('## Parent Project Context')
@@ -588,15 +585,16 @@ class TaskAgentContextBuilder {
       buffer.write(editableTimeEntriesSection);
     }
 
-    // Proposal ledger. In compacted mode only the OPEN proposals render here
-    // — they are current state (fingerprints for `retract_suggestions`,
-    // same-wake dedup) — while resolved verdicts live in the `## Task Log`
-    // as decision-tagged events that fold into summaries. Legacy mode keeps
-    // the full status-sorted view including resolved history.
-    if (!ledger.isEmpty) {
-      buffer.writeln(
-        _formatProposalLedger(ledger, includeResolved: !useCompactedLog),
-      );
+    // In compacted mode, resolved verdicts live in the `## Task Log` as
+    // decision-tagged events and open proposal details render once in the
+    // guard near the final instruction. Legacy fallback mode keeps a bounded
+    // resolved-history ledger because it lacks the compacted decision events.
+    final proposalLedgerSection = _formatProposalLedger(
+      ledger,
+      includeResolved: !useCompactedLog,
+    );
+    if (proposalLedgerSection.isNotEmpty) {
+      buffer.write(proposalLedgerSection);
     }
 
     final attentionSection = _formatTaskAttentionRequests(
@@ -665,10 +663,12 @@ class TaskAgentContextBuilder {
     }
 
     if (triggerTokens.isNotEmpty) {
+      final sortedTriggerTokens = triggerTokens.toList()..sort();
       buffer
         ..writeln('## Changed Since Last Wake')
         ..writeln(
-          'The following entity IDs changed: ${triggerTokens.join(", ")}',
+          'The following entity IDs changed: '
+          '${sortedTriggerTokens.join(", ")}',
         )
         ..writeln();
     }
@@ -767,11 +767,9 @@ class _LinkedTaskAgentReport {
     required this.agentId,
     required this.oneLiner,
     required this.tldr,
-    required this.createdAt,
   });
 
   final String agentId;
   final String? oneLiner;
   final String? tldr;
-  final DateTime createdAt;
 }

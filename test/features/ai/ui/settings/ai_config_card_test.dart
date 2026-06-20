@@ -428,6 +428,7 @@ void main() {
           InferenceProviderType.ollama: Icons.computer,
           InferenceProviderType.genericOpenAi: Icons.cloud,
           InferenceProviderType.nebiusAiStudio: Icons.rocket_launch,
+          InferenceProviderType.omlx: Icons.developer_board_rounded,
           InferenceProviderType.mlxAudio: Icons.memory_rounded,
           InferenceProviderType.whisper: Icons.mic,
           InferenceProviderType.voxtral: Icons.graphic_eq,

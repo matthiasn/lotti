@@ -100,15 +100,15 @@ class AiSettingsFtueBanner extends StatelessWidget {
 /// │      Add one to unlock transcription, image recognition,      │
 /// │            image generation, and semantic search.             │
 /// │                                                               │
-/// │ [Gemini] [OpenAI] [Anthropic] [Alibaba] [mlxAudio] [Ollama] │
+/// │ [Gemini] [OpenAI] [Anthropic] [Alibaba] [MLX Audio] [oMLX] [Ollama] │
 /// └──────────────────────────────────────────────────────────────┘
 /// ```
 ///
-/// One row of five compact provider chips inside a single wrapper —
+/// One row of compact provider chips inside a single wrapper —
 /// NOT a grid of large tiles. Each chip taps into
 /// `InferenceProviderEditPage(preselectedType: ...)` so the user lands
-/// on the connect form with one tap. Mistral is reachable from the
-/// page-level "+ Add provider" button.
+/// on the connect form with one tap. Additional providers are reachable from
+/// the page-level "+ Add provider" button.
 class AiSettingsNoProvidersCard extends StatelessWidget {
   const AiSettingsNoProvidersCard({
     required this.onProviderChipTap,
@@ -123,6 +123,7 @@ class AiSettingsNoProvidersCard extends StatelessWidget {
     InferenceProviderType.anthropic,
     InferenceProviderType.alibaba,
     InferenceProviderType.mlxAudio,
+    InferenceProviderType.omlx,
     InferenceProviderType.ollama,
   ];
 

@@ -1229,7 +1229,7 @@ void main() {
         expect(capturedMessage, contains('task-agent-1'));
         expect(
           capturedMessage,
-          contains(DateTime(2024, 6, 21, 9, 30).toIso8601String()),
+          isNot(contains('latestTaskAgentReportCreatedAt')),
         );
         // …but the full report body is trimmed out to save prefill.
         expect(capturedMessage, isNot(contains('Detailed task report')));

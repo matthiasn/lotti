@@ -11,8 +11,11 @@ part 'sync_node_profile.g.dart';
 /// `ollamaLlm` deliberately carries a semantic suffix because future Ollama
 /// integrations (embeddings, image) may warrant separate capability tokens
 /// without requiring a `NodeCapability.ollama` rename across stored snapshots.
+/// `omlxLlm` follows the same pattern for the local OpenAI-compatible oMLX
+/// runtime.
 enum NodeCapability {
   mlxAudio,
+  omlxLlm,
   ollamaLlm,
   voxtral,
   whisper;
@@ -25,6 +28,8 @@ enum NodeCapability {
     switch (this) {
       case NodeCapability.mlxAudio:
         return InferenceProviderType.mlxAudio;
+      case NodeCapability.omlxLlm:
+        return InferenceProviderType.omlx;
       case NodeCapability.ollamaLlm:
         return InferenceProviderType.ollama;
       case NodeCapability.voxtral:
@@ -44,6 +49,8 @@ NodeCapability? nodeCapabilityFromProviderType(
   switch (providerType) {
     case InferenceProviderType.mlxAudio:
       return NodeCapability.mlxAudio;
+    case InferenceProviderType.omlx:
+      return NodeCapability.omlxLlm;
     case InferenceProviderType.ollama:
       return NodeCapability.ollamaLlm;
     case InferenceProviderType.voxtral:

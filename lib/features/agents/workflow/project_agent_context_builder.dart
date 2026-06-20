@@ -273,11 +273,12 @@ immediately.''';
     }
 
     if (triggerTokens.isNotEmpty) {
+      final sortedTriggerTokens = triggerTokens.toList()..sort();
       buf
         ..writeln()
         ..writeln('## Trigger Tokens')
         ..writeln()
-        ..writeln(triggerTokens.join(', '));
+        ..writeln(sortedTriggerTokens.join(', '));
     }
 
     return (text: buf.toString(), logStart: logStart, logEnd: logEnd);
@@ -424,8 +425,6 @@ immediately.''';
             row['taskAgentId'] = link.fromId;
             row['latestTaskAgentReportOneLiner'] = report.oneLiner;
             row['latestTaskAgentReportTldr'] = report.tldr;
-            row['latestTaskAgentReportCreatedAt'] = report.createdAt
-                .toIso8601String();
             break;
           }
         }

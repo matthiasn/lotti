@@ -15,6 +15,7 @@ void main() {
             InferenceProviderType.mistral,
             InferenceProviderType.mlxAudio,
             InferenceProviderType.nebiusAiStudio,
+            InferenceProviderType.omlx,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
             InferenceProviderType.anthropic,
@@ -63,6 +64,13 @@ void main() {
           equals('https://openrouter.ai/api/v1'),
         );
       });
+
+      test('should have correct URL for oMLX', () {
+        expect(
+          ProviderConfig.defaultBaseUrls[InferenceProviderType.omlx],
+          equals('http://127.0.0.1:8003/v1'),
+        );
+      });
     });
 
     group('defaultNames', () {
@@ -76,6 +84,7 @@ void main() {
             InferenceProviderType.mistral,
             InferenceProviderType.mlxAudio,
             InferenceProviderType.nebiusAiStudio,
+            InferenceProviderType.omlx,
             InferenceProviderType.ollama,
             InferenceProviderType.openAi,
             InferenceProviderType.anthropic,
@@ -116,6 +125,13 @@ void main() {
           equals('OpenRouter'),
         );
       });
+
+      test('should have correct name for oMLX', () {
+        expect(
+          ProviderConfig.defaultNames[InferenceProviderType.omlx],
+          equals('oMLX (local)'),
+        );
+      });
     });
 
     group('noApiKeyRequired', () {
@@ -152,6 +168,11 @@ void main() {
         expect(
           ProviderConfig.noApiKeyRequired,
           isNot(contains(InferenceProviderType.genericOpenAi)),
+        );
+        // oMLX is local but OpenAI-compatible deployments can be key-protected.
+        expect(
+          ProviderConfig.noApiKeyRequired,
+          isNot(contains(InferenceProviderType.omlx)),
         );
       });
     });

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -12,6 +13,8 @@ void main() {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
             true,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
       );
 
       final profile = await probe(hostId: 'h1', now: now);
@@ -23,11 +26,39 @@ void main() {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
             false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
       );
 
       final profile = await probe(hostId: 'h1', now: now);
 
       expect(profile.capabilities, isNot(contains(NodeCapability.ollamaLlm)));
+    });
+
+    test('claims omlxLlm when the oMLX probe succeeds', () async {
+      final probe = makeDefaultSyncNodeCapabilityProbe(
+        ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            true,
+      );
+
+      final profile = await probe(hostId: 'h1', now: now);
+
+      expect(profile.capabilities, contains(NodeCapability.omlxLlm));
+    });
+
+    test('does NOT claim omlxLlm when the oMLX probe fails', () async {
+      final probe = makeDefaultSyncNodeCapabilityProbe(
+        ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+      );
+
+      final profile = await probe(hostId: 'h1', now: now);
+
+      expect(profile.capabilities, isNot(contains(NodeCapability.omlxLlm)));
     });
 
     test(
@@ -36,6 +67,8 @@ void main() {
         final probe = makeDefaultSyncNodeCapabilityProbe(
           ollamaProbe:
               ({Duration timeout = const Duration(seconds: 1)}) async => false,
+          omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+              false,
         );
 
         final profile = await probe(hostId: 'h1', now: now);
@@ -60,6 +93,8 @@ void main() {
         final probe = makeDefaultSyncNodeCapabilityProbe(
           ollamaProbe:
               ({Duration timeout = const Duration(seconds: 1)}) async => true,
+          omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+              true,
         );
 
         final profile = await probe(hostId: 'h1', now: now);
@@ -77,6 +112,8 @@ void main() {
         final probe = makeDefaultSyncNodeCapabilityProbe(
           ollamaProbe:
               ({Duration timeout = const Duration(seconds: 1)}) async => true,
+          omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+              true,
         );
 
         final first = await probe(hostId: 'h1', now: now);
@@ -90,6 +127,8 @@ void main() {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
             false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
       );
 
       final profile = await probe(hostId: 'h1', now: now);
@@ -100,6 +139,8 @@ void main() {
     test('keeps user-supplied displayName over the probe default', () async {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
             false,
       );
 
@@ -116,6 +157,8 @@ void main() {
       final probe = makeDefaultSyncNodeCapabilityProbe(
         ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
             false,
+        omlxProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
       );
 
       final withVersion = await probe(
@@ -129,5 +172,165 @@ void main() {
       final withoutVersion = await probe(hostId: 'h1', now: now);
       expect(withoutVersion.appVersion, isNull);
     });
+
+    test(
+      'default probe path returns a profile from real reachability probes',
+      () async {
+        final profile = await defaultSyncNodeCapabilityProbe(
+          hostId: 'h-default',
+          now: now,
+          displayName: 'Default Probe Host',
+          appVersion: '2.0.0+1',
+        );
+
+        expect(profile.hostId, 'h-default');
+        expect(profile.displayName, 'Default Probe Host');
+        expect(profile.appVersion, '2.0.0+1');
+        expect(profile.platform, Platform.operatingSystem);
+      },
+    );
   });
+
+  group('probeHttpReachability', () {
+    test('returns true for accepted response statuses', () async {
+      final uri = Uri.parse('http://127.0.0.1:8003/models');
+      final client = _FakeProbeHttpClient(
+        responseStatusCode: HttpStatus.forbidden,
+      );
+
+      final reachable = await _runWithFakeHttpClient(
+        client: client,
+        probe: () => probeHttpReachability(
+          uri: uri,
+          timeout: const Duration(seconds: 1),
+          acceptsStatusCode: (statusCode) => statusCode == HttpStatus.forbidden,
+        ),
+      );
+
+      expect(reachable, isTrue);
+      expect(client.requestedUris, [uri]);
+      expect(client.connectionTimeout, const Duration(seconds: 1));
+      expect(client.closeForceValues, [true]);
+    });
+
+    test('returns false for rejected response statuses', () async {
+      final uri = Uri.parse('http://127.0.0.1:11434/api/version');
+      final client = _FakeProbeHttpClient(
+        responseStatusCode: HttpStatus.internalServerError,
+      );
+
+      final reachable = await _runWithFakeHttpClient(
+        client: client,
+        probe: () => probeHttpReachability(
+          uri: uri,
+          timeout: const Duration(seconds: 1),
+          acceptsStatusCode: (statusCode) =>
+              statusCode >= 200 && statusCode < 300,
+        ),
+      );
+
+      expect(reachable, isFalse);
+      expect(client.requestedUris, [uri]);
+      expect(client.closeForceValues, [true]);
+    });
+
+    test('returns false when the endpoint is unavailable', () async {
+      final uri = Uri.parse('http://127.0.0.1:11434/api/version');
+      final client = _FakeProbeHttpClient(
+        exception: const SocketException('connection refused'),
+      );
+
+      final reachable = await _runWithFakeHttpClient(
+        client: client,
+        probe: () => probeHttpReachability(
+          uri: uri,
+          timeout: const Duration(milliseconds: 100),
+          acceptsStatusCode: (_) => true,
+        ),
+      );
+
+      expect(reachable, isFalse);
+      expect(client.requestedUris, [uri]);
+      expect(client.closeForceValues, [true]);
+    });
+  });
+}
+
+Future<bool> _runWithFakeHttpClient({
+  required _FakeProbeHttpClient client,
+  required Future<bool> Function() probe,
+}) {
+  return HttpOverrides.runZoned(
+    probe,
+    createHttpClient: (_) => client,
+  );
+}
+
+class _FakeProbeHttpClient implements HttpClient {
+  _FakeProbeHttpClient({this.responseStatusCode, this.exception});
+
+  final int? responseStatusCode;
+  final Exception? exception;
+  final requestedUris = <Uri>[];
+  final closeForceValues = <bool>[];
+
+  @override
+  Duration? connectionTimeout;
+
+  @override
+  Future<HttpClientRequest> getUrl(Uri url) async {
+    requestedUris.add(url);
+    final exception = this.exception;
+    if (exception != null) throw exception;
+
+    return _FakeProbeHttpClientRequest(responseStatusCode!);
+  }
+
+  @override
+  void close({bool force = false}) {
+    closeForceValues.add(force);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeProbeHttpClientRequest implements HttpClientRequest {
+  _FakeProbeHttpClientRequest(this.statusCode);
+
+  final int statusCode;
+
+  @override
+  Future<HttpClientResponse> close() async {
+    return _FakeProbeHttpClientResponse(statusCode);
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FakeProbeHttpClientResponse extends Stream<List<int>>
+    implements HttpClientResponse {
+  _FakeProbeHttpClientResponse(this.statusCode);
+
+  @override
+  final int statusCode;
+
+  @override
+  StreamSubscription<List<int>> listen(
+    void Function(List<int> event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) {
+    return const Stream<List<int>>.empty().listen(
+      onData,
+      onError: onError,
+      onDone: onDone,
+      cancelOnError: cancelOnError,
+    );
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

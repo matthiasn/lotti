@@ -3,7 +3,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 
 /// True iff every populated model id on [profile] resolves to a local
-/// inference provider (`ollama`, `voxtral`, `whisper`, `mlxAudio`).
+/// inference provider (`ollama`, `omlx`, `voxtral`, `whisper`, `mlxAudio`).
 ///
 /// Operates on the raw [AiConfigInferenceProfile] (not on a `ResolvedProfile`)
 /// because `ProfileResolver` silently drops optional slots whose provider

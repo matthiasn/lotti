@@ -2989,6 +2989,18 @@ abstract class AppLocalizations {
   /// **'Ollama'**
   String get aiProviderOllamaName;
 
+  /// No description provided for @aiProviderOmlxDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Local OpenAI-compatible oMLX inference for MLX models'**
+  String get aiProviderOmlxDescription;
+
+  /// No description provided for @aiProviderOmlxName.
+  ///
+  /// In en, this message translates to:
+  /// **'oMLX (local)'**
+  String get aiProviderOmlxName;
+
   /// No description provided for @aiProviderOpenAiDescription.
   ///
   /// In en, this message translates to:
@@ -3072,6 +3084,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Runs locally · no cloud calls'**
   String get aiProviderTaglineOllama;
+
+  /// No description provided for @aiProviderTaglineOmlx.
+  ///
+  /// In en, this message translates to:
+  /// **'Local MLX inference · OpenAI-compatible'**
+  String get aiProviderTaglineOmlx;
 
   /// No description provided for @aiProviderTaglineOpenAi.
   ///
@@ -12816,6 +12834,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Ollama LLM'**
   String get settingsSyncNodeProfileCapabilityOllamaLlm;
+
+  /// No description provided for @settingsSyncNodeProfileCapabilityOmlxLlm.
+  ///
+  /// In en, this message translates to:
+  /// **'oMLX LLM'**
+  String get settingsSyncNodeProfileCapabilityOmlxLlm;
 
   /// No description provided for @settingsSyncNodeProfileCapabilityVoxtral.
   ///

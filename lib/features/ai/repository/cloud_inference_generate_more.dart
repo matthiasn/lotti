@@ -408,6 +408,7 @@ class CloudInferenceGenerateMore {
       case InferenceProviderType.mistral:
       case InferenceProviderType.mlxAudio:
       case InferenceProviderType.nebiusAiStudio:
+      case InferenceProviderType.omlx:
       case InferenceProviderType.openAi:
       case InferenceProviderType.openRouter:
       case InferenceProviderType.ollama:

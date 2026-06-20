@@ -19,6 +19,7 @@ enum InferenceProviderType {
   mistral,
   mlxAudio,
   nebiusAiStudio,
+  omlx,
   openAi,
   openRouter,
   ollama,

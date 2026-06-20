@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -299,6 +300,123 @@ void main() {
           upgraded.skillAssignments.map((a) => a.skillId),
           contains(skillTranscribeContextId),
         );
+      },
+    );
+
+    test(
+      'migrates untouched legacy Local Power seed values to oMLX',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'model-omlx-qwen36',
+              providerModelId: omlxRecommendedMultimodalModelId,
+            ),
+          ],
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileLocalPowerId,
+              name: 'Local Power (Ollama)',
+              thinkingModelId: 'qwen3.6:35b-a3b-coding-nvfp4',
+              imageRecognitionModelId: 'qwen3.5:27b',
+              desktopOnly: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+
+        expect(upgraded.id, profileLocalPowerId);
+        expect(upgraded.name, 'Local Power (oMLX)');
+        expect(upgraded.thinkingModelId, 'model-omlx-qwen36');
+        expect(upgraded.imageRecognitionModelId, 'model-omlx-qwen36');
+        expect(upgraded.desktopOnly, isTrue);
+        expect(upgraded.isDefault, isFalse);
+      },
+    );
+
+    test(
+      'migrates previously resolved legacy Local Power slots to oMLX',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer(
+          (_) async => [
+            AiTestDataFactory.createTestModel(
+              id: 'model-old-qwen36',
+              providerModelId: 'qwen3.6:35b-a3b-coding-nvfp4',
+            ),
+            AiTestDataFactory.createTestModel(
+              id: 'model-old-qwen35',
+              providerModelId: 'qwen3.5:27b',
+            ),
+            AiTestDataFactory.createTestModel(
+              id: 'model-omlx-qwen36',
+              providerModelId: omlxRecommendedMultimodalModelId,
+            ),
+          ],
+        );
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileLocalPowerId,
+              name: 'Local Power (Ollama)',
+              thinkingModelId: 'model-old-qwen36',
+              imageRecognitionModelId: 'model-old-qwen35',
+              desktopOnly: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        final captured = verify(
+          () => mockRepo.saveConfig(captureAny(that: isA<AiConfig>())),
+        ).captured;
+        final upgraded = captured.single as AiConfigInferenceProfile;
+
+        expect(upgraded.name, 'Local Power (oMLX)');
+        expect(upgraded.thinkingModelId, 'model-omlx-qwen36');
+        expect(upgraded.imageRecognitionModelId, 'model-omlx-qwen36');
+      },
+    );
+
+    test(
+      'preserves user-edited Local Power profiles during oMLX migration',
+      () async {
+        when(
+          () => mockRepo.getConfigsByType(AiConfigType.inferenceProfile),
+        ).thenAnswer(
+          (_) async => [
+            AiConfig.inferenceProfile(
+              id: profileLocalPowerId,
+              name: 'Local Power (Ollama)',
+              thinkingModelId: 'custom-local-model',
+              imageRecognitionModelId: 'qwen3.5:27b',
+              desktopOnly: true,
+              createdAt: DateTime(2026),
+            ),
+          ],
+        );
+
+        await service.upgradeExisting();
+
+        verifyNever(() => mockRepo.saveConfig(any()));
       },
     );
 

@@ -3985,7 +3985,7 @@ void main() {
         }
 
         test(
-          'renders a single ## Proposal Ledger section with fingerprints',
+          'renders open proposal details once with fingerprints',
           () async {
             stubLedger(
               ProposalLedger(
@@ -4007,17 +4007,20 @@ void main() {
             // The unified section replaces the legacy split.
             expect(message, isNot(contains('## Recent User Decisions')));
             expect(message, isNot(contains('## Pending Proposals')));
-            // Open items carry a fingerprint so the agent can retract them.
             final expectedFingerprint = ChangeItem.fingerprintFromParts(
               'set_task_title',
               const {'title': 'New Title'},
             );
             expect(message, contains('[fp=$expectedFingerprint]'));
+            expect(message, contains('### Open (1)'));
             expect(
               message,
-              contains('`set_task_title`: Rename task to "New Title"'),
+              contains('See `## Open Proposal Guard` below'),
             );
-            expect(message, contains('### Open (1)'));
+            final renderedOpenEntry =
+                '- [fp=$expectedFingerprint] `set_task_title`: '
+                'Rename task to "New Title"';
+            expect(_countOccurrences(message!, renderedOpenEntry), 1);
           },
         );
 
@@ -4077,6 +4080,7 @@ void main() {
             final guardEntry =
                 '- [fp=$expectedFingerprint] `update_checklist_item`: '
                 'Check off: "Address review comments"';
+            expect(_countOccurrences(message, guardEntry), 1);
             final guardEntryIndex = message.indexOf(guardEntry, guardIndex);
             expect(guardEntryIndex, greaterThan(guardIndex));
             expect(finalInstructionIndex, greaterThan(guardEntryIndex));
@@ -6786,7 +6790,7 @@ void main() {
       });
 
       test('resolved verdicts render as decision events in the task log; '
-          'the ledger section keeps only open proposals', () async {
+          'open proposal details render only in the guard', () async {
         const tailContent = {'entryType': 'text', 'text': 'captured note'};
         final tailDigest = ContentDigest.of(tailContent);
         when(
@@ -6841,7 +6845,7 @@ void main() {
           agentId: agentId,
           taskId: taskId,
         );
-        // One open proposal (state — must stay in the ledger section) and one
+        // One open proposal (state — must stay in the guard) and one
         // resolved verdict (event — must move into the task log).
         when(
           () => mockAgentRepository.getProposalLedger(
@@ -6940,9 +6944,15 @@ void main() {
           userText.indexOf('(id: cs-1:0, decision)'),
           lessThan(userText.indexOf('captured note')),
         );
-        // The ledger section keeps only the open (actionable) state.
-        expect(userText, contains('### Open (1)'));
+        // The guard carries the open (actionable) state once; compacted
+        // prompts do not duplicate it through a separate Proposal Ledger.
+        expect(userText, isNot(contains('## Proposal Ledger')));
+        expect(userText, contains('## Open Proposal Guard'));
         expect(userText, contains('[fp=update_task_estimate:7]'));
+        expect(
+          _countOccurrences(userText, '[fp=update_task_estimate:7]'),
+          1,
+        );
         expect(userText, isNot(contains('### Resolved')));
       });
 
@@ -7433,6 +7443,17 @@ class _ThrowingCaptureService implements AgentInputCaptureService {
   }) async {
     throw StateError('capture boom');
   }
+}
+
+int _countOccurrences(String haystack, String needle) {
+  if (needle.isEmpty) return 0;
+  var count = 0;
+  var index = haystack.indexOf(needle);
+  while (index != -1) {
+    count++;
+    index = haystack.indexOf(needle, index + needle.length);
+  }
+  return count;
 }
 
 Task _makeTask(String id) {

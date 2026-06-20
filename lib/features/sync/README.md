@@ -70,7 +70,7 @@ At runtime, the sync feature owns:
 | `backfill/` | Send missing-counter requests and answer peer requests with resend, deleted, unresolvable, or covering-payload hints |
 | `state/` and `ui/` | Riverpod controllers and sync-facing settings, stats, diagnostics, provisioning, and maintenance screens |
 | `actor/` | Separate isolate-based sync implementation; present in the repo, but not wired by the default bootstrap path above |
-| `services/sync_node_capability_probe.dart` + `sync_node_profile_broadcaster.dart` | Detect local AI capabilities (macOS → mlxAudio, 300 ms HTTP probe to `127.0.0.1:11434` → ollamaLlm) and publish the local node's profile over Matrix |
+| `services/sync_node_capability_probe.dart` + `sync_node_profile_broadcaster.dart` | Detect local AI capabilities (macOS → mlxAudio, 300 ms HTTP probe to `127.0.0.1:8003/v1/models` → omlxLlm, 300 ms HTTP probe to `127.0.0.1:11434` → ollamaLlm) and publish the local node's profile over Matrix |
 | `repository/sync_node_profile_repository.dart` | Persist this device's self profile + the directory of peer profiles received over sync (both in `SettingsDb`) |
 | `repository/sync_maintenance_repository.dart` | Back the maintenance UI: purge and re-sync operations over local sync state |
 | `services/synced_audio_inference_listener.dart` + `synced_audio_inference_dispatcher.dart` | Subscribe to sync-only `UpdateNotifications.syncUpdateStream` and run MLX transcription + wake nudge for inbound audio whose pinned profile resolves to this device |
@@ -138,9 +138,12 @@ contract below.
 
 - **`SyncNodeProfile`** (`model/sync_node_profile.dart`) — freezed model
   capturing one device's vector-clock `hostId`, user-visible display name,
-  platform, and advertised AI capabilities (`mlxAudio`, `ollamaLlm`,
-  `voxtral`, `whisper`). Capabilities are auto-detected at app startup by
-  `makeDefaultSyncNodeCapabilityProbe`: `mlxAudio` iff `Platform.isMacOS`,
+  platform, and advertised AI capabilities (`mlxAudio`, `omlxLlm`,
+  `ollamaLlm`, `voxtral`, `whisper`). Capabilities are auto-detected at app
+  startup by `makeDefaultSyncNodeCapabilityProbe`: `mlxAudio` iff
+  `Platform.isMacOS`, `omlxLlm` iff the local OpenAI-compatible oMLX `/models`
+  endpoint responds at the configured default base URL (401/403 still counts as
+  reachable because inference uses the saved provider key),
   `ollamaLlm` iff a 300 ms HTTP request to `127.0.0.1:11434/api/version`
   succeeds. `voxtral` and `whisper` are intentionally not auto-claimed
   (they require user-installed binaries the app doesn't manage).

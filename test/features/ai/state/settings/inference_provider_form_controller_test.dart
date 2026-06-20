@@ -34,6 +34,7 @@ enum _GeneratedProviderFormTypeSlot {
   genericOpenAi,
   mistral,
   nebiusAiStudio,
+  omlx,
   openAi,
   openRouter,
   ollama,
@@ -64,6 +65,7 @@ InferenceProviderType _generatedProviderType(
     _GeneratedProviderFormTypeSlot.mistral => InferenceProviderType.mistral,
     _GeneratedProviderFormTypeSlot.nebiusAiStudio =>
       InferenceProviderType.nebiusAiStudio,
+    _GeneratedProviderFormTypeSlot.omlx => InferenceProviderType.omlx,
     _GeneratedProviderFormTypeSlot.openAi => InferenceProviderType.openAi,
     _GeneratedProviderFormTypeSlot.openRouter =>
       InferenceProviderType.openRouter,

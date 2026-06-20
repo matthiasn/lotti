@@ -21,6 +21,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderMistralName;
       case InferenceProviderType.mlxAudio:
         return context.messages.aiProviderMlxAudioName;
+      case InferenceProviderType.omlx:
+        return context.messages.aiProviderOmlxName;
       case InferenceProviderType.openAi:
         return context.messages.aiProviderOpenAiName;
       case InferenceProviderType.nebiusAiStudio:
@@ -52,6 +54,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderMistralDescription;
       case InferenceProviderType.mlxAudio:
         return context.messages.aiProviderMlxAudioDescription;
+      case InferenceProviderType.omlx:
+        return context.messages.aiProviderOmlxDescription;
       case InferenceProviderType.openAi:
         return context.messages.aiProviderOpenAiDescription;
       case InferenceProviderType.nebiusAiStudio:
@@ -83,6 +87,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return Icons.record_voice_over;
       case InferenceProviderType.mlxAudio:
         return Icons.memory_rounded;
+      case InferenceProviderType.omlx:
+        return Icons.developer_board_rounded;
       case InferenceProviderType.openRouter:
         return Icons.hub;
       case InferenceProviderType.ollama:
