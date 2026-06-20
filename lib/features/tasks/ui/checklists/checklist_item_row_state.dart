@@ -143,7 +143,12 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     if (reduceMotion) return;
     _checkPopController.forward(from: 0);
     final checkboxContext = _checkboxKey.currentContext;
-    if (checkboxContext != null) {
+    // Only emit the spark burst when the checkbox is actually on screen. An
+    // external check-off (an accepted AI "check off" proposal, a sync) can land
+    // on an item scrolled out of view; without this guard the sparks would
+    // erupt at the off-screen checkbox position — e.g. clamped over the page
+    // title. A direct tap is always on screen, so this never suppresses it.
+    if (checkboxContext != null && _checkboxIsInViewport(checkboxContext)) {
       spawnCompletionBurst(
         checkboxContext,
         count: 16,
@@ -152,6 +157,22 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
         duration: const Duration(milliseconds: 850),
       );
     }
+  }
+
+  /// Whether the checkbox currently overlaps its enclosing scroll viewport.
+  /// Returns true when there is no enclosing scrollable (nothing can clip it).
+  bool _checkboxIsInViewport(BuildContext checkboxContext) {
+    final box = checkboxContext.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return false;
+    final checkboxRect = box.localToGlobal(Offset.zero) & box.size;
+    final scrollable = Scrollable.maybeOf(checkboxContext);
+    if (scrollable == null) return true;
+    final viewport = scrollable.context.findRenderObject();
+    if (viewport is! RenderBox || !viewport.attached || !viewport.hasSize) {
+      return true;
+    }
+    final viewportRect = viewport.localToGlobal(Offset.zero) & viewport.size;
+    return viewportRect.overlaps(checkboxRect);
   }
 
   bool get _shouldHide {
