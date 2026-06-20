@@ -28,14 +28,15 @@ class EntryDatetimeWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    // Timestamp metadata: small, quiet, but legible. caption keeps it demoted
-    // below the entry's content (so a date never wins first fixation), while
-    // mediumEmphasis (white @ 80% ≈ 10:1 on the card surface) clears AA — the
-    // old colorScheme.outline was a decorative hairline tone, far too faint for
-    // text. Proportional figures (no tabular/badge features) so the date reads
-    // as one word in the body sans, not a monospaced debug stamp.
+    // Timestamp metadata: quiet but legible. bodySmall (not the tiny caption)
+    // keeps the date readable for low-vision users, while mediumEmphasis
+    // (white @ 80% ≈ 10:1 on the card surface) keeps it quiet enough not to win
+    // first fixation and clears AA — the old colorScheme.outline was a
+    // decorative hairline tone, far too faint for text. Proportional figures
+    // (no tabular/badge features) so the date reads as one word in the body
+    // sans, not a monospaced debug stamp.
     final tokens = context.designTokens;
-    final style = tokens.typography.styles.others.caption.copyWith(
+    final style = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
 

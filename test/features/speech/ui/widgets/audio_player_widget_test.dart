@@ -426,7 +426,8 @@ void main() {
     final opacity = tester.widget<Opacity>(
       find.ancestor(of: speedButton, matching: find.byType(Opacity)),
     );
-    expect(opacity.opacity, 0.5);
+    // Dimmed when inactive, but kept legible (not the old near-faint 0.5).
+    expect(opacity.opacity, 0.75);
   });
 
   // Every transition in the speed sequence is exercised here, including the

@@ -407,21 +407,17 @@ class EntryDetailsContent extends ConsumerWidget {
     );
   }
 
-  /// Interleaves the one shared vertical rhythm between the body sections: a
-  /// header→content step (`step4`) before the first section, then a tighter
-  /// content step (`step3`) between sections, so every card type stacks with
-  /// the same two-tier rhythm instead of per-widget ad-hoc gaps.
+  /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) between
+  /// every stacked body section — timestamp→body and body→value alike — so the
+  /// whole family scans with a single steady beat and no card sets its own
+  /// header gap (the old roomy-header / tight-body split read as a dead band).
   List<Widget> _withRhythm(BuildContext context, List<Widget> sections) {
     final tokens = context.designTokens;
     final out = <Widget>[];
-    for (var i = 0; i < sections.length; i++) {
+    for (final section in sections) {
       out
-        ..add(
-          SizedBox(
-            height: i == 0 ? tokens.spacing.step4 : tokens.spacing.step3,
-          ),
-        )
-        ..add(sections[i]);
+        ..add(SizedBox(height: tokens.spacing.cardItemSpacing))
+        ..add(section);
     }
     return out;
   }

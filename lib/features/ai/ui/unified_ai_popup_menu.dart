@@ -12,6 +12,7 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
     required this.journalEntity,
     required this.linkedFromId,
     this.iconColor,
+    this.useGlassButton = false,
     super.key,
   });
 
@@ -20,6 +21,11 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
 
   /// Optional icon color. Defaults to the theme's outline color.
   final Color? iconColor;
+
+  /// Whether to render the glass/blur action button (only appropriate when the
+  /// control sits *over an image*). On a normal card surface this leaves the
+  /// glyph reading as a dim badge, so the default is a plain [IconButton].
+  final bool useGlassButton;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -46,9 +52,9 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
         ref: ref,
       );
 
-      // Use GlassActionButton for proper clipped splash effect when iconColor
-      // is specified (used over images), otherwise use standard IconButton
-      if (iconColor != null) {
+      // GlassActionButton only over images (its blur reads as a dim badge on a
+      // flat card); everywhere else a plain IconButton with the given color.
+      if (iconColor != null && useGlassButton) {
         return GlassActionButton(
           onTap: onTap,
           child: icon,

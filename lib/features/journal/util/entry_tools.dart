@@ -148,8 +148,10 @@ String entryDateLabel(BuildContext context, DateTime date) {
 /// cumulative and discrete data shapes.
 String entryTextForQuant(QuantitativeEntry qe) {
   final qd = qe.data;
+  // At most one decimal — "94.5 kg", not a spurious "94.49 kg".
+  final value = (qd.value * 10).roundToDouble() / 10;
   return '${humanHealthTypeName(qd.dataType)}: '
-      '${nf.format(qd.value)} ${humanHealthUnit(qd)}';
+      '${nf.format(value)} ${humanHealthUnit(qd)}';
 }
 
 /// Multi-line workout summary (type, energy in kcal, duration in minutes);

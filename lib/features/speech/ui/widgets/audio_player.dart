@@ -318,7 +318,15 @@ class _PlayButton extends StatelessWidget {
         child: Material(
           key: const Key('audio_player_play_button_surface'),
           color: surfaceColor,
-          shape: const CircleBorder(),
+          // A visible accent ring makes the play control the focal point and
+          // gives the button SHAPE a >=3:1 boundary (WCAG 1.4.11) — the bare
+          // low-contrast fill alone read as nearly invisible chrome.
+          shape: CircleBorder(
+            side: BorderSide(
+              color: tokens?.colors.interactive.enabled ?? scheme.primary,
+              width: 1.5,
+            ),
+          ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onPressed,
@@ -357,14 +365,16 @@ class _SpeedButton extends StatelessWidget {
     final speedTextStyle = (captionStyle ?? const TextStyle(fontSize: 12))
         .copyWith(color: speedTextColor);
 
+    // A visible boundary (>=3:1) so the speed control reads as a real,
+    // tappable pill rather than near-invisible chrome.
+    final pillBorder =
+        tokens?.colors.decorative.level02 ?? scheme.outlineVariant;
     final child = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: currentSpeed != 1
-              ? scheme.error.withValues(alpha: 0.4)
-              : scheme.primary.withValues(alpha: 0.18),
+          color: currentSpeed != 1 ? scheme.error : pillBorder,
         ),
         color: scheme.surfaceTint.withValues(alpha: 0.05),
       ),
@@ -372,7 +382,8 @@ class _SpeedButton extends StatelessWidget {
     );
 
     if (!isActive) {
-      return Opacity(opacity: 0.5, child: child);
+      // Quieter than the active state, but not so faint it disappears.
+      return Opacity(opacity: 0.75, child: child);
     }
 
     return Semantics(

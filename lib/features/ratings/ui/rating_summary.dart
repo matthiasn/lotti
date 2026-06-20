@@ -47,10 +47,11 @@ class RatingSummary extends StatelessWidget {
             messages: messages,
           ),
 
-        // Note — a quiet secondary line so it never competes with the answers.
+        // Note — a quiet secondary line, set apart from the dense bar group so
+        // the free-text verdict reads as its own block.
         if (data.note != null && data.note!.isNotEmpty)
           Padding(
-            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
+            padding: EdgeInsets.only(bottom: tokens.spacing.step1),
             child: Text(
               data.note!,
               style: tokens.typography.styles.body.bodySmall.copyWith(
@@ -105,7 +106,7 @@ class RatingSummary extends StatelessWidget {
         // Label and answer inline (quiet label + bold value) — not flung to
         // opposite edges — so the eye keeps them as one pair.
         return Padding(
-          padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+          padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
@@ -230,8 +231,10 @@ class _DimensionRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final percent = (value.clamp(0.0, 1.0) * 100).round();
+    // Tight label→bar coupling (step1) inside a larger between-row gap
+    // (cardItemSpacing) so each question + bar reads as one grouped unit.
     return Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+      padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -243,7 +246,7 @@ class _DimensionRow extends StatelessWidget {
               Text('$percent%', style: _valueStyle(tokens)),
             ],
           ),
-          SizedBox(height: tokens.spacing.step2),
+          SizedBox(height: tokens.spacing.step1),
           ClipRRect(
             borderRadius: BorderRadius.circular(tokens.radii.xs),
             child: LinearProgressIndicator(
