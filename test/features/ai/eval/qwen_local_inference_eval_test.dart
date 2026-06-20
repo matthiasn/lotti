@@ -80,6 +80,80 @@ void main() {
     );
   });
 
+  test('parseQwenLocalEvalProfile rejects malformed separators', () {
+    for (final value in ['qwen', '=Qwen3.6-35B-A3B-4bit', 'qwen=']) {
+      expect(
+        () => parseQwenLocalEvalProfile(value),
+        throwsFormatException,
+      );
+    }
+  });
+
+  test('selectQwenLocalEvalScenarios filters known ids', () {
+    expect(
+      selectQwenLocalEvalScenarios(const []),
+      same(defaultQwenLocalEvalScenarios),
+    );
+    expect(
+      selectQwenLocalEvalScenarios(const [
+        'task_status_tool_call',
+      ]).map((scenario) => scenario.id),
+      equals(['task_status_tool_call']),
+    );
+    expect(
+      () => selectQwenLocalEvalScenarios(const ['missing_scenario']),
+      throwsArgumentError,
+    );
+  });
+
+  test('tool-call argument matching handles nested maps and lists', () {
+    const toolCall = QwenLocalEvalToolCall(
+      name: TaskAgentToolNames.setTaskTitle,
+      argumentsJson: '''
+{
+  "title": "Submit expense report",
+  "metadata": {
+    "priority": "P1",
+    "tags": ["finance", "urgent"]
+  }
+}
+''',
+    );
+
+    expect(
+      toolCall.containsExpectedArguments({
+        'metadata': {
+          'priority': 'P1',
+          'tags': ['finance', 'urgent'],
+        },
+      }),
+      isTrue,
+    );
+    expect(
+      toolCall.containsExpectedArguments({
+        'metadata': {
+          'tags': ['finance'],
+        },
+      }),
+      isFalse,
+    );
+    expect(
+      toolCall.containsExpectedArguments({'missing': true}),
+      isFalse,
+    );
+
+    const invalidToolCall = QwenLocalEvalToolCall(
+      name: TaskAgentToolNames.setTaskTitle,
+      argumentsJson: '[]',
+    );
+    expect(invalidToolCall.hasJsonObjectArguments, isFalse);
+    expect(invalidToolCall.containsExpectedArguments(const {}), isFalse);
+    expect(
+      invalidToolCall.toJson(),
+      containsPair('argumentsJsonValid', false),
+    );
+  });
+
   test(
     'runner records provenance, latency, usage, and matching tool calls',
     () async {
@@ -410,6 +484,44 @@ void main() {
     expect(report.summaries[1].failureCounts, {
       QwenLocalEvalFailureCategory.missingToolCall: 1,
     });
+  });
+
+  test('report markdown includes failures and empty-profile summaries', () {
+    const emptyProfile = QwenLocalEvalProfile(
+      name: 'qwen-empty',
+      providerModelId: 'not-run',
+      modelClass: 'qwen36-a35b-a3b-omlx',
+    );
+    final scenario = defaultQwenLocalEvalScenarios.first;
+    final report = QwenLocalEvalReport(
+      provider: provider,
+      scenarios: [scenario],
+      profiles: const [emptyProfile, profile],
+      results: [
+        QwenLocalEvalCaseResult(
+          profile: profile,
+          scenario: scenario,
+          provider: provider,
+          latencyMs: 25,
+          contentLength: 0,
+          toolCalls: const [],
+          failureCategory: QwenLocalEvalFailureCategory.missingToolCall,
+          errorMessage: 'model returned no tool call',
+        ),
+      ],
+    );
+
+    final emptySummary = report.summaries.first;
+    expect(emptySummary.totalScenarios, 0);
+    expect(emptySummary.passRate, 0);
+    expect(emptySummary.toolCallMatchRate, 0);
+    expect(emptySummary.argumentMatchRate, 0);
+
+    final markdown = report.toMarkdown();
+    expect(markdown, contains('| qwen-empty | `not-run` | 0/0 |'));
+    expect(markdown, contains('missingToolCall: 1'));
+    expect(markdown, contains('## Failures'));
+    expect(markdown, contains('model returned no tool call'));
   });
 }
 
