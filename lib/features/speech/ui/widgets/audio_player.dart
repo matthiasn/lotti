@@ -159,21 +159,24 @@ class _PlayerBody extends StatelessWidget {
         ),
         Row(
           children: <Widget>[
-            // Elapsed / total grouped at the card's content gutter (not inset
-            // under the scrubber) with an explicit separator so the pair reads
-            // unambiguously as elapsed-vs-total; the speed pill trails right so
-            // it is no longer marooned in the dead centre of a wide stretch.
+            // Elapsed / total and the speed pill are grouped together at the
+            // card's content gutter (not inset under the scrubber) with an
+            // explicit separator so the pair reads unambiguously as
+            // elapsed-vs-total; the speed pill sits right beside them rather
+            // than floating alone at the far edge, and trailing space falls to
+            // the right like every other value line.
             Text(
               '${formatAudioDuration(progress)} / '
               '${formatAudioDuration(totalDuration)}',
               style: timeStyle,
             ),
-            const Spacer(),
+            SizedBox(width: tokens?.spacing.step4 ?? 12.0),
             _SpeedButton(
               controller: controller,
               currentSpeed: state.speed,
               isActive: isActive,
             ),
+            const Spacer(),
           ],
         ),
       ],

@@ -55,6 +55,10 @@ class RatingSummary extends StatelessWidget {
         // made it read as an orphaned second headline). The verdict is a quiet
         // caption (medium-emphasis), not a bold white headline.
         Row(
+          // Top-align so the note sits at the top of the row (tight to the
+          // block above it) rather than floating centred in the taller edit
+          // button's height.
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (data.note != null && data.note!.isNotEmpty) ...[
               Flexible(
