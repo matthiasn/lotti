@@ -116,33 +116,47 @@ class _SquareIconButton extends StatelessWidget {
     // touch precision still get a Material-compliant tap zone. The
     // outer SizedBox + InkWell expand the gesture-accepting region;
     // the inner Container preserves the compact look.
-    return Tooltip(
-      message: tooltip,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onPressed.call,
-          borderRadius: BorderRadius.circular(7),
-          child: SizedBox(
-            width: 48,
-            height: 48,
-            child: Center(
-              child: Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  color: isAccent ? ai.accent.withValues(alpha: 0.13) : null,
-                  border: Border.all(
-                    color: isAccent
-                        ? ai.accent.withValues(alpha: 0.33)
-                        : ai.rowBorderStrong,
+    // Explicit button role + label, merged into one node, so screen readers
+    // announce "Confirm, button" / "Reject, button" and rotor "next button"
+    // navigation finds them — rather than leaning on the tooltip surfacing as
+    // a label (which gives no role). The visual tooltip stays for pointer users
+    // but is excluded from semantics to avoid a duplicate label.
+    return MergeSemantics(
+      child: Semantics(
+        button: true,
+        label: tooltip,
+        child: Tooltip(
+          message: tooltip,
+          excludeFromSemantics: true,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onPressed.call,
+              borderRadius: BorderRadius.circular(7),
+              child: SizedBox(
+                width: 48,
+                height: 48,
+                child: Center(
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: isAccent
+                          ? ai.accent.withValues(alpha: 0.13)
+                          : null,
+                      border: Border.all(
+                        color: isAccent
+                            ? ai.accent.withValues(alpha: 0.33)
+                            : ai.rowBorderStrong,
+                      ),
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                    child: Icon(
+                      icon,
+                      size: 14,
+                      color: isAccent ? ai.accent : ai.metaText,
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(7),
-                ),
-                child: Icon(
-                  icon,
-                  size: 14,
-                  color: isAccent ? ai.accent : ai.metaText,
                 ),
               ),
             ),

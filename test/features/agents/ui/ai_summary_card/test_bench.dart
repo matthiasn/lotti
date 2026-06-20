@@ -61,7 +61,8 @@ class AgentTestBench {
     this._mediaQueryData = desktopMediaQueryData,
     this._provideAgentIdentity = false,
     this._isRunningOverride,
-    this._suggestionListOverride,
+    this.suggestionListOverride,
+    this._extraOverrides = const [],
   });
 
   static const String taskId = 'task-001';
@@ -98,7 +99,12 @@ class AgentTestBench {
   /// override. Used by tests whose suggestion list reacts to the
   /// running flag (e.g. empties while the agent runs).
   final FutureOr<UnifiedSuggestionList> Function(Ref ref, String taskId)?
-  _suggestionListOverride;
+  suggestionListOverride;
+
+  /// Extra Riverpod overrides appended after the defaults — e.g. to seed
+  /// `proposalSwipeNudgePlayedProvider` so the swipe nudge is treated as
+  /// already-shown.
+  final List<Override> _extraOverrides;
 
   Widget build() {
     final identity = makeTestIdentity();
@@ -124,7 +130,7 @@ class AgentTestBench {
           (ref, agentId) async => _state,
         ),
         unifiedSuggestionListProvider.overrideWith(
-          _suggestionListOverride ?? (ref, taskId) async => _suggestions,
+          suggestionListOverride ?? (ref, taskId) async => _suggestions,
         ),
         if (_provideAgentIdentity)
           agentIdentityProvider.overrideWith((ref, id) async => identity),
@@ -143,6 +149,7 @@ class AgentTestBench {
         ttsEngineProvider.overrideWithValue(_ttsEngine ?? FakeTtsEngine()),
         ttsAudioPlayerProvider.overrideWithValue(FakeTtsAudioPlayer()),
         ttsModelRepositoryProvider.overrideWithValue(FakeTtsModelRepository()),
+        ..._extraOverrides,
       ],
       child: const SingleChildScrollView(
         child: AiSummaryCard(taskId: taskId),

@@ -6,6 +6,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1030]
 ### Changed
+- **Accepting or dismissing an AI suggestion is now smooth and calm instead of
+  jumpy.** The row you tap stays put and confirms in place — a clear filled
+  badge with the plain word *Confirmed* or *Dismissed* and a light haptic — then
+  gently collapses while the rest of the list slides up to close the gap; the
+  pending count ticks down with the action and the success popup is gone (the
+  badge and count are the confirmation). "Confirm all" now sweeps the list clean
+  in one staggered motion with a single tap-feel. The swipe hint no longer nags:
+  it plays once, as a single gentle nudge, instead of a repeating two-way
+  wiggle. While a row is leaving, the rows sliding up briefly ignore taps so a
+  fast second tap can't hit the wrong suggestion. Screen readers hear the
+  verdict and how many are left; with *reduce motion* on, rows update instantly
+  with no sliding.
 - The desktop sidebar's live-status area — the running timer, an active voice
   recording, and background agents — was redesigned to feel calmer and more
   cohesive while still reading at a glance. The old jumble of red, bordered, and

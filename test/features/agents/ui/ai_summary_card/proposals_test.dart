@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -11,6 +12,8 @@ import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart';
+import 'package:lotti/features/design_system/theme/motion_tokens.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -932,9 +935,263 @@ void main() {
     );
   });
 
+  group('AiSummaryCard – screen-reader announcement', () {
+    testWidgets(
+      'confirm announces the verdict assertively with the remaining count',
+      (tester) async {
+        final events = <Map<Object?, Object?>>[];
+        tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+          'flutter/accessibility',
+          (message) async {
+            final decoded = const StandardMessageCodec().decodeMessage(message);
+            if (decoded is Map) events.add(decoded);
+            return null;
+          },
+        );
+        addTearDown(
+          () => tester.binding.defaultBinaryMessenger.setMockMessageHandler(
+            'flutter/accessibility',
+            null,
+          ),
+        );
+
+        final service = MockChangeSetConfirmationService();
+        when(() => service.confirmItem(any(), any())).thenAnswer(
+          (_) async => const ToolExecutionResult(success: true, output: 'ok'),
+        );
+        // Two pending → after confirming one, "1 pending" remains.
+        final bench = AgentTestBench(
+          confirmationService: service,
+          updateNotifications: MockUpdateNotifications(),
+          suggestions: UnifiedSuggestionList(
+            open: [
+              makePending(
+                id: 'a',
+                toolName: 'set_task_status',
+                humanSummary: 'Set status to GROOMED',
+              ),
+              makePending(
+                id: 'b',
+                toolName: 'update_task_priority',
+                humanSummary: 'Raise priority to P1',
+              ),
+            ],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.check_rounded).first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        final announce = events.firstWhere(
+          (e) => e['type'] == 'announce',
+          orElse: () => const {},
+        );
+        final data = announce['data'] as Map<Object?, Object?>?;
+        final message = data?['message'] as String?;
+        // Verdict text + the localized remaining count are both spoken, and the
+        // announcement is assertive (index 1) — the direct result of an action.
+        expect(message, isNotNull);
+        expect(message, contains('Change applied'));
+        expect(message, contains('1'));
+        expect(data?['assertiveness'], 1);
+      },
+    );
+  });
+
+  group('AiSummaryCard – retain exiting suggestion', () {
+    testWidgets(
+      'a committed row dropped by the provider mid-exit stays until its '
+      'collapse finishes',
+      (tester) async {
+        final csA = makeTestChangeSet(
+          id: 'retain-a',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'GROOMED'},
+              humanSummary: 'Alpha proposal',
+            ),
+          ],
+        );
+        final csB = makeTestChangeSet(
+          id: 'retain-b',
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P1'},
+              humanSummary: 'Beta proposal',
+            ),
+          ],
+        );
+        final sugA = PendingSuggestion(
+          changeSet: csA,
+          itemIndex: 0,
+          item: csA.items.first,
+          fingerprint: 'fp-retain-a',
+        );
+        final sugB = PendingSuggestion(
+          changeSet: csB,
+          itemIndex: 0,
+          item: csB.items.first,
+          fingerprint: 'fp-retain-b',
+        );
+        var current = UnifiedSuggestionList(
+          open: [sugA, sugB],
+          activity: const [],
+        );
+
+        final service = MockChangeSetConfirmationService();
+        // Hold Alpha's write open so it stays in the exiting set (acknowledging)
+        // without pruning while the provider drops it.
+        final completer = Completer<ToolExecutionResult>();
+        when(
+          () => service.confirmItem(csA, 0),
+        ).thenAnswer((_) => completer.future);
+
+        final bench = AgentTestBench(
+          confirmationService: service,
+          updateNotifications: MockUpdateNotifications(),
+          suggestionListOverride: (ref, taskId) => current,
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.text('Alpha proposal'), findsOneWidget);
+        expect(find.text('Beta proposal'), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.check_rounded).first);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // The provider now drops Alpha (as the real re-query does after a
+        // write completes) while Alpha is still collapsing.
+        current = UnifiedSuggestionList(open: [sugB], activity: const []);
+        ProviderScope.containerOf(
+          tester.element(find.byType(AiSummaryCard)),
+        ).invalidate(unifiedSuggestionListProvider(AgentTestBench.taskId));
+        await tester.pump();
+        await tester.pump();
+
+        // Alpha is retained on screen even though the provider dropped it —
+        // _retainExitingSuggestions re-inserts it until its exit completes.
+        expect(find.text('Alpha proposal'), findsOneWidget);
+
+        // Release the write → Alpha collapses and is finally pruned; Beta stays.
+        completer.complete(
+          const ToolExecutionResult(success: true, output: 'ok'),
+        );
+        await tester.pump();
+        await tester.pump(ProposalMotion.resolveHold);
+        await tester.pump(ProposalMotion.collapse);
+        await tester.pump(ProposalMotion.collapse);
+        await tester.pump();
+        expect(find.text('Alpha proposal'), findsNothing);
+        expect(find.text('Beta proposal'), findsOneWidget);
+      },
+    );
+  });
+
+  group('AiSummaryCard – tap-guard during collapse', () {
+    testWidgets(
+      'a tap on a sibling is inert while another row is collapsing',
+      (tester) async {
+        final csA = makeTestChangeSet(
+          id: 'cs-guard-a',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'GROOMED'},
+              humanSummary: 'Set status to GROOMED',
+            ),
+          ],
+        );
+        final csB = makeTestChangeSet(
+          id: 'cs-guard-b',
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_priority',
+              args: {'priority': 'P1'},
+              humanSummary: 'Raise priority to P1',
+            ),
+          ],
+        );
+        final service = MockChangeSetConfirmationService();
+        // Hold row A's confirm open so it stays in the resolve/collapse window
+        // (settling = true) across the sibling tap.
+        final completer = Completer<ToolExecutionResult>();
+        when(
+          () => service.confirmItem(csA, 0),
+        ).thenAnswer((_) => completer.future);
+        when(() => service.confirmItem(csB, 0)).thenAnswer(
+          (_) async => const ToolExecutionResult(success: true, output: 'ok'),
+        );
+        final bench = AgentTestBench(
+          confirmationService: service,
+          updateNotifications: MockUpdateNotifications(),
+          suggestions: UnifiedSuggestionList(
+            open: [
+              PendingSuggestion(
+                changeSet: csA,
+                itemIndex: 0,
+                item: csA.items.first,
+                fingerprint: 'fp-guard-a',
+              ),
+              PendingSuggestion(
+                changeSet: csB,
+                itemIndex: 0,
+                item: csB.items.first,
+                fingerprint: 'fp-guard-b',
+              ),
+            ],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Commit row A; it begins resolving (and reports it), so the section is
+        // now settling. Row A's own buttons collapse to a spinner.
+        await tester.tap(find.byIcon(Icons.check_rounded).first);
+        await tester.pump();
+
+        // The only check button left belongs to row B. Tapping it now must be
+        // inert — the section is settling while row A collapses.
+        await tester.tap(find.byIcon(Icons.check_rounded).first);
+        await tester.pump(const Duration(milliseconds: 50));
+        verifyNever(() => service.confirmItem(csB, 0));
+
+        // Let row A finish leaving (resolve → collapse → prune), then row B is
+        // interactive again.
+        completer.complete(
+          const ToolExecutionResult(success: true, output: 'ok'),
+        );
+        await tester.pump();
+        await tester.pump(ProposalMotion.resolveHold);
+        await tester.pump(ProposalMotion.collapse);
+        await tester.pump(ProposalMotion.collapse);
+        await tester.pump();
+        // Only row B remains, and it is interactive again.
+        expect(find.byType(ProposalRow), findsOneWidget);
+
+        await tester.tap(find.byIcon(Icons.check_rounded).first);
+        await tester.pump();
+        verify(() => service.confirmItem(csB, 0)).called(1);
+      },
+    );
+  });
+
   group('AiSummaryCard – Confirm-all cascade', () {
     testWidgets(
-      'pressing Confirm all fires a staggered selection haptic across rows',
+      'pressing Confirm all fires one haptic and sweeps the rows out',
       (tester) async {
         final haptics = <String>[];
         tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -1007,17 +1264,24 @@ void main() {
 
         await tester.tap(find.text('Confirm all'));
         await tester.pump();
-        // Row 0 pops immediately; row 1 after its ~45ms stagger — let both fire.
         await tester.pump(const Duration(milliseconds: 100));
 
+        // Exactly one light haptic for the whole gesture — the rows no longer
+        // tick individually (which machine-gunned on a big batch).
         expect(
           haptics.where((h) => h == 'HapticFeedbackType.selectionClick').length,
-          greaterThanOrEqualTo(2),
+          1,
         );
 
+        // The rows run their staggered resolve → collapse sweep (independent of
+        // the still-pending writes) and leave one after another.
         completer.complete(const []);
         await tester.pump();
-        await tester.pumpAndSettle();
+        await tester.pump(ProposalMotion.total);
+        await tester.pump(ProposalMotion.collapse);
+        await tester.pump(ProposalMotion.staggerStep * 8);
+        await tester.pump();
+        expect(find.byType(ProposalRow), findsNothing);
       },
     );
   });
