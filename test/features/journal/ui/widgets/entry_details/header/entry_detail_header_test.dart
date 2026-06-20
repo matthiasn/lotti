@@ -342,7 +342,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.assistant_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
       },
     );
 
@@ -360,7 +360,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.byIcon(Icons.assistant_rounded), findsNothing);
+        expect(find.byIcon(Icons.assistant_outlined), findsNothing);
       },
     );
   });

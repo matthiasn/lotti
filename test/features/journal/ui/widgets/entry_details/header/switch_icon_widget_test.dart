@@ -211,7 +211,8 @@ void main() {
           .first;
 
       final sizedBox = tester.widget<SizedBox>(sizedBoxFinder);
-      expect(sizedBox.width, 40);
+      // 48px to match the other header controls' tap target.
+      expect(sizedBox.width, 48);
     });
   });
 }

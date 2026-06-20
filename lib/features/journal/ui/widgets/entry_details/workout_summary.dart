@@ -34,10 +34,19 @@ class WorkoutSummary extends StatelessWidget {
     });
 
     final tokens = context.designTokens;
-    // No outer bottom padding — the card shell owns the symmetric inset.
+    // Lead with the Energy/Duration value lines (the facts users scan for);
+    // the per-metric trend charts are secondary context below them. When the
+    // charts are shown they already title the workout type, so drop the
+    // redundant heading line. No outer bottom padding — the card shell owns
+    // the symmetric inset.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        EntryTextWidget(
+          entryTextForWorkout(data, includeTitle: !showChart),
+          padding: EdgeInsets.zero,
+        ),
+        if (showChart) SizedBox(height: tokens.spacing.cardItemSpacing),
         if (showChart)
           ...items.map(
             (DashboardWorkoutItem item) => DashboardWorkoutChart(
@@ -46,16 +55,6 @@ class WorkoutSummary extends StatelessWidget {
               rangeEnd: getRangeEnd(),
             ),
           ),
-        // Separate the summary block from the chart frame(s) above it so the
-        // facts don't read as crammed under the chart.
-        if (showChart) SizedBox(height: tokens.spacing.step4),
-        // When the charts are shown they already title the workout type, so
-        // drop the redundant heading line and lead with the Energy/Duration
-        // value lines.
-        EntryTextWidget(
-          entryTextForWorkout(data, includeTitle: !showChart),
-          padding: EdgeInsets.zero,
-        ),
       ],
     );
   }

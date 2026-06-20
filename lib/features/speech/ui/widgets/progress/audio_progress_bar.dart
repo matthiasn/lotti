@@ -369,28 +369,31 @@ class _ProgressBarPainter extends CustomPainter {
       final progressPaint = Paint()
         ..shader = gradient.createShader(progressRect.outerRect);
       canvas.drawRRect(progressRect, progressPaint);
-
-      final thumbCenter = Offset(
-        progressRect.outerRect.right,
-        trackRect.center.dy,
-      );
-
-      if (glowColor.a > 0) {
-        final glowPaint = Paint()
-          ..color = glowColor
-          ..maskFilter = const ui.MaskFilter.blur(
-            ui.BlurStyle.normal,
-            6,
-          );
-        canvas.drawCircle(thumbCenter, thumbRadius + 3, glowPaint);
-      }
-
-      canvas.drawCircle(
-        thumbCenter,
-        thumbRadius,
-        Paint()..color = thumbColor,
-      );
     }
+
+    // The scrub thumb is always drawn (at the start when at rest) so the
+    // control reads as a draggable scrubber rather than a bare track — a
+    // thumb that only appeared after playback began left no grab affordance.
+    final thumbCenter = Offset(
+      (size.width * progressRatio).clamp(thumbRadius, size.width),
+      trackRect.center.dy,
+    );
+
+    if (glowColor.a > 0) {
+      final glowPaint = Paint()
+        ..color = glowColor
+        ..maskFilter = const ui.MaskFilter.blur(
+          ui.BlurStyle.normal,
+          6,
+        );
+      canvas.drawCircle(thumbCenter, thumbRadius + 3, glowPaint);
+    }
+
+    canvas.drawCircle(
+      thumbCenter,
+      thumbRadius,
+      Paint()..color = thumbColor,
+    );
   }
 
   @override

@@ -23,10 +23,14 @@ class HealthSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    // No outer bottom padding — the card shell owns the symmetric inset.
+    // Lead with the summary value (the one fact users scan for); the trend
+    // chart is secondary context below it. No outer bottom padding — the card
+    // shell owns the symmetric inset.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        EntryTextWidget(entryTextForQuant(qe), padding: EdgeInsets.zero),
+        if (showChart) SizedBox(height: tokens.spacing.cardItemSpacing),
         if (showChart)
           DashboardHealthChart(
             chartConfig: DashboardHealthItem(
@@ -36,8 +40,6 @@ class HealthSummary extends StatelessWidget {
             rangeStart: getRangeStart(context: context),
             rangeEnd: getRangeEnd(),
           ),
-        if (showChart) SizedBox(height: tokens.spacing.step3),
-        EntryTextWidget(entryTextForQuant(qe), padding: EdgeInsets.zero),
       ],
     );
   }

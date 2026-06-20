@@ -217,7 +217,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
-      expect(find.byIcon(Icons.assistant_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
       expect(find.byType(IconButton), findsOneWidget);
     });
 
@@ -243,7 +243,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
-      expect(find.byIcon(Icons.assistant_rounded), findsNothing);
+      expect(find.byIcon(Icons.assistant_outlined), findsNothing);
       expect(find.byType(IconButton), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
     });
@@ -270,7 +270,7 @@ void main() {
       await tester.pump();
 
       // Assert
-      expect(find.byIcon(Icons.assistant_rounded), findsNothing);
+      expect(find.byIcon(Icons.assistant_outlined), findsNothing);
       expect(find.byType(IconButton), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
 
@@ -302,7 +302,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
-      expect(find.byIcon(Icons.assistant_rounded), findsNothing);
+      expect(find.byIcon(Icons.assistant_outlined), findsNothing);
       expect(find.byType(IconButton), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
     });
@@ -333,7 +333,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Act
-      await tester.tap(find.byIcon(Icons.assistant_rounded));
+      await tester.tap(find.byIcon(Icons.assistant_outlined));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -375,7 +375,7 @@ void main() {
         expect(find.byType(IconButton), findsOneWidget);
         expect(find.byType(GlassActionButton), findsNothing);
         final icon = tester.widget<Icon>(
-          find.byIcon(Icons.assistant_rounded),
+          find.byIcon(Icons.assistant_outlined),
         );
         expect(icon.color, const Color(0xFF00FF00));
 

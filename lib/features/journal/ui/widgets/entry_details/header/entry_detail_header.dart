@@ -137,9 +137,10 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         UnifiedAiPopUpMenu(
           journalEntity: entry,
           linkedFromId: widget.linkedFromId,
-          // highEmphasis (white) so the filled assistant glyph clears the
-          // non-text-contrast floor instead of reading as a grey-on-grey chip.
-          iconColor: tokens.colors.text.highEmphasis,
+          // mediumEmphasis (~10:1) so the outlined assistant glyph reads as a
+          // calm, co-equal header control rather than the heaviest element on
+          // the card — still well clear of the non-text-contrast floor.
+          iconColor: tokens.colors.text.mediumEmphasis,
         ),
       IconButton(
         icon: Icon(Icons.more_horiz, color: tokens.colors.text.mediumEmphasis),
@@ -156,9 +157,9 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
 
   /// Interleaves a consistent inter-control gap so adjacent header controls
   /// never sit flush — the crowded 4-control headers were a mis-tap hazard for
-  /// motor-impaired users.
+  /// motor-impaired users, so neighbouring tap zones get a clear visible gap.
   List<Widget> _spacedTrailing(BuildContext context, List<Widget> actions) {
-    final gap = context.designTokens.spacing.step2;
+    final gap = context.designTokens.spacing.step3;
     final out = <Widget>[];
     for (var i = 0; i < actions.length; i++) {
       if (i > 0) out.add(SizedBox(width: gap));

@@ -52,7 +52,10 @@ class EntryDetailFooter extends ConsumerWidget {
       children: [
         if (hasDuration || unsaved)
           Padding(
-            padding: EdgeInsets.only(top: tokens.spacing.step2),
+            // Same rhythm step as the body sections above so the duration/save
+            // row is not glued tighter to the content than the content is to
+            // itself (the old tight footer made cards read bottom-cramped).
+            padding: EdgeInsets.only(top: tokens.spacing.cardItemSpacing),
             child: Row(
               children: [
                 // Duration sits left under the content gutter (no longer

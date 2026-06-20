@@ -418,17 +418,19 @@ class EntryDetailsContent extends ConsumerWidget {
     child: EditorWidget(entryId: itemId),
   );
 
-  /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) between
-  /// every stacked body section — timestamp→body and body→value alike — so the
-  /// whole family scans with a single steady beat and no card sets its own
-  /// header gap (the old roomy-header / tight-body split read as a dead band).
+  /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) *between*
+  /// stacked body sections — but not before the first one. The header row is
+  /// taller than its timestamp text (its 48px icon-button tap targets overhang
+  /// below the baseline), so an explicit leading gap stacked on top of that
+  /// overhang made the header→body gap visibly larger than every body→body and
+  /// body→value gap, leaving the card front-loaded. Letting the overhang serve
+  /// as the header→first-content gap evens the cadence top to bottom.
   List<Widget> _withRhythm(BuildContext context, List<Widget> sections) {
     final tokens = context.designTokens;
     final out = <Widget>[];
-    for (final section in sections) {
-      out
-        ..add(SizedBox(height: tokens.spacing.cardItemSpacing))
-        ..add(section);
+    for (var i = 0; i < sections.length; i++) {
+      if (i > 0) out.add(SizedBox(height: tokens.spacing.cardItemSpacing));
+      out.add(sections[i]);
     }
     return out;
   }

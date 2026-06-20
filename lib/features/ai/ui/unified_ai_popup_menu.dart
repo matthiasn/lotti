@@ -40,8 +40,11 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
     // Since the provider is now keyed by entityId (stable), updates to
     // the same entry will reuse the provider and maintain previous value.
     if (hasPromptsAsync.hasValue && hasPromptsAsync.value!) {
+      // Outlined (not filled) glyph at the same optical weight as the other
+      // header controls — a filled high-contrast badge made the AI action the
+      // heaviest element on the card, out-ranking the timestamp and payload.
       final icon = Icon(
-        Icons.assistant_rounded,
+        Icons.assistant_outlined,
         color: iconColor ?? context.colorScheme.outline,
       );
 

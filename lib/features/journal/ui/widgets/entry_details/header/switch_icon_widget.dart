@@ -24,7 +24,9 @@ class SwitchIconWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 40,
+      // 48px to match the other header controls' tap target so the favorite
+      // toggle is not the one cramped, harder-to-hit control in the cluster.
+      width: 48,
       child: IconButton(
         splashColor: Colors.transparent,
         focusColor: Colors.transparent,

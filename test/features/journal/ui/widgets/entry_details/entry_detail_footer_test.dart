@@ -199,7 +199,8 @@ void main() {
       expect(recordIconFinder, findsOneWidget);
       expect(stopIconFinder, findsNothing);
 
-      final durationZeroFinder = find.text('00:00:00');
+      // Rendered as the labeled value line "Duration: 00:00:00".
+      final durationZeroFinder = find.textContaining('00:00:00');
       expect(durationZeroFinder, findsOneWidget);
 
       await tester.tap(recordIconFinder);
@@ -246,7 +247,8 @@ void main() {
       expect(recordIconFinder, findsNothing);
       expect(stopIconFinder, findsOneWidget);
 
-      final durationZeroFinder = find.text('00:00:05');
+      // Rendered as the labeled value line "Duration: 00:00:05".
+      final durationZeroFinder = find.textContaining('00:00:05');
       expect(durationZeroFinder, findsOneWidget);
 
       await tester.tap(stopIconFinder);

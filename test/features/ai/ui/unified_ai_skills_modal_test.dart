@@ -804,7 +804,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Act - Open the modal
-      await tester.tap(find.byIcon(Icons.assistant_rounded));
+      await tester.tap(find.byIcon(Icons.assistant_outlined));
       await tester.pumpAndSettle();
 
       // Verify modal is open
@@ -869,7 +869,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Prompt Generation Skill'));
         await tester.pumpAndSettle();
@@ -940,7 +940,7 @@ void main() {
         );
         await tester.pumpAndSettle();
 
-        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
         await tester.pumpAndSettle();
         await tester.tap(find.text('Prompt Generation Skill'));
         await tester.pumpAndSettle();
@@ -1008,7 +1008,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Open the modal
-        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1094,7 +1094,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Open the modal
-        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1147,7 +1147,7 @@ void main() {
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
 
-            await tester.tap(find.byIcon(Icons.assistant_rounded));
+            await tester.tap(find.byIcon(Icons.assistant_outlined));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
             await tester.tap(find.text(variant.skillName));
@@ -1199,7 +1199,7 @@ void main() {
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
 
-            await tester.tap(find.byIcon(Icons.assistant_rounded));
+            await tester.tap(find.byIcon(Icons.assistant_outlined));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
             await tester.tap(find.text(variant.skillName));
@@ -1255,7 +1255,7 @@ void main() {
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
 
-            await tester.tap(find.byIcon(Icons.assistant_rounded));
+            await tester.tap(find.byIcon(Icons.assistant_outlined));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
             await tester.tap(find.text(variant.skillName));
@@ -1311,7 +1311,7 @@ void main() {
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
 
-            await tester.tap(find.byIcon(Icons.assistant_rounded));
+            await tester.tap(find.byIcon(Icons.assistant_outlined));
             await tester.pump();
             await tester.pump(const Duration(milliseconds: 300));
             await tester.tap(find.text(variant.skillName));
@@ -1409,7 +1409,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
