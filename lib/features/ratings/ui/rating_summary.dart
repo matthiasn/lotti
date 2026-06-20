@@ -48,28 +48,23 @@ class RatingSummary extends StatelessWidget {
             messages: messages,
           ),
 
-        // The note closes the card on the family's standard inter-block step
-        // (not a doubled section gap), so it reads as the block's quiet closing
-        // line rather than an orphaned second headline floating in dead space.
-        if (data.note != null && data.note!.isNotEmpty)
-          SizedBox(height: tokens.spacing.cardItemSpacing),
-
-        // Note + edit on one row: the free-text verdict is a quiet caption
-        // (medium-emphasis, like the value-line labels — not a bold white
-        // headline) and the edit control sits centered at the trailing edge so
-        // it never floats alone below the content.
+        // Note + edit on one row, left-grouped so the edit pencil sits right
+        // next to the note instead of stranded at the far edge. The last rating
+        // row already carries the inter-block gap, so NO extra leading space is
+        // added here (an extra step on top doubled the gap above the note and
+        // made it read as an orphaned second headline). The verdict is a quiet
+        // caption (medium-emphasis), not a bold white headline.
         Row(
           children: [
-            Expanded(
-              child: (data.note != null && data.note!.isNotEmpty)
-                  ? Text(
-                      data.note!,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    )
-                  : const SizedBox.shrink(),
-            ),
+            if (data.note != null && data.note!.isNotEmpty)
+              Flexible(
+                child: Text(
+                  data.note!,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ),
             IconButton(
               visualDensity: VisualDensity.compact,
               icon: Icon(
@@ -83,6 +78,7 @@ class RatingSummary extends StatelessWidget {
                 catalogId: data.catalogId,
               ),
             ),
+            const Spacer(),
           ],
         ),
       ],
