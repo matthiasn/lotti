@@ -26,7 +26,7 @@ class _DueDateTextState extends State<DueDateText> {
 
   Color _getColor(BuildContext context, DueDateStatus status) {
     return status.urgentColor ??
-        context.colorScheme.onSurfaceVariant.withValues(alpha: 0.7);
+        context.colorScheme.onSurfaceVariant.withValues(alpha: 0.85);
   }
 
   String _getAbsoluteText(BuildContext context, DueDateStatus status) {

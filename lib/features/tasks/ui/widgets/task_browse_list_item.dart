@@ -87,19 +87,32 @@ class TaskBrowseListItem extends StatelessWidget {
     );
     // Graduate the band fill by rank so the urgent band genuinely dominates:
     // a uniform alpha let the intrinsically-brighter orange out-shout the
-    // darker red. Stronger for P0, fading to a whisper for P3.
+    // darker red. Stronger for P0, fading to a whisper for P3. Kept restrained
+    // so the band labels the group without reading like an alert banner — the
+    // dominance comes from the graduation, not raw saturation.
     final bandAlpha = switch (sectionPriority) {
-      TaskPriority.p0Urgent => 0.28,
-      TaskPriority.p1High => 0.14,
-      TaskPriority.p2Medium => 0.10,
-      TaskPriority.p3Low => 0.08,
+      TaskPriority.p0Urgent => 0.22,
+      TaskPriority.p1High => 0.11,
+      TaskPriority.p2Medium => 0.08,
+      TaskPriority.p3Low => 0.06,
       null => 0.0,
     };
     final borderSide = BorderSide(
       color: TaskShowcasePalette.containerBorder(context),
     );
+    // The first card of a priority bucket is, after the intra-bucket urgency
+    // sort, the single most time-critical task — the "do this first". Give it a
+    // faint priority-tinted fill so it lifts off its neighbours as a whole card
+    // (not just via its due chip) and the eye lands on it immediately.
+    final surfaceColor = TaskShowcasePalette.surface(context);
+    final cardColor = entry.isFirstInSection && priorityColor != null
+        ? Color.alphaBlend(
+            priorityColor.withValues(alpha: 0.07),
+            surfaceColor,
+          )
+        : surfaceColor;
     final decoration = BoxDecoration(
-      color: TaskShowcasePalette.surface(context),
+      color: cardColor,
       borderRadius: borderRadius,
       border: Border(
         top: entry.isFirstInSection ? borderSide : BorderSide.none,
@@ -155,7 +168,10 @@ class TaskBrowseListItem extends StatelessWidget {
                       Text(
                         context.messages.taskShowcaseTaskCount(count),
                         style: tokens.typography.styles.others.caption.copyWith(
-                          color: TaskShowcasePalette.mediumText(context),
+                          // High emphasis: the count sits on the tinted band as
+                          // part of the header, so it should read as clearly as
+                          // the label rather than fading to a faint tally.
+                          color: TaskShowcasePalette.highText(context),
                           fontFeatures: const [FontFeature.tabularFigures()],
                         ),
                       ),
