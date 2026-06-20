@@ -8377,6 +8377,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String taskShowcaseShowMore(int count) {
+    return 'Zobrazit dalších $count';
+  }
+
+  @override
   String taskShowcaseTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -8450,6 +8450,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String taskShowcaseShowMore(int count) {
+    return 'Afficher $count de plus';
+  }
+
+  @override
   String taskShowcaseTaskCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

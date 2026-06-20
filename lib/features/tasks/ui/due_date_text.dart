@@ -89,24 +89,40 @@ class _DueDateTextState extends State<DueDateText> {
       ],
     );
 
+    // Every due date is a chip so a dated card is spottable among undated
+    // ones, with the fill escalating by urgency so the deadline is the per-card
+    // alarm: overdue / due-today get a filled tinted pill (the loudest
+    // metadata), upcoming dates a quiet neutral outline. The pill's FORM also
+    // distinguishes the deadline from the priority header band when both are
+    // red.
+    final isUrgent = status.isUrgent;
     return GestureDetector(
       onTap: () => setState(() => _showRelative = !_showRelative),
-      // Overdue / due-today deadlines become a filled tinted pill so the one
-      // time-critical card in a group is spottable at a glance — and the pill's
-      // FORM distinguishes the deadline from the priority header band even when
-      // both happen to be red. Future dates stay quiet, plain coloured text.
-      child: status.isUrgent ? _UrgentDuePill(color: color, child: row) : row,
+      child: _DuePill(
+        fill: isUrgent ? color.withValues(alpha: 0.16) : Colors.transparent,
+        border: isUrgent
+            ? color.withValues(alpha: 0.45)
+            : context.designTokens.colors.decorative.level02,
+        child: row,
+      ),
     );
   }
 }
 
-/// A filled, rounded chip wrapping an urgent (overdue / due-today) due date,
-/// matching the dimensions of the other metadata chips but with a tinted fill
-/// instead of a border so the deadline reads as the loudest metadata.
-class _UrgentDuePill extends StatelessWidget {
-  const _UrgentDuePill({required this.color, required this.child});
+/// A rounded due-date chip matching the other metadata chips' dimensions. The
+/// urgent variants pass a tinted [fill] + matching [border] so the deadline
+/// reads as the loudest metadata; upcoming dates pass a transparent fill with a
+/// neutral hairline so they still have presence without shouting. The hairline
+/// keeps the chip perceptible (WCAG 1.4.11) regardless of fill luminance.
+class _DuePill extends StatelessWidget {
+  const _DuePill({
+    required this.fill,
+    required this.border,
+    required this.child,
+  });
 
-  final Color color;
+  final Color fill;
+  final Color border;
   final Widget child;
 
   @override
@@ -118,12 +134,9 @@ class _UrgentDuePill extends StatelessWidget {
         vertical: tokens.spacing.step1,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.16),
+        color: fill,
         borderRadius: BorderRadius.circular(tokens.radii.xs),
-        // A hairline at higher alpha gives the pill a perceptible boundary
-        // (WCAG 1.4.11) regardless of how dark the fill hue is — so the
-        // overdue-red pill reads as clearly as the brighter due-today amber.
-        border: Border.all(color: color.withValues(alpha: 0.45)),
+        border: Border.all(color: border),
       ),
       child: child,
     );

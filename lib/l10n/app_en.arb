@@ -4098,6 +4098,14 @@
       }
     }
   },
+  "taskShowcaseShowMore": "Show {count} more",
+  "@taskShowcaseShowMore": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "taskShowcaseTaskCount": "{count, plural, =1{1 task} other{{count} tasks}}",
   "@taskShowcaseTaskCount": {
     "placeholders": {

@@ -88,6 +88,8 @@ class TaskBrowseEntry {
     required this.isFirstInSection,
     required this.isLastInSection,
     this.sectionCount,
+    this.isShowMore = false,
+    this.hiddenCount = 0,
   });
 
   final Task task;
@@ -96,19 +98,38 @@ class TaskBrowseEntry {
   final bool isFirstInSection;
   final bool isLastInSection;
   final int? sectionCount;
+
+  /// When true this entry is not a task card but the collapsed-section
+  /// "+N more" affordance that sits as the last row of a capped group; it
+  /// renders [hiddenCount] and toggles the section open on tap. [task] is the
+  /// first hidden task — retained only so the row keys against its paging item.
+  final bool isShowMore;
+
+  /// Number of cards hidden below the cap in a collapsed section (the "+N").
+  final int hiddenCount;
 }
 
-/// Turns a flat, already-sorted [items] list into [TaskBrowseEntry]s annotated
+/// Turns a flat, already-ordered [items] list into [TaskBrowseEntry]s annotated
 /// with section boundaries and per-section counts for [sortOption].
 ///
 /// Non-task entities are dropped. Section headers are emitted at each boundary;
 /// the count is suppressed for the trailing section when [hasNextPage] is true,
 /// since that section may be incomplete and a wrong count would be misleading.
+///
+/// A section the user has not [expandedSections] and that holds more than
+/// [collapsedVisibleCount] tasks is *capped*: only the first few cards are
+/// emitted, followed by one `isShowMore` entry; the remaining tasks get no
+/// entry (their paging items render empty). The trailing partial section is
+/// never capped since its true size is still unknown. The caller must feed the
+/// list view items in the SAME order as [items] so the capped/skip positions
+/// line up with the rendered rows.
 List<TaskBrowseEntry> buildTaskBrowseEntries({
   required List<JournalEntity> items,
   required TaskSortOption sortOption,
   required DateTime now,
   required bool hasNextPage,
+  Set<String> expandedSections = const <String>{},
+  int collapsedVisibleCount = 3,
 }) {
   final tasks = items.whereType<Task>().toList(growable: false);
   if (tasks.isEmpty) {
@@ -129,31 +150,107 @@ List<TaskBrowseEntry> buildTaskBrowseEntries({
 
   final lastVisibleSectionKey = sectionKeys.last.stableKey;
 
-  return List<TaskBrowseEntry>.generate(tasks.length, (index) {
+  final entries = <TaskBrowseEntry>[];
+  final positionInSection = <String, int>{};
+  for (var index = 0; index < tasks.length; index++) {
     final sectionKey = sectionKeys[index];
+    final stableKey = sectionKey.stableKey;
     final previousSectionKey = index > 0
         ? sectionKeys[index - 1].stableKey
         : null;
     final nextSectionKey = index < tasks.length - 1
         ? sectionKeys[index + 1].stableKey
         : null;
-    final isFirstInSection = previousSectionKey != sectionKey.stableKey;
-    final isLastInSection = nextSectionKey != sectionKey.stableKey;
-    final showSectionHeader = isFirstInSection;
+    final isFirstInSection = previousSectionKey != stableKey;
+    final isLastInSectionRaw = nextSectionKey != stableKey;
     final isPartialTrailingSection =
-        hasNextPage && sectionKey.stableKey == lastVisibleSectionKey;
+        hasNextPage && stableKey == lastVisibleSectionKey;
+    final sectionCount = counts[stableKey]!;
 
-    return TaskBrowseEntry(
-      task: tasks[index],
-      sectionKey: sectionKey,
-      showSectionHeader: showSectionHeader,
-      isFirstInSection: isFirstInSection,
-      isLastInSection: isLastInSection,
-      sectionCount: showSectionHeader && !isPartialTrailingSection
-          ? counts[sectionKey.stableKey]
-          : null,
+    final position = positionInSection[stableKey] ?? 0;
+    positionInSection[stableKey] = position + 1;
+
+    final isCapped =
+        !expandedSections.contains(stableKey) &&
+        !isPartialTrailingSection &&
+        sectionCount > collapsedVisibleCount;
+
+    if (isCapped && position > collapsedVisibleCount) {
+      // Hidden below the cap — emit no entry; its paging item renders empty.
+      continue;
+    }
+
+    if (isCapped && position == collapsedVisibleCount) {
+      entries.add(
+        TaskBrowseEntry(
+          task: tasks[index],
+          sectionKey: sectionKey,
+          showSectionHeader: false,
+          isFirstInSection: false,
+          isLastInSection: true,
+          isShowMore: true,
+          hiddenCount: sectionCount - collapsedVisibleCount,
+        ),
+      );
+      continue;
+    }
+
+    entries.add(
+      TaskBrowseEntry(
+        task: tasks[index],
+        sectionKey: sectionKey,
+        showSectionHeader: isFirstInSection,
+        isFirstInSection: isFirstInSection,
+        isLastInSection: !isCapped && isLastInSectionRaw,
+        sectionCount: isFirstInSection && !isPartialTrailingSection
+            ? sectionCount
+            : null,
+      ),
     );
-  }, growable: false);
+  }
+
+  return List<TaskBrowseEntry>.unmodifiable(entries);
+}
+
+/// Stable-sorts [tasks] within each priority bucket by due-date urgency
+/// (overdue first, then today, then soonest future, then no due date) while
+/// preserving the buckets' existing priority order. Ties keep their original
+/// order so the reorder is deterministic and minimises reflow. The browse list
+/// applies this for priority sort so the visible (and capped) few in a bucket
+/// are the most time-critical.
+List<Task> sortTasksWithinPriorityBuckets(List<Task> tasks, DateTime now) {
+  final today = DateTime(now.year, now.month, now.day);
+  int dueKey(Task task) {
+    final due = task.data.due;
+    if (due == null) {
+      return 1 << 30; // no due date sinks to the bottom of its bucket
+    }
+    final day = DateTime(due.year, due.month, due.day);
+    return day.difference(today).inDays; // overdue < 0, today 0, future > 0
+  }
+
+  final bucketOrder = <TaskPriority>[];
+  final buckets = <TaskPriority, List<MapEntry<int, Task>>>{};
+  for (var i = 0; i < tasks.length; i++) {
+    final priority = tasks[i].data.priority;
+    buckets
+        .putIfAbsent(priority, () {
+          bucketOrder.add(priority);
+          return <MapEntry<int, Task>>[];
+        })
+        .add(MapEntry(i, tasks[i]));
+  }
+
+  final result = <Task>[];
+  for (final priority in bucketOrder) {
+    final bucket = buckets[priority]!
+      ..sort((a, b) {
+        final byDue = dueKey(a.value).compareTo(dueKey(b.value));
+        return byDue != 0 ? byDue : a.key.compareTo(b.key);
+      });
+    result.addAll(bucket.map((e) => e.value));
+  }
+  return result;
 }
 
 TaskBrowseSectionKey _sectionKeyForTask(

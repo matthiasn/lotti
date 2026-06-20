@@ -39,7 +39,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   filtered to a single category, the repeated category tag is dropped from every
   row — it comes back when you filter to several categories. Cards lift more
   clearly off the background, and the active-filter chips are a little larger to
-  tap.
+  tap. Within each priority group, tasks now sort by deadline (overdue first,
+  then due today, then soonest) so what's pressing rises to the top, and a long
+  group collapses to its few most-urgent tasks behind a "Show N more" you can
+  tap to expand. Every due date shows as a chip that escalates by urgency —
+  overdue in red, due today in amber, upcoming as a quiet outline — so the
+  deadline is easy to spot at a glance.
 - The desktop sidebar's live-status area — the running timer, an active voice
   recording, and background agents — was redesigned to feel calmer and more
   cohesive while still reading at a glance. The old jumble of red, bordered, and

@@ -228,3 +228,77 @@ class TaskBrowseListItem extends StatelessWidget {
     );
   }
 }
+
+/// The "+N more" affordance that closes a collapsed (capped) priority group.
+/// It mirrors the grouped container's last-row surface — side and bottom
+/// borders with a rounded bottom — so it reads as the final row of the group,
+/// and toggles the section open via [onTap].
+class TaskBrowseShowMoreRow extends StatelessWidget {
+  const TaskBrowseShowMoreRow({
+    required this.hiddenCount,
+    required this.onTap,
+    super.key,
+  });
+
+  final int hiddenCount;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final borderSide = BorderSide(
+      color: TaskShowcasePalette.containerBorder(context),
+    );
+    final borderRadius = BorderRadius.vertical(
+      bottom: Radius.circular(tokens.radii.sectionCards),
+    );
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: tokens.spacing.step3),
+      child: SizedBox(
+        width: double.infinity,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: TaskShowcasePalette.surface(context),
+            borderRadius: borderRadius,
+            border: Border(
+              left: borderSide,
+              right: borderSide,
+              bottom: borderSide,
+            ),
+          ),
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: borderRadius,
+              onTap: onTap,
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step4,
+                  vertical: tokens.spacing.step3,
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.expand_more_rounded,
+                      size: 18,
+                      color: TaskShowcasePalette.mediumText(context),
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                    Text(
+                      context.messages.taskShowcaseShowMore(hiddenCount),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: TaskShowcasePalette.mediumText(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

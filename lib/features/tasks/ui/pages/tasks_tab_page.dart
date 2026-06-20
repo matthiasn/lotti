@@ -17,6 +17,7 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/projects/ui/widgets/projects_overview_list.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_activator.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_controller.dart';
@@ -111,6 +112,11 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
   final _scrollController = ScrollController();
   final ValueNotifier<String?> _hoveredTaskIdNotifier = ValueNotifier(null);
 
+  /// Priority sections the user has expanded past the collapsed cap. Long
+  /// sections start collapsed (showing the first few cards + a "+N more" row)
+  /// so a busy bucket doesn't dump a wall of equal-weight cards on load.
+  final Set<String> _expandedSections = <String>{};
+
   @override
   void initState() {
     super.initState();
@@ -187,11 +193,37 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                         key: const ValueKey('tasks-tab-paged-list'),
                         controller: pagingController,
                         builder: (context, pagingState, fetchNextPage) {
+                          final now = clock.now();
+                          // For priority sort, float the time-critical tasks to
+                          // the top of each bucket. The list view must render
+                          // items in the SAME order the entries are derived
+                          // from, so feed PagedSliverList a reordered display
+                          // state rather than reordering the derived entries
+                          // (which would desync the section boundaries).
+                          final displayState =
+                              state.sortOption == TaskSortOption.byPriority
+                              ? pagingState.copyWith(
+                                  pages: [
+                                    <JournalEntity>[
+                                      ...sortTasksWithinPriorityBuckets(
+                                        (pagingState.items ??
+                                                const <JournalEntity>[])
+                                            .whereType<Task>()
+                                            .toList(),
+                                        now,
+                                      ),
+                                    ],
+                                  ],
+                                  keys: const [0],
+                                )
+                              : pagingState;
                           final entries = buildTaskBrowseEntries(
-                            items: pagingState.items ?? const <JournalEntity>[],
+                            items:
+                                displayState.items ?? const <JournalEntity>[],
                             sortOption: state.sortOption,
-                            now: clock.now(),
+                            now: now,
                             hasNextPage: pagingState.hasNextPage,
+                            expandedSections: _expandedSections,
                           );
                           final entryIndexByTaskId = <String, int>{
                             for (var i = 0; i < entries.length; i++)
@@ -199,7 +231,7 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                           };
 
                           return PagedSliverList<int, JournalEntity>(
-                            state: pagingState,
+                            state: displayState,
                             fetchNextPage: fetchNextPage,
                             builderDelegate: PagedChildBuilderDelegate<JournalEntity>(
                               invisibleItemsThreshold: 10,
@@ -239,6 +271,22 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                   return const SizedBox.shrink();
                                 }
                                 final entry = entries[entryIndex];
+
+                                if (entry.isShowMore) {
+                                  final sectionKey = entry.sectionKey.stableKey;
+                                  return KeyedSubtree(
+                                    key: ValueKey('show-more-$sectionKey'),
+                                    child: ProjectsOverviewContentWidth(
+                                      child: TaskBrowseShowMoreRow(
+                                        hiddenCount: entry.hiddenCount,
+                                        onTap: () => setState(
+                                          () =>
+                                              _expandedSections.add(sectionKey),
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                }
 
                                 final distance = state.showDistances
                                     ? state.vectorSearchDistances[item.meta.id]

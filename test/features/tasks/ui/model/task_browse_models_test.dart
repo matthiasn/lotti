@@ -242,6 +242,116 @@ void main() {
       },
     );
 
+    Task priorityTask(
+      String id,
+      TaskPriority priority, {
+      DateTime? due,
+    }) {
+      return TestTaskFactory.create(
+        id: id,
+        title: id,
+        dateFrom: DateTime(2026, 4, 1, 9),
+      ).copyWith(
+        data: TestTaskDataFactory.create(
+          title: id,
+          dateFrom: DateTime(2026, 4, 1, 9),
+        ).copyWith(priority: priority, due: due),
+      );
+    }
+
+    test(
+      'sortTasksWithinPriorityBuckets floats overdue/soonest to the top and '
+      'preserves the buckets’ incoming order',
+      () {
+        final now = DateTime(2026, 4, 8, 9);
+        final sorted = sortTasksWithinPriorityBuckets([
+          priorityTask('p1-nodue', TaskPriority.p1High),
+          priorityTask(
+            'p1-future',
+            TaskPriority.p1High,
+            due: DateTime(2026, 4, 12),
+          ),
+          priorityTask(
+            'p1-overdue',
+            TaskPriority.p1High,
+            due: DateTime(2026, 4, 5),
+          ),
+          priorityTask('p0-a', TaskPriority.p0Urgent),
+        ], now);
+
+        // p1 bucket stays first (first-seen); within it overdue < future <
+        // no-due; the p0 bucket keeps its trailing position.
+        expect(
+          sorted.map((t) => t.id).toList(),
+          ['p1-overdue', 'p1-future', 'p1-nodue', 'p0-a'],
+        );
+      },
+    );
+
+    test('caps a long collapsed section to N cards plus a show-more entry', () {
+      final now = DateTime(2026, 4, 8, 9);
+      final items = [
+        for (var i = 0; i < 5; i++) priorityTask('t$i', TaskPriority.p1High),
+      ];
+
+      final entries = buildTaskBrowseEntries(
+        items: items,
+        sortOption: TaskSortOption.byPriority,
+        now: now,
+        hasNextPage: false,
+      );
+
+      // 3 visible cards + 1 show-more row.
+      expect(entries, hasLength(4));
+      expect(entries.take(3).every((e) => !e.isShowMore), isTrue);
+      // The header still reports the TRUE section size, not the visible count.
+      expect(entries.first.sectionCount, 5);
+      // The last visible card defers its rounded bottom to the show-more row.
+      expect(entries[2].isLastInSection, isFalse);
+      final more = entries[3];
+      expect(more.isShowMore, isTrue);
+      expect(more.hiddenCount, 2);
+      expect(more.isLastInSection, isTrue);
+    });
+
+    test('an expanded section shows every card and no show-more row', () {
+      final now = DateTime(2026, 4, 8, 9);
+      final items = [
+        for (var i = 0; i < 5; i++) priorityTask('t$i', TaskPriority.p1High),
+      ];
+
+      final entries = buildTaskBrowseEntries(
+        items: items,
+        sortOption: TaskSortOption.byPriority,
+        now: now,
+        hasNextPage: false,
+        expandedSections: const {'priority:P1'},
+      );
+
+      expect(entries, hasLength(5));
+      expect(entries.any((e) => e.isShowMore), isFalse);
+      expect(entries.last.isLastInSection, isTrue);
+    });
+
+    test('the trailing partial section is never capped', () {
+      final now = DateTime(2026, 4, 8, 9);
+      final items = [
+        for (var i = 0; i < 5; i++) priorityTask('t$i', TaskPriority.p1High),
+      ];
+
+      final entries = buildTaskBrowseEntries(
+        items: items,
+        sortOption: TaskSortOption.byPriority,
+        now: now,
+        hasNextPage: true,
+      );
+
+      // Its true size is unknown, so show all loaded rows and suppress count.
+      expect(entries, hasLength(5));
+      expect(entries.any((e) => e.isShowMore), isFalse);
+      expect(entries.first.sectionCount, isNull);
+    });
+
     glados.Glados(
       glados.IntAnys(glados.any).intInRange(-10, 10),
       glados.ExploreConfig(numRuns: 120),

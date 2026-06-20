@@ -14233,6 +14233,12 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 recording} other{{count} recordings}}'**
   String taskShowcaseRecordingsCount(int count);
 
+  /// No description provided for @taskShowcaseShowMore.
+  ///
+  /// In en, this message translates to:
+  /// **'Show {count} more'**
+  String taskShowcaseShowMore(int count);
+
   /// No description provided for @taskShowcaseTaskCount.
   ///
   /// In en, this message translates to:

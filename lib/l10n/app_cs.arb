@@ -3369,6 +3369,7 @@
       }
     }
   },
+  "taskShowcaseShowMore": "Zobrazit dalších {count}",
   "taskShowcaseTaskCount": "{count, plural, =1{1 úkol} few{{count} úkoly} other{{count} úkolů}}",
   "@taskShowcaseTaskCount": {
     "placeholders": {

@@ -3586,6 +3586,7 @@
       }
     }
   },
+  "taskShowcaseShowMore": "Mostrar {count} más",
   "taskShowcaseTaskCount": "{count, plural, =1{1 tarea} other{{count} tareas}}",
   "@taskShowcaseTaskCount": {
     "placeholders": {

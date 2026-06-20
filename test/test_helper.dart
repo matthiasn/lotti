@@ -79,7 +79,10 @@ class DarkWidgetTestBench extends StatelessWidget {
       child: MediaQuery(
         data: mediaQuery,
         child: MaterialApp(
-          theme: ThemeData.dark(),
+          // Resolve through the production theme overrides so the DsTokens
+          // extension is present (matching DarkRiverpodWidgetTestBench and the
+          // real app); widgets that read design tokens must work here too.
+          theme: resolveTestTheme(ThemeData.dark()),
           localizationsDelegates: const [
             AppLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,

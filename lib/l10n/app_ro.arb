@@ -3586,6 +3586,7 @@
       }
     }
   },
+  "taskShowcaseShowMore": "Afișați încă {count}",
   "taskShowcaseTaskCount": "{count, plural, =1{1 sarcină} few{{count} sarcini} other{{count} sarcini}}",
   "@taskShowcaseTaskCount": {
     "placeholders": {
