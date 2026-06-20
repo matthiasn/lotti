@@ -106,13 +106,18 @@ class DashboardChart extends StatelessWidget {
           children: [
             chartHeader,
             if (showEmpty) ...[
-              SizedBox(height: tokens.spacing.step2),
-              Text(
-                emptyMessage ?? '',
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+              // Skip the gap + Text entirely when there's no message, so an
+              // empty card with no notice collapses to just its header rather
+              // than leaving a stray spacer hanging under it.
+              if (emptyMessage != null && emptyMessage!.isNotEmpty) ...[
+                SizedBox(height: tokens.spacing.step2),
+                Text(
+                  emptyMessage!,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
                 ),
-              ),
+              ],
             ] else ...[
               SizedBox(height: tokens.spacing.step3),
               SizedBox(height: height, child: chartArea),

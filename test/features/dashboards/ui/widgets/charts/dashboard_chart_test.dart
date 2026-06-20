@@ -203,6 +203,34 @@ void main() {
     );
 
     testWidgets(
+      'an empty card without a message collapses to just its header',
+      (tester) async {
+        Future<double> cardHeight({String? emptyMessage}) async {
+          await tester.pumpWidget(
+            makeTestableWidget(
+              DashboardChart(
+                chart: const Text('Chart'),
+                chartHeader: const Text('Header'),
+                height: 240,
+                isEmpty: true,
+                emptyMessage: emptyMessage,
+              ),
+            ),
+          );
+          return tester.getSize(find.byType(DashboardChart)).height;
+        }
+
+        final withMessage = await cardHeight(emptyMessage: 'No data');
+        final withoutMessage = await cardHeight();
+
+        // No stray gap under the header: dropping the message leaves only the
+        // header, so the card is strictly shorter than when a notice is shown.
+        expect(find.text('No data'), findsNothing);
+        expect(withoutMessage, lessThan(withMessage));
+      },
+    );
+
+    testWidgets(
       'keeps the full chart height during the initial load even with no data',
       (tester) async {
         await tester.pumpWidget(
