@@ -1136,26 +1136,30 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
   }
 }
 
-/// Composer for the desktop sidebar's `aboveSettings` slot. Groups the
-/// active-status surfaces — audio recording, running timer, and the optional
-/// inline Wake Queue — inside ONE shared recessed "activity" well so they
-/// read as a single calm cluster that belongs with the nav rows above,
-/// rather than three separately-bordered cards.
-///
-/// The well itself is the Material ancestor and the shared neutral surface;
-/// each child renders as a borderless row and self-collapses when its own
-/// state is inactive, so the well shows only while at least one item is live
-/// and grows/shrinks smoothly as items come and go. Items are ordered
-/// live-first (recording → timer → wakes), since a recording is the most
-/// volatile thing to surface and scheduled wakes are the most ambient.
+/// Composer for the desktop sidebar's `aboveSettings` slot. Stacks the
+/// active-status surfaces as a family of distinct cards, ordered live-first:
+/// the active audio recording (red), the running timer (teal), then the
+/// optional inline agent queue (a quieter neutral card). Each card carries its
+/// own surface and self-collapses when inactive; animated gaps appear only
+/// between cards that are both visible, so the stack grows and shrinks
+/// smoothly without leaving phantom spacing.
 class _DesktopSidebarAboveSettings extends ConsumerWidget {
   const _DesktopSidebarAboveSettings({required this.showWakeQueue});
 
   final bool showWakeQueue;
 
+  Widget _gap(BuildContext context, {required bool visible}) {
+    final tokens = context.designTokens;
+    return AnimatedSize(
+      duration: SidebarAudioRecordingSection.animationDuration,
+      curve: Curves.easeInOut,
+      alignment: Alignment.bottomCenter,
+      child: SizedBox(height: visible ? tokens.spacing.step3 : 0),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
     final wakesVisible =
         showWakeQueue && sidebarWakeQueueHasVisibleContent(ref);
     final audioVisible =
@@ -1165,41 +1169,16 @@ class _DesktopSidebarAboveSettings extends ConsumerWidget {
       stream: getIt<TimeService>().getStream(),
       builder: (context, snapshot) {
         final hasTimer = snapshot.data != null;
-        // `wakesVisible`/`audioVisible` already fold in `showWakeQueue` and
-        // `!_isRunningInFlatpak()` (above), so `anyVisible` respects both
-        // flags: whenever it is true, at least one of the three rows below
-        // renders non-empty content and the well is never shown empty.
-        final anyVisible = wakesVisible || audioVisible || hasTimer;
-
-        final content = Column(
+        return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (!_isRunningInFlatpak()) const SidebarAudioRecordingSection(),
+            _gap(context, visible: audioVisible && (hasTimer || wakesVisible)),
             const SidebarTimerSection(),
+            _gap(context, visible: hasTimer && wakesVisible),
             if (showWakeQueue) const SidebarWakeQueue(),
           ],
-        );
-
-        final well = anyVisible
-            ? Material(
-                color: tokens.colors.background.level01,
-                borderRadius: BorderRadius.circular(tokens.radii.m),
-                clipBehavior: Clip.antiAlias,
-                child: Padding(
-                  padding: EdgeInsets.symmetric(
-                    vertical: tokens.spacing.step3,
-                  ),
-                  child: content,
-                ),
-              )
-            : const SizedBox.shrink();
-
-        return AnimatedSize(
-          duration: SidebarAudioRecordingSection.animationDuration,
-          curve: Curves.easeInOut,
-          alignment: Alignment.bottomCenter,
-          child: well,
         );
       },
     );

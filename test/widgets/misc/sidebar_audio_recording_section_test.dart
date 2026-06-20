@@ -167,19 +167,15 @@ void main() {
     expect(find.text('01:02:03'), findsOneWidget);
     expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
     expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+    expect(
+      find.byKey(const Key('sidebar_audio_recording_card')),
+      findsOneWidget,
+    );
 
-    // The static mic glyph carries the recording (red) accent — the only
-    // chroma in the otherwise neutral row (replacing the old reactive orb).
+    // The mic glyph carries the recording (red) accent — the live card's
+    // single accent (rail + glyph + elapsed time all read red).
     final micIcon = tester.widget<Icon>(find.byIcon(Icons.mic_rounded));
     expect(micIcon.color, dsTokensLight.colors.alert.error.defaultColor);
-
-    // The card is a borderless row on the shared activity well; the well
-    // (not the row) provides the surface, so the row is an InkWell carrying
-    // the small interaction radius.
-    final inkWell = tester.widget<InkWell>(
-      find.byKey(const Key('sidebar_audio_recording_card')),
-    );
-    expect(inkWell.borderRadius, BorderRadius.circular(dsTokensLight.radii.s));
   });
 
   testWidgets('time text uses tabular figure features', (tester) async {

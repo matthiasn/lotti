@@ -149,7 +149,7 @@ sequenceDiagram
   Repo-->>Ctl: AudioNote + amplitude stream
   Ctl->>Ctl: update dBFS, RMS-based VU, progress
   Ctl-->>Modal: VU meter + elapsed time
-  Ctl-->>Sidebar: static red mic glyph + elapsed time (no dBFS reaction)
+  Ctl-->>Sidebar: red accent card + pulsing record dot + elapsed time (no dBFS reaction)
   User->>Modal: tap stop
   Modal->>Ctl: stop()
   Ctl->>Repo: stopRecording()

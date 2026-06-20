@@ -7,17 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.1030]
 ### Changed
 - The desktop sidebar's live-status area — the running timer, an active voice
-  recording, and background agents — was redesigned to feel calmer and to match
-  the rest of the app. The separate red, bordered, and monospace boxes are gone:
-  everything now lives in one quiet recessed panel of clean rows in the app's own
-  font. A running timer shows a teal stopwatch, an active recording a red
-  microphone, and background work appears under a gentle "Agents" label — each
-  row with its elapsed time and a clear stop or cancel button, all lined up in a
-  single column. The pulsing recording orb and the alarm-red fills are replaced
-  by a single small accent per row, and hovering a shortened task name now shows
-  it in full. At the very bottom, the sync-activity readout is now labelled
-  "Outbox / Inbox" (instead of "tx / rx") and stays quiet until there is
-  actually something to sync.
+  recording, and background agents — was redesigned to feel calmer and more
+  cohesive while still reading at a glance. The old jumble of red, bordered, and
+  monospace boxes is gone. A running timer is now a teal card and an active
+  recording a red card, each with a coloured accent rail, the task name on up to
+  two lines, and a big, easy-to-read elapsed time in its accent colour; the
+  recording shows a gentle pulsing dot so you can tell it's live (it respects the
+  system "reduce motion" setting). Background "Agents" sit just below in a
+  quieter card. Hovering a shortened task name shows it in full, and at the very
+  bottom the sync readout is now labelled "Outbox / Inbox" (instead of
+  "tx / rx") and stays quiet until there's something to sync.
 - The task details **header** was reworked for a calmer, more responsive
   layout. The status control no longer floats in empty space — it leads a
   two-lane metadata block (status · priority · due · time estimate on the first

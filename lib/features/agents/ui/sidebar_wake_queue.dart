@@ -101,24 +101,34 @@ class SidebarWakeQueue extends ConsumerWidget {
     // sidebar; the header link icon is the path to the full list.
     final totalCount = ongoing.length + inWindow.length;
 
+    final tokens = context.designTokens;
     final child = totalCount == 0
         ? const SizedBox.shrink(key: _hiddenKey)
-        : Column(
+        : Material(
             key: _visibleKey,
-            // Borderless — the surrounding activity well
-            // (SidebarActivitySection) provides the shared recessed surface,
-            // the Material ancestor for the ink, and the horizontal gutter.
-            // Rows carry their own horizontal padding so the leading dot
-            // aligns to the same icon column as the nav and the timer/audio
-            // rows.
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Header(count: totalCount),
-              if (ongoing.isNotEmpty)
-                for (final record in ongoing) _OngoingWakeRow(record: record),
-              if (visibleScheduled.isNotEmpty)
-                for (final record in visibleScheduled) _WakeRow(record: record),
-            ],
+            // Quiet neutral card — agents are background/scheduled work, so
+            // this sits a tier below the accent-tinted live timer/recording
+            // cards (no accent rail or tint). Rows carry their own horizontal
+            // padding so the leading dot aligns to the live cards' glyph
+            // column and the nav rows above.
+            color: tokens.colors.surface.enabled,
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            clipBehavior: Clip.antiAlias,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Header(count: totalCount),
+                  if (ongoing.isNotEmpty)
+                    for (final record in ongoing)
+                      _OngoingWakeRow(record: record),
+                  if (visibleScheduled.isNotEmpty)
+                    for (final record in visibleScheduled)
+                      _WakeRow(record: record),
+                ],
+              ),
+            ),
           );
 
     return AnimatedSize(

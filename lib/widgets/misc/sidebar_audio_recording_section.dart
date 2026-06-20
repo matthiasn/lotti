@@ -12,7 +12,7 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
+import 'package:lotti/widgets/misc/sidebar_live_card.dart';
 
 final FutureProviderFamily<JournalEntity?, String>
 sidebarAudioRecordingLinkedEntryProvider = FutureProvider.autoDispose
@@ -34,12 +34,12 @@ bool _recordingIsVisible(AudioRecorderState state) {
 /// `aboveSettings` slot whenever the microphone is active and the modal is
 /// not already open.
 ///
-/// The card intentionally mirrors `SidebarTimerSection`: the same neutral
-/// recessed surface, a leading type glyph, the linked title, a live elapsed
-/// clock, and a stop button. A static red microphone glyph (record
-/// convention) identifies it and distinguishes it from the teal running
-/// timer — there is no animated orb or signal-reactive frame, keeping the
-/// sidebar calm while a background recording runs in another tab or route.
+/// The card shares [SidebarLiveCard] with `SidebarTimerSection`: a soft
+/// accent-tinted card with an accent rail, a leading glyph, the linked title
+/// (up to two lines), a prominent accent-coloured elapsed time, and a stop
+/// button. Recording uses the red accent and a microphone glyph with a gentle
+/// pulsing record dot (record convention, reduce-motion aware) — present and
+/// unmistakable, but without the old signal-reactive orb/frame/glow.
 class SidebarAudioRecordingSection extends ConsumerWidget {
   const SidebarAudioRecordingSection({super.key});
 
@@ -103,64 +103,27 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
     );
     final durationText = formatDuration(body.progress);
 
-    // Borderless single-line row — the surrounding activity well provides
-    // the shared recessed surface and the Material ancestor for the ink.
-    // A static red mic glyph (record convention) identifies it and keeps
-    // its stop button distinct from the teal running timer.
-    return Semantics(
-      container: true,
+    // Red "live" accent card with a static mic glyph plus a gentle pulsing
+    // record dot (record convention) — present without the old reactive orb,
+    // and clearly distinct from the teal running timer.
+    return SidebarLiveCard(
+      key: const Key('sidebar_audio_recording_card'),
+      accent: errorColor,
+      glyph: Icons.mic_rounded,
+      title: title,
+      timeText: durationText,
+      pulse: true,
       liveRegion: true,
-      label: messages.taskActionBarAudioRecordingActive,
-      child: InkWell(
-        key: const Key('sidebar_audio_recording_card'),
-        onTap: () => AudioRecordingModal.show(
-          context,
-          linkedId: linkedId,
-          categoryId: linkedEntry?.categoryId,
-          useRootNavigator: false,
-        ),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step5,
-            vertical: tokens.spacing.step3,
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.mic_rounded, size: 20, color: errorColor),
-              SizedBox(width: tokens.spacing.step4),
-              Expanded(
-                child: Tooltip(
-                  message: title,
-                  child: Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: tokens.typography.styles.body.bodySmall.copyWith(
-                      // Lead the row at high emphasis, matching the running
-                      // timer, so the recorded task stays readable when
-                      // truncated.
-                      color: tokens.colors.text.highEmphasis,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                durationText,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                  fontFeatures: numericBadgeFontFeatures,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              _StopAudioRecordingButton(
-                onStop: () => unawaited(
-                  _stop(ref, isRealtimeMode: body.isRealtimeMode),
-                ),
-              ),
-            ],
-          ),
+      semanticsLabel: messages.taskActionBarAudioRecordingActive,
+      onTap: () => AudioRecordingModal.show(
+        context,
+        linkedId: linkedId,
+        categoryId: linkedEntry?.categoryId,
+        useRootNavigator: false,
+      ),
+      trailing: _StopAudioRecordingButton(
+        onStop: () => unawaited(
+          _stop(ref, isRealtimeMode: body.isRealtimeMode),
         ),
       ),
     );

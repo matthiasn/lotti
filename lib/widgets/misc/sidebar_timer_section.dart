@@ -8,7 +8,7 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
+import 'package:lotti/widgets/misc/sidebar_live_card.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
 
 /// Inline timer panel rendered in the desktop sidebar's `aboveSettings`
@@ -116,55 +116,20 @@ class _SidebarTimerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    // Teal "live" accent — the app's interactive accent identifies a
-    // running timer and visually separates it from the red audio row so
-    // their stop buttons can never be confused.
-    final accent = tokens.colors.interactive.enabled;
     final title = _resolveTitle(messages.taskUntitled);
     final durationText = formatDuration(entryDuration(current));
 
-    // Borderless single-line row — the surrounding activity well
-    // (SidebarActivitySection) provides the shared recessed surface and
-    // the Material ancestor for the ink. Layout mirrors the nav rows and
-    // the audio/wake rows: leading glyph, title, trailing tabular clock,
-    // trailing action.
-    return Semantics(
-      container: true,
-      label: messages.sidebarRunningTimerLabel,
-      child: InkWell(
-        onTap: onTapBody,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step5,
-            vertical: tokens.spacing.step3,
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.timer_outlined, size: 20, color: accent),
-              SizedBox(width: tokens.spacing.step4),
-              // Tooltip surfaces the full task name, which the single-line
-              // row truncates — so two concurrent timers stay distinguishable.
-              Expanded(
-                child: Tooltip(
-                  message: title,
-                  child: _TimerTitleRow(title: title),
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              Text(
-                durationText,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                  fontFeatures: numericBadgeFontFeatures,
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step2),
-              _StopTimerButton(onStop: onStop),
-            ],
-          ),
-        ),
-      ),
+    // Teal "live" accent — the app's interactive accent identifies a running
+    // timer (rail + glyph + prominent elapsed time) and separates it from the
+    // red audio card so the two stop buttons can never be confused.
+    return SidebarLiveCard(
+      accent: tokens.colors.interactive.enabled,
+      glyph: Icons.timer_outlined,
+      title: title,
+      timeText: durationText,
+      onTap: onTapBody,
+      semanticsLabel: messages.sidebarRunningTimerLabel,
+      trailing: _StopTimerButton(onStop: onStop),
     );
   }
 
@@ -178,28 +143,6 @@ class _SidebarTimerCard extends StatelessWidget {
     final currentText = current.entryText?.plainText.trim();
     if (currentText != null && currentText.isNotEmpty) return currentText;
     return fallback;
-  }
-}
-
-class _TimerTitleRow extends StatelessWidget {
-  const _TimerTitleRow({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Text(
-      title,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: tokens.typography.styles.body.bodySmall.copyWith(
-        // High-emphasis so the running task — the most important live object
-        // in the well — leads its row alongside the clock, and stays readable
-        // even when truncated.
-        color: tokens.colors.text.highEmphasis,
-      ),
-    );
   }
 }
 

@@ -194,14 +194,15 @@ without leaving whatever tab the operator is on:
 - the header link switches to the Settings tab and beams to
   `/settings/agents/pending-wakes` for the full list.
 
-The widget renders as borderless rows (no card of its own); the desktop
-sidebar composer wraps it — together with the running-timer and audio rows —
-in one shared recessed "activity" well, so the agents block reads as part of a
-single calm live-status group rather than a separate bordered card. Every row
-aligns its leading dot/glyph to the same icon column as the nav rows above.
-Type is the app's Inter family throughout (no monospace); elapsed times use
-tabular figures. Titles surface in full via a hover tooltip when the row
-truncates them.
+The widget renders as its own **quiet neutral card** (`surface.enabled`, radius
+`m`, no accent rail or tint) — deliberately a tier below the accent-tinted live
+cards (`SidebarLiveCard`: the teal running timer and red recording). The desktop
+sidebar composer stacks all three live-first (audio → timer → agents) so the eye
+lands on what is actively running before the scheduled/background agent work.
+Every row aligns its leading dot to the live cards' glyph column and the nav
+rows above. Type is the app's Inter family throughout (no monospace); elapsed
+times use tabular figures. Titles surface in full via a hover tooltip when the
+row truncates them.
 
 Rows are driven by the page-scoped `wakeCountdownTickerProvider`, so the
 sidebar shares a one-second ticker instead of spawning a timer per row. Wakes
