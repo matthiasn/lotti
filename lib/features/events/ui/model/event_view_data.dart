@@ -131,11 +131,15 @@ class EventTaskRef {
   const EventTaskRef({
     required this.title,
     required this.done,
+    this.id,
     this.statusLabel,
     this.statusColor,
     this.dueLabel,
   });
 
+  /// The linked task's entity id, used to open its detail page. Null only for
+  /// fixtures that don't drive navigation.
+  final String? id;
   final String title;
   final bool done;
   final String? statusLabel;

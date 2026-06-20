@@ -61,6 +61,7 @@ EventTimelineEntry? eventTimelineEntryFor(
 EventTaskRef? eventTaskRefFor(JournalEntity entity, {String? dueLabel}) {
   if (entity is! Task) return null;
   return EventTaskRef(
+    id: entity.meta.id,
     title: entity.data.title,
     done: entity.data.status is TaskDone,
     dueLabel: dueLabel,

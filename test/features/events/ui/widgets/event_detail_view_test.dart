@@ -465,6 +465,48 @@ void main() {
       expect(opened, ['note-1']);
     });
 
+    testWidgets('tapping a linked task row opens that task', (tester) async {
+      final opened = <String>[];
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            tasks: const [
+              EventTaskRef(id: 'task-1', title: 'Book the venue', done: true),
+              EventTaskRef(id: 'task-2', title: 'Share the album', done: false),
+            ],
+          ),
+          onOpenTask: opened.add,
+        ),
+        size: _tallMobile,
+      );
+
+      // Each openable task row carries an "open" chevron and is tappable.
+      expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
+      await tester.tap(find.text('Share the album'));
+      await tester.pump();
+      expect(opened, ['task-2']);
+    });
+
+    testWidgets('a linked task row without an id stays static', (tester) async {
+      var opens = 0;
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            tasks: const [EventTaskRef(title: 'No id task', done: false)],
+          ),
+          onOpenTask: (_) => opens++,
+        ),
+        size: _tallMobile,
+      );
+
+      expect(find.byIcon(Icons.chevron_right), findsNothing);
+      await tester.tap(find.text('No id task'));
+      await tester.pump();
+      expect(opens, 0);
+    });
+
     testWidgets('hides summary when none is provided', (tester) async {
       await pumpEventScreen(
         tester,

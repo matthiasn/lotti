@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
+import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -130,6 +132,20 @@ class EventDetailPage extends ConsumerWidget {
       categoryId: entry.meta.categoryId,
     );
 
+    // Creates a prep/follow-up task linked from this event, assigns the
+    // category's default agent (mirroring the linked-tasks flow), then opens
+    // the new task — landing on its fresh detail page, where the event shows
+    // under "Linked from".
+    Future<void> addTask() async {
+      final task = await createTask(
+        linkedId: eventId,
+        categoryId: entry.meta.categoryId,
+      );
+      if (task == null || !context.mounted) return;
+      unawaited(autoAssignCategoryAgent(ref, task));
+      openLinkedTaskDetail(context: context, taskId: task.meta.id);
+    }
+
     return EventDetailView(
       data: data,
       onBack: () => Navigator.of(context).maybePop(),
@@ -142,11 +158,10 @@ class EventDetailPage extends ConsumerWidget {
       onAddCover: addLinkedEntry,
       onDelete: confirmDelete,
       onAddToTimeline: addLinkedEntry,
-      onAddTask: () => createTask(
-        linkedId: eventId,
-        categoryId: entry.meta.categoryId,
-      ),
+      onAddTask: addTask,
       onOpenTimelineEntry: (entryId) => beamToNamed('/journal/$entryId'),
+      onOpenTask: (taskId) =>
+          openLinkedTaskDetail(context: context, taskId: taskId),
     );
   }
 }

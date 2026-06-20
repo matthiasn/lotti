@@ -39,6 +39,7 @@ class EventDetailView extends StatelessWidget {
     this.onAddToTimeline,
     this.onAddTask,
     this.onOpenTimelineEntry,
+    this.onOpenTask,
     super.key,
   });
 
@@ -69,6 +70,10 @@ class EventDetailView extends StatelessWidget {
   /// as static (and drop the trailing "open" chevron) so the affordance always
   /// matches the actual behavior.
   final ValueChanged<String>? onOpenTimelineEntry;
+
+  /// Opens a linked task's detail page (receives the task id). When null (or a
+  /// row has no id) the task rows render as static.
+  final ValueChanged<String>? onOpenTask;
 
   /// Content cap so the body doesn't sprawl on very wide screens.
   static const double _contentMaxWidth = 1080;
@@ -203,7 +208,7 @@ class EventDetailView extends StatelessWidget {
           onTap: onAddTask,
         )
       else
-        for (final task in data.tasks) _TaskRow(task: task),
+        for (final task in data.tasks) _TaskRow(task: task, onOpen: onOpenTask),
     ];
   }
 }
@@ -1096,9 +1101,12 @@ class _TimelineContent extends StatelessWidget {
 }
 
 class _TaskRow extends StatelessWidget {
-  const _TaskRow({required this.task});
+  const _TaskRow({required this.task, this.onOpen});
 
   final EventTaskRef task;
+
+  /// Opens the task's detail page (receives the task id).
+  final ValueChanged<String>? onOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -1106,7 +1114,12 @@ class _TaskRow extends StatelessWidget {
     final cs = context.colorScheme;
     final styles = tokens.typography.styles;
 
-    return Padding(
+    // Only interactive — and only carrying the "open" chevron — when there's a
+    // task id and a handler to open it.
+    final taskId = task.id;
+    final canOpen = onOpen != null && taskId != null;
+
+    final row = Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step2),
       child: Row(
         children: [
@@ -1145,8 +1158,19 @@ class _TaskRow extends StatelessWidget {
               ),
             ),
           ],
+          if (canOpen) ...[
+            SizedBox(width: tokens.spacing.step2),
+            Icon(Icons.chevron_right, size: 20, color: cs.outline),
+          ],
         ],
       ),
+    );
+
+    if (!canOpen) return row;
+    return InkWell(
+      onTap: () => onOpen!(taskId),
+      borderRadius: BorderRadius.circular(tokens.radii.s),
+      child: row,
     );
   }
 }

@@ -98,7 +98,10 @@ it — and the full, uncropped photo is always one tap away in the viewer.
 Each timeline row carries the source entry's id and is tappable when the page
 wires `onOpenTimelineEntry` (it beams to `/journal/<entryId>`); the trailing
 "open" chevron renders only when that handler is present, so the affordance
-always matches the behavior.
+always matches the behavior. Linked **task** rows follow the same pattern: each
+`EventTaskRef` carries its task id, and when the page wires `onOpenTask` the row
+gains the "open" chevron and opens the task's detail page via
+`openLinkedTaskDetail` (desktop push / mobile route to `TaskDetailsPage`).
 
 #### Inline editing
 
@@ -128,9 +131,12 @@ should be removed once the old form route is retired (don't "fix" it).
   rating, so a fresh/tentative event isn't pushed gold stars.
 - **Cover** — while the event has no cover, an "add cover photo" action opens the
   create-entry menu; the first linked photo then becomes the cover automatically.
-- **Add to timeline / Add task** — open the shared `CreateEntryModal` scoped to
-  the event (`linkedFromId`) / `createTask(linkedId:)`, so new notes, photos,
-  audio and tasks link straight back.
+- **Add to timeline** — opens the shared `CreateEntryModal` scoped to the event
+  (`linkedFromId`), so new notes, photos and audio link straight back.
+- **Add task** — mirrors the linked-tasks flow: `createTask(linkedId: eventId)`
+  (which writes the `event → task` link, so the event surfaces under the task's
+  "Linked from"), then `autoAssignCategoryAgent` assigns the category's default
+  agent, then it opens the new task via `openLinkedTaskDetail`.
 - **Delete** — the overflow menu confirms via the standard delete sheet →
   `delete(beamBack: true)`.
 
