@@ -443,7 +443,57 @@ void main() {
     );
   });
 
-  // ---------------------------------------------------------------------------
-  // Group: Scroll offset listener (lines 54-56)
-  // ---------------------------------------------------------------------------
+  group('TaskDetailsPage Suggestions Anchor - ', () {
+    setUpAll(registerTaskDetailsFallbacks);
+    setUp(registerTaskDetailsServices);
+    tearDown(getIt.reset);
+
+    testWidgets(
+      'confirming a proposal (open count drops) engages the scroll anchor and '
+      'updates the list without crashing',
+      (tester) async {
+        final container = ProviderContainer(
+          overrides: [
+            ...hTaskDetailsPageOverrides(),
+            ...hControllableSuggestionOverrides(),
+          ],
+        );
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: makeTestableWidget2(
+              TaskDetailsPage(taskId: testTask.id),
+            ),
+          ),
+        );
+        // Explicit pumps (not pumpAndSettle, which would hang on the AI
+        // card's long-lived wake timers) to let the async providers resolve.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The proposals section is up with the (first) open proposal showing.
+        expect(find.text('Set estimate to 30 minutes'), findsOneWidget);
+
+        // Simulate confirming one proposal: the open list shrinks 2 -> 1,
+        // which fires the page's suggestion listener and engages the scroll
+        // anchor (capturing the proposals' position to hold it across the
+        // relayout a confirm can trigger above the card).
+        container.read(controllableOpenSuggestionCountProvider.notifier).set(1);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        // The page absorbed the shrink cleanly (the anchor ran, no exception)
+        // and the surviving proposal is still shown.
+        expect(tester.takeException(), isNull);
+        expect(find.text('Set estimate to 30 minutes'), findsOneWidget);
+
+        // Dispose the container (cancels the entry-controller cache timer)
+        // before the framework's pending-timer check.
+        container.dispose();
+      },
+    );
+  });
 }

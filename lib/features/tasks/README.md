@@ -177,9 +177,21 @@ Checklist content is modeled separately through checklist entities and linked ch
   body (set off by a hairline rule + `sectionGap`), then the user's *work*
   (`ChecklistsWidget`, `LinkedTasksWidget`), and finally the `AiSummaryCard`
   assistant zone — checklists come before the AI suggestions so "what's left to
-  do" is visible without scrolling past proposals. The bands are wrapped in a
+  do" is visible without scrolling past proposals. The AI card leads with a
+  `step4` top gap (not a full `sectionGap` — `LinkedTasksWidget` already adds
+  its own `step3` bottom padding, so a sectionGap on top stacked into an
+  oversized gap) and carries a `sectionGap` *bottom* padding so it has real
+  breathing room above the bottom action bar (the linked-entries sliver below
+  it contributes almost none). The bands are wrapped in a
   `StaggeredEntrance` (a one-time fade-and-rise on load that does not replay on
   background refresh) and, on wide windows, a centred max-width reading column.
+  Because the AI card sits *below* the work, confirming a proposal can add a
+  checklist item above it and shove the proposals the user just tapped
+  downward. `TaskDetailsPage` guards against that with a `ScrollAnchor`
+  (`util/scroll_anchor.dart`): it listens to `unifiedSuggestionListProvider`
+  and, when the open-proposal count drops (a confirm/dismiss), pins the
+  proposals' on-screen position for a short frame budget so the page stays put
+  across the relayout instead of jumping.
 - linked entries with timer-aware highlighting (card padding evened onto tokens)
 - reverse linked-from entries
 - `TaskActionBar` — a sticky frosted-glass bar hosted in the page's
@@ -303,7 +315,7 @@ Some text styles inside the card override the base design-system token's `height
 
 ### DesktopTaskHeader visual states
 
-The header title has two interactive states driven by local editing state. The ReadOnly state is plain text plus an edit pencil (no capsule); the Editing state is a capsule-shaped `TextField` with a `surface.hover` fill and an 8px radius (`_capsuleRadius = 8.0`):
+The header title has two interactive states driven by local editing state. The ReadOnly state is a plain-text click-to-edit region (no capsule, no pencil glyph); the Editing state is a capsule-shaped `TextField` with a `surface.hover` fill and an 8px radius (`_capsuleRadius = 8.0`):
 
 ```mermaid
 stateDiagram-v2
@@ -313,14 +325,16 @@ stateDiagram-v2
   Editing --> ReadOnly: close button / Esc → revert
 ```
 
-- ReadOnly: the title renders as plain `Text` in Heading 3 Bold, wrapping onto multiple lines for long strings.
+- ReadOnly: the title renders as plain `Text` in Heading 2 Bold at a 1.15 line-height (so a wrapping multi-line title reads as one cohesive block). The whole title is the edit target — there is deliberately **no trailing pencil glyph** (a persistent pencil drifted into a dead gutter beside short / wrapping titles), so the affordance is carried by the hover click-cursor, an "Edit title" `Semantics` button, and keyboard activation. The title spans the full content width and wraps freely — no control rides this line.
 - Editing: the title becomes a capsule-shaped inline `TextField` with a teal `interactive.enabled` border and external check (save) and close (cancel) buttons. Enter inserts a newline; ⌘/Ctrl+Enter or tapping the check saves.
 
-The header body is three explicit lines, composed top-to-bottom in `DesktopTaskHeader.build`:
+The header body is composed top-to-bottom in `DesktopTaskHeader.build`:
 
 1. **Crumb** (`_HeroCrumb`) — a `Row` of `[category | unassigned placeholder] / [project | No project placeholder]` separated by a literal `/`. No label chips here.
-2. **Title** (`_TitleReadOnly` / `_TitleEditor`) — tap to edit.
-3. **Meta** (`_MetaRow`) — a trailing-aligned `Wrap` of `[priority badge] → [due date | No due date placeholder] → [estimate chip] → [label chips | Add Label placeholder]`, with the `[status dropdown]` pinned to the trailing edge. Labels live in this meta row, not in a separate classification line.
+2. **Title** (`TitleReadOnly` / `TitleEditor`) — full-width, tap to edit.
+3. **Meta** (`MetaRow`) — a two-lane `Column`. The **attribute lane** is a left-aligned `Wrap` led by the status pill: `[status select] → [priority] → [due | No due date placeholder] + [estimate chip]`. The **label lane** below is a second left-aligned `Wrap` of `[label chips | Add Label placeholder]`. Status *leads* the attribute lane (rather than being pinned to a trailing edge) so it has one stable home that never opens a horizontal dead zone next to a short cluster and never gets marooned when the row wraps; separating the structured attributes from the free-form label taxonomy keeps the "what state / when / how big" read distinct from the user's tags. The due date and time-estimate are bonded into a single inner `Wrap` unit (`MetaRow._timeGroup`) so when the lane wraps on a narrow viewport the optional estimate travels with the due chip (the lane breaks as `status+priority` / `due+estimate`) instead of stranding the lone estimate on its own near-empty row; the inner wrap reuses the same chip gap, so the pair is visually identical to two adjacent chips on wide screens and only ever splits internally at extreme widths. The chips share one neutral filled shell at one height — the status pill is the lane's only tinted accent (matched to the chip height), priority carries its urgency via a coloured glyph, and the due chip escalates to a tinted accent only when it is due today / overdue. Every neutral filled metadata chip (priority, normal due, estimate, labels) carries a quiet 1px `decorative.level02` border (`DsPill(bordered: true)`) so its boundary is legible against the near-same-tone surface for low-vision users; the status pill and an urgent (tinted) due chip skip the border since their fill already reads. The **priority** chip spells the level out (`TaskPriority.localizedLabel` → Urgent / High / Medium / Low) rather than the opaque `P2` code, so the urgency direction reads at a glance (the compact `priority.short` "P{n}" is retained only for the priority picker rows and AI-context strings). The **estimate** chip (`_TaskEstimateChip`) reads `{tracked} of {estimate}` in plain duration units (e.g. `0m of 1h`, `1h 30m of 2h` — not a clock-like `00:00 / 01:00`, which users misread as a time-of-day range) with a `Tooltip` ("Time tracked: … of … estimated") so the two numbers are not a guessing game. The **label lane** caps at `_maxVisibleLabels` (4) chips and collapses the remainder behind a tappable `+N` `_LabelOverflowChip`; expanding swaps in a "Show fewer" chip, and a label change (new task) resets the expansion via `didUpdateWidget`. Inter-chip horizontal gaps (`step2`) are kept tighter than each pill's internal padding (`step3`) so the chips read as one anchored cluster, while a full `step4` context-break step (the same gap used between the breadcrumb and the title) sets the two lanes apart so the label lane reads as a distinct register from vertical rhythm alone, not just the chips' colour dots.
+
+The status pill's *label text* is kept at high contrast (the high-emphasis text colour, not the accent itself — accent-on-accent-tint fails WCAG); the status's colour identity is instead carried by its translucent tinted fill plus the per-status glyph. The vertical rhythm uses proximity grouping: a `step4` gap separates the breadcrumb (ancestor context) from the title, and a tighter `step3` gap bonds the title down to its metadata block so title + chips read as one unit.
 
 There is no ellipsis inside the header — entry actions live on the pinned app bar. `TaskCompactAppBar` and `TaskExpandableAppBar` also surface the task title in `subtitle2` once the detail scroll offset passes a threshold, so the title stays visible as the header scrolls out of view.
 
@@ -348,6 +362,37 @@ the strike-through wipe, and the 100% glow; `.tasks` for the task-done beat —
 Settings → Advanced → Animations) and on the system reduce-motion setting. The
 haptics always fire (the switch turns off animations, not feedback). Every beat
 fires only on the not-done → done transition.
+
+Each row's checkbox keeps a compact 20×20 visual but is centred inside a 44×44
+`InkWell` tap target so it clears the Material / WCAG touch-target minimum
+without enlarging the box — users with reduced motor precision can hit the
+surrounding ring instead of aiming at the tiny square. A centre tap lands on
+the `Checkbox` itself (keeping its native gesture + a11y semantics); the ring
+is caught by the `InkWell`, and both route through the row's single
+`applyCheck` handler so the toggle behaviour stays in one place. The 44px zone
+draws a faint resting "well" (a `surface.enabled` fill with a
+`decorative.level02` border — the same filled+bordered language as the metadata
+chips) so the forgiving tap area is *visible at rest*; on touch there is no
+hover, so a hover-only highlight left it invisible where most users tap. The
+`InkWell` also carries a `hoverColor` for hover/press feedback on pointer
+devices. The drag-grip icon is a
+quiet hint at a low (0.2) alpha (a long-press anywhere on the row starts the
+drag), so the repeating grip texture doesn't compete with the checkbox + title.
+The empty checkbox draws its outline at medium emphasis / 2px (not the faint
+low-emphasis 1.5px it used to) — an unchecked control must stay visible against
+the dark card for low-vision users; this is control legibility, not the
+metadata-chip emphasis tiering.
+
+The row renders **stale-while-revalidate**: it reads `itemAsync.value` (the
+retained value) rather than `itemAsync.map(loading: …)`, so a *reloading* item
+keeps its current state instead of blanking to `SizedBox.shrink` for a frame
+(the flicker when an accepted AI suggestion updated the checklist); a genuine
+first mount / deletion still collapses, and a hard load error with no prior
+value still surfaces an `ErrorWidget`. Relatedly, the checklist cards in
+`ChecklistsWidget` are keyed by checklist **identity** (`Key('checklist-$id-…')`,
+not the list index), so inserting or reordering a checklist keeps every other
+card's element + state instead of shifting indices and re-fetching (which
+flashed them).
 
 ### Checklist runtime model
 

@@ -66,9 +66,11 @@ class RowActions extends StatelessWidget {
         ),
       );
     }
-    // Each [_SquareIconButton] already centers its 26×26 visual inside
-    // a 48×48 hit zone, so the visible chips end up ≈22px apart with
-    // no extra gap — matching the spec'd compact rhythm.
+    // Each [_SquareIconButton] centers its 26×26 visual inside a 48×48 hit
+    // zone. A `step4` gap separates the two hit zones so the destructive
+    // reject is never flush against accept — a mis-tap between the adjacent
+    // 48×48 zones is the failure users with reduced motor control fear most,
+    // and the dead band between them removes it.
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -78,6 +80,7 @@ class RowActions extends StatelessWidget {
           onPressed: onReject,
           variant: _SquareIconVariant.outline,
         ),
+        SizedBox(width: context.designTokens.spacing.step4),
         _SquareIconButton(
           icon: Icons.check_rounded,
           tooltip: context.messages.changeSetSwipeConfirm,

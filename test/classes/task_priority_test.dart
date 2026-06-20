@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/themes/colors.dart';
 
 void main() {
@@ -83,6 +84,31 @@ void main() {
       expect(priority.rank, priority.index, reason: '$priority');
       expect(taskPriorityFromString(priority.short), priority);
     }, tags: 'glados');
+  });
+
+  group('TaskPriority localizedLabel', () {
+    testWidgets('spells out each priority (Urgent/High/Medium/Low)', (
+      tester,
+    ) async {
+      late BuildContext ctx;
+      await tester.pumpWidget(
+        MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Builder(
+            builder: (context) {
+              ctx = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(TaskPriority.p0Urgent.localizedLabel(ctx), 'Urgent');
+      expect(TaskPriority.p1High.localizedLabel(ctx), 'High');
+      expect(TaskPriority.p2Medium.localizedLabel(ctx), 'Medium');
+      expect(TaskPriority.p3Low.localizedLabel(ctx), 'Low');
+    });
   });
 }
 

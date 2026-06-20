@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/media_import.dart';
@@ -57,6 +59,18 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   );
   Timer? _suggestionsRetryTimer;
 
+  /// Holds the AI proposals' on-screen position when a proposal is confirmed:
+  /// confirming a suggestion can add a checklist item *above* the AI card,
+  /// which would otherwise shove the card (and the proposal the user just
+  /// tapped) downward. The anchor keeps the spot stable across that relayout.
+  late final ScrollAnchor _suggestionsAnchor;
+  int? _lastOpenSuggestionCount;
+
+  /// The task the [_lastOpenSuggestionCount] belongs to. If this page's state is
+  /// reused for a different task (e.g. a master-detail pane), the count is reset
+  /// so a stale previous-task count can't falsely trigger the scroll anchor.
+  String? _lastTaskId;
+
   @override
   void initState() {
     final provider = taskAppBarControllerProvider(id: widget.taskId);
@@ -70,6 +84,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       ..addListener(_listener)
       ..addListener(_updateOffsetListener);
 
+    _suggestionsAnchor = ScrollAnchor(
+      controller: _scrollController,
+      locate: _suggestionsViewportTop,
+    );
+
     super.initState();
   }
 
@@ -77,11 +96,41 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   void dispose() {
     disposeHighlight();
     _suggestionsRetryTimer?.cancel();
+    _suggestionsAnchor.dispose();
     _scrollController
       ..removeListener(_listener)
       ..removeListener(_updateOffsetListener)
       ..dispose();
     super.dispose();
+  }
+
+  /// Global-Y of the AI proposals section, or null when it isn't laid out.
+  double? _suggestionsViewportTop() {
+    final renderObject = _suggestionsKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.attached) return null;
+    return renderObject.localToGlobal(Offset.zero).dy;
+  }
+
+  /// When the open-proposal count drops (a proposal was confirmed/dismissed),
+  /// pin the proposals' position so the relayout above them doesn't yank the
+  /// page down under the user's eyes.
+  void _onSuggestionsChanged(
+    AsyncValue<UnifiedSuggestionList>? previous,
+    AsyncValue<UnifiedSuggestionList> next,
+  ) {
+    // Reset the baseline when the page is reused for a different task, so a
+    // previous task's count can't make the next task's first emission look
+    // like a drop and fire the anchor.
+    if (_lastTaskId != widget.taskId) {
+      _lastTaskId = widget.taskId;
+      _lastOpenSuggestionCount = null;
+    }
+    final nextOpen = next.value?.open.length;
+    final previousOpen = _lastOpenSuggestionCount;
+    if (nextOpen != null) _lastOpenSuggestionCount = nextOpen;
+    if (previousOpen != null && nextOpen != null && nextOpen < previousOpen) {
+      _suggestionsAnchor.hold();
+    }
   }
 
   GlobalKey _getEntryKey(String entryId) {
@@ -120,10 +169,17 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       }
     }
 
-    ref.listen<TaskFocusIntent?>(
-      focusProvider,
-      (previous, next) => handleFocus(next, isInitialLoad: previous == null),
-    );
+    ref
+      ..listen<TaskFocusIntent?>(
+        focusProvider,
+        (previous, next) => handleFocus(next, isInitialLoad: previous == null),
+      )
+      // Hold the AI proposals in place when one is confirmed (which can grow
+      // the checklist above them) so the page doesn't jump under the user.
+      ..listen<AsyncValue<UnifiedSuggestionList>>(
+        unifiedSuggestionListProvider(widget.taskId),
+        _onSuggestionsChanged,
+      );
 
     final provider = entryControllerProvider(id: widget.taskId);
     final asyncTask = ref.watch(provider);

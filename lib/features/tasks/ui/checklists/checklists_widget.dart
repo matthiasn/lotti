@@ -115,9 +115,14 @@ class _ChecklistsWidgetState extends ConsumerState<ChecklistsWidget> {
             checklistIds.length,
             (int index) {
               final checklistId = checklistIds.elementAt(index);
-              // Wrap in Consumer to filter out deleted/stale checklists
+              // Wrap in Consumer to filter out deleted/stale checklists.
+              // The key is keyed on the checklist identity only — NOT its
+              // index — so inserting/reordering a checklist (e.g. when an AI
+              // suggestion adds one) keeps every other card's element + state,
+              // instead of shifting indices, dropping state, and re-fetching
+              // (which flashed the cards). checklistId is unique per task.
               return Consumer(
-                key: Key('$checklistId${widget.entryId}$index'),
+                key: Key('checklist-$checklistId-${widget.entryId}'),
                 builder: (context, ref, _) {
                   final checklist = ref
                       .watch(

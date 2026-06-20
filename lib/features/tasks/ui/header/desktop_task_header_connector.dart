@@ -10,6 +10,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/task_filters/design_system_filter_shared.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
@@ -176,7 +177,9 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     final controller = ref.read(entryControllerProvider(id: taskId).notifier);
     final selected = await ModalUtils.showSinglePageModal<String>(
       context: context,
-      title: context.messages.taskStatusLabel,
+      // Strip the trailing colon so the picker title matches the other
+      // pickers (e.g. "Select priority", "Labels"), which carry no colon.
+      title: stripTrailingColon(context.messages.taskStatusLabel),
       builder: (_) => TaskStatusModalContent(task: task),
     );
     if (selected != null) {
@@ -198,27 +201,43 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final p in TaskPriority.values)
-            ListTile(
-              leading: SizedBox(
-                width: 56,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TaskShowcasePriorityGlyph(priority: p),
-                    SizedBox(width: ctx.designTokens.spacing.step2),
-                    Text(
-                      p.short,
-                      style: ctx.designTokens.typography.styles.body.bodySmall
-                          .copyWith(
-                            color: TaskShowcasePalette.highText(ctx),
-                          ),
-                    ),
-                  ],
-                ),
+            Padding(
+              // Inset each row so its hover/selection highlight is a rounded,
+              // contained shape rather than a sharp edge-to-edge band. Matches
+              // the shared EntityPickerSheet rows (inset step3, radii.l) so the
+              // status / priority / label pickers read as one family.
+              padding: EdgeInsets.symmetric(
+                horizontal: ctx.designTokens.spacing.step3,
+                vertical: ctx.designTokens.spacing.step1,
               ),
-              title: Text(_priorityDescription(ctx, p)),
-              trailing: current == p ? const Icon(Icons.check) : null,
-              onTap: () => Navigator.of(ctx).pop(p.short),
+              child: ListTile(
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: ctx.designTokens.spacing.step3,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(ctx.designTokens.radii.l),
+                ),
+                leading: SizedBox(
+                  width: 56,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TaskShowcasePriorityGlyph(priority: p),
+                      SizedBox(width: ctx.designTokens.spacing.step2),
+                      Text(
+                        p.short,
+                        style: ctx.designTokens.typography.styles.body.bodySmall
+                            .copyWith(
+                              color: TaskShowcasePalette.highText(ctx),
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+                title: Text(_priorityDescription(ctx, p)),
+                trailing: current == p ? const Icon(Icons.check) : null,
+                onTap: () => Navigator.of(ctx).pop(p.short),
+              ),
             ),
         ],
       ),
@@ -330,10 +349,15 @@ class _TaskEstimateChip extends ConsumerWidget {
 
   final String taskId;
 
+  /// Formats a duration as plain units ("1h 30m", "45m", "2h") rather than a
+  /// zero-padded "HH:MM" clock — users read "00:00 / 01:00" as a time-of-day
+  /// range; "0m of 1h" reads unambiguously as tracked-of-estimated duration.
   String _format(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+    if (hours > 0 && minutes > 0) return '${hours}h ${minutes}m';
+    if (hours > 0) return '${hours}h';
+    return '${minutes}m';
   }
 
   @override
@@ -405,31 +429,43 @@ class _TaskEstimateChip extends ConsumerWidget {
             ),
           );
 
-    if (isOvertime) {
-      return DsPill(
-        variant: DsPillVariant.tinted,
-        color: TaskShowcasePalette.error(context),
-        label: '${_format(progress)} / ${_format(estimate)}',
-        leading: Icon(
-          Icons.timer_outlined,
-          size: 12,
-          color: iconColor,
-        ),
-        trailing: progressBar,
-        onTap: onTap,
-      );
-    }
-    return DsPill(
-      variant: DsPillVariant.filled,
-      label: '${_format(progress)} / ${_format(estimate)}',
-      labelColor: TaskShowcasePalette.lowText(context),
-      leading: Icon(
-        Icons.timer_outlined,
-        size: 12,
-        color: iconColor,
-      ),
-      trailing: progressBar,
-      onTap: onTap,
+    final trackedStr = _format(progress);
+    final estimateStr = _format(estimate);
+    // "X of Y" reads as tracked-of-estimated (part of a whole) instead of the
+    // ambiguous "X / Y" where users couldn't tell which number was which.
+    final progressLabel = context.messages.taskEstimateProgressLabel(
+      trackedStr,
+      estimateStr,
     );
+    // The tooltip spells it out fully on hover and for assistive tech, so the
+    // two numbers are never a guessing game.
+    final tooltip = context.messages.taskEstimateTooltip(
+      trackedStr,
+      estimateStr,
+    );
+    final pill = isOvertime
+        ? DsPill(
+            variant: DsPillVariant.tinted,
+            color: TaskShowcasePalette.error(context),
+            label: progressLabel,
+            leading: Icon(Icons.timer_outlined, size: 12, color: iconColor),
+            trailing: progressBar,
+            onTap: onTap,
+          )
+        : DsPill(
+            variant: DsPillVariant.filled,
+            // Quiet border gives low-vision users a clear chip boundary.
+            bordered: true,
+            label: progressLabel,
+            // A set estimate carries real data, so it reads at the same
+            // medium-emphasis contrast as the due-date chip rather than the dim
+            // low-emphasis grey reserved for empty placeholders (which made an
+            // active estimate look disabled).
+            labelColor: TaskShowcasePalette.mediumText(context),
+            leading: Icon(Icons.timer_outlined, size: 12, color: iconColor),
+            trailing: progressBar,
+            onTap: onTap,
+          );
+    return Tooltip(message: tooltip, child: pill);
   }
 }

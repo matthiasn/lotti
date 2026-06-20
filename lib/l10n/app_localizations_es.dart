@@ -7969,6 +7969,24 @@ class AppLocalizationsEs extends AppLocalizations {
   String get taskEstimateLabel => 'Estimación:';
 
   @override
+  String taskEstimateProgressLabel(String tracked, String estimate) {
+    return '$tracked de $estimate';
+  }
+
+  @override
+  String taskEstimateTooltip(String tracked, String estimate) {
+    return 'Tiempo registrado: $tracked de $estimate estimado';
+  }
+
+  @override
+  String taskLabelsMoreCount(int count) {
+    return '+$count';
+  }
+
+  @override
+  String get taskLabelsShowFewer => 'Mostrar menos';
+
+  @override
   String get taskLanguageArabic => 'Árabe';
 
   @override
@@ -8119,6 +8137,18 @@ class AppLocalizationsEs extends AppLocalizations {
     );
     return 'Atrasado $_temp0';
   }
+
+  @override
+  String get taskPriorityHigh => 'Alta';
+
+  @override
+  String get taskPriorityLow => 'Baja';
+
+  @override
+  String get taskPriorityMedium => 'Media';
+
+  @override
+  String get taskPriorityUrgent => 'Urgente';
 
   @override
   String get tasksAddLabelButton => 'Añadir etiqueta';

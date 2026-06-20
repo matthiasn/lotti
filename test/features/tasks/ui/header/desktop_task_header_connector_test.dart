@@ -12,6 +12,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -420,13 +421,15 @@ void main() {
 
         // When no progress has been computed yet (null progress state), the
         // chip still formats the pair with a zero tracked component — this
-        // keeps the chip the correct width during first paint.
-        expect(find.text('00:00 / 02:00'), findsOneWidget);
+        // keeps the chip the correct width during first paint. The "of"
+        // connector reads as tracked-of-estimated rather than the ambiguous
+        // "X / Y".
+        expect(find.text('0m of 2h'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'formats the tracked / estimate pair as HH:MM consistently',
+      'formats a sub-hour estimate in plain minutes',
       (tester) async {
         final task = buildTask(estimate: const Duration(minutes: 45));
 
@@ -434,8 +437,54 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // 45-minute estimate pads hours with a leading zero.
-        expect(find.text('00:00 / 00:45'), findsOneWidget);
+        // A 45-minute estimate reads as "45m", not a clock-like "00:45".
+        expect(find.text('0m of 45m'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'formats a mixed hours+minutes estimate as "Xh Ym"',
+      (tester) async {
+        final task = buildTask(
+          estimate: const Duration(hours: 1, minutes: 30),
+        );
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Both components present → "1h 30m" (the hours+minutes branch).
+        expect(find.text('0m of 1h 30m'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'estimate chip carries a tracked-vs-estimate tooltip and a low-vision '
+      'border',
+      (tester) async {
+        final task = buildTask(estimate: const Duration(hours: 2));
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The tooltip spells out which number is which for hover + a11y.
+        final tooltip = tester.widget<Tooltip>(
+          find.ancestor(
+            of: find.text('0m of 2h'),
+            matching: find.byType(Tooltip),
+          ),
+        );
+        expect(tooltip.message, 'Time tracked: 0m of 2h estimated');
+
+        // The neutral filled estimate chip carries the quiet border.
+        final pill = tester.widget<DsPill>(
+          find.ancestor(
+            of: find.text('0m of 2h'),
+            matching: find.byType(DsPill),
+          ),
+        );
+        expect(pill.bordered, isTrue);
       },
     );
   });
@@ -474,13 +523,16 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Every enum variant should be rendered in the picker. (`P2`
-        // appears twice — once in the header's own badge for the default
-        // task, once in the picker row — so we allow `findsWidgets`.)
+        // Every enum variant is rendered in the picker via its short "P{n}"
+        // code. The header's own badge now spells the priority out ("Medium"
+        // for the default p2Medium task), so the short codes appear only in
+        // the picker rows.
         expect(find.text('P0'), findsOneWidget);
         expect(find.text('P1'), findsOneWidget);
-        expect(find.text('P2'), findsWidgets);
+        expect(find.text('P2'), findsOneWidget);
         expect(find.text('P3'), findsOneWidget);
+        // The header badge spells out the default priority instead of "P2".
+        expect(find.text('Medium'), findsOneWidget);
       },
     );
 
@@ -589,10 +641,10 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The pill renders the "tracked / estimate" pair, with progress
+        // The pill renders the "tracked of estimate" pair, with progress
         // overrunning the estimate; the connector takes the overtime branch
         // and paints a tinted error-coloured pill plus a progress bar.
-        expect(find.text('02:00 / 01:00'), findsOneWidget);
+        expect(find.text('2h of 1h'), findsOneWidget);
         expect(find.byType(LinearProgressIndicator), findsOneWidget);
       },
     );
@@ -625,7 +677,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('00:00 / 02:00'));
+        await tester.tap(find.text('0m of 2h'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

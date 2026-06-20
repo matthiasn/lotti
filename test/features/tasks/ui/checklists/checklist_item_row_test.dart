@@ -173,6 +173,14 @@ class FakeChecklistCompletionService extends ChecklistCompletionService {
 // Widget pump helpers
 // ---------------------------------------------------------------------------
 
+/// Controller whose async build throws, to exercise the row's error branch.
+class _ErrorChecklistItemController extends ChecklistItemController {
+  _ErrorChecklistItemController() : super(const (id: 'fake', taskId: null));
+
+  @override
+  Future<ChecklistItem?> build() async => throw Exception('load failed');
+}
+
 Future<void> _pump(
   WidgetTester tester, {
   ChecklistItem? item,
@@ -297,6 +305,39 @@ void main() {
 
       final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
       expect(checkbox.value, isFalse);
+    });
+
+    testWidgets('surfaces an ErrorWidget when the item fails to load', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).overrideWith(_ErrorChecklistItemController.new),
+            checklistControllerProvider((
+              id: 'checklist-1',
+              taskId: 'task-1',
+            )).overrideWith(FakeChecklistController.new),
+            checklistCompletionServiceProvider.overrideWith(
+              FakeChecklistCompletionService.new,
+            ),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const ChecklistItemRow(
+              itemId: 'item-1',
+              checklistId: 'checklist-1',
+              taskId: 'task-1',
+              index: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(ErrorWidget), findsOneWidget);
     });
 
     testWidgets('checked item shows checked Checkbox', (tester) async {
@@ -463,6 +504,36 @@ void main() {
 
       expect(ctrls.itemController.checkedValue, isTrue);
     });
+
+    testWidgets(
+      'tapping the enlarged tap target off the checkbox also toggles it',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        await tester.pump();
+
+        // The 20x20 checkbox is centred in a 44x44 InkWell. Tap the ring
+        // around the box (outside the central Checkbox) to exercise the
+        // enlarged motor-friendly hit target rather than the box itself.
+        final inkWell = find
+            .ancestor(
+              of: find.byType(Checkbox),
+              matching: find.byType(InkWell),
+            )
+            .first;
+        // The enlarged target lights up on hover/press so it is visible, not
+        // just promised.
+        expect(
+          tester.widget<InkWell>(inkWell).hoverColor,
+          isNotNull,
+          reason: 'the 44px tap target highlights on hover',
+        );
+        final rect = tester.getRect(inkWell);
+        await tester.tapAt(Offset(rect.left + 3, rect.center.dy));
+        await tester.pump();
+
+        expect(ctrls.itemController.checkedValue, isTrue);
+      },
+    );
 
     testWidgets('checking an item fires a light haptic and pops the checkbox', (
       tester,

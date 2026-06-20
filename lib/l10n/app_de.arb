@@ -3402,6 +3402,37 @@
   "taskDueYesterday": "Gestern fällig",
   "taskEditTitleLabel": "Aufgabentitel bearbeiten",
   "taskEstimateLabel": "Schätzung:",
+  "taskEstimateProgressLabel": "{tracked} von {estimate}",
+  "@taskEstimateProgressLabel": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "taskEstimateTooltip": "Erfasste Zeit: {tracked} von {estimate} geschätzt",
+  "@taskEstimateTooltip": {
+    "placeholders": {
+      "tracked": {
+        "type": "String"
+      },
+      "estimate": {
+        "type": "String"
+      }
+    }
+  },
+  "taskLabelsMoreCount": "+{count}",
+  "@taskLabelsMoreCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "taskLabelsShowFewer": "Weniger anzeigen",
   "taskLanguageArabic": "Arabisch",
   "taskLanguageBengali": "Bengalisch",
   "taskLanguageBulgarian": "Bulgarisch",
@@ -3460,6 +3491,10 @@
       }
     }
   },
+  "taskPriorityHigh": "Hoch",
+  "taskPriorityLow": "Niedrig",
+  "taskPriorityMedium": "Mittel",
+  "taskPriorityUrgent": "Dringend",
   "tasksAddLabelButton": "Label hinzufügen",
   "tasksAgentFilterAll": "Alle",
   "tasksAgentFilterHasAgent": "Hat Agent",

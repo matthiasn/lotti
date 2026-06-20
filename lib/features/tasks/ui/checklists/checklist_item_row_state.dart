@@ -227,369 +227,419 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
 
     final itemAsync = ref.watch(provider);
 
-    return itemAsync.map(
-      data: (data) {
-        final item = data.value;
-        if (item == null || item.isDeleted) {
-          return const SizedBox.shrink();
+    // Stale-while-revalidate: render from the retained value so a *reloading*
+    // item keeps its last data instead of blanking to SizedBox.shrink for a
+    // frame — that blank-on-reload was the flicker when an accepted AI
+    // suggestion updated the checklist. A genuine first mount / deletion has no
+    // value → collapse; a hard load error with no prior value still surfaces.
+    final item = itemAsync.value;
+    if (item == null || item.isDeleted) {
+      if (itemAsync.hasError) {
+        return ErrorWidget(itemAsync.error!);
+      }
+      return const SizedBox.shrink();
+    }
+    {
+      // Synchronous first-frame fix: if the provider already has data
+      // on the first build, ref.listen may not have fired yet.
+      // Set _showRow immediately so the row never renders its content
+      // before being hidden — avoids a single visible frame of
+      // strikethrough items in the Open tab.
+      if (!_receivedInitialData) {
+        _receivedInitialData = true;
+        _lastIsChecked = item.data.isChecked;
+        _lastIsArchived = item.data.isArchived;
+        final isCompleted = item.data.isChecked || item.data.isArchived;
+        if ((widget.hideIfChecked && isCompleted) ||
+            (widget.hideIfUnchecked && !isCompleted)) {
+          _showRow = false;
         }
+      }
 
-        // Synchronous first-frame fix: if the provider already has data
-        // on the first build, ref.listen may not have fired yet.
-        // Set _showRow immediately so the row never renders its content
-        // before being hidden — avoids a single visible frame of
-        // strikethrough items in the Open tab.
-        if (!_receivedInitialData) {
-          _receivedInitialData = true;
-          _lastIsChecked = item.data.isChecked;
-          _lastIsArchived = item.data.isArchived;
-          final isCompleted = item.data.isChecked || item.data.isArchived;
-          if ((widget.hideIfChecked && isCompleted) ||
-              (widget.hideIfUnchecked && !isCompleted)) {
-            _showRow = false;
-          }
+      final itemNotifier = ref.read(provider.notifier);
+      final checklistNotifier = ref.read(
+        checklistControllerProvider((
+          id: widget.checklistId,
+          taskId: widget.taskId,
+        )).notifier,
+      );
+      final messenger = ScaffoldMessenger.of(context);
+
+      // AI suggestions
+      final completionService = ref.watch(checklistCompletionServiceProvider);
+      final suggestion = completionService.whenOrNull(
+        data: (suggestions) => suggestions.firstWhereOrNull(
+          (s) => s.checklistItemId == widget.itemId,
+        ),
+      );
+
+      // The suggestion pulse loops forever, so it must yield to reduced
+      // motion: freeze it at rest (scale 1.0) rather than pulsing.
+      final reduceMotion =
+          MediaQuery.maybeOf(context)?.disableAnimations ?? false;
+      if (suggestion != null &&
+          !reduceMotion &&
+          !_suggestionController.isAnimating) {
+        _suggestionController.repeat(reverse: true);
+      } else if ((suggestion == null || reduceMotion) &&
+          _suggestionController.isAnimating) {
+        _suggestionController
+          ..stop()
+          ..reset();
+      }
+
+      final tokens = context.designTokens;
+      final isStrikethrough = item.data.isChecked || item.data.isArchived;
+      final canToggle = !item.data.isArchived;
+
+      // Toggling the check — whether from the compact checkbox itself or
+      // from the enlarged tap target wrapped around it — routes here so the
+      // behaviour (persist + celebrate + clear any AI suggestion) lives in
+      // one place.
+      void applyCheck({required bool checked}) {
+        itemNotifier.updateChecked(checked: checked);
+        if (checked) _celebrateInteractiveCheck();
+        if (suggestion != null) {
+          ref
+              .read(checklistCompletionServiceProvider.notifier)
+              .clearSuggestion(widget.itemId);
         }
+      }
 
-        final itemNotifier = ref.read(provider.notifier);
-        final checklistNotifier = ref.read(
-          checklistControllerProvider((
-            id: widget.checklistId,
-            taskId: widget.taskId,
-          )).notifier,
-        );
-        final messenger = ScaffoldMessenger.of(context);
-
-        // AI suggestions
-        final completionService = ref.watch(checklistCompletionServiceProvider);
-        final suggestion = completionService.whenOrNull(
-          data: (suggestions) => suggestions.firstWhereOrNull(
-            (s) => s.checklistItemId == widget.itemId,
-          ),
-        );
-
-        // The suggestion pulse loops forever, so it must yield to reduced
-        // motion: freeze it at rest (scale 1.0) rather than pulsing.
-        final reduceMotion =
-            MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-        if (suggestion != null &&
-            !reduceMotion &&
-            !_suggestionController.isAnimating) {
-          _suggestionController.repeat(reverse: true);
-        } else if ((suggestion == null || reduceMotion) &&
-            _suggestionController.isAnimating) {
-          _suggestionController
-            ..stop()
-            ..reset();
-        }
-
-        final tokens = context.designTokens;
-        final isStrikethrough = item.data.isChecked || item.data.isArchived;
-
-        // Build the visual row content.
-        Widget rowContent = Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step3,
-                vertical: tokens.spacing.step2,
-              ),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(minHeight: 44),
-                child: Row(
-                  children: [
-                    // Drag handle — purely visual affordance. Long-press
-                    // anywhere on the row engages the DraggableWidget below,
-                    // which routes through super_drag_and_drop for BOTH
-                    // within-list reorder (via dropChecklistItem ->
-                    // _reorderItem) and cross-checklist moves (via
-                    // moveToChecklist). A ReorderableDragStartListener here
-                    // would win the gesture race and trap drags inside the
-                    // source list.
-                    Icon(
-                      Icons.drag_indicator,
-                      size: 24,
-                      color: tokens.colors.text.lowEmphasis.withValues(
-                        alpha: 0.32,
-                      ),
+      // Build the visual row content.
+      Widget rowContent = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step3,
+              vertical: tokens.spacing.step2,
+            ),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 44),
+              child: Row(
+                children: [
+                  // Drag handle — purely visual affordance. Long-press
+                  // anywhere on the row engages the DraggableWidget below,
+                  // which routes through super_drag_and_drop for BOTH
+                  // within-list reorder (via dropChecklistItem ->
+                  // _reorderItem) and cross-checklist moves (via
+                  // moveToChecklist). A ReorderableDragStartListener here
+                  // would win the gesture race and trap drags inside the
+                  // source list.
+                  // The drag handle is a quiet hint only — a long-press
+                  // anywhere on the row starts the drag — so it sits at a
+                  // very low alpha to keep the repeating grip texture from
+                  // competing with the checkbox + title for attention.
+                  Icon(
+                    Icons.drag_indicator,
+                    size: 24,
+                    color: tokens.colors.text.lowEmphasis.withValues(
+                      alpha: 0.2,
                     ),
-                    SizedBox(width: tokens.spacing.step3),
-                    // Checkbox
-                    // Checking an item off earns a small spark burst at the
-                    // checkbox — the same celebration language as habits, but
-                    // dialled down (no glow, fewer/finer sparks, quicker) so
-                    // rapid check-offs read as a cascade of little pops rather
-                    // than visual chaos. Fired imperatively from the tap (see
-                    // [_celebrateInteractiveCheck]) rather than from a widget
-                    // edge, so it also fires when checking the LAST item
-                    // collapses the row. Reduced motion suppresses the sparks
-                    // and pop (the haptic still fires).
-                    SizedBox(
-                      key: _checkboxKey,
-                      width: 20,
-                      height: 20,
-                      child: ScaleTransition(
-                        scale: _checkPopScale,
-                        child: Checkbox(
-                          value: item.data.isChecked,
-                          onChanged: item.data.isArchived
-                              ? null
-                              : (value) {
-                                  final checked = value ?? false;
-                                  itemNotifier.updateChecked(checked: checked);
-                                  if (checked) _celebrateInteractiveCheck();
-                                  if (suggestion != null) {
-                                    ref
-                                        .read(
-                                          checklistCompletionServiceProvider
-                                              .notifier,
-                                        )
-                                        .clearSuggestion(widget.itemId);
-                                  }
-                                },
-                          activeColor: tokens.colors.interactive.enabled,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          side: BorderSide(
-                            color: tokens.colors.text.lowEmphasis,
-                            width: 1.5,
-                          ),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  // Checkbox
+                  // Checking an item off earns a small spark burst at the
+                  // checkbox — the same celebration language as habits, but
+                  // dialled down (no glow, fewer/finer sparks, quicker) so
+                  // rapid check-offs read as a cascade of little pops rather
+                  // than visual chaos. Fired imperatively from the tap (see
+                  // [_celebrateInteractiveCheck]) rather than from a widget
+                  // edge, so it also fires when checking the LAST item
+                  // collapses the row. Reduced motion suppresses the sparks
+                  // and pop (the haptic still fires).
+                  // The visual checkbox stays a compact 20×20, but a 44×44
+                  // InkWell around it provides a Material-compliant tap
+                  // target so users with reduced motor precision can hit it
+                  // without aiming at the tiny box. A centre tap lands on the
+                  // Checkbox itself (keeping its native gesture + a11y
+                  // semantics); the surrounding ring is caught by the
+                  // InkWell. Both route through [applyCheck].
+                  InkWell(
+                    onTap: canToggle
+                        ? () => applyCheck(checked: !item.data.isChecked)
+                        : null,
+                    borderRadius: BorderRadius.circular(
+                      tokens.radii.badgesPills,
+                    ),
+                    // Light up the whole 44×44 zone on hover / press so the
+                    // forgiving tap area is *visible*, not just promised —
+                    // users can see where it is safe to tap rather than
+                    // having to aim at the tiny box.
+                    hoverColor: tokens.colors.surface.hover,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      alignment: Alignment.center,
+                      // A faint resting "well" (the same filled+bordered
+                      // language as the metadata chips) makes the 44px tap
+                      // zone visible at REST — on touch there is no hover, so
+                      // the hover highlight alone left the forgiving area
+                      // invisible where most users tap.
+                      decoration: BoxDecoration(
+                        color: tokens.colors.surface.enabled,
+                        borderRadius: BorderRadius.circular(
+                          tokens.radii.badgesPills,
+                        ),
+                        border: Border.all(
+                          color: tokens.colors.decorative.level02,
                         ),
                       ),
-                    ),
-                    SizedBox(width: tokens.spacing.step3),
-                    // Title — editable or display
-                    Expanded(
-                      child: _isEditing
-                          ? TitleTextField(
-                              initialValue: item.data.title,
-                              onSave: (newTitle) {
-                                if (newTitle != null &&
-                                    newTitle.trim().isNotEmpty) {
-                                  itemNotifier.updateTitle(newTitle.trim());
-                                }
-                                setState(() => _isEditing = false);
-                              },
-                              resetToInitialValue: true,
-                              onCancel: () =>
-                                  setState(() => _isEditing = false),
-                            )
-                          : StrikethroughWipe(
-                              done: isStrikethrough,
-                              // Off → the strike-through still shows, but
-                              // applies instantly with no left-to-right wipe.
-                              animate: ref
-                                  .watch(celebrationPreferencesProvider)
-                                  .checklistItems,
-                              text: item.data.title,
-                              baseStyle: tokens.typography.styles.body.bodySmall
-                                  .copyWith(
-                                    color: tokens.colors.text.highEmphasis,
-                                  ),
-                              struckStyle: tokens
-                                  .typography
-                                  .styles
-                                  .body
-                                  .bodySmall
-                                  .copyWith(
-                                    color: tokens.colors.text.lowEmphasis,
-                                    decoration: TextDecoration.lineThrough,
-                                  ),
-                              maxLines: 4,
-                              overflow: TextOverflow.fade,
+                      child: SizedBox(
+                        key: _checkboxKey,
+                        width: 20,
+                        height: 20,
+                        child: ScaleTransition(
+                          scale: _checkPopScale,
+                          child: Checkbox(
+                            value: item.data.isChecked,
+                            onChanged: canToggle
+                                ? (value) => applyCheck(checked: value ?? false)
+                                : null,
+                            activeColor: tokens.colors.interactive.enabled,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(4),
                             ),
-                    ),
-                    // Edit icon
-                    if (!_isEditing)
-                      GestureDetector(
-                        onTap: () => setState(() => _isEditing = true),
-                        child: Icon(
-                          Icons.mode_edit_outlined,
-                          size: 20,
-                          color: tokens.colors.text.lowEmphasis,
+                            // Medium emphasis (not low) at 2px: an empty
+                            // checkbox is a control the user must be able to
+                            // SEE — a faint low-emphasis outline nearly
+                            // vanished against the dark card for low-vision
+                            // users. This is control legibility, not the
+                            // metadata-chip emphasis tiering.
+                            side: BorderSide(
+                              color: tokens.colors.text.mediumEmphasis,
+                              width: 2,
+                            ),
+                            materialTapTargetSize:
+                                MaterialTapTargetSize.shrinkWrap,
+                            visualDensity: VisualDensity.compact,
+                          ),
                         ),
                       ),
-                  ],
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  // Title — editable or display
+                  Expanded(
+                    child: _isEditing
+                        ? TitleTextField(
+                            initialValue: item.data.title,
+                            onSave: (newTitle) {
+                              if (newTitle != null &&
+                                  newTitle.trim().isNotEmpty) {
+                                itemNotifier.updateTitle(newTitle.trim());
+                              }
+                              setState(() => _isEditing = false);
+                            },
+                            resetToInitialValue: true,
+                            onCancel: () => setState(() => _isEditing = false),
+                          )
+                        : StrikethroughWipe(
+                            done: isStrikethrough,
+                            // Off → the strike-through still shows, but
+                            // applies instantly with no left-to-right wipe.
+                            animate: ref
+                                .watch(celebrationPreferencesProvider)
+                                .checklistItems,
+                            text: item.data.title,
+                            baseStyle: tokens.typography.styles.body.bodySmall
+                                .copyWith(
+                                  color: tokens.colors.text.highEmphasis,
+                                ),
+                            struckStyle: tokens.typography.styles.body.bodySmall
+                                .copyWith(
+                                  color: tokens.colors.text.lowEmphasis,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                            maxLines: 4,
+                            overflow: TextOverflow.fade,
+                          ),
+                  ),
+                  // Edit icon
+                  if (!_isEditing)
+                    GestureDetector(
+                      onTap: () => setState(() => _isEditing = true),
+                      child: Icon(
+                        Icons.mode_edit_outlined,
+                        size: 20,
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+          if (widget.showDivider)
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: tokens.colors.decorative.level01,
+            ),
+        ],
+      );
+
+      // Overlay AI suggestion pulsing bar on the left side.
+      if (suggestion != null) {
+        rowContent = Stack(
+          children: [
+            rowContent,
+            Positioned(
+              left: 0,
+              top: tokens.spacing.step3,
+              bottom: tokens.spacing.step3,
+              child: AnimatedBuilder(
+                animation: _suggestionPulse,
+                builder: (context, child) => Transform.scale(
+                  scale: _suggestionPulse.value,
+                  child: child,
+                ),
+                child: GestureDetector(
+                  onTap: () => _showSuggestionDialog(context, suggestion),
+                  child: Container(
+                    width: 8,
+                    decoration: BoxDecoration(
+                      color: _getSuggestionColor(suggestion.confidence),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
                 ),
               ),
             ),
-            if (widget.showDivider)
-              Divider(
-                height: 1,
-                thickness: 1,
-                color: tokens.colors.decorative.level01,
-              ),
           ],
         );
+      }
 
-        // Overlay AI suggestion pulsing bar on the left side.
-        if (suggestion != null) {
-          rowContent = Stack(
-            children: [
-              rowContent,
-              Positioned(
-                left: 0,
-                top: tokens.spacing.step3,
-                bottom: tokens.spacing.step3,
-                child: AnimatedBuilder(
-                  animation: _suggestionPulse,
-                  builder: (context, child) => Transform.scale(
-                    scale: _suggestionPulse.value,
-                    child: child,
-                  ),
-                  child: GestureDetector(
-                    onTap: () => _showSuggestionDialog(context, suggestion),
-                    child: Container(
-                      width: 8,
-                      decoration: BoxDecoration(
-                        color: _getSuggestionColor(suggestion.confidence),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
+      // Wrap in Dismissible for swipe actions.
+      Widget child = Dismissible(
+        key: Key('dismissible-${item.id}'),
+        dismissThresholds: const {
+          DismissDirection.endToStart: 0.25,
+          DismissDirection.startToEnd: 0.25,
+        },
+        confirmDismiss: (direction) async {
+          if (direction == DismissDirection.startToEnd) {
+            // Swipe right → toggle archive
+            if (item.data.isArchived) {
+              itemNotifier.unarchive();
+            } else {
+              itemNotifier.archive();
+              messenger.showDesignSystemToast(
+                tone: DesignSystemToastTone.warning,
+                title: context.messages.checklistItemArchived,
+                duration: kChecklistArchiveDuration,
+                countdown: true,
+                replaceCurrent: true,
+                action: ToastAction(
+                  label: context.messages.checklistItemArchiveUndo,
+                  onPressed: () {
+                    itemNotifier.unarchive();
+                    messenger.hideCurrentSnackBar();
+                  },
                 ),
-              ),
-            ],
-          );
-        }
-
-        // Wrap in Dismissible for swipe actions.
-        Widget child = Dismissible(
-          key: Key('dismissible-${item.id}'),
-          dismissThresholds: const {
-            DismissDirection.endToStart: 0.25,
-            DismissDirection.startToEnd: 0.25,
-          },
-          confirmDismiss: (direction) async {
-            if (direction == DismissDirection.startToEnd) {
-              // Swipe right → toggle archive
-              if (item.data.isArchived) {
-                itemNotifier.unarchive();
-              } else {
-                itemNotifier.archive();
-                messenger.showDesignSystemToast(
-                  tone: DesignSystemToastTone.warning,
-                  title: context.messages.checklistItemArchived,
-                  duration: kChecklistArchiveDuration,
-                  countdown: true,
-                  replaceCurrent: true,
-                  action: ToastAction(
-                    label: context.messages.checklistItemArchiveUndo,
-                    onPressed: () {
-                      itemNotifier.unarchive();
-                      messenger.hideCurrentSnackBar();
-                    },
-                  ),
-                );
-              }
-              return false;
+              );
             }
-            // Swipe left → confirm delete
-            return true;
-          },
-          onDismissed: (_) async {
-            // Capture the message strings from `context` BEFORE the await:
-            // `unlinkItem` removes this row from the checklist's item list,
-            // which unmounts the row and invalidates `context`. The
-            // `messenger` reference is captured higher up and survives.
-            final deletedMessage = context.messages.checklistItemDeleted;
-            final undoLabel = context.messages.checklistItemArchiveUndo;
+            return false;
+          }
+          // Swipe left → confirm delete
+          return true;
+        },
+        onDismissed: (_) async {
+          // Capture the message strings from `context` BEFORE the await:
+          // `unlinkItem` removes this row from the checklist's item list,
+          // which unmounts the row and invalidates `context`. The
+          // `messenger` reference is captured higher up and survives.
+          final deletedMessage = context.messages.checklistItemDeleted;
+          final undoLabel = context.messages.checklistItemArchiveUndo;
 
-            await checklistNotifier.unlinkItem(widget.itemId);
+          await checklistNotifier.unlinkItem(widget.itemId);
 
-            _deleteTimer?.cancel();
-            _deleteTimer = Timer(
-              kChecklistDeleteDuration,
-              () async => itemNotifier.delete(),
-            );
-
-            messenger.showDesignSystemToast(
-              tone: DesignSystemToastTone.warning,
-              title: deletedMessage,
-              duration: kChecklistDeleteDuration,
-              countdown: true,
-              replaceCurrent: true,
-              action: ToastAction(
-                label: undoLabel,
-                onPressed: () {
-                  _deleteTimer?.cancel();
-                  _deleteTimer = null;
-                  checklistNotifier.relinkItem(widget.itemId);
-                  messenger.hideCurrentSnackBar();
-                },
-              ),
-            );
-          },
-          background: ColoredBox(
-            color: Colors.amber.shade700,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Padding(
-                padding: EdgeInsets.only(left: tokens.spacing.step5),
-                child: Icon(
-                  item.data.isArchived ? Icons.unarchive : Icons.archive,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          secondaryBackground: ColoredBox(
-            color: Colors.red,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: EdgeInsets.only(right: tokens.spacing.step5),
-                child: const Icon(Icons.delete, color: Colors.white),
-              ),
-            ),
-          ),
-          child: rowContent,
-        );
-
-        // Wrap in super_drag_and_drop for cross-checklist moves.
-        child = DropRegion(
-          formats: Formats.standardFormats,
-          onDropOver: (_) => DropOperation.move,
-          onPerformDrop: (event) => handleChecklistItemDrop(
-            event: event,
-            checklistNotifier: checklistNotifier,
-            targetIndex: widget.index,
-            targetItemId: widget.itemId,
-          ),
-          child: DragItemWidget(
-            dragItemProvider: (request) async => createChecklistItemDragItem(
-              itemId: item.id,
-              checklistId: widget.checklistId,
-              title: item.data.title,
-            ),
-            allowedOperations: () => [DropOperation.move],
-            dragBuilder: buildDragDecorator,
-            child: DraggableWidget(child: child),
-          ),
-        );
-
-        // Animated hide/show for filtered modes (open-only or done-only).
-        if (widget.hideIfChecked || widget.hideIfUnchecked) {
-          child = AnimatedCrossFade(
-            duration: checklistCompletionFadeDuration,
-            sizeCurve: Curves.easeInOut,
-            crossFadeState: _showRow
-                ? CrossFadeState.showFirst
-                : CrossFadeState.showSecond,
-            firstChild: child,
-            secondChild: const SizedBox.shrink(),
+          _deleteTimer?.cancel();
+          _deleteTimer = Timer(
+            kChecklistDeleteDuration,
+            () async => itemNotifier.delete(),
           );
-        }
 
-        return RepaintBoundary(child: child);
-      },
-      error: ErrorWidget.new,
-      loading: (_) => const SizedBox.shrink(),
-    );
+          messenger.showDesignSystemToast(
+            tone: DesignSystemToastTone.warning,
+            title: deletedMessage,
+            duration: kChecklistDeleteDuration,
+            countdown: true,
+            replaceCurrent: true,
+            action: ToastAction(
+              label: undoLabel,
+              onPressed: () {
+                _deleteTimer?.cancel();
+                _deleteTimer = null;
+                checklistNotifier.relinkItem(widget.itemId);
+                messenger.hideCurrentSnackBar();
+              },
+            ),
+          );
+        },
+        background: ColoredBox(
+          color: Colors.amber.shade700,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Padding(
+              padding: EdgeInsets.only(left: tokens.spacing.step5),
+              child: Icon(
+                item.data.isArchived ? Icons.unarchive : Icons.archive,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+        secondaryBackground: ColoredBox(
+          color: Colors.red,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: EdgeInsets.only(right: tokens.spacing.step5),
+              child: const Icon(Icons.delete, color: Colors.white),
+            ),
+          ),
+        ),
+        child: rowContent,
+      );
+
+      // Wrap in super_drag_and_drop for cross-checklist moves.
+      child = DropRegion(
+        formats: Formats.standardFormats,
+        onDropOver: (_) => DropOperation.move,
+        onPerformDrop: (event) => handleChecklistItemDrop(
+          event: event,
+          checklistNotifier: checklistNotifier,
+          targetIndex: widget.index,
+          targetItemId: widget.itemId,
+        ),
+        child: DragItemWidget(
+          dragItemProvider: (request) async => createChecklistItemDragItem(
+            itemId: item.id,
+            checklistId: widget.checklistId,
+            title: item.data.title,
+          ),
+          allowedOperations: () => [DropOperation.move],
+          dragBuilder: buildDragDecorator,
+          child: DraggableWidget(child: child),
+        ),
+      );
+
+      // Animated hide/show for filtered modes (open-only or done-only).
+      if (widget.hideIfChecked || widget.hideIfUnchecked) {
+        child = AnimatedCrossFade(
+          duration: checklistCompletionFadeDuration,
+          sizeCurve: Curves.easeInOut,
+          crossFadeState: _showRow
+              ? CrossFadeState.showFirst
+              : CrossFadeState.showSecond,
+          firstChild: child,
+          secondChild: const SizedBox.shrink(),
+        );
+      }
+
+      return RepaintBoundary(child: child);
+    }
   }
 
   Color _getSuggestionColor(ChecklistCompletionConfidence confidence) {

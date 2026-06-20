@@ -30,6 +30,7 @@ class DsPill extends StatelessWidget {
     this.trailing,
     this.color,
     this.labelColor,
+    this.bordered = false,
     this.onTap,
     this.onLongPress,
     super.key,
@@ -55,6 +56,13 @@ class DsPill extends StatelessWidget {
   /// canonical color when null (high-emphasis on filled, the accent on
   /// tinted/outline, low-emphasis on muted).
   final Color? labelColor;
+
+  /// When true, draws a quiet 1px `decorative.level02` border around the
+  /// `filled` variant. Opt-in (default false) so existing filled pills are
+  /// unchanged; the task header enables it so low-vision users get a clear
+  /// chip boundary against the near-same-tone surface. No-op for the other
+  /// variants, which already carry their own border / tint.
+  final bool bordered;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
@@ -110,6 +118,9 @@ class DsPill extends StatelessWidget {
         decoration: BoxDecoration(
           color: tokens.colors.surface.enabled,
           borderRadius: radius,
+          border: bordered
+              ? Border.all(color: tokens.colors.decorative.level02)
+              : null,
         ),
         child: content,
       ),
