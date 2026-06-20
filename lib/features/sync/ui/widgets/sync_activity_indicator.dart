@@ -243,8 +243,11 @@ class _SyncActivityChannel extends StatelessWidget {
       color: tokens.colors.text.mediumEmphasis,
     );
 
-    return SizedBox(
-      height: 18,
+    // Min-height (not a fixed height) keeps the 1x row rhythm but lets the row
+    // grow under larger accessibility text scales instead of clipping the
+    // label/count.
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 18),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

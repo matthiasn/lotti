@@ -45,10 +45,16 @@ void main() {
       WidgetTester tester, {
       int outbox = 0,
       int inbox = 0,
+      double textScale = 1,
     }) async {
       await tester.pumpWidget(
         makeTestableWidget(
           const SyncActivityIndicator(),
+          mediaQueryData: textScale == 1
+              ? null
+              : phoneMediaQueryData.copyWith(
+                  textScaler: TextScaler.linear(textScale),
+                ),
           overrides: [
             syncActivityTxPulsesProvider.overrideWith((_) => txCtl.stream),
             syncActivityRxPulsesProvider.overrideWith((_) => rxCtl.stream),
@@ -63,6 +69,28 @@ void main() {
       );
       await tester.pump();
     }
+
+    testWidgets(
+      'rows grow with larger text scale instead of clipping '
+      '(min-height, not a fixed height)',
+      (tester) async {
+        await pumpIndicator(tester, outbox: 1573);
+        final height1x = tester
+            .getSize(find.byType(SyncActivityIndicator))
+            .height;
+
+        await pumpIndicator(tester, outbox: 1573, textScale: 2);
+        final height2x = tester
+            .getSize(find.byType(SyncActivityIndicator))
+            .height;
+
+        // The footer grows with the text scale rather than clamping to a
+        // fixed 18px-per-row height, so the label/count never clip.
+        expect(height2x, greaterThan(height1x));
+        expect(find.text('Outbox'), findsOneWidget);
+        expect(find.text('1573'), findsOneWidget);
+      },
+    );
 
     testWidgets('renders both Outbox and Inbox channels with their counts', (
       tester,
