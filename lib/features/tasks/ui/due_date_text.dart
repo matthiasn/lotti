@@ -73,11 +73,20 @@ class _DueDateTextState extends State<DueDateText> {
 
     // Every due date is a calm surface chip matching the other metadata chips:
     // same height, neutral fill, hairline border. Urgency is signalled only by
-    // the text/icon COLOUR (overdue red, due-today amber) and a slightly
-    // heavier weight — so the deadline stays scannable without reading as an
+    // the text/icon COLOUR (overdue red, due-today amber, upcoming neutral) and
+    // a weight LADDER — so the deadline stays scannable without reading as an
     // "angry" filled red block, and a dated card is still spottable among
     // undated ones.
-    final isUrgent = status.isUrgent;
+    //
+    // The ladder makes *overdue* the loudest state (heaviest weight), then
+    // due-today, then a quiet upcoming date: triage needs "what's late?" to win
+    // over "what's due today", and amber (today) is intrinsically brighter than
+    // red (overdue), so overdue earns the extra weight to out-rank it.
+    final weight = switch (status.urgency) {
+      DueDateUrgency.overdue => FontWeight.w700,
+      DueDateUrgency.dueToday => FontWeight.w600,
+      DueDateUrgency.normal => FontWeight.w500,
+    };
 
     return GestureDetector(
       onTap: () => setState(() => _showRelative = !_showRelative),
@@ -101,7 +110,7 @@ class _DueDateTextState extends State<DueDateText> {
               text,
               style: tokens.typography.styles.others.caption.copyWith(
                 color: color,
-                fontWeight: isUrgent ? FontWeight.w600 : FontWeight.w500,
+                fontWeight: weight,
               ),
             ),
           ],

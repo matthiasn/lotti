@@ -252,6 +252,19 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                           final showCategoryChips =
                               loadedCategoryIds.length > 1;
 
+                          // Same restraint for the status pill: when every
+                          // loaded task is in the same status the pill repeats a
+                          // constant on every row and carries no signal, so drop
+                          // it. Keyed by the status union's runtime type so the
+                          // distinct-status count is exact.
+                          final loadedStatusKinds = <Type>{
+                            for (final item
+                                in displayState.items ??
+                                    const <JournalEntity>[])
+                              if (item is Task) item.data.status.runtimeType,
+                          };
+                          final showStatusChips = loadedStatusKinds.length > 1;
+
                           return PagedSliverList<int, JournalEntity>(
                             state: displayState,
                             fetchNextPage: fetchNextPage,
@@ -323,15 +336,13 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                       showCreationDate: state.showCreationDate,
                                       showDueDate: state.showDueDate,
                                       showCoverArt: true,
-                                      // When the user has narrowed the list
-                                      // to a single status via the filter,
-                                      // every row would carry the same
-                                      // chip — drop it. With 0 (no filter)
-                                      // or 2+ statuses selected the chip
-                                      // disambiguates rows.
-                                      showStatus:
-                                          state.selectedTaskStatuses.length !=
-                                          1,
+                                      // Drop the status pill when every loaded
+                                      // task shares one status (whether narrowed
+                                      // by the filter or just uniform) — it would
+                                      // otherwise repeat the same value on every
+                                      // row. Shown only when 2+ distinct statuses
+                                      // are visible to disambiguate.
+                                      showStatus: showStatusChips,
                                       // Same reasoning for the category chip:
                                       // when every loaded task shares one
                                       // category the chip repeats it on every
