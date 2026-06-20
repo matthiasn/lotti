@@ -54,7 +54,6 @@ class HabitSummary extends StatelessWidget {
 
             return Padding(
               padding: EdgeInsets.only(
-                top: 5,
                 left: paddingLeft,
                 bottom: paddingBottom,
               ),

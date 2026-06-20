@@ -180,7 +180,11 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
                     formatHeader2ToHeaderStyle,
                     formatHeader3ToHeaderStyle,
                   ],
-                  minHeight: widget.minHeight,
+                  // When read-only/unfocused the editor hugs its content — no
+                  // reserved blank band beneath a short note (which left the
+                  // following value line floating over a void). The min tap
+                  // height only applies while it is being edited.
+                  minHeight: shouldShowEditorToolBar ? widget.minHeight : 0,
                   placeholder: context.messages.editorPlaceholder,
                   padding: contentPadding,
                   keyboardAppearance: Theme.of(context).brightness,

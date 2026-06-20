@@ -257,11 +257,9 @@ class EntryDetailsContent extends ConsumerWidget {
       QuantitativeEntry() => HealthSummary(item),
       MeasurementEntry() => MeasurementSummary(item),
       JournalEvent() => EventForm(item),
-      HabitCompletionEntry() => HabitSummary(
-        item,
-        showIcon: true,
-        showText: false,
-      ),
+      // No leading avatar glyph — the habit line uses the same plain
+      // "label: value" grammar as the other value cards.
+      HabitCompletionEntry() => HabitSummary(item, showText: false),
       AiResponseEntry() => AiResponseSummary(
         item,
         linkedFromId: linkedFrom?.id,

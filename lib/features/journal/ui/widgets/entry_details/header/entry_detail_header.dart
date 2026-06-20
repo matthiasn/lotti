@@ -75,61 +75,90 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     EntryController notifier,
   ) {
     final tokens = context.designTokens;
+    final showCategory =
+        entry != null &&
+        entry is! Task &&
+        entry is! JournalEvent &&
+        !widget.inLinkedEntries;
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         EntryDatetimeWidget(entryId: widget.entryId),
-        const SizedBox.shrink(),
-        if (entry != null &&
-            entry is! Task &&
-            entry is! JournalEvent &&
-            !widget.inLinkedEntries)
+        if (showCategory) ...[
+          SizedBox(width: tokens.spacing.step3),
           CategorySelectionIconButton(entry: entry),
-        const SizedBox(width: 10),
+        ],
         const Spacer(),
-        if (entry is! JournalEvent && (entry?.meta.starred ?? false))
-          SwitchIconWidget(
-            tooltip: context.messages.journalFavoriteTooltip,
-            onPressed: notifier.toggleStarred,
-            value: entry?.meta.starred ?? false,
-            icon: Icons.star_outline_rounded,
-            activeIcon: Icons.star_rounded,
-            activeColor: starredGold,
-          ),
-        if (entry?.meta.flag == EntryFlag.import)
-          SwitchIconWidget(
-            tooltip: context.messages.journalFlaggedTooltip,
-            onPressed: notifier.toggleFlagged,
-            value: entry?.meta.flag == EntryFlag.import,
-            icon: Icons.flag_outlined,
-            activeIcon: Icons.flag,
-            activeColor: context.colorScheme.error,
-          ),
-        if (entry != null &&
-            (entry is Task ||
-                entry is JournalImage ||
-                entry is JournalAudio ||
-                entry is JournalEntry))
-          UnifiedAiPopUpMenu(
-            journalEntity: entry,
-            linkedFromId: widget.linkedFromId,
-            iconColor: tokens.colors.text.mediumEmphasis,
-          ),
-        IconButton(
-          icon: Icon(
-            Icons.more_horiz,
-            color: tokens.colors.text.mediumEmphasis,
-          ),
-          onPressed: () => ExtendedHeaderModal.show(
-            context: context,
-            entryId: id,
-            inLinkedEntries: widget.inLinkedEntries,
-            linkedFromId: widget.linkedFromId,
-            link: widget.link,
-          ),
+        ..._spacedTrailing(
+          context,
+          _trailingActions(context, entry, id, notifier, tokens),
         ),
       ],
     );
+  }
+
+  /// The trailing action controls shared by both header layouts, in one fixed
+  /// order — favorite, flag, AI, overflow — with absent actions simply omitted
+  /// so the cluster reads consistently across all entry types.
+  List<Widget> _trailingActions(
+    BuildContext context,
+    JournalEntity? entry,
+    String id,
+    EntryController notifier,
+    DsTokens tokens,
+  ) {
+    return <Widget>[
+      if (entry is! JournalEvent && (entry?.meta.starred ?? false))
+        SwitchIconWidget(
+          tooltip: context.messages.journalFavoriteTooltip,
+          onPressed: notifier.toggleStarred,
+          value: entry?.meta.starred ?? false,
+          icon: Icons.star_outline_rounded,
+          activeIcon: Icons.star_rounded,
+          activeColor: starredGold,
+        ),
+      if (entry?.meta.flag == EntryFlag.import)
+        SwitchIconWidget(
+          tooltip: context.messages.journalFlaggedTooltip,
+          onPressed: notifier.toggleFlagged,
+          value: entry?.meta.flag == EntryFlag.import,
+          icon: Icons.flag_outlined,
+          activeIcon: Icons.flag,
+          activeColor: context.colorScheme.error,
+        ),
+      if (entry != null &&
+          (entry is Task ||
+              entry is JournalImage ||
+              entry is JournalAudio ||
+              entry is JournalEntry))
+        UnifiedAiPopUpMenu(
+          journalEntity: entry,
+          linkedFromId: widget.linkedFromId,
+          iconColor: tokens.colors.text.mediumEmphasis,
+        ),
+      IconButton(
+        icon: Icon(Icons.more_horiz, color: tokens.colors.text.mediumEmphasis),
+        onPressed: () => ExtendedHeaderModal.show(
+          context: context,
+          entryId: id,
+          inLinkedEntries: widget.inLinkedEntries,
+          linkedFromId: widget.linkedFromId,
+          link: widget.link,
+        ),
+      ),
+    ];
+  }
+
+  /// Interleaves a consistent inter-control gap so adjacent header controls
+  /// never sit flush — the crowded 4-control headers were a mis-tap hazard for
+  /// motor-impaired users.
+  List<Widget> _spacedTrailing(BuildContext context, List<Widget> actions) {
+    final gap = context.designTokens.spacing.step2;
+    final out = <Widget>[];
+    for (var i = 0; i < actions.length; i++) {
+      if (i > 0) out.add(SizedBox(width: gap));
+      out.add(actions[i]);
+    }
+    return out;
   }
 
   Widget _buildCollapsibleHeader(
@@ -155,47 +184,13 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           EntryDatetimeWidget(entryId: widget.entryId),
         const Spacer(),
         if (!widget.isCollapsed) ...[
-          // Action icons only when expanded
-          if (entry is! JournalEvent && (entry?.meta.starred ?? false))
-            SwitchIconWidget(
-              tooltip: context.messages.journalFavoriteTooltip,
-              onPressed: notifier.toggleStarred,
-              value: entry?.meta.starred ?? false,
-              icon: Icons.star_outline_rounded,
-              activeIcon: Icons.star_rounded,
-              activeColor: starredGold,
-            ),
-          if (entry?.meta.flag == EntryFlag.import)
-            SwitchIconWidget(
-              tooltip: context.messages.journalFlaggedTooltip,
-              onPressed: notifier.toggleFlagged,
-              value: entry?.meta.flag == EntryFlag.import,
-              icon: Icons.flag_outlined,
-              activeIcon: Icons.flag,
-              activeColor: context.colorScheme.error,
-            ),
-          if (entry != null &&
-              (entry is Task ||
-                  entry is JournalImage ||
-                  entry is JournalAudio ||
-                  entry is JournalEntry))
-            UnifiedAiPopUpMenu(
-              journalEntity: entry,
-              linkedFromId: widget.linkedFromId,
-            ),
-          IconButton(
-            icon: Icon(
-              Icons.more_horiz,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-            onPressed: () => ExtendedHeaderModal.show(
-              context: context,
-              entryId: id,
-              inLinkedEntries: widget.inLinkedEntries,
-              linkedFromId: widget.linkedFromId,
-              link: widget.link,
-            ),
+          // Action icons only when expanded — same spaced cluster as the
+          // default header so the family shares one action grammar.
+          ..._spacedTrailing(
+            context,
+            _trailingActions(context, entry, id, notifier, tokens),
           ),
+          SizedBox(width: tokens.spacing.step2),
         ],
         AnimatedRotation(
           turns: widget.isCollapsed ? -0.25 : 0.0,
