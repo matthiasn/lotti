@@ -151,6 +151,7 @@ rather than a blank void.
 | `ui/widgets/events_overview_view.dart` | Overview layout: header, search, chips, sections, grid. |
 | `ui/widgets/event_detail_view.dart` | Detail layout: inline-editable hero, summary, timeline, tasks. |
 | `ui/widgets/event_status_picker.dart` | `showEventStatusPicker` modal + `eventStatusLabel` helper. |
+| `ui/widgets/event_summary_card.dart` | Dense list-context summary card (cover + meta + metrics) for the logbook / task timeline. |
 | `ui/widgets/event_photo_gallery.dart` | `EventPhotoGrid` (photo wall + "+N" overflow) + full-screen `EventPhotoGalleryViewer`. |
 | `state/event_view_mapping.dart` | Pure entity→view-model mapping, date labels, grouping. |
 | `state/events_controller.dart` | `eventsStreamProvider` + `loadResolvedEvents` (DB → resolved events). |
