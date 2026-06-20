@@ -472,29 +472,16 @@ class SectionHeaderTitle extends StatelessWidget {
 
     if (isPriority) {
       final priority = sectionKey.priority!;
-      // Word first (e.g. "Urgent"), with the "· P0" code kept as a quieter
-      // suffix — plain meaning leads for everyone, the Pn shorthand stays for
-      // power users and stays consistent with the filter chips / AI context.
+      // Plain priority word only (e.g. "Urgent") — the opaque "P0" code reads
+      // as developer shorthand to everyday users, and the glyph + colour
+      // already encode severity. The Pn code still lives in the filter chips
+      // and AI context where it is the established handle.
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           TaskShowcasePriorityGlyph(priority: priority),
           const SizedBox(width: 6),
-          Text.rich(
-            TextSpan(
-              children: [
-                TextSpan(text: _priorityWord(context, priority)),
-                TextSpan(
-                  text: ' · ${priority.short}',
-                  style: textStyle.copyWith(
-                    color: TaskShowcasePalette.mediumText(context),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            style: textStyle,
-          ),
+          Text(_priorityWord(context, priority), style: textStyle),
         ],
       );
     }
@@ -517,7 +504,7 @@ String _sectionTitle(BuildContext context, TaskBrowseSectionKey sectionKey) {
     TaskBrowseSectionKind.dueTomorrow => context.messages.taskDueTomorrow,
     TaskBrowseSectionKind.dueYesterday => context.messages.taskDueYesterday,
     TaskBrowseSectionKind.noDueDate => context.messages.taskNoDueDateLabel,
-    TaskBrowseSectionKind.priority => _prioritySectionTitle(
+    TaskBrowseSectionKind.priority => _priorityWord(
       context,
       sectionKey.priority!,
     ),
@@ -532,11 +519,4 @@ String _priorityWord(BuildContext context, TaskPriority priority) {
     TaskPriority.p2Medium => context.messages.tasksPriorityP2,
     TaskPriority.p3Low => context.messages.tasksPriorityP3,
   };
-}
-
-/// Word-first priority section title with the code as a quiet suffix, e.g.
-/// "Urgent · P0". Used where a single styled string is needed; the header
-/// itself renders the suffix in a dimmer span (see [SectionHeaderTitle]).
-String _prioritySectionTitle(BuildContext context, TaskPriority priority) {
-  return '${_priorityWord(context, priority)} · ${priority.short}';
 }

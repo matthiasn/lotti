@@ -29,10 +29,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.9.1030]
 ### Changed
 - The **tasks list** (the middle column) was reworked for urgency-first triage.
-  Tasks are grouped under priority section bands that read word-first — "Urgent",
-  "High", "Medium" — with the "· P0" code kept as a quiet suffix, and the bands
-  are colour-graduated so the urgent group stands out at a glance no matter how
-  many tasks it holds. Each card is calmer and denser: the AI one-liner is now a
+  Tasks are grouped under priority section bands labelled in plain words —
+  "Urgent", "High", "Medium" — instead of the cryptic "P0/P1/P2" codes, and the
+  bands are colour-graduated so the urgent group stands out at a glance no matter
+  how many tasks it holds. Each card is calmer and denser: the AI one-liner is now a
   single line, tracked time and the due date share one row (and "0h 0m" no longer
   shows), and overdue / due-today deadlines appear as a coloured pill so the
   time-critical task in a group is easy to spot. When the list is already
