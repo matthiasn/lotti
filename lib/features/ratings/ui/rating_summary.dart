@@ -47,34 +47,35 @@ class RatingSummary extends StatelessWidget {
             messages: messages,
           ),
 
-        // Note — a quiet secondary line, set apart from the dense bar group so
-        // the free-text verdict reads as its own block.
-        if (data.note != null && data.note!.isNotEmpty)
-          Padding(
-            padding: EdgeInsets.only(bottom: tokens.spacing.step1),
-            child: Text(
-              data.note!,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
+        // Note + edit on one baseline row: the free-text verdict fills the
+        // left, the edit control sits at the trailing edge — so the pencil is
+        // never orphaned in a dead band below the content.
+        Row(
+          children: [
+            Expanded(
+              child: (data.note != null && data.note!.isNotEmpty)
+                  ? Text(
+                      data.note!,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            IconButton(
+              visualDensity: VisualDensity.compact,
+              icon: Icon(
+                Icons.edit_outlined,
                 color: tokens.colors.text.mediumEmphasis,
               ),
+              tooltip: messages.sessionRatingEditButton,
+              onPressed: () => RatingModal.show(
+                context,
+                data.targetId,
+                catalogId: data.catalogId,
+              ),
             ),
-          ),
-
-        // Edit action.
-        Align(
-          alignment: Alignment.centerRight,
-          child: IconButton(
-            icon: Icon(
-              Icons.edit_outlined,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-            tooltip: messages.sessionRatingEditButton,
-            onPressed: () => RatingModal.show(
-              context,
-              data.targetId,
-              catalogId: data.catalogId,
-            ),
-          ),
+          ],
         ),
       ],
     );
@@ -135,7 +136,7 @@ TextStyle _labelStyle(DsTokens tokens) =>
     );
 
 TextStyle _valueStyle(DsTokens tokens) =>
-    tokens.typography.styles.subtitle.subtitle2.copyWith(
+    tokens.typography.styles.subtitle.subtitle1.copyWith(
       color: tokens.colors.text.highEmphasis,
       fontFeatures: const [FontFeature.tabularFigures()],
     );

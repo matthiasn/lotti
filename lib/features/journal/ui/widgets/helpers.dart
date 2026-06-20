@@ -26,7 +26,9 @@ class EntryTextWidget extends StatelessWidget {
     final labelStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
-    final valueStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
+    // subtitle1 (16/w600) lifts the measured value above the 14px body/label
+    // so the number the user came for is the card's primary figure.
+    final valueStyle = tokens.typography.styles.subtitle.subtitle1.copyWith(
       color: tokens.colors.text.highEmphasis,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
