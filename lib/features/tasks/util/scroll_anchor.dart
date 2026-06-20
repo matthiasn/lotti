@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/scheduler.dart';
@@ -41,13 +42,15 @@ double? anchorCorrectionOffset({
 ///    frame burst would have ended; [holdDuration] must span that gap.
 ///
 /// On [hold] it captures the target's current viewport top (via [locate]) and,
-/// each frame until the deadline, jumps [controller] so the target returns to
-/// that captured top whenever it drifts. Because the window is long, the hold
-/// **releases early the moment the user scrolls** (an offset change it did not
-/// itself make) so it never fights a deliberate scroll. Correction math is the
-/// pure [anchorCorrectionOffset]; the loop is driven by post-frame callbacks so
-/// it is exercised by a normal widget `pump`, and the deadline is measured from
-/// the frame timestamps so it is frame-rate independent and deterministic.
+/// on each frame the awaited relayout produces, jumps [controller] so the target
+/// returns to that captured top whenever it drifts. The hold is released by a
+/// [Timer] after [holdDuration]; it does **not** force frames while the page is
+/// static, so it never re-renders the screen at 60/120Hz through an idle window.
+/// Because the window is long, the hold also **releases early the moment the
+/// user scrolls** (an offset change it did not itself make) so it never fights a
+/// deliberate scroll. Correction math is the pure [anchorCorrectionOffset]; the
+/// loop is driven by post-frame callbacks so it is exercised by a normal widget
+/// `pump`.
 class ScrollAnchor {
   ScrollAnchor({
     required this.controller,
@@ -75,9 +78,10 @@ class ScrollAnchor {
 
   double? _anchorTop;
 
-  /// Frame-timestamp deadline; set lazily on the first frame of a hold so it is
-  /// relative to that frame's clock (which `pump` advances deterministically).
-  Duration? _deadline;
+  /// Releases the hold once [holdDuration] elapses. A timer (rather than a
+  /// drained frame budget) owns the deadline, so the loop never has to force
+  /// frames just to keep counting down toward release.
+  Timer? _releaseTimer;
 
   /// The offset this anchor last established. If the controller's offset moves
   /// away from it between frames, the user scrolled and the hold bows out.
@@ -96,35 +100,33 @@ class ScrollAnchor {
     final top = locate();
     if (top == null || holdDuration <= Duration.zero) return;
     _anchorTop = top;
-    _deadline = null;
     _expectedOffset = controller.positions.length == 1
         ? controller.offset
         : null;
+    _releaseTimer?.cancel();
+    _releaseTimer = Timer(holdDuration, _endHold);
     _schedule();
   }
 
   void _schedule() {
     if (_scheduled || _disposed) return;
     _scheduled = true;
-    _scheduler
-      ..addPostFrameCallback((timeStamp) {
-        _scheduled = false;
-        if (_disposed || _anchorTop == null) return;
-        _deadline ??= timeStamp + holdDuration;
-        if (timeStamp >= _deadline!) {
-          _anchorTop = null;
-          return;
-        }
-        _correctOnce();
-        // A user scroll (or any released state) ends the hold immediately.
-        if (_anchorTop == null) return;
-        _schedule();
-      })
-      // A post-frame callback alone does not request a frame, so once the
-      // page stops changing the hold would stall (and could later resume on
-      // an unrelated frame). Explicitly request the next frame so the loop
-      // keeps draining toward its deadline and always releases itself.
-      ..scheduleFrame();
+    // No scheduleFrame() here: the relayout this hold absorbs (a checklist row
+    // added, or cross-fading away, above the anchor) is itself animated, so it
+    // schedules the frames that drive correction. Release is owned by
+    // [_releaseTimer], so we never force a frame burst while the page is static
+    // — which would otherwise re-render at 60/120Hz for the whole hold window.
+    // Once released _anchorTop is null, so a post-frame callback that fires
+    // later on an unrelated frame is inert.
+    _scheduler.addPostFrameCallback((_) {
+      _scheduled = false;
+      if (_disposed || _anchorTop == null) return;
+      _correctOnce();
+      // A user scroll (handled in _correctOnce) may have ended the hold; only
+      // re-arm while it is still active.
+      if (_anchorTop == null) return;
+      _schedule();
+    });
   }
 
   void _correctOnce() {
@@ -138,7 +140,7 @@ class ScrollAnchor {
     // rather than yank them back; the long hold window must never fight input.
     final expected = _expectedOffset;
     if (expected != null && (controller.offset - expected).abs() > tolerance) {
-      _anchorTop = null;
+      _endHold();
       return;
     }
     final currentTop = locate();
@@ -160,9 +162,17 @@ class ScrollAnchor {
     }
   }
 
+  /// Ends the current hold and cancels the release timer. Safe to call from the
+  /// timer callback itself — cancelling an already-fired timer is a no-op.
+  void _endHold() {
+    _releaseTimer?.cancel();
+    _releaseTimer = null;
+    _anchorTop = null;
+  }
+
   /// Stop any in-flight hold and release resources.
   void dispose() {
     _disposed = true;
-    _anchorTop = null;
+    _endHold();
   }
 }
