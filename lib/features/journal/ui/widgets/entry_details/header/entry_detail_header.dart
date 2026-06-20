@@ -220,17 +220,23 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
 
     if (widget.isCollapsed) {
       // Collapsed preview: thumbnail/icon + date + duration, chevron trailing.
-      return Row(
-        children: [
-          if (entry is JournalImage) _buildImageThumbnail(entry),
-          if (entry is JournalAudio) _buildAudioIcon(context),
-          if (entry is JournalEntry) _buildTextIcon(context),
-          SizedBox(width: tokens.spacing.step3),
-          EntryDatetimeWidget(entryId: widget.entryId),
-          if (entry is JournalAudio) _buildDurationLabel(context, entry),
-          const Spacer(),
-          chevron,
-        ],
+      // The whole preview row is a tap target (not just the small caret) so a
+      // collapsed entry reliably expands wherever it's tapped.
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onToggleCollapse,
+        child: Row(
+          children: [
+            if (entry is JournalImage) _buildImageThumbnail(entry),
+            if (entry is JournalAudio) _buildAudioIcon(context),
+            if (entry is JournalEntry) _buildTextIcon(context),
+            SizedBox(width: tokens.spacing.step3),
+            EntryDatetimeWidget(entryId: widget.entryId),
+            if (entry is JournalAudio) _buildDurationLabel(context, entry),
+            const Spacer(),
+            chevron,
+          ],
+        ),
       );
     }
 

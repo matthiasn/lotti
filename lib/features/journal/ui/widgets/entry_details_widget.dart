@@ -430,7 +430,15 @@ class EntryDetailsContent extends ConsumerWidget {
   /// card family's alignment).
   Widget _bodyEditor(String itemId) => Transform.translate(
     offset: const Offset(-3, 0),
-    child: EditorWidget(entryId: itemId),
+    // Drop the Material Card's default vertical margin (EdgeInsets.all(4)) — it
+    // added a stray band above the read-only markdown (most visible before the
+    // editor toolbar appears). Keep the 4px horizontal margin: the -3px nudge
+    // above is tuned against it to land the text on the shared content gutter,
+    // so zeroing it entirely would clip the first glyph.
+    child: EditorWidget(
+      entryId: itemId,
+      margin: const EdgeInsets.symmetric(horizontal: 4),
+    ),
   );
 
   /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) *between*
