@@ -423,11 +423,17 @@ void main() {
     final speedButton = find.text('1.5x');
     expect(speedButton, findsOneWidget);
 
-    final opacity = tester.widget<Opacity>(
+    // Kept at full contrast (no dimming wrapper) so it stays a clearly legible
+    // control in the resting card, but not interactive until playback is active
+    // (no InkWell wrapping it).
+    expect(
       find.ancestor(of: speedButton, matching: find.byType(Opacity)),
+      findsNothing,
     );
-    // Dimmed when inactive, but kept legible (not the old near-faint 0.5).
-    expect(opacity.opacity, 0.75);
+    expect(
+      find.ancestor(of: speedButton, matching: find.byType(InkWell)),
+      findsNothing,
+    );
   });
 
   // Every transition in the speed sequence is exercised here, including the

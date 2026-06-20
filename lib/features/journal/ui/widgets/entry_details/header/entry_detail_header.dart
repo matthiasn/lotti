@@ -162,14 +162,21 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     ];
   }
 
-  /// Interleaves a consistent inter-control gap so adjacent header controls
-  /// never sit flush — the crowded 4-control headers were a mis-tap hazard for
-  /// motor-impaired users, so neighbouring tap zones get a clear visible gap.
+  /// Interleaves the inter-control gap so adjacent header controls never sit
+  /// flush — the crowded 4-control headers were a mis-tap hazard for
+  /// motor-impaired users. The gap before the trailing overflow `…` is widened
+  /// further so the favorite toggle and the (destructive-capable) overflow menu
+  /// are not near-neighbours and a slipped tap can't catch the wrong one.
   List<Widget> _spacedTrailing(BuildContext context, List<Widget> actions) {
-    final gap = context.designTokens.spacing.step3;
+    final spacing = context.designTokens.spacing;
     final out = <Widget>[];
     for (var i = 0; i < actions.length; i++) {
-      if (i > 0) out.add(SizedBox(width: gap));
+      if (i > 0) {
+        final beforeOverflow = i == actions.length - 1;
+        out.add(
+          SizedBox(width: beforeOverflow ? spacing.step4 : spacing.step3),
+        );
+      }
       out.add(actions[i]);
     }
     return out;

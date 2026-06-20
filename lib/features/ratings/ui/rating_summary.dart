@@ -56,7 +56,7 @@ class RatingSummary extends StatelessWidget {
         // caption (medium-emphasis), not a bold white headline.
         Row(
           children: [
-            if (data.note != null && data.note!.isNotEmpty)
+            if (data.note != null && data.note!.isNotEmpty) ...[
               Flexible(
                 child: Text(
                   data.note!,
@@ -65,8 +65,13 @@ class RatingSummary extends StatelessWidget {
                   ),
                 ),
               ),
+              // A clear gap so the edit target is not flush against the note
+              // text (a mis-tap hazard for imprecise taps).
+              SizedBox(width: tokens.spacing.step3),
+            ],
+            // Full 48px tap target (no compact density) so the edit affordance
+            // is comfortably tappable and reads as a real control.
             IconButton(
-              visualDensity: VisualDensity.compact,
               icon: Icon(
                 Icons.edit_outlined,
                 color: tokens.colors.text.mediumEmphasis,

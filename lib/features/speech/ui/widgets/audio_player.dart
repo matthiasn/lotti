@@ -365,26 +365,28 @@ class _SpeedButton extends StatelessWidget {
     final speedTextStyle = (captionStyle ?? const TextStyle(fontSize: 12))
         .copyWith(color: speedTextColor);
 
-    // A boundary at the same weight as the other header glyphs (mediumEmphasis,
-    // well above the WCAG 1.4.11 3:1 floor) so the speed control reads as a
-    // real, tappable pill rather than near-invisible chrome.
+    // A filled chip with a mediumEmphasis boundary (well above the WCAG 1.4.11
+    // 3:1 floor) so the speed control reads as a real, tappable pill rather than
+    // near-invisible chrome — important because the entry card's resting state
+    // shows this control while playback is inactive.
     final pillBorder =
         tokens?.colors.text.mediumEmphasis ?? scheme.outlineVariant;
     final child = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
           color: currentSpeed != 1 ? scheme.error : pillBorder,
         ),
-        color: scheme.surfaceTint.withValues(alpha: 0.05),
+        color: scheme.surfaceTint.withValues(alpha: 0.14),
       ),
       child: Text(label, style: speedTextStyle),
     );
 
     if (!isActive) {
-      // Quieter than the active state, but not so faint it disappears.
-      return Opacity(opacity: 0.75, child: child);
+      // Not tappable until playback is active, but kept at full contrast (not a
+      // dimmed ghost) so it always reads as a real control in the resting card.
+      return child;
     }
 
     return Semantics(

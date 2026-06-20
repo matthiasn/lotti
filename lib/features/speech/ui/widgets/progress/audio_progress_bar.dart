@@ -159,8 +159,10 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<DsTokens>();
-    final trackHeight = widget.compact ? 6.0 : 8.0;
-    final thumbRadius = widget.compact ? 6.0 : 7.5;
+    // A thicker track and larger thumb so the scrubber is easy to see and grab
+    // without precise aim (low-vision / limited-motor).
+    final trackHeight = widget.compact ? 7.0 : 9.0;
+    final thumbRadius = widget.compact ? 7.5 : 9.0;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {

@@ -46,11 +46,17 @@ class WorkoutSummary extends StatelessWidget {
           entryTextForWorkout(data, includeTitle: !showChart),
           padding: EdgeInsets.zero,
         ),
-        // The embedded charts read as integrated detail below the value lines
-        // (no framed-section break), with one rhythm step between each.
+        // Zone the card: one deliberate section break separates the value-line
+        // summary (Energy/Duration) from the trend-chart zone, then a tighter
+        // item step groups the charts within that zone — so the summary and the
+        // trends read as two distinct groups rather than one flat stack.
         if (showChart)
           for (var i = 0; i < items.length; i++) ...[
-            SizedBox(height: tokens.spacing.cardItemSpacing),
+            SizedBox(
+              height: i == 0
+                  ? tokens.spacing.sectionGap
+                  : tokens.spacing.cardItemSpacing,
+            ),
             DashboardWorkoutChart(
               chartConfig: items[i],
               rangeStart: getRangeStart(context: context),

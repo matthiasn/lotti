@@ -30,9 +30,10 @@ class HealthSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         EntryTextWidget(entryTextForQuant(qe), padding: EdgeInsets.zero),
-        // The embedded chart reads as integrated detail below the value line
-        // (no framed-section break), one rhythm step down.
-        if (showChart) SizedBox(height: tokens.spacing.cardItemSpacing),
+        // One deliberate section break separates the value-line summary from
+        // the trend chart below, so the card reads as summary + trend rather
+        // than two equally-weighted lines.
+        if (showChart) SizedBox(height: tokens.spacing.sectionGap),
         if (showChart)
           DashboardHealthChart(
             chartConfig: DashboardHealthItem(
