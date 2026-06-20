@@ -62,9 +62,11 @@ Future<void> _pump(
 }) async {
   await tester.pumpWidget(
     MaterialApp(
-      theme: brightness == Brightness.dark
-          ? ThemeData.dark()
-          : ThemeData.light(),
+      // resolveTestTheme adds the DsTokens extension (the modal rows read
+      // `context.designTokens`) while preserving the requested brightness.
+      theme: resolveTestTheme(
+        brightness == Brightness.dark ? ThemeData.dark() : ThemeData.light(),
+      ),
       home: Scaffold(
         body: Material(
           child: TaskStatusModalContent(
@@ -278,6 +280,7 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
+          theme: resolveTestTheme(),
           home: Scaffold(
             body: Material(
               child: Builder(
@@ -318,6 +321,7 @@ void main() {
 
         await tester.pumpWidget(
           MaterialApp(
+            theme: resolveTestTheme(),
             home: Scaffold(
               body: Material(
                 child: Builder(

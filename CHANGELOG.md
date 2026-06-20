@@ -43,6 +43,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   muted against the page — and the spacing around it is evened up: a smaller
   gap above (matching the other section gaps) and real breathing room below it
   before the bottom action bar.
+- The status / priority / label picker modals are tidier and more consistent:
+  each row now highlights with a rounded, inset shape on hover or selection
+  instead of a sharp edge-to-edge band, and the picker titles no longer mix
+  styles (the stray trailing colon on the status picker is gone).
 
 ### Fixed
 - Accepting an AI suggestion that adds a to-do no longer makes the page jump:

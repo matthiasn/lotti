@@ -83,7 +83,7 @@ class TaskForm extends ConsumerWidget {
           // (the linked-entries sliver below contributes almost none).
           padding: EdgeInsets.only(
             top: tokens.spacing.step4,
-            bottom: tokens.spacing.sectionGap,
+            bottom: tokens.spacing.step5,
           ),
           child: AiSummaryCard(
             taskId: taskId,
