@@ -1154,7 +1154,7 @@ class _DesktopSidebarAboveSettings extends ConsumerWidget {
       duration: SidebarAudioRecordingSection.animationDuration,
       curve: Curves.easeInOut,
       alignment: Alignment.bottomCenter,
-      child: SizedBox(height: visible ? tokens.spacing.step3 : 0),
+      child: SizedBox(height: visible ? tokens.spacing.step4 : 0),
     );
   }
 

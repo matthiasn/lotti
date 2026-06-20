@@ -181,7 +181,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
           // to display readable monospace counters.
           if (!collapsed && aboveSettings != null) ...[
             aboveSettings!,
-            SizedBox(height: tokens.spacing.step6),
+            SizedBox(height: tokens.spacing.step5),
           ],
 
           // Settings at the bottom

@@ -154,11 +154,13 @@ class _StopTimerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final accent = tokens.colors.interactive.enabled;
     final tooltip = context.messages.sidebarRunningTimerStopTooltip;
 
-    // Neutral stop control — stopping a timer is not destructive, so the
-    // glyph stays medium-emphasis on a subtle surface rather than shouting
-    // in red. (Red is reserved for the audio recording's stop button.)
+    // Teal-tinted chip + teal glyph — same affordance pattern as the audio
+    // recording's red stop, so the action language is consistent across the
+    // live cards (only the accent differs). Red still stays exclusive to the
+    // consequential recording stop.
     return Semantics(
       button: true,
       label: tooltip,
@@ -166,7 +168,7 @@ class _StopTimerButton extends StatelessWidget {
         message: tooltip,
         excludeFromSemantics: true,
         child: Material(
-          color: tokens.colors.surface.enabled,
+          color: accent.withValues(alpha: 0.16),
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
@@ -175,11 +177,7 @@ class _StopTimerButton extends StatelessWidget {
             child: SizedBox(
               width: 28,
               height: 28,
-              child: Icon(
-                Icons.stop_rounded,
-                size: 16,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
+              child: Icon(Icons.stop_rounded, size: 16, color: accent),
             ),
           ),
         ),

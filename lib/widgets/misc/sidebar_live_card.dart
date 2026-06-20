@@ -62,7 +62,13 @@ class SidebarLiveCard extends StatelessWidget {
       liveRegion: liveRegion,
       label: semanticsLabel,
       child: Material(
-        color: accent.withValues(alpha: 0.10),
+        // Composite the accent tint over the darker level01 base (not the
+        // lighter sidebar level02) so the card reads richer and the
+        // accent-coloured time keeps strong, parity contrast across hues.
+        color: Color.alphaBlend(
+          accent.withValues(alpha: 0.14),
+          tokens.colors.background.level01,
+        ),
         borderRadius: BorderRadius.circular(tokens.radii.m),
         clipBehavior: Clip.antiAlias,
         child: InkWell(
@@ -81,6 +87,10 @@ class SidebarLiveCard extends StatelessWidget {
                       tokens.spacing.step3,
                     ),
                     child: Row(
+                      // Align the leading glyph and trailing action to the
+                      // title's first line rather than centring them against
+                      // the taller title+time block.
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _Leading(accent: accent, glyph: glyph, pulse: pulse),
                         SizedBox(width: tokens.spacing.step4),
