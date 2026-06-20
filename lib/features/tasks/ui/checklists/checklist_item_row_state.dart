@@ -362,40 +362,53 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                       // users can see where it is safe to tap rather than
                       // having to aim at the tiny box.
                       hoverColor: tokens.colors.surface.hover,
-                      child: SizedBox(
+                      child: Container(
                         width: 44,
                         height: 44,
-                        child: Center(
-                          child: SizedBox(
-                            key: _checkboxKey,
-                            width: 20,
-                            height: 20,
-                            child: ScaleTransition(
-                              scale: _checkPopScale,
-                              child: Checkbox(
-                                value: item.data.isChecked,
-                                onChanged: canToggle
-                                    ? (value) =>
-                                          applyCheck(checked: value ?? false)
-                                    : null,
-                                activeColor: tokens.colors.interactive.enabled,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                // Medium emphasis (not low) at 2px: an empty
-                                // checkbox is a control the user must be able to
-                                // SEE — a faint low-emphasis outline nearly
-                                // vanished against the dark card for low-vision
-                                // users. This is control legibility, not the
-                                // metadata-chip emphasis tiering.
-                                side: BorderSide(
-                                  color: tokens.colors.text.mediumEmphasis,
-                                  width: 2,
-                                ),
-                                materialTapTargetSize:
-                                    MaterialTapTargetSize.shrinkWrap,
-                                visualDensity: VisualDensity.compact,
+                        alignment: Alignment.center,
+                        // A faint resting "well" (the same filled+bordered
+                        // language as the metadata chips) makes the 44px tap
+                        // zone visible at REST — on touch there is no hover, so
+                        // the hover highlight alone left the forgiving area
+                        // invisible where most users tap.
+                        decoration: BoxDecoration(
+                          color: tokens.colors.surface.enabled,
+                          borderRadius: BorderRadius.circular(
+                            tokens.radii.badgesPills,
+                          ),
+                          border: Border.all(
+                            color: tokens.colors.decorative.level02,
+                          ),
+                        ),
+                        child: SizedBox(
+                          key: _checkboxKey,
+                          width: 20,
+                          height: 20,
+                          child: ScaleTransition(
+                            scale: _checkPopScale,
+                            child: Checkbox(
+                              value: item.data.isChecked,
+                              onChanged: canToggle
+                                  ? (value) =>
+                                        applyCheck(checked: value ?? false)
+                                  : null,
+                              activeColor: tokens.colors.interactive.enabled,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4),
                               ),
+                              // Medium emphasis (not low) at 2px: an empty
+                              // checkbox is a control the user must be able to
+                              // SEE — a faint low-emphasis outline nearly
+                              // vanished against the dark card for low-vision
+                              // users. This is control legibility, not the
+                              // metadata-chip emphasis tiering.
+                              side: BorderSide(
+                                color: tokens.colors.text.mediumEmphasis,
+                                width: 2,
+                              ),
+                              materialTapTargetSize:
+                                  MaterialTapTargetSize.shrinkWrap,
+                              visualDensity: VisualDensity.compact,
                             ),
                           ),
                         ),

@@ -364,9 +364,13 @@ without enlarging the box — users with reduced motor precision can hit the
 surrounding ring instead of aiming at the tiny square. A centre tap lands on
 the `Checkbox` itself (keeping its native gesture + a11y semantics); the ring
 is caught by the `InkWell`, and both route through the row's single
-`applyCheck` handler so the toggle behaviour stays in one place. The `InkWell`
-carries a `hoverColor` so the whole 44px zone lights up on hover/press —
-the forgiving target is *visible*, not just promised. The drag-grip icon is a
+`applyCheck` handler so the toggle behaviour stays in one place. The 44px zone
+draws a faint resting "well" (a `surface.enabled` fill with a
+`decorative.level02` border — the same filled+bordered language as the metadata
+chips) so the forgiving tap area is *visible at rest*; on touch there is no
+hover, so a hover-only highlight left it invisible where most users tap. The
+`InkWell` also carries a `hoverColor` for hover/press feedback on pointer
+devices. The drag-grip icon is a
 quiet hint at a low (0.2) alpha (a long-press anywhere on the row starts the
 drag), so the repeating grip texture doesn't compete with the checkbox + title.
 The empty checkbox draws its outline at medium emphasis / 2px (not the faint
