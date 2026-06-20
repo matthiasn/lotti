@@ -5,13 +5,15 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 /// Shared visual shell for the sidebar's *live* status surfaces — the running
 /// timer and an active audio recording.
 ///
-/// Each renders as its own soft, accent-tinted card with a 3 px accent rail, a
-/// leading glyph, the linked title (free to wrap to two lines), a prominent
-/// accent-coloured elapsed time, and a trailing action. The accent both
-/// identifies the kind at a glance (teal = timer, red = recording) and gives
-/// the row real presence — without the old saturated alarm-red fill, glow, or
-/// reactive frame. Background/scheduled surfaces (the agent queue) deliberately
-/// use a quieter neutral card instead, so the eye lands on what is live first.
+/// Each renders as its own accent-tinted card with a 3 px accent rail. A top
+/// row carries the leading glyph, the prominent accent-coloured elapsed time,
+/// and the trailing action (stop); the linked title sits on a second row
+/// spanning the full card width, so it wraps to two lines before truncating.
+/// The accent both identifies the kind at a glance (teal = timer, red =
+/// recording) and gives the card real presence — without the old saturated
+/// alarm-red fill, glow, or reactive frame. Background/scheduled surfaces (the
+/// agent queue) deliberately use a quieter neutral card instead, so the eye
+/// lands on what is live first.
 class SidebarLiveCard extends StatelessWidget {
   const SidebarLiveCard({
     required this.accent,
@@ -86,49 +88,48 @@ class SidebarLiveCard extends StatelessWidget {
                       tokens.spacing.step3,
                       tokens.spacing.step3,
                     ),
-                    child: Row(
-                      // Align the leading glyph and trailing action to the
-                      // title's first line rather than centring them against
-                      // the taller title+time block.
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _Leading(accent: accent, glyph: glyph, pulse: pulse),
-                        SizedBox(width: tokens.spacing.step4),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Tooltip(
-                                message: title,
-                                child: Text(
-                                  title,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: tokens.typography.styles.body.bodySmall
-                                      .copyWith(
-                                        color: tokens.colors.text.highEmphasis,
-                                      ),
+                        // Top row: glyph + the prominent elapsed time on the
+                        // left, the stop action pinned right. Keeping these on
+                        // one line frees the full card width for the title.
+                        Row(
+                          children: [
+                            _Leading(
+                              accent: accent,
+                              glyph: glyph,
+                              pulse: pulse,
+                            ),
+                            SizedBox(width: tokens.spacing.step3),
+                            Text(
+                              timeText,
+                              style: tokens.typography.styles.subtitle.subtitle1
+                                  .copyWith(
+                                    color: accent,
+                                    fontFeatures: numericBadgeFontFeatures,
+                                  ),
+                            ),
+                            const Spacer(),
+                            trailing,
+                          ],
+                        ),
+                        SizedBox(height: tokens.spacing.step2),
+                        // Second row: the title gets the full width, so it
+                        // wraps to two lines before truncating.
+                        Tooltip(
+                          message: title,
+                          child: Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.body.bodySmall
+                                .copyWith(
+                                  color: tokens.colors.text.highEmphasis,
                                 ),
-                              ),
-                              SizedBox(height: tokens.spacing.step1),
-                              Text(
-                                timeText,
-                                style: tokens
-                                    .typography
-                                    .styles
-                                    .subtitle
-                                    .subtitle1
-                                    .copyWith(
-                                      color: accent,
-                                      fontFeatures: numericBadgeFontFeatures,
-                                    ),
-                              ),
-                            ],
                           ),
                         ),
-                        SizedBox(width: tokens.spacing.step3),
-                        trailing,
                       ],
                     ),
                   ),
