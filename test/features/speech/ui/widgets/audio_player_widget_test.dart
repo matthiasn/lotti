@@ -795,14 +795,16 @@ void main() {
       expect(colors.progress, dsTokensLight.colors.interactive.enabled);
     });
 
-    test('progress track uses decorative token instead of variant overlay', () {
+    test('progress track uses a perceivable (>=3:1) token, not a hairline', () {
       final colors = resolveAudioProgressColors(
         ThemeData(useMaterial3: true).copyWith(
           extensions: const [dsTokensDark],
         ),
       );
 
-      expect(colors.track, dsTokensDark.colors.decorative.level02);
+      // lowEmphasis reads as a control boundary (WCAG 1.4.11); the old
+      // decorative.level02 sat ~2.2:1 against the card surface.
+      expect(colors.track, dsTokensDark.colors.text.lowEmphasis);
       expect(colors.progress, dsTokensDark.colors.interactive.enabled);
     });
 

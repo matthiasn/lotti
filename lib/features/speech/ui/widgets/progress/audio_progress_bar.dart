@@ -64,8 +64,10 @@ AudioProgressColors resolveAudioProgressColors(
   final progressBase =
       activeTokens?.colors.interactive.enabled ?? theme.colorScheme.primary;
 
+  // The unfilled scrubber track must read as a control boundary (WCAG 1.4.11
+  // >=3:1), not a hairline — decorative.level02 sat ~2.2:1 against the card.
   final track = activeTokens != null
-      ? activeTokens.colors.decorative.level02
+      ? activeTokens.colors.text.lowEmphasis
       : theme.colorScheme.onSurfaceVariant.withValues(
           alpha: isDark ? 0.32 : 0.24,
         );

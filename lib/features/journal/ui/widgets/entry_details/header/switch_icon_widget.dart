@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 class SwitchIconWidget extends StatelessWidget {
   const SwitchIconWidget({
@@ -46,7 +46,7 @@ class SwitchIconWidget extends StatelessWidget {
               )
             : Icon(
                 icon,
-                color: context.colorScheme.outline,
+                color: context.designTokens.colors.text.mediumEmphasis,
               ),
       ),
     );

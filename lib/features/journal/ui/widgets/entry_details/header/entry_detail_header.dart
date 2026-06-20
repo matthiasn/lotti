@@ -107,11 +107,15 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     DsTokens tokens,
   ) {
     return <Widget>[
-      if (entry is! JournalEvent && (entry?.meta.starred ?? false))
+      // Favorite toggle is shown on every (non-event) entry, not only when
+      // already starred, so the action set is consistent across card types —
+      // the appearing/disappearing star was the most jarring header
+      // inconsistency. Empty/outline when not starred, gold when starred.
+      if (entry != null && entry is! JournalEvent)
         SwitchIconWidget(
           tooltip: context.messages.journalFavoriteTooltip,
           onPressed: notifier.toggleStarred,
-          value: entry?.meta.starred ?? false,
+          value: entry.meta.starred ?? false,
           icon: Icons.star_outline_rounded,
           activeIcon: Icons.star_rounded,
           activeColor: starredGold,
