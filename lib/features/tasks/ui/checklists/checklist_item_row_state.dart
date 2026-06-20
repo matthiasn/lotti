@@ -53,6 +53,14 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
   bool _lastIsArchived = false;
   bool _receivedInitialData = false;
 
+  /// Set when a *local* tap already fired the check-off celebration, so the
+  /// data-change listener (which sees the same check land a moment later)
+  /// doesn't fire a second burst for it. External check-offs (an accepted AI
+  /// proposal, a sync from another device) leave this false, so they DO get the
+  /// burst — the reward fires whenever an item becomes checked, not only on a
+  /// direct tap.
+  bool _suppressDataCheckCelebration = false;
+
   @override
   void initState() {
     super.initState();
@@ -105,29 +113,42 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
     super.dispose();
   }
 
-  /// The interactive check-off reward — a light haptic, the checkbox "pop", and
-  /// a spark burst at the checkbox. Fired straight from the tap (or the AI
-  /// "mark complete" action), so it runs while the row is still mounted and the
-  /// checkbox rect is still readable.
+  /// The check-off reward — a checkbox "pop" and a spark burst at the checkbox,
+  /// plus a light haptic on a direct tap. Fired imperatively (not from a
+  /// rebuild) so it runs while the row is still mounted and the checkbox rect
+  /// is still readable.
   ///
   /// This must NOT wait for a widget rebuild: completing the *last* open item
   /// brings the checklist to 100%, and the card swaps the row list for an "all
   /// done" line on the next build — unmounting this row before any
   /// lifecycle-driven celebration could fire. [spawnCompletionBurst] captures
   /// the geometry here and renders in the overlay, so the sparks survive the
-  /// row collapsing away. Burst + pop are suppressed under reduced motion; the
-  /// haptic still fires, since it is feedback, not motion.
-  void _celebrateInteractiveCheck() {
-    unawaited(HapticFeedback.lightImpact());
-    // The haptic always fires; the visual pop + spark burst honour the user's
-    // "celebrate checklist items" switch and the system reduced-motion setting.
+  /// row collapsing away. Burst + pop are suppressed under reduced motion.
+  ///
+  /// [interactive] is true for a direct tap on this row's checkbox (or its AI
+  /// "mark complete" dialog): it adds the haptic and flags the upcoming
+  /// data-change so the listener doesn't double-fire. It is false for an
+  /// external check-off (an accepted AI proposal, a sync) routed through the
+  /// data listener — same sparks, no haptic.
+  void _celebrateCheck({required bool interactive}) {
+    // A direct tap also gets a haptic (feedback, not motion). The data-listener
+    // suppression flag is set by the caller *before* it writes the check, so it
+    // is already in place when the change lands back through the listener.
+    if (interactive) unawaited(HapticFeedback.lightImpact());
+    // The visual pop + spark burst honour the user's "celebrate checklist
+    // items" switch and the system reduced-motion setting.
     if (!ref.read(celebrationPreferencesProvider).checklistItems) return;
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     if (reduceMotion) return;
     _checkPopController.forward(from: 0);
     final checkboxContext = _checkboxKey.currentContext;
-    if (checkboxContext != null) {
+    // Only emit the spark burst when the checkbox is actually on screen. An
+    // external check-off (an accepted AI "check off" proposal, a sync) can land
+    // on an item scrolled out of view; without this guard the sparks would
+    // erupt at the off-screen checkbox position — e.g. clamped over the page
+    // title. A direct tap is always on screen, so this never suppresses it.
+    if (checkboxContext != null && _checkboxIsInViewport(checkboxContext)) {
       spawnCompletionBurst(
         checkboxContext,
         count: 16,
@@ -136,6 +157,22 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
         duration: const Duration(milliseconds: 850),
       );
     }
+  }
+
+  /// Whether the checkbox currently overlaps its enclosing scroll viewport.
+  /// Returns true when there is no enclosing scrollable (nothing can clip it).
+  bool _checkboxIsInViewport(BuildContext checkboxContext) {
+    final box = checkboxContext.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return false;
+    final checkboxRect = box.localToGlobal(Offset.zero) & box.size;
+    final scrollable = Scrollable.maybeOf(checkboxContext);
+    if (scrollable == null) return true;
+    final viewport = scrollable.context.findRenderObject();
+    if (viewport is! RenderBox || !viewport.attached || !viewport.hasSize) {
+      return true;
+    }
+    final viewportRect = viewport.localToGlobal(Offset.zero) & viewport.size;
+    return viewportRect.overlaps(checkboxRect);
   }
 
   bool get _shouldHide {
@@ -218,6 +255,22 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
         return;
       }
 
+      // Celebrate whenever an item *becomes* checked, not only on a direct tap:
+      // an accepted AI "check off" proposal (or any external check) arrives
+      // here. A local tap already fired the burst imperatively and set the
+      // suppression flag, so it isn't double-celebrated; an item going back to
+      // unchecked clears the flag so a later external check still celebrates.
+      final becameChecked = !_lastIsChecked && item.data.isChecked;
+      if (!item.data.isChecked) {
+        _suppressDataCheckCelebration = false;
+      } else if (becameChecked) {
+        if (_suppressDataCheckCelebration) {
+          _suppressDataCheckCelebration = false;
+        } else {
+          _celebrateCheck(interactive: false);
+        }
+      }
+
       _handleHideStateChange(
         newIsChecked: item.data.isChecked,
         newIsArchived: item.data.isArchived,
@@ -297,8 +350,12 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
       // behaviour (persist + celebrate + clear any AI suggestion) lives in
       // one place.
       void applyCheck({required bool checked}) {
+        // Flag the suppression BEFORE the write so the data listener (which can
+        // fire as soon as the controller updates) sees it and doesn't add a
+        // second burst on top of the imperative one below.
+        if (checked) _suppressDataCheckCelebration = true;
         itemNotifier.updateChecked(checked: checked);
-        if (checked) _celebrateInteractiveCheck();
+        if (checked) _celebrateCheck(interactive: true);
         if (suggestion != null) {
           ref
               .read(checklistCompletionServiceProvider.notifier)
@@ -353,11 +410,11 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                   // checkbox — the same celebration language as habits, but
                   // dialled down (no glow, fewer/finer sparks, quicker) so
                   // rapid check-offs read as a cascade of little pops rather
-                  // than visual chaos. Fired imperatively from the tap (see
-                  // [_celebrateInteractiveCheck]) rather than from a widget
-                  // edge, so it also fires when checking the LAST item
-                  // collapses the row. Reduced motion suppresses the sparks
-                  // and pop (the haptic still fires).
+                  // than visual chaos. Fired imperatively (see [_celebrateCheck])
+                  // rather than from a widget edge, so it also fires when
+                  // checking the LAST item collapses the row, and the data
+                  // listener fires it for external check-offs (accepted AI
+                  // proposals) too. Reduced motion suppresses the sparks + pop.
                   // The visual checkbox stays a compact 20×20, but a 44×44
                   // InkWell around it provides a Material-compliant tap
                   // target so users with reduced motor precision can hit it
@@ -710,6 +767,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
           FilledButton.icon(
             onPressed: () {
               Navigator.of(dialogContext).pop();
+              _suppressDataCheckCelebration = true;
               ref
                   .read(
                     checklistItemControllerProvider((
@@ -718,7 +776,7 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     )).notifier,
                   )
                   .updateChecked(checked: true);
-              _celebrateInteractiveCheck();
+              _celebrateCheck(interactive: true);
               ref
                   .read(checklistCompletionServiceProvider.notifier)
                   .clearSuggestion(widget.itemId);

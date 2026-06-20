@@ -3,6 +3,8 @@ import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -100,6 +102,14 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   int _confirmAllPulse = 0;
   bool _cancelledManually = false;
   UnifiedSuggestionList? _lastVisibleSuggestions;
+
+  /// Fingerprints of suggestions the user has committed to (accept/reject) but
+  /// whose row is still animating out. The provider drops a confirmed item
+  /// immediately; this set keeps the row in the visible list (collapsing in
+  /// place) until its exit animation completes, so the row never blinks out
+  /// from under the finger. The dual of [_mergeUnresolvedOpenSuggestions].
+  final Set<String> _exitingFingerprints = {};
+
   ProviderSubscription<AsyncValue<UnifiedSuggestionList>>?
   _suggestionsSubscription;
   ProviderSubscription<AsyncValue<bool>>? _runningSubscription;
@@ -115,6 +125,10 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.taskId != widget.taskId ||
         oldWidget.identity.agentId != widget.identity.agentId) {
+      // Drop in-flight exit state too: a fingerprint left over from the
+      // previous task must not carry into the next one (it would keep
+      // `settling` on or skew the pending-count filter).
+      _exitingFingerprints.clear();
       _lastVisibleSuggestions = null;
       _closeSuggestionSubscriptions();
       _startSuggestionSubscriptions();
@@ -123,6 +137,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
   @override
   void dispose() {
+    _exitingFingerprints.clear();
     _closeSuggestionSubscriptions();
     super.dispose();
   }
@@ -145,6 +160,48 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     _runningSubscription?.close();
     _suggestionsSubscription = null;
     _runningSubscription = null;
+  }
+
+  /// The user committed to this suggestion — keep its row mounted while it
+  /// collapses, even after the provider resolves it away. Rebuild so the
+  /// pending-count pill ticks down with the action (the row is excluded from
+  /// the count the instant it is committed).
+  void _onRowResolveStart(PendingSuggestion suggestion) {
+    if (!_exitingFingerprints.add(suggestion.fingerprint)) return;
+    if (mounted) setState(() {});
+  }
+
+  /// The row's exit animation finished, or the write failed. On `removed: true`
+  /// drop the suggestion from the visible list now — independent of provider
+  /// timing — so a slow re-query can't briefly pop the collapsed row back. On
+  /// `removed: false` (failed / no-op write) restore provider truth so the row
+  /// stays.
+  void _onRowResolveEnd(PendingSuggestion suggestion, {required bool removed}) {
+    if (!_exitingFingerprints.remove(suggestion.fingerprint)) return;
+    // The exiting set changed, and both `settling` and the pending count derive
+    // from it — always rebuild so neither can stick in a stale state, even on
+    // the paths where the visible list itself doesn't change.
+    if (!mounted) return;
+    if (removed) {
+      final list = _lastVisibleSuggestions;
+      setState(() {
+        if (list != null) {
+          final open = list.open
+              .where((s) => s.fingerprint != suggestion.fingerprint)
+              .toList();
+          if (open.length != list.open.length) {
+            _lastVisibleSuggestions = UnifiedSuggestionList(
+              open: open,
+              activity: list.activity,
+              agentName: list.agentName,
+            );
+          }
+        }
+      });
+      return;
+    }
+    setState(() {});
+    _syncVisibleSuggestions();
   }
 
   void _syncVisibleSuggestions({bool notify = true}) {
@@ -186,8 +243,21 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
   Future<void> _confirmAll(List<PendingSuggestion> pending) async {
     if (_confirmAllBusy || pending.isEmpty) return;
-    // Bump the pulse so the proposal rows cascade their confirm pop while the
-    // batch confirm runs.
+    // One light haptic for the whole gesture (the rows no longer tick
+    // individually — that machine-gunned on a big batch). Bump the pulse so
+    // the rows run their resolve → collapse exit as one staggered downward
+    // sweep while the batch confirm writes run.
+    unawaited(HapticFeedback.selectionClick());
+    // A single assertive screen-reader announcement for the whole batch — the
+    // per-row sweep does not announce individually (that would flood SR users).
+    unawaited(
+      SemanticsService.sendAnnouncement(
+        View.of(context),
+        context.messages.changeSetItemConfirmed,
+        Directionality.of(context),
+        assertiveness: Assertiveness.assertive,
+      ),
+    );
     setState(() {
       _confirmAllBusy = true;
       _confirmAllPulse++;
@@ -210,14 +280,13 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         final results = await service.confirmAll(cs);
         if (results.any((r) => !r.success)) anyFailed = true;
       }
-      if (mounted) {
+      // Only surface a toast on failure — a successful batch is already made
+      // abundantly clear by the rows sweeping out and the count dropping to
+      // zero, so a "Change applied" banner is redundant noise.
+      if (anyFailed && mounted) {
         context.showToast(
-          tone: anyFailed
-              ? DesignSystemToastTone.error
-              : DesignSystemToastTone.success,
-          title: anyFailed
-              ? messages.changeSetConfirmError
-              : messages.changeSetItemConfirmed,
+          tone: DesignSystemToastTone.error,
+          title: messages.changeSetConfirmError,
           clearQueue: true,
         );
       }
@@ -425,6 +494,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
               ProposalsSection(
                 key: widget.proposalsFocusKey,
                 open: list.open,
+                // The pill counts what the user still has to act on: rows
+                // already committed (collapsing out) are excluded, so the count
+                // ticks down *with* the action rather than waiting for prune.
+                pendingCount: list.open
+                    .where((s) => !_exitingFingerprints.contains(s.fingerprint))
+                    .length,
                 resolved: list.activity,
                 historyOpen: _historyOpen,
                 onToggleHistory: () =>
@@ -434,6 +509,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
                 onConfirmAll: list.open.length > 1
                     ? () => _confirmAll(list.open)
                     : null,
+                onResolveStart: _onRowResolveStart,
+                onResolveEnd: _onRowResolveEnd,
+                // While any row is collapsing out, the survivors are sliding
+                // up — guard them so a fast second tap can't land on a row
+                // that just moved under the pointer.
+                settling: _exitingFingerprints.isNotEmpty,
               ),
           ],
         ),
@@ -467,11 +548,44 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
       return previous;
     }
 
-    if (isRunning && previous != null) {
-      return _mergeUnresolvedOpenSuggestions(previous, next);
+    var resolved = isRunning && previous != null
+        ? _mergeUnresolvedOpenSuggestions(previous, next)
+        : next;
+
+    if (_exitingFingerprints.isNotEmpty && previous != null) {
+      resolved = _retainExitingSuggestions(previous, resolved);
     }
 
-    return next;
+    return resolved;
+  }
+
+  /// Re-insert any suggestion the user is currently dismissing whose row is
+  /// still collapsing but which the provider has already dropped. Keeps it near
+  /// its previous slot (by stable fingerprint identity) so the row widget keeps
+  /// its exit animation running rather than being torn down mid-collapse.
+  UnifiedSuggestionList _retainExitingSuggestions(
+    UnifiedSuggestionList previous,
+    UnifiedSuggestionList current,
+  ) {
+    final currentFingerprints = {
+      for (final suggestion in current.open) suggestion.fingerprint,
+    };
+    final open = [...current.open];
+    for (final suggestion in previous.open) {
+      final fingerprint = suggestion.fingerprint;
+      if (!_exitingFingerprints.contains(fingerprint)) continue;
+      if (currentFingerprints.contains(fingerprint)) continue;
+      final index = previous.open
+          .indexWhere((s) => s.fingerprint == fingerprint)
+          .clamp(0, open.length);
+      open.insert(index, suggestion);
+    }
+    if (open.length == current.open.length) return current;
+    return UnifiedSuggestionList(
+      open: open,
+      activity: current.activity,
+      agentName: current.agentName,
+    );
   }
 
   UnifiedSuggestionList _mergeUnresolvedOpenSuggestions(

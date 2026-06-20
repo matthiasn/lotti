@@ -1519,6 +1519,63 @@ and user decisions update the UI.
 The card is the only entry point in `task_form.dart`; the legacy
 `AgentSuggestionsPanel` is gone.
 
+#### Proposal accept/reject motion
+
+Accepting or rejecting a proposal is choreographed so nothing jumps out from
+under the pointer/finger. Timing/curves come from the hand-authored
+`MotionDurations` / `MotionCurves` / `ProposalMotion` tokens in
+`lib/features/design_system/theme/motion_tokens.dart` (M3 duration scale +
+emphasized easing; not in the generated `ThemeExtension` pipeline because
+`Duration`/`Curve` aren't lerp-able). Each `ProposalRow` runs a two-beat exit on
+two controllers (`_resolveController`, `_collapseController`):
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending
+  pending --> resolving: tap ✓/✕ or swipe (commit)
+  note right of resolving
+    in place, no layout move:
+    filled badge + "Confirmed"/"Dismissed"
+    word firm in, restrained wash, light
+    haptic at T0; data write runs concurrently
+  end note
+  resolving --> collapsing: write succeeded (collapse joins at ProposalMotion.collapseStart)
+  resolving --> pending: write failed → resolve rewinds, row stays
+  collapsing --> [*]: height→0 (opacity leads), neighbours reflow on the same tween, then pruned
+```
+
+Key invariants:
+
+- **The committed row never moves on the action frame.** It acknowledges in
+  place for `ProposalMotion.resolveHold`, then collapses; the height collapse
+  *is* the reflow (`SizeTransition`, `alignment: topCenter`), so neighbours
+  slide up on the same tween with no snap. The inter-row gap lives inside the
+  collapse so nothing snaps on prune.
+- **The shell, not the provider, removes the row.** `_AiSummaryShellState`
+  keeps a `Set<String> _exitingFingerprints`; `onResolveStart` records a
+  fingerprint (so `_resolveVisibleSuggestionList` re-inserts it even after the
+  provider drops it), and `onResolveEnd(removed:)` prunes on animation complete
+  (or keeps the row on a failed write).
+- **Confirm-all** is a staggered resolve→collapse sweep (one `confirmAllPulse`
+  bump → each row exits after `ProposalMotion.staggerStep * cascadeIndex`), with
+  **one** light haptic for the whole gesture.
+- **Pending pill** ticks down on commit (`pendingCount` excludes exiting rows)
+  and cross-fades; the single-accept success toast is suppressed — the badge +
+  count carry it.
+- **Tap-guard:** while any row is collapsing, the shell passes `settling: true`
+  so the surviving (sliding) rows treat tap/swipe as inert until the exit
+  completes — a fast second action can't hit a row that moved under the pointer.
+- **Swipe hint:** a one-shot, one-directional nudge on the first row, gated by
+  the session-scoped `proposalSwipeNudgePlayedProvider` so it never re-fires on
+  promotion; suppressed under reduced motion.
+- **Accessibility:** on commit an assertive `SemanticsService.sendAnnouncement`
+  speaks the verdict + remaining count; the committed row is `ExcludeSemantics`'d
+  immediately (no ghost focus); action buttons carry explicit
+  `Semantics(button:)` roles + labels.
+- **Reduced motion** (`MediaQuery.disableAnimations`): no resolve/collapse
+  travel — the row is pruned instantly; pill swaps instantly; the haptic still
+  fires (feedback, not motion).
+
 ### `AgentInternalsPanel` — right-side overlay
 
 `lib/features/agents/ui/agent_internals_panel.dart` is a dismissable

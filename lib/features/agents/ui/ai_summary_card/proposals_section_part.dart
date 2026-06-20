@@ -19,10 +19,19 @@ class ProposalsSection extends StatelessWidget {
     required this.confirmAllBusy,
     required this.onConfirmAll,
     required this.confirmAllPulse,
+    this.pendingCount,
+    this.onResolveStart,
+    this.onResolveEnd,
+    this.settling = false,
     super.key,
   });
 
   final List<PendingSuggestion> open;
+
+  /// The count to show in the pending pill. Excludes rows that are committed
+  /// and collapsing out, so the count ticks down in sync with the action.
+  /// Falls back to `open.length` when not supplied.
+  final int? pendingCount;
   final List<LedgerEntry> resolved;
   final bool historyOpen;
   final VoidCallback onToggleHistory;
@@ -32,6 +41,17 @@ class ProposalsSection extends StatelessWidget {
   /// Bumped by the shell on each "Confirm all" press; forwarded to the rows so
   /// they cascade their confirm pop top-to-bottom.
   final int confirmAllPulse;
+
+  /// Forwarded to each open [ProposalRow] so the shell can keep a row mounted
+  /// (collapsing in place) while it leaves, instead of the provider snapping
+  /// it out. See `_AiSummaryShellState`.
+  final void Function(PendingSuggestion suggestion)? onResolveStart;
+  final void Function(PendingSuggestion suggestion, {required bool removed})?
+  onResolveEnd;
+
+  /// True while at least one row is committing/collapsing, so the surviving
+  /// rows guard taps against a mis-targeted second action while they slide.
+  final bool settling;
 
   @override
   Widget build(BuildContext context) {
@@ -74,7 +94,7 @@ class ProposalsSection extends StatelessWidget {
                         height: 1.1,
                       ),
                     ),
-                    _PendingPill(count: open.length),
+                    _PendingPill(count: pendingCount ?? open.length),
                   ],
                 ),
               ),
@@ -89,29 +109,29 @@ class ProposalsSection extends StatelessWidget {
           if (open.isEmpty)
             const _EmptyProposalsRow()
           else
+            // No inter-row Padding here: each open row owns a trailing gap
+            // (step4) *inside* its collapse subtree, so the gap closes with the
+            // row when it leaves — no leftover spacing to snap on prune.
             for (var i = 0; i < open.length; i++)
-              Padding(
-                // A clear gap between proposals (step4) against the tighter
-                // step3 rhythm inside each row, so each reads as its own unit.
-                padding: EdgeInsets.only(
-                  top: i == 0 ? 0 : tokens.spacing.step4,
+              ProposalRow(
+                // Stable identity (set id + item index) so the row's
+                // timer/animation/busy state stays bound to its suggestion
+                // when the open list mutates (e.g. confirm-all), instead of
+                // index-based element reuse transferring it to a sibling.
+                key: ValueKey(
+                  'open-${open[i].changeSet.id}-${open[i].itemIndex}',
                 ),
-                child: ProposalRow(
-                  // Stable identity (set id + item index) so the row's
-                  // timer/animation/busy state stays bound to its suggestion
-                  // when the open list mutates (e.g. confirm-all), instead of
-                  // index-based element reuse transferring it to a sibling.
-                  key: ValueKey(
-                    'open-${open[i].changeSet.id}-${open[i].itemIndex}',
-                  ),
-                  suggestion: open[i],
-                  // Only the first pending row gets the swipe-affordance
-                  // wiggle hint so the page doesn't pulse with every
-                  // visible row.
-                  isFirst: i == 0,
-                  confirmAllPulse: confirmAllPulse,
-                  cascadeIndex: i,
-                ),
+                suggestion: open[i],
+                // Only the first pending row gets the swipe-affordance
+                // wiggle hint so the page doesn't pulse with every
+                // visible row.
+                isFirst: i == 0,
+                confirmAllPulse: confirmAllPulse,
+                cascadeIndex: i,
+                onResolveStart: onResolveStart,
+                onResolveEnd: onResolveEnd,
+                settling: settling,
+                pendingCount: pendingCount ?? open.length,
               ),
           if (resolved.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -150,6 +170,10 @@ class _PendingPill extends StatelessWidget {
     final tokens = context.designTokens;
     final ai = tokens.colors.aiCard;
     final hasItems = count > 0;
+    // Fade-through on count change (a value transition, not a spatial one), so
+    // the number resolves rather than hard-swapping. Instant under reduced
+    // motion. Keyed by count so the switcher cross-fades only when it changes.
+    final reduceMotion = MediaQuery.disableAnimationsOf(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
       decoration: BoxDecoration(
@@ -158,12 +182,18 @@ class _PendingPill extends StatelessWidget {
             : ai.subtleWashStrong,
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        context.messages.changeSetPendingCount(count),
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: hasItems ? ai.accent : ai.metaText,
-          fontWeight: FontWeight.w600,
-          height: 1.1,
+      child: AnimatedSwitcher(
+        duration: reduceMotion ? Duration.zero : MotionDurations.medium1,
+        switchInCurve: MotionCurves.standard,
+        switchOutCurve: MotionCurves.standard,
+        child: Text(
+          context.messages.changeSetPendingCount(count),
+          key: ValueKey(count),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: hasItems ? ai.accent : ai.metaText,
+            fontWeight: FontWeight.w600,
+            height: 1.1,
+          ),
         ),
       ),
     );

@@ -620,6 +620,84 @@ void main() {
       expect(find.byType(CompletionBurst), findsNothing);
     });
 
+    testWidgets(
+      'an external check-off (accepted AI proposal / sync) also fires the burst',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        await tester.pump();
+        expect(find.byType(CompletionBurst), findsNothing);
+
+        // No tap on the checkbox: the item becomes checked from outside — an
+        // accepted AI "check off" proposal (or a sync) updating the controller.
+        // The data listener celebrates it just like a direct tap would.
+        ctrls.itemController.updateChecked(checked: true);
+        await tester.pump(); // listener fires → schedule the overlay burst
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(CompletionBurst), findsOneWidget);
+
+        await tester.pumpAndSettle();
+        expect(find.byType(CompletionBurst), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'an external check-off on a row scrolled out of view spawns no burst',
+      (tester) async {
+        final itemCtrl = FakeChecklistItemController(_makeItem());
+        final tracker = ChecklistControllerCallTracker();
+        final completionSvc = FakeChecklistCompletionService();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              checklistItemControllerProvider((
+                id: 'item-1',
+                taskId: 'task-1',
+              )).overrideWith(() => itemCtrl),
+              checklistControllerProvider.overrideWith(
+                () => FakeChecklistController(tracker),
+              ),
+              checklistCompletionServiceProvider.overrideWith(
+                () => completionSvc,
+              ),
+            ],
+            // A tall spacer pushes the row far below the visible viewport, but
+            // a SingleChildScrollView still builds it (so its data listener
+            // runs) — the burst must be suppressed by the on-screen check.
+            child: makeTestableWidgetWithScaffold(
+              const SingleChildScrollView(
+                child: Column(
+                  children: [
+                    SizedBox(height: 2000),
+                    ChecklistItemRow(
+                      itemId: 'item-1',
+                      checklistId: 'checklist-1',
+                      taskId: 'task-1',
+                      index: 0,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        // The row is built but sits well below the ~800px test viewport.
+        expect(tester.getRect(find.byType(Checkbox)).top, greaterThan(800));
+        expect(find.byType(CompletionBurst), findsNothing);
+
+        itemCtrl.updateChecked(checked: true);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 300));
+        // Off-screen checkbox → no sparks erupting over unrelated content.
+        expect(find.byType(CompletionBurst), findsNothing);
+
+        await tester.pumpAndSettle();
+      },
+    );
+
     testWidgets('no spark burst when checklist celebrations are off', (
       tester,
     ) async {
