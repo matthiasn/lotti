@@ -100,8 +100,9 @@ wires `onOpenTimelineEntry` (it beams to `/journal/<entryId>`); the trailing
 "open" chevron renders only when that handler is present, so the affordance
 always matches the behavior. Linked **task** rows follow the same pattern: each
 `EventTaskRef` carries its task id, and when the page wires `onOpenTask` the row
-gains the "open" chevron and opens the task's detail page via
-`openLinkedTaskDetail` (desktop push / mobile route to `TaskDetailsPage`).
+gains the "open" chevron and beams to `/tasks/<id>` (the same cross-location
+navigation a task card uses, which surfaces correctly from the Events
+destination).
 
 #### Inline editing
 
@@ -136,7 +137,7 @@ should be removed once the old form route is retired (don't "fix" it).
 - **Add task** — mirrors the linked-tasks flow: `createTask(linkedId: eventId)`
   (which writes the `event → task` link, so the event surfaces under the task's
   "Linked from"), then `autoAssignCategoryAgent` assigns the category's default
-  agent, then it opens the new task via `openLinkedTaskDetail`.
+  agent, then it beams to `/tasks/<id>` to open the new task.
 - **Delete** — the overflow menu confirms via the standard delete sheet →
   `delete(beamBack: true)`.
 

@@ -13,7 +13,6 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
-import 'package:lotti/features/tasks/util/task_navigation.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -143,7 +142,7 @@ class EventDetailPage extends ConsumerWidget {
       );
       if (task == null || !context.mounted) return;
       unawaited(autoAssignCategoryAgent(ref, task));
-      openLinkedTaskDetail(context: context, taskId: task.meta.id);
+      beamToNamed('/tasks/${task.meta.id}');
     }
 
     return EventDetailView(
@@ -160,8 +159,7 @@ class EventDetailPage extends ConsumerWidget {
       onAddToTimeline: addLinkedEntry,
       onAddTask: addTask,
       onOpenTimelineEntry: (entryId) => beamToNamed('/journal/$entryId'),
-      onOpenTask: (taskId) =>
-          openLinkedTaskDetail(context: context, taskId: taskId),
+      onOpenTask: (taskId) => beamToNamed('/tasks/$taskId'),
     );
   }
 }
