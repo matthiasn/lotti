@@ -7,7 +7,6 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/outbox/outbox_daily_volume.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
-import 'package:lotti/features/sync/ui/widgets/outbox/outbox_volume_chart.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
@@ -181,22 +180,6 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => mock.deleteOutboxItemById(7)).called(1);
-    });
-
-    testWidgets('technical details toggle reveals the volume chart', (
-      tester,
-    ) async {
-      await _pump(
-        tester,
-        mock: _prepareMock(items: [_item(id: 1, status: OutboxStatus.pending)]),
-      );
-      expect(find.byType(OutboxVolumeChart), findsNothing);
-
-      await tester.tap(find.byType(Switch));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byType(OutboxVolumeChart), findsOneWidget);
     });
 
     testWidgets('a fetch failure surfaces an error toast', (tester) async {

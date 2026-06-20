@@ -9,7 +9,6 @@ import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/view_models/outbox_status_presentation.dart';
 import 'package:lotti/features/sync/ui/widgets/outbox/outbox_message_card.dart';
 import 'package:lotti/features/sync/ui/widgets/outbox/outbox_summary_header.dart';
-import 'package:lotti/features/sync/ui/widgets/outbox/outbox_volume_chart.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -49,7 +48,6 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
 
   List<OutboxItem>? _items;
   bool _isFetching = false;
-  bool _showDetails = false;
 
   @override
   void initState() {
@@ -242,12 +240,7 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       items: _items,
       isLoading: _items == null,
       onRefresh: _fetch,
-      headerSliver: _OutboxHeader(
-        counts: _counts(),
-        showDetails: _showDetails,
-        onToggleDetails: (value) => setState(() => _showDetails = value),
-        onRetryAll: _retryAll,
-      ),
+      headerSliver: _OutboxHeader(counts: _counts(), onRetryAll: _retryAll),
       filters: filters,
       initialFilter: _OutboxListFilter.waiting,
       emptyIcon: Icons.inbox_rounded,
@@ -261,7 +254,6 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         final isError = _statusFromIndex(item.status) == OutboxStatus.error;
         return OutboxMessageCard(
           item: item,
-          showDetails: _showDetails,
           onRetry: isError ? () => _retryItem(item) : null,
           onRemove: isError ? () => _removeItem(item) : null,
         );
@@ -283,25 +275,16 @@ class _OutboxCounts {
 }
 
 /// The page header: a plain-language summary line (which reads sign-in state to
-/// distinguish "offline" from "failed") plus a "show technical details" toggle
-/// that reveals the per-row diagnostics and the volume chart.
+/// distinguish "offline" from "failed"), with a one-tap Retry-all when items
+/// have failed.
 class _OutboxHeader extends ConsumerWidget {
-  const _OutboxHeader({
-    required this.counts,
-    required this.showDetails,
-    required this.onToggleDetails,
-    required this.onRetryAll,
-  });
+  const _OutboxHeader({required this.counts, required this.onRetryAll});
 
   final _OutboxCounts counts;
-  final bool showDetails;
-  final ValueChanged<bool> onToggleDetails;
   final VoidCallback onRetryAll;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    final colors = tokens.colors;
     final online =
         ref.watch(outboxConnectionStateProvider).value ==
         OutboxConnectionState.online;
@@ -312,30 +295,6 @@ class _OutboxHeader extends ConsumerWidget {
       syncEnabled: true,
       signedIn: online,
     );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        OutboxSummaryHeader(summary: summary, onRetryAll: onRetryAll),
-        SizedBox(height: tokens.spacing.step2),
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                context.messages.outboxShowDetails,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: colors.text.mediumEmphasis,
-                ),
-              ),
-            ),
-            Switch.adaptive(value: showDetails, onChanged: onToggleDetails),
-          ],
-        ),
-        if (showDetails) ...[
-          SizedBox(height: tokens.spacing.step2),
-          const OutboxVolumeChart(),
-        ],
-      ],
-    );
+    return OutboxSummaryHeader(summary: summary, onRetryAll: onRetryAll);
   }
 }

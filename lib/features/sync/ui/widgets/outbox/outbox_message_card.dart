@@ -10,30 +10,36 @@ import 'package:lotti/features/sync/ui/view_models/outbox_status_presentation.da
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// A single sync-outbox row, redesigned to match the conflicts surface:
-/// a token-driven card with a plain-language status badge, the human "what"
-/// (payload kind), and — for failed items — a reassuring reason plus Retry /
-/// Remove actions. Diagnostic meta (retries, size, subject, attachment) is
-/// shown only when [showDetails] is on.
-class OutboxMessageCard extends StatelessWidget {
+/// A single sync-outbox row: a token-driven card with a plain-language status
+/// badge, the human "what" (payload kind), and — for failed items — a
+/// reassuring reason plus Retry / Remove actions. Tapping the card expands its
+/// diagnostic meta (retries, size, subject, attachment) for the curious; the
+/// default view stays clean.
+class OutboxMessageCard extends StatefulWidget {
   const OutboxMessageCard({
     required this.item,
-    this.showDetails = false,
     this.onRetry,
     this.onRemove,
     super.key,
   });
 
   final OutboxItem item;
-  final bool showDetails;
   final VoidCallback? onRetry;
   final VoidCallback? onRemove;
+
+  @override
+  State<OutboxMessageCard> createState() => _OutboxMessageCardState();
+}
+
+class _OutboxMessageCardState extends State<OutboxMessageCard> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final colors = tokens.colors;
     final messages = context.messages;
+    final item = widget.item;
 
     final status = item.status >= 0 && item.status < OutboxStatus.values.length
         ? OutboxStatus.values[item.status]
@@ -48,80 +54,92 @@ class OutboxMessageCard extends StatelessWidget {
 
     return Semantics(
       label: '$statusLabel, ${vm.timestampLabel}, ${vm.payloadKindLabel}',
-      child: Container(
-        padding: EdgeInsets.all(tokens.spacing.step4),
-        decoration: BoxDecoration(
-          color: colors.background.level02,
+      child: Material(
+        color: colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        child: InkWell(
           borderRadius: BorderRadius.circular(tokens.radii.m),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+          onTap: () => setState(() => _expanded = !_expanded),
+          child: Padding(
+            padding: EdgeInsets.all(tokens.spacing.step4),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                DesignSystemBadge.filled(
-                  label: statusLabel,
-                  tone: _toneFor(presentation),
+                Row(
+                  children: [
+                    DesignSystemBadge.filled(
+                      label: statusLabel,
+                      tone: _toneFor(presentation),
+                    ),
+                    const Spacer(),
+                    Text(
+                      vm.timestampLabel,
+                      style: monoMetaStyle(
+                        tokens,
+                        colors,
+                        color: colors.text.lowEmphasis,
+                      ),
+                    ),
+                    SizedBox(width: tokens.spacing.step1),
+                    Icon(
+                      _expanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: tokens.spacing.step4,
+                      color: colors.text.lowEmphasis,
+                    ),
+                  ],
                 ),
-                const Spacer(),
+                SizedBox(height: tokens.spacing.step2),
                 Text(
-                  vm.timestampLabel,
-                  style: monoMetaStyle(
-                    tokens,
-                    colors,
-                    color: colors.text.lowEmphasis,
+                  vm.payloadKindLabel,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: colors.text.highEmphasis,
                   ),
                 ),
+                if (isFailed) ...[
+                  SizedBox(height: tokens.spacing.step2),
+                  Text(
+                    messages.outboxFailedReassurance,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: colors.text.mediumEmphasis,
+                    ),
+                  ),
+                  SizedBox(height: tokens.spacing.step1),
+                  Text(
+                    messages.outboxTriedTimes(item.retries),
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: colors.text.lowEmphasis,
+                    ),
+                  ),
+                ],
+                if (_expanded) _Details(vm: vm),
+                if (widget.onRetry != null || widget.onRemove != null) ...[
+                  SizedBox(height: tokens.spacing.step3),
+                  Wrap(
+                    spacing: tokens.spacing.step2,
+                    runSpacing: tokens.spacing.step2,
+                    children: [
+                      if (widget.onRetry != null)
+                        DesignSystemButton(
+                          label: messages.outboxActionRetry,
+                          leadingIcon: Icons.refresh_rounded,
+                          variant: DesignSystemButtonVariant.secondary,
+                          onPressed: widget.onRetry,
+                        ),
+                      if (widget.onRemove != null)
+                        DesignSystemButton(
+                          label: messages.outboxActionRemove,
+                          leadingIcon: Icons.delete_outline_rounded,
+                          variant: DesignSystemButtonVariant.dangerTertiary,
+                          onPressed: widget.onRemove,
+                        ),
+                    ],
+                  ),
+                ],
               ],
             ),
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              vm.payloadKindLabel,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: colors.text.highEmphasis,
-              ),
-            ),
-            if (isFailed) ...[
-              SizedBox(height: tokens.spacing.step2),
-              Text(
-                messages.outboxFailedReassurance,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: colors.text.mediumEmphasis,
-                ),
-              ),
-              SizedBox(height: tokens.spacing.step1),
-              Text(
-                messages.outboxTriedTimes(item.retries),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: colors.text.lowEmphasis,
-                ),
-              ),
-            ],
-            if (showDetails) _Details(vm: vm),
-            if (onRetry != null || onRemove != null) ...[
-              SizedBox(height: tokens.spacing.step3),
-              Wrap(
-                spacing: tokens.spacing.step2,
-                runSpacing: tokens.spacing.step2,
-                children: [
-                  if (onRetry != null)
-                    DesignSystemButton(
-                      label: messages.outboxActionRetry,
-                      leadingIcon: Icons.refresh_rounded,
-                      variant: DesignSystemButtonVariant.secondary,
-                      onPressed: onRetry,
-                    ),
-                  if (onRemove != null)
-                    DesignSystemButton(
-                      label: messages.outboxActionRemove,
-                      leadingIcon: Icons.delete_outline_rounded,
-                      variant: DesignSystemButtonVariant.dangerTertiary,
-                      onPressed: onRemove,
-                    ),
-                ],
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -146,8 +164,7 @@ class OutboxMessageCard extends StatelessWidget {
   };
 }
 
-/// De-emphasized diagnostic meta, revealed by the page-level "show technical
-/// details" toggle.
+/// De-emphasized diagnostic meta, revealed by tapping the card.
 class _Details extends StatelessWidget {
   const _Details({required this.vm});
 

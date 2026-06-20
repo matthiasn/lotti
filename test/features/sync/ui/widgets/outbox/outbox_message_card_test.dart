@@ -32,18 +32,12 @@ void main() {
   Future<void> pump(
     WidgetTester tester,
     OutboxItem item, {
-    bool showDetails = false,
     VoidCallback? onRetry,
     VoidCallback? onRemove,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
-        OutboxMessageCard(
-          item: item,
-          showDetails: showDetails,
-          onRetry: onRetry,
-          onRemove: onRemove,
-        ),
+        OutboxMessageCard(item: item, onRetry: onRetry, onRemove: onRemove),
       ),
     );
     await tester.pump();
@@ -103,17 +97,14 @@ void main() {
     );
   });
 
-  testWidgets('diagnostic details are gated behind showDetails', (
+  testWidgets('tapping the card expands its diagnostic details', (
     tester,
   ) async {
     await pump(tester, _item(status: OutboxStatus.pending, payloadSize: 2048));
     expect(find.text('2.0 KB'), findsNothing);
 
-    await pump(
-      tester,
-      _item(status: OutboxStatus.pending, payloadSize: 2048),
-      showDetails: true,
-    );
+    await tester.tap(find.byType(OutboxMessageCard));
+    await tester.pump();
     expect(find.text('2.0 KB'), findsOneWidget);
   });
 }
