@@ -16,6 +16,7 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -57,12 +58,31 @@ class _RecordingEntryController extends FakeEntryController {
 
   final titles = <String>[];
   final ratings = <double>[];
+  final categories = <String?>[];
+  final statuses = <EventStatus>[];
+  int deletes = 0;
 
   @override
   Future<void> updateEventTitle(String title) async => titles.add(title);
 
   @override
   Future<void> updateRating(double stars) async => ratings.add(stars);
+
+  @override
+  Future<bool> updateCategoryId(String? categoryId) async {
+    categories.add(categoryId);
+    return true;
+  }
+
+  @override
+  Future<void> updateEventStatus(EventStatus status) async =>
+      statuses.add(status);
+
+  @override
+  Future<bool> delete({required bool beamBack}) async {
+    deletes++;
+    return true;
+  }
 }
 
 JournalEvent _event() {
@@ -85,27 +105,53 @@ JournalEvent _event() {
   );
 }
 
+CategoryDefinition _category(String id, String name, String color) =>
+    CategoryDefinition(
+      id: id,
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      name: name,
+      vectorClock: null,
+      private: false,
+      active: true,
+      color: color,
+    );
+
 void main() {
+  late MockPersistenceLogic persistence;
+
+  setUpAll(() {
+    registerFallbackValue(FakeTaskData());
+    registerFallbackValue(const EntryText(plainText: ''));
+  });
+
   // EntryController resolves several services through getIt at construction
   // time, so even the loading/error fakes need them registered.
   setUp(() async {
+    persistence = MockPersistenceLogic();
     await setUpTestGetIt(
       additionalSetup: () {
         final cache = MockEntitiesCacheService();
-        when(() => cache.getCategoryById(any())).thenReturn(
-          CategoryDefinition(
-            id: 'cat-1',
-            createdAt: DateTime(2026),
-            updatedAt: DateTime(2026),
-            name: 'Friends',
-            vectorClock: null,
-            private: false,
-            active: true,
-            color: '#E91E63',
+        when(() => cache.getCategoryById(any())).thenAnswer((invocation) {
+          final id = invocation.positionalArguments.first as String?;
+          return id == 'work'
+              ? _category('work', 'Work', '#3B82F6')
+              : _category('cat-1', 'Friends', '#E91E63');
+        });
+        when(
+          () => cache.sortedCategories,
+        ).thenReturn([_category('work', 'Work', '#3B82F6')]);
+        when(
+          () => persistence.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
           ),
-        );
+        ).thenAnswer((_) async => null);
         getIt
           ..registerSingleton<EntitiesCacheService>(cache)
+          ..registerSingleton<PersistenceLogic>(persistence)
           ..registerSingleton<EditorStateService>(MockEditorStateService())
           ..registerSingleton<Directory>(Directory.systemTemp);
       },
@@ -258,6 +304,114 @@ void main() {
       await tester.pump();
 
       expect(beamed, ['/journal/${testTextEntry.meta.id}']);
+    });
+
+    testWidgets('the category pill picks a category through the controller', (
+      tester,
+    ) async {
+      final rec = _RecordingEntryController(_event());
+      await pumpResolved(
+        tester,
+        linked: const [],
+        controllerBuilder: () => rec,
+      );
+
+      await tester.tap(find.text('Friends')); // category pill
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Work')); // a row from sortedCategories
+      await tester.pumpAndSettle();
+
+      expect(rec.categories, ['work']);
+    });
+
+    testWidgets('clearing the category through the picker', (tester) async {
+      final rec = _RecordingEntryController(_event());
+      await pumpResolved(
+        tester,
+        linked: const [],
+        controllerBuilder: () => rec,
+      );
+
+      await tester.tap(find.text('Friends'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Clear')); // the explicit "none" row
+      await tester.pumpAndSettle();
+
+      expect(rec.categories, [null]);
+    });
+
+    testWidgets('tapping the date opens the shared date-time editor', (
+      tester,
+    ) async {
+      await pumpResolved(tester, linked: const []);
+      await tester.tap(find.textContaining('May 2026')); // hero date line
+      await tester.pumpAndSettle();
+      expect(find.text('Date & Time'), findsOneWidget);
+    });
+
+    testWidgets('the status pill sets a status through the controller', (
+      tester,
+    ) async {
+      final rec = _RecordingEntryController(_event());
+      await pumpResolved(
+        tester,
+        linked: const [],
+        controllerBuilder: () => rec,
+      );
+
+      await tester.tap(find.text('Completed')); // status pill
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancelled')); // a status row
+      await tester.pumpAndSettle();
+
+      expect(rec.statuses, [EventStatus.cancelled]);
+    });
+
+    testWidgets('the overflow menu deletes the event through the controller', (
+      tester,
+    ) async {
+      final rec = _RecordingEntryController(_event());
+      await pumpResolved(
+        tester,
+        linked: const [],
+        controllerBuilder: () => rec,
+      );
+
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete event'));
+      await tester.pumpAndSettle();
+      // The destructive confirm action carries the warning glyph.
+      await tester.tap(find.byIcon(Icons.warning_rounded));
+      await tester.pumpAndSettle();
+
+      expect(rec.deletes, 1);
+    });
+
+    testWidgets('the back button is wired to maybePop', (tester) async {
+      await pumpResolved(tester, linked: const []);
+      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.pump();
+      // maybePop on the root no-ops, but the handler ran without leaving.
+      expect(find.byType(EventDetailView), findsOneWidget);
+    });
+
+    testWidgets('the Tasks "+ Add" creates a task linked to the event', (
+      tester,
+    ) async {
+      await pumpResolved(tester, linked: const []);
+      // Empty event → Timeline + Tasks each show "+ Add"; the last is Tasks.
+      await tester.tap(find.text('Add').last);
+      await tester.pump();
+
+      verify(
+        () => persistence.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          linkedId: _eventId,
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).called(1);
     });
   });
 }

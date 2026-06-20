@@ -251,6 +251,81 @@ void main() {
       expect(find.byIcon(Icons.add_a_photo_outlined), findsNothing);
     });
 
+    testWidgets(
+      'shows an additive "+ Category" placeholder when uncategorized',
+      (
+        tester,
+      ) async {
+        var categoryTaps = 0;
+        await pumpEventScreen(
+          tester,
+          // _emptyData has no category; with onTapCategory wired the placeholder
+          // chip appears.
+          EventDetailView(
+            data: _emptyData(),
+            onTapCategory: () => categoryTaps++,
+          ),
+          size: _tallMobile,
+        );
+        expect(find.text('Category'), findsOneWidget);
+        await tester.tap(find.text('Category'));
+        expect(categoryTaps, 1);
+      },
+    );
+
+    testWidgets('reflects an external title change (rename round-trip)', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            card: buildEventCardData(title: 'First', coverImage: testImage()),
+          ),
+        ),
+        size: _tallMobile,
+      );
+      expect(find.text('First'), findsOneWidget);
+
+      // Re-pump with a new title (as after a rename persists) — the title field
+      // syncs to the new value while not editing.
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            card: buildEventCardData(title: 'Second', coverImage: testImage()),
+          ),
+        ),
+        size: _tallMobile,
+      );
+      expect(find.text('Second'), findsOneWidget);
+    });
+
+    testWidgets(
+      'a photo timeline beat with no images degrades to its caption',
+      (
+        tester,
+      ) async {
+        await pumpEventScreen(
+          tester,
+          EventDetailView(
+            data: buildEventDetailData(
+              timeline: const [
+                EventTimelineEntry(
+                  timeLabel: '20:00',
+                  kind: EventTimelineKind.photo,
+                  entryId: 'x',
+                  text: 'just a caption, no image',
+                ),
+              ],
+            ),
+          ),
+          size: _tallMobile,
+        );
+        expect(find.text('just a caption, no image'), findsOneWidget);
+      },
+    );
+
     testWidgets('tapping the category and status pills opens their pickers', (
       tester,
     ) async {
