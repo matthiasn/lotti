@@ -28,23 +28,31 @@ double? anchorCorrectionOffset({
   return clamped;
 }
 
-/// Holds a target widget at a fixed on-screen position across a short burst of
-/// frames after [hold] is called — long enough to absorb an async layout
-/// change above it (e.g. a checklist item added when an AI proposal is
-/// confirmed, which would otherwise shove the AI card and the proposal the
-/// user just tapped downward).
+/// Holds a target widget at a fixed on-screen position for [holdDuration] after
+/// [hold] is called — long enough to absorb a layout change above it that lands
+/// on a *later* frame than the trigger.
+///
+/// Two cases this covers when an AI proposal is confirmed on the task page:
+///  - a checklist item is **added** above the AI card (immediate growth), and
+///  - a checklist item is **checked off** above it, whose row only collapses
+///    after a delay (the row holds the checkmark, then cross-fades out — see
+///    `checklistCompletionAnimationDuration` + `checklistCompletionFadeDuration`).
+///    The shrink therefore arrives ~a second after the tap, well after a short
+///    frame burst would have ended; [holdDuration] must span that gap.
 ///
 /// On [hold] it captures the target's current viewport top (via [locate]) and,
-/// for the next [maxFrames] frames, jumps [controller] so the target returns
-/// to that captured top whenever it drifts. The frame budget covers the gap
-/// between the trigger and the relayout actually landing. Correction math is
-/// the pure [anchorCorrectionOffset]; the loop is driven by post-frame
-/// callbacks so it is exercised by a normal widget `pump`.
+/// each frame until the deadline, jumps [controller] so the target returns to
+/// that captured top whenever it drifts. Because the window is long, the hold
+/// **releases early the moment the user scrolls** (an offset change it did not
+/// itself make) so it never fights a deliberate scroll. Correction math is the
+/// pure [anchorCorrectionOffset]; the loop is driven by post-frame callbacks so
+/// it is exercised by a normal widget `pump`, and the deadline is measured from
+/// the frame timestamps so it is frame-rate independent and deterministic.
 class ScrollAnchor {
   ScrollAnchor({
     required this.controller,
     required this.locate,
-    this.maxFrames = 24,
+    this.holdDuration = const Duration(milliseconds: 400),
     this.tolerance = 0.5,
     SchedulerBinding? scheduler,
   }) : _scheduler = scheduler ?? SchedulerBinding.instance;
@@ -56,8 +64,9 @@ class ScrollAnchor {
   /// when it is not currently laid out / attached.
   final double? Function() locate;
 
-  /// How many frames to keep holding after a [hold] call.
-  final int maxFrames;
+  /// How long to keep holding after a [hold] call. Measured from frame
+  /// timestamps, so it is independent of the device refresh rate.
+  final Duration holdDuration;
 
   /// Drift below this (logical px) is ignored.
   final double tolerance;
@@ -65,7 +74,15 @@ class ScrollAnchor {
   final SchedulerBinding _scheduler;
 
   double? _anchorTop;
-  int _framesLeft = 0;
+
+  /// Frame-timestamp deadline; set lazily on the first frame of a hold so it is
+  /// relative to that frame's clock (which `pump` advances deterministically).
+  Duration? _deadline;
+
+  /// The offset this anchor last established. If the controller's offset moves
+  /// away from it between frames, the user scrolled and the hold bows out.
+  double? _expectedOffset;
+
   bool _scheduled = false;
   bool _disposed = false;
 
@@ -77,9 +94,12 @@ class ScrollAnchor {
   void hold() {
     if (_disposed) return;
     final top = locate();
-    if (top == null || maxFrames <= 0) return;
+    if (top == null || holdDuration <= Duration.zero) return;
     _anchorTop = top;
-    _framesLeft = maxFrames;
+    _deadline = null;
+    _expectedOffset = controller.positions.length == 1
+        ? controller.offset
+        : null;
     _schedule();
   }
 
@@ -87,27 +107,23 @@ class ScrollAnchor {
     if (_scheduled || _disposed) return;
     _scheduled = true;
     _scheduler
-      ..addPostFrameCallback((_) {
+      ..addPostFrameCallback((timeStamp) {
         _scheduled = false;
-        if (_disposed) return;
-        // Decrement before correcting so a hold runs exactly [maxFrames]
-        // corrections (not maxFrames + 1).
-        if (_framesLeft <= 0) {
+        if (_disposed || _anchorTop == null) return;
+        _deadline ??= timeStamp + holdDuration;
+        if (timeStamp >= _deadline!) {
           _anchorTop = null;
           return;
         }
-        _framesLeft--;
         _correctOnce();
-        if (_framesLeft > 0) {
-          _schedule();
-        } else {
-          _anchorTop = null;
-        }
+        // A user scroll (or any released state) ends the hold immediately.
+        if (_anchorTop == null) return;
+        _schedule();
       })
       // A post-frame callback alone does not request a frame, so once the
       // page stops changing the hold would stall (and could later resume on
-      // an unrelated frame). Explicitly request the next frame so the budget
-      // drains promptly and the hold always releases itself.
+      // an unrelated frame). Explicitly request the next frame so the loop
+      // keeps draining toward its deadline and always releases itself.
       ..scheduleFrame();
   }
 
@@ -118,6 +134,13 @@ class ScrollAnchor {
     // controller drives more than one scroll view (possible during route
     // transitions or page-state reuse), which `hasClients` would not catch.
     if (anchorTop == null || controller.positions.length != 1) return;
+    // The offset moved away from what we set → the user is scrolling. Release
+    // rather than yank them back; the long hold window must never fight input.
+    final expected = _expectedOffset;
+    if (expected != null && (controller.offset - expected).abs() > tolerance) {
+      _anchorTop = null;
+      return;
+    }
     final currentTop = locate();
     if (currentTop == null) return;
     final position = controller.position;
@@ -129,13 +152,17 @@ class ScrollAnchor {
       maxScrollExtent: position.maxScrollExtent,
       tolerance: tolerance,
     );
-    if (target != null) controller.jumpTo(target);
+    if (target != null) {
+      controller.jumpTo(target);
+      _expectedOffset = target;
+    } else {
+      _expectedOffset = controller.offset;
+    }
   }
 
   /// Stop any in-flight hold and release resources.
   void dispose() {
     _disposed = true;
     _anchorTop = null;
-    _framesLeft = 0;
   }
 }

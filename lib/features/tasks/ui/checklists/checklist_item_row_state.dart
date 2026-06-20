@@ -310,6 +310,15 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
       Widget rowContent = Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Leading divider: it separates this row from the one above and is
+          // part of this row's widget, so it mounts/unmounts together with the
+          // row (no "row appears, divider follows a frame later" flicker).
+          if (widget.showDivider)
+            Divider(
+              height: 1,
+              thickness: 1,
+              color: tokens.colors.decorative.level01,
+            ),
           Padding(
             padding: EdgeInsets.symmetric(
               horizontal: tokens.spacing.step3,
@@ -470,12 +479,6 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
               ),
             ),
           ),
-          if (widget.showDivider)
-            Divider(
-              height: 1,
-              thickness: 1,
-              color: tokens.colors.decorative.level01,
-            ),
         ],
       );
 

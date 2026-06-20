@@ -185,13 +185,21 @@ Checklist content is modeled separately through checklist entities and linked ch
   it contributes almost none). The bands are wrapped in a
   `StaggeredEntrance` (a one-time fade-and-rise on load that does not replay on
   background refresh) and, on wide windows, a centred max-width reading column.
-  Because the AI card sits *below* the work, confirming a proposal can add a
-  checklist item above it and shove the proposals the user just tapped
-  downward. `TaskDetailsPage` guards against that with a `ScrollAnchor`
+  Because the AI card sits *below* the work, confirming a proposal can change
+  the checklist height above it and shove the proposals the user just tapped —
+  either *up* (a checked-off item's row collapses) or *down* (a new to-do is
+  added). `TaskDetailsPage` guards against both with a `ScrollAnchor`
   (`util/scroll_anchor.dart`): it listens to `unifiedSuggestionListProvider`
   and, when the open-proposal count drops (a confirm/dismiss), pins the
-  proposals' on-screen position for a short frame budget so the page stays put
-  across the relayout instead of jumping.
+  proposals' on-screen viewport position for a `holdDuration` so the page stays
+  put across the relayout instead of jumping. The window is sized to span the
+  checked item's *delayed* row collapse (`checklistCompletionAnimationDuration`
+  + `checklistCompletionFadeDuration` + buffer), which lands ~a second after the
+  tap — long after a short frame burst would have ended. Because the window is
+  long, the hold releases the moment the user scrolls (an offset change the
+  anchor did not itself make) so it never fights a deliberate scroll; the
+  deadline is measured from frame timestamps, so it is frame-rate independent
+  and deterministic under `pump`.
 - linked entries with timer-aware highlighting (card padding evened onto tokens)
 - reverse linked-from entries
 - `TaskActionBar` — a sticky frosted-glass bar hosted in the page's

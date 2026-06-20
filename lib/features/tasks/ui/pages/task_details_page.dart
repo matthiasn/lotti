@@ -15,6 +15,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart'
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
+import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
@@ -87,6 +88,15 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     _suggestionsAnchor = ScrollAnchor(
       controller: _scrollController,
       locate: _suggestionsViewportTop,
+      // Cover a checked-off item's *delayed* row collapse: confirming a
+      // "check off" proposal leaves the checklist row in place, then collapses
+      // it (hold + cross-fade) ~a second later. That shrink lands above the AI
+      // card; without spanning it the card slides up out from under the user's
+      // next tap. The hold bows out early if the user scrolls in the meantime.
+      holdDuration:
+          checklistCompletionAnimationDuration +
+          checklistCompletionFadeDuration +
+          const Duration(milliseconds: 200),
     );
 
     super.initState();
