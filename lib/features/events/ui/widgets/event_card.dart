@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
+import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 
@@ -96,8 +97,7 @@ class EventCard extends StatelessWidget {
   }
 }
 
-/// The chips/rating overlaid on a cover photo: category (top-left), an upcoming
-/// date (top-right), and the star rating (bottom-left, over the scrim).
+/// The category pill overlaid top-left on a cover photo (over the scrim).
 class EventCoverOverlay extends StatelessWidget {
   const EventCoverOverlay({required this.data, super.key});
 
@@ -105,21 +105,16 @@ class EventCoverOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (data.categoryName == null) return const SizedBox.shrink();
     final tokens = context.designTokens;
     return Padding(
       padding: EdgeInsets.all(tokens.spacing.step3),
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (data.categoryName != null)
-            Align(
-              alignment: Alignment.topLeft,
-              child: EventOverlayPill(
-                dotColor: data.categoryColor,
-                label: data.categoryName!,
-              ),
-            ),
-        ],
+      child: Align(
+        alignment: Alignment.topLeft,
+        child: EventOverlayPill(
+          dotColor: data.categoryColor,
+          label: data.categoryName!,
+        ),
       ),
     );
   }
@@ -212,7 +207,7 @@ class EventCardFooter extends StatelessWidget {
           const Spacer(),
           if (showStatus)
             Text(
-              _statusLabel(data.status),
+              eventStatusLabel(data.status),
               style: tokens.typography.styles.others.caption.copyWith(
                 color: data.status.color,
                 fontWeight: FontWeight.w600,
@@ -221,13 +216,6 @@ class EventCardFooter extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  String _statusLabel(EventStatus status) {
-    final lower = status.label.toLowerCase();
-    return lower.isEmpty
-        ? lower
-        : '${lower[0].toUpperCase()}${lower.substring(1)}';
   }
 }
 

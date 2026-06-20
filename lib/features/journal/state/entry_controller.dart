@@ -8,6 +8,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:flutter_quill/flutter_quill.dart' hide ChangeSource;
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/change_source.dart';
+import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -365,53 +366,38 @@ class EntryController extends _$EntryController {
     );
   }
 
-  Future<void> updateRating(double stars) async {
-    final event = state.value?.entry;
-    if (event != null && event is JournalEvent) {
-      await _persistenceLogic.updateEvent(
-        entryText: entryTextFromController(controller),
-        journalEntityId: id,
-        data: event.data.copyWith(
-          stars: stars,
-        ),
-      );
-    }
-  }
-
-  /// Renames an event inline (no-ops for non-events or an unchanged title).
-  Future<void> updateEventTitle(String title) async {
+  /// Applies a single-field edit to an event's [EventData] with optimistic local
+  /// state, persistence, and haptic feedback. No-ops for non-events or no change.
+  Future<void> _updateEventData(
+    EventData Function(EventData data) mutate, {
+    Future<void> Function() haptic = HapticFeedback.selectionClick,
+  }) async {
     final event = state.value?.entry;
     if (event is! JournalEvent) return;
-    final trimmed = title.trim();
-    if (trimmed == event.data.title) return;
-    final optimistic = event.copyWith(
-      data: event.data.copyWith(title: trimmed),
-    );
-    state = AsyncData(state.value?.copyWith(entry: optimistic));
+    final next = mutate(event.data);
+    if (next == event.data) return;
+    state = AsyncData(state.value?.copyWith(entry: event.copyWith(data: next)));
     await _persistenceLogic.updateEvent(
       entryText: entryTextFromController(controller),
       journalEntityId: id,
-      data: optimistic.data,
+      data: next,
     );
-    await HapticFeedback.selectionClick();
+    await haptic();
   }
 
-  /// Sets an event's [EventStatus] inline (no-ops for non-events or no change).
-  Future<void> updateEventStatus(EventStatus status) async {
-    final event = state.value?.entry;
-    if (event is! JournalEvent) return;
-    if (status == event.data.status) return;
-    final optimistic = event.copyWith(
-      data: event.data.copyWith(status: status),
-    );
-    state = AsyncData(state.value?.copyWith(entry: optimistic));
-    await _persistenceLogic.updateEvent(
-      entryText: entryTextFromController(controller),
-      journalEntityId: id,
-      data: optimistic.data,
-    );
-    await HapticFeedback.heavyImpact();
-  }
+  /// Sets an event's star rating.
+  Future<void> updateRating(double stars) =>
+      _updateEventData((data) => data.copyWith(stars: stars));
+
+  /// Renames an event inline.
+  Future<void> updateEventTitle(String title) =>
+      _updateEventData((data) => data.copyWith(title: title.trim()));
+
+  /// Sets an event's [EventStatus] inline.
+  Future<void> updateEventStatus(EventStatus status) => _updateEventData(
+    (data) => data.copyWith(status: status),
+    haptic: HapticFeedback.heavyImpact,
+  );
 
   Future<bool> delete({
     required bool beamBack,

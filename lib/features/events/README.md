@@ -105,7 +105,15 @@ always matches the behavior.
 The detail page is a full editor, not a viewer — nothing bounces to the old
 entry form. `EventDetailView` is presentational and surfaces every mutation as a
 callback; `EventDetailPage` wires them to `EntryController` and the shared
-pickers/create flows:
+pickers/create flows.
+
+The title/status/rating writes go through `EntryController`'s direct event-data
+setters (`updateEventTitle` / `updateEventStatus` / `updateRating`, all built on
+the private `_updateEventData` helper: optimistic local state → `updateEvent` →
+haptic). These supersede the legacy `EventForm` + `EntryController.save()`
+FormBuilder path (`lib/widgets/events/event_form.dart`): the new Events surface
+never mounts a `FormBuilder`, so `save()`'s event branch is dead for it and
+should be removed once the old form route is retired (don't "fix" it).
 
 - **Title** — tap to swap in a borderless field; commit on submit/blur →
   `updateEventTitle`.

@@ -105,10 +105,13 @@ EventDetailData eventDetailDataFromEntities({
     coverImage: cover == null ? null : imageProviderFor(cover),
   );
 
-  final timeline = <EventTimelineEntry>[];
-  final sortedLinked = [...linked]
+  // Sort the linked entries once; the timeline, photo gallery and AI summary
+  // all read from this single ordering (oldest first).
+  final sorted = [...linked]
     ..sort((a, b) => a.meta.dateFrom.compareTo(b.meta.dateFrom));
-  for (final entity in sortedLinked) {
+
+  final timeline = <EventTimelineEntry>[];
+  for (final entity in sorted) {
     final timelineEntry = eventTimelineEntryFor(
       entity,
       timeLabel: DateFormat('HH:mm').format(entity.meta.dateFrom),
@@ -129,17 +132,14 @@ EventDetailData eventDetailDataFromEntities({
 
   // All linked photos, oldest first, for the gallery grid.
   final photos = [
-    for (final image in [
-      ...images,
-    ]..sort((a, b) => a.meta.dateFrom.compareTo(b.meta.dateFrom)))
+    for (final image in sorted.whereType<JournalImage>())
       EventPhoto(imageProviderFor(image)),
   ];
 
   final note = event.entryText?.plainText.trim();
-  // Sort by timestamp so the summary is the newest AI response regardless of the
-  // order the linked entries arrive in.
-  final aiResponses = linked.whereType<AiResponseEntry>().toList()
-    ..sort((a, b) => a.meta.dateFrom.compareTo(b.meta.dateFrom));
+  // `sorted` is oldest-first, so the last AI response is the newest regardless
+  // of the order the linked entries arrived in.
+  final aiResponses = sorted.whereType<AiResponseEntry>();
   final summary = aiResponses.isNotEmpty
       ? aiResponses.last.data.response.trim()
       : (note != null && note.isNotEmpty ? note : null);
