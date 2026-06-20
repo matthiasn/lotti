@@ -8514,6 +8514,12 @@ abstract class AppLocalizations {
   /// **'Events'**
   String get eventsPageTitle;
 
+  /// No description provided for @eventsPhotosSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get eventsPhotosSection;
+
   /// No description provided for @eventsRegenerateSummary.
   ///
   /// In en, this message translates to:

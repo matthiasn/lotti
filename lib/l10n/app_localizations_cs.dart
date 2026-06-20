@@ -4932,6 +4932,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsPageTitle => 'Události';
 
   @override
+  String get eventsPhotosSection => 'Fotky';
+
+  @override
   String get eventsRegenerateSummary => 'Znovu vytvořit shrnutí';
 
   @override

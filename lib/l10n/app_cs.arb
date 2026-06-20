@@ -2041,6 +2041,7 @@
   "eventsFilterAll": "Vše",
   "eventsNewEvent": "Nová událost",
   "eventsPageTitle": "Události",
+  "eventsPhotosSection": "Fotky",
   "eventsRegenerateSummary": "Znovu vytvořit shrnutí",
   "eventsSearchHint": "Hledat události",
   "eventsSectionUpcoming": "Nadcházející",
@@ -3146,7 +3147,6 @@
   "speechVoiceGenderMale": "Mužský",
   "speechVoicePreviewTooltip": "Přehrát ukázku hlasu",
   "syncActivityInboxLabel": "Příchozí",
-  "syncActivityOutboxLabel": "Odchozí",
   "syncActivityIndicatorSemantics": "Aktivita synchronizace. Odchozí: {outbox}. Příchozí: {inbox}. Otevřít odchozí frontu synchronizace.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {
@@ -3158,6 +3158,7 @@
       }
     }
   },
+  "syncActivityOutboxLabel": "Odchozí",
   "syncDeleteConfigConfirm": "ANO, JSEM SI JISTÝ",
   "syncDeleteConfigQuestion": "Chcete smazat konfiguraci synchronizace?",
   "syncEntitiesConfirm": "SPUSTIT SYNCHRONIZACI",

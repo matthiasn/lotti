@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
+import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
@@ -165,6 +166,15 @@ class EventDetailView extends StatelessWidget {
       // straight into the summary + sections.
       if (data.summary != null)
         _SummaryCard(summary: data.summary!, onRegenerate: onRegenerateSummary),
+      // A flat, scannable photo wall (distinct from the narrative timeline).
+      if (data.photos.isNotEmpty) ...[
+        _SectionHeader(
+          title: context.messages.eventsPhotosSection,
+          count: data.photos.length,
+          onAdd: onAddToTimeline,
+        ),
+        EventPhotoGrid(photos: data.photos),
+      ],
       _SectionHeader(
         title: context.messages.eventsTimelineSection,
         count: data.timeline.length,

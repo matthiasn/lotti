@@ -64,11 +64,13 @@ EventDetailData buildEventDetailData({
   String? summary = 'A surprise 30th for Anna on the rooftop.',
   List<EventTimelineEntry>? timeline,
   List<EventTaskRef>? tasks,
+  List<EventPhoto> photos = const [],
 }) {
   return EventDetailData(
     card: card ?? buildEventCardData(coverImage: testImage()),
     whenLabel: whenLabel,
     summary: summary,
+    photos: photos,
     timeline:
         timeline ??
         [

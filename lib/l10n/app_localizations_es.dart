@@ -4957,6 +4957,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsPageTitle => 'Eventos';
 
   @override
+  String get eventsPhotosSection => 'Fotos';
+
+  @override
   String get eventsRegenerateSummary => 'Regenerar resumen';
 
   @override

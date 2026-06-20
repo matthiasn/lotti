@@ -2232,6 +2232,7 @@
   "eventsFilterAll": "Alle",
   "eventsNewEvent": "Neues Ereignis",
   "eventsPageTitle": "Ereignisse",
+  "eventsPhotosSection": "Fotos",
   "eventsRegenerateSummary": "Zusammenfassung neu erstellen",
   "eventsSearchHint": "Ereignisse suchen",
   "eventsSectionUpcoming": "Bevorstehend",
@@ -3362,7 +3363,6 @@
   "speechVoiceGenderMale": "Männlich",
   "speechVoicePreviewTooltip": "Stimme anhören",
   "syncActivityInboxLabel": "Inbox",
-  "syncActivityOutboxLabel": "Outbox",
   "syncActivityIndicatorSemantics": "Sync-Aktivität. Outbox: {outbox}. Inbox: {inbox}. Sync-Outbox öffnen.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {
@@ -3374,6 +3374,7 @@
       }
     }
   },
+  "syncActivityOutboxLabel": "Outbox",
   "syncDeleteConfigConfirm": "JA, ICH BIN SICHER",
   "syncDeleteConfigQuestion": "Möchtest du die Synchronisierungskonfiguration löschen?",
   "syncEntitiesConfirm": "SYNC STARTEN",

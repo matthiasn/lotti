@@ -152,6 +152,7 @@ class EventDetailData {
     this.summary,
     this.timeline = const [],
     this.tasks = const [],
+    this.photos = const [],
   });
 
   final EventCardData card;
@@ -161,4 +162,8 @@ class EventDetailData {
   final String? summary;
   final List<EventTimelineEntry> timeline;
   final List<EventTaskRef> tasks;
+
+  /// Every linked photo, oldest first — the source for the Photos gallery
+  /// (a flat grid, distinct from the narrative [timeline]).
+  final List<EventPhoto> photos;
 }

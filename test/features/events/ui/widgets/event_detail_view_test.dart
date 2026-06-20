@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
+import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 
 import '../../test_utils.dart';
 
@@ -172,6 +173,34 @@ void main() {
         size: _tallDesktop,
       );
       expect(find.text('Book the venue'), findsOneWidget);
+    });
+
+    testWidgets('renders a Photos gallery section when photos are present', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            photos: [EventPhoto(testImage()), EventPhoto(testImage())],
+          ),
+        ),
+        size: _tallMobile,
+      );
+      expect(find.text('Photos'), findsOneWidget);
+      expect(find.byType(EventPhotoGrid), findsOneWidget);
+    });
+
+    testWidgets('omits the Photos section when there are no photos', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: buildEventDetailData()),
+        size: _tallMobile,
+      );
+      expect(find.text('Photos'), findsNothing);
+      expect(find.byType(EventPhotoGrid), findsNothing);
     });
 
     testWidgets('an empty event shows section scaffolding with add hints', (

@@ -127,6 +127,14 @@ EventDetailData eventDetailDataFromEntities({
     if (task != null) tasks.add(task);
   }
 
+  // All linked photos, oldest first, for the gallery grid.
+  final photos = [
+    for (final image in [
+      ...images,
+    ]..sort((a, b) => a.meta.dateFrom.compareTo(b.meta.dateFrom)))
+      EventPhoto(imageProviderFor(image)),
+  ];
+
   final note = event.entryText?.plainText.trim();
   // Sort by timestamp so the summary is the newest AI response regardless of the
   // order the linked entries arrive in.
@@ -144,6 +152,7 @@ EventDetailData eventDetailDataFromEntities({
     summary: summary,
     timeline: timeline,
     tasks: tasks,
+    photos: photos,
   );
 }
 

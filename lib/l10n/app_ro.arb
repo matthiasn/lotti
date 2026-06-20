@@ -2232,6 +2232,7 @@
   "eventsFilterAll": "Toate",
   "eventsNewEvent": "Eveniment nou",
   "eventsPageTitle": "Evenimente",
+  "eventsPhotosSection": "Fotografii",
   "eventsRegenerateSummary": "Regenerează rezumatul",
   "eventsSearchHint": "Căutați evenimente",
   "eventsSectionUpcoming": "Viitoare",
@@ -3362,7 +3363,6 @@
   "speechVoiceGenderMale": "Masculină",
   "speechVoicePreviewTooltip": "Ascultați vocea",
   "syncActivityInboxLabel": "Intrare",
-  "syncActivityOutboxLabel": "Ieșire",
   "syncActivityIndicatorSemantics": "Activitate sincronizare. Coadă de ieșire: {outbox}. Coadă de intrare: {inbox}. Deschide coada de ieșire pentru sincronizare.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {
@@ -3374,6 +3374,7 @@
       }
     }
   },
+  "syncActivityOutboxLabel": "Ieșire",
   "syncDeleteConfigConfirm": "DA, SUNT SIGUR",
   "syncDeleteConfigQuestion": "Doriți să ștergeți configurația de sincronizare?",
   "syncEntitiesConfirm": "ÎNCEPE SINCRONIZAREA",

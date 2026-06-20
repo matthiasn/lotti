@@ -77,9 +77,23 @@ by year, newest first.
 `EventDetailView` leads with a capped photographic hero (cover, title,
 when/where, category, rating over a strong scrim), then an AI summary card (the
 newest linked `AiResponseEntry` by `meta.dateFrom`, else the event note), a
-vertical timeline of linked entries (lead photo + supporting cluster + caption,
-notes, voice notes), and a linked-tasks section. On wide screens the body splits
-into a main column (summary + timeline) and a tasks rail; on phones it stacks.
+**Photos** gallery, a vertical timeline of linked entries (lead photo +
+supporting cluster + caption, notes, voice notes), and a linked-tasks section.
+On wide screens the body splits into a main column (summary + photos + timeline)
+and a tasks rail; on phones it stacks.
+
+#### Photos gallery
+
+`EventPhotoGrid` (in `event_photo_gallery.dart`) renders every linked image as a
+flat, scannable wall of uniform cover-cropped squares — distinct from the
+narrative timeline. The column count is width-derived; thumbnails are downsampled
+via `ResizeImage`. Beyond a 3-row preview the grid caps and the last tile shows a
+"+N" overflow badge. Tapping any tile opens `EventPhotoGalleryViewer`, a
+full-screen, swipeable, pinch-zoom `PhotoViewGallery` with a page indicator and a
+close button (mirroring the journal entry image viewer). A uniform grid is used
+deliberately: `ImageData` carries no intrinsic dimensions, so an
+aspect-preserving/masonry layout would require decoding every image to measure
+it — and the full, uncropped photo is always one tap away in the viewer.
 
 Each timeline row carries the source entry's id and is tappable when the page
 wires `onOpenTimelineEntry` (it beams to `/journal/<entryId>`); the trailing
@@ -129,6 +143,7 @@ rather than a blank void.
 | `ui/widgets/events_overview_view.dart` | Overview layout: header, search, chips, sections, grid. |
 | `ui/widgets/event_detail_view.dart` | Detail layout: inline-editable hero, summary, timeline, tasks. |
 | `ui/widgets/event_status_picker.dart` | `showEventStatusPicker` modal + `eventStatusLabel` helper. |
+| `ui/widgets/event_photo_gallery.dart` | `EventPhotoGrid` (photo wall + "+N" overflow) + full-screen `EventPhotoGalleryViewer`. |
 | `state/event_view_mapping.dart` | Pure entity→view-model mapping, date labels, grouping. |
 | `state/events_controller.dart` | `eventsStreamProvider` + `loadResolvedEvents` (DB → resolved events). |
 | `ui/pages/events_overview_page.dart` | Route page: provider → localized sections → view. |
@@ -145,8 +160,9 @@ User-visible strings are localized via `context.messages`: `navTabTitleEvents`,
 `eventsSectionUpcoming`, `eventsSummaryTitle`, `eventsTimelineSection`,
 `eventsTasksSection`, `eventsAddLabel`, `eventsRegenerateSummary`,
 `eventsVoiceNote`, `eventsTitleHint`, `eventsAddCoverPhoto`, `eventsDeleteEvent`,
-`eventsTimelineEmpty`, `eventsTasksEmpty`. (The event status picker reuses
-`EventStatus.label`; the category picker reuses `habitCategoryLabel`.)
+`eventsTimelineEmpty`, `eventsTasksEmpty`, `eventsPhotosSection`. (The event
+status picker reuses `EventStatus.label`; the category picker reuses
+`habitCategoryLabel`.)
 
 ## Testing
 

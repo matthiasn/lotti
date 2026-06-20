@@ -355,6 +355,22 @@ void main() {
       );
     });
 
+    test('collects all linked photos oldest-first for the gallery', () {
+      final later = testImageEntry.copyWith(
+        meta: testImageEntry.meta.copyWith(
+          id: 'img-later',
+          dateFrom: DateTime(2026, 5, 12, 21),
+        ),
+      );
+      // Out-of-order input with a non-image mixed in; only images appear,
+      // oldest first.
+      final data = detail(_event(), [later, testTextEntry, testImageEntry]);
+      expect(
+        data.photos.map((p) => (p.image as NetworkImage).url).toList(),
+        [testImageEntry.meta.id, 'img-later'],
+      );
+    });
+
     test('has no cover when there are no linked images', () {
       final data = detail(_event(), [testTextEntry]);
       expect(data.card.coverImage, isNull);

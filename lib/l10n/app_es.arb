@@ -2232,6 +2232,7 @@
   "eventsFilterAll": "Todos",
   "eventsNewEvent": "Nuevo evento",
   "eventsPageTitle": "Eventos",
+  "eventsPhotosSection": "Fotos",
   "eventsRegenerateSummary": "Regenerar resumen",
   "eventsSearchHint": "Buscar eventos",
   "eventsSectionUpcoming": "Próximos",
@@ -3362,7 +3363,6 @@
   "speechVoiceGenderMale": "Masculina",
   "speechVoicePreviewTooltip": "Escuchar la voz",
   "syncActivityInboxLabel": "Entrada",
-  "syncActivityOutboxLabel": "Salida",
   "syncActivityIndicatorSemantics": "Actividad de sincronización. Bandeja de salida: {outbox}. Bandeja de entrada: {inbox}. Abrir bandeja de salida de sincronización.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {
@@ -3374,6 +3374,7 @@
       }
     }
   },
+  "syncActivityOutboxLabel": "Salida",
   "syncDeleteConfigConfirm": "SÍ, ESTOY SEGURO",
   "syncDeleteConfigQuestion": "¿Quieres eliminar la configuración de sincronización?",
   "syncEntitiesConfirm": "INICIAR SINCRONIZACIÓN",

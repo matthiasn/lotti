@@ -4966,6 +4966,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsPageTitle => 'Evenimente';
 
   @override
+  String get eventsPhotosSection => 'Fotografii';
+
+  @override
   String get eventsRegenerateSummary => 'Regenerează rezumatul';
 
   @override
