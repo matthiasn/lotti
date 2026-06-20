@@ -37,9 +37,16 @@ void main() {
 
       // The priority section header renders a TaskShowcasePriorityGlyph
       expect(find.byType(TaskShowcasePriorityGlyph), findsAtLeastNWidgets(1));
-      // "P1 High" — the priority short code + localized label
-      expect(find.textContaining('P1'), findsAtLeastNWidgets(1));
-      expect(find.textContaining('High'), findsAtLeastNWidgets(1));
+      // Word-first label with the code as a quiet suffix: "High · P1".
+      // Rendered as a Text.rich, so search the rich spans.
+      expect(
+        find.textContaining('High', findRichText: true),
+        findsAtLeastNWidgets(1),
+      );
+      expect(
+        find.textContaining('P1', findRichText: true),
+        findsAtLeastNWidgets(1),
+      );
     });
 
     testWidgets('renders dueToday section header', (tester) async {

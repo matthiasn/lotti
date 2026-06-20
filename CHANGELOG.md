@@ -28,6 +28,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1030]
 ### Changed
+- The **tasks list** (the middle column) was reworked for urgency-first triage.
+  Tasks are grouped under priority section bands that read word-first — "Urgent",
+  "High", "Medium" — with the "· P0" code kept as a quiet suffix, and the bands
+  are colour-graduated so the urgent group stands out at a glance no matter how
+  many tasks it holds. Each card is calmer and denser: the AI one-liner is now a
+  single line, tracked time and the due date share one row (and "0h 0m" no longer
+  shows), and overdue / due-today deadlines appear as a coloured pill so the
+  time-critical task in a group is easy to spot. When the list is already
+  filtered to a single category, the repeated category tag is dropped from every
+  row — it comes back when you filter to several categories. Cards lift more
+  clearly off the background, and the active-filter chips are a little larger to
+  tap.
 - The desktop sidebar's live-status area — the running timer, an active voice
   recording, and background agents — was redesigned to feel calmer and more
   cohesive while still reading at a glance. The old jumble of red, bordered, and

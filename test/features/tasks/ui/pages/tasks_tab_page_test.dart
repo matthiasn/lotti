@@ -758,7 +758,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.textContaining('· '), findsNothing);
+      // The saved-filter suffix is the only plain Text starting with "· ".
+      // (The priority section header "Urgent · P0" is a Text.rich with the
+      // separator mid-string, not a leading suffix.)
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Text && (w.data?.startsWith('· ') ?? false),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets(
@@ -798,7 +806,15 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.textContaining('· '), findsNothing);
+        // The saved-filter suffix is the only plain Text starting with "· ".
+        // (The priority section header "Urgent · P0" is a Text.rich with the
+        // separator mid-string, not a leading suffix.)
+        expect(
+          find.byWidgetPredicate(
+            (w) => w is Text && (w.data?.startsWith('· ') ?? false),
+          ),
+          findsNothing,
+        );
       },
     );
   });

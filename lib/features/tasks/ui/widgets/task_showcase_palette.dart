@@ -16,6 +16,12 @@ class TaskShowcasePalette {
   static Color border(BuildContext context) =>
       context.designTokens.colors.decorative.level01;
 
+  /// Stronger hairline used for the outer edge of a grouped card so the group
+  /// reads as a discrete container that lifts off the page. The lighter
+  /// [border] stays for the low-emphasis dividers between rows inside a group.
+  static Color containerBorder(BuildContext context) =>
+      context.designTokens.colors.decorative.level02;
+
   static Color highText(BuildContext context) =>
       context.designTokens.colors.text.highEmphasis;
 

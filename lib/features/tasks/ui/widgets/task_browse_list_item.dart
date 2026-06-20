@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
@@ -30,6 +31,7 @@ class TaskBrowseListItem extends StatelessWidget {
     this.selectedTaskId,
     this.hoveredTaskIdNotifier,
     this.showStatus = true,
+    this.showCategoryChip = true,
     super.key,
   });
 
@@ -55,6 +57,11 @@ class TaskBrowseListItem extends StatelessWidget {
   /// list down to a single status — repeating it on every row is noise.
   final bool showStatus;
 
+  /// When false, the per-row category chip is omitted. The caller sets this
+  /// when the list is already scoped to a single category — the chip would
+  /// otherwise repeat the same value on every row, adding noise, not signal.
+  final bool showCategoryChip;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -70,7 +77,27 @@ class TaskBrowseListItem extends StatelessWidget {
           ? Radius.circular(tokens.radii.sectionCards)
           : Radius.zero,
     );
-    final borderSide = BorderSide(color: TaskShowcasePalette.border(context));
+    // The priority colour is carried boldly by the filled header band below;
+    // the container keeps a neutral, slightly-stronger hairline that lifts the
+    // card off the dark page (figure-ground) without spending priority colour
+    // a second, fainter time on the edge.
+    final sectionPriority = entry.sectionKey.priority;
+    final priorityColor = sectionPriority?.colorForBrightness(
+      Theme.of(context).brightness,
+    );
+    // Graduate the band fill by rank so the urgent band genuinely dominates:
+    // a uniform alpha let the intrinsically-brighter orange out-shout the
+    // darker red. Stronger for P0, fading to a whisper for P3.
+    final bandAlpha = switch (sectionPriority) {
+      TaskPriority.p0Urgent => 0.28,
+      TaskPriority.p1High => 0.14,
+      TaskPriority.p2Medium => 0.10,
+      TaskPriority.p3Low => 0.08,
+      null => 0.0,
+    };
+    final borderSide = BorderSide(
+      color: TaskShowcasePalette.containerBorder(context),
+    );
     final decoration = BoxDecoration(
       color: TaskShowcasePalette.surface(context),
       borderRadius: borderRadius,
@@ -91,26 +118,49 @@ class TaskBrowseListItem extends StatelessWidget {
         children: [
           if (entry.showSectionHeader)
             Padding(
+              // Asymmetric: a generous gap ABOVE the header separates it from
+              // the previous priority group, while a tight gap below binds the
+              // header to the first card it labels. This makes the three
+              // priority bands chunk pre-attentively instead of reading as one
+              // continuous stream.
               padding: EdgeInsets.only(
-                top: tokens.spacing.step4,
-                bottom: tokens.spacing.step4,
+                top: tokens.spacing.step6,
+                bottom: tokens.spacing.step3,
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: SectionHeaderTitle(
-                      sectionKey: entry.sectionKey,
-                      titleOverride: sectionHeaderTitleOverride,
-                    ),
-                  ),
-                  if (entry.sectionCount case final count?)
-                    Text(
-                      context.messages.taskShowcaseTaskCount(count),
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: TaskShowcasePalette.mediumText(context),
+              child: Container(
+                // A filled priority-tinted band makes the colour *land*: the
+                // urgent (red) band visibly outweighs the high/medium groups
+                // regardless of how many cards each holds. Horizontal padding
+                // matches the card content inset so the header text shares the
+                // cards' left edge. Date-sorted sections get no band.
+                decoration: priorityColor != null
+                    ? BoxDecoration(
+                        color: priorityColor.withValues(alpha: bandAlpha),
+                        borderRadius: BorderRadius.circular(tokens.radii.s),
+                      )
+                    : null,
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step4,
+                  vertical: tokens.spacing.step2,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SectionHeaderTitle(
+                        sectionKey: entry.sectionKey,
+                        titleOverride: sectionHeaderTitleOverride,
                       ),
                     ),
-                ],
+                    if (entry.sectionCount case final count?)
+                      Text(
+                        context.messages.taskShowcaseTaskCount(count),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: TaskShowcasePalette.mediumText(context),
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           if (hoveredTaskIdNotifier case final notifier?)
@@ -123,6 +173,7 @@ class TaskBrowseListItem extends StatelessWidget {
                 showDueDate: showDueDate,
                 showCoverArt: showCoverArt,
                 showStatus: showStatus,
+                showCategoryChip: showCategoryChip,
                 vectorDistance: vectorDistance,
                 categoryNameOverride: categoryNameOverride,
                 categoryIconOverride: categoryIconOverride,
@@ -164,6 +215,7 @@ class TaskBrowseListItem extends StatelessWidget {
                 showDueDate: showDueDate,
                 showCoverArt: showCoverArt,
                 showStatus: showStatus,
+                showCategoryChip: showCategoryChip,
                 vectorDistance: vectorDistance,
                 categoryNameOverride: categoryNameOverride,
                 categoryIconOverride: categoryIconOverride,

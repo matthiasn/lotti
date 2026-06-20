@@ -63,12 +63,14 @@ class ActiveFilterChip extends StatelessWidget {
           child: Padding(
             // The leading edge gets step2 + step1 (6px): the trailing ✕ is
             // a filled 20px glyph with generous internal margins, so a
-            // bare step2 on the left reads tighter than the right.
+            // bare step2 on the left reads tighter than the right. Vertical
+            // padding is step2 so the whole chip (which is the remove target)
+            // clears a comfortable touch height rather than the bare minimum.
             padding: EdgeInsets.fromLTRB(
               tokens.spacing.step2 + tokens.spacing.step1,
+              tokens.spacing.step2,
               tokens.spacing.step1,
-              tokens.spacing.step1,
-              tokens.spacing.step1,
+              tokens.spacing.step2,
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,

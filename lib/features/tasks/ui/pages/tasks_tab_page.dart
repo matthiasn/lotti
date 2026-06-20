@@ -262,6 +262,12 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                       showStatus:
                                           state.selectedTaskStatuses.length !=
                                           1,
+                                      // Same reasoning for the category chip:
+                                      // when scoped to exactly one category,
+                                      // the chip repeats that category on
+                                      // every row and carries no signal.
+                                      showCategoryChip:
+                                          state.selectedCategoryIds.length != 1,
                                       vectorDistance: distance,
                                       previousTaskIdInSection:
                                           entryIndex > 0 &&
