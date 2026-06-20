@@ -11,6 +11,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/switch_icon_widget.dart';
+import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -127,6 +128,22 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           // calm, co-equal header control rather than the heaviest element on
           // the card — still well clear of the non-text-contrast floor.
           iconColor: tokens.colors.text.mediumEmphasis,
+        ),
+      // The rating edit affordance lives in the header action cluster (a real,
+      // aligned, comfortably-sized control) rather than as a small icon orphaned
+      // beside the note at the bottom of the card.
+      if (entry is RatingEntry)
+        IconButton(
+          tooltip: context.messages.sessionRatingEditButton,
+          icon: Icon(
+            Icons.edit_outlined,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          onPressed: () => RatingModal.show(
+            context,
+            entry.data.targetId,
+            catalogId: entry.data.catalogId,
+          ),
         ),
       if (entry?.meta.flag == EntryFlag.import)
         SwitchIconWidget(

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/geolocation.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -150,6 +151,37 @@ void main() {
       await tester.tap(flagIconFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+    });
+
+    testWidgets('rating entry shows the edit affordance in the header', (
+      WidgetTester tester,
+    ) async {
+      final ratingEntry = RatingEntry(
+        meta: Metadata(
+          id: 'rating-header-1',
+          createdAt: DateTime(2024, 6, 15),
+          updatedAt: DateTime(2024, 6, 15),
+          dateFrom: DateTime(2024, 6, 15),
+          dateTo: DateTime(2024, 6, 15),
+        ),
+        data: const RatingData(targetId: 'target-1', dimensions: []),
+      );
+
+      when(
+        () => mockJournalDb.journalEntityById(ratingEntry.meta.id),
+      ).thenAnswer((_) async => ratingEntry);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailHeader(entryId: ratingEntry.meta.id),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The rating edit pencil lives in the header action cluster (not orphaned
+      // in the summary body), so it renders for a RatingEntry header.
+      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
     });
 
     testWidgets('tap private icon', (WidgetTester tester) async {

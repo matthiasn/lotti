@@ -6,7 +6,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/ratings/data/rating_catalogs.dart';
 import 'package:lotti/features/ratings/ui/rating_utils.dart';
-import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -19,7 +18,8 @@ import 'package:lotti/themes/theme.dart';
 ///   2. Catalog lookup (if catalogId is registered)
 ///   3. Dimension `key` (last resort)
 ///
-/// Displays an edit button to re-open the [RatingModal].
+/// Read-only: the edit affordance that re-opens the rating modal lives in the
+/// entry header's action cluster, not in this body.
 class RatingSummary extends StatelessWidget {
   const RatingSummary(this.ratingEntry, {super.key});
 
@@ -48,48 +48,17 @@ class RatingSummary extends StatelessWidget {
             messages: messages,
           ),
 
-        // Note + edit on one row, left-grouped so the edit pencil sits right
-        // next to the note instead of stranded at the far edge. The last rating
-        // row already carries the inter-block gap, so NO extra leading space is
-        // added here (an extra step on top doubled the gap above the note and
-        // made it read as an orphaned second headline). The verdict is a quiet
-        // caption (medium-emphasis), not a bold white headline.
-        Row(
-          // Top-align so the note sits at the top of the row (tight to the
-          // block above it) rather than floating centred in the taller edit
-          // button's height.
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (data.note != null && data.note!.isNotEmpty) ...[
-              Flexible(
-                child: Text(
-                  data.note!,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ),
-              // A clear gap so the edit target is not flush against the note
-              // text (a mis-tap hazard for imprecise taps).
-              SizedBox(width: tokens.spacing.step3),
-            ],
-            // Full 48px tap target (no compact density) so the edit affordance
-            // is comfortably tappable and reads as a real control.
-            IconButton(
-              icon: Icon(
-                Icons.edit_outlined,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              tooltip: messages.sessionRatingEditButton,
-              onPressed: () => RatingModal.show(
-                context,
-                data.targetId,
-                catalogId: data.catalogId,
-              ),
+        // The free-text verdict closes the card as a quiet caption on the same
+        // left gutter (the last rating row already carries the inter-block gap).
+        // The edit affordance now lives in the header action cluster, so the
+        // note is no longer paired with an orphaned, misaligned pencil.
+        if (data.note != null && data.note!.isNotEmpty)
+          Text(
+            data.note!,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
-            const Spacer(),
-          ],
-        ),
+          ),
       ],
     );
   }

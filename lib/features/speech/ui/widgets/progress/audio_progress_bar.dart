@@ -394,11 +394,18 @@ class _ProgressBarPainter extends CustomPainter {
       canvas.drawCircle(thumbCenter, thumbRadius + 3, glowPaint);
     }
 
-    canvas.drawCircle(
-      thumbCenter,
-      thumbRadius,
-      Paint()..color = thumbColor,
-    );
+    // A soft drop shadow gives the thumb a defined edge so it is perceivable
+    // against the light unfilled track (where a teal-on-grey fill alone is low
+    // luminance contrast) — the same definition a Material slider thumb carries.
+    final thumbPath = Path()
+      ..addOval(Rect.fromCircle(center: thumbCenter, radius: thumbRadius));
+    canvas
+      ..drawShadow(thumbPath, const Color(0xFF000000), 2, true)
+      ..drawCircle(
+        thumbCenter,
+        thumbRadius,
+        Paint()..color = thumbColor,
+      );
   }
 
   @override

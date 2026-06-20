@@ -190,26 +190,16 @@ void main() {
       expect(find.text('Great session!'), findsNothing);
     });
 
-    testWidgets('renders edit button with icon', (tester) async {
+    testWidgets('does not render an inline edit button (moved to the header)', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
-      expect(find.byType(IconButton), findsOneWidget);
-    });
-
-    testWidgets('edit button has correct tooltip', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
-
-      final l10n = AppLocalizations.of(
-        tester.element(find.byType(RatingSummary)),
-      )!;
-
-      final iconButton = tester.widget<IconButton>(
-        find.byType(IconButton),
-      );
-      expect(iconButton.tooltip, l10n.sessionRatingEditButton);
+      // The edit affordance now lives in the entry header's action cluster, so
+      // the summary body no longer carries an orphaned, misaligned pencil.
+      expect(find.byIcon(Icons.edit_outlined), findsNothing);
+      expect(find.byType(IconButton), findsNothing);
     });
   });
 
