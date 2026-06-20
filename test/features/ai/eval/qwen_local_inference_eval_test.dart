@@ -138,6 +138,18 @@ void main() {
       isFalse,
     );
     expect(
+      toolCall.containsExpectedArguments({
+        'metadata': {
+          'tags': ['finance', 'later'],
+        },
+      }),
+      isFalse,
+    );
+    expect(
+      toolCall.containsExpectedArguments({'metadata': 'not-a-map'}),
+      isFalse,
+    );
+    expect(
       toolCall.containsExpectedArguments({'missing': true}),
       isFalse,
     );
@@ -317,6 +329,33 @@ void main() {
     expect(report.results.single.passed, isTrue);
   });
 
+  test(
+    'runner creates fallback ids for streamed tool calls without ids',
+    () async {
+      final repository = _FakeInferenceRepository([
+        _toolCallChunk(
+          name: TaskAgentToolNames.setTaskTitle,
+          argumentsJson: '{"title":"Submit expense report"}',
+        ),
+      ]);
+      final runner = QwenLocalInferenceEvalRunner(
+        provider: provider,
+        repository: repository,
+      );
+
+      final report = await runner.run(
+        profiles: const [profile],
+        scenarios: [defaultQwenLocalEvalScenarios.first],
+      );
+
+      expect(
+        report.results.single.toolCalls.single.name,
+        TaskAgentToolNames.setTaskTitle,
+      );
+      expect(report.results.single.passed, isTrue);
+    },
+  );
+
   test('runner preserves function names streamed after arguments', () async {
     final repository = _FakeInferenceRepository([
       _toolCallChunk(id: 'call-1', argumentsJson: '{"title":'),
@@ -339,6 +378,27 @@ void main() {
     expect(toolCall.name, TaskAgentToolNames.setTaskTitle);
     expect(toolCall.argumentsJson, '{"title":"Submit expense report"}');
     expect(report.results.single.passed, isTrue);
+  });
+
+  test('runner ignores malformed streamed tool-call chunks', () async {
+    final repository = _FakeInferenceRepository([
+      _toolCallChunkWithoutFunction(),
+    ]);
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: [defaultQwenLocalEvalScenarios.first],
+    );
+
+    expect(report.results.single.toolCalls, isEmpty);
+    expect(
+      report.results.single.failureCategory,
+      QwenLocalEvalFailureCategory.missingToolCall,
+    );
   });
 
   test('runner classifies a different tool as wrong tool call', () async {
@@ -389,6 +449,56 @@ void main() {
       );
     },
   );
+
+  test('runner ignores stream chunks without choices', () async {
+    const scenario = QwenLocalEvalScenario(
+      id: 'plain_response',
+      userPrompt: 'Answer with a short acknowledgement.',
+      exposedToolNames: [],
+    );
+    final repository = _FakeInferenceRepository([
+      _chunkWithoutChoices(),
+      _content('Acknowledged.'),
+    ]);
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: const [scenario],
+    );
+
+    expect(
+      report.results.single.failureCategory,
+      QwenLocalEvalFailureCategory.none,
+    );
+    expect(report.results.single.contentLength, greaterThan(0));
+  });
+
+  test('runner reports unknown exposed tools as request failures', () async {
+    const scenario = QwenLocalEvalScenario(
+      id: 'unknown_tool',
+      userPrompt: 'Use a tool that is not registered.',
+      exposedToolNames: ['missing_tool'],
+    );
+    final repository = _FakeInferenceRepository(const []);
+    final runner = QwenLocalInferenceEvalRunner(
+      provider: provider,
+      repository: repository,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile],
+      scenarios: const [scenario],
+    );
+
+    final result = report.results.single;
+    expect(result.failureCategory, QwenLocalEvalFailureCategory.requestFailed);
+    expect(result.errorMessage, contains('Unknown enabled task-agent tool'));
+    expect(repository.requests, isEmpty);
+  });
 
   test('runner records request failures without leaking long errors', () async {
     final repository = _FakeInferenceRepository(
@@ -642,6 +752,36 @@ CreateChatCompletionStreamResponse _toolCallChunk({
         index: 0,
       ),
     ],
+    object: 'chat.completion.chunk',
+    created: 0,
+  );
+}
+
+CreateChatCompletionStreamResponse _toolCallChunkWithoutFunction() {
+  return CreateChatCompletionStreamResponse(
+    id: 'tool',
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        delta: ChatCompletionStreamResponseDelta.fromJson({
+          'tool_calls': [
+            {
+              'index': 0,
+              'id': 'call-1',
+              'type': 'function',
+            },
+          ],
+        }),
+        index: 0,
+      ),
+    ],
+    object: 'chat.completion.chunk',
+    created: 0,
+  );
+}
+
+CreateChatCompletionStreamResponse _chunkWithoutChoices() {
+  return const CreateChatCompletionStreamResponse(
+    id: 'empty',
     object: 'chat.completion.chunk',
     created: 0,
   );

@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
+import 'package:meta/meta.dart';
 
 /// Resolves the local node's capabilities for `SyncNodeProfileBroadcaster`.
 ///
@@ -41,38 +42,42 @@ typedef OmlxReachabilityProbe = Future<bool> Function({Duration timeout});
 Future<bool> _defaultOllamaProbe({
   Duration timeout = const Duration(milliseconds: 300),
 }) async {
-  final client = HttpClient()..connectionTimeout = timeout;
-  try {
-    final request = await client
-        .getUrl(Uri.parse('http://127.0.0.1:11434/api/version'))
-        .timeout(timeout);
-    final response = await request.close().timeout(timeout);
-    await response.drain<void>().timeout(timeout);
-    return response.statusCode >= 200 && response.statusCode < 300;
-  } catch (_) {
-    // Refused, DNS failure, timeout, parse error — all "Ollama not here".
-    return false;
-  } finally {
-    client.close(force: true);
-  }
+  return probeHttpReachability(
+    uri: Uri.parse('http://127.0.0.1:11434/api/version'),
+    timeout: timeout,
+    acceptsStatusCode: (statusCode) => statusCode >= 200 && statusCode < 300,
+  );
 }
 
 Future<bool> _defaultOmlxProbe({
   Duration timeout = const Duration(milliseconds: 300),
 }) async {
+  final baseUrl = ProviderConfig.defaultBaseUrls[InferenceProviderType.omlx]!;
+  return probeHttpReachability(
+    uri: Uri.parse('$baseUrl/models'),
+    timeout: timeout,
+    acceptsStatusCode: (statusCode) {
+      return (statusCode >= 200 && statusCode < 300) ||
+          statusCode == HttpStatus.unauthorized ||
+          statusCode == HttpStatus.forbidden;
+    },
+  );
+}
+
+@visibleForTesting
+Future<bool> probeHttpReachability({
+  required Uri uri,
+  required Duration timeout,
+  required bool Function(int statusCode) acceptsStatusCode,
+}) async {
   final client = HttpClient()..connectionTimeout = timeout;
   try {
-    final baseUrl = ProviderConfig.defaultBaseUrls[InferenceProviderType.omlx]!;
-    final request = await client
-        .getUrl(Uri.parse('$baseUrl/models'))
-        .timeout(timeout);
+    final request = await client.getUrl(uri).timeout(timeout);
     final response = await request.close().timeout(timeout);
     await response.drain<void>().timeout(timeout);
-    return (response.statusCode >= 200 && response.statusCode < 300) ||
-        response.statusCode == HttpStatus.unauthorized ||
-        response.statusCode == HttpStatus.forbidden;
+    return acceptsStatusCode(response.statusCode);
   } catch (_) {
-    // Refused, DNS failure, timeout, parse error — all "oMLX not here".
+    // Refused, DNS failure, timeout, parse error - all "server not here".
     return false;
   } finally {
     client.close(force: true);

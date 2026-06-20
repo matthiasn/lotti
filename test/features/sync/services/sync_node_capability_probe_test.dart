@@ -171,5 +171,86 @@ void main() {
       final withoutVersion = await probe(hostId: 'h1', now: now);
       expect(withoutVersion.appVersion, isNull);
     });
+
+    test(
+      'default probe path returns a profile from real reachability probes',
+      () async {
+        final profile = await defaultSyncNodeCapabilityProbe(
+          hostId: 'h-default',
+          now: now,
+          displayName: 'Default Probe Host',
+          appVersion: '2.0.0+1',
+        );
+
+        expect(profile.hostId, 'h-default');
+        expect(profile.displayName, 'Default Probe Host');
+        expect(profile.appVersion, '2.0.0+1');
+        expect(profile.platform, Platform.operatingSystem);
+      },
+    );
   });
+
+  group('probeHttpReachability', () {
+    test('returns true for accepted response statuses', () async {
+      final server = await _startProbeServer(statusCode: HttpStatus.forbidden);
+      addTearDown(() => server.close(force: true));
+
+      final reachable = await probeHttpReachability(
+        uri: _serverUri(server, '/models'),
+        timeout: const Duration(seconds: 1),
+        acceptsStatusCode: (statusCode) => statusCode == HttpStatus.forbidden,
+      );
+
+      expect(reachable, isTrue);
+    });
+
+    test('returns false for rejected response statuses', () async {
+      final server = await _startProbeServer(
+        statusCode: HttpStatus.internalServerError,
+      );
+      addTearDown(() => server.close(force: true));
+
+      final reachable = await probeHttpReachability(
+        uri: _serverUri(server, '/api/version'),
+        timeout: const Duration(seconds: 1),
+        acceptsStatusCode: (statusCode) =>
+            statusCode >= 200 && statusCode < 300,
+      );
+
+      expect(reachable, isFalse);
+    });
+
+    test('returns false when the endpoint is unavailable', () async {
+      final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final uri = _serverUri(server, '/closed');
+      await server.close(force: true);
+
+      final reachable = await probeHttpReachability(
+        uri: uri,
+        timeout: const Duration(milliseconds: 100),
+        acceptsStatusCode: (_) => true,
+      );
+
+      expect(reachable, isFalse);
+    });
+  });
+}
+
+Future<HttpServer> _startProbeServer({required int statusCode}) async {
+  final server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+  server.listen((request) async {
+    request.response.statusCode = statusCode;
+    request.response.write('probe');
+    await request.response.close();
+  });
+  return server;
+}
+
+Uri _serverUri(HttpServer server, String path) {
+  return Uri(
+    scheme: 'http',
+    host: InternetAddress.loopbackIPv4.address,
+    port: server.port,
+    path: path,
+  );
 }
