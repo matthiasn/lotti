@@ -105,11 +105,7 @@ class SidebarLiveCard extends StatelessWidget {
                                   title,
                                   maxLines: 2,
                                   overflow: TextOverflow.ellipsis,
-                                  style: tokens
-                                      .typography
-                                      .styles
-                                      .body
-                                      .bodyMedium
+                                  style: tokens.typography.styles.body.bodySmall
                                       .copyWith(
                                         color: tokens.colors.text.highEmphasis,
                                       ),
@@ -118,7 +114,11 @@ class SidebarLiveCard extends StatelessWidget {
                               SizedBox(height: tokens.spacing.step1),
                               Text(
                                 timeText,
-                                style: tokens.typography.styles.heading.heading3
+                                style: tokens
+                                    .typography
+                                    .styles
+                                    .subtitle
+                                    .subtitle1
                                     .copyWith(
                                       color: accent,
                                       fontFeatures: numericBadgeFontFeatures,

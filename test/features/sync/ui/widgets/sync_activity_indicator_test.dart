@@ -67,11 +67,13 @@ void main() {
     testWidgets('renders both Outbox and Inbox channels with their counts', (
       tester,
     ) async {
-      await pumpIndicator(tester, outbox: 289, inbox: 14);
+      // A 4-digit outbox count proves it renders in full (the inline count
+      // has no fixed-width column to clip against).
+      await pumpIndicator(tester, outbox: 1573, inbox: 14);
 
       expect(find.text('Outbox'), findsOneWidget);
       expect(find.text('Inbox'), findsOneWidget);
-      expect(find.text('289'), findsOneWidget);
+      expect(find.text('1573'), findsOneWidget);
       expect(find.text('14'), findsOneWidget);
     });
 
@@ -97,19 +99,27 @@ void main() {
     });
 
     testWidgets(
-      'fixed numeric column keeps the LED + label anchored as the count '
-      'grows or shrinks (no jumpiness)',
+      'inline count keeps the LED + label anchored as the count grows '
+      '(the count is the last element, so it never shifts the label)',
       (tester) async {
+        // Measure the label offset relative to the indicator's own left edge:
+        // that internal offset (border + padding + LED + gap) is the real
+        // invariant. The test harness centres the widget, so absolute x shifts
+        // as the content widens — but in the sidebar the footer is left-aligned.
+        double labelOffset(String label) =>
+            tester.getTopLeft(find.text(label)).dx -
+            tester.getTopLeft(find.byType(SyncActivityIndicator)).dx;
+
         await pumpIndicator(tester, outbox: 1, inbox: 1);
-        final txLabelXSmall = tester.getTopLeft(find.text('Outbox')).dx;
-        final rxLabelXSmall = tester.getTopLeft(find.text('Inbox')).dx;
+        final txOffsetSmall = labelOffset('Outbox');
+        final rxOffsetSmall = labelOffset('Inbox');
 
         await pumpIndicator(tester, outbox: 9999, inbox: 9999);
-        final txLabelXLarge = tester.getTopLeft(find.text('Outbox')).dx;
-        final rxLabelXLarge = tester.getTopLeft(find.text('Inbox')).dx;
+        final txOffsetLarge = labelOffset('Outbox');
+        final rxOffsetLarge = labelOffset('Inbox');
 
-        expect(txLabelXLarge, equals(txLabelXSmall));
-        expect(rxLabelXLarge, equals(rxLabelXSmall));
+        expect(txOffsetLarge, equals(txOffsetSmall));
+        expect(rxOffsetLarge, equals(rxOffsetSmall));
       },
     );
 

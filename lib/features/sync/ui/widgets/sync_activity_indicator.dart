@@ -184,6 +184,11 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
+                  // Left-align so the Outbox/Inbox rows share one left edge.
+                  // (Their widths differ now that the labels are words and one
+                  // carries a count; the default centring indented the
+                  // narrower row.)
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _SyncActivityChannel(
                       label: outboxLabel,
@@ -209,12 +214,6 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
     );
   }
 }
-
-/// Width reserved for the numeric column on each channel. Wide enough to
-/// fit a 4-digit count without forcing the surrounding row to reflow —
-/// the value is right-aligned inside this fixed slot, so the LED and
-/// label keep their x-positions even when the count grows or shrinks.
-const double _kSyncActivityValueColumnWidth = 28;
 
 class _SyncActivityChannel extends StatelessWidget {
   const _SyncActivityChannel({
@@ -252,22 +251,13 @@ class _SyncActivityChannel extends StatelessWidget {
           _SyncActivityLed(on: on, color: color, idleColor: idleColor),
           const SizedBox(width: 8),
           ExcludeSemantics(child: Text(label, style: labelStyle)),
-          const SizedBox(width: 8),
-          // Fixed-width numeric slot — the value is right-aligned so the
-          // LED + label stay anchored regardless of digit count.
-          SizedBox(
-            width: _kSyncActivityValueColumnWidth,
-            child: ExcludeSemantics(
-              child: Text(
-                value > 0 ? '$value' : '',
-                style: valueStyle,
-                textAlign: TextAlign.right,
-                maxLines: 1,
-                overflow: TextOverflow.clip,
-                softWrap: false,
-              ),
-            ),
-          ),
+          // Count sits inline after the label and only when the queue is
+          // non-empty — it is the last element in the row, so it can grow to
+          // any digit count without clipping or shifting the LED + label.
+          if (value > 0) ...[
+            const SizedBox(width: 6),
+            ExcludeSemantics(child: Text('$value', style: valueStyle)),
+          ],
         ],
       ),
     );
