@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/rating_question.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/ratings/data/rating_catalogs.dart';
 import 'package:lotti/features/ratings/ui/rating_utils.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
@@ -29,51 +30,52 @@ class RatingSummary extends StatelessWidget {
     final messages = context.messages;
     final colorScheme = context.colorScheme;
 
+    final tokens = context.designTokens;
+
     // Resolve catalog for label fallback (may be null for unknown catalogs)
     final catalog = ratingCatalogRegistry[data.catalogId]?.call(messages);
 
-    return Padding(
-      padding: const EdgeInsets.only(
-        top: AppTheme.spacingSmall,
-        bottom: AppTheme.spacingMedium,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final dim in data.dimensions)
-            _buildDimensionRow(
-              context,
-              dim,
-              catalog: catalog,
-              colorScheme: colorScheme,
-              messages: messages,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final dim in data.dimensions)
+          _buildDimensionRow(
+            context,
+            dim,
+            catalog: catalog,
+            colorScheme: colorScheme,
+            messages: messages,
+          ),
 
-          // Note
-          if (data.note != null && data.note!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
-              child: Text(
-                data.note!,
-                style: context.textTheme.bodyMedium,
-              ),
-            ),
-
-          // Edit button (only for known catalogs)
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: messages.sessionRatingEditButton,
-              onPressed: () => RatingModal.show(
-                context,
-                data.targetId,
-                catalogId: data.catalogId,
+        // Note — a quiet secondary line so it never competes with the answers.
+        if (data.note != null && data.note!.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
+            child: Text(
+              data.note!,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           ),
-        ],
-      ),
+
+        // Edit action.
+        Align(
+          alignment: Alignment.centerRight,
+          child: IconButton(
+            icon: Icon(
+              Icons.edit_outlined,
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+            tooltip: messages.sessionRatingEditButton,
+            onPressed: () => RatingModal.show(
+              context,
+              data.targetId,
+              catalogId: data.catalogId,
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -99,24 +101,18 @@ class RatingSummary extends StatelessWidget {
       );
 
       if (valueText != null) {
+        final tokens = context.designTokens;
+        // Label and answer inline (quiet label + bold value) — not flung to
+        // opposite edges — so the eye keeps them as one pair.
         return Padding(
-          padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
+          padding: EdgeInsets.only(bottom: tokens.spacing.step3),
           child: Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
             children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              Text(
-                valueText,
-                style: context.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              Flexible(child: Text(label, style: _labelStyle(tokens))),
+              SizedBox(width: tokens.spacing.step2),
+              Text(valueText, style: _valueStyle(tokens)),
             ],
           ),
         );
@@ -131,6 +127,17 @@ class RatingSummary extends StatelessWidget {
     );
   }
 }
+
+TextStyle _labelStyle(DsTokens tokens) =>
+    tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
+
+TextStyle _valueStyle(DsTokens tokens) =>
+    tokens.typography.styles.subtitle.subtitle2.copyWith(
+      color: tokens.colors.text.highEmphasis,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
 
 /// Resolves the inputType for a dimension using the fallback chain:
 /// stored inputType → catalog lookup → null (defaults to progress bar).
@@ -221,25 +228,29 @@ class _DimensionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final percent = (value.clamp(0.0, 1.0) * 100).round();
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
+      padding: EdgeInsets.only(bottom: tokens.spacing.step3),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: context.textTheme.bodySmall?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-            ),
+          Row(
+            children: [
+              Expanded(child: Text(label, style: _labelStyle(tokens))),
+              // The numeric value next to the bar, so the score is not encoded
+              // by bar length / colour alone (low-vision + clarity).
+              Text('$percent%', style: _valueStyle(tokens)),
+            ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: tokens.spacing.step2),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(tokens.radii.xs),
             child: LinearProgressIndicator(
               value: value.clamp(0.0, 1.0),
               backgroundColor: context.colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(color),
-              minHeight: 8,
+              minHeight: tokens.spacing.step3,
             ),
           ),
         ],

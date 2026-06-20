@@ -123,9 +123,10 @@ class _PlayerBody extends StatelessWidget {
         tokens?.colors.text.mediumEmphasis ??
         theme.colorScheme.onSurfaceVariant;
     final captionStyle = tokens?.typography.styles.others.caption;
+    // Proportional body sans (no monospace/slashed-zero badge features) so the
+    // timecodes share one numeric voice with the rest of the card.
     final timeStyle = (captionStyle ?? const TextStyle(fontSize: 12)).copyWith(
       color: timeColor,
-      fontFeatures: numericBadgeFontFeatures,
     );
 
     final controlSpacing = tokens?.spacing.step2 ?? 4.0;
@@ -354,10 +355,7 @@ class _SpeedButton extends StatelessWidget {
         ? scheme.error
         : (tokens?.colors.text.mediumEmphasis ?? scheme.onSurfaceVariant);
     final speedTextStyle = (captionStyle ?? const TextStyle(fontSize: 12))
-        .copyWith(
-          color: speedTextColor,
-          fontFeatures: numericBadgeFontFeatures,
-        );
+        .copyWith(color: speedTextColor);
 
     final child = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),

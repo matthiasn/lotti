@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 
@@ -20,23 +22,23 @@ class HealthSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: Column(
-        children: [
-          if (showChart)
-            DashboardHealthChart(
-              chartConfig: DashboardHealthItem(
-                color: '#82E6CE',
-                healthType: qe.data.dataType,
-              ),
-              rangeStart: getRangeStart(context: context),
-              rangeEnd: getRangeEnd(),
+    final tokens = context.designTokens;
+    // No outer bottom padding — the card shell owns the symmetric inset.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showChart)
+          DashboardHealthChart(
+            chartConfig: DashboardHealthItem(
+              color: '#82E6CE',
+              healthType: qe.data.dataType,
             ),
-          const SizedBox(height: 8),
-          InfoText(entryTextForQuant(qe)),
-        ],
-      ),
+            rangeStart: getRangeStart(context: context),
+            rangeEnd: getRangeEnd(),
+          ),
+        if (showChart) SizedBox(height: tokens.spacing.step3),
+        EntryTextWidget(entryTextForQuant(qe), padding: EdgeInsets.zero),
+      ],
     );
   }
 }

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
@@ -81,7 +82,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('date text uses tabular figures style', (
+    testWidgets('date text is a legible proportional caption (not tabular)', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -97,12 +98,18 @@ void main() {
       expect(finder, findsOneWidget);
 
       final text = tester.widget<Text>(finder);
+      // Proportional figures — not the old monospace/tabular "badge" look.
       final hasTabular =
           text.style?.fontFeatures?.any(
             (ui.FontFeature ff) => ff.feature == 'tnum',
           ) ??
           false;
-      expect(hasTabular, isTrue);
+      expect(hasTabular, isFalse);
+
+      // Legible secondary colour (mediumEmphasis ≈ 10:1 on the card), not the
+      // faint decorative hairline tone the timestamp used to inherit.
+      final BuildContext ctx = tester.element(finder);
+      expect(text.style?.color, ctx.designTokens.colors.text.mediumEmphasis);
     });
   });
 }

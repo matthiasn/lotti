@@ -52,6 +52,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   quieter card. Hovering a shortened task name shows it in full, and at the very
   bottom the sync readout is now labelled "Outbox / Inbox" (instead of
   "tx / rx") and stays quiet until there's something to sync.
+- The **entry cards on a task's timeline** got a whitespace-and-typography
+  pass so the different entry types (text, audio, image, measurement, health,
+  workout, habit, rating) read as one calm, legible family. The timestamp is
+  now a quiet but readable caption (it used to be a faint, monospace-looking
+  stamp), and every "label: value" line shares one treatment — a quiet label
+  with the number itself as the bold, high-contrast value — left-aligned to a
+  single content gutter. Measurements no longer print their note twice, "55 %"
+  reads "55%", health/measurement values stop floating centered, the rating
+  card now shows a number next to each bar (e.g. 80%), and faint header/footer
+  controls (the timestamp, duration, overflow ⋯, expand chevron, audio
+  timecodes, the AI button) were lifted to a legible contrast. Cards also hug
+  their content with one symmetric padding instead of reserving an empty band
+  at the bottom.
 - The task details **header** was reworked for a calmer, more responsive
   layout. The status control no longer floats in empty space — it leads a
   two-lane metadata block (status · priority · due · time estimate on the first

@@ -9,6 +9,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/save_button_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
@@ -280,9 +281,8 @@ void main() {
       expect(find.byType(SaveButton), findsNothing);
     });
 
-    testWidgets('shows SaveButton when rendered inside linked entries', (
-      tester,
-    ) async {
+    testWidgets('shows SaveButton in linked entries when there are unsaved '
+        'changes', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           EntryDetailFooter(
@@ -296,6 +296,11 @@ void main() {
             ).overrideWith(
               () => FakeEntryController(testTextEntryNoGeo),
             ),
+            saveButtonControllerProvider(
+              id: testTextEntryNoGeo.meta.id,
+            ).overrideWith(
+              () => _FakeSaveButtonController(unsaved: true),
+            ),
           ],
         ),
       );
@@ -303,6 +308,35 @@ void main() {
       await tester.pump(const Duration(milliseconds: 10));
 
       expect(find.byType(SaveButton), findsOneWidget);
+    });
+
+    testWidgets('hides SaveButton in linked entries when there are no unsaved '
+        'changes (footer stays compact)', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailFooter(
+            entryId: testTextEntryNoGeo.meta.id,
+            linkedFrom: null,
+            inLinkedEntries: true,
+          ),
+          overrides: [
+            entryControllerProvider(
+              id: testTextEntryNoGeo.meta.id,
+            ).overrideWith(
+              () => FakeEntryController(testTextEntryNoGeo),
+            ),
+            saveButtonControllerProvider(
+              id: testTextEntryNoGeo.meta.id,
+            ).overrideWith(
+              () => _FakeSaveButtonController(unsaved: false),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 10));
+
+      expect(find.byType(SaveButton), findsNothing);
     });
 
     testWidgets('map child is built and visible when showMap is true', (
@@ -328,20 +362,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 10));
 
-      // With showMap true the Visibility child is built, so MapWidget is in the
-      // tree, and its enclosing Visibility reports visible == true.
+      // With showMap true the footer renders the map (it is conditionally
+      // built — `if (showMap)` — rather than wrapped in a Visibility).
       final mapFinder = find.byType(MapWidget);
       expect(mapFinder, findsOneWidget);
       // No geolocation -> no FlutterMap (no network tile loading).
       expect(find.byType(FlutterMap), findsNothing);
-
-      // The closest Visibility ancestor of MapWidget is the footer's own
-      // map wrapper; first() avoids matching framework Visibility widgets
-      // higher up the tree.
-      final visibility = tester.widget<Visibility>(
-        find.ancestor(of: mapFinder, matching: find.byType(Visibility)).first,
-      );
-      expect(visibility.visible, isTrue);
     });
 
     testWidgets('renders nothing when the entry is null', (tester) async {
@@ -370,4 +396,15 @@ void main() {
       expect(find.byType(MapWidget), findsNothing);
     });
   });
+}
+
+/// Drives the footer's SaveButton visibility deterministically by forcing the
+/// unsaved-changes state.
+class _FakeSaveButtonController extends SaveButtonController {
+  _FakeSaveButtonController({required this.unsaved});
+
+  final bool unsaved;
+
+  @override
+  Future<bool?> build({required String id}) async => unsaved;
 }

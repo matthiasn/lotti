@@ -46,10 +46,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Coverage: 55 %'), findsOneWidget);
+      expect(find.textContaining('Coverage: 55%'), findsOneWidget);
     });
 
-    testWidgets('displays TextViewerWidget when entryText is present', (
+    testWidgets('does not duplicate the note — summary shows only the value', (
       tester,
     ) async {
       when(
@@ -63,9 +63,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // testMeasuredCoverageEntry has entryText, so TextViewerWidget should
-      // render it (via QuillEditor, not as plain Text widget)
-      expect(find.byType(TextViewerWidget), findsOneWidget);
+      // Even though the entry has a note, the summary renders only the value
+      // line: the note is shown once by the card's editor above the summary, so
+      // the summary no longer repeats it via a TextViewerWidget.
+      expect(find.byType(TextViewerWidget), findsNothing);
+      expect(find.textContaining('Coverage: 55%'), findsOneWidget);
     });
 
     testWidgets('renders SizedBox.shrink when dataType is null', (
@@ -83,7 +85,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should render nothing when dataType is null
-      expect(find.text('Coverage: 55 %'), findsNothing);
+      expect(find.textContaining('Coverage: 55%'), findsNothing);
       expect(find.byType(SizedBox), findsWidgets);
     });
 
@@ -105,7 +107,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Value should still display
-      expect(find.text('Coverage: 55 %'), findsOneWidget);
+      expect(find.textContaining('Coverage: 55%'), findsOneWidget);
       // But TextViewerWidget should not appear
       expect(find.byType(TextViewerWidget), findsNothing);
     });

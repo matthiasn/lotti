@@ -4,12 +4,11 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
-import 'package:lotti/themes/theme.dart';
 
 class EntryDatetimeWidget extends ConsumerWidget {
   const EntryDatetimeWidget({
     required this.entryId,
-    this.padding = const EdgeInsets.only(left: 5),
+    this.padding = EdgeInsets.zero,
     super.key,
   });
 
@@ -29,11 +28,16 @@ class EntryDatetimeWidget extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    final style = context.designTokens.typography.styles.others.caption
-        .copyWith(
-          color: context.colorScheme.outline,
-          fontFeatures: numericBadgeFontFeatures,
-        );
+    // Timestamp metadata: small, quiet, but legible. caption keeps it demoted
+    // below the entry's content (so a date never wins first fixation), while
+    // mediumEmphasis (white @ 80% ≈ 10:1 on the card surface) clears AA — the
+    // old colorScheme.outline was a decorative hairline tone, far too faint for
+    // text. Proportional figures (no tabular/badge features) so the date reads
+    // as one word in the body sans, not a monospaced debug stamp.
+    final tokens = context.designTokens;
+    final style = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
 
     return GestureDetector(
       onTap: () =>

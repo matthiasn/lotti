@@ -119,12 +119,11 @@ class EntryDetailsWidget extends ConsumerWidget {
     final card = TaskDetailSectionCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
-      // Even vertical padding (was a cramped top 4 / bottom 2) so the entry
-      // content sits balanced inside the card.
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step4,
-        vertical: tokens.spacing.step3,
-      ),
+      // One symmetric shell inset (equal top/bottom/left/right) so every card
+      // type shares the same gutter and the same breathing room — the value
+      // lines no longer sit flush against the card floor, and bodies align to a
+      // single left edge instead of each summary adding its own padding.
+      padding: EdgeInsets.all(tokens.spacing.step4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -260,8 +259,6 @@ class EntryDetailsContent extends ConsumerWidget {
       JournalEvent() => EventForm(item),
       HabitCompletionEntry() => HabitSummary(
         item,
-        paddingLeft: 10,
-        paddingBottom: 5,
         showIcon: true,
         showText: false,
       ),

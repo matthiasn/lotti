@@ -32,23 +32,20 @@ class WorkoutSummary extends StatelessWidget {
       }
     });
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (showChart)
-            ...items.map(
-              (DashboardWorkoutItem item) => DashboardWorkoutChart(
-                chartConfig: item,
-                rangeStart: getRangeStart(context: context),
-                rangeEnd: getRangeEnd(),
-              ),
+    // No outer bottom padding — the card shell owns the symmetric inset.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showChart)
+          ...items.map(
+            (DashboardWorkoutItem item) => DashboardWorkoutChart(
+              chartConfig: item,
+              rangeStart: getRangeStart(context: context),
+              rangeEnd: getRangeEnd(),
             ),
-          const SizedBox(height: 8),
-          EntryTextWidget(entryTextForWorkout(data)),
-        ],
-      ),
+          ),
+        EntryTextWidget(entryTextForWorkout(data), padding: EdgeInsets.zero),
+      ],
     );
   }
 }

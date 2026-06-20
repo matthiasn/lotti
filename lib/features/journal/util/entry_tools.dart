@@ -5,7 +5,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/config/dashboard_health_config.dart';
-import 'package:lotti/themes/theme.dart';
 
 NumberFormat nf = NumberFormat('###.##');
 
@@ -145,26 +144,6 @@ String entryDateLabel(BuildContext context, DateTime date) {
   );
 }
 
-class InfoText extends StatelessWidget {
-  const InfoText(
-    this.text, {
-    super.key,
-    this.maxLines = 5,
-  });
-
-  final String text;
-  final int maxLines;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      maxLines: maxLines,
-      style: tabularFigureStyle(fontSize: fontSizeMedium),
-    );
-  }
-}
-
 /// Renders a quantitative (health) entry as `type: value unit`, handling both
 /// cumulative and discrete data shapes.
 String entryTextForQuant(QuantitativeEntry qe) {
@@ -180,12 +159,21 @@ String entryTextForWorkout(
   bool includeTitle = true,
 }) {
   final duration = data.dateTo.difference(data.dateFrom);
-  final title = includeTitle ? '${data.workoutType}\n' : '';
+  final type = data.workoutType;
+  // Capitalize the workout type so the group heading reads as a title
+  // ("Running"), not a bare lowercase word.
+  final heading = type.isEmpty
+      ? type
+      : '${type[0].toUpperCase()}${type.substring(1)}';
+  final title = includeTitle ? '$heading\n' : '';
   final energy = data.energy ?? 0;
 
+  // Sentence-case labels so the workout lines match the other value cards
+  // (Coverage / Weight); whole-number energy (632, not 632.02) keeps numeric
+  // precision sane.
   return '$title'
-      'energy: ${nf.format(energy)} kcal\n'
-      'duration: ${duration.inMinutes} minutes';
+      'Energy: ${nfWhole.format(energy)} kcal\n'
+      'Duration: ${duration.inMinutes} min';
 }
 
 /// Renders a measurement as `name: value unit` using the measurable type's
@@ -194,7 +182,9 @@ String entryTextForMeasurable(
   MeasurementData data,
   MeasurableDataType dataType,
 ) {
-  return '${dataType.displayName}: '
-      '${nf.format(data.value)} '
-      '${dataType.unitName}';
+  final unit = dataType.unitName;
+  // No space before a percent sign ("55%"), a thin space before word units
+  // ("94.49 kg") — matches conventional numeric formatting.
+  final separator = unit == '%' ? '' : ' ';
+  return '${dataType.displayName}: ${nf.format(data.value)}$separator$unit';
 }

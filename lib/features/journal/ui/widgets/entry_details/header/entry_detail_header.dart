@@ -74,6 +74,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     String id,
     EntryController notifier,
   ) {
+    final tokens = context.designTokens;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -112,11 +113,12 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           UnifiedAiPopUpMenu(
             journalEntity: entry,
             linkedFromId: widget.linkedFromId,
+            iconColor: tokens.colors.text.mediumEmphasis,
           ),
         IconButton(
           icon: Icon(
             Icons.more_horiz,
-            color: context.colorScheme.outline,
+            color: tokens.colors.text.mediumEmphasis,
           ),
           onPressed: () => ExtendedHeaderModal.show(
             context: context,
@@ -184,7 +186,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           IconButton(
             icon: Icon(
               Icons.more_horiz,
-              color: context.colorScheme.outline,
+              color: tokens.colors.text.mediumEmphasis,
             ),
             onPressed: () => ExtendedHeaderModal.show(
               context: context,
@@ -201,7 +203,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           child: IconButton(
             icon: Icon(
               Icons.expand_more,
-              color: context.colorScheme.outline,
+              color: tokens.colors.text.mediumEmphasis,
             ),
             onPressed: widget.onToggleCollapse,
           ),
@@ -256,12 +258,13 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         ? '${duration.inHours}:${minutes.remainder(60).toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
         : '$minutes:${seconds.toString().padLeft(2, '0')}';
 
+    final tokens = context.designTokens;
     return Padding(
-      padding: const EdgeInsets.only(left: AppTheme.spacingSmall),
+      padding: EdgeInsets.only(left: tokens.spacing.step3),
       child: Text(
         label,
-        style: context.textTheme.bodySmall?.copyWith(
-          color: context.colorScheme.outline,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
         ),
       ),
     );

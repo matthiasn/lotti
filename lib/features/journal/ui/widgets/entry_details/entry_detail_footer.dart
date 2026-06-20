@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/save_button_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/widgets/misc/map_widget.dart';
@@ -35,28 +37,41 @@ class EntryDetailFooter extends ConsumerWidget {
     }
 
     final showMap = entryState?.showMap ?? false;
+    final tokens = context.designTokens;
+
+    // Only summary entries with no duration and no unsaved edits would leave an
+    // empty footer; collapsing it (rather than reserving an invisible
+    // large-button height) removes the dead band that sat under every card.
+    final hasDuration = entry is JournalEntry;
+    final unsaved =
+        inLinkedEntries &&
+        (ref.watch(saveButtonControllerProvider(id: entryId)).value ?? false);
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const SizedBox(width: 100),
-            if (entry is JournalEntry)
-              DurationWidget(item: entry, linkedFrom: linkedFrom),
-            if (inLinkedEntries)
-              SaveButton(entryId: entryId)
-            else
-              const SizedBox(width: 60),
-          ],
-        ),
-        Visibility(
-          visible: showMap,
-          child: Padding(
-            padding: const EdgeInsets.only(top: 5, bottom: 10),
+        if (hasDuration || unsaved)
+          Padding(
+            padding: EdgeInsets.only(top: tokens.spacing.step2),
+            child: Row(
+              children: [
+                // Duration sits left under the content gutter (no longer
+                // floating centered in the footer's dead space).
+                if (hasDuration)
+                  DurationWidget(item: entry, linkedFrom: linkedFrom),
+                const Spacer(),
+                if (unsaved) SaveButton(entryId: entryId),
+              ],
+            ),
+          ),
+        if (showMap)
+          Padding(
+            padding: EdgeInsets.only(
+              top: tokens.spacing.step1,
+              bottom: tokens.spacing.step3,
+            ),
             child: MapWidget(geolocation: entry.geolocation),
           ),
-        ),
       ],
     );
   }

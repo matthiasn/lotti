@@ -137,9 +137,12 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
       isRecording = true;
     }
 
+    // Non-recording duration uses mediumEmphasis text (≈10:1), not the
+    // decorative hairline tone colorScheme.outline resolves to (far too faint
+    // to read as a value).
     final labelColor = isRecording
         ? context.colorScheme.error
-        : context.colorScheme.outline;
+        : context.designTokens.colors.text.mediumEmphasis;
 
     final saveFn = ref.read(provider.notifier).save;
 
@@ -217,11 +220,10 @@ class FormattedTime extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // One numeric voice with the rest of the card: proportional body sans, no
+    // monospace/slashed-zero badge features.
     final style = context.designTokens.typography.styles.body.bodySmall
-        .copyWith(
-          color: labelColor,
-          fontFeatures: numericBadgeFontFeatures,
-        );
+        .copyWith(color: labelColor);
     final text = formatDuration(entryDuration(displayed));
     return Text(text, style: style);
   }
