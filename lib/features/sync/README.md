@@ -325,38 +325,74 @@ The feature uses vector clocks in three separate ways.
    type, creation timestamp and an 8-char prefix of the conflict id; tapping a
    row opens the resolution surface.
 
-   The detail page (`ConflictDetailRoute`) renders an inline-diff picker:
-   each side's title is run through a word-level LCS
-   (`computeTitleDiff` in `ui/widgets/conflicts/title_diff.dart`) so tokens
-   unique to local are tinted as `added`, tokens the remote dropped are
-   line-through `removed`, and tokens the remote introduced are tinted as
-   `replaced`. The accent palette comes from the new `colors.conflict.*`
-   token group (local = teal, remote = blue, diverged = amber); the
-   highlight backgrounds come from `colors.diff.*`. Selection lives in
-   widget state — tapping a card or a picker pill (`Use this device`,
-   `Use from sync`) only stages the choice; the sticky footer's Apply
-   button is what commits via `PersistenceLogic.updateJournalEntity`.
-   Cancel beams back without writing. `Edit & merge…` (a third desktop
-   pill, a left-side mobile link) routes to the existing
-   `/settings/advanced/conflicts/<id>/edit` surface for hand merges.
+   The detail page (`ConflictDetailRoute`) loads both versions — the local
+   row from the journal and the remote payload deserialized from the
+   `Conflict` row — and renders a **full field-level diff**, not just the
+   title. `computeEntryDiff` (`ui/widgets/conflicts/entry_field_diff.dart`)
+   walks a registry of comparable fields (title, body, category, start/end
+   dates, starred, private, flag, audio duration) and returns an
+   `EntryDiff{shape, fields, identicalFieldCount}`. Text fields carry a
+   word-level LCS diff (`computeTitleDiff` in `title_diff.dart`); a JSON
+   **completeness guard** emits a single `EntryField.other` entry whenever
+   the two versions differ in a field the registry does not model, so a
+   change can never be silently hidden across any of the 16 entity types.
+   `EntryDiffView` renders each differing field with both sides ("this
+   device" / "from sync"), reusing the `colors.conflict.*` accents
+   (local = teal, remote = blue, diverged = amber) and `colors.diff.*`
+   highlight backgrounds.
+
+   `ConflictResolutionView` offers three stress-free paths: **Keep this
+   device** / **Keep from sync** (whole-side), or **Combine** — a per-field
+   merge where each independently-mergeable field (title, body, category,
+   dates, starred, private, flag) gets a non-color-dependent toggle and
+   everything else follows a chosen base side. A *recommended* chip marks
+   the no-data-loss option. When one side was soft-deleted while the other
+   was edited (`ConflictShape.deletedOnLocal` / `deletedOnRemote`), the diff
+   is replaced by a safe binary — keep the edited version, or confirm the
+   deletion — defaulting to keeping the edit.
+
+   All three paths resolve through `ConflictResolutionService`
+   (`state/conflict_resolution_service.dart`): `resolveToSide` /
+   `buildMergedEntity` (`conflict_merge.dart`) build the winner and stamp
+   `VectorClock.merge(local, remote)` so the written entity dominates both
+   clocks; `PersistenceLogic.updateJournalEntity` applies it and the
+   `detectConflict` write-gate auto-resolves the row. A success toast
+   confirms and the page beams back; a failure surfaces an error toast and
+   leaves the conflict open.
+
+   **Proactive surfacing.** Conflicts no longer have to be discovered by
+   browsing settings. `ConflictNotificationObserver`
+   (`state/conflict_notification_observer.dart`, started from `get_it`)
+   watches the unresolved-conflict stream and raises a single OS banner when
+   *new* conflicts appear during a session — existing ones at startup are
+   primed silently and a burst (e.g. a device returning from a long offline
+   stretch) is coalesced into one alert. `unresolvedConflictCountProvider`
+   exposes the live count for badges, and the list page's unresolved filter
+   chip uses the `colors.conflict.diverged` token.
 
    The desktop V2 panel uses `DetailIdDispatch(idParamKey: 'conflictId')`
-   so the right-hand pane swaps from list to picker when the URL gains an
-   id, matching the categories / labels / dashboards flows.
+   so the right-hand pane swaps from list to resolution surface when the URL
+   gains an id, matching the categories / labels / dashboards flows.
 
    ```mermaid
    stateDiagram-v2
-       [*] --> Detected: incoming clock is concurrent with local
+       [*] --> Detected: incoming clock concurrent with local
        Detected: Detected (status = unresolved)
-       Detected --> Picking: user opens conflict detail
-       Picking: Picking (no side staged yet)
-       Picking --> Local: tap This device card / pill
-       Picking --> Remote: tap From sync card / pill
-       Local --> Picking: tap the other side
-       Remote --> Picking: tap the other side
-       Local --> Resolved: tap Apply
-       Remote --> Resolved: tap Apply
-       Picking --> Detected: tap Cancel
+       Detected --> Alerted: ConflictNotificationObserver OS banner
+       Alerted --> Reviewing: open conflict detail
+       Detected --> Reviewing: open from settings list
+       Reviewing --> Edited: shape = edited
+       Reviewing --> DeleteVsEdit: shape = deletedOnLocal/Remote
+       Edited --> KeepLocal: Keep this device
+       Edited --> KeepRemote: Keep from sync
+       Edited --> Combine: per-field merge
+       DeleteVsEdit --> KeepEdited: keep the edit (recommended)
+       DeleteVsEdit --> ConfirmDelete: confirm deletion
+       KeepLocal --> Resolved: write winner (merged clock)
+       KeepRemote --> Resolved: write winner (merged clock)
+       Combine --> Resolved: write merged entity (merged clock)
+       KeepEdited --> Resolved
+       ConfirmDelete --> Resolved
        Resolved --> [*]
    ```
 
@@ -469,6 +505,48 @@ In this feature, vector clocks describe causal knowledge.
 `OutboxService` stages local work in `sync_db`, merges superseded work when it
 can, enriches sequence-aware payloads with covered clocks, and nudges a
 `ClientRunner`-driven `OutboxProcessor`.
+
+### Outbox Monitor (UI)
+
+`OutboxMonitorPage` (`ui/pages/outbox/outbox_monitor_page.dart`) is the
+user-facing view of the send queue, reached from **Settings → Sync → Outbox**.
+It reads a one-shot snapshot (`getOutboxItems`, deliberately not a live
+`watch()` — the queue churns hundreds of rows per minute during sync) with
+pull-to-refresh.
+
+The page opens with a plain-language **summary header** (`OutboxSummaryHeader`)
+driven by the pure `summarizeOutbox()`
+(`ui/view_models/outbox_status_presentation.dart` → `QueueSummary`):
+"Everything's synced", "Sending N…", "N waiting to send", "N couldn't send"
+(with a one-tap **Retry all**), or — when sync is off — "N will send when you
+reconnect", so an offline user is reassured rather than alarmed.
+
+Each row is an `OutboxMessageCard`: a token-driven card matching the conflicts
+surface, with a `DesignSystemBadge` status pill
+(waiting / sending / failed / sent → warning / info / error / success tones via
+`presentationStatusOf`), the human payload kind, and — for **failed** items — a
+reassurance ("still saved on this device") plus **Retry** (a safe one-tap
+re-queue, no confirmation) and **Remove** (guarded by a confirmation that spells
+out the data-loss risk — the change won't reach other devices). A "show
+technical details" toggle reveals the per-row diagnostics (retries, size,
+subject, attachment) and the daily-volume chart, keeping the default view clean.
+Filters are plain-language — **Waiting** (pending + sending), **Failed**
+(error), **Sent** — with design-system alert-tone accents.
+
+The item lifecycle the page reflects (manual actions write straight to
+`SyncDatabase`):
+
+```mermaid
+stateDiagram-v2
+    [*] --> pending: enqueued
+    pending --> sending: claimed by OutboxProcessor
+    sending --> sent: delivered
+    sending --> pending: recoverable failure (markRetry, retries++)
+    pending --> error: retries reach maxRetries (10)
+    error --> pending: manual Retry / Retry all (re-queue)
+    sent --> [*]: pruned after 7 days
+    error --> [*]: Remove (won't sync)
+```
 
 ### Agent Wake-Cycle Sync
 

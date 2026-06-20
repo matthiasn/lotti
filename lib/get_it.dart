@@ -51,6 +51,7 @@ import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/services/sync_node_capability_probe.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
+import 'package:lotti/features/sync/state/conflict_notification_observer.dart';
 import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -118,6 +119,12 @@ Future<void> registerSingletons() async {
   _registerLazyServiceSafely<NotificationService>(
     NotificationService.new,
     'NotificationService',
+  );
+
+  // Proactively surface newly detected sync conflicts via an OS banner so the
+  // user doesn't have to discover them by browsing settings.
+  getIt.registerSingleton<ConflictNotificationObserver>(
+    ConflictNotificationObserver()..start(),
   );
 
   final entitiesCacheService = EntitiesCacheService(

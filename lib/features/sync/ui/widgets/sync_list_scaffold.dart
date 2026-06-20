@@ -62,7 +62,7 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
     required this.itemBuilder,
     required this.emptyIcon,
     required this.emptyTitleBuilder,
-    required this.countSummaryBuilder,
+    this.countSummaryBuilder,
     this.stream,
     this.items,
     this.isLoading = false,
@@ -121,12 +121,14 @@ class SyncListScaffold<T, F extends Enum> extends StatefulWidget {
   /// Optional description builder for the empty state.
   final String? Function(BuildContext context)? emptyDescriptionBuilder;
 
-  /// Summary builder shown below the segmented control.
+  /// Summary builder shown below the segmented control. When null (or it
+  /// returns an empty string) the count line is suppressed — used by pages
+  /// that carry their own summary header.
   final String Function(
     BuildContext context,
     String label,
     int count,
-  )
+  )?
   countSummaryBuilder;
 
   /// Initial segment selection. Defaults to the first entry in [filters].
@@ -276,11 +278,13 @@ class _SyncListScaffoldState<T, F extends Enum>
           widget.filters[_selectedFilter]!,
           locale,
         );
-        final summaryText = widget.countSummaryBuilder(
-          context,
-          summaryLabel,
-          filteredItems.length,
-        );
+        final summaryText =
+            widget.countSummaryBuilder?.call(
+              context,
+              summaryLabel,
+              filteredItems.length,
+            ) ??
+            '';
 
         // Build labels, counts, and icon presence lists for height calculation.
         final filterEntries = widget.filters.entries.toList(

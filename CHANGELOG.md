@@ -36,6 +36,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   each row highlights with a rounded, inset shape on hover or selection instead
   of a sharp edge-to-edge band, and the titles no longer mix styles (the stray
   trailing colon on the status picker is gone).
+- Sync conflicts got a ground-up redesign. When the same entry was edited on two
+  devices, you now see a full field-by-field comparison — title, body, category,
+  dates, flags and more — with the exact words that changed highlighted, so you
+  can tell what a choice would keep or discard instead of guessing. You can keep
+  either version or **combine** them field by field, and a "recommended" hint
+  points at the option that loses nothing. A "deleted on one device, edited on
+  another" clash is shown as a clear, safe choice rather than a confusing diff.
+  And new conflicts now raise a notification, so you find out right away instead
+  of having to dig through settings.
+- The sync outbox page (Settings → Sync → Outbox) was redesigned to be clear
+  instead of cryptic. It now opens with a plain-language summary — "Everything's
+  synced", "Sending 3…", or "2 couldn't send" — and items that failed to send
+  finally explain themselves and reassure you they're still saved on this
+  device. You can retry a single item or retry everything at once, and each
+  item's technical details (payload size, retry count) stay tucked away until
+  you tap its card, so the everyday view stays calm. Removing a queued item now
+  clearly warns that the change won't reach your other devices.
 
 ### Fixed
 - Accepting an AI suggestion that adds a to-do no longer makes the page jump:

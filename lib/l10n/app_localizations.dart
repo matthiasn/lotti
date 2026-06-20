@@ -4921,6 +4921,36 @@ abstract class AppLocalizations {
   /// **'Differs in: {fields}'**
   String conflictBannerFieldsDifferList(String fields);
 
+  /// No description provided for @conflictCombineApply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply combined'**
+  String get conflictCombineApply;
+
+  /// No description provided for @conflictCombineStartFrom.
+  ///
+  /// In en, this message translates to:
+  /// **'Start from'**
+  String get conflictCombineStartFrom;
+
+  /// No description provided for @conflictConfirmDeletion.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm deletion'**
+  String get conflictConfirmDeletion;
+
+  /// No description provided for @conflictDeleteVsEditDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'This entry was edited on one device and deleted on another. Nothing is removed until you choose.'**
+  String get conflictDeleteVsEditDescription;
+
+  /// No description provided for @conflictDeleteVsEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted on one device'**
+  String get conflictDeleteVsEditTitle;
+
   /// No description provided for @conflictDetailEntryNotFoundTitle.
   ///
   /// In en, this message translates to:
@@ -4939,17 +4969,77 @@ abstract class AppLocalizations {
   /// **'Conflict not found'**
   String get conflictDetailNotFoundTitle;
 
+  /// No description provided for @conflictDiffRecommended.
+  ///
+  /// In en, this message translates to:
+  /// **'Recommended'**
+  String get conflictDiffRecommended;
+
+  /// No description provided for @conflictDiffUnchanged.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 field unchanged} other{{count} fields unchanged}}'**
+  String conflictDiffUnchanged(int count);
+
+  /// No description provided for @conflictFieldBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Body'**
+  String get conflictFieldBody;
+
   /// No description provided for @conflictFieldCategory.
   ///
   /// In en, this message translates to:
-  /// **'category'**
+  /// **'Category'**
   String get conflictFieldCategory;
 
   /// No description provided for @conflictFieldDuration.
   ///
   /// In en, this message translates to:
-  /// **'duration'**
+  /// **'Duration'**
   String get conflictFieldDuration;
+
+  /// No description provided for @conflictFieldEnd.
+  ///
+  /// In en, this message translates to:
+  /// **'End'**
+  String get conflictFieldEnd;
+
+  /// No description provided for @conflictFieldFlag.
+  ///
+  /// In en, this message translates to:
+  /// **'Flag'**
+  String get conflictFieldFlag;
+
+  /// No description provided for @conflictFieldOther.
+  ///
+  /// In en, this message translates to:
+  /// **'Other details'**
+  String get conflictFieldOther;
+
+  /// No description provided for @conflictFieldOtherDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'These versions differ in details not shown individually here.'**
+  String get conflictFieldOtherDescription;
+
+  /// No description provided for @conflictFieldPrivate.
+  ///
+  /// In en, this message translates to:
+  /// **'Private'**
+  String get conflictFieldPrivate;
+
+  /// No description provided for @conflictFieldStarred.
+  ///
+  /// In en, this message translates to:
+  /// **'Starred'**
+  String get conflictFieldStarred;
+
+  /// No description provided for @conflictFieldStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Start'**
+  String get conflictFieldStart;
 
   /// No description provided for @conflictFieldTitle.
   ///
@@ -4962,6 +5052,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'word count'**
   String get conflictFieldWordCount;
+
+  /// No description provided for @conflictFlagFollowUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow-up needed'**
+  String get conflictFlagFollowUp;
+
+  /// No description provided for @conflictFlagImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Imported'**
+  String get conflictFlagImport;
+
+  /// No description provided for @conflictFlagNone.
+  ///
+  /// In en, this message translates to:
+  /// **'None'**
+  String get conflictFlagNone;
 
   /// No description provided for @conflictFooterHelperLocalSelected.
   ///
@@ -4992,6 +5100,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =1{1 field differs} other{{count} fields differ}}'**
   String conflictHeaderPillFieldsDiffer(int count);
+
+  /// No description provided for @conflictKeepEdited.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep the edited version'**
+  String get conflictKeepEdited;
 
   /// Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.
   ///
@@ -5028,6 +5142,18 @@ abstract class AppLocalizations {
   /// **'via sync'**
   String get conflictMetaViaSync;
 
+  /// No description provided for @conflictNotificationBody.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 entry was edited on two devices} other{{count} entries were edited on two devices}}'**
+  String conflictNotificationBody(int count);
+
+  /// No description provided for @conflictNotificationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync needs your review'**
+  String get conflictNotificationTitle;
+
   /// No description provided for @conflictPageLeadDesktop.
   ///
   /// In en, this message translates to:
@@ -5046,6 +5172,12 @@ abstract class AppLocalizations {
   /// **'Sync conflict'**
   String get conflictPageTitle;
 
+  /// No description provided for @conflictPickerCombine.
+  ///
+  /// In en, this message translates to:
+  /// **'Combine…'**
+  String get conflictPickerCombine;
+
   /// No description provided for @conflictPickerEditMerge.
   ///
   /// In en, this message translates to:
@@ -5063,6 +5195,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Use this device'**
   String get conflictPickerUseThisDevice;
+
+  /// No description provided for @conflictResolvedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Conflict resolved'**
+  String get conflictResolvedToast;
 
   /// No description provided for @conflictsEmptyDescription.
   ///
@@ -5099,6 +5237,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'unresolved'**
   String get conflictsUnresolved;
+
+  /// No description provided for @conflictValueAbsent.
+  ///
+  /// In en, this message translates to:
+  /// **'Not set'**
+  String get conflictValueAbsent;
+
+  /// No description provided for @conflictValueNo.
+  ///
+  /// In en, this message translates to:
+  /// **'No'**
+  String get conflictValueNo;
+
+  /// No description provided for @conflictValueYes.
+  ///
+  /// In en, this message translates to:
+  /// **'Yes'**
+  String get conflictValueYes;
 
   /// Word count shown on the conflict detail meta row.
   ///
@@ -10618,6 +10774,36 @@ abstract class AppLocalizations {
   /// **'Category (optional)'**
   String get optionalCategoryLabel;
 
+  /// No description provided for @outboxActionRemove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get outboxActionRemove;
+
+  /// No description provided for @outboxActionRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get outboxActionRetry;
+
+  /// No description provided for @outboxFailedReassurance.
+  ///
+  /// In en, this message translates to:
+  /// **'Still saved on this device — it\'ll sync once the problem clears.'**
+  String get outboxFailedReassurance;
+
+  /// No description provided for @outboxFilterFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed'**
+  String get outboxFilterFailed;
+
+  /// No description provided for @outboxFilterWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting'**
+  String get outboxFilterWaiting;
+
   /// No description provided for @outboxMonitorAttachmentLabel.
   ///
   /// In en, this message translates to:
@@ -10761,6 +10947,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Daily sync volume'**
   String get outboxMonitorVolumeChartTitle;
+
+  /// No description provided for @outboxRemoveConfirmMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This change hasn\'t synced yet. Removing it here means it won\'t reach your other devices. It stays on this device.'**
+  String get outboxRemoveConfirmMessage;
+
+  /// No description provided for @outboxRemoveConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from queue?'**
+  String get outboxRemoveConfirmTitle;
+
+  /// No description provided for @outboxRetryAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry all'**
+  String get outboxRetryAll;
+
+  /// No description provided for @outboxShowDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Show technical details'**
+  String get outboxShowDetails;
+
+  /// No description provided for @outboxStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t send'**
+  String get outboxStatusFailed;
+
+  /// No description provided for @outboxStatusSending.
+  ///
+  /// In en, this message translates to:
+  /// **'Sending'**
+  String get outboxStatusSending;
+
+  /// No description provided for @outboxStatusSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Sent'**
+  String get outboxStatusSent;
+
+  /// No description provided for @outboxStatusWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting to send'**
+  String get outboxStatusWaiting;
+
+  /// No description provided for @outboxSummaryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item couldn\'t send} other{{count} items couldn\'t send}}'**
+  String outboxSummaryFailed(int count);
+
+  /// No description provided for @outboxSummaryOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item will send when you reconnect} other{{count} items will send when you reconnect}}'**
+  String outboxSummaryOffline(int count);
+
+  /// No description provided for @outboxSummarySending.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Sending 1 item…} other{Sending {count} items…}}'**
+  String outboxSummarySending(int count);
+
+  /// No description provided for @outboxSummarySynced.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything\'s synced'**
+  String get outboxSummarySynced;
+
+  /// No description provided for @outboxSummaryWaiting.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item waiting to send} other{{count} items waiting to send}}'**
+  String outboxSummaryWaiting(int count);
+
+  /// No description provided for @outboxTriedTimes.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{Tried once} other{Tried {count} times}}'**
+  String outboxTriedTimes(int count);
 
   /// No description provided for @privateLabel.
   ///

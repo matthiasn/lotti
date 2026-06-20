@@ -108,20 +108,25 @@ class SyncHeaderBottom<T, F extends Enum> extends StatelessWidget
             onChanged: onChanged,
             locale: locale,
           ),
-          const SizedBox(height: SettingsHeaderDimensions.filterSummaryGap),
-          Padding(
-            padding: const EdgeInsetsDirectional.only(
-              start: SettingsHeaderDimensions.filterCardPadding,
-            ),
-            child: Text(
-              summaryText,
-              style: context.textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-                fontSize: SettingsHeaderDimensions.filterSummaryFontSize,
-                height: SettingsHeaderDimensions.filterSummaryLineHeight,
+          // An empty summary suppresses the count line entirely — used by
+          // pages (e.g. the outbox) that carry their own plain-language
+          // summary header and would otherwise duplicate the count.
+          if (summaryText.isNotEmpty) ...[
+            const SizedBox(height: SettingsHeaderDimensions.filterSummaryGap),
+            Padding(
+              padding: const EdgeInsetsDirectional.only(
+                start: SettingsHeaderDimensions.filterCardPadding,
+              ),
+              child: Text(
+                summaryText,
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.colorScheme.onSurfaceVariant,
+                  fontSize: SettingsHeaderDimensions.filterSummaryFontSize,
+                  height: SettingsHeaderDimensions.filterSummaryLineHeight,
+                ),
               ),
             ),
-          ),
+          ],
         ],
       ),
     );

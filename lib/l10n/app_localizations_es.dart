@@ -2913,6 +2913,22 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get conflictCombineApply => 'Aplicar combinación';
+
+  @override
+  String get conflictCombineStartFrom => 'Partir de';
+
+  @override
+  String get conflictConfirmDeletion => 'Confirmar eliminación';
+
+  @override
+  String get conflictDeleteVsEditDescription =>
+      'Esta entrada se editó en un dispositivo y se eliminó en otro. No se elimina nada hasta que elijas.';
+
+  @override
+  String get conflictDeleteVsEditTitle => 'Eliminado en un dispositivo';
+
+  @override
   String get conflictDetailEntryNotFoundTitle => 'Entrada no encontrada';
 
   @override
@@ -2922,16 +2938,64 @@ class AppLocalizationsEs extends AppLocalizations {
   String get conflictDetailNotFoundTitle => 'Conflicto no encontrado';
 
   @override
+  String get conflictDiffRecommended => 'Recomendado';
+
+  @override
+  String conflictDiffUnchanged(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count campos sin cambios',
+      one: '1 campo sin cambios',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictFieldBody => 'Cuerpo';
+
+  @override
   String get conflictFieldCategory => 'categoría';
 
   @override
   String get conflictFieldDuration => 'duración';
 
   @override
+  String get conflictFieldEnd => 'Fin';
+
+  @override
+  String get conflictFieldFlag => 'Marca';
+
+  @override
+  String get conflictFieldOther => 'Otros detalles';
+
+  @override
+  String get conflictFieldOtherDescription =>
+      'Estas versiones difieren en detalles que no se muestran individualmente aquí.';
+
+  @override
+  String get conflictFieldPrivate => 'Privado';
+
+  @override
+  String get conflictFieldStarred => 'Favorito';
+
+  @override
+  String get conflictFieldStart => 'Inicio';
+
+  @override
   String get conflictFieldTitle => 'Título';
 
   @override
   String get conflictFieldWordCount => 'número de palabras';
+
+  @override
+  String get conflictFlagFollowUp => 'Requiere seguimiento';
+
+  @override
+  String get conflictFlagImport => 'Importado';
+
+  @override
+  String get conflictFlagNone => 'Ninguna';
 
   @override
   String get conflictFooterHelperLocalSelected =>
@@ -2967,6 +3031,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get conflictKeepEdited => 'Conservar la versión editada';
+
+  @override
   String conflictListItemSemanticsLabel(
     String status,
     String timestamp,
@@ -2991,6 +3058,21 @@ class AppLocalizationsEs extends AppLocalizations {
   String get conflictMetaViaSync => 'vía sync';
 
   @override
+  String conflictNotificationBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entradas se editaron en dos dispositivos',
+      one: '1 entrada se editó en dos dispositivos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictNotificationTitle =>
+      'La sincronización necesita tu atención';
+
+  @override
   String get conflictPageLeadDesktop =>
       'Diferencias resaltadas en línea. Haz clic en un lado para usar esa versión, o abre Editar y combinar para fusionarlas.';
 
@@ -3002,6 +3084,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get conflictPageTitle => 'Conflicto de sincronización';
 
   @override
+  String get conflictPickerCombine => 'Combinar…';
+
+  @override
   String get conflictPickerEditMerge => 'Editar y combinar…';
 
   @override
@@ -3009,6 +3094,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get conflictPickerUseThisDevice => 'Usar este dispositivo';
+
+  @override
+  String get conflictResolvedToast => 'Conflicto resuelto';
 
   @override
   String get conflictsEmptyDescription =>
@@ -3028,6 +3116,15 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get conflictsUnresolved => 'sin resolver';
+
+  @override
+  String get conflictValueAbsent => 'Sin definir';
+
+  @override
+  String get conflictValueNo => 'No';
+
+  @override
+  String get conflictValueYes => 'Sí';
 
   @override
   String conflictWordCount(int count) {
@@ -6206,6 +6303,22 @@ class AppLocalizationsEs extends AppLocalizations {
   String get optionalCategoryLabel => 'Categoría (opcional)';
 
   @override
+  String get outboxActionRemove => 'Quitar';
+
+  @override
+  String get outboxActionRetry => 'Reintentar';
+
+  @override
+  String get outboxFailedReassurance =>
+      'Sigue guardado en este dispositivo: se sincronizará cuando se resuelva el problema.';
+
+  @override
+  String get outboxFilterFailed => 'Fallido';
+
+  @override
+  String get outboxFilterWaiting => 'En espera';
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Adjunto';
 
   @override
@@ -6283,6 +6396,89 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get outboxMonitorVolumeChartTitle =>
       'Volumen de sincronización diario';
+
+  @override
+  String get outboxRemoveConfirmMessage =>
+      'Este cambio aún no se ha sincronizado. Si lo quitas aquí, no llegará a tus otros dispositivos. Permanece en este dispositivo.';
+
+  @override
+  String get outboxRemoveConfirmTitle => '¿Quitar de la cola?';
+
+  @override
+  String get outboxRetryAll => 'Reintentar todo';
+
+  @override
+  String get outboxShowDetails => 'Mostrar detalles técnicos';
+
+  @override
+  String get outboxStatusFailed => 'No se pudo enviar';
+
+  @override
+  String get outboxStatusSending => 'Enviando';
+
+  @override
+  String get outboxStatusSent => 'Enviado';
+
+  @override
+  String get outboxStatusWaiting => 'Esperando para enviar';
+
+  @override
+  String outboxSummaryFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementos no se pudieron enviar',
+      one: '1 elemento no se pudo enviar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummaryOffline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementos se enviarán cuando te reconectes',
+      one: '1 elemento se enviará cuando te reconectes',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummarySending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Enviando $count elementos…',
+      one: 'Enviando 1 elemento…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get outboxSummarySynced => 'Todo sincronizado';
+
+  @override
+  String outboxSummaryWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementos esperando para enviar',
+      one: '1 elemento esperando para enviar',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxTriedTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Intentado $count veces',
+      one: 'Intentado una vez',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get privateLabel => 'Privado';

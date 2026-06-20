@@ -2920,6 +2920,22 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get conflictCombineApply => 'Aplicați combinația';
+
+  @override
+  String get conflictCombineStartFrom => 'Pornire de la';
+
+  @override
+  String get conflictConfirmDeletion => 'Confirmați ștergerea';
+
+  @override
+  String get conflictDeleteVsEditDescription =>
+      'Această intrare a fost editată pe un dispozitiv și ștearsă pe altul. Nimic nu este eliminat până când nu alegeți.';
+
+  @override
+  String get conflictDeleteVsEditTitle => 'Șters pe un dispozitiv';
+
+  @override
   String get conflictDetailEntryNotFoundTitle => 'Intrare negăsită';
 
   @override
@@ -2930,16 +2946,64 @@ class AppLocalizationsRo extends AppLocalizations {
   String get conflictDetailNotFoundTitle => 'Conflict negăsit';
 
   @override
+  String get conflictDiffRecommended => 'Recomandat';
+
+  @override
+  String conflictDiffUnchanged(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count câmpuri neschimbate',
+      one: '1 câmp neschimbat',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictFieldBody => 'Conținut';
+
+  @override
   String get conflictFieldCategory => 'categorie';
 
   @override
   String get conflictFieldDuration => 'durată';
 
   @override
+  String get conflictFieldEnd => 'Sfârșit';
+
+  @override
+  String get conflictFieldFlag => 'Marcaj';
+
+  @override
+  String get conflictFieldOther => 'Alte detalii';
+
+  @override
+  String get conflictFieldOtherDescription =>
+      'Aceste versiuni diferă prin detalii care nu sunt afișate individual aici.';
+
+  @override
+  String get conflictFieldPrivate => 'Privat';
+
+  @override
+  String get conflictFieldStarred => 'Favorit';
+
+  @override
+  String get conflictFieldStart => 'Început';
+
+  @override
   String get conflictFieldTitle => 'Titlu';
 
   @override
   String get conflictFieldWordCount => 'număr de cuvinte';
+
+  @override
+  String get conflictFlagFollowUp => 'Necesită urmărire';
+
+  @override
+  String get conflictFlagImport => 'Importat';
+
+  @override
+  String get conflictFlagNone => 'Niciunul';
 
   @override
   String get conflictFooterHelperLocalSelected =>
@@ -2976,6 +3040,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get conflictKeepEdited => 'Păstrați versiunea editată';
+
+  @override
   String conflictListItemSemanticsLabel(
     String status,
     String timestamp,
@@ -3000,6 +3067,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get conflictMetaViaSync => 'prin sincronizare';
 
   @override
+  String conflictNotificationBody(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count intrări au fost editate pe două dispozitive',
+      one: '1 intrare a fost editată pe două dispozitive',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get conflictNotificationTitle => 'Sincronizarea necesită atenția dvs.';
+
+  @override
   String get conflictPageLeadDesktop =>
       'Diferențele sunt evidențiate inline. Faceți clic pe o parte pentru a folosi versiunea respectivă sau deschideți Editare și îmbinare pentru a le combina.';
 
@@ -3011,6 +3092,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get conflictPageTitle => 'Conflict de sincronizare';
 
   @override
+  String get conflictPickerCombine => 'Combinați…';
+
+  @override
   String get conflictPickerEditMerge => 'Editare și îmbinare…';
 
   @override
@@ -3018,6 +3102,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get conflictPickerUseThisDevice => 'Folosiți acest dispozitiv';
+
+  @override
+  String get conflictResolvedToast => 'Conflict rezolvat';
 
   @override
   String get conflictsEmptyDescription =>
@@ -3037,6 +3124,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get conflictsUnresolved => 'nerezolvat';
+
+  @override
+  String get conflictValueAbsent => 'Nedefinit';
+
+  @override
+  String get conflictValueNo => 'Nu';
+
+  @override
+  String get conflictValueYes => 'Da';
 
   @override
   String conflictWordCount(int count) {
@@ -6207,6 +6303,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get optionalCategoryLabel => 'Categorie (opțional)';
 
   @override
+  String get outboxActionRemove => 'Eliminați';
+
+  @override
+  String get outboxActionRetry => 'Reîncercați';
+
+  @override
+  String get outboxFailedReassurance =>
+      'Rămâne salvat pe acest dispozitiv – se va sincroniza după ce problema se rezolvă.';
+
+  @override
+  String get outboxFilterFailed => 'Eșuat';
+
+  @override
+  String get outboxFilterWaiting => 'În așteptare';
+
+  @override
   String get outboxMonitorAttachmentLabel => 'Atașament';
 
   @override
@@ -6283,6 +6395,89 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get outboxMonitorVolumeChartTitle => 'Volum de sincronizare zilnic';
+
+  @override
+  String get outboxRemoveConfirmMessage =>
+      'Această modificare nu a fost încă sincronizată. Dacă o eliminați aici, nu va ajunge pe celelalte dispozitive. Rămâne pe acest dispozitiv.';
+
+  @override
+  String get outboxRemoveConfirmTitle => 'Eliminați din coadă?';
+
+  @override
+  String get outboxRetryAll => 'Reîncercați tot';
+
+  @override
+  String get outboxShowDetails => 'Afișați detaliile tehnice';
+
+  @override
+  String get outboxStatusFailed => 'Nu s-a putut trimite';
+
+  @override
+  String get outboxStatusSending => 'Se trimite';
+
+  @override
+  String get outboxStatusSent => 'Trimis';
+
+  @override
+  String get outboxStatusWaiting => 'În așteptarea trimiterii';
+
+  @override
+  String outboxSummaryFailed(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elemente nu au putut fi trimise',
+      one: '1 element nu a putut fi trimis',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummaryOffline(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elemente vor fi trimise la reconectare',
+      one: '1 element va fi trimis la reconectare',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxSummarySending(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Se trimit $count elemente…',
+      one: 'Se trimite 1 element…',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get outboxSummarySynced => 'Totul este sincronizat';
+
+  @override
+  String outboxSummaryWaiting(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elemente în așteptarea trimiterii',
+      one: '1 element în așteptarea trimiterii',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String outboxTriedTimes(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Încercat de $count ori',
+      one: 'Încercat o dată',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get privateLabel => 'Privat';

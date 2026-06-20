@@ -1,27 +1,24 @@
 import 'package:drift/drift.dart' as drift;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
-import 'package:lotti/features/sync/ui/widgets/outbox/outbox_list_item.dart';
-import 'package:lotti/features/sync/ui/widgets/outbox/outbox_volume_chart.dart';
+import 'package:lotti/features/sync/ui/view_models/outbox_status_presentation.dart';
+import 'package:lotti/features/sync/ui/widgets/outbox/outbox_message_card.dart';
+import 'package:lotti/features/sync/ui/widgets/outbox/outbox_summary_header.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_list_scaffold.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/themes/colors.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
-enum _OutboxListFilter {
-  pending,
-  success,
-  error,
-}
+enum _OutboxListFilter { waiting, failed, sent }
 
-/// Full-page outbox monitor — used by the V1 beamer route and kept
-/// as the entry-point class so existing callers and tests continue
-/// to work unchanged.
+/// Full-page outbox monitor — used by the V1 beamer route and kept as the
+/// entry-point class so existing callers and tests continue to work.
 class OutboxMonitorPage extends StatefulWidget {
   const OutboxMonitorPage({super.key});
 
@@ -29,15 +26,9 @@ class OutboxMonitorPage extends StatefulWidget {
   State<OutboxMonitorPage> createState() => _OutboxMonitorPageState();
 }
 
-/// Content body for the Settings V2 detail pane (plan step 7).
-///
-/// [OutboxMonitorPage] owns its own full-surface `SyncListScaffold`
-/// with a page header; embedding it inside the V2 leaf panel would
-/// double the title bar. The polish pass (plan step 10) will refactor
-/// `SyncListScaffold` to support a headerless embedded mode. Until
-/// then this wrapper re-uses the page verbatim so the panel is
-/// functional; the resulting minor title duplication is a known
-/// cosmetic issue tracked for polish.
+/// Content body for the Settings V2 detail pane. Re-uses the page verbatim;
+/// the minor title duplication inside the V2 leaf panel is a known cosmetic
+/// issue tracked for polish.
 class OutboxMonitorBody extends StatelessWidget {
   const OutboxMonitorBody({super.key});
 
@@ -48,12 +39,11 @@ class OutboxMonitorBody extends StatelessWidget {
 class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
   final SyncDatabase _db = getIt<SyncDatabase>();
 
-  // The page deliberately does NOT subscribe to a live `watch()` stream.
-  // The outbox grows by hundreds of rows per minute during sync; a live
-  // watcher with the CASE-WHEN ORDER BY required for this page forces
-  // SQLite into a temp B-tree sort on every write and dominates CPU
-  // for as long as the page is open. Snapshot + pull-to-refresh
-  // matches what an operator actually needs here.
+  // The page deliberately does NOT subscribe to a live `watch()` stream: the
+  // outbox grows by hundreds of rows per minute during sync, and a live
+  // watcher with the CASE-WHEN ORDER BY this page needs forces SQLite into a
+  // temp B-tree sort on every write. Snapshot + pull-to-refresh is what an
+  // operator actually needs here.
   static const int _fetchLimit = 2500;
 
   List<OutboxItem>? _items;
@@ -62,10 +52,6 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
   @override
   void initState() {
     super.initState();
-    // Defer the first fetch to after the first frame so the localization
-    // and toast dependencies are wired up before any error path runs —
-    // a synchronous DB throw inside initState would otherwise touch
-    // `context.messages` before dependencies are ready.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _fetch();
     });
@@ -86,11 +72,6 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         subDomain: 'fetch',
       );
       if (!mounted) return;
-      // Surface the failure to the user — on the initial load, this is
-      // the only signal that something went wrong (otherwise the page
-      // would just render the same "Outbox is clear" empty state as a
-      // legitimately empty outbox). On a refresh failure, leave the
-      // prior snapshot in place so the user does not lose context.
       setState(() => _items ??= const <OutboxItem>[]);
       if (!context.mounted) return;
       context.showToast(
@@ -102,65 +83,95 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
     }
   }
 
-  Future<void> _retryItem(BuildContext context, OutboxItem item) async {
-    final confirmed = await showConfirmationModal(
-      context: context,
-      message: context.messages.outboxMonitorRetryConfirmMessage,
-      confirmLabel: context.messages.outboxMonitorRetryConfirmLabel,
-      cancelLabel: context.messages.cancelButton,
-      isDestructive: false,
-    );
-    if (!confirmed) return;
-
-    try {
-      await _db.updateOutboxItem(
-        OutboxCompanion(
-          id: drift.Value(item.id),
-          status: drift.Value(OutboxStatus.pending.index),
-          retries: drift.Value(item.retries + 1),
-          updatedAt: drift.Value(DateTime.now()),
-        ),
-      );
-
-      await _fetch();
-
-      if (!context.mounted) return;
-      context.showToast(
-        tone: DesignSystemToastTone.success,
-        title: context.messages.outboxMonitorRetryQueued,
-      );
-    } catch (error, stackTrace) {
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
-        error,
-        stackTrace: stackTrace,
-        subDomain: 'retry_item',
-      );
-      if (!context.mounted) {
-        return;
-      }
-      context.showToast(
-        tone: DesignSystemToastTone.error,
-        title: context.messages.outboxMonitorRetryFailed,
-      );
+  OutboxStatus? _statusFromIndex(int statusIndex) {
+    if (statusIndex < 0 || statusIndex >= OutboxStatus.values.length) {
+      return null;
     }
+    return OutboxStatus.values[statusIndex];
   }
 
-  Future<void> _deleteItem(BuildContext context, OutboxItem item) async {
+  _OutboxCounts _counts() {
+    var pending = 0;
+    var sending = 0;
+    var error = 0;
+    for (final item in _items ?? const <OutboxItem>[]) {
+      switch (_statusFromIndex(item.status)) {
+        case OutboxStatus.pending:
+          pending++;
+        case OutboxStatus.sending:
+          sending++;
+        case OutboxStatus.error:
+          error++;
+        case OutboxStatus.sent:
+        case null:
+          break;
+      }
+    }
+    return _OutboxCounts(pending: pending, sending: sending, error: error);
+  }
+
+  Future<void> _retryItem(OutboxItem item) => _requeue([item]);
+
+  Future<void> _retryAll() {
+    final errors = (_items ?? const <OutboxItem>[])
+        .where((i) => _statusFromIndex(i.status) == OutboxStatus.error)
+        .toList();
+    return _requeue(errors);
+  }
+
+  /// Re-queues failed items by flipping them back to pending so the runner
+  /// picks them up again. Non-destructive and idempotent, so each row is
+  /// retried independently — one bad write doesn't strand the rest, and the
+  /// user can simply tap again. Reports overall success/failure.
+  Future<void> _requeue(List<OutboxItem> items) async {
+    if (items.isEmpty) return;
+    var failed = 0;
+    for (final item in items) {
+      try {
+        await _db.updateOutboxItem(
+          OutboxCompanion(
+            id: drift.Value(item.id),
+            status: drift.Value(OutboxStatus.pending.index),
+            retries: drift.Value(item.retries + 1),
+            updatedAt: drift.Value(DateTime.now()),
+          ),
+        );
+      } catch (error, stackTrace) {
+        failed++;
+        getIt<DomainLogger>().error(
+          LogDomain.sync,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'retry',
+        );
+      }
+    }
+    await _fetch();
+    if (!mounted) return;
+    context.showToast(
+      tone: failed == 0
+          ? DesignSystemToastTone.success
+          : DesignSystemToastTone.error,
+      title: failed == 0
+          ? context.messages.outboxMonitorRetryQueued
+          : context.messages.outboxMonitorRetryFailed,
+    );
+  }
+
+  Future<void> _removeItem(OutboxItem item) async {
     final confirmed = await showConfirmationModal(
       context: context,
-      message: context.messages.outboxMonitorDeleteConfirmMessage,
-      confirmLabel: context.messages.outboxMonitorDeleteConfirmLabel,
+      title: context.messages.outboxRemoveConfirmTitle,
+      message: context.messages.outboxRemoveConfirmMessage,
+      confirmLabel: context.messages.outboxActionRemove,
       cancelLabel: context.messages.cancelButton,
     );
-    if (!confirmed) return;
+    if (!confirmed || !mounted) return;
 
     try {
       await _db.deleteOutboxItemById(item.id);
-
       await _fetch();
-
-      if (!context.mounted) return;
+      if (!mounted) return;
       context.showToast(
         tone: DesignSystemToastTone.success,
         title: context.messages.outboxMonitorDeleteSuccess,
@@ -170,11 +181,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
-        subDomain: 'delete_item',
+        subDomain: 'remove_item',
       );
-      if (!context.mounted) {
-        return;
-      }
+      if (!mounted) return;
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: context.messages.outboxMonitorDeleteFailed,
@@ -182,50 +191,46 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
     }
   }
 
-  OutboxStatus? _statusFromIndex(int statusIndex) {
-    if (statusIndex < 0 || statusIndex >= OutboxStatus.values.length) {
-      return null;
-    }
-    return OutboxStatus.values[statusIndex];
-  }
-
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final colors = context.designTokens.colors;
+    final onAlert = colors.text.onInteractiveAlert;
     final filters = <_OutboxListFilter, SyncFilterOption<OutboxItem>>{
-      _OutboxListFilter.pending: SyncFilterOption<OutboxItem>(
-        labelBuilder: (context) => context.messages.outboxMonitorLabelPending,
-        predicate: (OutboxItem item) {
+      _OutboxListFilter.waiting: SyncFilterOption<OutboxItem>(
+        labelBuilder: (ctx) => ctx.messages.outboxFilterWaiting,
+        predicate: (item) {
           final status = _statusFromIndex(item.status);
+          // Unknown/corrupt status indices fall here too, so a row is never
+          // invisible across every filter.
           return status == OutboxStatus.pending ||
-              status == OutboxStatus.sending;
+              status == OutboxStatus.sending ||
+              status == null;
         },
         icon: Icons.schedule_rounded,
-        selectedColor: syncPendingAccentColor,
-        selectedForegroundColor: syncPendingForegroundColor,
+        selectedColor: colors.alert.warning.defaultColor,
+        selectedForegroundColor: onAlert,
         hideCountWhenZero: true,
-        countAccentColor: syncPendingCountAccentColor,
-        countAccentForegroundColor: syncPendingForegroundColor,
+        countAccentColor: colors.alert.warning.defaultColor,
+        countAccentForegroundColor: onAlert,
       ),
-      _OutboxListFilter.success: SyncFilterOption<OutboxItem>(
-        labelBuilder: (context) => context.messages.outboxMonitorLabelSuccess,
-        predicate: (OutboxItem item) =>
-            _statusFromIndex(item.status) == OutboxStatus.sent,
-        icon: Icons.check_circle_outline_rounded,
-        selectedColor: syncSuccessAccentColor,
-        selectedForegroundColor: syncSuccessForegroundColor,
-        showCount: false,
-      ),
-      _OutboxListFilter.error: SyncFilterOption<OutboxItem>(
-        labelBuilder: (context) => context.messages.outboxMonitorLabelError,
-        predicate: (OutboxItem item) =>
+      _OutboxListFilter.failed: SyncFilterOption<OutboxItem>(
+        labelBuilder: (ctx) => ctx.messages.outboxFilterFailed,
+        predicate: (item) =>
             _statusFromIndex(item.status) == OutboxStatus.error,
         icon: Icons.error_outline_rounded,
-        selectedColor: colorScheme.error,
-        selectedForegroundColor: colorScheme.onError,
+        selectedColor: colors.alert.error.defaultColor,
+        selectedForegroundColor: onAlert,
         hideCountWhenZero: true,
-        countAccentColor: syncErrorCountAccentColor(colorScheme),
-        countAccentForegroundColor: colorScheme.onError,
+        countAccentColor: colors.alert.error.defaultColor,
+        countAccentForegroundColor: onAlert,
+      ),
+      _OutboxListFilter.sent: SyncFilterOption<OutboxItem>(
+        labelBuilder: (ctx) => ctx.messages.outboxStatusSent,
+        predicate: (item) => _statusFromIndex(item.status) == OutboxStatus.sent,
+        icon: Icons.check_circle_outline_rounded,
+        selectedColor: colors.alert.success.defaultColor,
+        selectedForegroundColor: onAlert,
+        showCount: false,
       ),
     };
 
@@ -235,25 +240,61 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       items: _items,
       isLoading: _items == null,
       onRefresh: _fetch,
-      headerSliver: const OutboxVolumeChart(),
+      headerSliver: _OutboxHeader(counts: _counts(), onRetryAll: _retryAll),
       filters: filters,
-      initialFilter: _OutboxListFilter.pending,
+      initialFilter: _OutboxListFilter.waiting,
       emptyIcon: Icons.inbox_rounded,
       emptyTitleBuilder: (ctx) => ctx.messages.outboxMonitorEmptyTitle,
       emptyDescriptionBuilder: (ctx) =>
           ctx.messages.outboxMonitorEmptyDescription,
-      countSummaryBuilder: (ctx, label, count) =>
-          ctx.messages.syncListCountSummary(label, count),
-      itemBuilder: (ctx, OutboxItem item) {
+      // No count line — the summary header above the list already states the
+      // status in plain language, so a "waiting · N items" line would just
+      // duplicate the number.
+      itemBuilder: (ctx, item) {
         final isError = _statusFromIndex(item.status) == OutboxStatus.error;
-        return OutboxListItem(
+        return OutboxMessageCard(
           item: item,
-          showRetry: isError,
-          onRetry: () => _retryItem(ctx, item),
-          showDelete: isError,
-          onDelete: () => _deleteItem(ctx, item),
+          onRetry: isError ? () => _retryItem(item) : null,
+          onRemove: isError ? () => _removeItem(item) : null,
         );
       },
     );
+  }
+}
+
+class _OutboxCounts {
+  const _OutboxCounts({
+    required this.pending,
+    required this.sending,
+    required this.error,
+  });
+
+  final int pending;
+  final int sending;
+  final int error;
+}
+
+/// The page header: a plain-language summary line (which reads sign-in state to
+/// distinguish "offline" from "failed"), with a one-tap Retry-all when items
+/// have failed.
+class _OutboxHeader extends ConsumerWidget {
+  const _OutboxHeader({required this.counts, required this.onRetryAll});
+
+  final _OutboxCounts counts;
+  final VoidCallback onRetryAll;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final online =
+        ref.watch(outboxConnectionStateProvider).value ==
+        OutboxConnectionState.online;
+    final summary = summarizeOutbox(
+      pendingCount: counts.pending,
+      sendingCount: counts.sending,
+      failedCount: counts.error,
+      syncEnabled: true,
+      signedIn: online,
+    );
+    return OutboxSummaryHeader(summary: summary, onRetryAll: onRetryAll);
   }
 }

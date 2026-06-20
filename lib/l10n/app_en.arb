@@ -1569,13 +1569,39 @@
       }
     }
   },
+  "conflictCombineApply": "Apply combined",
+  "conflictCombineStartFrom": "Start from",
+  "conflictConfirmDeletion": "Confirm deletion",
+  "conflictDeleteVsEditDescription": "This entry was edited on one device and deleted on another. Nothing is removed until you choose.",
+  "conflictDeleteVsEditTitle": "Deleted on one device",
   "conflictDetailEntryNotFoundTitle": "Entry not found",
   "conflictDetailLoadErrorTitle": "Couldn't load conflict",
   "conflictDetailNotFoundTitle": "Conflict not found",
-  "conflictFieldCategory": "category",
-  "conflictFieldDuration": "duration",
+  "conflictDiffRecommended": "Recommended",
+  "conflictDiffUnchanged": "{count, plural, =1{1 field unchanged} other{{count} fields unchanged}}",
+  "@conflictDiffUnchanged": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "conflictFieldBody": "Body",
+  "conflictFieldCategory": "Category",
+  "conflictFieldDuration": "Duration",
+  "conflictFieldEnd": "End",
+  "conflictFieldFlag": "Flag",
+  "conflictFieldOther": "Other details",
+  "conflictFieldOtherDescription": "These versions differ in details not shown individually here.",
+  "conflictFieldPrivate": "Private",
+  "conflictFieldStarred": "Starred",
+  "conflictFieldStart": "Start",
   "conflictFieldTitle": "Title",
   "conflictFieldWordCount": "word count",
+  "conflictFlagFollowUp": "Follow-up needed",
+  "conflictFlagImport": "Imported",
+  "conflictFlagNone": "None",
   "conflictFooterHelperLocalSelected": "Will keep your local edit and discard the synced version.",
   "conflictFooterHelperPickASide": "Pick a side to apply.",
   "conflictFooterHelperRemoteSelected": "Will accept the synced version and discard your local edit.",
@@ -1597,6 +1623,7 @@
       }
     }
   },
+  "conflictKeepEdited": "Keep the edited version",
   "conflictListItemSemanticsLabel": "{status}, {timestamp}, {entityType}, conflict {id}",
   "@conflictListItemSemanticsLabel": {
     "description": "Screen-reader label for a row in the conflicts list. Reads status, timestamp, entity type, and the full conflict id.",
@@ -1632,18 +1659,33 @@
   "conflictMetaLocalEdit": "local edit",
   "conflictMetaVecPrefix": "vec",
   "conflictMetaViaSync": "via sync",
+  "conflictNotificationBody": "{count, plural, =1{1 entry was edited on two devices} other{{count} entries were edited on two devices}}",
+  "@conflictNotificationBody": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "conflictNotificationTitle": "Sync needs your review",
   "conflictPageLeadDesktop": "Differences highlighted inline. Click a side to use that version, or open Edit & merge to combine them.",
   "conflictPageLeadMobile": "Differences highlighted inline. Tap a side to use that version.",
   "conflictPageTitle": "Sync conflict",
+  "conflictPickerCombine": "Combine…",
   "conflictPickerEditMerge": "Edit & merge…",
   "conflictPickerUseFromSync": "Use from sync",
   "conflictPickerUseThisDevice": "Use this device",
+  "conflictResolvedToast": "Conflict resolved",
   "conflictsEmptyDescription": "Everything is in sync right now. Resolved items stay available in the other filter.",
   "conflictsEmptyTitle": "No conflicts detected",
   "conflictSideFromSync": "FROM SYNC",
   "conflictSideThisDevice": "THIS DEVICE",
   "conflictsResolved": "resolved",
   "conflictsUnresolved": "unresolved",
+  "conflictValueAbsent": "Not set",
+  "conflictValueNo": "No",
+  "conflictValueYes": "Yes",
   "conflictWordCount": "{count, plural, one{{count} word} other{{count} words}}",
   "@conflictWordCount": {
     "description": "Word count shown on the conflict detail meta row.",
@@ -3078,6 +3120,11 @@
     }
   },
   "optionalCategoryLabel": "Category (optional)",
+  "outboxActionRemove": "Remove",
+  "outboxActionRetry": "Retry",
+  "outboxFailedReassurance": "Still saved on this device — it'll sync once the problem clears.",
+  "outboxFilterFailed": "Failed",
+  "outboxFilterWaiting": "Waiting",
   "outboxMonitorAttachmentLabel": "Attachment",
   "outboxMonitorDelete": "delete",
   "outboxMonitorDeleteConfirmLabel": "Delete",
@@ -3102,6 +3149,60 @@
   "outboxMonitorRetryQueued": "Retry scheduled",
   "outboxMonitorSubjectLabel": "Subject",
   "outboxMonitorVolumeChartTitle": "Daily sync volume",
+  "outboxRemoveConfirmMessage": "This change hasn't synced yet. Removing it here means it won't reach your other devices. It stays on this device.",
+  "outboxRemoveConfirmTitle": "Remove from queue?",
+  "outboxRetryAll": "Retry all",
+  "outboxShowDetails": "Show technical details",
+  "outboxStatusFailed": "Couldn't send",
+  "outboxStatusSending": "Sending",
+  "outboxStatusSent": "Sent",
+  "outboxStatusWaiting": "Waiting to send",
+  "outboxSummaryFailed": "{count, plural, =1{1 item couldn't send} other{{count} items couldn't send}}",
+  "@outboxSummaryFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "outboxSummaryOffline": "{count, plural, =1{1 item will send when you reconnect} other{{count} items will send when you reconnect}}",
+  "@outboxSummaryOffline": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "outboxSummarySending": "{count, plural, =1{Sending 1 item…} other{Sending {count} items…}}",
+  "@outboxSummarySending": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "outboxSummarySynced": "Everything's synced",
+  "outboxSummaryWaiting": "{count, plural, =1{1 item waiting to send} other{{count} items waiting to send}}",
+  "@outboxSummaryWaiting": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "outboxTriedTimes": "{count, plural, =1{Tried once} other{Tried {count} times}}",
+  "@outboxTriedTimes": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
   "privateLabel": "Private",
   "privateSwitchDescription": "Only visible when private entries are shown",
   "projectAgentNotProvisioned": "No project agent has been provisioned for this project yet.",
