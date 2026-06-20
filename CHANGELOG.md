@@ -52,6 +52,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Accepting an AI suggestion that adds a to-do no longer makes the page jump:
   the task detail view now holds the AI proposals in place when a confirmed
   change grows the checklist above them, so the spot you were reading stays put.
+- Accepting an AI suggestion no longer makes the checklist flicker: a checklist
+  item row that's reloading now keeps showing its current state instead of
+  blanking for a frame (stale-while-revalidate), and checklist cards are keyed
+  by identity rather than list position, so inserting or reordering one no
+  longer drops the others' state and flashes them.
 
 ## [0.9.1028]
 ### Changed

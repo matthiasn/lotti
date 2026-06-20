@@ -173,6 +173,14 @@ class FakeChecklistCompletionService extends ChecklistCompletionService {
 // Widget pump helpers
 // ---------------------------------------------------------------------------
 
+/// Controller whose async build throws, to exercise the row's error branch.
+class _ErrorChecklistItemController extends ChecklistItemController {
+  _ErrorChecklistItemController() : super(const (id: 'fake', taskId: null));
+
+  @override
+  Future<ChecklistItem?> build() async => throw Exception('load failed');
+}
+
 Future<void> _pump(
   WidgetTester tester, {
   ChecklistItem? item,
@@ -297,6 +305,39 @@ void main() {
 
       final checkbox = tester.widget<Checkbox>(find.byType(Checkbox));
       expect(checkbox.value, isFalse);
+    });
+
+    testWidgets('surfaces an ErrorWidget when the item fails to load', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            checklistItemControllerProvider((
+              id: 'item-1',
+              taskId: 'task-1',
+            )).overrideWith(_ErrorChecklistItemController.new),
+            checklistControllerProvider((
+              id: 'checklist-1',
+              taskId: 'task-1',
+            )).overrideWith(FakeChecklistController.new),
+            checklistCompletionServiceProvider.overrideWith(
+              FakeChecklistCompletionService.new,
+            ),
+          ],
+          child: makeTestableWidgetWithScaffold(
+            const ChecklistItemRow(
+              itemId: 'item-1',
+              checklistId: 'checklist-1',
+              taskId: 'task-1',
+              index: 0,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(ErrorWidget), findsOneWidget);
     });
 
     testWidgets('checked item shows checked Checkbox', (tester) async {

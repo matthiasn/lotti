@@ -383,6 +383,17 @@ low-emphasis 1.5px it used to) — an unchecked control must stay visible agains
 the dark card for low-vision users; this is control legibility, not the
 metadata-chip emphasis tiering.
 
+The row renders **stale-while-revalidate**: it reads `itemAsync.value` (the
+retained value) rather than `itemAsync.map(loading: …)`, so a *reloading* item
+keeps its current state instead of blanking to `SizedBox.shrink` for a frame
+(the flicker when an accepted AI suggestion updated the checklist); a genuine
+first mount / deletion still collapses, and a hard load error with no prior
+value still surfaces an `ErrorWidget`. Relatedly, the checklist cards in
+`ChecklistsWidget` are keyed by checklist **identity** (`Key('checklist-$id-…')`,
+not the list index), so inserting or reordering a checklist keeps every other
+card's element + state instead of shifting indices and re-fetching (which
+flashed them).
+
 ### Checklist runtime model
 
 `ChecklistController`:
