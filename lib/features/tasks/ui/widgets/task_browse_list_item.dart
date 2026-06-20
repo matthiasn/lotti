@@ -85,34 +85,34 @@ class TaskBrowseListItem extends StatelessWidget {
     final priorityColor = sectionPriority?.colorForBrightness(
       Theme.of(context).brightness,
     );
-    // Graduate the band fill by rank so the urgent band genuinely dominates:
-    // a uniform alpha let the intrinsically-brighter orange out-shout the
-    // darker red. Stronger for P0, fading to a whisper for P3. Kept restrained
-    // so the band labels the group without reading like an alert banner — the
-    // dominance comes from the graduation, not raw saturation.
+    // Quiet, lightly-graduated band fills: the band only labels its group. The
+    // urgency *anchor* is the lead-card rail + glyph + due chips, so the bands
+    // no longer need a loud "alert" fill — even the urgent band stays calm.
     final bandAlpha = switch (sectionPriority) {
-      TaskPriority.p0Urgent => 0.22,
-      TaskPriority.p1High => 0.11,
+      TaskPriority.p0Urgent => 0.13,
+      TaskPriority.p1High => 0.10,
       TaskPriority.p2Medium => 0.08,
       TaskPriority.p3Low => 0.06,
+      null => 0.0,
+    };
+    // The most-urgent (sorted-first) card of a priority bucket gets a thin
+    // priority-coloured left rail — rendered inside the row shell so it spans
+    // the full card height — as a focused but restrained "do this first" accent.
+    // Its width is graduated by rank so the urgent rail wins across buckets on
+    // weight as well as hue (red, widest → blue, narrowest).
+    final leadAccentColor = entry.isFirstInSection ? priorityColor : null;
+    final leadAccentWidth = switch (sectionPriority) {
+      TaskPriority.p0Urgent => 5.0,
+      TaskPriority.p1High => 4.0,
+      TaskPriority.p2Medium => 3.0,
+      TaskPriority.p3Low => 2.5,
       null => 0.0,
     };
     final borderSide = BorderSide(
       color: TaskShowcasePalette.containerBorder(context),
     );
-    // The first card of a priority bucket is, after the intra-bucket urgency
-    // sort, the single most time-critical task — the "do this first". Give it a
-    // faint priority-tinted fill so it lifts off its neighbours as a whole card
-    // (not just via its due chip) and the eye lands on it immediately.
-    final surfaceColor = TaskShowcasePalette.surface(context);
-    final cardColor = entry.isFirstInSection && priorityColor != null
-        ? Color.alphaBlend(
-            priorityColor.withValues(alpha: 0.07),
-            surfaceColor,
-          )
-        : surfaceColor;
     final decoration = BoxDecoration(
-      color: cardColor,
+      color: TaskShowcasePalette.surface(context),
       borderRadius: borderRadius,
       border: Border(
         top: entry.isFirstInSection ? borderSide : BorderSide.none,
@@ -121,6 +121,68 @@ class TaskBrowseListItem extends StatelessWidget {
         bottom: entry.isLastInSection ? borderSide : BorderSide.none,
       ),
     );
+    final notifier = hoveredTaskIdNotifier;
+    final cardRow = notifier != null
+        ? ValueListenableBuilder<String?>(
+            valueListenable: notifier,
+            child: TaskRowContent(
+              task: entry.task,
+              sortOption: sortOption,
+              showCreationDate: showCreationDate,
+              showDueDate: showDueDate,
+              showCoverArt: showCoverArt,
+              showStatus: showStatus,
+              showCategoryChip: showCategoryChip,
+              vectorDistance: vectorDistance,
+              categoryNameOverride: categoryNameOverride,
+              categoryIconOverride: categoryIconOverride,
+              categoryColorHexOverride: categoryColorHexOverride,
+              trackedDurationLabelOverride: trackedDurationLabelOverride,
+            ),
+            builder: (context, hoveredTaskId, child) => TaskBrowseRowShell(
+              entry: entry,
+              rowPadding: rowPadding,
+              borderRadius: borderRadius,
+              decoration: decoration,
+              leadAccentColor: leadAccentColor,
+              leadAccentWidth: leadAccentWidth,
+              previousTaskIdInSection: previousTaskIdInSection,
+              nextTaskIdInSection: nextTaskIdInSection,
+              selectedTaskId: selectedTaskId,
+              hoveredTaskId: hoveredTaskId,
+              hoveredTaskIdNotifier: notifier,
+              onTap: onTap,
+              child: child!,
+            ),
+          )
+        : TaskBrowseRowShell(
+            entry: entry,
+            rowPadding: rowPadding,
+            borderRadius: borderRadius,
+            decoration: decoration,
+            leadAccentColor: leadAccentColor,
+            leadAccentWidth: leadAccentWidth,
+            previousTaskIdInSection: previousTaskIdInSection,
+            nextTaskIdInSection: nextTaskIdInSection,
+            selectedTaskId: selectedTaskId,
+            hoveredTaskId: null,
+            hoveredTaskIdNotifier: null,
+            onTap: onTap,
+            child: TaskRowContent(
+              task: entry.task,
+              sortOption: sortOption,
+              showCreationDate: showCreationDate,
+              showDueDate: showDueDate,
+              showCoverArt: showCoverArt,
+              showStatus: showStatus,
+              showCategoryChip: showCategoryChip,
+              vectorDistance: vectorDistance,
+              categoryNameOverride: categoryNameOverride,
+              categoryIconOverride: categoryIconOverride,
+              categoryColorHexOverride: categoryColorHexOverride,
+              trackedDurationLabelOverride: trackedDurationLabelOverride,
+            ),
+          );
 
     return Padding(
       padding: EdgeInsets.only(
@@ -179,66 +241,7 @@ class TaskBrowseListItem extends StatelessWidget {
                 ),
               ),
             ),
-          if (hoveredTaskIdNotifier case final notifier?)
-            ValueListenableBuilder<String?>(
-              valueListenable: notifier,
-              child: TaskRowContent(
-                task: entry.task,
-                sortOption: sortOption,
-                showCreationDate: showCreationDate,
-                showDueDate: showDueDate,
-                showCoverArt: showCoverArt,
-                showStatus: showStatus,
-                showCategoryChip: showCategoryChip,
-                vectorDistance: vectorDistance,
-                categoryNameOverride: categoryNameOverride,
-                categoryIconOverride: categoryIconOverride,
-                categoryColorHexOverride: categoryColorHexOverride,
-                trackedDurationLabelOverride: trackedDurationLabelOverride,
-              ),
-              builder: (context, hoveredTaskId, child) {
-                return TaskBrowseRowShell(
-                  entry: entry,
-                  rowPadding: rowPadding,
-                  borderRadius: borderRadius,
-                  decoration: decoration,
-                  previousTaskIdInSection: previousTaskIdInSection,
-                  nextTaskIdInSection: nextTaskIdInSection,
-                  selectedTaskId: selectedTaskId,
-                  hoveredTaskId: hoveredTaskId,
-                  hoveredTaskIdNotifier: notifier,
-                  onTap: onTap,
-                  child: child!,
-                );
-              },
-            )
-          else
-            TaskBrowseRowShell(
-              entry: entry,
-              rowPadding: rowPadding,
-              borderRadius: borderRadius,
-              decoration: decoration,
-              previousTaskIdInSection: previousTaskIdInSection,
-              nextTaskIdInSection: nextTaskIdInSection,
-              selectedTaskId: selectedTaskId,
-              hoveredTaskId: null,
-              hoveredTaskIdNotifier: null,
-              onTap: onTap,
-              child: TaskRowContent(
-                task: entry.task,
-                sortOption: sortOption,
-                showCreationDate: showCreationDate,
-                showDueDate: showDueDate,
-                showCoverArt: showCoverArt,
-                showStatus: showStatus,
-                showCategoryChip: showCategoryChip,
-                vectorDistance: vectorDistance,
-                categoryNameOverride: categoryNameOverride,
-                categoryIconOverride: categoryIconOverride,
-                categoryColorHexOverride: categoryColorHexOverride,
-                trackedDurationLabelOverride: trackedDurationLabelOverride,
-              ),
-            ),
+          cardRow,
         ],
       ),
     );

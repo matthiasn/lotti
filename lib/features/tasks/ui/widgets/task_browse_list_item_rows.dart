@@ -38,6 +38,8 @@ class TaskBrowseRowShell extends StatelessWidget {
     required this.hoveredTaskIdNotifier,
     required this.onTap,
     required this.child,
+    this.leadAccentColor,
+    this.leadAccentWidth = 4.0,
     super.key,
   });
 
@@ -45,6 +47,16 @@ class TaskBrowseRowShell extends StatelessWidget {
   final EdgeInsets rowPadding;
   final BorderRadius borderRadius;
   final BoxDecoration decoration;
+
+  /// When set, a thin full-height accent rail is drawn down the card's leading
+  /// edge in this colour — used to mark the most-urgent ("do this first") card
+  /// of a priority bucket. Rendered here, inside the row's content box, so it
+  /// spans the true card height regardless of the surface's row-merge overlap.
+  final Color? leadAccentColor;
+
+  /// Width of the lead-accent rail, graduated by priority by the caller so the
+  /// urgent rail reads wider (and thus more dominant) than lower buckets'.
+  final double leadAccentWidth;
   final String? previousTaskIdInSection;
   final String? nextTaskIdInSection;
   final String? selectedTaskId;
@@ -88,35 +100,67 @@ class TaskBrowseRowShell extends StatelessWidget {
                 }
               },
         onTap: onTap,
-        child: Column(
-          children: [
-            Padding(
-              padding: rowPadding,
-              child: child,
-            ),
-            if (!entry.isLastInSection)
-              interaction.showDividerBelow
-                  ? Divider(
-                      key: ValueKey(
-                        'task-browse-divider-${entry.task.meta.id}',
+        child: _withLeadRail(
+          Column(
+            children: [
+              Padding(
+                padding: rowPadding,
+                child: child,
+              ),
+              if (!entry.isLastInSection)
+                interaction.showDividerBelow
+                    ? Divider(
+                        key: ValueKey(
+                          'task-browse-divider-${entry.task.meta.id}',
+                        ),
+                        height: 1,
+                        thickness: 1,
+                        // Inset to the content's left edge so within-group rows
+                        // read as related lines under one container, while the
+                        // stronger outer border defines the group boundary.
+                        indent: rowPadding.left,
+                        color: TaskShowcasePalette.border(context),
+                      )
+                    : SizedBox(
+                        key: ValueKey(
+                          'task-browse-divider-slot-${entry.task.meta.id}',
+                        ),
+                        height: 1,
                       ),
-                      height: 1,
-                      thickness: 1,
-                      // Inset to the content's left edge so within-group rows
-                      // read as related lines under one container, while the
-                      // stronger outer border defines the group boundary.
-                      indent: rowPadding.left,
-                      color: TaskShowcasePalette.border(context),
-                    )
-                  : SizedBox(
-                      key: ValueKey(
-                        'task-browse-divider-slot-${entry.task.meta.id}',
-                      ),
-                      height: 1,
-                    ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  /// Overlays a thin full-height [leadAccentColor] rail on the leading edge of
+  /// [content] when set. The rail lives inside the content box (so it matches
+  /// the real card height) and follows the card's leading corner radii.
+  Widget _withLeadRail(Widget content) {
+    final color = leadAccentColor;
+    if (color == null) {
+      return content;
+    }
+    return Stack(
+      children: [
+        content,
+        PositionedDirectional(
+          start: 0,
+          top: 0,
+          bottom: 0,
+          child: Container(
+            width: leadAccentWidth,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.only(
+                topLeft: borderRadius.topLeft,
+                bottomLeft: borderRadius.bottomLeft,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
