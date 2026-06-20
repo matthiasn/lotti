@@ -32,6 +32,7 @@ class TaskBrowseListItem extends StatelessWidget {
     this.hoveredTaskIdNotifier,
     this.showStatus = true,
     this.showCategoryChip = true,
+    this.isGlobalLead = false,
     super.key,
   });
 
@@ -61,6 +62,12 @@ class TaskBrowseListItem extends StatelessWidget {
   /// when the list is already scoped to a single category — the chip would
   /// otherwise repeat the same value on every row, adding noise, not signal.
   final bool showCategoryChip;
+
+  /// When true this is the single globally most-urgent task (the first card of
+  /// the top bucket after the urgency sort). It alone gets the bold "do this
+  /// first" treatment — a wide priority rail plus a faint whole-card tint — so
+  /// the list has exactly one unambiguous starting point.
+  final bool isGlobalLead;
 
   @override
   Widget build(BuildContext context) {
@@ -95,24 +102,25 @@ class TaskBrowseListItem extends StatelessWidget {
       TaskPriority.p3Low => 0.06,
       null => 0.0,
     };
-    // The most-urgent (sorted-first) card of a priority bucket gets a thin
-    // priority-coloured left rail — rendered inside the row shell so it spans
-    // the full card height — as a focused but restrained "do this first" accent.
-    // Its width is graduated by rank so the urgent rail wins across buckets on
-    // weight as well as hue (red, widest → blue, narrowest).
-    final leadAccentColor = entry.isFirstInSection ? priorityColor : null;
-    final leadAccentWidth = switch (sectionPriority) {
-      TaskPriority.p0Urgent => 5.0,
-      TaskPriority.p1High => 4.0,
-      TaskPriority.p2Medium => 3.0,
-      TaskPriority.p3Low => 2.5,
-      null => 0.0,
-    };
+    // Favour an unmistakable "what do I do first?" read: ONLY the single
+    // globally most-urgent task (the first card of the top bucket after the
+    // urgency sort) is marked — with a bold full-height priority rail AND a
+    // faint whole-card priority tint — so there is exactly one anchor rather
+    // than one per bucket competing for the eye.
+    final leadAccentColor = isGlobalLead ? priorityColor : null;
+    const leadAccentWidth = 6.0;
+    final surfaceColor = TaskShowcasePalette.surface(context);
+    final cardColor = isGlobalLead && priorityColor != null
+        ? Color.alphaBlend(
+            priorityColor.withValues(alpha: 0.1),
+            surfaceColor,
+          )
+        : surfaceColor;
     final borderSide = BorderSide(
       color: TaskShowcasePalette.containerBorder(context),
     );
     final decoration = BoxDecoration(
-      color: TaskShowcasePalette.surface(context),
+      color: cardColor,
       borderRadius: borderRadius,
       border: Border(
         top: entry.isFirstInSection ? borderSide : BorderSide.none,

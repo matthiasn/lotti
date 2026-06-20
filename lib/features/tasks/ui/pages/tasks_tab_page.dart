@@ -316,6 +316,12 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                       // every row and carries no signal.
                                       showCategoryChip:
                                           state.selectedCategoryIds.length != 1,
+                                      // The very first entry (top of the
+                                      // highest-priority bucket after the
+                                      // urgency sort) is the single most-urgent
+                                      // task — give it the lone "do this first"
+                                      // anchor treatment.
+                                      isGlobalLead: entryIndex == 0,
                                       vectorDistance: distance,
                                       previousTaskIdInSection:
                                           entryIndex > 0 &&
