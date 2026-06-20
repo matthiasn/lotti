@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -64,88 +65,48 @@ class _DueDateTextState extends State<DueDateText> {
       referenceDate: now,
     );
 
+    final tokens = context.designTokens;
     final color = _getColor(context, status);
     final text = _showRelative
         ? _getRelativeText(context, status)
         : _getAbsoluteText(context, status);
 
-    // Every due date is a chip so a dated card is spottable among undated
-    // ones, with the fill escalating by urgency so the deadline is the per-card
-    // alarm AND scannable across buckets at a glance: overdue / due-today get a
-    // bold filled tinted pill in a heavier weight (the loudest metadata),
-    // upcoming dates a quiet neutral outline. The pill's FORM also distinguishes
-    // the deadline from the priority header band when both are red.
+    // Every due date is a calm surface chip matching the other metadata chips:
+    // same height, neutral fill, hairline border. Urgency is signalled only by
+    // the text/icon COLOUR (overdue red, due-today amber) and a slightly
+    // heavier weight — so the deadline stays scannable without reading as an
+    // "angry" filled red block, and a dated card is still spottable among
+    // undated ones.
     final isUrgent = status.isUrgent;
-
-    final row = Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.event_rounded,
-          size: AppTheme.statusIndicatorFontSize,
-          color: color,
-        ),
-        const SizedBox(width: 4),
-        Text(
-          text,
-          style: context.textTheme.bodySmall?.copyWith(
-            fontSize: AppTheme.statusIndicatorFontSize,
-            color: color,
-            fontWeight: isUrgent ? FontWeight.w700 : FontWeight.w600,
-          ),
-        ),
-      ],
-    );
 
     return GestureDetector(
       onTap: () => setState(() => _showRelative = !_showRelative),
-      // Upcoming dates get a subtle neutral *filled* pill (not just an outline)
-      // so every deadline reads as a scannable chip across buckets — keeping
-      // colour reserved for the genuinely urgent ones (overdue red / today
-      // amber), which carry a bolder fill and heavier weight.
-      child: _DuePill(
-        fill: isUrgent
-            ? color.withValues(alpha: 0.22)
-            : color.withValues(alpha: 0.1),
-        border: isUrgent
-            ? color.withValues(alpha: 0.6)
-            : context.designTokens.colors.decorative.level02,
-        child: row,
+      child: Container(
+        height: 20,
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step2,
+          vertical: tokens.spacing.step1,
+        ),
+        decoration: BoxDecoration(
+          color: TaskShowcasePalette.surface(context),
+          borderRadius: BorderRadius.circular(tokens.radii.xs),
+          border: Border.all(color: TaskShowcasePalette.border(context)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.event_rounded, size: 12, color: color),
+            const SizedBox(width: 4),
+            Text(
+              text,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: color,
+                fontWeight: isUrgent ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
-    );
-  }
-}
-
-/// A rounded due-date chip matching the other metadata chips' dimensions. The
-/// urgent variants pass a tinted [fill] + matching [border] so the deadline
-/// reads as the loudest metadata; upcoming dates pass a transparent fill with a
-/// neutral hairline so they still have presence without shouting. The hairline
-/// keeps the chip perceptible (WCAG 1.4.11) regardless of fill luminance.
-class _DuePill extends StatelessWidget {
-  const _DuePill({
-    required this.fill,
-    required this.border,
-    required this.child,
-  });
-
-  final Color fill;
-  final Color border;
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        color: fill,
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: border),
-      ),
-      child: child,
     );
   }
 }

@@ -142,25 +142,27 @@ class TaskBrowseRowShell extends StatelessWidget {
     if (color == null) {
       return content;
     }
-    return Stack(
-      children: [
-        content,
-        PositionedDirectional(
-          start: 0,
-          top: 0,
-          bottom: 0,
-          child: Container(
-            width: leadAccentWidth,
-            decoration: BoxDecoration(
+    // Clip the whole row to the card's rounded rectangle and paint a plain
+    // rail rectangle on the leading edge. Letting the card corner do the
+    // rounding keeps the rail flush with the card — a 6px-wide rail can't
+    // carry the card's 16px corner radius itself without rounding off into a
+    // blob at the top, which is what read as "broken".
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: Stack(
+        children: [
+          content,
+          PositionedDirectional(
+            start: 0,
+            top: 0,
+            bottom: 0,
+            child: Container(
+              width: leadAccentWidth,
               color: color,
-              borderRadius: BorderRadius.only(
-                topLeft: borderRadius.topLeft,
-                bottomLeft: borderRadius.bottomLeft,
-              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -314,12 +316,10 @@ class TaskRowContent extends ConsumerWidget {
                 SizedBox(height: tokens.spacing.step2),
                 Text(
                   oneLiner,
-                  // One glanceable line: the subtitle annotates the title, it
-                  // is not a paragraph to read. Single-line keeps the list
-                  // scannable and dense while staying legible at medium
-                  // emphasis.
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  // Show the AI summary in full rather than truncating it: the
+                  // subtitle carries the task's current status, which is worth
+                  // a second line when the model emits one. Medium emphasis
+                  // keeps it subordinate to the bold title above.
                   style: tokens.typography.styles.others.caption.copyWith(
                     color: TaskShowcasePalette.mediumText(context),
                   ),

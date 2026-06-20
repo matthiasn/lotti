@@ -105,12 +105,12 @@ void main() {
         tester.widget<Text>(find.text('AI Task Summary')).style?.fontWeight,
         FontWeight.w600,
       );
-      // Section headers and counts now use the caption token (12px) so the
-      // group hierarchy is lighter than the task title (Figma alignment).
+      // Section headers use the caption size (12px) but a high-emphasis bold
+      // weight so the group label out-ranks the card titles below it.
       expect(tester.widget<Text>(find.text('Today')).style?.fontSize, 12);
       expect(
         tester.widget<Text>(find.text('Today')).style?.fontWeight,
-        FontWeight.w400,
+        FontWeight.w700,
       );
       expect(tester.widget<Text>(find.text('3 tasks')).style?.fontSize, 12);
       expect(

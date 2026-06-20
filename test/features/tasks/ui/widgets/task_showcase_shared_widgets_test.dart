@@ -83,7 +83,9 @@ void main() {
               ),
             )
             .height,
-        18,
+        // Calm category chip now matches the other metadata chips' height
+        // instead of the old, shorter CategoryTag (18).
+        20,
       );
       expect(
         tester

@@ -235,6 +235,23 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                               entries[i].task.meta.id: i,
                           };
 
+                          // Hide the per-row category chip when every loaded
+                          // task shares a single category (e.g. the list is
+                          // scoped to one project or category, however the
+                          // filter was applied): repeating the same chip on
+                          // every row is noise, not signal. Derived from the
+                          // loaded items so it holds regardless of WHICH filter
+                          // narrowed the list, not just an explicit category
+                          // selection.
+                          final loadedCategoryIds = <String?>{
+                            for (final item
+                                in displayState.items ??
+                                    const <JournalEntity>[])
+                              if (item is Task) item.meta.categoryId,
+                          };
+                          final showCategoryChips =
+                              loadedCategoryIds.length > 1;
+
                           return PagedSliverList<int, JournalEntity>(
                             state: displayState,
                             fetchNextPage: fetchNextPage,
@@ -316,11 +333,10 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                           state.selectedTaskStatuses.length !=
                                           1,
                                       // Same reasoning for the category chip:
-                                      // when scoped to exactly one category,
-                                      // the chip repeats that category on
-                                      // every row and carries no signal.
-                                      showCategoryChip:
-                                          state.selectedCategoryIds.length != 1,
+                                      // when every loaded task shares one
+                                      // category the chip repeats it on every
+                                      // row and carries no signal.
+                                      showCategoryChip: showCategoryChips,
                                       // The very first entry (top of the
                                       // highest-priority bucket after the
                                       // urgency sort) is the single most-urgent

@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/projects/ui/widgets/shared_widgets.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/utils/color.dart';
 
-/// Showcase chip rendering a category as a `CategoryTag`, with [colorHex]
-/// parsed into the tag's tint color.
+/// Showcase chip rendering a category as a calm, neutral surface pill that
+/// matches [TaskShowcaseMetaChip]'s dimensions. The category [colorHex] is
+/// carried only by a small leading icon, not a full saturated fill, so the
+/// row stays quiet and the chip lines up in height with the other metadata.
 class TaskShowcaseCategoryChip extends StatelessWidget {
   const TaskShowcaseCategoryChip({
     required this.label,
@@ -22,11 +23,37 @@ class TaskShowcaseCategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = colorFromCssHex(colorHex);
-    return CategoryTag(
-      label: label,
-      icon: icon,
-      color: bg,
+    final tokens = context.designTokens;
+    final accent = colorFromCssHex(colorHex);
+    return Container(
+      height: 20,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: TaskShowcasePalette.surface(context),
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        border: Border.all(color: TaskShowcasePalette.border(context)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: accent),
+          SizedBox(width: tokens.spacing.step1),
+          Flexible(
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: TaskShowcasePalette.mediumText(context),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -219,7 +219,7 @@ void main() {
       expect(find.text('2h 30m'), findsOneWidget);
     });
 
-    testWidgets('shows zero duration label when provider returns null', (
+    testWidgets('suppresses the tracked-duration chip when progress is zero', (
       tester,
     ) async {
       const taskId = 'task-null-duration';
@@ -259,8 +259,10 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // null state → Duration.zero → "0h 0m"
-      expect(find.text('0h 0m'), findsOneWidget);
+      // null state → Duration.zero → the chip is omitted rather than showing
+      // "0h 0m" on a task that has not been worked on yet.
+      expect(find.text('0h 0m'), findsNothing);
+      expect(find.byIcon(Icons.timelapse_rounded), findsNothing);
     });
   });
 
