@@ -97,8 +97,13 @@ pickers/create flows:
   `updateEventTitle`.
 - **Category / Status** — the hero pills open `showCategoryPicker` /
   `showEventStatusPicker` → `updateCategoryId` / `updateEventStatus`. The
-  category pill shows a "set category" placeholder when none is assigned yet.
-- **Rating** — the hero stars are interactive → `updateRating`.
+  category pill shows an additive "+ Category" placeholder when none is assigned.
+- **Date / time** — the hero date line opens the shared
+  `EntryDateTimeMultiPageModal` → `updateFromTo`; it is the single source of the
+  event's when (the body no longer repeats it).
+- **Rating** — the hero stars are interactive → `updateRating`, and only appear
+  once the event has happened (`status == completed`) or already carries a
+  rating, so a fresh/tentative event isn't pushed gold stars.
 - **Cover** — while the event has no cover, an "add cover photo" action opens the
   create-entry menu; the first linked photo then becomes the cover automatically.
 - **Add to timeline / Add task** — open the shared `CreateEntryModal` scoped to

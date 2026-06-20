@@ -4939,7 +4939,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventNameLabel => 'Evento:';
 
   @override
+  String get eventsAddCoverPhoto => 'Añadir foto de portada';
+
+  @override
   String get eventsAddLabel => 'Añadir';
+
+  @override
+  String get eventsDeleteEvent => 'Eliminar evento';
 
   @override
   String get eventsFilterAll => 'Todos';
@@ -4963,26 +4969,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsSummaryTitle => 'Resumen';
 
   @override
+  String get eventsTasksEmpty =>
+      'Vincula una tarea de preparación o seguimiento';
+
+  @override
   String get eventsTasksSection => 'Tareas';
-
-  @override
-  String get eventsTitleHint => 'Título del evento';
-
-  @override
-  String get eventsAddCoverPhoto => 'Añadir foto de portada';
-
-  @override
-  String get eventsDeleteEvent => 'Eliminar evento';
 
   @override
   String get eventsTimelineEmpty => 'Añade fotos, notas o una nota de voz';
 
   @override
-  String get eventsTasksEmpty =>
-      'Vincula una tarea de preparación o seguimiento';
+  String get eventsTimelineSection => 'Cronología';
 
   @override
-  String get eventsTimelineSection => 'Cronología';
+  String get eventsTitleHint => 'Título del evento';
 
   @override
   String get eventsVoiceNote => 'Nota de voz';

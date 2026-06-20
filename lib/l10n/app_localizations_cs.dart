@@ -4914,7 +4914,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventNameLabel => 'Událost:';
 
   @override
+  String get eventsAddCoverPhoto => 'Přidat titulní fotku';
+
+  @override
   String get eventsAddLabel => 'Přidat';
+
+  @override
+  String get eventsDeleteEvent => 'Smazat událost';
 
   @override
   String get eventsFilterAll => 'Vše';
@@ -4938,26 +4944,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsSummaryTitle => 'Souhrn';
 
   @override
+  String get eventsTasksEmpty => 'Propoj přípravný nebo navazující úkol';
+
+  @override
   String get eventsTasksSection => 'Úkoly';
-
-  @override
-  String get eventsTitleHint => 'Název události';
-
-  @override
-  String get eventsAddCoverPhoto => 'Přidat titulní fotku';
-
-  @override
-  String get eventsDeleteEvent => 'Smazat událost';
 
   @override
   String get eventsTimelineEmpty =>
       'Přidej fotky, poznámky nebo hlasovou poznámku';
 
   @override
-  String get eventsTasksEmpty => 'Propoj přípravný nebo navazující úkol';
+  String get eventsTimelineSection => 'Časová osa';
 
   @override
-  String get eventsTimelineSection => 'Časová osa';
+  String get eventsTitleHint => 'Název události';
 
   @override
   String get eventsVoiceNote => 'Hlasová poznámka';

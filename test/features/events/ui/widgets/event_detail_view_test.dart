@@ -39,8 +39,33 @@ void main() {
       expect(find.text('Friends'), findsOneWidget);
       // Status is always shown now (it's editable); default is completed.
       expect(find.text('Completed'), findsOneWidget);
-      expect(find.textContaining('Rooftop Bar'), findsWidgets);
+      // The hero carries the single date/time line (from whenLabel).
+      expect(find.text('19:30 – 02:00 · 18 friends'), findsOneWidget);
+      // A completed event shows its rating.
       expect(find.byType(StarRating), findsOneWidget);
+    });
+
+    testWidgets('hides the rating on a fresh, not-yet-happened event', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: _emptyData()),
+        size: _tallMobile,
+      );
+      // A tentative event with no rating yet shows no stars.
+      expect(find.byType(StarRating), findsNothing);
+    });
+
+    testWidgets('tapping the date opens the date-time picker', (tester) async {
+      var dateTaps = 0;
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: _emptyData(), onTapDateTime: () => dateTaps++),
+        size: _tallMobile,
+      );
+      await tester.tap(find.text('Sat, 20 Jun 2026 · 18:22'));
+      expect(dateTaps, 1);
     });
 
     testWidgets('capitalizes the status label for any status', (tester) async {
@@ -246,7 +271,8 @@ void main() {
       final ratings = <double>[];
       await pumpEventScreen(
         tester,
-        EventDetailView(data: _emptyData(), onSetRating: ratings.add),
+        // A completed event surfaces the (interactive) rating.
+        EventDetailView(data: buildEventDetailData(), onSetRating: ratings.add),
         size: _tallMobile,
       );
 

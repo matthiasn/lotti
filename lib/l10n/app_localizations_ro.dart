@@ -4948,7 +4948,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventNameLabel => 'Eveniment:';
 
   @override
+  String get eventsAddCoverPhoto => 'Adăugați o fotografie de copertă';
+
+  @override
   String get eventsAddLabel => 'Adăugați';
+
+  @override
+  String get eventsDeleteEvent => 'Ștergeți evenimentul';
 
   @override
   String get eventsFilterAll => 'Toate';
@@ -4972,27 +4978,21 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsSummaryTitle => 'Rezumat';
 
   @override
+  String get eventsTasksEmpty =>
+      'Asociați o sarcină de pregătire sau de urmărire';
+
+  @override
   String get eventsTasksSection => 'Sarcini';
-
-  @override
-  String get eventsTitleHint => 'Titlul evenimentului';
-
-  @override
-  String get eventsAddCoverPhoto => 'Adăugați o fotografie de copertă';
-
-  @override
-  String get eventsDeleteEvent => 'Ștergeți evenimentul';
 
   @override
   String get eventsTimelineEmpty =>
       'Adăugați fotografii, notițe sau o notă vocală';
 
   @override
-  String get eventsTasksEmpty =>
-      'Asociați o sarcină de pregătire sau de urmărire';
+  String get eventsTimelineSection => 'Cronologie';
 
   @override
-  String get eventsTimelineSection => 'Cronologie';
+  String get eventsTitleHint => 'Titlul evenimentului';
 
   @override
   String get eventsVoiceNote => 'Notă vocală';

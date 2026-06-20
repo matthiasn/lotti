@@ -11,6 +11,7 @@ import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_multipage_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
@@ -135,6 +136,8 @@ class EventDetailPage extends ConsumerWidget {
       onRenameTitle: controller.updateEventTitle,
       onTapCategory: pickCategory,
       onTapStatus: pickStatus,
+      onTapDateTime: () =>
+          EntryDateTimeMultiPageModal.show(context: context, entry: entry),
       onSetRating: controller.updateRating,
       onAddCover: addLinkedEntry,
       onDelete: confirmDelete,

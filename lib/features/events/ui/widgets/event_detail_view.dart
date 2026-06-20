@@ -30,6 +30,7 @@ class EventDetailView extends StatelessWidget {
     this.onRenameTitle,
     this.onTapCategory,
     this.onTapStatus,
+    this.onTapDateTime,
     this.onSetRating,
     this.onAddCover,
     this.onDelete,
@@ -46,9 +47,11 @@ class EventDetailView extends StatelessWidget {
   /// Inline rename — receives the new (trimmed-by-caller) title.
   final ValueChanged<String>? onRenameTitle;
 
-  /// Opens the category / status pickers. The rating is set directly.
+  /// Opens the category / status / date-time pickers. The rating is set
+  /// directly.
   final VoidCallback? onTapCategory;
   final VoidCallback? onTapStatus;
+  final VoidCallback? onTapDateTime;
   final ValueChanged<double>? onSetRating;
 
   /// Adds a cover photo (shown only while the event has no cover).
@@ -82,11 +85,13 @@ class EventDetailView extends StatelessWidget {
         slivers: [
           _HeroSliver(
             card: data.card,
+            whenLabel: data.whenLabel,
             onBack: onBack,
             onDelete: onDelete,
             onRenameTitle: onRenameTitle,
             onTapCategory: onTapCategory,
             onTapStatus: onTapStatus,
+            onTapDateTime: onTapDateTime,
             onSetRating: onSetRating,
             onAddCover: onAddCover,
           ),
@@ -155,17 +160,9 @@ class EventDetailView extends StatelessWidget {
   }
 
   List<Widget> _mainColumn(BuildContext context) {
-    final tokens = context.designTokens;
     return [
-      if (data.whenLabel != null) ...[
-        Text(
-          data.whenLabel!,
-          style: tokens.typography.styles.body.bodyMedium.copyWith(
-            color: context.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        SizedBox(height: tokens.spacing.step4),
-      ],
+      // The date/time lives in the hero now (single source); the body opens
+      // straight into the summary + sections.
       if (data.summary != null)
         _SummaryCard(summary: data.summary!, onRegenerate: onRegenerateSummary),
       _SectionHeader(
@@ -204,21 +201,25 @@ class EventDetailView extends StatelessWidget {
 class _HeroSliver extends StatelessWidget {
   const _HeroSliver({
     required this.card,
+    this.whenLabel,
     this.onBack,
     this.onDelete,
     this.onRenameTitle,
     this.onTapCategory,
     this.onTapStatus,
+    this.onTapDateTime,
     this.onSetRating,
     this.onAddCover,
   });
 
   final EventCardData card;
+  final String? whenLabel;
   final VoidCallback? onBack;
   final VoidCallback? onDelete;
   final ValueChanged<String>? onRenameTitle;
   final VoidCallback? onTapCategory;
   final VoidCallback? onTapStatus;
+  final VoidCallback? onTapDateTime;
   final ValueChanged<double>? onSetRating;
   final VoidCallback? onAddCover;
 
@@ -238,12 +239,6 @@ class _HeroSliver extends StatelessWidget {
       backgroundColor: dsPageSurface(context),
       leading: _ScrimIconButton(icon: Icons.arrow_back, onPressed: onBack),
       actions: [
-        if (card.coverImage == null && onAddCover != null)
-          _ScrimIconButton(
-            icon: Icons.add_a_photo_outlined,
-            onPressed: onAddCover,
-            tooltip: context.messages.eventsAddCoverPhoto,
-          ),
         if (onDelete != null) _HeroMenuButton(onDelete: onDelete),
         SizedBox(width: tokens.spacing.step2),
       ],
@@ -261,10 +256,13 @@ class _HeroSliver extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 640),
                 child: _HeroContent(
                   card: card,
+                  whenLabel: whenLabel,
                   onRenameTitle: onRenameTitle,
                   onTapCategory: onTapCategory,
                   onTapStatus: onTapStatus,
+                  onTapDateTime: onTapDateTime,
                   onSetRating: onSetRating,
+                  onAddCover: onAddCover,
                 ),
               ),
             ),
@@ -278,17 +276,23 @@ class _HeroSliver extends StatelessWidget {
 class _HeroContent extends StatelessWidget {
   const _HeroContent({
     required this.card,
+    this.whenLabel,
     this.onRenameTitle,
     this.onTapCategory,
     this.onTapStatus,
+    this.onTapDateTime,
     this.onSetRating,
+    this.onAddCover,
   });
 
   final EventCardData card;
+  final String? whenLabel;
   final ValueChanged<String>? onRenameTitle;
   final VoidCallback? onTapCategory;
   final VoidCallback? onTapStatus;
+  final VoidCallback? onTapDateTime;
   final ValueChanged<double>? onSetRating;
+  final VoidCallback? onAddCover;
 
   @override
   Widget build(BuildContext context) {
@@ -299,11 +303,21 @@ class _HeroContent extends StatelessWidget {
     final titleStyle = MediaQuery.sizeOf(context).width < 600
         ? styles.heading.heading1
         : styles.display.display2;
+    final fade = Colors.white.withValues(alpha: 0.85);
+    // The hero carries the single, authoritative date/time (the body no longer
+    // repeats it). A rating only makes sense once an event has happened, so a
+    // fresh/tentative one isn't pushed gold stars.
+    final dateText = whenLabel ?? card.dateLabel;
+    final showRating = card.status == EventStatus.completed || card.stars > 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
+        if (card.coverImage == null && onAddCover != null) ...[
+          _AddCoverButton(onTap: onAddCover),
+          SizedBox(height: tokens.spacing.step3),
+        ],
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -317,13 +331,10 @@ class _HeroContent extends StatelessWidget {
               ),
               SizedBox(width: tokens.spacing.step2),
             ] else if (onTapCategory != null) ...[
-              // No category yet, but editable: offer a placeholder to set one.
-              _TappablePill(
+              // No category yet, but editable: a clearly-additive placeholder.
+              _SetChip(
+                label: context.messages.habitCategoryLabel,
                 onTap: onTapCategory,
-                child: EventOverlayPill(
-                  dotColor: Colors.white.withValues(alpha: 0.5),
-                  label: context.messages.habitCategoryLabel,
-                ),
               ),
               SizedBox(width: tokens.spacing.step2),
             ],
@@ -345,40 +356,136 @@ class _HeroContent extends StatelessWidget {
           onRename: onRenameTitle,
         ),
         SizedBox(height: tokens.spacing.step3),
-        Row(
-          children: [
-            Icon(
-              Icons.event_outlined,
-              size: 15,
-              color: Colors.white.withValues(alpha: 0.85),
-            ),
-            SizedBox(width: tokens.spacing.step1),
-            Flexible(
-              child: Text(
-                card.location != null
-                    ? '${card.dateLabel}  ·  ${card.location}'
-                    : card.dateLabel,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: styles.body.bodyMedium.copyWith(
-                  color: Colors.white.withValues(alpha: 0.85),
+        _TappablePill(
+          onTap: onTapDateTime,
+          child: Row(
+            children: [
+              Icon(Icons.event_outlined, size: 15, color: fade),
+              SizedBox(width: tokens.spacing.step1),
+              Flexible(
+                child: Text(
+                  dateText,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: styles.body.bodyMedium.copyWith(color: fade),
                 ),
               ),
-            ),
-          ],
+              if (onTapDateTime != null) ...[
+                SizedBox(width: tokens.spacing.step2),
+                Icon(
+                  Icons.edit_outlined,
+                  size: 13,
+                  color: Colors.white.withValues(alpha: 0.6),
+                ),
+              ],
+            ],
+          ),
         ),
-        SizedBox(height: tokens.spacing.step2),
-        StarRating(
-          rating: card.stars,
-          size: 22,
-          allowHalfRating: true,
-          color: starredGold,
-          borderColor: starredGold,
-          onRatingChanged: onSetRating == null
-              ? null
-              : (rating) => onSetRating!(rating),
-        ),
+        if (showRating) ...[
+          SizedBox(height: tokens.spacing.step3),
+          StarRating(
+            rating: card.stars,
+            size: 22,
+            allowHalfRating: true,
+            color: starredGold,
+            borderColor: starredGold,
+            onRatingChanged: onSetRating == null
+                ? null
+                : (rating) => onSetRating!(rating),
+          ),
+        ],
       ],
+    );
+  }
+}
+
+/// A labelled ghost button over the hero inviting a cover photo, shown while the
+/// event has none.
+class _AddCoverButton extends StatelessWidget {
+  const _AddCoverButton({this.onTap});
+
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Material(
+      color: Colors.black.withValues(alpha: 0.35),
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step3,
+            vertical: tokens.spacing.step2,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.add_a_photo_outlined,
+                size: 16,
+                color: Colors.white,
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                context.messages.eventsAddCoverPhoto,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// An additive "set X" placeholder chip for the hero (e.g. set a category),
+/// visually distinct from a populated [EventOverlayPill] via its `+` glyph.
+class _SetChip extends StatelessWidget {
+  const _SetChip({required this.label, this.onTap});
+
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Material(
+      color: Colors.black.withValues(alpha: 0.30),
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step2,
+            vertical: tokens.spacing.step1,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.add,
+                size: 13,
+                color: Colors.white.withValues(alpha: 0.8),
+              ),
+              SizedBox(width: tokens.spacing.step1),
+              Text(
+                label,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -512,11 +619,10 @@ class _EditableTitleState extends State<_EditableTitle> {
 }
 
 class _ScrimIconButton extends StatelessWidget {
-  const _ScrimIconButton({required this.icon, this.onPressed, this.tooltip});
+  const _ScrimIconButton({required this.icon, this.onPressed});
 
   final IconData icon;
   final VoidCallback? onPressed;
-  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -528,7 +634,6 @@ class _ScrimIconButton extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: IconButton(
           icon: Icon(icon, color: Colors.white),
-          tooltip: tooltip,
           onPressed: onPressed,
         ),
       ),

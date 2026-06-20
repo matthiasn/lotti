@@ -8478,11 +8478,23 @@ abstract class AppLocalizations {
   /// **'Event:'**
   String get eventNameLabel;
 
+  /// No description provided for @eventsAddCoverPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add cover photo'**
+  String get eventsAddCoverPhoto;
+
   /// No description provided for @eventsAddLabel.
   ///
   /// In en, this message translates to:
   /// **'Add'**
   String get eventsAddLabel;
+
+  /// No description provided for @eventsDeleteEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete event'**
+  String get eventsDeleteEvent;
 
   /// No description provided for @eventsFilterAll.
   ///
@@ -8526,29 +8538,17 @@ abstract class AppLocalizations {
   /// **'Summary'**
   String get eventsSummaryTitle;
 
+  /// No description provided for @eventsTasksEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a prep or follow-up task'**
+  String get eventsTasksEmpty;
+
   /// No description provided for @eventsTasksSection.
   ///
   /// In en, this message translates to:
   /// **'Tasks'**
   String get eventsTasksSection;
-
-  /// No description provided for @eventsTitleHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Event title'**
-  String get eventsTitleHint;
-
-  /// No description provided for @eventsAddCoverPhoto.
-  ///
-  /// In en, this message translates to:
-  /// **'Add cover photo'**
-  String get eventsAddCoverPhoto;
-
-  /// No description provided for @eventsDeleteEvent.
-  ///
-  /// In en, this message translates to:
-  /// **'Delete event'**
-  String get eventsDeleteEvent;
 
   /// No description provided for @eventsTimelineEmpty.
   ///
@@ -8556,17 +8556,17 @@ abstract class AppLocalizations {
   /// **'Add photos, notes or a voice memo'**
   String get eventsTimelineEmpty;
 
-  /// No description provided for @eventsTasksEmpty.
-  ///
-  /// In en, this message translates to:
-  /// **'Link a prep or follow-up task'**
-  String get eventsTasksEmpty;
-
   /// No description provided for @eventsTimelineSection.
   ///
   /// In en, this message translates to:
   /// **'Timeline'**
   String get eventsTimelineSection;
+
+  /// No description provided for @eventsTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Event title'**
+  String get eventsTitleHint;
 
   /// No description provided for @eventsVoiceNote.
   ///
