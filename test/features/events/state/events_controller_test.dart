@@ -42,15 +42,16 @@ JournalEvent _event({
   );
 }
 
-JournalImage _image(String id) {
+JournalImage _image(String id, {DateTime? dateFrom}) {
   final now = DateTime(2026, 5, 12);
+  final from = dateFrom ?? now;
   return JournalImage(
     meta: Metadata(
       id: id,
       createdAt: now,
       updatedAt: now,
-      dateFrom: now,
-      dateTo: now,
+      dateFrom: from,
+      dateTo: from,
     ),
     data: ImageData(
       capturedAt: now,
@@ -58,6 +59,20 @@ JournalImage _image(String id) {
       imageFile: '$id.jpg',
       imageDirectory: '/images/2026/',
     ),
+  );
+}
+
+LinkedDbEntry _link(String id, {required String from, required String to}) {
+  final now = DateTime(2026, 5, 12);
+  return LinkedDbEntry(
+    id: id,
+    fromId: from,
+    toId: to,
+    type: 'BasicLink',
+    serialized: '{}',
+    hidden: false,
+    createdAt: now,
+    updatedAt: now,
   );
 }
 
@@ -83,6 +98,11 @@ void main() {
     when(
       () => updateNotifications.updateStream,
     ).thenAnswer((_) => const Stream<Set<String>>.empty());
+
+    // No linked photos by default; individual tests override for the fallback.
+    when(
+      () => db.linksFromIds(any()),
+    ).thenReturn(MockSelectable<LinkedDbEntry>([]));
 
     when(() => cache.showPrivateEntries).thenReturn(true);
     when(() => cache.getCategoryById(any())).thenReturn(
@@ -163,12 +183,62 @@ void main() {
     );
   });
 
-  test('does not fetch cover images when no event has cover art', () async {
+  test(
+    'resolves no cover when the event has neither cover art nor photos',
+    () async {
+      stubEvents([_event(id: 'e1')]);
+
+      final resolved = await loadResolvedEvents();
+
+      expect(resolved.single.coverImage, isNull);
+      // No cover-art ids → the by-id fetch is skipped; the fallback queries
+      // links, finds none, and resolves no image.
+      verify(() => db.linksFromIds(any())).called(1);
+      verifyNever(() => db.getJournalEntitiesForIds(any()));
+    },
+  );
+
+  test('falls back to a linked photo when no cover art is set', () async {
     stubEvents([_event(id: 'e1')]);
+    when(
+      () => db.linksFromIds(any()),
+    ).thenReturn(
+      MockSelectable<LinkedDbEntry>([_link('l1', from: 'e1', to: 'img-1')]),
+    );
+    when(
+      () => db.getJournalEntitiesForIds(any()),
+    ).thenAnswer((_) async => [_image('img-1')]);
 
-    await loadResolvedEvents();
+    final resolved = await loadResolvedEvents();
 
-    verifyNever(() => db.getJournalEntitiesForIds(any()));
+    final cover = resolved.single.coverImage;
+    expect(cover, isA<FileImage>());
+    expect(
+      (cover! as FileImage).file.path,
+      getFullImagePath(_image('img-1'), documentsDirectory: docDir.path),
+    );
+  });
+
+  test('fallback picks the newest linked photo', () async {
+    final older = _image('img-old', dateFrom: DateTime(2026, 5, 10));
+    final newer = _image('img-new', dateFrom: DateTime(2026, 5, 20));
+    stubEvents([_event(id: 'e1')]);
+    when(() => db.linksFromIds(any())).thenReturn(
+      MockSelectable<LinkedDbEntry>([
+        _link('l1', from: 'e1', to: 'img-old'),
+        _link('l2', from: 'e1', to: 'img-new'),
+      ]),
+    );
+    when(
+      () => db.getJournalEntitiesForIds(any()),
+    ).thenAnswer((_) async => [older, newer]);
+
+    final resolved = await loadResolvedEvents();
+
+    expect(
+      (resolved.single.coverImage! as FileImage).file.path,
+      getFullImagePath(newer, documentsDirectory: docDir.path),
+    );
   });
 
   test('eventsStreamProvider emits resolved events on first listen', () async {

@@ -64,6 +64,7 @@ Future<List<ResolvedEvent>> loadResolvedEvents() async {
   );
   final events = entities.whereType<JournalEvent>().toList();
 
+  // 1) Explicit cover art, resolved by id.
   final coverIds = events
       .map((e) => e.data.coverArtId)
       .whereType<String>()
@@ -76,12 +77,46 @@ Future<List<ResolvedEvent>> loadResolvedEvents() async {
     }
   }
 
+  // 2) Fall back to the event's newest linked photo when there's no resolvable
+  //    cover-art id — matching the detail page (which always shows that photo),
+  //    so the card and the detail never disagree about an event's cover.
+  final fallbackEventIds = events
+      .where((e) {
+        final id = e.data.coverArtId;
+        return id == null || !coverImagesById.containsKey(id);
+      })
+      .map((e) => e.meta.id)
+      .toList();
+  final fallbackCoverByEventId = <String, JournalImage>{};
+  if (fallbackEventIds.isNotEmpty) {
+    final links = await db.linksFromIds(fallbackEventIds).get();
+    final linkedImagesById = <String, JournalImage>{};
+    final toIds = links.map((l) => l.toId).toSet();
+    if (toIds.isNotEmpty) {
+      final linkedEntities = await db.getJournalEntitiesForIds(toIds);
+      for (final entity in linkedEntities.whereType<JournalImage>()) {
+        linkedImagesById[entity.meta.id] = entity;
+      }
+    }
+    for (final link in links) {
+      final image = linkedImagesById[link.toId];
+      if (image == null) continue;
+      final current = fallbackCoverByEventId[link.fromId];
+      if (current == null ||
+          image.meta.dateFrom.isAfter(current.meta.dateFrom)) {
+        fallbackCoverByEventId[link.fromId] = image;
+      }
+    }
+  }
+
   final documentsDirectory = getIt<Directory>().path;
 
   return events.map((event) {
     final category = cache.getCategoryById(event.meta.categoryId);
     final coverArtId = event.data.coverArtId;
-    final coverImage = coverArtId != null ? coverImagesById[coverArtId] : null;
+    final coverImage =
+        (coverArtId != null ? coverImagesById[coverArtId] : null) ??
+        fallbackCoverByEventId[event.meta.id];
     return ResolvedEvent(
       event: event,
       categoryColor: colorFromCssHex(category?.color),
