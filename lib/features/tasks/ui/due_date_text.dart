@@ -69,6 +69,14 @@ class _DueDateTextState extends State<DueDateText> {
         ? _getRelativeText(context, status)
         : _getAbsoluteText(context, status);
 
+    // Every due date is a chip so a dated card is spottable among undated
+    // ones, with the fill escalating by urgency so the deadline is the per-card
+    // alarm AND scannable across buckets at a glance: overdue / due-today get a
+    // bold filled tinted pill in a heavier weight (the loudest metadata),
+    // upcoming dates a quiet neutral outline. The pill's FORM also distinguishes
+    // the deadline from the priority header band when both are red.
+    final isUrgent = status.isUrgent;
+
     final row = Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -83,25 +91,24 @@ class _DueDateTextState extends State<DueDateText> {
           style: context.textTheme.bodySmall?.copyWith(
             fontSize: AppTheme.statusIndicatorFontSize,
             color: color,
-            fontWeight: FontWeight.w500,
+            fontWeight: isUrgent ? FontWeight.w700 : FontWeight.w600,
           ),
         ),
       ],
     );
 
-    // Every due date is a chip so a dated card is spottable among undated
-    // ones, with the fill escalating by urgency so the deadline is the per-card
-    // alarm: overdue / due-today get a filled tinted pill (the loudest
-    // metadata), upcoming dates a quiet neutral outline. The pill's FORM also
-    // distinguishes the deadline from the priority header band when both are
-    // red.
-    final isUrgent = status.isUrgent;
     return GestureDetector(
       onTap: () => setState(() => _showRelative = !_showRelative),
+      // Upcoming dates get a subtle neutral *filled* pill (not just an outline)
+      // so every deadline reads as a scannable chip across buckets — keeping
+      // colour reserved for the genuinely urgent ones (overdue red / today
+      // amber), which carry a bolder fill and heavier weight.
       child: _DuePill(
-        fill: isUrgent ? color.withValues(alpha: 0.16) : Colors.transparent,
+        fill: isUrgent
+            ? color.withValues(alpha: 0.22)
+            : color.withValues(alpha: 0.1),
         border: isUrgent
-            ? color.withValues(alpha: 0.45)
+            ? color.withValues(alpha: 0.6)
             : context.designTokens.colors.decorative.level02,
         child: row,
       ),

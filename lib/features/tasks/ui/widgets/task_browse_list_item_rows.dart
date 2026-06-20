@@ -461,7 +461,12 @@ class _TrackedDurationMetaContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textStyle = context.designTokens.typography.styles.others.caption
+    // bodySmall (not caption) so the duration reads at the same size as the
+    // one-liner rather than as the tiniest text on the card — the recessive
+    // read comes from the muted colour + regular weight, not a smaller size,
+    // which keeps it legible for low-vision users while still subordinate to
+    // the bold title.
+    final textStyle = context.designTokens.typography.styles.body.bodySmall
         .copyWith(
           color: TaskShowcasePalette.mediumText(context),
           fontFeatures: const [FontFeature.tabularFigures()],
@@ -472,7 +477,7 @@ class _TrackedDurationMetaContent extends StatelessWidget {
       children: [
         Icon(
           Icons.timelapse_rounded,
-          size: 16,
+          size: 18,
           color: TaskShowcasePalette.mediumText(context),
         ),
         const SizedBox(width: 6),
