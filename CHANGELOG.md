@@ -4,6 +4,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1030]
+### Changed
+- The task details **header** was reworked for a calmer, more responsive
+  layout. The status control no longer floats in empty space — it leads a
+  two-lane metadata block (status · priority · due · time estimate on the first
+  lane, your labels on the second), with status and the due date carrying more
+  weight than priority and tracked time. Every chip shares one height and style,
+  the breadcrumb sits as a quiet eyebrow above the title, and the title binds
+  tightly to its metadata. The title is now click-to-edit (no separate pencil
+  button), and on narrow phones the due date and time estimate stay paired on
+  one row. Chips read more clearly too: priority is spelled out (Urgent / High /
+  Medium / Low) instead of the cryptic "P2", the time-estimate chip reads
+  "tracked of estimate" in plain duration units (e.g. "0m of 1h" rather than a
+  clock-like "00:00 / 01:00") with a tooltip, neutral metadata chips carry a
+  defined outline so their edges stay legible, and a long label list collapses
+  behind a tappable "+N" chip. The layout holds up across long wrapping titles,
+  many labels, empty new tasks, narrow widths, and tasks with cover art.
+- Two spots on the task page are easier to hit precisely. The AI suggestions'
+  reject control is now clearly separated from accept, so a mis-tap can't
+  trigger the wrong one. Each Todo checkbox gets a 44px tap target that sits in
+  a subtle outlined well, so the whole tappable area is visible before you touch
+  it (and lights up on hover/press) — no more aiming at the tiny square. The
+  drag-grip dots are quieter so they don't compete with the task text, and the
+  empty checkbox is drawn with a higher-contrast outline.
+- The AI summary card reads as a slightly more vivid "assistant" panel — a touch
+  more accent in its corner wash and glow so it no longer looks muted — with
+  evened-up spacing: a smaller gap above (matching the other section gaps) and
+  real breathing room below before the bottom action bar.
+- The status / priority / label picker modals are tidier and more consistent:
+  each row highlights with a rounded, inset shape on hover or selection instead
+  of a sharp edge-to-edge band, and the titles no longer mix styles (the stray
+  trailing colon on the status picker is gone).
+
+### Fixed
+- Accepting an AI suggestion that adds a to-do no longer makes the page jump:
+  the task detail view holds the AI proposals in place when a confirmed change
+  grows the checklist above them, so the spot you were reading stays put.
+- Accepting an AI suggestion no longer makes the checklist flicker: a reloading
+  item row keeps showing its current state instead of blanking for a frame
+  (stale-while-revalidate), and checklist cards are keyed by identity rather
+  than list position, so inserting or reordering one no longer drops the others'
+  state and flashes them.
+
 ## [0.9.1029]
 ### Changed
 - The experimental task knowledge graph now keeps expanding as you walk through
@@ -11,52 +54,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   that task's own linked neighborhood, adds the new nodes and links to the graph
   already on screen, and recomputes the merged layout so the world stays
   explorable instead of turning sibling tasks into dead ends.
-- The task details **header** was reworked for a calmer, more responsive
-  layout. The status control no longer strands itself in empty space — it now
-  leads a tidy two-lane metadata block (status · priority · due · time-estimate
-  on the first lane, your labels on the second), with the facts you scan for
-  first — status and the due date — given more weight while priority and time
-  tracked stay quiet. Every chip shares one consistent style and height, the
-  breadcrumb reads as a quiet eyebrow above the title, and the title bonds
-  tightly to its metadata. The title itself is now click-to-edit (no separate
-  pencil button), and on narrow phone widths the due date and time-estimate
-  stay paired on the same row instead of leaving a chip stranded by itself.
-  The metadata chips are also clearer to read at a glance: priority is spelled
-  out as a word (Urgent / High / Medium / Low) instead of the cryptic "P2", the
-  time-estimate chip reads "tracked of estimate" in plain duration units (e.g.
-  "0m of 1h" rather than a clock-like "00:00 / 01:00") with a tooltip spelling
-  it out, the neutral metadata chips now carry a defined outline so their edges
-  stay legible, and a long list of labels collapses behind a "+N" chip you can tap
-  to expand. The header stays tidy across long wrapping titles, many labels,
-  the just-created (empty) state, narrow phone widths, and tasks with cover art.
-- Two spots on the task page are now easier to hit precisely: the AI
-  suggestions' destructive reject control is clearly separated from accept so
-  a mis-tap can't trigger the wrong one, and each Todo checkbox now has a
-  larger 44px tap target: the checkbox now sits in a subtle outlined well so
-  the whole tappable area is visible even before you touch it (and it lights up
-  on hover/press), so you no longer have to aim at the tiny square. The
-  drag-grip dots on each Todo row are quieter so they no longer compete with
-  the task text, and the empty checkbox is drawn with a clearer,
-  higher-contrast outline so it's easy to see.
-- The AI summary card reads as a slightly more vivid "assistant" panel — a
-  touch more accent in its top-corner wash and glow so it no longer looks
-  muted against the page — and the spacing around it is evened up: a smaller
-  gap above (matching the other section gaps) and real breathing room below it
-  before the bottom action bar.
-- The status / priority / label picker modals are tidier and more consistent:
-  each row now highlights with a rounded, inset shape on hover or selection
-  instead of a sharp edge-to-edge band, and the picker titles no longer mix
-  styles (the stray trailing colon on the status picker is gone).
-
-### Fixed
-- Accepting an AI suggestion that adds a to-do no longer makes the page jump:
-  the task detail view now holds the AI proposals in place when a confirmed
-  change grows the checklist above them, so the spot you were reading stays put.
-- Accepting an AI suggestion no longer makes the checklist flicker: a checklist
-  item row that's reloading now keeps showing its current state instead of
-  blanking for a frame (stale-while-revalidate), and checklist cards are keyed
-  by identity rather than list position, so inserting or reordering one no
-  longer drops the others' state and flashes them.
 
 ## [0.9.1028]
 ### Changed
