@@ -162,23 +162,16 @@ void main() {
         await _pump(tester, conflict: conflict, surface: _wideSurface);
 
         const tokens = dsTokensLight;
-        final decoration = tester
-            .widgetList<DecoratedBox>(
-              find.descendant(
-                of: find.byType(ConflictListItem),
-                matching: find.byType(DecoratedBox),
-              ),
-            )
-            .map((d) => d.decoration)
-            .whereType<BoxDecoration>()
-            .firstWhere(
-              (d) => d.border != null,
-              orElse: () => throw StateError('no bordered card surface found'),
-            );
+        final material = tester.widget<Material>(
+          find.descendant(
+            of: find.byType(ConflictListItem),
+            matching: find.byType(Material),
+          ),
+        );
 
-        expect(decoration.color, tokens.colors.background.level02);
-        final side = (decoration.border! as Border).top;
-        expect(side.color, tokens.colors.decorative.level01);
+        expect(material.color, tokens.colors.background.level02);
+        final shape = material.shape! as RoundedRectangleBorder;
+        expect(shape.side.color, tokens.colors.decorative.level01);
       },
     );
   });
