@@ -532,8 +532,9 @@ void main() {
 
     await pumpPlayer(tester, journalAudio: journalAudio, state: state);
 
-    // Should display state totalDuration (03:00), not journalAudio duration (05:00)
-    expect(find.text('03:00'), findsOneWidget);
+    // Should display state totalDuration (03:00), not journalAudio duration
+    // (05:00) — rendered as the "elapsed / total" value line.
+    expect(find.textContaining('03:00'), findsOneWidget);
   });
 
   testWidgets('progress ratio is clamped between 0 and 1', (
@@ -719,11 +720,14 @@ void main() {
         expect(progressBar.progress, c.expectedProgress);
         expect(progressBar.enabled, c.active);
 
-        // The total-duration label is always rendered from totalDuration.
-        expect(find.text(formatAudioDuration(totalDuration)), findsOneWidget);
-        // The leading label shows the current playback position.
+        // Elapsed and total render together as one "elapsed / total" line.
         expect(
-          find.text(formatAudioDuration(c.expectedProgress)),
+          find.textContaining(formatAudioDuration(totalDuration)),
+          findsOneWidget,
+        );
+        // The leading position is shown in that same combined line.
+        expect(
+          find.textContaining(formatAudioDuration(c.expectedProgress)),
           findsWidgets,
         );
       });

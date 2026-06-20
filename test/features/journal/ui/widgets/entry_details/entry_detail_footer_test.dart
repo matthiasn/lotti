@@ -338,7 +338,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.byType(SaveButton), findsNothing);
+      // The save button is always mounted in linked entries (so it can animate
+      // its grow + fade reveal) but collapses to nothing when there are no
+      // unsaved changes — so the footer stays compact: no "Save" label renders.
+      expect(find.byType(SaveButton), findsOneWidget);
+      expect(find.text('Save'), findsNothing);
     });
 
     testWidgets('map child is built and visible when showMap is true', (

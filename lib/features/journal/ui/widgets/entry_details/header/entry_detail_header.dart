@@ -96,39 +96,25 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     );
   }
 
-  /// The trailing action controls shared by both header layouts, in one fixed
-  /// order — favorite, flag, AI, overflow — with absent actions simply omitted
-  /// so the cluster reads consistently across all entry types.
+  /// The trailing action controls shared by both header layouts.
+  ///
+  /// The two universal controls — favorite, then overflow — are pinned as the
+  /// rightmost two slots so they sit at an identical x on every card type and a
+  /// user can build muscle memory for them. The type-specific affordances
+  /// ([collapseChevron], AI, flag) grow *inward* from that fixed anchor, so the
+  /// star/overflow pair never shifts and the collapse chevron is kept well clear
+  /// of the overflow `…` (the near-identical grey pair was a mis-tap hazard).
   List<Widget> _trailingActions(
     BuildContext context,
     JournalEntity? entry,
     String id,
     EntryController notifier,
-    DsTokens tokens,
-  ) {
+    DsTokens tokens, {
+    Widget? collapseChevron,
+  }) {
     return <Widget>[
-      // Favorite toggle is shown on every (non-event) entry, not only when
-      // already starred, so the action set is consistent across card types —
-      // the appearing/disappearing star was the most jarring header
-      // inconsistency. Empty/outline when not starred, gold when starred.
-      if (entry != null && entry is! JournalEvent)
-        SwitchIconWidget(
-          tooltip: context.messages.journalFavoriteTooltip,
-          onPressed: notifier.toggleStarred,
-          value: entry.meta.starred ?? false,
-          icon: Icons.star_outline_rounded,
-          activeIcon: Icons.star_rounded,
-          activeColor: starredGold,
-        ),
-      if (entry?.meta.flag == EntryFlag.import)
-        SwitchIconWidget(
-          tooltip: context.messages.journalFlaggedTooltip,
-          onPressed: notifier.toggleFlagged,
-          value: entry?.meta.flag == EntryFlag.import,
-          icon: Icons.flag_outlined,
-          activeIcon: Icons.flag,
-          activeColor: context.colorScheme.error,
-        ),
+      // --- type-specific slot, grows inward (left) from the fixed anchor ---
+      ?collapseChevron,
       if (entry != null &&
           (entry is Task ||
               entry is JournalImage ||
@@ -141,6 +127,27 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           // calm, co-equal header control rather than the heaviest element on
           // the card — still well clear of the non-text-contrast floor.
           iconColor: tokens.colors.text.mediumEmphasis,
+        ),
+      if (entry?.meta.flag == EntryFlag.import)
+        SwitchIconWidget(
+          tooltip: context.messages.journalFlaggedTooltip,
+          onPressed: notifier.toggleFlagged,
+          value: entry?.meta.flag == EntryFlag.import,
+          icon: Icons.flag_outlined,
+          activeIcon: Icons.flag,
+          activeColor: context.colorScheme.error,
+        ),
+      // --- fixed trailing anchor: identical x on every card type ---
+      // Favorite is shown on every (non-event) entry — outline when not
+      // starred, gold when starred — so the action set never changes shape.
+      if (entry != null && entry is! JournalEvent)
+        SwitchIconWidget(
+          tooltip: context.messages.journalFavoriteTooltip,
+          onPressed: notifier.toggleStarred,
+          value: entry.meta.starred ?? false,
+          icon: Icons.star_outline_rounded,
+          activeIcon: Icons.star_rounded,
+          activeColor: starredGold,
         ),
       IconButton(
         icon: Icon(Icons.more_horiz, color: tokens.colors.text.mediumEmphasis),
@@ -175,39 +182,51 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     EntryController notifier,
   ) {
     final tokens = context.designTokens;
-    return Row(
-      children: [
-        if (widget.isCollapsed) ...[
-          // Collapsed preview: thumbnail/icon + date + duration
+    final chevron = AnimatedRotation(
+      turns: widget.isCollapsed ? -0.25 : 0.0,
+      duration: AppTheme.chevronRotationDuration,
+      child: IconButton(
+        icon: Icon(
+          Icons.expand_more,
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+        onPressed: widget.onToggleCollapse,
+      ),
+    );
+
+    if (widget.isCollapsed) {
+      // Collapsed preview: thumbnail/icon + date + duration, chevron trailing.
+      return Row(
+        children: [
           if (entry is JournalImage) _buildImageThumbnail(entry),
           if (entry is JournalAudio) _buildAudioIcon(context),
           if (entry is JournalEntry) _buildTextIcon(context),
           SizedBox(width: tokens.spacing.step3),
           EntryDatetimeWidget(entryId: widget.entryId),
           if (entry is JournalAudio) _buildDurationLabel(context, entry),
+          const Spacer(),
+          chevron,
         ],
-        if (!widget.isCollapsed)
-          // Expanded: date on left, actions on right
-          EntryDatetimeWidget(entryId: widget.entryId),
+      );
+    }
+
+    // Expanded: date on left, the same fixed trailing rail as the default
+    // header — favorite + overflow pinned right, the collapse chevron folded
+    // into the inward type-specific slot so the star/overflow anchor stays at
+    // the same x as every other card type.
+    return Row(
+      children: [
+        EntryDatetimeWidget(entryId: widget.entryId),
         const Spacer(),
-        if (!widget.isCollapsed) ...[
-          // Action icons only when expanded — same spaced cluster as the
-          // default header so the family shares one action grammar.
-          ..._spacedTrailing(
+        ..._spacedTrailing(
+          context,
+          _trailingActions(
             context,
-            _trailingActions(context, entry, id, notifier, tokens),
-          ),
-          SizedBox(width: tokens.spacing.step2),
-        ],
-        AnimatedRotation(
-          turns: widget.isCollapsed ? -0.25 : 0.0,
-          duration: AppTheme.chevronRotationDuration,
-          child: IconButton(
-            icon: Icon(
-              Icons.expand_more,
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-            onPressed: widget.onToggleCollapse,
+            entry,
+            id,
+            notifier,
+            tokens,
+            collapseChevron: chevron,
           ),
         ),
       ],

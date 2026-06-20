@@ -22,18 +22,31 @@ class SaveButton extends ConsumerWidget {
     final provider = saveButtonControllerProvider(id: entryId);
     final unsaved = ref.watch(provider).value ?? false;
 
-    return AnimatedOpacity(
-      curve: Curves.easeInOutQuint,
-      opacity: unsaved ? 1 : 0,
-      duration: const Duration(milliseconds: 500),
-      child: DesignSystemButton(
-        label: context.messages.saveLabel,
-        onPressed: () {
-          ref.read(provider.notifier).save();
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
-        variant: DesignSystemButtonVariant.dangerTertiary,
-        size: DesignSystemButtonSize.large,
+    // Reveal with a combined grow + fade so the button eases into the layout
+    // rather than popping in at full size (the previous fade never played in
+    // the footer, which mounted the button fresh only once it was needed). Both
+    // hosts — the app bar and the linked-entry footer — keep it mounted, so the
+    // transition animates; when there are no unsaved changes it collapses to
+    // zero size and reserves no space.
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+      alignment: Alignment.centerRight,
+      child: AnimatedOpacity(
+        curve: Curves.easeInOutQuint,
+        opacity: unsaved ? 1 : 0,
+        duration: const Duration(milliseconds: 300),
+        child: unsaved
+            ? DesignSystemButton(
+                label: context.messages.saveLabel,
+                onPressed: () {
+                  ref.read(provider.notifier).save();
+                  FocusManager.instance.primaryFocus?.unfocus();
+                },
+                variant: DesignSystemButtonVariant.dangerTertiary,
+                size: DesignSystemButtonSize.large,
+              )
+            : const SizedBox.shrink(),
       ),
     );
   }

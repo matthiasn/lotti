@@ -48,25 +48,24 @@ class RatingSummary extends StatelessWidget {
             messages: messages,
           ),
 
-        // One deliberate section break separates the qualitative note + edit
-        // affordance from the quantitative rating rows above, so the lower
-        // block reads as its own grouped unit rather than drifting.
+        // The note closes the card on the family's standard inter-block step
+        // (not a doubled section gap), so it reads as the block's quiet closing
+        // line rather than an orphaned second headline floating in dead space.
         if (data.note != null && data.note!.isNotEmpty)
-          SizedBox(height: tokens.spacing.sectionGap),
+          SizedBox(height: tokens.spacing.cardItemSpacing),
 
-        // Note + edit on one row: the free-text verdict reads as prose
-        // (high-emphasis white, not the medium-grey reserved for value-line
-        // labels) and the edit control sits at the trailing edge, top-aligned
-        // to the note so it is never orphaned in a dead band below the content.
+        // Note + edit on one row: the free-text verdict is a quiet caption
+        // (medium-emphasis, like the value-line labels — not a bold white
+        // headline) and the edit control sits centered at the trailing edge so
+        // it never floats alone below the content.
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: (data.note != null && data.note!.isNotEmpty)
                   ? Text(
                       data.note!,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.highEmphasis,
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
                       ),
                     )
                   : const SizedBox.shrink(),

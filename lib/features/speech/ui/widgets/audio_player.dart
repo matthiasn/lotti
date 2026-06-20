@@ -130,7 +130,6 @@ class _PlayerBody extends StatelessWidget {
     );
 
     final controlSpacing = tokens?.spacing.step2 ?? 4.0;
-    final timeRowLeftInset = (isCompact ? 40 : 48).toDouble() + controlSpacing;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -158,25 +157,24 @@ class _PlayerBody extends StatelessWidget {
             ),
           ],
         ),
-        Padding(
-          padding: EdgeInsets.only(left: timeRowLeftInset),
-          child: Row(
-            children: <Widget>[
-              // Both timecodes grouped at the scrubber's left gutter (elapsed
-              // then total) with the speed pill pushed to the trailing edge, so
-              // the row keeps the card's single left-gutter scan path instead of
-              // marooning the pill in the dead centre of a wide empty stretch.
-              Text(formatAudioDuration(progress), style: timeStyle),
-              SizedBox(width: tokens?.spacing.step3 ?? 8.0),
-              Text(formatAudioDuration(totalDuration), style: timeStyle),
-              const Spacer(),
-              _SpeedButton(
-                controller: controller,
-                currentSpeed: state.speed,
-                isActive: isActive,
-              ),
-            ],
-          ),
+        Row(
+          children: <Widget>[
+            // Elapsed / total grouped at the card's content gutter (not inset
+            // under the scrubber) with an explicit separator so the pair reads
+            // unambiguously as elapsed-vs-total; the speed pill trails right so
+            // it is no longer marooned in the dead centre of a wide stretch.
+            Text(
+              '${formatAudioDuration(progress)} / '
+              '${formatAudioDuration(totalDuration)}',
+              style: timeStyle,
+            ),
+            const Spacer(),
+            _SpeedButton(
+              controller: controller,
+              currentSpeed: state.speed,
+              isActive: isActive,
+            ),
+          ],
         ),
       ],
     );
