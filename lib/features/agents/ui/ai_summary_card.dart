@@ -280,14 +280,13 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         final results = await service.confirmAll(cs);
         if (results.any((r) => !r.success)) anyFailed = true;
       }
-      if (mounted) {
+      // Only surface a toast on failure — a successful batch is already made
+      // abundantly clear by the rows sweeping out and the count dropping to
+      // zero, so a "Change applied" banner is redundant noise.
+      if (anyFailed && mounted) {
         context.showToast(
-          tone: anyFailed
-              ? DesignSystemToastTone.error
-              : DesignSystemToastTone.success,
-          title: anyFailed
-              ? messages.changeSetConfirmError
-              : messages.changeSetItemConfirmed,
+          tone: DesignSystemToastTone.error,
+          title: messages.changeSetConfirmError,
           clearQueue: true,
         );
       }

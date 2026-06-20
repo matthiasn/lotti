@@ -4,20 +4,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1030]
+## [0.9.1031]
 ### Changed
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of
   jumpy.** The row you tap stays put and confirms in place — a clear filled
   badge with the plain word *Confirmed* or *Dismissed* and a light haptic — then
   gently collapses while the rest of the list slides up to close the gap; the
-  pending count ticks down with the action and the success popup is gone (the
-  badge and count are the confirmation). "Confirm all" now sweeps the list clean
-  in one staggered motion with a single tap-feel. The swipe hint no longer nags:
-  it plays once, as a single gentle nudge, instead of a repeating two-way
-  wiggle. While a row is leaving, the rows sliding up briefly ignore taps so a
-  fast second tap can't hit the wrong suggestion. Screen readers hear the
-  verdict and how many are left; with *reduce motion* on, rows update instantly
-  with no sliding.
+  pending count ticks down with the action. There's no longer a success popup at
+  all (for single accepts or "Confirm all") — the motion makes success
+  abundantly clear. "Confirm all" sweeps the list clean in one staggered motion
+  with a single tap-feel. The swipe hint no longer nags: it plays once, as a
+  single gentle nudge, instead of a repeating two-way wiggle. While a row is
+  leaving, the rows sliding up briefly ignore taps so a fast second tap can't
+  hit the wrong suggestion. Screen readers hear the verdict and how many are
+  left; with *reduce motion* on, rows update instantly with no sliding.
+- Checking off a checklist item now plays the same little spark burst no matter
+  how it happens — a direct tap, an accepted AI "check off" suggestion, or a
+  sync from another device — so completing an item always feels rewarding.
+
+## [0.9.1030]
+### Changed
 - The desktop sidebar's live-status area — the running timer, an active voice
   recording, and background agents — was redesigned to feel calmer and more
   cohesive while still reading at a glance. The old jumble of red, bordered, and

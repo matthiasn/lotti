@@ -620,6 +620,27 @@ void main() {
       expect(find.byType(CompletionBurst), findsNothing);
     });
 
+    testWidgets(
+      'an external check-off (accepted AI proposal / sync) also fires the burst',
+      (tester) async {
+        final ctrls = await _pumpWithControllers(tester);
+        await tester.pump();
+        expect(find.byType(CompletionBurst), findsNothing);
+
+        // No tap on the checkbox: the item becomes checked from outside — an
+        // accepted AI "check off" proposal (or a sync) updating the controller.
+        // The data listener celebrates it just like a direct tap would.
+        ctrls.itemController.updateChecked(checked: true);
+        await tester.pump(); // listener fires → schedule the overlay burst
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(CompletionBurst), findsOneWidget);
+
+        await tester.pumpAndSettle();
+        expect(find.byType(CompletionBurst), findsNothing);
+      },
+    );
+
     testWidgets('no spark burst when checklist celebrations are off', (
       tester,
     ) async {
