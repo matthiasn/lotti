@@ -177,7 +177,12 @@ Checklist content is modeled separately through checklist entities and linked ch
   body (set off by a hairline rule + `sectionGap`), then the user's *work*
   (`ChecklistsWidget`, `LinkedTasksWidget`), and finally the `AiSummaryCard`
   assistant zone — checklists come before the AI suggestions so "what's left to
-  do" is visible without scrolling past proposals. The bands are wrapped in a
+  do" is visible without scrolling past proposals. The AI card leads with a
+  `step4` top gap (not a full `sectionGap` — `LinkedTasksWidget` already adds
+  its own `step3` bottom padding, so a sectionGap on top stacked into an
+  oversized gap) and carries a `sectionGap` *bottom* padding so it has real
+  breathing room above the bottom action bar (the linked-entries sliver below
+  it contributes almost none). The bands are wrapped in a
   `StaggeredEntrance` (a one-time fade-and-rise on load that does not replay on
   background refresh) and, on wide windows, a centred max-width reading column.
   Because the AI card sits *below* the work, confirming a proposal can add a

@@ -75,7 +75,16 @@ class TaskForm extends ConsumerWidget {
         ChecklistsWidget(entryId: taskId, task: task),
         LinkedTasksWidget(taskId: taskId),
         Padding(
-          padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
+          // The AI zone sits a notch below the work above it, but only a
+          // notch: LinkedTasks already adds its own step3 bottom padding, so a
+          // full sectionGap on top stacked into an oversized gap. A step4 top
+          // keeps the rhythm even with the other section gaps, and a sectionGap
+          // BOTTOM gives the card real breathing room above the action bar
+          // (the linked-entries sliver below contributes almost none).
+          padding: EdgeInsets.only(
+            top: tokens.spacing.step4,
+            bottom: tokens.spacing.sectionGap,
+          ),
           child: AiSummaryCard(
             taskId: taskId,
             proposalsFocusKey: suggestionsFocusKey,

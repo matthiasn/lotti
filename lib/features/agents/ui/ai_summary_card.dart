@@ -365,12 +365,12 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
           end: Alignment.bottomRight,
           stops: const [0, 0.55, 1],
           colors: [
-            // A stronger top-left accent wash that lingers into the middle of
-            // the card (rather than collapsing to flat background almost
-            // immediately), so the AI panel reads as a lively "intelligence"
-            // surface instead of a near-flat muted box.
-            Color.alphaBlend(ai.accent.withValues(alpha: 0.16), ai.background),
-            Color.alphaBlend(ai.accent.withValues(alpha: 0.06), ai.background),
+            // A gentle top-left accent wash that falls off to the flat
+            // background — a touch more present than the original (which read
+            // as muted) but without carrying the accent across the whole card
+            // (which read as too loud). Landed between the two.
+            Color.alphaBlend(ai.accent.withValues(alpha: 0.12), ai.background),
+            ai.background,
             ai.background,
           ],
         ),
@@ -378,9 +378,9 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
         border: Border.all(color: ai.border),
         boxShadow: [
           BoxShadow(
-            color: ai.accent.withValues(alpha: 0.24),
-            blurRadius: 26,
-            spreadRadius: -2,
+            color: ai.accent.withValues(alpha: 0.2),
+            blurRadius: 24,
+            spreadRadius: -4,
             offset: const Offset(0, 6),
           ),
         ],
