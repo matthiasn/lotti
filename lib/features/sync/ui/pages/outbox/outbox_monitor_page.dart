@@ -254,8 +254,9 @@ class _OutboxMonitorPageState extends State<OutboxMonitorPage> {
       emptyTitleBuilder: (ctx) => ctx.messages.outboxMonitorEmptyTitle,
       emptyDescriptionBuilder: (ctx) =>
           ctx.messages.outboxMonitorEmptyDescription,
-      countSummaryBuilder: (ctx, label, count) =>
-          ctx.messages.syncListCountSummary(label, count),
+      // No count line — the summary header above the list already states the
+      // status in plain language, so a "waiting · N items" line would just
+      // duplicate the number.
       itemBuilder: (ctx, item) {
         final isError = _statusFromIndex(item.status) == OutboxStatus.error;
         return OutboxMessageCard(
