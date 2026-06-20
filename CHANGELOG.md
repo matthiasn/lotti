@@ -6,6 +6,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1031]
 ### Changed
+- The **tasks list** (the middle column) was reworked for urgency-first triage.
+  Tasks are grouped under priority section bands labelled in plain words —
+  "Urgent", "High", "Medium" — instead of the cryptic "P0/P1/P2" codes, and the
+  bands are colour-graduated so the urgent group stands out at a glance no matter
+  how many tasks it holds. Each card is calmer and denser: the AI one-liner is now a
+  single line, tracked time and the due date share one row (and "0h 0m" no longer
+  shows), and overdue / due-today deadlines appear as a coloured pill so the
+  time-critical task in a group is easy to spot. When the list is already
+  filtered to a single category, the repeated category tag is dropped from every
+  row — it comes back when you filter to several categories. Cards lift more
+  clearly off the background, and the active-filter chips are a little larger to
+  tap. Within each priority group, tasks now sort by deadline (overdue first,
+  then due today, then soonest) so what's pressing rises to the top, and a long
+  group collapses to its few most-urgent tasks behind a "Show N more" you can
+  tap to expand. Every due date shows as a chip that escalates by urgency —
+  overdue in red, due today in amber, upcoming as a quiet outline — so the
+  deadline is easy to spot at a glance.
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of
   jumpy.** The row you tap stays put and confirms in place — a clear filled
   badge with the plain word *Confirmed* or *Dismissed* and a light haptic — then
@@ -28,23 +45,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1030]
 ### Changed
-- The **tasks list** (the middle column) was reworked for urgency-first triage.
-  Tasks are grouped under priority section bands labelled in plain words —
-  "Urgent", "High", "Medium" — instead of the cryptic "P0/P1/P2" codes, and the
-  bands are colour-graduated so the urgent group stands out at a glance no matter
-  how many tasks it holds. Each card is calmer and denser: the AI one-liner is now a
-  single line, tracked time and the due date share one row (and "0h 0m" no longer
-  shows), and overdue / due-today deadlines appear as a coloured pill so the
-  time-critical task in a group is easy to spot. When the list is already
-  filtered to a single category, the repeated category tag is dropped from every
-  row — it comes back when you filter to several categories. Cards lift more
-  clearly off the background, and the active-filter chips are a little larger to
-  tap. Within each priority group, tasks now sort by deadline (overdue first,
-  then due today, then soonest) so what's pressing rises to the top, and a long
-  group collapses to its few most-urgent tasks behind a "Show N more" you can
-  tap to expand. Every due date shows as a chip that escalates by urgency —
-  overdue in red, due today in amber, upcoming as a quiet outline — so the
-  deadline is easy to spot at a glance.
 - The desktop sidebar's live-status area — the running timer, an active voice
   recording, and background agents — was redesigned to feel calmer and more
   cohesive while still reading at a glance. The old jumble of red, bordered, and
