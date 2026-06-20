@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 
@@ -66,6 +67,9 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
 
       return IconButton(
         icon: icon,
+        // Label the otherwise-cryptic sparkle glyph so a new user knows what
+        // the action does before tapping it.
+        tooltip: context.messages.aiAssistantTitle,
         onPressed: onTap,
       );
     }

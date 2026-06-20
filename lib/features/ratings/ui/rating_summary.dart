@@ -3,6 +3,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/rating_question.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/ratings/data/rating_catalogs.dart';
 import 'package:lotti/features/ratings/ui/rating_utils.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
@@ -47,17 +48,25 @@ class RatingSummary extends StatelessWidget {
             messages: messages,
           ),
 
-        // Note + edit on one baseline row: the free-text verdict fills the
-        // left, the edit control sits at the trailing edge — so the pencil is
-        // never orphaned in a dead band below the content.
+        // One deliberate section break separates the qualitative note + edit
+        // affordance from the quantitative rating rows above, so the lower
+        // block reads as its own grouped unit rather than drifting.
+        if (data.note != null && data.note!.isNotEmpty)
+          SizedBox(height: tokens.spacing.sectionGap),
+
+        // Note + edit on one row: the free-text verdict reads as prose
+        // (high-emphasis white, not the medium-grey reserved for value-line
+        // labels) and the edit control sits at the trailing edge, top-aligned
+        // to the note so it is never orphaned in a dead band below the content.
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: (data.note != null && data.note!.isNotEmpty)
                   ? Text(
                       data.note!,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis,
                       ),
                     )
                   : const SizedBox.shrink(),
@@ -104,18 +113,16 @@ class RatingSummary extends StatelessWidget {
 
       if (valueText != null) {
         final tokens = context.designTokens;
-        // Label and answer inline (quiet label + bold value) — not flung to
-        // opposite edges — so the eye keeps them as one pair.
+        // Render through the shared value-line widget so the categorical answer
+        // parses with the exact same "quiet Label: bold value" colon grammar as
+        // every other card (Duration:, Weight:, Coverage:) — the prompt's
+        // trailing ellipsis is stripped so "This work felt…" reads as
+        // "This work felt: Just right".
         return Padding(
           padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Flexible(child: Text(label, style: _labelStyle(tokens))),
-              SizedBox(width: tokens.spacing.step2),
-              Text(valueText, style: _valueStyle(tokens)),
-            ],
+          child: EntryTextWidget(
+            '${_stripTrailingPunctuation(label)}: $valueText',
+            padding: EdgeInsets.zero,
           ),
         );
       }
@@ -128,6 +135,23 @@ class RatingSummary extends StatelessWidget {
       color: colorScheme.primary,
     );
   }
+}
+
+/// Strips trailing sentence punctuation (ellipsis, period, question/exclamation
+/// mark) from a rating prompt so a statement- or question-style label joins the
+/// colon value-line grammar cleanly — "This work felt…" becomes "This work felt"
+/// and "How did the work feel?" becomes "How did the work feel" before the
+/// ": value" is appended.
+String _stripTrailingPunctuation(String label) {
+  var out = label.trimRight();
+  while (out.isNotEmpty &&
+      (out.endsWith('…') ||
+          out.endsWith('.') ||
+          out.endsWith('?') ||
+          out.endsWith('!'))) {
+    out = out.substring(0, out.length - 1).trimRight();
+  }
+  return out;
 }
 
 TextStyle _labelStyle(DsTokens tokens) =>

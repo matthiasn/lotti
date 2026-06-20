@@ -42,9 +42,9 @@ class EntryTextWidget extends StatelessWidget {
         children: [
           for (var i = 0; i < lines.length; i++) ...[
             // Breathing room between stacked value rows (e.g. the workout
-            // summary's type / energy / duration) so a multi-line block does
-            // not read as a cramped clump.
-            if (i > 0) SizedBox(height: tokens.spacing.step1),
+            // summary's energy / duration) so a multi-line block reads as
+            // distinct facts rather than a cramped clump.
+            if (i > 0) SizedBox(height: tokens.spacing.step3),
             _ValueLine(
               line: lines[i],
               labelStyle: labelStyle,

@@ -52,10 +52,15 @@ class EntryDetailFooter extends ConsumerWidget {
       children: [
         if (hasDuration || unsaved)
           Padding(
-            // Same rhythm step as the body sections above so the duration/save
-            // row is not glued tighter to the content than the content is to
-            // itself (the old tight footer made cards read bottom-cramped).
-            padding: EdgeInsets.only(top: tokens.spacing.cardItemSpacing),
+            // The read-only duration value line shares the body rhythm step so
+            // the card reads evenly top to bottom; but when the transient save
+            // button appears (editing a linked entry) it sits close to its
+            // content with a tight gap, not a wide rhythm band above it.
+            padding: EdgeInsets.only(
+              top: unsaved
+                  ? tokens.spacing.step2
+                  : tokens.spacing.cardItemSpacing,
+            ),
             child: Row(
               children: [
                 // Duration sits left under the content gutter (no longer

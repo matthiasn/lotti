@@ -162,17 +162,19 @@ class _PlayerBody extends StatelessWidget {
           padding: EdgeInsets.only(left: timeRowLeftInset),
           child: Row(
             children: <Widget>[
+              // Both timecodes grouped at the scrubber's left gutter (elapsed
+              // then total) with the speed pill pushed to the trailing edge, so
+              // the row keeps the card's single left-gutter scan path instead of
+              // marooning the pill in the dead centre of a wide empty stretch.
               Text(formatAudioDuration(progress), style: timeStyle),
-              Expanded(
-                child: Align(
-                  child: _SpeedButton(
-                    controller: controller,
-                    currentSpeed: state.speed,
-                    isActive: isActive,
-                  ),
-                ),
-              ),
+              SizedBox(width: tokens?.spacing.step3 ?? 8.0),
               Text(formatAudioDuration(totalDuration), style: timeStyle),
+              const Spacer(),
+              _SpeedButton(
+                controller: controller,
+                currentSpeed: state.speed,
+                isActive: isActive,
+              ),
             ],
           ),
         ),
@@ -365,10 +367,11 @@ class _SpeedButton extends StatelessWidget {
     final speedTextStyle = (captionStyle ?? const TextStyle(fontSize: 12))
         .copyWith(color: speedTextColor);
 
-    // A visible boundary (>=3:1) so the speed control reads as a real,
-    // tappable pill rather than near-invisible chrome.
+    // A boundary at the same weight as the other header glyphs (mediumEmphasis,
+    // well above the WCAG 1.4.11 3:1 floor) so the speed control reads as a
+    // real, tappable pill rather than near-invisible chrome.
     final pillBorder =
-        tokens?.colors.decorative.level02 ?? scheme.outlineVariant;
+        tokens?.colors.text.mediumEmphasis ?? scheme.outlineVariant;
     final child = Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
