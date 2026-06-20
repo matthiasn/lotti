@@ -4951,6 +4951,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsPageTitle => 'Eventos';
 
   @override
+  String get eventsRegenerateSummary => 'Regenerar resumen';
+
+  @override
   String get eventsSearchHint => 'Buscar eventos';
 
   @override
@@ -4963,13 +4966,26 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsTasksSection => 'Tareas';
 
   @override
-  String get eventsRegenerateSummary => 'Regenerar resumen';
+  String get eventsTitleHint => 'Título del evento';
 
   @override
-  String get eventsVoiceNote => 'Nota de voz';
+  String get eventsAddCoverPhoto => 'Añadir foto de portada';
+
+  @override
+  String get eventsDeleteEvent => 'Eliminar evento';
+
+  @override
+  String get eventsTimelineEmpty => 'Añade fotos, notas o una nota de voz';
+
+  @override
+  String get eventsTasksEmpty =>
+      'Vincula una tarea de preparación o seguimiento';
 
   @override
   String get eventsTimelineSection => 'Cronología';
+
+  @override
+  String get eventsVoiceNote => 'Nota de voz';
 
   @override
   String get favoriteLabel => 'Favorito';

@@ -6,24 +6,33 @@ import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
+import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/index.dart';
 
 /// The redesigned event detail surface: a photographic hero header carrying the
-/// event's identity (cover, title, when/where, rating), followed by an AI
-/// summary, a vertical timeline of linked entries, and the associated
+/// event's identity (cover, title, when/where, status, rating), followed by an
+/// AI summary, a vertical timeline of linked entries, and the associated
 /// prep/follow-up tasks. On wide screens the body splits into a main column
-/// (summary + timeline) and a tasks rail so the canvas is used; on phones it
-/// stacks into one column.
+/// (summary + timeline) and a tasks rail; on phones it stacks.
 ///
-/// Pure/presentational — driven entirely by [EventDetailData].
+/// Editing happens inline: the title is tap-to-rename, the category/status pills
+/// and the rating open pickers, and each section can add linked entries — so the
+/// page never bounces to a separate editor. The empty event still shows its
+/// section scaffolding with "add" affordances rather than a blank void. All
+/// mutations are surfaced as callbacks; with none wired the view is read-only.
 class EventDetailView extends StatelessWidget {
   const EventDetailView({
     required this.data,
     this.onBack,
-    this.onEdit,
+    this.onRenameTitle,
+    this.onTapCategory,
+    this.onTapStatus,
+    this.onSetRating,
+    this.onAddCover,
+    this.onDelete,
     this.onRegenerateSummary,
     this.onAddToTimeline,
     this.onAddTask,
@@ -33,7 +42,21 @@ class EventDetailView extends StatelessWidget {
 
   final EventDetailData data;
   final VoidCallback? onBack;
-  final VoidCallback? onEdit;
+
+  /// Inline rename — receives the new (trimmed-by-caller) title.
+  final ValueChanged<String>? onRenameTitle;
+
+  /// Opens the category / status pickers. The rating is set directly.
+  final VoidCallback? onTapCategory;
+  final VoidCallback? onTapStatus;
+  final ValueChanged<double>? onSetRating;
+
+  /// Adds a cover photo (shown only while the event has no cover).
+  final VoidCallback? onAddCover;
+
+  /// Deletes the event (offered in the overflow menu).
+  final VoidCallback? onDelete;
+
   final VoidCallback? onRegenerateSummary;
   final VoidCallback? onAddToTimeline;
   final VoidCallback? onAddTask;
@@ -57,7 +80,16 @@ class EventDetailView extends StatelessWidget {
       backgroundColor: dsPageSurface(context),
       body: CustomScrollView(
         slivers: [
-          _HeroSliver(card: data.card, onBack: onBack, onEdit: onEdit),
+          _HeroSliver(
+            card: data.card,
+            onBack: onBack,
+            onDelete: onDelete,
+            onRenameTitle: onRenameTitle,
+            onTapCategory: onTapCategory,
+            onTapStatus: onTapStatus,
+            onSetRating: onSetRating,
+            onAddCover: onAddCover,
+          ),
           SliverToBoxAdapter(
             child: Center(
               child: ConstrainedBox(
@@ -72,8 +104,7 @@ class EventDetailView extends StatelessWidget {
                   child: LayoutBuilder(
                     builder: (context, constraints) {
                       final twoColumn =
-                          constraints.maxWidth >= _twoColumnBreakpoint &&
-                          data.tasks.isNotEmpty;
+                          constraints.maxWidth >= _twoColumnBreakpoint;
                       return twoColumn
                           ? _twoColumnBody(context)
                           : _oneColumnBody(context);
@@ -94,14 +125,7 @@ class EventDetailView extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ..._mainColumn(context),
-        if (data.tasks.isNotEmpty) ...[
-          _SectionHeader(
-            title: context.messages.eventsTasksSection,
-            count: data.tasks.length,
-            onAdd: onAddTask,
-          ),
-          for (final task in data.tasks) _TaskRow(task: task),
-        ],
+        ..._tasksBlock(context),
         SizedBox(height: tokens.spacing.step2),
       ],
     );
@@ -123,14 +147,7 @@ class EventDetailView extends StatelessWidget {
           width: 320,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _SectionHeader(
-                title: context.messages.eventsTasksSection,
-                count: data.tasks.length,
-                onAdd: onAddTask,
-              ),
-              for (final task in data.tasks) _TaskRow(task: task),
-            ],
+            children: _tasksBlock(context),
           ),
         ),
       ],
@@ -149,27 +166,61 @@ class EventDetailView extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step4),
       ],
-      if (data.summary != null) ...[
+      if (data.summary != null)
         _SummaryCard(summary: data.summary!, onRegenerate: onRegenerateSummary),
-      ],
-      if (data.timeline.isNotEmpty) ...[
-        _SectionHeader(
-          title: context.messages.eventsTimelineSection,
-          count: data.timeline.length,
-          onAdd: onAddToTimeline,
-        ),
+      _SectionHeader(
+        title: context.messages.eventsTimelineSection,
+        count: data.timeline.length,
+        onAdd: onAddToTimeline,
+      ),
+      if (data.timeline.isEmpty)
+        _EmptyHint(
+          label: context.messages.eventsTimelineEmpty,
+          onTap: onAddToTimeline,
+        )
+      else
         _Timeline(entries: data.timeline, onOpenEntry: onOpenTimelineEntry),
-      ],
+    ];
+  }
+
+  List<Widget> _tasksBlock(BuildContext context) {
+    return [
+      _SectionHeader(
+        title: context.messages.eventsTasksSection,
+        count: data.tasks.length,
+        onAdd: onAddTask,
+      ),
+      if (data.tasks.isEmpty)
+        _EmptyHint(
+          label: context.messages.eventsTasksEmpty,
+          onTap: onAddTask,
+        )
+      else
+        for (final task in data.tasks) _TaskRow(task: task),
     ];
   }
 }
 
 class _HeroSliver extends StatelessWidget {
-  const _HeroSliver({required this.card, this.onBack, this.onEdit});
+  const _HeroSliver({
+    required this.card,
+    this.onBack,
+    this.onDelete,
+    this.onRenameTitle,
+    this.onTapCategory,
+    this.onTapStatus,
+    this.onSetRating,
+    this.onAddCover,
+  });
 
   final EventCardData card;
   final VoidCallback? onBack;
-  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final ValueChanged<String>? onRenameTitle;
+  final VoidCallback? onTapCategory;
+  final VoidCallback? onTapStatus;
+  final ValueChanged<double>? onSetRating;
+  final VoidCallback? onAddCover;
 
   @override
   Widget build(BuildContext context) {
@@ -186,10 +237,14 @@ class _HeroSliver extends StatelessWidget {
       pinned: true,
       backgroundColor: dsPageSurface(context),
       leading: _ScrimIconButton(icon: Icons.arrow_back, onPressed: onBack),
-      // A single overflow action (Edit / Share / Change cover / Delete) rather
-      // than competing pencil + overflow icons.
       actions: [
-        _ScrimIconButton(icon: Icons.more_horiz, onPressed: onEdit),
+        if (card.coverImage == null && onAddCover != null)
+          _ScrimIconButton(
+            icon: Icons.add_a_photo_outlined,
+            onPressed: onAddCover,
+            tooltip: context.messages.eventsAddCoverPhoto,
+          ),
+        if (onDelete != null) _HeroMenuButton(onDelete: onDelete),
         SizedBox(width: tokens.spacing.step2),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -204,7 +259,13 @@ class _HeroSliver extends StatelessWidget {
               padding: EdgeInsets.all(tokens.spacing.step5),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 640),
-                child: _HeroContent(card: card),
+                child: _HeroContent(
+                  card: card,
+                  onRenameTitle: onRenameTitle,
+                  onTapCategory: onTapCategory,
+                  onTapStatus: onTapStatus,
+                  onSetRating: onSetRating,
+                ),
               ),
             ),
           ),
@@ -215,15 +276,24 @@ class _HeroSliver extends StatelessWidget {
 }
 
 class _HeroContent extends StatelessWidget {
-  const _HeroContent({required this.card});
+  const _HeroContent({
+    required this.card,
+    this.onRenameTitle,
+    this.onTapCategory,
+    this.onTapStatus,
+    this.onSetRating,
+  });
 
   final EventCardData card;
+  final ValueChanged<String>? onRenameTitle;
+  final VoidCallback? onTapCategory;
+  final VoidCallback? onTapStatus;
+  final ValueChanged<double>? onSetRating;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final styles = tokens.typography.styles;
-    final showStatus = card.status != EventStatus.completed;
     // display2 is too large for a phone width and truncates long titles; step
     // down to heading1 on narrow screens so the full title always fits.
     final titleStyle = MediaQuery.sizeOf(context).width < 600
@@ -237,29 +307,42 @@ class _HeroContent extends StatelessWidget {
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (card.categoryName != null)
-              EventOverlayPill(
-                dotColor: card.categoryColor,
-                label: card.categoryName!,
+            if (card.categoryName != null) ...[
+              _TappablePill(
+                onTap: onTapCategory,
+                child: EventOverlayPill(
+                  dotColor: card.categoryColor,
+                  label: card.categoryName!,
+                ),
               ),
-            if (showStatus) ...[
               SizedBox(width: tokens.spacing.step2),
-              EventOverlayPill(
-                dotColor: card.status.color,
-                label: _statusLabel(card.status),
+            ] else if (onTapCategory != null) ...[
+              // No category yet, but editable: offer a placeholder to set one.
+              _TappablePill(
+                onTap: onTapCategory,
+                child: EventOverlayPill(
+                  dotColor: Colors.white.withValues(alpha: 0.5),
+                  label: context.messages.habitCategoryLabel,
+                ),
               ),
+              SizedBox(width: tokens.spacing.step2),
             ],
+            // Status is always shown (and tappable) since it's the core
+            // editable state of an event.
+            _TappablePill(
+              onTap: onTapStatus,
+              child: EventOverlayPill(
+                dotColor: card.status.color,
+                label: eventStatusLabel(card.status),
+              ),
+            ),
           ],
         ),
         SizedBox(height: tokens.spacing.step3),
-        Text(
-          card.title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: titleStyle.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w700,
-          ),
+        _EditableTitle(
+          title: card.title,
+          style: titleStyle,
+          onRename: onRenameTitle,
         ),
         SizedBox(height: tokens.spacing.step3),
         Row(
@@ -282,35 +365,158 @@ class _HeroContent extends StatelessWidget {
                 ),
               ),
             ),
-            if (card.stars > 0) ...[
-              SizedBox(width: tokens.spacing.step3),
-              StarRating(
-                rating: card.stars,
-                size: 16,
-                allowHalfRating: true,
-                color: starredGold,
-                borderColor: starredGold,
-              ),
-            ],
           ],
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        StarRating(
+          rating: card.stars,
+          size: 22,
+          allowHalfRating: true,
+          color: starredGold,
+          borderColor: starredGold,
+          onRatingChanged: onSetRating == null
+              ? null
+              : (rating) => onSetRating!(rating),
         ),
       ],
     );
   }
+}
 
-  String _statusLabel(EventStatus status) {
-    final lower = status.label.toLowerCase();
-    return lower.isEmpty
-        ? lower
-        : '${lower[0].toUpperCase()}${lower.substring(1)}';
+/// Wraps a hero pill so it taps through to a picker when [onTap] is wired,
+/// staying inert (read-only) otherwise.
+class _TappablePill extends StatelessWidget {
+  const _TappablePill({required this.child, this.onTap});
+
+  final Widget child;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    if (onTap == null) return child;
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: child,
+    );
+  }
+}
+
+/// Tap-to-rename title rendered over the hero. Read-only when [onRename] is
+/// null; otherwise a tap swaps in a borderless field that commits on submit or
+/// when focus leaves.
+class _EditableTitle extends StatefulWidget {
+  const _EditableTitle({
+    required this.title,
+    required this.style,
+    this.onRename,
+  });
+
+  final String title;
+  final TextStyle style;
+  final ValueChanged<String>? onRename;
+
+  @override
+  State<_EditableTitle> createState() => _EditableTitleState();
+}
+
+class _EditableTitleState extends State<_EditableTitle> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.title,
+  );
+  final FocusNode _focusNode = FocusNode();
+  bool _editing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode.addListener(_onFocusChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _EditableTitle oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_editing && oldWidget.title != widget.title) {
+      _controller.text = widget.title;
+    }
+  }
+
+  void _onFocusChange() {
+    if (!_focusNode.hasFocus && _editing) _commit();
+  }
+
+  void _startEditing() {
+    if (widget.onRename == null) return;
+    _controller
+      ..text = widget.title
+      ..selection = TextSelection(
+        baseOffset: 0,
+        extentOffset: widget.title.length,
+      );
+    setState(() => _editing = true);
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _focusNode.requestFocus(),
+    );
+  }
+
+  void _commit() {
+    final text = _controller.text.trim();
+    setState(() => _editing = false);
+    if (text.isNotEmpty && text != widget.title) widget.onRename?.call(text);
+  }
+
+  @override
+  void dispose() {
+    _focusNode
+      ..removeListener(_onFocusChange)
+      ..dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final style = widget.style.copyWith(
+      color: Colors.white,
+      fontWeight: FontWeight.w700,
+    );
+
+    if (_editing) {
+      return TextField(
+        controller: _controller,
+        focusNode: _focusNode,
+        maxLines: 2,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _commit(),
+        style: style,
+        cursorColor: Colors.white,
+        decoration: const InputDecoration(
+          isDense: true,
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+        ),
+      );
+    }
+
+    return GestureDetector(
+      onTap: _startEditing,
+      behavior: HitTestBehavior.opaque,
+      child: Text(
+        widget.title,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      ),
+    );
   }
 }
 
 class _ScrimIconButton extends StatelessWidget {
-  const _ScrimIconButton({required this.icon, this.onPressed});
+  const _ScrimIconButton({required this.icon, this.onPressed, this.tooltip});
 
   final IconData icon;
   final VoidCallback? onPressed;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
@@ -322,7 +528,47 @@ class _ScrimIconButton extends StatelessWidget {
         clipBehavior: Clip.antiAlias,
         child: IconButton(
           icon: Icon(icon, color: Colors.white),
+          tooltip: tooltip,
           onPressed: onPressed,
+        ),
+      ),
+    );
+  }
+}
+
+/// Overflow menu over the hero. Currently a single destructive action; more
+/// (share, change cover) slot in here as they land.
+class _HeroMenuButton extends StatelessWidget {
+  const _HeroMenuButton({this.onDelete});
+
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = context.colorScheme;
+    return Padding(
+      padding: EdgeInsets.all(context.designTokens.spacing.step2),
+      child: Material(
+        color: Colors.black.withValues(alpha: 0.35),
+        shape: const CircleBorder(),
+        clipBehavior: Clip.antiAlias,
+        child: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_horiz, color: Colors.white),
+          onSelected: (value) {
+            if (value == 'delete') onDelete?.call();
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem<String>(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, size: 18, color: cs.error),
+                  SizedBox(width: context.designTokens.spacing.step2),
+                  Text(context.messages.eventsDeleteEvent),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -450,6 +696,46 @@ class _AddButton extends StatelessWidget {
                 style: tokens.typography.styles.body.bodyMedium.copyWith(
                   color: cs.primary,
                   fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tappable placeholder shown when a section has no content yet, so a fresh
+/// event always offers something to do instead of a blank gap.
+class _EmptyHint extends StatelessWidget {
+  const _EmptyHint({required this.label, this.onTap});
+
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final cs = context.colorScheme;
+    return Material(
+      color: dsCardSurface(context),
+      borderRadius: BorderRadius.circular(tokens.radii.m),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.all(tokens.spacing.step4),
+          child: Row(
+            children: [
+              Icon(Icons.add, size: 18, color: cs.onSurfaceVariant),
+              SizedBox(width: tokens.spacing.step2),
+              Expanded(
+                child: Text(
+                  label,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
                 ),
               ),
             ],

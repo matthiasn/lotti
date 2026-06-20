@@ -4862,6 +4862,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsPageTitle => 'Events';
 
   @override
+  String get eventsRegenerateSummary => 'Regenerate summary';
+
+  @override
   String get eventsSearchHint => 'Search events';
 
   @override
@@ -4874,13 +4877,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsTasksSection => 'Tasks';
 
   @override
-  String get eventsRegenerateSummary => 'Regenerate summary';
+  String get eventsTitleHint => 'Event title';
 
   @override
-  String get eventsVoiceNote => 'Voice note';
+  String get eventsAddCoverPhoto => 'Add cover photo';
+
+  @override
+  String get eventsDeleteEvent => 'Delete event';
+
+  @override
+  String get eventsTimelineEmpty => 'Add photos, notes or a voice memo';
+
+  @override
+  String get eventsTasksEmpty => 'Link a prep or follow-up task';
 
   @override
   String get eventsTimelineSection => 'Timeline';
+
+  @override
+  String get eventsVoiceNote => 'Voice note';
 
   @override
   String get favoriteLabel => 'Favorite';

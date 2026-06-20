@@ -32,9 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Settings → Advanced → Flags). Events — birthdays, trips, milestones — now get
   their own destination (under *More* on mobile, the sidebar on desktop) with a
   photo-led overview that groups your moments by time and filters by category,
-  plus a redesigned detail page: a photographic header, an at-a-glance summary,
-  a timeline of the linked photos, notes and voice notes, and the prep/follow-up
-  tasks tied to the event.
+  plus a redesigned detail page that doubles as a full inline editor: a
+  photographic header where you rename the event, set its category, status and
+  rating, and add a cover; an at-a-glance summary; a timeline of the linked
+  photos, notes and voice notes (each opening its source entry); and the
+  prep/follow-up tasks tied to the event. Add photos, notes, voice memos and
+  tasks straight from the page — even a brand-new event shows what to do next
+  instead of an empty screen.
 
 ### Changed
 - The desktop sidebar's live-status area — the running timer, an active voice

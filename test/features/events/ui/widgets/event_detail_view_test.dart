@@ -10,9 +10,23 @@ import '../../test_utils.dart';
 const _tallMobile = Size(390, 1640);
 const _tallDesktop = Size(1280, 1480);
 
+/// An empty (just-created) event: status only, no cover, summary, timeline or
+/// tasks — the case that must still offer affordances rather than a blank void.
+EventDetailData _emptyData() => EventDetailData(
+  card: buildEventCardData(
+    title: 'Test Event',
+    status: EventStatus.tentative,
+    stars: 0,
+    categoryName: null,
+    summary: null,
+    location: null,
+  ),
+  whenLabel: 'Sat, 20 Jun 2026 · 18:22',
+);
+
 void main() {
   group('EventDetailView', () {
-    testWidgets('renders hero identity: title, category, date, rating', (
+    testWidgets('renders hero identity: title, category, status, rating', (
       tester,
     ) async {
       await pumpEventScreen(
@@ -23,13 +37,13 @@ void main() {
 
       expect(find.text("Anna's 30th Birthday"), findsOneWidget);
       expect(find.text('Friends'), findsOneWidget);
+      // Status is always shown now (it's editable); default is completed.
+      expect(find.text('Completed'), findsOneWidget);
       expect(find.textContaining('Rooftop Bar'), findsWidgets);
-      expect(find.byType(StarRating), findsOneWidget); // stars > 0
+      expect(find.byType(StarRating), findsOneWidget);
     });
 
-    testWidgets('shows a status pill only for non-completed events', (
-      tester,
-    ) async {
+    testWidgets('capitalizes the status label for any status', (tester) async {
       await pumpEventScreen(
         tester,
         EventDetailView(
@@ -57,7 +71,7 @@ void main() {
         find.text('A surprise 30th for Anna on the rooftop.'),
         findsOneWidget,
       );
-      expect(find.byIcon(Icons.refresh), findsOneWidget); // regenerate
+      expect(find.byIcon(Icons.refresh), findsOneWidget);
     });
 
     testWidgets('renders all three timeline entry kinds', (tester) async {
@@ -68,12 +82,9 @@ void main() {
       );
 
       expect(find.text('Timeline'), findsOneWidget);
-      // photo entry: italic authored caption
       final caption = tester.widget<Text>(find.text('The reveal moment.'));
       expect(caption.style?.fontStyle, FontStyle.italic);
-      // note entry
       expect(find.text("Anna's speech."), findsOneWidget);
-      // audio entry
       expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
       expect(find.text('Voice note · 0:42'), findsOneWidget);
       expect(find.text('Toast from Dad'), findsOneWidget);
@@ -91,8 +102,8 @@ void main() {
       expect(find.text('Book the venue'), findsOneWidget);
       expect(find.text('Share the album'), findsOneWidget);
       expect(find.text('Due Fri'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle), findsOneWidget); // done
-      expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget); // not
+      expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
     });
 
     testWidgets('renders a task status label in its status colour', (
@@ -123,7 +134,6 @@ void main() {
     testWidgets('renders tasks in both one- and two-column layouts', (
       tester,
     ) async {
-      // Narrow → one column.
       await pumpEventScreen(
         tester,
         EventDetailView(data: buildEventDetailData()),
@@ -131,7 +141,6 @@ void main() {
       );
       expect(find.text('Book the venue'), findsOneWidget);
 
-      // Wide → two-column body with a tasks rail.
       await pumpEventScreen(
         tester,
         EventDetailView(data: buildEventDetailData()),
@@ -140,11 +149,134 @@ void main() {
       expect(find.text('Book the venue'), findsOneWidget);
     });
 
-    testWidgets('wires hero, summary and section add callbacks', (
+    testWidgets('an empty event shows section scaffolding with add hints', (
+      tester,
+    ) async {
+      final timelineAdds = <int>[];
+      final taskAdds = <int>[];
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: _emptyData(),
+          onAddToTimeline: () => timelineAdds.add(1),
+          onAddTask: () => taskAdds.add(1),
+        ),
+        size: _tallMobile,
+      );
+
+      // Both sections render even with nothing in them, with tappable hints.
+      expect(find.text('Timeline'), findsOneWidget);
+      expect(find.text('Tasks'), findsOneWidget);
+      expect(find.text('Add photos, notes or a voice memo'), findsOneWidget);
+      expect(find.text('Link a prep or follow-up task'), findsOneWidget);
+
+      await tester.tap(find.text('Add photos, notes or a voice memo'));
+      await tester.tap(find.text('Link a prep or follow-up task'));
+      expect(timelineAdds, [1]);
+      expect(taskAdds, [1]);
+    });
+
+    testWidgets('offers an add-cover affordance only when there is no cover', (
+      tester,
+    ) async {
+      var coverAdds = 0;
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: _emptyData(), onAddCover: () => coverAdds++),
+        size: _tallMobile,
+      );
+      await tester.tap(find.byIcon(Icons.add_a_photo_outlined));
+      expect(coverAdds, 1);
+
+      // With a cover present, the add-cover affordance is gone.
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: buildEventDetailData(), onAddCover: () {}),
+        size: _tallMobile,
+      );
+      expect(find.byIcon(Icons.add_a_photo_outlined), findsNothing);
+    });
+
+    testWidgets('tapping the category and status pills opens their pickers', (
+      tester,
+    ) async {
+      var categoryTaps = 0;
+      var statusTaps = 0;
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(),
+          onTapCategory: () => categoryTaps++,
+          onTapStatus: () => statusTaps++,
+        ),
+        size: _tallMobile,
+      );
+
+      await tester.tap(find.text('Friends'));
+      await tester.tap(find.text('Completed'));
+      expect(categoryTaps, 1);
+      expect(statusTaps, 1);
+    });
+
+    testWidgets('tapping the title swaps in a field that commits a rename', (
+      tester,
+    ) async {
+      final renames = <String>[];
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(),
+          onRenameTitle: renames.add,
+        ),
+        size: _tallMobile,
+      );
+
+      await tester.tap(find.text("Anna's 30th Birthday"));
+      await tester.pump();
+      expect(find.byType(TextField), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), 'Anna turns 30');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      expect(renames, ['Anna turns 30']);
+    });
+
+    testWidgets('setting a star rating reports the new value', (tester) async {
+      final ratings = <double>[];
+      await pumpEventScreen(
+        tester,
+        EventDetailView(data: _emptyData(), onSetRating: ratings.add),
+        size: _tallMobile,
+      );
+
+      await tester.tap(find.byType(StarRating));
+      expect(ratings, isNotEmpty);
+    });
+
+    testWidgets('the overflow menu deletes the event', (tester) async {
+      var deletes = 0;
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(),
+          onDelete: () => deletes++,
+        ),
+        size: _tallMobile,
+      );
+
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete event'));
+      await tester.pumpAndSettle();
+
+      expect(deletes, 1);
+    });
+
+    testWidgets('wires back, regenerate and section add callbacks', (
       tester,
     ) async {
       var back = false;
-      var edit = false;
       var regen = false;
       var addTimeline = false;
       var addTask = false;
@@ -154,7 +286,6 @@ void main() {
         EventDetailView(
           data: buildEventDetailData(),
           onBack: () => back = true,
-          onEdit: () => edit = true,
           onRegenerateSummary: () => regen = true,
           onAddToTimeline: () => addTimeline = true,
           onAddTask: () => addTask = true,
@@ -163,14 +294,11 @@ void main() {
       );
 
       await tester.tap(find.byIcon(Icons.arrow_back));
-      await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.tap(find.byIcon(Icons.refresh));
-      // Two "Add" actions: first = Timeline, last = Tasks.
       await tester.tap(find.text('Add').first);
       await tester.tap(find.text('Add').last);
 
       expect(back, isTrue);
-      expect(edit, isTrue);
       expect(regen, isTrue);
       expect(addTimeline, isTrue);
       expect(addTask, isTrue);
@@ -179,8 +307,6 @@ void main() {
     testWidgets('shows no row chevron when timeline rows are not openable', (
       tester,
     ) async {
-      // Without an onOpenTimelineEntry handler the rows are static, so the
-      // "open" chevron must not appear (no false affordance).
       await pumpEventScreen(
         tester,
         EventDetailView(data: buildEventDetailData()),
@@ -202,7 +328,6 @@ void main() {
         size: _tallMobile,
       );
 
-      // Wired rows carry the chevron and are tappable.
       expect(find.byIcon(Icons.chevron_right), findsNWidgets(3));
       await tester.tap(find.text("Anna's speech."));
       await tester.pump();

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -46,6 +47,22 @@ class _ErrorEntryController extends EntryController {
     state = AsyncError(Exception('load failed'), StackTrace.current);
     return Future<EntryState?>.error(Exception('load failed'));
   }
+}
+
+/// Records the inline-edit mutations the page wires to, so we can assert the
+/// page calls the controller (rather than bouncing to the old editor).
+class _RecordingEntryController extends FakeEntryController {
+  // ignore: use_super_parameters, parent uses a private `_entity` field
+  _RecordingEntryController(JournalEvent entity) : super(entity);
+
+  final titles = <String>[];
+  final ratings = <double>[];
+
+  @override
+  Future<void> updateEventTitle(String title) async => titles.add(title);
+
+  @override
+  Future<void> updateRating(double stars) async => ratings.add(stars);
 }
 
 JournalEvent _event() {
@@ -146,6 +163,7 @@ void main() {
     Future<void> pumpResolved(
       WidgetTester tester, {
       required List<JournalEntity> linked,
+      EntryController Function()? controllerBuilder,
       Size size = const Size(500, 2400),
     }) async {
       tester.view
@@ -158,9 +176,9 @@ void main() {
         makeTestableWidget2(
           ProviderScope(
             overrides: [
-              entryControllerProvider(
-                id: _eventId,
-              ).overrideWith(() => FakeEntryController(_event())),
+              entryControllerProvider(id: _eventId).overrideWith(
+                controllerBuilder ?? () => FakeEntryController(_event()),
+              ),
               resolvedOutgoingLinkedEntriesProvider(
                 _eventId,
               ).overrideWithValue(linked),
@@ -193,35 +211,39 @@ void main() {
       expect(find.text('Tasks'), findsOneWidget);
     });
 
-    testWidgets('wires back / edit / add-to-timeline / add-task navigation', (
+    testWidgets('renames inline through the controller (not the old editor)', (
       tester,
     ) async {
-      final beamed = <String>[];
-      beamToNamedOverride = beamed.add;
-
+      final rec = _RecordingEntryController(_event());
       await pumpResolved(
         tester,
-        linked: [testImageEntry, testTextEntry, testTask],
+        linked: const [],
+        controllerBuilder: () => rec,
       );
 
-      // Back maps to Navigator.maybePop (no route to pop → no-op, but runs).
-      await tester.tap(find.byIcon(Icons.arrow_back));
+      await tester.tap(find.text('Launch Party'));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField), 'Launch Party v2');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
       await tester.pump();
 
-      // Edit + both section "Add" actions beam to the underlying journal entry.
-      await tester.tap(find.byIcon(Icons.more_horiz));
-      await tester.pump();
-      await tester.ensureVisible(find.text('Add').first);
-      await tester.tap(find.text('Add').first);
-      await tester.pump();
-      await tester.ensureVisible(find.text('Add').last);
-      await tester.tap(find.text('Add').last);
-      await tester.pump();
+      expect(rec.titles, ['Launch Party v2']);
+    });
 
-      expect(
-        beamed.where((p) => p == '/journal/$_eventId').length,
-        3,
+    testWidgets('sets the rating inline through the controller', (
+      tester,
+    ) async {
+      final rec = _RecordingEntryController(_event());
+      await pumpResolved(
+        tester,
+        linked: const [],
+        controllerBuilder: () => rec,
       );
+
+      await tester.tap(find.byType(StarRating));
+      await tester.pump();
+
+      expect(rec.ratings, isNotEmpty);
     });
 
     testWidgets('tapping a timeline row opens its linked source entry', (

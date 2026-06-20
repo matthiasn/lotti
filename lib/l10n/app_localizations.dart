@@ -8502,6 +8502,12 @@ abstract class AppLocalizations {
   /// **'Events'**
   String get eventsPageTitle;
 
+  /// No description provided for @eventsRegenerateSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate summary'**
+  String get eventsRegenerateSummary;
+
   /// No description provided for @eventsSearchHint.
   ///
   /// In en, this message translates to:
@@ -8526,23 +8532,47 @@ abstract class AppLocalizations {
   /// **'Tasks'**
   String get eventsTasksSection;
 
-  /// No description provided for @eventsRegenerateSummary.
+  /// No description provided for @eventsTitleHint.
   ///
   /// In en, this message translates to:
-  /// **'Regenerate summary'**
-  String get eventsRegenerateSummary;
+  /// **'Event title'**
+  String get eventsTitleHint;
 
-  /// No description provided for @eventsVoiceNote.
+  /// No description provided for @eventsAddCoverPhoto.
   ///
   /// In en, this message translates to:
-  /// **'Voice note'**
-  String get eventsVoiceNote;
+  /// **'Add cover photo'**
+  String get eventsAddCoverPhoto;
+
+  /// No description provided for @eventsDeleteEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete event'**
+  String get eventsDeleteEvent;
+
+  /// No description provided for @eventsTimelineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photos, notes or a voice memo'**
+  String get eventsTimelineEmpty;
+
+  /// No description provided for @eventsTasksEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a prep or follow-up task'**
+  String get eventsTasksEmpty;
 
   /// No description provided for @eventsTimelineSection.
   ///
   /// In en, this message translates to:
   /// **'Timeline'**
   String get eventsTimelineSection;
+
+  /// No description provided for @eventsVoiceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note'**
+  String get eventsVoiceNote;
 
   /// No description provided for @favoriteLabel.
   ///

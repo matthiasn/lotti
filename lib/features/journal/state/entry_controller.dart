@@ -378,6 +378,41 @@ class EntryController extends _$EntryController {
     }
   }
 
+  /// Renames an event inline (no-ops for non-events or an unchanged title).
+  Future<void> updateEventTitle(String title) async {
+    final event = state.value?.entry;
+    if (event is! JournalEvent) return;
+    final trimmed = title.trim();
+    if (trimmed == event.data.title) return;
+    final optimistic = event.copyWith(
+      data: event.data.copyWith(title: trimmed),
+    );
+    state = AsyncData(state.value?.copyWith(entry: optimistic));
+    await _persistenceLogic.updateEvent(
+      entryText: entryTextFromController(controller),
+      journalEntityId: id,
+      data: optimistic.data,
+    );
+    await HapticFeedback.selectionClick();
+  }
+
+  /// Sets an event's [EventStatus] inline (no-ops for non-events or no change).
+  Future<void> updateEventStatus(EventStatus status) async {
+    final event = state.value?.entry;
+    if (event is! JournalEvent) return;
+    if (status == event.data.status) return;
+    final optimistic = event.copyWith(
+      data: event.data.copyWith(status: status),
+    );
+    state = AsyncData(state.value?.copyWith(entry: optimistic));
+    await _persistenceLogic.updateEvent(
+      entryText: entryTextFromController(controller),
+      journalEntityId: id,
+      data: optimistic.data,
+    );
+    await HapticFeedback.heavyImpact();
+  }
+
   Future<bool> delete({
     required bool beamBack,
   }) async {

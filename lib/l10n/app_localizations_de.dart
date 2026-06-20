@@ -4921,6 +4921,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsPageTitle => 'Ereignisse';
 
   @override
+  String get eventsRegenerateSummary => 'Zusammenfassung neu erstellen';
+
+  @override
   String get eventsSearchHint => 'Ereignisse suchen';
 
   @override
@@ -4933,13 +4936,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsTasksSection => 'Aufgaben';
 
   @override
-  String get eventsRegenerateSummary => 'Zusammenfassung neu erstellen';
+  String get eventsTitleHint => 'Event-Titel';
 
   @override
-  String get eventsVoiceNote => 'Sprachnotiz';
+  String get eventsAddCoverPhoto => 'Titelbild hinzufügen';
+
+  @override
+  String get eventsDeleteEvent => 'Event löschen';
+
+  @override
+  String get eventsTimelineEmpty =>
+      'Füge Fotos, Notizen oder eine Sprachnotiz hinzu';
+
+  @override
+  String get eventsTasksEmpty =>
+      'Verknüpfe eine Vorbereitungs- oder Folgeaufgabe';
 
   @override
   String get eventsTimelineSection => 'Zeitleiste';
+
+  @override
+  String get eventsVoiceNote => 'Sprachnotiz';
 
   @override
   String get favoriteLabel => 'Favorit';

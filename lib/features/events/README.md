@@ -86,6 +86,32 @@ wires `onOpenTimelineEntry` (it beams to `/journal/<entryId>`); the trailing
 "open" chevron renders only when that handler is present, so the affordance
 always matches the behavior.
 
+#### Inline editing
+
+The detail page is a full editor, not a viewer — nothing bounces to the old
+entry form. `EventDetailView` is presentational and surfaces every mutation as a
+callback; `EventDetailPage` wires them to `EntryController` and the shared
+pickers/create flows:
+
+- **Title** — tap to swap in a borderless field; commit on submit/blur →
+  `updateEventTitle`.
+- **Category / Status** — the hero pills open `showCategoryPicker` /
+  `showEventStatusPicker` → `updateCategoryId` / `updateEventStatus`. The
+  category pill shows a "set category" placeholder when none is assigned yet.
+- **Rating** — the hero stars are interactive → `updateRating`.
+- **Cover** — while the event has no cover, an "add cover photo" action opens the
+  create-entry menu; the first linked photo then becomes the cover automatically.
+- **Add to timeline / Add task** — open the shared `CreateEntryModal` scoped to
+  the event (`linkedFromId`) / `createTask(linkedId:)`, so new notes, photos,
+  audio and tasks link straight back.
+- **Delete** — the overflow menu confirms via the standard delete sheet →
+  `delete(beamBack: true)`.
+
+When a callback is null the corresponding control is read-only (or hidden), so
+the same widget renders cleanly in screenshots and tests. Empty events still
+render the Timeline and Tasks section scaffolding with tappable "add" hints
+rather than a blank void.
+
 ## Files
 
 | Path | Role |
@@ -96,7 +122,8 @@ always matches the behavior.
 | `ui/widgets/event_card.dart` | Overview card + cover overlay + meta/footer. |
 | `ui/widgets/event_feature_card.dart` | Full-bleed featured hero (→ vertical card when narrow). |
 | `ui/widgets/events_overview_view.dart` | Overview layout: header, search, chips, sections, grid. |
-| `ui/widgets/event_detail_view.dart` | Detail layout: hero, summary, timeline, tasks. |
+| `ui/widgets/event_detail_view.dart` | Detail layout: inline-editable hero, summary, timeline, tasks. |
+| `ui/widgets/event_status_picker.dart` | `showEventStatusPicker` modal + `eventStatusLabel` helper. |
 | `state/event_view_mapping.dart` | Pure entity→view-model mapping, date labels, grouping. |
 | `state/events_controller.dart` | `eventsStreamProvider` + `loadResolvedEvents` (DB → resolved events). |
 | `ui/pages/events_overview_page.dart` | Route page: provider → localized sections → view. |
@@ -112,7 +139,9 @@ User-visible strings are localized via `context.messages`: `navTabTitleEvents`,
 `eventsPageTitle`, `eventsSearchHint`, `eventsNewEvent`, `eventsFilterAll`,
 `eventsSectionUpcoming`, `eventsSummaryTitle`, `eventsTimelineSection`,
 `eventsTasksSection`, `eventsAddLabel`, `eventsRegenerateSummary`,
-`eventsVoiceNote`.
+`eventsVoiceNote`, `eventsTitleHint`, `eventsAddCoverPhoto`, `eventsDeleteEvent`,
+`eventsTimelineEmpty`, `eventsTasksEmpty`. (The event status picker reuses
+`EventStatus.label`; the category picker reuses `habitCategoryLabel`.)
 
 ## Testing
 
