@@ -133,7 +133,9 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         UnifiedAiPopUpMenu(
           journalEntity: entry,
           linkedFromId: widget.linkedFromId,
-          iconColor: tokens.colors.text.mediumEmphasis,
+          // highEmphasis (white) so the filled assistant glyph clears the
+          // non-text-contrast floor instead of reading as a grey-on-grey chip.
+          iconColor: tokens.colors.text.highEmphasis,
         ),
       IconButton(
         icon: Icon(Icons.more_horiz, color: tokens.colors.text.mediumEmphasis),

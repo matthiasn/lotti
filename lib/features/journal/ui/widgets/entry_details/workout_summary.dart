@@ -49,7 +49,13 @@ class WorkoutSummary extends StatelessWidget {
         // Separate the summary block from the chart frame(s) above it so the
         // facts don't read as crammed under the chart.
         if (showChart) SizedBox(height: tokens.spacing.step4),
-        EntryTextWidget(entryTextForWorkout(data), padding: EdgeInsets.zero),
+        // When the charts are shown they already title the workout type, so
+        // drop the redundant heading line and lead with the Energy/Duration
+        // value lines.
+        EntryTextWidget(
+          entryTextForWorkout(data, includeTitle: !showChart),
+          padding: EdgeInsets.zero,
+        ),
       ],
     );
   }

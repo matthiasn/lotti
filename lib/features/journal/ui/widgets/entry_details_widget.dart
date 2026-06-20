@@ -358,7 +358,7 @@ class EntryDetailsContent extends ConsumerWidget {
       final body = <Widget>[
         if (hasLabels) EntryLabelsDisplay(entryId: itemId),
         if (item is JournalImage) EntryImageWidget(item),
-        if (!shouldHideEditor) EditorWidget(entryId: itemId),
+        if (!shouldHideEditor) _bodyEditor(itemId),
         ?detailSection,
         if (item is JournalAudio)
           NestedAiResponsesWidget(
@@ -368,6 +368,7 @@ class EntryDetailsContent extends ConsumerWidget {
       ];
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           header,
           ..._withRhythm(context, body),
@@ -384,17 +385,19 @@ class EntryDetailsContent extends ConsumerWidget {
       if (item is JournalImage) EntryImageWidget(item),
       if (item is JournalAudio && detailSection != null) detailSection,
       if (hasLabels) EntryLabelsDisplay(entryId: itemId),
-      if (!shouldHideEditor) EditorWidget(entryId: itemId),
+      if (!shouldHideEditor) _bodyEditor(itemId),
       if (item is JournalAudio)
         NestedAiResponsesWidget(parentEntryId: itemId, linkedFromEntity: item),
     ];
     final expandedContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [..._withRhythm(context, collapsibleBody), footer],
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         header,
         _CollapsibleBody(
@@ -404,6 +407,16 @@ class EntryDetailsContent extends ConsumerWidget {
       ],
     );
   }
+
+  /// The entry's body/note editor, nudged left so its text hangs from the same
+  /// content gutter as the timestamp and value lines. flutter_quill insets a
+  /// read-only line's text ~3px from the editor's own left edge; without this
+  /// the body sat on a second, inboard left rail (the most-flagged break in the
+  /// card family's alignment).
+  Widget _bodyEditor(String itemId) => Transform.translate(
+    offset: const Offset(-3, 0),
+    child: EditorWidget(entryId: itemId),
+  );
 
   /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) between
   /// every stacked body section — timestamp→body and body→value alike — so the
