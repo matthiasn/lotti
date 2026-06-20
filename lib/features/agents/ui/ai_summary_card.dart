@@ -125,6 +125,10 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.taskId != widget.taskId ||
         oldWidget.identity.agentId != widget.identity.agentId) {
+      // Drop in-flight exit state too: a fingerprint left over from the
+      // previous task must not carry into the next one (it would keep
+      // `settling` on or skew the pending-count filter).
+      _exitingFingerprints.clear();
       _lastVisibleSuggestions = null;
       _closeSuggestionSubscriptions();
       _startSuggestionSubscriptions();
@@ -133,6 +137,7 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
 
   @override
   void dispose() {
+    _exitingFingerprints.clear();
     _closeSuggestionSubscriptions();
     super.dispose();
   }
@@ -173,24 +178,29 @@ class _AiSummaryShellState extends ConsumerState<_AiSummaryShell> {
   /// stays.
   void _onRowResolveEnd(PendingSuggestion suggestion, {required bool removed}) {
     if (!_exitingFingerprints.remove(suggestion.fingerprint)) return;
+    // The exiting set changed, and both `settling` and the pending count derive
+    // from it — always rebuild so neither can stick in a stale state, even on
+    // the paths where the visible list itself doesn't change.
+    if (!mounted) return;
     if (removed) {
       final list = _lastVisibleSuggestions;
-      if (list != null) {
-        final open = list.open
-            .where((s) => s.fingerprint != suggestion.fingerprint)
-            .toList();
-        if (open.length != list.open.length && mounted) {
-          setState(() {
+      setState(() {
+        if (list != null) {
+          final open = list.open
+              .where((s) => s.fingerprint != suggestion.fingerprint)
+              .toList();
+          if (open.length != list.open.length) {
             _lastVisibleSuggestions = UnifiedSuggestionList(
               open: open,
               activity: list.activity,
               agentName: list.agentName,
             );
-          });
+          }
         }
-      }
+      });
       return;
     }
+    setState(() {});
     _syncVisibleSuggestions();
   }
 

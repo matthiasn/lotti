@@ -1163,9 +1163,12 @@ void main() {
         await tester.tap(find.byIcon(Icons.check_rounded).first);
         await tester.pump();
 
-        // The only check button left belongs to row B. Tapping it now must be
-        // inert — the section is settling while row A collapses.
-        await tester.tap(find.byIcon(Icons.check_rounded).first);
+        // Tap row B's confirm button — it must be inert while the section is
+        // settling (row A collapsing). `.last` targets row B's button: row A's
+        // resolve badge also renders a check glyph, so `.first` could hit that
+        // inert badge and pass for the wrong reason; row B sits below row A, so
+        // its button is always the last check glyph in tree order.
+        await tester.tap(find.byIcon(Icons.check_rounded).last);
         await tester.pump(const Duration(milliseconds: 50));
         verifyNever(() => service.confirmItem(csB, 0));
 
