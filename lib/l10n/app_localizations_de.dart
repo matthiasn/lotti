@@ -7792,10 +7792,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get sidebarToggleExpandLabel => 'Seitenleiste ausklappen';
 
   @override
-  String get sidebarWakesCancelTooltip => 'Weckvorgang abbrechen';
+  String get sidebarWakesCancelTooltip => 'Agent abbrechen';
 
   @override
-  String get sidebarWakesHeader => 'Weckvorgänge';
+  String get sidebarWakesHeader => 'Agenten';
 
   @override
   String get sidebarWakesNow => 'jetzt';
@@ -7868,6 +7868,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Stimme anhören';
+
+  @override
+  String get syncActivityInboxLabel => 'Inbox';
+
+  @override
+  String get syncActivityOutboxLabel => 'Outbox';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {

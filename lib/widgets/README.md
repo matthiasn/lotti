@@ -189,22 +189,25 @@ Widget displaying multiple task count statistics.
 ### TasksCountWidget
 Individual task count display component.
 
-### SidebarTimerSection
-Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever a time-recording session is active. Replaces the legacy bottom-anchored floating indicator on desktop.
+### SidebarLiveCard
+Shared visual shell for the sidebar's *live* status surfaces — the running timer and an active audio recording (`lib/widgets/misc/sidebar_live_card.dart`). Each is its own accent-tinted card (`Color.alphaBlend(accent.withValues(alpha: 0.14), background.level01)` — the accent composited over the darker base so the colour reads richer and the elapsed time keeps strong parity contrast across hues; radius `m`) with a 3px accent rail, laid out as two rows: a **top row** with the leading glyph, the prominent **accent-coloured** elapsed time (`subtitle1`, tabular figures), and the trailing action pinned right; and a **second row** with the linked title (`bodySmall`) spanning the full card width so it wraps to two lines (full value via tooltip) before truncating. The accent both identifies the kind at a glance (teal = timer, red = recording) and gives the card real presence — without the old saturated alarm-red fill, glow, or reactive frame. The composer (`_DesktopSidebarAboveSettings` in `lib/beamer/beamer_app.dart`) stacks the live cards plus the quieter neutral agent-queue card in the `aboveSettings` slot, ordered live-first (audio → timer → agents), with animated gaps that appear only between cards that are both visible.
 
-- Layout: a text-only title row (task title) over a body row with a timer icon, the tabular HH:MM:SS duration, and a circular stop button.
-- Typography: Inter with `numericBadgeFontFeatures` (tabular figures, slashed zero, `cv02`/`cv03`/`cv04` open digits) so 4/6/9 stay legible at small sizes and digits do not breathe.
+- `pulse: true` overlays a small breathing record dot on the glyph (recording), and respects the platform reduce-motion setting (static when animations are disabled).
+
+### SidebarTimerSection
+Live card surfaced in the sidebar whenever a time-recording session is active (via `SidebarLiveCard`). Replaces the legacy bottom-anchored floating indicator on desktop.
+
+- Layout: top row = teal `Icons.timer_outlined` glyph + a prominent teal tabular HH:MM:SS time + a 28px circular stop button (a teal-tinted chip + teal glyph, matching the audio card's red stop chip — same affordance, accent the only difference; red stays exclusive to the consequential recording stop); second row = the task title (two lines, full title via hover tooltip when truncated). A 3px teal accent rail runs the full height.
+- Typography: Inter with `numericBadgeFontFeatures` (tabular figures, slashed zero, `cv02`/`cv03`/`cv04` open digits) so 4/6/9 stay legible and digits do not breathe.
 - Interactions: tapping the body navigates to the running task (or the timer's journal entry, if not task-linked); tapping the stop button calls `TimeService.stop()`.
 - Visibility: shown for the entire lifetime of a running timer, driven solely by `TimeService.getStream()`. It is intentionally not hidden when the running task is open in the details pane (the action bar's running pill and this card may both show at once) and persists across tab navigation. See "Sidebar timer coordination" in `lib/features/tasks/README.md`.
 - Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
 
 ### SidebarAudioRecordingSection
-Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever an audio recording is active and the recording modal is not visible. It sits above `SidebarTimerSection` and uses the same card radius, padding rhythm, elapsed-time typography, and circular stop affordance.
+Live card surfaced whenever an audio recording is active and the recording modal is not visible (via `SidebarLiveCard`). It sits above `SidebarTimerSection`.
 
-- Layout: linked task/title fallback over a body row with an emphasized,
-  dBFS-reactive `AudioRecordingOrb`, tabular HH:MM:SS, and a circular stop
-  button.
-- Signal: reads `AudioRecorderState.dBFS`, which is fed by the `record` package amplitude stream for standard recording and by realtime PCM amplitude calculation for realtime recording. The same speech-weighted signal value drives the orb and the card frame's red border/shadow intensity.
+- Layout: top row = `Icons.mic_rounded` glyph with a **gentle pulsing record dot** (record convention, reduce-motion aware) + a prominent red tabular HH:MM:SS time + a red 28px circular stop button (the consequential action keeps the destructive red); second row = the linked title (two lines, full title via tooltip). A 3px red accent rail runs the full height.
+- No `AudioRecordingOrb` and no dBFS-reactive frame/shadow in the sidebar — the red accent + pulsing dot carry "recording" without the reactive orb. (The live orb still drives the mobile recording pill and the modal's VU meter.)
 - Interactions: tapping the body reopens `AudioRecordingModal`; tapping the stop button calls `AudioRecorderController.stop()` or `stopRealtime()` based on the active recording mode.
 - Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
 

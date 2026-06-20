@@ -6,6 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1030]
 ### Changed
+- The desktop sidebar's live-status area — the running timer, an active voice
+  recording, and background agents — was redesigned to feel calmer and more
+  cohesive while still reading at a glance. The old jumble of red, bordered, and
+  monospace boxes is gone. A running timer is now a teal card and an active
+  recording a red card, each with a coloured accent rail, the task name on up to
+  two lines, and a big, easy-to-read elapsed time in its accent colour; the
+  recording shows a gentle pulsing dot so you can tell it's live (it respects the
+  system "reduce motion" setting). Background "Agents" sit just below in a
+  quieter card. Hovering a shortened task name shows it in full, and at the very
+  bottom the sync readout is now labelled "Outbox / Inbox" (instead of
+  "tx / rx") and stays quiet until there's something to sync.
 - The task details **header** was reworked for a calmer, more responsive
   layout. The status control no longer floats in empty space — it leads a
   two-lane metadata block (status · priority · due · time estimate on the first

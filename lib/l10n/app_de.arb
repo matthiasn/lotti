@@ -3320,8 +3320,8 @@
   "sidebarRunningTimerStopTooltip": "Timer stoppen",
   "sidebarToggleCollapseLabel": "Seitenleiste einklappen",
   "sidebarToggleExpandLabel": "Seitenleiste ausklappen",
-  "sidebarWakesCancelTooltip": "Weckvorgang abbrechen",
-  "sidebarWakesHeader": "Weckvorgänge",
+  "sidebarWakesCancelTooltip": "Agent abbrechen",
+  "sidebarWakesHeader": "Agenten",
   "sidebarWakesNow": "jetzt",
   "sidebarWakesOpenList": "Liste öffnen",
   "skillsSectionTitle": "Skills",
@@ -3344,6 +3344,8 @@
   "speechVoiceGenderFemale": "Weiblich",
   "speechVoiceGenderMale": "Männlich",
   "speechVoicePreviewTooltip": "Stimme anhören",
+  "syncActivityInboxLabel": "Inbox",
+  "syncActivityOutboxLabel": "Outbox",
   "syncActivityIndicatorSemantics": "Sync-Aktivität. Outbox: {outbox}. Inbox: {inbox}. Sync-Outbox öffnen.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {

@@ -3320,8 +3320,8 @@
   "sidebarRunningTimerStopTooltip": "Detener temporizador",
   "sidebarToggleCollapseLabel": "Contraer barra lateral",
   "sidebarToggleExpandLabel": "Expandir barra lateral",
-  "sidebarWakesCancelTooltip": "Cancelar despertar",
-  "sidebarWakesHeader": "Despertares",
+  "sidebarWakesCancelTooltip": "Cancelar agente",
+  "sidebarWakesHeader": "Agentes",
   "sidebarWakesNow": "ahora",
   "sidebarWakesOpenList": "Abrir lista",
   "skillsSectionTitle": "Habilidades",
@@ -3344,6 +3344,8 @@
   "speechVoiceGenderFemale": "Femenina",
   "speechVoiceGenderMale": "Masculina",
   "speechVoicePreviewTooltip": "Escuchar la voz",
+  "syncActivityInboxLabel": "Entrada",
+  "syncActivityOutboxLabel": "Salida",
   "syncActivityIndicatorSemantics": "Actividad de sincronización. Bandeja de salida: {outbox}. Bandeja de entrada: {inbox}. Abrir bandeja de salida de sincronización.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {

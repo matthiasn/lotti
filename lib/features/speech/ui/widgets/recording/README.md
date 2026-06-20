@@ -73,15 +73,20 @@ AudioRecordingOrb(
 ### 4. Persistent Recording Indicators
 
 Persistent indicators appear when recording is active and the modal is not
-visible. They read `AudioRecorderState.dBFS` directly, so the animation follows
-the same audio stream as the VU meter.
+visible.
 
 **Features:**
-- Desktop: `SidebarAudioRecordingSection` renders a full-width card in the
-  sidebar above `SidebarTimerSection`, with linked task title, live orb,
-  dBFS-reactive red frame/shadow intensity, duration, and a stop button.
-- Mobile: `AudioRecordingIndicator` renders the compact bottom-nav pill with
-  the same live orb and duration.
+- Desktop: `SidebarAudioRecordingSection` renders a red accent-tinted live card
+  (via `SidebarLiveCard`, alongside the teal running-timer card and the quieter
+  agent-queue card) with a microphone glyph + a gentle pulsing record dot, the
+  linked task title (up to two lines, full value via hover tooltip), a prominent
+  red elapsed time, and a stop button. It uses **no** `AudioRecordingOrb` and no
+  dBFS-reactive frame — the red accent plus the pulsing dot carry "recording"
+  without the reactive orb, and the pulse respects the platform reduce-motion
+  setting.
+- Mobile: `AudioRecordingIndicator` renders the compact bottom-nav pill with a
+  live `AudioRecordingOrb` and duration; it reads `AudioRecorderState.dBFS`
+  directly so the orb animation follows the same audio stream as the VU meter.
 - Clicking the non-stop body reopens the recording modal.
 - Auto-hides when modal is visible or recording stops
 

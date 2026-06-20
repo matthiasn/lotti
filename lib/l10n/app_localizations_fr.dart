@@ -7910,10 +7910,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get sidebarToggleExpandLabel => 'Développer la barre latérale';
 
   @override
-  String get sidebarWakesCancelTooltip => 'Annuler le réveil';
+  String get sidebarWakesCancelTooltip => 'Annuler l\'agent';
 
   @override
-  String get sidebarWakesHeader => 'Réveils';
+  String get sidebarWakesHeader => 'Agents';
 
   @override
   String get sidebarWakesNow => 'maintenant';
@@ -7986,6 +7986,12 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Écouter la voix';
+
+  @override
+  String get syncActivityInboxLabel => 'Entrée';
+
+  @override
+  String get syncActivityOutboxLabel => 'Sortie';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {

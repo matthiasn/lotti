@@ -8,7 +8,7 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
+import 'package:lotti/widgets/misc/sidebar_live_card.dart';
 import 'package:lotti/widgets/misc/timer_navigation.dart';
 
 /// Inline timer panel rendered in the desktop sidebar's `aboveSettings`
@@ -116,41 +116,20 @@ class _SidebarTimerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final errorColor = tokens.colors.alert.error.defaultColor;
     final title = _resolveTitle(messages.taskUntitled);
     final durationText = formatDuration(entryDuration(current));
 
-    return Semantics(
-      container: true,
-      label: messages.sidebarRunningTimerLabel,
-      child: Material(
-        color: errorColor.withAlpha(20),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTapBody,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.step4,
-              tokens.spacing.step3,
-              tokens.spacing.step3,
-              tokens.spacing.step3,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _TimerTitleRow(title: title),
-                SizedBox(height: tokens.spacing.step2),
-                _TimerBodyRow(
-                  durationText: durationText,
-                  onStop: onStop,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+    // Teal "live" accent — the app's interactive accent identifies a running
+    // timer (rail + glyph + prominent elapsed time) and separates it from the
+    // red audio card so the two stop buttons can never be confused.
+    return SidebarLiveCard(
+      accent: tokens.colors.interactive.enabled,
+      glyph: Icons.timer_outlined,
+      title: title,
+      timeText: durationText,
+      onTap: onTapBody,
+      semanticsLabel: messages.sidebarRunningTimerLabel,
+      trailing: _StopTimerButton(onStop: onStop),
     );
   }
 
@@ -167,61 +146,6 @@ class _SidebarTimerCard extends StatelessWidget {
   }
 }
 
-class _TimerTitleRow extends StatelessWidget {
-  const _TimerTitleRow({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Text(
-      title,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.text.mediumEmphasis,
-      ),
-    );
-  }
-}
-
-class _TimerBodyRow extends StatelessWidget {
-  const _TimerBodyRow({
-    required this.durationText,
-    required this.onStop,
-  });
-
-  final String durationText;
-  final VoidCallback onStop;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final errorColor = tokens.colors.alert.error.defaultColor;
-    return Row(
-      children: [
-        Icon(
-          Icons.timer_outlined,
-          size: 20,
-          color: errorColor,
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Expanded(
-          child: Text(
-            durationText,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: errorColor,
-              fontFeatures: numericBadgeFontFeatures,
-            ),
-          ),
-        ),
-        _StopTimerButton(onStop: onStop),
-      ],
-    );
-  }
-}
-
 class _StopTimerButton extends StatelessWidget {
   const _StopTimerButton({required this.onStop});
 
@@ -230,9 +154,13 @@ class _StopTimerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final errorColor = tokens.colors.alert.error.defaultColor;
+    final accent = tokens.colors.interactive.enabled;
     final tooltip = context.messages.sidebarRunningTimerStopTooltip;
 
+    // Teal-tinted chip + teal glyph — same affordance pattern as the audio
+    // recording's red stop, so the action language is consistent across the
+    // live cards (only the accent differs). Red still stays exclusive to the
+    // consequential recording stop.
     return Semantics(
       button: true,
       label: tooltip,
@@ -240,20 +168,16 @@ class _StopTimerButton extends StatelessWidget {
         message: tooltip,
         excludeFromSemantics: true,
         child: Material(
-          color: errorColor.withAlpha(40),
+          color: accent.withValues(alpha: 0.16),
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: onStop,
             child: SizedBox(
-              width: 32,
-              height: 32,
-              child: Icon(
-                Icons.stop_rounded,
-                size: 18,
-                color: errorColor,
-              ),
+              width: 28,
+              height: 28,
+              child: Icon(Icons.stop_rounded, size: 16, color: accent),
             ),
           ),
         ),

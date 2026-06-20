@@ -3104,8 +3104,8 @@
   "sidebarRunningTimerStopTooltip": "Zastavit časovač",
   "sidebarToggleCollapseLabel": "Sbalit postranní panel",
   "sidebarToggleExpandLabel": "Rozbalit postranní panel",
-  "sidebarWakesCancelTooltip": "Zrušit probuzení",
-  "sidebarWakesHeader": "Probuzení",
+  "sidebarWakesCancelTooltip": "Zrušit agenta",
+  "sidebarWakesHeader": "Agenti",
   "sidebarWakesNow": "nyní",
   "sidebarWakesOpenList": "Otevřít seznam",
   "skillsSectionTitle": "Dovednosti",
@@ -3128,6 +3128,8 @@
   "speechVoiceGenderFemale": "Ženský",
   "speechVoiceGenderMale": "Mužský",
   "speechVoicePreviewTooltip": "Přehrát ukázku hlasu",
+  "syncActivityInboxLabel": "Příchozí",
+  "syncActivityOutboxLabel": "Odchozí",
   "syncActivityIndicatorSemantics": "Aktivita synchronizace. Odchozí: {outbox}. Příchozí: {inbox}. Otevřít odchozí frontu synchronizace.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {

@@ -1137,18 +1137,29 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
 }
 
 /// Composer for the desktop sidebar's `aboveSettings` slot. Stacks the
-/// optional inline Wake Queue (when its config flag is enabled), audio
-/// recording panel, and running-timer panel, so the running timer still sits
-/// closest to the Settings entry below. Separators are rendered only between
-/// sections that are actually visible.
+/// active-status surfaces as a family of distinct cards, ordered live-first:
+/// the active audio recording (red), the running timer (teal), then the
+/// optional inline agent queue (a quieter neutral card). Each card carries its
+/// own surface and self-collapses when inactive; animated gaps appear only
+/// between cards that are both visible, so the stack grows and shrinks
+/// smoothly without leaving phantom spacing.
 class _DesktopSidebarAboveSettings extends ConsumerWidget {
   const _DesktopSidebarAboveSettings({required this.showWakeQueue});
 
   final bool showWakeQueue;
 
+  Widget _gap(BuildContext context, {required bool visible}) {
+    final tokens = context.designTokens;
+    return AnimatedSize(
+      duration: SidebarAudioRecordingSection.animationDuration,
+      curve: Curves.easeInOut,
+      alignment: Alignment.bottomCenter,
+      child: SizedBox(height: visible ? tokens.spacing.step4 : 0),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
     final wakesVisible =
         showWakeQueue && sidebarWakeQueueHasVisibleContent(ref);
     final audioVisible =
@@ -1158,36 +1169,15 @@ class _DesktopSidebarAboveSettings extends ConsumerWidget {
       stream: getIt<TimeService>().getStream(),
       builder: (context, snapshot) {
         final hasTimer = snapshot.data != null;
-        final hasBelowWake = audioVisible || hasTimer;
         return Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (showWakeQueue) const SidebarWakeQueue(),
-            // Animate the gap height so it grows/collapses in sync with
-            // the wake card's own AnimatedSize transition; a static
-            // SizedBox would otherwise pop in or out the instant either
-            // side's visibility flipped.
-            AnimatedSize(
-              duration: SidebarWakeQueue.animationDuration,
-              curve: Curves.easeInOut,
-              alignment: Alignment.bottomCenter,
-              child: SizedBox(
-                height: (wakesVisible && hasBelowWake)
-                    ? tokens.spacing.step3
-                    : 0,
-              ),
-            ),
             if (!_isRunningInFlatpak()) const SidebarAudioRecordingSection(),
-            AnimatedSize(
-              duration: SidebarAudioRecordingSection.animationDuration,
-              curve: Curves.easeInOut,
-              alignment: Alignment.bottomCenter,
-              child: SizedBox(
-                height: (audioVisible && hasTimer) ? tokens.spacing.step3 : 0,
-              ),
-            ),
+            _gap(context, visible: audioVisible && (hasTimer || wakesVisible)),
             const SidebarTimerSection(),
+            _gap(context, visible: hasTimer && wakesVisible),
+            if (showWakeQueue) const SidebarWakeQueue(),
           ],
         );
       },

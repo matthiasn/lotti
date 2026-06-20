@@ -2442,7 +2442,7 @@ void main() {
 
   group('AppScreen desktop sidebar aboveSettings gaps', () {
     testWidgets(
-      'inserts wake→below gap when wakes visible and a timer is running',
+      'inserts timer→wakes gap when wakes visible and a timer is running',
       (tester) async {
         final mockNavService = MockNavService();
         await _stubNavService(
@@ -2485,8 +2485,9 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // The wake card renders, proving wakesVisible == true. With a running
-        // timer, the wake→below spacer takes its non-zero (step3) branch.
+        // The wake card renders last (live-first order: audio → timer →
+        // wakes), so with a running timer above it the timer→wakes spacer
+        // takes its non-zero (step4) branch.
         expect(find.byType(SidebarWakeQueue), findsOneWidget);
         expect(find.byType(SidebarTimerSection), findsOneWidget);
         final tokens = tester
@@ -2494,9 +2495,9 @@ void main() {
             .designTokens;
         final gap = _aboveSettingsGapHeight(
           tester,
-          belowChildType: SidebarAudioRecordingSection,
+          belowChildType: SidebarWakeQueue,
         );
-        expect(gap, tokens.spacing.step3);
+        expect(gap, tokens.spacing.step4);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -2551,7 +2552,7 @@ void main() {
           tester,
           belowChildType: SidebarTimerSection,
         );
-        expect(gap, tokens.spacing.step3);
+        expect(gap, tokens.spacing.step4);
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();
@@ -2559,7 +2560,7 @@ void main() {
     );
 
     testWidgets(
-      'collapses both gaps when wakes are visible but nothing renders below',
+      'collapses both gaps when only the wake card is visible',
       (tester) async {
         // The audio section widget is absent on Flatpak builds, so the
         // gap lookup below SidebarAudioRecordingSection cannot run there.
@@ -2605,19 +2606,20 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // Wake card is rendered, but with no timer and no recording both
-        // spacers stay on their zero-height branch.
+        // spacers — audio→timer (above the timer) and timer→wakes (above the
+        // wake card) — stay on their zero-height branch.
         expect(find.byType(SidebarWakeQueue), findsOneWidget);
         expect(
           _aboveSettingsGapHeight(
             tester,
-            belowChildType: SidebarAudioRecordingSection,
+            belowChildType: SidebarTimerSection,
           ),
           0,
         );
         expect(
           _aboveSettingsGapHeight(
             tester,
-            belowChildType: SidebarTimerSection,
+            belowChildType: SidebarWakeQueue,
           ),
           0,
         );

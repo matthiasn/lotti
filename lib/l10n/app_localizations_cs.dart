@@ -7845,10 +7845,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get sidebarToggleExpandLabel => 'Rozbalit postranní panel';
 
   @override
-  String get sidebarWakesCancelTooltip => 'Zrušit probuzení';
+  String get sidebarWakesCancelTooltip => 'Zrušit agenta';
 
   @override
-  String get sidebarWakesHeader => 'Probuzení';
+  String get sidebarWakesHeader => 'Agenti';
 
   @override
   String get sidebarWakesNow => 'nyní';
@@ -7921,6 +7921,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Přehrát ukázku hlasu';
+
+  @override
+  String get syncActivityInboxLabel => 'Příchozí';
+
+  @override
+  String get syncActivityOutboxLabel => 'Odchozí';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {

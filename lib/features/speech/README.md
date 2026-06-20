@@ -79,8 +79,8 @@ Standard recording goes through `AudioRecorderRepository`, which wraps the
 - VU calculation from dBFS samples via the standalone
   [`VuMeter`](./state/vu_meter.dart) (a self-contained sliding-window RMS→VU
   unit, unit-tested directly in `vu_meter_test.dart`)
-- live dBFS exposure for the modal VU meter, the speech-weighted desktop
-  sidebar orb, and the mobile recording pill
+- live dBFS exposure for the modal VU meter and the mobile recording pill
+  (the desktop sidebar row no longer visualizes dBFS — see below)
 - linked-entry and category context
 - coordination with app-wide playback
 - persistence through `SpeechRepository`
@@ -149,7 +149,7 @@ sequenceDiagram
   Repo-->>Ctl: AudioNote + amplitude stream
   Ctl->>Ctl: update dBFS, RMS-based VU, progress
   Ctl-->>Modal: VU meter + elapsed time
-  Ctl-->>Sidebar: dBFS-reactive orb, red frame/shadow + elapsed time
+  Ctl-->>Sidebar: red accent card + pulsing record dot + elapsed time (no dBFS reaction)
   User->>Modal: tap stop
   Modal->>Ctl: stop()
   Ctl->>Repo: stopRecording()
