@@ -96,7 +96,14 @@ class Body extends StatelessWidget {
                 index: index,
                 hideIfChecked: hideChecked,
                 hideIfUnchecked: hideUnchecked,
-                showDivider: index < itemIds.length - 1,
+                // Leading divider (every row except the first) rather than a
+                // trailing one: the separator above a row is part of that
+                // row's own widget, so an appended item and the line above it
+                // mount on the same frame. A trailing divider would belong to
+                // the *previous* row, whose repaint isn't synchronized with the
+                // new (async-loading) row — producing a "row appears, divider
+                // lands a frame later" flicker.
+                showDivider: index > 0,
               );
             },
           ),

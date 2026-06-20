@@ -460,6 +460,16 @@ void main() {
       expect(find.byType(Divider), findsNothing);
     });
 
+    testWidgets('divider sits above the row content (leading)', (tester) async {
+      // The separator is a leading child of the row, not a trailing one, so it
+      // is bound to the same widget as the item below it — an appended row and
+      // the line above it always mount together.
+      await _pump(tester, showDivider: true);
+      final dividerTop = tester.getTopLeft(find.byType(Divider)).dy;
+      final checkboxTop = tester.getTopLeft(find.byType(Checkbox)).dy;
+      expect(dividerTop, lessThan(checkboxTop));
+    });
+
     // ── Null item ──────────────────────────────────────────────────────────
 
     testWidgets('returns SizedBox.shrink for null item', (tester) async {

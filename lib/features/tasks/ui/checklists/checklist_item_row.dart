@@ -47,7 +47,9 @@ class ChecklistItemRow extends ConsumerStatefulWidget {
   /// When true, uncompleted items are hidden (for the "Done" filter tab).
   final bool hideIfUnchecked;
 
-  /// Whether to show a divider below this row.
+  /// Whether to show a divider *above* this row (separating it from the
+  /// previous one). Owning the leading separator keeps it atomic with the row:
+  /// an appended item and the line above it appear on the same frame.
   final bool showDivider;
 
   @override

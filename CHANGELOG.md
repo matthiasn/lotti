@@ -46,6 +46,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (stale-while-revalidate), and checklist cards are keyed by identity rather
   than list position, so inserting or reordering one no longer drops the others'
   state and flashes them.
+- Adding a checklist item no longer flashes a missing divider: the line that
+  separates the new item from the one above it is now part of the new row
+  itself, so the item and its divider appear together instead of the divider
+  arriving a frame later.
+- Confirming an AI proposal that checks off a checklist item no longer slides
+  the AI card up from under your finger. The checked item's row collapses a beat
+  after the tap, and the card now stays pinned across that delayed collapse, so
+  you can keep tapping in the same spot to accept the next proposal. The pin
+  steps aside the instant you scroll.
 
 ## [0.9.1029]
 ### Changed

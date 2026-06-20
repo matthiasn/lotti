@@ -128,13 +128,73 @@ void main() {
         // ...and the scroll compensated by ~the inserted height.
         expect(state.controller.offset, closeTo(420, 2));
 
-        // After its (small) frame budget drains, the hold releases itself.
-        for (var i = 0; i < 8; i++) {
-          await tester.pump(const Duration(milliseconds: 16));
-        }
+        // After the hold duration elapses, the hold releases itself.
+        await tester.pump(const Duration(milliseconds: 120));
         expect(state.anchor.isHolding, isFalse);
       },
     );
+
+    testWidgets(
+      'corrects a shrink above it that lands well after the trigger',
+      (tester) async {
+        // The check-off case: the row above stays put for a while, then
+        // collapses. The hold must still be active when that delayed shrink
+        // finally lands — a short frame burst would have missed it.
+        final harnessKey = GlobalKey<_AnchorHarnessState>();
+        await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+        await tester.pump();
+
+        final state = harnessKey.currentState!;
+        state.controller.jumpTo(300);
+        await tester.pump();
+
+        final before = state.anchorTop();
+        state.anchor.hold();
+
+        // Quiet stretch: nothing changes above, but well past a 24-frame burst.
+        await tester.pump(const Duration(milliseconds: 60));
+        expect(state.anchor.isHolding, isTrue);
+
+        // The delayed collapse finally shrinks the content above the anchor.
+        state.grow(-150);
+        await tester.pump();
+        await tester.pump();
+
+        final after = state.anchorTop();
+        // The anchor held its viewport position despite the late shrink...
+        expect((after! - before!).abs(), lessThan(2));
+        // ...by scrolling back ~the removed height (300 - 150).
+        expect(state.controller.offset, closeTo(150, 2));
+      },
+    );
+
+    testWidgets('releases without fighting when the user scrolls mid-hold', (
+      tester,
+    ) async {
+      final harnessKey = GlobalKey<_AnchorHarnessState>();
+      await tester.pumpWidget(_AnchorHarness(key: harnessKey));
+      await tester.pump();
+
+      final state = harnessKey.currentState!;
+      state.controller.jumpTo(120);
+      await tester.pump();
+
+      state.anchor.hold();
+      await tester.pump();
+      expect(state.anchor.isHolding, isTrue);
+
+      // The user deliberately scrolls — an offset change the anchor didn't make.
+      state.controller.jumpTo(260);
+      await tester.pump();
+      expect(state.anchor.isHolding, isFalse);
+
+      // A later shrink must NOT be compensated: the hold has bowed out, so the
+      // user's scroll position is preserved.
+      state.grow(-150);
+      await tester.pump();
+      await tester.pump();
+      expect(state.controller.offset, 260);
+    });
 
     testWidgets('does nothing when locate returns null (anchor absent)', (
       tester,
@@ -180,14 +240,14 @@ class _AnchorHarnessState extends State<_AnchorHarness> {
   final GlobalKey _anchorKey = GlobalKey();
   late final ScrollAnchor anchor = ScrollAnchor(
     controller: controller,
-    maxFrames: 3,
+    holdDuration: const Duration(milliseconds: 100),
     locate: () {
       final box = _anchorKey.currentContext?.findRenderObject() as RenderBox?;
       if (box == null || !box.attached) return null;
       return box.localToGlobal(Offset.zero).dy;
     },
   );
-  double _spacer = 200;
+  double _spacer = 400;
 
   double? anchorTop() {
     final box = _anchorKey.currentContext?.findRenderObject() as RenderBox?;
