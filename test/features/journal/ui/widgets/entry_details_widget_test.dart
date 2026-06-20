@@ -1846,6 +1846,161 @@ void main() {
     );
   });
 
+  // ---------------------------------------------------------------------------
+  // Regression: optimistic collapse override.
+  //
+  // The toggle must drive the body open/closed from local state the instant the
+  // chevron is tapped — the persisted `collapsed` flip only arrives later, via a
+  // sync round-trip that can lag behind a large backlog. These tests pass a
+  // FIXED `link` prop (never updated) so any expand/collapse can only come from
+  // the local override; before the override a collapsed card whose persist lagged
+  // never visibly expanded on tap.
+  // ---------------------------------------------------------------------------
+  group('EntryDetailsContent coverage – optimistic collapse override', () {
+    setUpAll(() {
+      setFakeDocumentsPath();
+      registerFallbackValue(
+        EntryLink.basic(
+          id: 'fallback-link',
+          fromId: 'fallback-from',
+          toId: 'fallback-to',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        ),
+      );
+    });
+
+    setUp(() async {
+      await _registerEntryDetailsMocks();
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    double sizeFactor(WidgetTester tester) => tester
+        .widget<SizeTransition>(find.byType(SizeTransition))
+        .sizeFactor
+        .value;
+
+    testWidgets(
+      'tapping a collapsed entry expands it before the link prop flips',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.updateLink(any()),
+        ).thenAnswer((_) async => true);
+
+        final collapsedLink = EntryLink.basic(
+          id: 'link-optimistic-expand',
+          fromId: testTask.meta.id,
+          toId: testTextEntry.meta.id,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          collapsed: true,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+              ],
+              child: EntryDetailsContent(
+                testTextEntry.meta.id,
+                linkedFrom: testTask,
+                link: collapsedLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Starts fully folded away.
+        expect(sizeFactor(tester), 0.0);
+
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+        await tester.pump(AppTheme.collapseAnimationDuration);
+
+        // Expanded from the local override even though `link` is still collapsed,
+        // and the flip was persisted exactly once.
+        expect(sizeFactor(tester), 1.0);
+        final captured = verify(
+          () => mockJournalRepository.updateLink(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        expect((captured.first as EntryLink).collapsed, isFalse);
+
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'tapping an expanded entry collapses it before the link prop flips',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.updateLink(any()),
+        ).thenAnswer((_) async => true);
+
+        // Expanded link (collapsed defaults to false).
+        final expandedLink = EntryLink.basic(
+          id: 'link-optimistic-collapse',
+          fromId: testTask.meta.id,
+          toId: testTextEntry.meta.id,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+              ],
+              child: EntryDetailsContent(
+                testTextEntry.meta.id,
+                linkedFrom: testTask,
+                link: expandedLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Starts fully expanded.
+        expect(sizeFactor(tester), 1.0);
+
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+        await tester.pump(AppTheme.collapseAnimationDuration);
+
+        // Folded away from the local override even though `link` is still
+        // expanded, and the flip was persisted exactly once.
+        expect(sizeFactor(tester), 0.0);
+        final captured = verify(
+          () => mockJournalRepository.updateLink(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        expect((captured.first as EntryLink).collapsed, isTrue);
+
+        await tester.pumpAndSettle();
+      },
+    );
+  });
+
   group('EntryDetailsWidget Collapsible Tests', () {
     TestWidgetsFlutterBinding.ensureInitialized();
 

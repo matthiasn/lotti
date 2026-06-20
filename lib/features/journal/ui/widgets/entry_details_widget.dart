@@ -211,7 +211,7 @@ class EntryDetailsWidget extends ConsumerWidget {
 /// and the entry is image/audio/text, the body becomes collapsible and the
 /// header drives an animated expand/collapse plus a best-effort auto-scroll so
 /// a newly expanded card is brought into view.
-class EntryDetailsContent extends ConsumerWidget {
+class EntryDetailsContent extends ConsumerStatefulWidget {
   const EntryDetailsContent(
     this.itemId, {
     this.linkedFrom,
@@ -225,10 +225,33 @@ class EntryDetailsContent extends ConsumerWidget {
   final EntryLink? link;
 
   @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  ConsumerState<EntryDetailsContent> createState() =>
+      _EntryDetailsContentState();
+}
+
+class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
+  // Optimistic collapse state: flipped instantly on tap so a collapsed entry
+  // expands the moment it is tapped, while the persisted `link.collapsed`
+  // catches up asynchronously. Persisting runs inside a vector-clock scope that
+  // can lag behind a large sync backlog, which made the tap feel unresponsive;
+  // the override is cleared once the persisted value matches it again.
+  bool? _collapsedOverride;
+
+  @override
+  void didUpdateWidget(EntryDetailsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_collapsedOverride != null &&
+        (widget.link?.collapsed ?? false) == _collapsedOverride) {
+      _collapsedOverride = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final itemId = widget.itemId;
+    final linkedFrom = widget.linkedFrom;
+    final link = widget.link;
+
     final provider = entryControllerProvider(id: itemId);
     final entryState = ref.watch(provider).value;
 
@@ -240,7 +263,8 @@ class EntryDetailsContent extends ConsumerWidget {
     final isCollapsible =
         linkedFrom != null &&
         (item is JournalImage || item is JournalAudio || item is JournalEntry);
-    final isCollapsed = isCollapsible && (link?.collapsed ?? false);
+    final isCollapsed =
+        isCollapsible && (_collapsedOverride ?? (link?.collapsed ?? false));
 
     final shouldHideEditor = switch (item) {
       JournalEvent() ||
@@ -280,7 +304,7 @@ class EntryDetailsContent extends ConsumerWidget {
         checklistId: item.data.linkedChecklists.isEmpty
             ? ''
             : item.data.linkedChecklists.first,
-        taskId: linkedFrom is Task ? linkedFrom!.id : '',
+        taskId: linkedFrom is Task ? linkedFrom.id : '',
         index: 0,
       ),
       RatingEntry() => RatingSummary(item),
@@ -300,14 +324,15 @@ class EntryDetailsContent extends ConsumerWidget {
       isCollapsed: isCollapsed,
       onToggleCollapse: isCollapsible && currentLink != null
           ? () async {
-              final isExpanding = currentLink.collapsed ?? false;
+              final isExpanding = isCollapsed;
+              // Flip the displayed state immediately so the tap is responsive
+              // even if the persist (below) lags behind a sync backlog.
+              setState(() => _collapsedOverride = !isCollapsed);
               try {
                 await ref
                     .read(journalRepositoryProvider)
                     .updateLink(
-                      currentLink.copyWith(
-                        collapsed: !(currentLink.collapsed ?? false),
-                      ),
+                      currentLink.copyWith(collapsed: !isCollapsed),
                     );
               } catch (e, s) {
                 getIt<DomainLogger>().error(
