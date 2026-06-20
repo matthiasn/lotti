@@ -424,12 +424,12 @@ void main() {
         // keeps the chip the correct width during first paint. The "of"
         // connector reads as tracked-of-estimated rather than the ambiguous
         // "X / Y".
-        expect(find.text('00:00 of 02:00'), findsOneWidget);
+        expect(find.text('0m of 2h'), findsOneWidget);
       },
     );
 
     testWidgets(
-      'formats the tracked / estimate pair as HH:MM consistently',
+      'formats a sub-hour estimate in plain minutes',
       (tester) async {
         final task = buildTask(estimate: const Duration(minutes: 45));
 
@@ -437,8 +437,24 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // 45-minute estimate pads hours with a leading zero.
-        expect(find.text('00:00 of 00:45'), findsOneWidget);
+        // A 45-minute estimate reads as "45m", not a clock-like "00:45".
+        expect(find.text('0m of 45m'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'formats a mixed hours+minutes estimate as "Xh Ym"',
+      (tester) async {
+        final task = buildTask(
+          estimate: const Duration(hours: 1, minutes: 30),
+        );
+
+        await tester.pumpWidget(pumpConnector(task: task));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Both components present → "1h 30m" (the hours+minutes branch).
+        expect(find.text('0m of 1h 30m'), findsOneWidget);
       },
     );
 
@@ -455,16 +471,16 @@ void main() {
         // The tooltip spells out which number is which for hover + a11y.
         final tooltip = tester.widget<Tooltip>(
           find.ancestor(
-            of: find.text('00:00 of 02:00'),
+            of: find.text('0m of 2h'),
             matching: find.byType(Tooltip),
           ),
         );
-        expect(tooltip.message, 'Time tracked: 00:00 of 02:00 estimated');
+        expect(tooltip.message, 'Time tracked: 0m of 2h estimated');
 
         // The neutral filled estimate chip carries the quiet border.
         final pill = tester.widget<DsPill>(
           find.ancestor(
-            of: find.text('00:00 of 02:00'),
+            of: find.text('0m of 2h'),
             matching: find.byType(DsPill),
           ),
         );
@@ -628,7 +644,7 @@ void main() {
         // The pill renders the "tracked of estimate" pair, with progress
         // overrunning the estimate; the connector takes the overtime branch
         // and paints a tinted error-coloured pill plus a progress bar.
-        expect(find.text('02:00 of 01:00'), findsOneWidget);
+        expect(find.text('2h of 1h'), findsOneWidget);
         expect(find.byType(LinearProgressIndicator), findsOneWidget);
       },
     );
@@ -661,7 +677,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('00:00 of 02:00'));
+        await tester.tap(find.text('0m of 2h'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

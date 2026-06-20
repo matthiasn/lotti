@@ -330,10 +330,15 @@ class _TaskEstimateChip extends ConsumerWidget {
 
   final String taskId;
 
+  /// Formats a duration as plain units ("1h 30m", "45m", "2h") rather than a
+  /// zero-padded "HH:MM" clock — users read "00:00 / 01:00" as a time-of-day
+  /// range; "0m of 1h" reads unambiguously as tracked-of-estimated duration.
   String _format(Duration duration) {
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+    if (hours > 0 && minutes > 0) return '${hours}h ${minutes}m';
+    if (hours > 0) return '${hours}h';
+    return '${minutes}m';
   }
 
   @override
