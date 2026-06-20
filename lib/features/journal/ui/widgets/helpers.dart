@@ -38,13 +38,18 @@ class EntryTextWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          for (final line in lines)
+          for (var i = 0; i < lines.length; i++) ...[
+            // Breathing room between stacked value rows (e.g. the workout
+            // summary's type / energy / duration) so a multi-line block does
+            // not read as a cramped clump.
+            if (i > 0) SizedBox(height: tokens.spacing.step1),
             _ValueLine(
-              line: line,
+              line: lines[i],
               labelStyle: labelStyle,
               valueStyle: valueStyle,
               maxLines: maxLines,
             ),
+          ],
         ],
       ),
     );

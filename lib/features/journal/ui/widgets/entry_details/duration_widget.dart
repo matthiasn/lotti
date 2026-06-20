@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -155,15 +154,11 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
         visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
         child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: Icon(
-                MdiIcons.timerOutline,
-                color: labelColor,
-                size: 15,
-              ),
+            FormattedTime(
+              labelColor: labelColor,
+              isRecording: isRecording,
+              displayed: displayed,
             ),
-            FormattedTime(labelColor: labelColor, displayed: displayed),
             Visibility(
               visible: isRecent && showRecordIcon && !isRecording,
               child: IconButton(
@@ -212,19 +207,39 @@ class FormattedTime extends StatelessWidget {
   const FormattedTime({
     required this.labelColor,
     required this.displayed,
+    this.isRecording = false,
     super.key,
   });
 
   final Color? labelColor;
+  final bool isRecording;
   final JournalEntity displayed;
 
   @override
   Widget build(BuildContext context) {
-    // One numeric voice with the rest of the card: proportional body sans, no
-    // monospace/slashed-zero badge features.
-    final style = context.designTokens.typography.styles.body.bodySmall
-        .copyWith(color: labelColor);
+    final tokens = context.designTokens;
+    // Same "label: value" grammar as the other cards — a quiet "Duration:"
+    // label and the time as the bold value (tabular figures so the running
+    // counter does not jitter), instead of a bare unlabelled time + glyph.
+    final labelStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: labelColor,
+    );
+    final valueStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: isRecording ? labelColor : tokens.colors.text.highEmphasis,
+      fontWeight: FontWeight.w600,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
     final text = formatDuration(entryDuration(displayed));
-    return Text(text, style: style);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '${context.messages.journalDurationLabel}: ',
+            style: labelStyle,
+          ),
+          TextSpan(text: text, style: valueStyle),
+        ],
+      ),
+    );
   }
 }

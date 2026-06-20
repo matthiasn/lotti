@@ -48,7 +48,10 @@ DefaultStyles customEditorStyles({
     ),
     paragraph: DefaultTextBlockStyle(
       paragraphStyle,
-      const HorizontalSpacing(2, 0),
+      // No left indent — the body/note text must hang from the same content
+      // gutter as the timestamp and value lines (the 2px inset pushed the body
+      // off the shared left edge).
+      HorizontalSpacing.zero,
       VerticalSpacing.zero,
       VerticalSpacing.zero,
       null,
