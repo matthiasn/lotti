@@ -382,9 +382,15 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(4),
                                 ),
+                                // Medium emphasis (not low) at 2px: an empty
+                                // checkbox is a control the user must be able to
+                                // SEE — a faint low-emphasis outline nearly
+                                // vanished against the dark card for low-vision
+                                // users. This is control legibility, not the
+                                // metadata-chip emphasis tiering.
                                 side: BorderSide(
-                                  color: tokens.colors.text.lowEmphasis,
-                                  width: 1.5,
+                                  color: tokens.colors.text.mediumEmphasis,
+                                  width: 2,
                                 ),
                                 materialTapTargetSize:
                                     MaterialTapTargetSize.shrinkWrap,

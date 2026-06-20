@@ -369,6 +369,10 @@ carries a `hoverColor` so the whole 44px zone lights up on hover/press —
 the forgiving target is *visible*, not just promised. The drag-grip icon is a
 quiet hint at a low (0.2) alpha (a long-press anywhere on the row starts the
 drag), so the repeating grip texture doesn't compete with the checkbox + title.
+The empty checkbox draws its outline at medium emphasis / 2px (not the faint
+low-emphasis 1.5px it used to) — an unchecked control must stay visible against
+the dark card for low-vision users; this is control legibility, not the
+metadata-chip emphasis tiering.
 
 ### Checklist runtime model
 
