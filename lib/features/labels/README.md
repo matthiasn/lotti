@@ -338,11 +338,11 @@ There are two practical entry points:
 
 The AI path is intentionally add-only and defensive:
 
-- if a task already has 3 or more labels, the task-side handler and processor no-op (`existingIds.length >= 3`)
 - low-confidence labels are dropped during parsing
 - the parser (`parseLabelCallArgs`) forwards at most the top 3 candidate IDs, ordered by confidence (very_high > high > medium)
 - the processor independently dedupes, rejects already-assigned IDs, and caps the deduped set at `kMaxLabelsPerAssignment` (currently 5) as a second guard — so even a caller that bypasses the parser stays bounded
 - labels must exist, must not be deleted, must be in category scope, and must not be suppressed for that task
+- pre-existing labels (manual or from earlier AI runs) never block a new suggestion — only the per-call cap of 3 and the validation rules above apply, so an accepted suggestion is always added (deduped against what is already there)
 
 The current prompt context builder also includes:
 

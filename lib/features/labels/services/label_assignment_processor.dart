@@ -62,11 +62,13 @@ class LabelAssignmentResult {
 
 /// Applies an AI/agent label proposal to a task with defense-in-depth guards.
 ///
-/// The pipeline normalizes and dedupes proposed IDs, no-ops when the task
-/// already has >= 3 labels, caps the set at [kMaxLabelsPerAssignment], skips
-/// already-assigned IDs, and validates each remaining ID via [LabelValidator]
-/// (must exist, not be deleted, be in category scope, and not be suppressed for
-/// the task). Survivors are persisted add-only through
+/// The pipeline normalizes and dedupes proposed IDs, caps the set at
+/// [kMaxLabelsPerAssignment], skips already-assigned IDs, and validates each
+/// remaining ID via [LabelValidator] (must exist, not be deleted, be in
+/// category scope, and not be suppressed for the task). Pre-existing labels do
+/// not block new assignments — a suggested label is applied regardless of how
+/// many labels the task already carries. Survivors are persisted add-only
+/// through
 /// [LabelsRepository.addLabels]; the outcome is summarized via
 /// [LabelAssignmentResult.toStructuredJson] for return to the model.
 class LabelAssignmentProcessor {
@@ -88,9 +90,10 @@ class LabelAssignmentProcessor {
   /// Runs the guarded assignment pipeline for [taskId] over [proposedIds],
   /// returning which IDs were assigned, invalid, or skipped (with reasons).
   ///
-  /// [existingIds] are the task's current labels (feeds the `>= 3` no-op gate);
-  /// pass [categoryId] to avoid a redundant DB lookup. The remaining parameters
-  /// are parser telemetry forwarded into structured logs, not control flow.
+  /// [existingIds] are the task's current labels, used only to skip
+  /// already-assigned IDs — they do not count against the per-call cap. Pass
+  /// [categoryId] to avoid a redundant DB lookup. The remaining parameters are
+  /// parser telemetry forwarded into structured logs, not control flow.
   Future<LabelAssignmentResult> processAssignment({
     required String taskId,
     required List<String> proposedIds,
@@ -103,19 +106,6 @@ class LabelAssignmentProcessor {
     Map<String, int>? confidenceBreakdown,
     int? totalCandidates,
   }) async {
-    // Phase 2: Do not assign if task already has >= 3 labels
-    if (existingIds.length >= 3) {
-      _logging.log(
-        LogDomain.labels,
-        'max_total_reached: existing labels >= 3 for task $taskId',
-        subDomain: 'processor',
-      );
-      return LabelAssignmentResult(
-        assigned: const [],
-        invalid: const [],
-        skipped: const [],
-      );
-    }
     // Normalize proposed IDs (trim, drop empties)
     final normalized = proposedIds
         .map((e) => e.trim())

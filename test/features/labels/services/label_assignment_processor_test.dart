@@ -178,8 +178,9 @@ class _GeneratedProcessorScenario {
         .toList(growable: false);
   }
 
-  bool get hasMaxExistingLabels => existingIds.length >= 3;
-  bool get returnsBeforeValidation => hasMaxExistingLabels || requested.isEmpty;
+  // Pre-existing labels no longer short-circuit the pipeline; the processor
+  // only returns before validation when there is nothing new to assign.
+  bool get returnsBeforeValidation => requested.isEmpty;
 
   List<String> get assigned => [
     for (final id in requested)
@@ -1051,24 +1052,42 @@ void main() {
 
     tearDown(getIt.reset);
 
-    test('short-circuits when task already has >=3 labels', () async {
-      final result = await processorPhase2.processAssignment(
-        taskId: 't1',
-        proposedIds: const ['a', 'b'],
-        existingIds: const ['e1', 'e2', 'e3'],
-      );
-
-      expect(result.assigned, isEmpty);
-      expect(result.invalid, isEmpty);
-      expect(result.skipped, isEmpty);
-      verifyNever(
+    test('assigns suggestions even when task already has >=3 labels', () async {
+      when(
+        () => mockDbPhase2.journalEntityById('t1'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDbPhase2.getLabelDefinitionById('global_a'),
+      ).thenAnswer((_) async => _labelDefinitionsById['global_a']);
+      when(
+        () => mockDbPhase2.getLabelDefinitionById('global_b'),
+      ).thenAnswer((_) async => _labelDefinitionsById['global_b']);
+      when(
         () => mockRepoPhase2.addLabels(
           journalEntityId: any(named: 'journalEntityId'),
           addedLabelIds: any(named: 'addedLabelIds'),
         ),
+      ).thenAnswer((_) async => true);
+
+      final result = await processorPhase2.processAssignment(
+        taskId: 't1',
+        proposedIds: const ['global_a', 'global_b'],
+        existingIds: const ['e1', 'e2', 'e3'],
+        categoryId: _GeneratedProcessorScenario.categoryId,
       );
 
-      // Verify a max_total_reached event was logged with expected marker
+      // The >=3 gate is gone: both suggestions are validated and persisted.
+      expect(result.assigned, ['global_a', 'global_b']);
+      expect(result.invalid, isEmpty);
+      expect(result.skipped, isEmpty);
+      verify(
+        () => mockRepoPhase2.addLabels(
+          journalEntityId: 't1',
+          addedLabelIds: ['global_a', 'global_b'],
+        ),
+      ).called(1);
+
+      // No max_total_reached event is emitted anymore.
       final logged = verify(
         () => mockLoggingPhase2.log(
           LogDomain.labels,
@@ -1077,9 +1096,12 @@ void main() {
           level: any<InsightLevel>(named: 'level'),
         ),
       ).captured;
-      expect(logged, isNotEmpty);
-      final message = logged.first.toString();
-      expect(message, contains('max_total_reached'));
+      expect(
+        logged.every(
+          (event) => !event.toString().contains('max_total_reached'),
+        ),
+        isTrue,
+      );
     });
 
     glados.Glados(
@@ -1097,7 +1119,6 @@ void main() {
           logging: localLogging,
         );
         final telemetry = <String>[];
-        final maxTotalEvents = <dynamic>[];
 
         when(
           () => localDb.journalEntityById(_GeneratedProcessorScenario.taskId),
@@ -1128,8 +1149,6 @@ void main() {
           final event = invocation.positionalArguments[1];
           if (event is String && event.startsWith('{')) {
             telemetry.add(event);
-          } else {
-            maxTotalEvents.add(event);
           }
         });
 
@@ -1151,14 +1170,6 @@ void main() {
           expect(result.invalid, isEmpty, reason: '$scenario');
           expect(result.skipped, isEmpty, reason: '$scenario');
           expect(telemetry, isEmpty, reason: '$scenario');
-          if (scenario.hasMaxExistingLabels) {
-            expect(
-              maxTotalEvents.single.toString(),
-              contains('max_total_reached'),
-            );
-          } else {
-            expect(maxTotalEvents, isEmpty, reason: '$scenario');
-          }
           verifyNever(
             () => localRepo.addLabels(
               journalEntityId: any(named: 'journalEntityId'),
@@ -1171,7 +1182,6 @@ void main() {
         expect(result.assigned, scenario.assigned, reason: '$scenario');
         expect(result.invalid, scenario.invalid, reason: '$scenario');
         expect(result.skipped, scenario.skipped, reason: '$scenario');
-        expect(maxTotalEvents, isEmpty, reason: '$scenario');
 
         if (scenario.assigned.isEmpty) {
           verifyNever(
