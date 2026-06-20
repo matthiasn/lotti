@@ -200,16 +200,21 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                           // from, so feed PagedSliverList a reordered display
                           // state rather than reordering the derived entries
                           // (which would desync the section boundaries).
+                          // Only reorder once items have actually loaded.
+                          // During the first-page load `items` is null; replacing
+                          // it with `pages: [[]]` would mask the loading/error
+                          // state and make PagedSliverList render an empty page
+                          // instead of the spinner. Leave the raw state untouched
+                          // in that case.
+                          final loadedItems = pagingState.items;
                           final displayState =
-                              state.sortOption == TaskSortOption.byPriority
+                              state.sortOption == TaskSortOption.byPriority &&
+                                  loadedItems != null
                               ? pagingState.copyWith(
                                   pages: [
                                     <JournalEntity>[
                                       ...sortTasksWithinPriorityBuckets(
-                                        (pagingState.items ??
-                                                const <JournalEntity>[])
-                                            .whereType<Task>()
-                                            .toList(),
+                                        loadedItems.whereType<Task>().toList(),
                                         now,
                                       ),
                                     ],

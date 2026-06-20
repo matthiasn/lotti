@@ -241,11 +241,27 @@ class TaskRowContent extends ConsumerWidget {
         category?.icon?.iconData ??
         Icons.label_outline_rounded;
     final coverArtId = showCoverArt ? liveTask.data.coverArtId : null;
-    final trackedLabel = _resolveTrackedDurationLabel(
-      context,
-      ref,
-      liveTask.meta.id,
-    );
+    // Tracked-duration label: an explicit override (previews/tests, and
+    // runtime callers such as task_list_pane) wins; otherwise the live tracked
+    // duration is read HERE so the reactive dependency on the progress provider
+    // is visible in build() rather than hidden inside a helper. A zero duration
+    // — whether it arrives via an override or the live value — is suppressed so
+    // "0h 0m" never clutters a row that has not been worked on yet.
+    final String? trackedLabel;
+    if (trackedDurationLabelOverride case final override?) {
+      final zeroLabel = context.messages
+          .designSystemMyDailyDurationHoursMinutesCompact(0, 0);
+      trackedLabel = override == zeroLabel ? null : override;
+    } else {
+      final progressState = ref.watch(
+        taskProgressControllerProvider(id: liveTask.meta.id),
+      );
+      final progress = switch (progressState) {
+        AsyncData(:final value) => value?.progress ?? Duration.zero,
+        _ => Duration.zero,
+      };
+      trackedLabel = _formatTrackedDuration(context, progress);
+    }
     final metadata = <Widget>[
       if (sortOption != TaskSortOption.byPriority)
         _PriorityMeta(priority: liveTask.data.priority),
@@ -372,25 +388,12 @@ class TaskRowContent extends ConsumerWidget {
     return widgets;
   }
 
-  /// Resolves the tracked-duration label for the metadata row, or `null` when
-  /// there is nothing worth showing. A [trackedDurationLabelOverride] (used by
-  /// previews/tests) is always honoured; otherwise the live tracked duration is
-  /// read and a zero duration returns `null` so "0h 0m" never clutters a row
-  /// that has not been worked on yet.
-  String? _resolveTrackedDurationLabel(
-    BuildContext context,
-    WidgetRef ref,
-    String taskId,
-  ) {
-    if (trackedDurationLabelOverride case final override?) {
-      return override;
-    }
-
-    final progressState = ref.watch(taskProgressControllerProvider(id: taskId));
-    final progress = switch (progressState) {
-      AsyncData(:final value) => value?.progress ?? Duration.zero,
-      _ => Duration.zero,
-    };
+  /// Formats a tracked [progress] duration as a compact "Hh Mm" label, or
+  /// returns `null` for a zero/negative duration so "0h 0m" never clutters a
+  /// row that has not been worked on yet. Pure — it reads no providers — so it
+  /// stays a synchronous presentation helper; the live duration is watched in
+  /// [build] where the reactive dependency is explicit.
+  String? _formatTrackedDuration(BuildContext context, Duration progress) {
     if (progress <= Duration.zero) {
       return null;
     }

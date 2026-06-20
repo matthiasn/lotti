@@ -219,13 +219,17 @@ List<TaskBrowseEntry> buildTaskBrowseEntries({
 /// applies this for priority sort so the visible (and capped) few in a bucket
 /// are the most time-critical.
 List<Task> sortTasksWithinPriorityBuckets(List<Task> tasks, DateTime now) {
-  final today = DateTime(now.year, now.month, now.day);
+  // Compare calendar days via UTC midnights: the elapsed time between two
+  // *local* midnights can be 23h or 25h across a DST transition, which would
+  // truncate `inDays` and misorder a due-tomorrow task next to due-today.
+  // UTC midnights are always exactly 24h apart, so the day delta is exact.
+  final today = DateTime.utc(now.year, now.month, now.day);
   int dueKey(Task task) {
     final due = task.data.due;
     if (due == null) {
       return 1 << 30; // no due date sinks to the bottom of its bucket
     }
-    final day = DateTime(due.year, due.month, due.day);
+    final day = DateTime.utc(due.year, due.month, due.day);
     return day.difference(today).inDays; // overdue < 0, today 0, future > 0
   }
 

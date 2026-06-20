@@ -427,6 +427,48 @@ void main() {
     });
   });
 
+  group('Tracked duration', () {
+    testWidgets('renders the tracked-duration chip for a non-zero override', (
+      tester,
+    ) async {
+      final task = TestTaskFactory.create(
+        id: 'task-tracked',
+        title: 'Tracked Task',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+
+      await pumpTaskBrowseItem(
+        tester,
+        task,
+        trackedDurationLabelOverride: '1h 30m',
+      );
+
+      expect(find.byIcon(Icons.timelapse_rounded), findsOneWidget);
+      expect(find.text('1h 30m'), findsOneWidget);
+    });
+
+    testWidgets('suppresses the chip when the override is a zero duration', (
+      tester,
+    ) async {
+      final task = TestTaskFactory.create(
+        id: 'task-tracked-zero',
+        title: 'Untracked Task',
+        dateFrom: DateTime(2026, 4, 8),
+      );
+
+      // "0h 0m" equals designSystemMyDailyDurationHoursMinutesCompact(0, 0), so
+      // it must be suppressed rather than cluttering an untouched task's row.
+      await pumpTaskBrowseItem(
+        tester,
+        task,
+        trackedDurationLabelOverride: '0h 0m',
+      );
+
+      expect(find.byIcon(Icons.timelapse_rounded), findsNothing);
+      expect(find.text('0h 0m'), findsNothing);
+    });
+  });
+
   // -------------------------------------------------------------------------
   // Cover art
   // -------------------------------------------------------------------------
