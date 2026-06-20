@@ -26,11 +26,13 @@ class DashboardHealthBpChart extends ConsumerStatefulWidget {
   const DashboardHealthBpChart({
     required this.rangeStart,
     required this.rangeEnd,
+    this.embedded = false,
     super.key,
   });
 
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final bool embedded;
 
   @override
   ConsumerState<DashboardHealthBpChart> createState() =>
@@ -193,10 +195,11 @@ class _DashboardHealthBpChartState
         rangeStart: widget.rangeStart,
         rangeEnd: widget.rangeEnd,
       ),
-      chartHeader: const BpChartInfoWidget(),
+      chartHeader: BpChartInfoWidget(embedded: widget.embedded),
       isLoading: isLoading,
       isEmpty: systolicData.isEmpty && diastolicData.isEmpty,
       emptyMessage: context.messages.dashboardChartNoData,
+      embedded: widget.embedded,
       footer: DashboardChartLegend(
         entries: [
           DashboardLegendEntry(
@@ -209,7 +212,7 @@ class _DashboardHealthBpChartState
           ),
         ],
       ),
-      height: 220,
+      height: widget.embedded ? 140 : 220,
     );
   }
 }
@@ -217,10 +220,17 @@ class _DashboardHealthBpChartState
 /// Header for the blood-pressure card: localized "Blood pressure" title with a
 /// "mmHg" unit subtitle.
 class BpChartInfoWidget extends StatelessWidget {
-  const BpChartInfoWidget({super.key});
+  const BpChartInfoWidget({this.embedded = false, super.key});
+
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
+    // Embedded in an entry card the host names the metric, so the chart's own
+    // title would duplicate it — drop the header and keep just the trend +
+    // legend.
+    if (embedded) return const SizedBox.shrink();
+
     return DashboardChartHeader(
       title: context.messages.dashboardHealthBloodPressure,
       subtitle: 'mmHg',

@@ -46,17 +46,18 @@ class WorkoutSummary extends StatelessWidget {
           entryTextForWorkout(data, includeTitle: !showChart),
           padding: EdgeInsets.zero,
         ),
-        // A real section break so the value lines are not crowded against the
-        // chart frame(s) below them.
-        if (showChart) SizedBox(height: tokens.spacing.sectionGap),
+        // The embedded charts read as integrated detail below the value lines
+        // (no framed-section break), with one rhythm step between each.
         if (showChart)
-          ...items.map(
-            (DashboardWorkoutItem item) => DashboardWorkoutChart(
-              chartConfig: item,
+          for (var i = 0; i < items.length; i++) ...[
+            SizedBox(height: tokens.spacing.cardItemSpacing),
+            DashboardWorkoutChart(
+              chartConfig: items[i],
               rangeStart: getRangeStart(context: context),
               rangeEnd: getRangeEnd(),
+              embedded: true,
             ),
-          ),
+          ],
       ],
     );
   }

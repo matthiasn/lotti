@@ -30,9 +30,9 @@ class HealthSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         EntryTextWidget(entryTextForQuant(qe), padding: EdgeInsets.zero),
-        // A real section break so the value line is not crowded against the
-        // chart frame below it.
-        if (showChart) SizedBox(height: tokens.spacing.sectionGap),
+        // The embedded chart reads as integrated detail below the value line
+        // (no framed-section break), one rhythm step down.
+        if (showChart) SizedBox(height: tokens.spacing.cardItemSpacing),
         if (showChart)
           DashboardHealthChart(
             chartConfig: DashboardHealthItem(
@@ -41,6 +41,7 @@ class HealthSummary extends StatelessWidget {
             ),
             rangeStart: getRangeStart(context: context),
             rangeEnd: getRangeEnd(),
+            embedded: true,
           ),
       ],
     );

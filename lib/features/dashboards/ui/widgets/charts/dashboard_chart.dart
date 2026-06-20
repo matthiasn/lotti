@@ -17,11 +17,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// stale-while-revalidate refresh) shows a subtle progress affordance, and
 /// [isEmpty] shows [emptyMessage] so "no data in range" is never confused with
 /// a flat run of real zeros.
-///
-/// An empty card collapses to a compact, single-line notice directly under the
-/// header instead of reserving the full [height]: on a dashboard with many
-/// charts, the cards that have no data in range stay out of the way and give
-/// the room to the charts that actually have something to show.
 class DashboardChart extends StatelessWidget {
   const DashboardChart({
     required this.chart,
@@ -33,6 +28,7 @@ class DashboardChart extends StatelessWidget {
     this.isLoading = false,
     this.isEmpty = false,
     this.emptyMessage,
+    this.embedded = false,
     super.key,
   });
 
@@ -59,6 +55,12 @@ class DashboardChart extends StatelessWidget {
   final bool isLoading;
   final bool isEmpty;
   final String? emptyMessage;
+
+  /// When embedded inside another card (e.g. an entry summary) the chart drops
+  /// its own frame (border/background/padding) so it reads as part of the host
+  /// card instead of a transplanted dashboard tile, and its header title is
+  /// demoted so the host card's own value line stays the headline.
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
@@ -92,6 +94,47 @@ class DashboardChart extends StatelessWidget {
       chartArea = chart;
     }
 
+    final content = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        chartHeader,
+        if (showEmpty) ...[
+          // Skip the gap + Text entirely when there's no message, so an empty
+          // card collapses to just its header rather than leaving a stray
+          // spacer hanging under it. In a Column with start alignment the
+          // notice sits on the same left gutter as the rest of the card.
+          if (emptyMessage != null && emptyMessage!.isNotEmpty) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              emptyMessage!,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
+          ],
+        ] else ...[
+          SizedBox(
+            height: embedded ? tokens.spacing.step2 : tokens.spacing.step3,
+          ),
+          SizedBox(height: height, child: chartArea),
+          if (dateAxis != null && !isLoading) ...[
+            SizedBox(height: tokens.spacing.step2),
+            dateAxis!,
+          ],
+          if (footer != null) ...[
+            SizedBox(height: tokens.spacing.step3),
+            footer!,
+          ],
+        ],
+      ],
+    );
+
+    // Embedded: no frame of its own, so it sits flush inside the host card.
+    if (embedded) {
+      return content;
+    }
+
     return DecoratedBox(
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
@@ -100,38 +143,7 @@ class DashboardChart extends StatelessWidget {
       ),
       child: Padding(
         padding: EdgeInsets.all(tokens.spacing.cardPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            chartHeader,
-            if (showEmpty) ...[
-              // Skip the gap + Text entirely when there's no message, so an
-              // empty card with no notice collapses to just its header rather
-              // than leaving a stray spacer hanging under it.
-              if (emptyMessage != null && emptyMessage!.isNotEmpty) ...[
-                SizedBox(height: tokens.spacing.step2),
-                Text(
-                  emptyMessage!,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ],
-            ] else ...[
-              SizedBox(height: tokens.spacing.step3),
-              SizedBox(height: height, child: chartArea),
-              if (dateAxis != null && !isLoading) ...[
-                SizedBox(height: tokens.spacing.step2),
-                dateAxis!,
-              ],
-              if (footer != null) ...[
-                SizedBox(height: tokens.spacing.step3),
-                footer!,
-              ],
-            ],
-          ],
-        ),
+        child: content,
       ),
     );
   }
@@ -150,6 +162,7 @@ class DashboardChartHeader extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.action,
+    this.embedded = false,
     super.key,
   });
 
@@ -158,10 +171,26 @@ class DashboardChartHeader extends StatelessWidget {
   final Widget? trailing;
   final Widget? action;
 
+  /// When the chart is embedded in another card, the title is demoted to a
+  /// quiet subtitle weight so it reads as a subordinate section label rather
+  /// than competing with the host card's own bold value line.
+  final bool embedded;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final hasSubtitle = subtitle != null && subtitle!.isNotEmpty;
+
+    // Embedded: a quiet, regular-weight label (not a semibold heading) so the
+    // host card's bold value line stays the dominant text and the chart title
+    // reads as a subordinate section caption.
+    final titleStyle = embedded
+        ? tokens.typography.styles.body.bodySmall.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          )
+        : tokens.typography.styles.subtitle.subtitle1.copyWith(
+            color: tokens.colors.text.highEmphasis,
+          );
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -173,9 +202,7 @@ class DashboardChartHeader extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
+                style: titleStyle,
                 overflow: TextOverflow.ellipsis,
               ),
               if (hasSubtitle) ...[
