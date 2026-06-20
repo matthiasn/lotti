@@ -37,6 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   drag-grip dots on each Todo row are quieter so they no longer compete with
   the task text, and the empty checkbox is drawn with a clearer,
   higher-contrast outline so it's easy to see.
+- The AI summary card reads as a more vivid "assistant" panel — its accent
+  wash carries further across the surface and its glow is a touch stronger, so
+  it no longer looks muted against the page.
 
 ### Fixed
 - Accepting an AI suggestion that adds a to-do no longer makes the page jump:
