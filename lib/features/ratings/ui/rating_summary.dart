@@ -249,7 +249,11 @@ class _DimensionRow extends StatelessWidget {
             borderRadius: BorderRadius.circular(tokens.radii.xs),
             child: LinearProgressIndicator(
               value: value.clamp(0.0, 1.0),
-              backgroundColor: context.colorScheme.surfaceContainerHighest,
+              // A perceivable unfilled track (>=3:1 against the card, same token
+              // as the audio scrubber) so the bar's scale — the unfilled extent
+              // behind the fill — is visible, not carried by the fill length and
+              // the numeric % alone (WCAG 1.4.11).
+              backgroundColor: tokens.colors.text.lowEmphasis,
               valueColor: AlwaysStoppedAnimation<Color>(color),
               minHeight: tokens.spacing.step3,
             ),
