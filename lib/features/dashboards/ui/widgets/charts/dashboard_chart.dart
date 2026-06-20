@@ -179,7 +179,11 @@ class DashboardChartHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final hasSubtitle = subtitle != null && subtitle!.isNotEmpty;
+    // Embedded in an entry card, the host's value lines already carry the units
+    // (Energy: 632 kcal / Duration: 60 min), so the chart's separate unit
+    // caption is just an orphaned extra line — drop it and let the demoted title
+    // stand alone.
+    final hasSubtitle = !embedded && subtitle != null && subtitle!.isNotEmpty;
 
     // Embedded: a quiet, regular-weight label (not a semibold heading) so the
     // host card's bold value line stays the dominant text and the chart title

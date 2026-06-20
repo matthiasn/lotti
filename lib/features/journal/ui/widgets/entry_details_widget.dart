@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
@@ -119,11 +120,13 @@ class EntryDetailsWidget extends ConsumerWidget {
     final card = TaskDetailSectionCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
-      // One symmetric shell inset (equal top/bottom/left/right) so every card
-      // type shares the same gutter and the same breathing room — the value
-      // lines no longer sit flush against the card floor, and bodies align to a
-      // single left edge instead of each summary adding its own padding.
-      padding: EdgeInsets.all(tokens.spacing.step4),
+      // One shared shell inset: a consistent left/right gutter so every card
+      // type aligns to a single content edge, with a slightly tighter top/bottom
+      // so short cards don't carry more vertical air than their content needs.
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step4,
+        vertical: tokens.spacing.step3,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -348,6 +351,18 @@ class EntryDetailsContent extends ConsumerWidget {
     // a gap before an empty (collapsed) labels row.
     final hasLabels = showLabels && (item.meta.labelIds?.isNotEmpty ?? false);
 
+    // Only mount the nested AI responses section when there are responses to
+    // show. The widget hides itself when empty, but it is still a body section,
+    // so the rhythm step in front of it left a wasted gap above the footer
+    // (most visible as the dead band over the Save button on audio entries).
+    final hasNestedAiResponses =
+        item is JournalAudio &&
+        (ref
+                .watch(linkedAiResponsesControllerProvider(itemId))
+                .value
+                ?.isNotEmpty ??
+            false);
+
     final footer = EntryDetailFooter(
       entryId: itemId,
       linkedFrom: linkedFrom,
@@ -360,7 +375,7 @@ class EntryDetailsContent extends ConsumerWidget {
         if (item is JournalImage) EntryImageWidget(item),
         if (!shouldHideEditor) _bodyEditor(itemId),
         ?detailSection,
-        if (item is JournalAudio)
+        if (hasNestedAiResponses)
           NestedAiResponsesWidget(
             parentEntryId: itemId,
             linkedFromEntity: item,
@@ -386,7 +401,7 @@ class EntryDetailsContent extends ConsumerWidget {
       if (item is JournalAudio && detailSection != null) detailSection,
       if (hasLabels) EntryLabelsDisplay(entryId: itemId),
       if (!shouldHideEditor) _bodyEditor(itemId),
-      if (item is JournalAudio)
+      if (hasNestedAiResponses)
         NestedAiResponsesWidget(parentEntryId: itemId, linkedFromEntity: item),
     ];
     final expandedContent = Column(

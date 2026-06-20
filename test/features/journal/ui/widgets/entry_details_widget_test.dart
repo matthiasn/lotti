@@ -13,9 +13,11 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
@@ -77,6 +79,36 @@ class _NullEntryController extends EntryController {
     return SynchronousFuture(null);
   }
 }
+
+/// Pins the linked AI responses for an entry so the nested-responses section can
+/// be tested in both its empty (gated out) and populated states without the
+/// repository/notification graph.
+class _FakeLinkedAiResponsesController extends LinkedAiResponsesController {
+  _FakeLinkedAiResponsesController(super.entryId, this._responses);
+
+  final List<AiResponseEntry> _responses;
+
+  @override
+  Future<List<AiResponseEntry>> build() async => _responses;
+}
+
+final _testLinkedAiResponse = AiResponseEntry(
+  meta: Metadata(
+    id: 'linked-ai-response-1',
+    createdAt: DateTime(2024, 1, 15, 10),
+    dateFrom: DateTime(2024, 1, 15, 10),
+    dateTo: DateTime(2024, 1, 15, 10, 5),
+    updatedAt: DateTime(2024, 1, 15, 10, 5),
+  ),
+  data: const AiResponseData(
+    model: 'test-model',
+    systemMessage: 'System message',
+    prompt: 'Test prompt',
+    thoughts: 'Test thoughts',
+    response: 'Test response',
+    type: AiResponseType.audioTranscription,
+  ),
+);
 
 /// Finds private widget types (e.g. `_PulsingBorder`) by runtime type name.
 Finder _byPrivateType(String typeName) =>
@@ -1044,11 +1076,12 @@ void main() {
       },
     );
 
-    // Lines 575-576: NestedAiResponsesWidget is rendered for non-collapsible
-    // audio entries (the non-collapsible column path, line 574-578).
+    // Audio entries only mount NestedAiResponsesWidget when there are linked AI
+    // responses — otherwise the empty section's rhythm gap left a dead band
+    // above the footer (the Save-button void).
     testWidgets(
-      'EntryDetailsContent renders NestedAiResponsesWidget for JournalAudio '
-      'in non-collapsible layout',
+      'EntryDetailsContent omits NestedAiResponsesWidget for JournalAudio with '
+      'no linked AI responses',
       (tester) async {
         final mockJournalRepository = MockJournalRepository();
         when(
@@ -1065,6 +1098,14 @@ void main() {
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
                 ),
+                linkedAiResponsesControllerProvider(
+                  testAudioEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeLinkedAiResponsesController(
+                    testAudioEntry.meta.id,
+                    const [],
+                  ),
+                ),
               ],
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
@@ -1076,10 +1117,53 @@ void main() {
 
         await tester.pump();
 
-        // NestedAiResponsesWidget is always included in the widget tree for
-        // audio entries (even if it renders as SizedBox.shrink internally).
+        // No responses → the nested section is not mounted (no wasted gap).
+        expect(find.byType(NestedAiResponsesWidget), findsNothing);
+        // AudioPlayerWidget is still the detail section for audio entries.
+        expect(find.byType(AudioPlayerWidget), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'EntryDetailsContent renders NestedAiResponsesWidget for JournalAudio '
+      'when linked AI responses exist',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => <EntryLink>[]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testAudioEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testAudioEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+                linkedAiResponsesControllerProvider(
+                  testAudioEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeLinkedAiResponsesController(
+                    testAudioEntry.meta.id,
+                    [_testLinkedAiResponse],
+                  ),
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testAudioEntry.meta.id,
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // Responses present → the nested section is mounted.
         expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
-        // AudioPlayerWidget is the detail section for audio entries.
         expect(find.byType(AudioPlayerWidget), findsOneWidget);
       },
     );
