@@ -397,6 +397,8 @@ void main() {
     );
 
     testWidgets('chart container has height 220', (tester) async {
+      // Real data so the chart renders at its configured height — an empty
+      // card now collapses and reserves no chart area.
       await tester.pumpWidget(
         makeTestableWidget(
           DashboardHealthBpChart(
@@ -408,12 +410,12 @@ void main() {
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            ).overrideWithBuild((ref, notifier) => sysObs([125, 130])),
             healthObservationsControllerProvider(
               healthDataType: 'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            ).overrideWithBuild((ref, notifier) => diaObs([78, 82])),
           ],
         ),
       );

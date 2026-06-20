@@ -270,6 +270,8 @@ void main() {
     });
 
     testWidgets('DashboardChart has height 320', (tester) async {
+      // Real data so the chart renders at its configured height — an empty
+      // card now collapses and reserves no chart area.
       await tester.pumpWidget(
         makeTestableWidget(
           DashboardHealthBmiChart(
@@ -282,7 +284,9 @@ void main() {
               healthDataType: 'HealthDataType.WEIGHT',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            ).overrideWithBuild(
+              (ref, notifier) => makeObservations([72, 73.5, 74]),
+            ),
           ],
         ),
       );

@@ -299,6 +299,8 @@ void main() {
     testWidgets('DashboardChart has height 150 for a line-chart health type', (
       tester,
     ) async {
+      // Real data so the chart renders at its configured height — an empty
+      // card now collapses and reserves no chart area.
       await tester.pumpWidget(
         makeTestableWidget(
           DashboardHealthChart(
@@ -311,7 +313,9 @@ void main() {
               healthDataType: 'HealthDataType.RESTING_HEART_RATE',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            ).overrideWithBuild(
+              (ref, notifier) => makeObservations([60, 62, 58]),
+            ),
           ],
         ),
       );
@@ -527,6 +531,8 @@ void main() {
     testWidgets('DashboardChart has height 180 for a bar-chart health type', (
       tester,
     ) async {
+      // Real data so the chart renders at its configured height — an empty
+      // card now collapses and reserves no chart area.
       await tester.pumpWidget(
         makeTestableWidget(
           DashboardHealthChart(
@@ -539,7 +545,9 @@ void main() {
               healthDataType: 'cumulative_step_count',
               rangeStart: rangeStart,
               rangeEnd: rangeEnd,
-            ).overrideWithBuild((ref, notifier) => <Observation>[]),
+            ).overrideWithBuild(
+              (ref, notifier) => makeObservations([8000, 12000, 6500]),
+            ),
           ],
         ),
       );
