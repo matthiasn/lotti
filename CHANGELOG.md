@@ -25,8 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   out as a word (Urgent / High / Medium / Low) instead of the cryptic "P2", the
   time-estimate chip reads "tracked of estimate" in plain duration units (e.g.
   "0m of 1h" rather than a clock-like "00:00 / 01:00") with a tooltip spelling
-  it out, every chip has a defined outline so its edge stays
-  legible, and a long list of labels collapses behind a "+N" chip you can tap
+  it out, the neutral metadata chips now carry a defined outline so their edges
+  stay legible, and a long list of labels collapses behind a "+N" chip you can tap
   to expand. The header stays tidy across long wrapping titles, many labels,
   the just-created (empty) state, narrow phone widths, and tasks with cover art.
 - Two spots on the task page are now easier to hit precisely: the AI

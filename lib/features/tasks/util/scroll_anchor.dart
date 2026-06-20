@@ -77,7 +77,7 @@ class ScrollAnchor {
   void hold() {
     if (_disposed) return;
     final top = locate();
-    if (top == null) return;
+    if (top == null || maxFrames <= 0) return;
     _anchorTop = top;
     _framesLeft = maxFrames;
     _schedule();
@@ -90,9 +90,15 @@ class ScrollAnchor {
       ..addPostFrameCallback((_) {
         _scheduled = false;
         if (_disposed) return;
+        // Decrement before correcting so a hold runs exactly [maxFrames]
+        // corrections (not maxFrames + 1).
+        if (_framesLeft <= 0) {
+          _anchorTop = null;
+          return;
+        }
+        _framesLeft--;
         _correctOnce();
         if (_framesLeft > 0) {
-          _framesLeft--;
           _schedule();
         } else {
           _anchorTop = null;
@@ -107,7 +113,11 @@ class ScrollAnchor {
 
   void _correctOnce() {
     final anchorTop = _anchorTop;
-    if (anchorTop == null || !controller.hasClients) return;
+    // `positions.length != 1` guards both the no-client case and the
+    // multi-client case: `controller.position` / `.offset` assert when the
+    // controller drives more than one scroll view (possible during route
+    // transitions or page-state reuse), which `hasClients` would not catch.
+    if (anchorTop == null || controller.positions.length != 1) return;
     final currentTop = locate();
     if (currentTop == null) return;
     final position = controller.position;

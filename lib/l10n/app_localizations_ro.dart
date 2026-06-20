@@ -7987,7 +7987,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get taskLabelsShowFewer => 'Afișează mai puține';
+  String get taskLabelsShowFewer => 'Afișați mai puține';
 
   @override
   String get taskLanguageArabic => 'Arabă';

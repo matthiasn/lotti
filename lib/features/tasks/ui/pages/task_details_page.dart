@@ -66,6 +66,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
   late final ScrollAnchor _suggestionsAnchor;
   int? _lastOpenSuggestionCount;
 
+  /// The task the [_lastOpenSuggestionCount] belongs to. If this page's state is
+  /// reused for a different task (e.g. a master-detail pane), the count is reset
+  /// so a stale previous-task count can't falsely trigger the scroll anchor.
+  String? _lastTaskId;
+
   @override
   void initState() {
     final provider = taskAppBarControllerProvider(id: widget.taskId);
@@ -113,6 +118,13 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     AsyncValue<UnifiedSuggestionList>? previous,
     AsyncValue<UnifiedSuggestionList> next,
   ) {
+    // Reset the baseline when the page is reused for a different task, so a
+    // previous task's count can't make the next task's first emission look
+    // like a drop and fire the anchor.
+    if (_lastTaskId != widget.taskId) {
+      _lastTaskId = widget.taskId;
+      _lastOpenSuggestionCount = null;
+    }
     final nextOpen = next.value?.open.length;
     final previousOpen = _lastOpenSuggestionCount;
     if (nextOpen != null) _lastOpenSuggestionCount = nextOpen;
