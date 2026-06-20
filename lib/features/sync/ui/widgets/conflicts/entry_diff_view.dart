@@ -53,8 +53,13 @@ class _FieldDiffRow extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(tokens.spacing.step3),
       decoration: BoxDecoration(
+        // `level02` fill plus the `decorative.level01` hairline — the shared
+        // design-system card treatment — so each field reads as a distinct
+        // card against the near-black `level01` scaffold instead of blending
+        // into it.
         color: colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.m),
+        border: Border.all(color: colors.decorative.level01),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

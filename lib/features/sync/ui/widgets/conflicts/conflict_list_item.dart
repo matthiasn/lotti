@@ -27,14 +27,24 @@ class ConflictListItem extends StatelessWidget {
     final tokens = context.designTokens;
     final colors = tokens.colors;
 
+    final radius = BorderRadius.circular(tokens.radii.m);
     return Semantics(
       button: onTap != null,
       label: viewModel.semanticsLabel,
+      // A `level02` fill with a `decorative.level01` hairline (the shared
+      // design-system card treatment, e.g. the dashboard chart cards) lifts
+      // each conflict off the near-black `level01` scaffold. Without the
+      // border the row's fill is almost indistinguishable from the background
+      // in dark mode, so the list read as one flat, almost-black sheet. The
+      // border rides on the Material's shape so the ink splash clips to it.
       child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
+        color: colors.background.level02,
+        clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: radius,
+          side: BorderSide(color: colors.decorative.level01),
+        ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(tokens.radii.s),
           hoverColor: colors.surface.hover,
           onTap: onTap,
           child: Padding(
