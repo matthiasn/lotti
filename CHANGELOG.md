@@ -55,6 +55,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   clearly warns that the change won't reach your other devices.
 
 ### Fixed
+- Accepting an AI-suggested label now works even when the task already has
+  labels. Previously, once a task carried three labels — whether you added them
+  yourself or accepted earlier suggestions — any further suggested label was
+  silently dropped on accept. Suggestions are now applied regardless of how many
+  labels the task already has, while a label you already have is still skipped as
+  a duplicate.
 - Accepting an AI suggestion that adds a to-do no longer makes the page jump:
   the task detail view holds the AI proposals in place when a confirmed change
   grows the checklist above them, so the spot you were reading stays put.

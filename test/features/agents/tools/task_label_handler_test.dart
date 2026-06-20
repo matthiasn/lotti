@@ -120,12 +120,11 @@ class _GeneratedTaskLabelHandlerScenario {
     (index) => 'existing-$index',
   );
 
-  bool get hasMaxExistingLabels => existingCount >= 3;
-
   LabelCallParseResult get parseResult => parseLabelCallArgs(jsonEncode(args));
 
-  bool get shouldCallProcessor =>
-      !hasMaxExistingLabels && parseResult.selectedIds.isNotEmpty;
+  // Pre-existing labels never gate the call; only a non-empty parse result
+  // (after dropping low-confidence/empty entries) reaches the processor.
+  bool get shouldCallProcessor => parseResult.selectedIds.isNotEmpty;
 
   List<String> get assignedByProcessor {
     final selected = parseResult.selectedIds;
@@ -264,37 +263,66 @@ void main() {
         ).called(1);
       });
 
-      test('returns no-op when task already has >= 3 labels', () async {
-        final taskWith3Labels = task.copyWith(
-          meta: task.meta.copyWith(
-            labelIds: ['l1', 'l2', 'l3'],
-          ),
-        );
+      test(
+        'applies a suggestion even when task already has >= 3 labels',
+        () async {
+          when(
+            () => mockProcessor.processAssignment(
+              taskId: any(named: 'taskId'),
+              proposedIds: any(named: 'proposedIds'),
+              existingIds: any(named: 'existingIds'),
+              categoryId: any(named: 'categoryId'),
+              droppedLow: any(named: 'droppedLow'),
+              legacyUsed: any(named: 'legacyUsed'),
+              confidenceBreakdown: any(named: 'confidenceBreakdown'),
+              totalCandidates: any(named: 'totalCandidates'),
+            ),
+          ).thenAnswer(
+            (_) async => LabelAssignmentResult(
+              assigned: ['label-a'],
+              invalid: const [],
+              skipped: const [],
+            ),
+          );
 
-        final handler = TaskLabelHandler(
-          task: taskWith3Labels,
-          processor: mockProcessor,
-        );
+          final taskWith3Labels = task.copyWith(
+            meta: task.meta.copyWith(
+              labelIds: ['l1', 'l2', 'l3'],
+            ),
+          );
 
-        final result = await handler.handle({
-          'labels': [
-            {'id': 'label-a', 'confidence': 'high'},
-          ],
-        });
+          final handler = TaskLabelHandler(
+            task: taskWith3Labels,
+            processor: mockProcessor,
+          );
 
-        expect(result.success, isTrue);
-        expect(result.didWrite, isFalse);
-        expect(result.wasNoOp, isTrue);
-        expect(result.message, contains('3 or more labels'));
+          final result = await handler.handle({
+            'labels': [
+              {'id': 'label-a', 'confidence': 'high'},
+            ],
+          });
 
-        verifyNever(
-          () => mockProcessor.processAssignment(
-            taskId: any(named: 'taskId'),
-            proposedIds: any(named: 'proposedIds'),
-            existingIds: any(named: 'existingIds'),
-          ),
-        );
-      });
+          expect(result.success, isTrue);
+          expect(result.didWrite, isTrue);
+          expect(result.wasNoOp, isFalse);
+          expect(result.assigned, equals(['label-a']));
+
+          // The pre-existing labels are forwarded so the processor can skip
+          // already-assigned IDs, but they no longer gate the assignment.
+          verify(
+            () => mockProcessor.processAssignment(
+              taskId: taskWith3Labels.meta.id,
+              proposedIds: ['label-a'],
+              existingIds: ['l1', 'l2', 'l3'],
+              categoryId: any(named: 'categoryId'),
+              droppedLow: any(named: 'droppedLow'),
+              legacyUsed: any(named: 'legacyUsed'),
+              confidenceBreakdown: any(named: 'confidenceBreakdown'),
+              totalCandidates: any(named: 'totalCandidates'),
+            ),
+          ).called(1);
+        },
+      );
 
       test('drops low confidence labels during parsing', () async {
         when(
@@ -933,43 +961,50 @@ void main() {
         },
       );
 
-      test('omits available labels section when task has 3+ labels', () async {
-        final taskWith3Labels = task.copyWith(
-          meta: task.meta.copyWith(
-            labelIds: ['label-1', 'label-2', 'label-3'],
-          ),
-        );
-
-        final result = await buildContext(
-          labels: [
-            testLabelDefinition1,
-            testLabelDefinition2,
-            LabelDefinition(
-              id: 'label-3',
-              name: 'Third',
-              color: '#00FF00',
-              createdAt: DateTime(2024),
-              updatedAt: DateTime(2024),
-              vectorClock: null,
+      test(
+        'includes available labels section even when task has 3+ labels',
+        () async {
+          final taskWith3Labels = task.copyWith(
+            meta: task.meta.copyWith(
+              labelIds: ['label-1', 'label-2', 'label-3'],
             ),
-            LabelDefinition(
-              id: 'label-4',
-              name: 'Fourth',
-              color: '#FF0000',
-              createdAt: DateTime(2024),
-              updatedAt: DateTime(2024),
-              vectorClock: null,
-            ),
-          ],
-          forTask: taskWith3Labels,
-        );
+          );
 
-        // Should not contain available labels section since task already
-        // has 3 labels — prevents the LLM from proposing redundant
-        // assignments.
-        expect(result, isNot(contains('## Available Labels')));
-        expect(result, isNot(contains('label-4')));
-      });
+          final result = await buildContext(
+            labels: [
+              testLabelDefinition1,
+              testLabelDefinition2,
+              LabelDefinition(
+                id: 'label-3',
+                name: 'Third',
+                color: '#00FF00',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                vectorClock: null,
+              ),
+              LabelDefinition(
+                id: 'label-4',
+                name: 'Fourth',
+                color: '#FF0000',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                vectorClock: null,
+              ),
+            ],
+            forTask: taskWith3Labels,
+          );
+
+          // Pre-existing labels no longer suppress the available section, so the
+          // model can still propose a fitting label (label-4) — while the three
+          // already-assigned labels stay excluded from the available list.
+          expect(result, contains('## Available Labels'));
+          final availableSection = result.split('## Available Labels')[1];
+          expect(availableSection, contains('label-4'));
+          expect(availableSection, isNot(contains('"label-1"')));
+          expect(availableSection, isNot(contains('"label-2"')));
+          expect(availableSection, isNot(contains('"label-3"')));
+        },
+      );
 
       test('excludes assigned and suppressed from available', () async {
         final taskWithLabelsAndSuppressed = task.copyWith(

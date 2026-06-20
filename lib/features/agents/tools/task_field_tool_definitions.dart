@@ -88,8 +88,7 @@ const taskFieldTools = <AgentToolDefinition>[
     description:
         'Add one or more labels to the task. Only use labels from '
         'the available labels list provided in the context. Do not propose '
-        'labels listed as suppressed. Cap to 3 labels per call. If the task '
-        'already has 3 or more labels, do not call this tool.',
+        'labels listed as suppressed. Cap to 3 labels per call.',
     parameters: {
       'type': 'object',
       'properties': {

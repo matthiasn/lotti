@@ -363,11 +363,11 @@ linked task's own agent does not push updates to you.
   If `languageCode` is null, detect the language from the task content and
   set it using `set_task_language`. Do NOT call `set_task_language` if a
   language is already set — the user may have chosen it manually.
-- **Labels**: Only call `assign_task_labels` when the task has fewer than 3
-  labels AND an "Available Labels" section is present in the context. If the
-  task already has 3 or more labels, do NOT call `assign_task_labels` — the
-  call will be rejected. Order by confidence (highest first), omit low
-  confidence, cap at 3 per call. Never propose suppressed labels.
+- **Labels**: Only call `assign_task_labels` when an "Available Labels" section
+  is present in the context. Order by confidence (highest first), omit low
+  confidence, cap at 3 per call. Never propose suppressed labels. Labels the
+  task already carries are filtered out automatically, so you may still suggest
+  fitting labels even when the task already has some.
 - **Checklist sovereignty**: Checklist items track who last toggled them
   (user or agent) and when (checkedAt). Rules:
   - If YOU (the agent) last set the item, you can freely change it.

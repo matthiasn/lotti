@@ -48,25 +48,19 @@ class TaskLabelHandler {
   /// 3 are selected.
   ///
   /// Returns a no-op success if:
-  /// - The task already has >= 3 labels
   /// - No valid labels remain after parsing
   /// - All proposed labels are already assigned
+  ///
+  /// Pre-existing labels (manual or earlier AI assignments) do NOT block a
+  /// suggestion: a label the user accepts is applied regardless of how many
+  /// labels the task already carries. The only bound is the per-call cap of 3.
   Future<TaskLabelResult> handle(Map<String, dynamic> args) async {
     developer.log(
       'Processing assign_task_labels',
       name: 'TaskLabelHandler',
     );
 
-    // Check max labels upfront.
     final existingIds = task.meta.labelIds ?? const <String>[];
-    if (existingIds.length >= 3) {
-      const message = 'Task already has 3 or more labels. Skipping assignment.';
-      developer.log(message, name: 'TaskLabelHandler');
-      return const TaskLabelResult(
-        success: true,
-        message: message,
-      );
-    }
 
     // Parse and rank by confidence.
     final parseResult = parseLabelCallArgs(jsonEncode(args));
@@ -157,25 +151,22 @@ class TaskLabelHandler {
       }
     }
 
-    // Skip available labels when the task already has 3+ labels — the handler
-    // would reject the call anyway, and omitting the section prevents the LLM
-    // from proposing redundant label assignments.
+    // Build available labels list (in scope, not assigned, not suppressed).
+    // Pre-existing labels never gate suggestions, so the section is always
+    // offered when in-scope candidates remain.
     final availableLabels = <Map<String, String>>[];
-    if (existingIds.length < 3) {
-      // Build available labels list (in scope, not assigned, not suppressed).
-      for (final def in activeDefs) {
-        if (existingIds.contains(def.id)) continue;
-        if (suppressedIds.contains(def.id)) continue;
+    for (final def in activeDefs) {
+      if (existingIds.contains(def.id)) continue;
+      if (suppressedIds.contains(def.id)) continue;
 
-        // Check category scope.
-        final cats = def.applicableCategoryIds;
-        final isGlobal = cats == null || cats.isEmpty;
-        final inCategory =
-            categoryId != null && (cats?.contains(categoryId) ?? false);
-        if (!isGlobal && !inCategory) continue;
+      // Check category scope.
+      final cats = def.applicableCategoryIds;
+      final isGlobal = cats == null || cats.isEmpty;
+      final inCategory =
+          categoryId != null && (cats?.contains(categoryId) ?? false);
+      if (!isGlobal && !inCategory) continue;
 
-        availableLabels.add({'id': def.id, 'name': def.name});
-      }
+      availableLabels.add({'id': def.id, 'name': def.name});
     }
 
     if (availableLabels.isEmpty && suppressedLabels.isEmpty) {
