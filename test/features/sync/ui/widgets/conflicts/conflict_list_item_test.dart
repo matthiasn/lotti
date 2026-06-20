@@ -6,6 +6,7 @@ import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_list_item.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
@@ -150,6 +151,36 @@ void main() {
       // The full id never appears as visible text (only inside the tooltip).
       expect(find.text(conflict.id), findsNothing);
     });
+  });
+
+  group('ConflictListItem (card surface)', () {
+    testWidgets(
+      'renders a level02 card with a decorative hairline border so the row '
+      'lifts off the near-black scaffold',
+      (tester) async {
+        final conflict = _buildConflict(status: ConflictStatus.unresolved);
+        await _pump(tester, conflict: conflict, surface: _wideSurface);
+
+        const tokens = dsTokensLight;
+        final decoration = tester
+            .widgetList<DecoratedBox>(
+              find.descendant(
+                of: find.byType(ConflictListItem),
+                matching: find.byType(DecoratedBox),
+              ),
+            )
+            .map((d) => d.decoration)
+            .whereType<BoxDecoration>()
+            .firstWhere(
+              (d) => d.border != null,
+              orElse: () => throw StateError('no bordered card surface found'),
+            );
+
+        expect(decoration.color, tokens.colors.background.level02);
+        final side = (decoration.border! as Border).top;
+        expect(side.color, tokens.colors.decorative.level01);
+      },
+    );
   });
 
   group('ConflictListItem (status tone)', () {

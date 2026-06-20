@@ -27,31 +27,47 @@ class ConflictListItem extends StatelessWidget {
     final tokens = context.designTokens;
     final colors = tokens.colors;
 
+    final radius = BorderRadius.circular(tokens.radii.m);
     return Semantics(
       button: onTap != null,
       label: viewModel.semanticsLabel,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(tokens.radii.s),
-          hoverColor: colors.surface.hover,
-          onTap: onTap,
-          child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.step4,
-              vertical: tokens.spacing.step3,
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isCompact = constraints.maxWidth < _compactBreakpoint;
-                return isCompact
-                    ? _CompactLayout(
-                        viewModel: viewModel,
-                        hasTap: onTap != null,
-                      )
-                    : _WideLayout(viewModel: viewModel, hasTap: onTap != null);
-              },
+      // A `level02` fill with a `decorative.level01` hairline (the shared
+      // design-system card treatment, e.g. the dashboard chart cards) lifts
+      // each conflict off the near-black `level01` scaffold. Without the
+      // border the row's fill is almost indistinguishable from the background
+      // in dark mode, so the list read as one flat, almost-black sheet.
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.background.level02,
+          borderRadius: radius,
+          border: Border.all(color: colors.decorative.level01),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: radius,
+          child: InkWell(
+            borderRadius: radius,
+            hoverColor: colors.surface.hover,
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: tokens.spacing.step4,
+                vertical: tokens.spacing.step3,
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isCompact = constraints.maxWidth < _compactBreakpoint;
+                  return isCompact
+                      ? _CompactLayout(
+                          viewModel: viewModel,
+                          hasTap: onTap != null,
+                        )
+                      : _WideLayout(
+                          viewModel: viewModel,
+                          hasTap: onTap != null,
+                        );
+                },
+              ),
             ),
           ),
         ),

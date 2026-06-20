@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_diff_view.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
 
@@ -28,6 +30,38 @@ void main() {
     // 'brave' is the remote-introduced word, rendered as a highlight pill.
     expect(find.text('brave'), findsOneWidget);
   });
+
+  testWidgets(
+    'each field renders on a level02 card with a decorative hairline border '
+    'so it lifts off the near-black scaffold',
+    (tester) async {
+      final diff = computeEntryDiff(
+        entryOf(text: 'hello world'),
+        entryOf(text: 'hello brave world'),
+      );
+
+      await _pump(tester, diff);
+
+      const tokens = dsTokensLight;
+      final decoration = tester
+          .widgetList<Container>(
+            find.descendant(
+              of: find.byType(EntryDiffView),
+              matching: find.byType(Container),
+            ),
+          )
+          .map((c) => c.decoration)
+          .whereType<BoxDecoration>()
+          .firstWhere(
+            (d) => d.border != null,
+            orElse: () => throw StateError('no bordered field card found'),
+          );
+
+      expect(decoration.color, tokens.colors.background.level02);
+      final side = (decoration.border! as Border).top;
+      expect(side.color, tokens.colors.decorative.level01);
+    },
+  );
 
   testWidgets('boolean fields render localized Yes/No values', (tester) async {
     final diff = computeEntryDiff(
