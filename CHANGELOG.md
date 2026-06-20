@@ -32,7 +32,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   suggestions' destructive reject control is clearly separated from accept so
   a mis-tap can't trigger the wrong one, and each Todo checkbox now has a
   larger 44px tap target (the box looks the same, but the whole row-height
-  area around it responds) so you no longer have to aim at the tiny square.
+  area around it responds and lights up on hover/press) so you no longer have
+  to aim at the tiny square. The drag-grip dots on each Todo row are quieter
+  so they no longer compete with the task text.
 
 ### Fixed
 - Accepting an AI suggestion that adds a to-do no longer makes the page jump:

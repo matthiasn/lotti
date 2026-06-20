@@ -479,6 +479,13 @@ void main() {
               matching: find.byType(InkWell),
             )
             .first;
+        // The enlarged target lights up on hover/press so it is visible, not
+        // just promised.
+        expect(
+          tester.widget<InkWell>(inkWell).hoverColor,
+          isNotNull,
+          reason: 'the 44px tap target highlights on hover',
+        );
         final rect = tester.getRect(inkWell);
         await tester.tapAt(Offset(rect.left + 3, rect.center.dy));
         await tester.pump();

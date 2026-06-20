@@ -321,11 +321,15 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                     // moveToChecklist). A ReorderableDragStartListener here
                     // would win the gesture race and trap drags inside the
                     // source list.
+                    // The drag handle is a quiet hint only — a long-press
+                    // anywhere on the row starts the drag — so it sits at a
+                    // very low alpha to keep the repeating grip texture from
+                    // competing with the checkbox + title for attention.
                     Icon(
                       Icons.drag_indicator,
                       size: 24,
                       color: tokens.colors.text.lowEmphasis.withValues(
-                        alpha: 0.32,
+                        alpha: 0.2,
                       ),
                     ),
                     SizedBox(width: tokens.spacing.step3),
@@ -353,6 +357,11 @@ class ChecklistItemRowState extends ConsumerState<ChecklistItemRow>
                       borderRadius: BorderRadius.circular(
                         tokens.radii.badgesPills,
                       ),
+                      // Light up the whole 44×44 zone on hover / press so the
+                      // forgiving tap area is *visible*, not just promised —
+                      // users can see where it is safe to tap rather than
+                      // having to aim at the tiny box.
+                      hoverColor: tokens.colors.surface.hover,
                       child: SizedBox(
                         width: 44,
                         height: 44,
