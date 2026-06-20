@@ -1,6 +1,6 @@
 import 'dart:async';
-import 'dart:ui';
 
+import 'package:flutter/widgets.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -30,7 +30,9 @@ class ConflictNotificationObserver {
   /// Resolves the user's locale for the OS banner copy, falling back to English
   /// for locales the app doesn't ship translations for.
   static AppLocalizations _deviceMessages() {
-    final locale = PlatformDispatcher.instance.locale;
+    // Read via the binding's dispatcher (not the global `PlatformDispatcher`
+    // singleton) so it follows the recognised, test-overridable locale source.
+    final locale = WidgetsBinding.instance.platformDispatcher.locale;
     return AppLocalizations.delegate.isSupported(locale)
         ? lookupAppLocalizations(locale)
         : AppLocalizationsEn();

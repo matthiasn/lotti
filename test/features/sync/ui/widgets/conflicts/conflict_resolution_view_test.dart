@@ -128,6 +128,57 @@ void main() {
       expect(combineBase, ConflictSide.remote);
       expect(combineChoices, {EntryField.starred: ConflictSide.remote});
     });
+
+    testWidgets('toggling one field overrides only that field, not the base', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        computeEntryDiff(entryOf(starred: true), entryOf(starred: false)),
+      );
+      await tester.tap(
+        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+      );
+      await tester.pump();
+
+      // The *second* "Use from sync" is the per-field toggle (the first is the
+      // base-side selector); tapping it pulls just that field from remote.
+      final fieldToggle = find
+          .widgetWithText(DesignSystemButton, 'Use from sync')
+          .at(1);
+      await tester.ensureVisible(fieldToggle);
+      await tester.tap(fieldToggle);
+      await tester.pump();
+
+      await tapButton(tester, 'Apply combined');
+
+      expect(combineBase, ConflictSide.local);
+      expect(combineChoices, {EntryField.starred: ConflictSide.remote});
+    });
+
+    testWidgets('Back returns from combine to the choosing surface', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        computeEntryDiff(entryOf(starred: true), entryOf(starred: false)),
+      );
+      await tester.tap(
+        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+      );
+      await tester.pump();
+      expect(find.text('Start from'), findsOneWidget);
+
+      await tapButton(tester, 'Back');
+
+      // We are back on the choosing surface: the combine header is gone and the
+      // Combine entry-point button is offered again.
+      expect(find.text('Start from'), findsNothing);
+      expect(
+        find.widgetWithIcon(DesignSystemButton, Icons.merge_rounded),
+        findsOneWidget,
+      );
+    });
   });
 
   group('type change', () {

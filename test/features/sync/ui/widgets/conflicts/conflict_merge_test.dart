@@ -1,5 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_shared.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/conflict_merge.dart';
 import 'package:lotti/features/sync/ui/widgets/conflicts/entry_field_diff.dart';
@@ -168,8 +173,99 @@ void main() {
       );
       expect(result.meta.vectorClock, mergedClock);
     });
+
+    test(
+      'overrides private, flag, dateFrom and dateTo from the chosen side',
+      () {
+        final result = buildMergedEntity(
+          local: entryOf(
+            flag: EntryFlag.none,
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15, 10),
+          ),
+          remote: entryOf(
+            private: true,
+            flag: EntryFlag.followUpNeeded,
+            dateFrom: DateTime(2024, 3, 16),
+            dateTo: DateTime(2024, 3, 16, 10),
+          ),
+          baseSide: ConflictSide.local,
+          choices: const {
+            EntryField.private: ConflictSide.remote,
+            EntryField.flag: ConflictSide.remote,
+            EntryField.dateFrom: ConflictSide.remote,
+            EntryField.dateTo: ConflictSide.remote,
+          },
+        );
+        expect(result.meta.private, true);
+        expect(result.meta.flag, EntryFlag.followUpNeeded);
+        expect(result.meta.dateFrom, DateTime(2024, 3, 16));
+        expect(result.meta.dateTo, DateTime(2024, 3, 16, 10));
+      },
+    );
+  });
+
+  group('buildMergedEntity · structured title across entity types', () {
+    final builders = <String, JournalEntity Function(String)>{
+      'event': (t) => JournalEvent(
+        meta: metaOf(id: 'ev'),
+        data: EventData(title: t, stars: 0.5, status: EventStatus.planned),
+      ),
+      'project': (t) => ProjectEntry(
+        meta: metaOf(id: 'pr'),
+        data: ProjectData(
+          title: t,
+          status: ProjectStatus.open(
+            id: 's',
+            createdAt: DateTime(2024, 3, 15),
+            utcOffset: 0,
+          ),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+      ),
+      'checklist': (t) => Checklist(
+        meta: metaOf(id: 'cl'),
+        data: ChecklistData(
+          title: t,
+          linkedChecklistItems: const [],
+          linkedTasks: const [],
+        ),
+      ),
+      'checklist item': (t) => ChecklistItem(
+        meta: metaOf(id: 'ci'),
+        data: ChecklistItemData(
+          title: t,
+          isChecked: false,
+          linkedChecklists: const [],
+        ),
+      ),
+    };
+
+    for (final entry in builders.entries) {
+      final name = entry.key;
+      final build = entry.value;
+      test('combines the $name title from the chosen side', () {
+        final result = buildMergedEntity(
+          local: build('Local title'),
+          remote: build('Remote title'),
+          baseSide: ConflictSide.local,
+          choices: const {EntryField.title: ConflictSide.remote},
+        );
+        expect(_titleOf(result), 'Remote title');
+      });
+    }
   });
 }
+
+String? _titleOf(JournalEntity e) => switch (e) {
+  Task(:final data) => data.title,
+  JournalEvent(:final data) => data.title,
+  ProjectEntry(:final data) => data.title,
+  Checklist(:final data) => data.title,
+  ChecklistItem(:final data) => data.title,
+  _ => null,
+};
 
 /// A metadata block with no vector clock, for the null-clock path.
 Metadata metaNoClock({required String text}) => Metadata(

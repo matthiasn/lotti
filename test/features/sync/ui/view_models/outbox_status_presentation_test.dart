@@ -94,6 +94,21 @@ void main() {
       expect(_summary(pending: 1), _summary(pending: 1));
       expect(_summary(pending: 1) == _summary(pending: 2), isFalse);
     });
+
+    test('equal summaries share a hashCode; different ones usually differ', () {
+      expect(_summary(pending: 1).hashCode, _summary(pending: 1).hashCode);
+      expect(
+        _summary(pending: 1).hashCode == _summary(failed: 1).hashCode,
+        isFalse,
+      );
+    });
+
+    test('toString surfaces the state name and both counts', () {
+      expect(
+        _summary(sending: 4, failed: 2).toString(),
+        'QueueSummary(failed, active: 4, failed: 2)',
+      );
+    });
   });
 
   group('properties', () {

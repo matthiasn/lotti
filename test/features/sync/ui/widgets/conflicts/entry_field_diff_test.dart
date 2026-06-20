@@ -233,6 +233,17 @@ void main() {
       final b = computeEntryDiff(entryOf(text: 'a'), entryOf(text: 'c'));
       expect(a == b, isFalse);
     });
+
+    test('FieldDiff.toString surfaces field, kind and both values', () {
+      final field = _fieldFor(
+        computeEntryDiff(entryOf(categoryId: 'cat-a'), entryOf()),
+        EntryField.category,
+      );
+      expect(
+        field.toString(),
+        'FieldDiff(category, onlyLocal, local: cat-a, remote: null)',
+      );
+    });
   });
 
   group('properties', () {

@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/state/conflict_notification_observer.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/services/notification_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -18,6 +21,9 @@ Conflict _conflict(String id) => Conflict(
 );
 
 void main() {
+  // The default-locale path resolves through WidgetsBinding.instance.
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   late MockJournalDb db;
   late MockNotificationService notifications;
   late ConflictNotificationObserver observer;
@@ -103,6 +109,72 @@ void main() {
       ..handleSnapshot([_conflict('a')]) // unchanged
       ..handleSnapshot(const []); // one resolved, none new
     verifyNeverNotified();
+  });
+
+  group('default dependencies resolve from getIt', () {
+    setUp(() {
+      if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
+      if (getIt.isRegistered<NotificationService>()) {
+        getIt.unregister<NotificationService>();
+      }
+      getIt
+        ..registerSingleton<JournalDb>(db)
+        ..registerSingleton<NotificationService>(notifications);
+    });
+
+    tearDown(() {
+      if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
+      if (getIt.isRegistered<NotificationService>()) {
+        getIt.unregister<NotificationService>();
+      }
+    });
+
+    test(
+      'falls back to getIt for the db/notifier and the device locale for copy',
+      () {
+        // No db, notifier or messages passed: the db comes from getIt, the
+        // notifier resolves lazily from getIt on first alert, and the copy
+        // comes from the device-locale resolver (en in the test host).
+        ConflictNotificationObserver()
+          ..handleSnapshot(const []) // prime
+          ..handleSnapshot([_conflict('a')]);
+
+        verify(
+          () => notifications.showNotificationNow(
+            title: l10n.conflictNotificationTitle,
+            body: l10n.conflictNotificationBody(1),
+            notificationId: ConflictNotificationObserver.notificationId,
+            showOnMobile: true,
+            showOnDesktop: true,
+            deepLink: ConflictNotificationObserver.deepLink,
+          ),
+        ).called(1);
+      },
+    );
+
+    testWidgets('an unsupported device locale falls back to English copy', (
+      tester,
+    ) async {
+      // 'xx' is not a shipped translation, so the resolver takes the
+      // AppLocalizationsEn() fallback rather than lookupAppLocalizations.
+      tester.platformDispatcher.localeTestValue = const Locale('xx');
+      addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+
+      ConflictNotificationObserver()
+        ..handleSnapshot(const []) // prime
+        ..handleSnapshot([_conflict('a')]);
+
+      verify(
+        () => notifications.showNotificationNow(
+          title: l10n.conflictNotificationTitle,
+          body: l10n.conflictNotificationBody(1),
+          notificationId: ConflictNotificationObserver.notificationId,
+          showOnMobile: true,
+          showOnDesktop: true,
+          deepLink: ConflictNotificationObserver.deepLink,
+        ),
+      ).called(1);
+    });
   });
 
   test('start subscribes to the unresolved stream; dispose cancels', () async {

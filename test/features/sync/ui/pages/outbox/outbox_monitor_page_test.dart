@@ -36,16 +36,32 @@ OutboxItem _item({
   priority: OutboxPriority.low.index,
 );
 
+/// A row whose status index is outside the [OutboxStatus] range, exercising the
+/// `null` (unknown status) branches in the page.
+OutboxItem _rawItem({required int id, required int statusIndex}) => OutboxItem(
+  id: id,
+  createdAt: _epoch,
+  updatedAt: _epoch,
+  status: statusIndex,
+  retries: 0,
+  message: '{"runtimeType":"aiConfigDelete","id":"c$id"}',
+  subject: 'subj',
+  priority: OutboxPriority.low.index,
+);
+
 MockSyncDatabase _prepareMock({
   List<OutboxItem>? items,
   bool fetchThrows = false,
+  bool updateThrows = false,
   List<OutboxDailyVolume> volumeData = const [],
 }) {
   final mock = mockSyncDatabaseWithCount(0);
   when(
     () => mock.getDailyOutboxVolume(days: kOutboxVolumeDays),
   ).thenAnswer((_) async => volumeData);
-  when(() => mock.updateOutboxItem(any())).thenAnswer((_) async => 1);
+  when(() => mock.updateOutboxItem(any())).thenAnswer(
+    (_) async => updateThrows ? throw StateError('write failed') : 1,
+  );
   if (fetchThrows) {
     when(
       () => mock.getOutboxItems(limit: any(named: 'limit')),
@@ -185,6 +201,90 @@ void main() {
     testWidgets('a fetch failure surfaces an error toast', (tester) async {
       await _pump(tester, mock: _prepareMock(fetchThrows: true));
       expect(find.text(_l10n.outboxMonitorFetchFailed), findsOneWidget);
+    });
+
+    testWidgets('sending and unknown-status rows feed the active summary', (
+      tester,
+    ) async {
+      await _pump(
+        tester,
+        mock: _prepareMock(
+          items: [
+            _item(id: 1, status: OutboxStatus.sending),
+            // Status index out of range -> the page's `null` branch.
+            _rawItem(id: 2, statusIndex: 99),
+          ],
+        ),
+      );
+      // Sending takes precedence; activeCount counts the single sending row.
+      expect(find.text(_l10n.outboxSummarySending(1)), findsOneWidget);
+    });
+
+    testWidgets('a retry write failure surfaces the retry-failed toast', (
+      tester,
+    ) async {
+      final mock = _prepareMock(
+        items: [_item(id: 5, status: OutboxStatus.error, retries: 3)],
+        updateThrows: true,
+      );
+      await _pump(tester, mock: mock);
+
+      await tester.tap(find.text(_l10n.outboxFilterFailed));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text(_l10n.outboxActionRetry));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text(_l10n.outboxMonitorRetryFailed), findsOneWidget);
+    });
+
+    testWidgets('a delete failure surfaces the delete-failed toast', (
+      tester,
+    ) async {
+      final mock = _prepareMock(
+        items: [_item(id: 7, status: OutboxStatus.error, retries: 3)],
+      );
+      when(
+        () => mock.deleteOutboxItemById(7),
+      ).thenAnswer((_) async => throw StateError('delete failed'));
+      await _pump(tester, mock: mock);
+
+      await tester.tap(find.text(_l10n.outboxFilterFailed));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text(_l10n.outboxActionRemove));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.text(_l10n.outboxActionRemove.toUpperCase()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text(_l10n.outboxMonitorDeleteFailed), findsOneWidget);
+    });
+
+    testWidgets('OutboxMonitorBody renders the monitor page', (tester) async {
+      final mock = _prepareMock(items: const []);
+      getIt.registerSingleton<SyncDatabase>(mock);
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const SizedBox(width: 500, height: 1000, child: OutboxMonitorBody()),
+          overrides: <Override>[
+            syncDatabaseProvider.overrideWithValue(mock),
+            outboxConnectionStateProvider.overrideWith(
+              (ref) => Stream.value(OutboxConnectionState.online),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.byType(OutboxMonitorPage), findsOneWidget);
+      expect(find.text(_l10n.outboxMonitorEmptyTitle), findsOneWidget);
     });
   });
 }

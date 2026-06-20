@@ -57,6 +57,85 @@ void main() {
     expect(find.text('followUpNeeded'), findsNothing);
   });
 
+  testWidgets('the import flag is localized to its human label', (
+    tester,
+  ) async {
+    final diff = computeEntryDiff(
+      entryOf(flag: EntryFlag.import),
+      entryOf(flag: EntryFlag.none),
+    );
+
+    await _pump(tester, diff);
+
+    expect(find.text('Flag'), findsOneWidget);
+    expect(find.text('Imported'), findsOneWidget);
+    expect(find.text('None'), findsOneWidget);
+    expect(find.text('import'), findsNothing);
+  });
+
+  testWidgets('date fields are formatted, never shown as raw ISO strings', (
+    tester,
+  ) async {
+    final diff = computeEntryDiff(
+      entryOf(dateFrom: DateTime(2024, 3, 15, 9)),
+      entryOf(dateFrom: DateTime(2024, 3, 16, 14, 30)),
+    );
+
+    await _pump(tester, diff);
+
+    expect(find.text('Start'), findsOneWidget);
+    // Localized M/D/YYYY + h:mm on each side (intl uses a narrow no-break
+    // space before AM/PM, so match on fragments rather than the exact string).
+    expect(find.textContaining('3/15/2024'), findsOneWidget);
+    expect(find.textContaining('9:00'), findsOneWidget);
+    expect(find.textContaining('3/16/2024'), findsOneWidget);
+    expect(find.textContaining('2:30'), findsOneWidget);
+    // The canonical ISO string must never reach the UI.
+    expect(find.textContaining('2024-03-15T'), findsNothing);
+  });
+
+  testWidgets('an unparseable date value falls back to the raw string', (
+    tester,
+  ) async {
+    // Defensive path: a date field whose canonical value can't be parsed is
+    // shown verbatim rather than crashing the formatter.
+    const diff = EntryDiff(
+      shape: ConflictShape.edited,
+      fields: [
+        FieldDiff(
+          field: EntryField.dateFrom,
+          kind: FieldDiffKind.changed,
+          localValue: 'not-a-date',
+          remoteValue: '2024-03-16T14:30:00.000',
+        ),
+      ],
+      identicalFieldCount: 0,
+    );
+
+    await _pump(tester, diff);
+
+    expect(find.text('not-a-date'), findsOneWidget);
+    // The parseable side is still formatted.
+    expect(find.textContaining('3/16/2024'), findsOneWidget);
+  });
+
+  testWidgets('an emptied text side renders as "Not set", not a blank pill', (
+    tester,
+  ) async {
+    // A whitespace-only title is "present" (non-empty) so it diffs as a
+    // change, but tokenizes to nothing — the local word-diff side is empty.
+    final diff = computeEntryDiff(
+      taskOf(title: '   '),
+      taskOf(title: 'Renamed'),
+    );
+
+    await _pump(tester, diff);
+
+    expect(find.text('Title'), findsOneWidget);
+    expect(find.text('Not set'), findsOneWidget);
+    expect(find.text('Renamed'), findsOneWidget);
+  });
+
   testWidgets('audio duration is shown formatted on both sides', (
     tester,
   ) async {
