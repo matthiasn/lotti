@@ -374,8 +374,11 @@ class _ProgressBarPainter extends CustomPainter {
     // The scrub thumb is always drawn (at the start when at rest) so the
     // control reads as a draggable scrubber rather than a bare track — a
     // thumb that only appeared after playback began left no grab affordance.
+    // Keep it inset by a thumb radius so it is not clipped at the track ends,
+    // but never let the lower clamp bound exceed the (possibly tiny) width.
+    final thumbInset = thumbRadius > size.width ? size.width : thumbRadius;
     final thumbCenter = Offset(
-      (size.width * progressRatio).clamp(thumbRadius, size.width),
+      (size.width * progressRatio).clamp(thumbInset, size.width),
       trackRect.center.dy,
     );
 

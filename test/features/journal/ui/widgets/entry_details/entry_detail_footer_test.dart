@@ -338,10 +338,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 10));
 
-      // The save button is always mounted in linked entries (so it can animate
-      // its grow + fade reveal) but collapses to nothing when there are no
-      // unsaved changes — so the footer stays compact: no "Save" label renders.
-      expect(find.byType(SaveButton), findsOneWidget);
+      // With no unsaved changes the save button renders nothing and reserves no
+      // space, so the footer stays compact.
       expect(find.text('Save'), findsNothing);
     });
 

@@ -172,9 +172,10 @@ void main() {
         findsOneWidget,
       );
 
-      // test entry displays duration of one hour
+      // test entry displays duration of one hour (rendered as the labeled
+      // value line "Duration: 01:00:00")
       expect(
-        find.text('01:00:00'),
+        find.textContaining('01:00:00'),
         findsOneWidget,
       );
 
@@ -216,8 +217,11 @@ void main() {
         findsOneWidget,
       );
 
-      // test weight entry is not starred
-      expect(find.byIcon(Icons.star_outline_rounded), findsNothing);
+      // test weight entry is not starred: the favorite toggle is always shown
+      // (so the header action set is consistent across types), so an unstarred
+      // entry renders the outline star, not the filled one.
+      expect(find.byIcon(Icons.star_rounded), findsNothing);
+      expect(find.byIcon(Icons.star_outline_rounded), findsOneWidget);
     });
 
     // -------------------------------------------------------------------------

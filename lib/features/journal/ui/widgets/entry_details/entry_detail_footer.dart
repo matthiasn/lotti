@@ -47,26 +47,19 @@ class EntryDetailFooter extends ConsumerWidget {
         inLinkedEntries &&
         (ref.watch(saveButtonControllerProvider(id: entryId)).value ?? false);
 
-    // In linked entries the save button is always mounted (it self-collapses to
-    // zero when there are no unsaved changes) so it can animate its grow + fade
-    // reveal instead of popping in; the row is therefore shown whenever there is
-    // a duration to display or we are in a linked-entry context.
-    final showActionRow = hasDuration || inLinkedEntries;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (showActionRow)
+        if (hasDuration || unsaved)
           Padding(
             // The read-only duration value line shares the body rhythm step so
-            // the card reads evenly top to bottom; when the transient save
-            // button is showing it sits close to its content with a tight gap;
-            // and a linked entry with neither (idle, no duration) collapses to
-            // nothing rather than leaving a dead band.
+            // the card reads evenly top to bottom; the transient save button
+            // sits close to its content with a tight gap, not a wide rhythm
+            // band above it.
             padding: EdgeInsets.only(
               top: unsaved
                   ? tokens.spacing.step2
-                  : (hasDuration ? tokens.spacing.cardItemSpacing : 0),
+                  : tokens.spacing.cardItemSpacing,
             ),
             child: Row(
               children: [
@@ -75,7 +68,7 @@ class EntryDetailFooter extends ConsumerWidget {
                 if (hasDuration)
                   DurationWidget(item: entry, linkedFrom: linkedFrom),
                 const Spacer(),
-                if (inLinkedEntries) SaveButton(entryId: entryId),
+                if (unsaved) SaveButton(entryId: entryId),
               ],
             ),
           ),

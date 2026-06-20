@@ -22,31 +22,35 @@ class SaveButton extends ConsumerWidget {
     final provider = saveButtonControllerProvider(id: entryId);
     final unsaved = ref.watch(provider).value ?? false;
 
-    // Reveal with a combined grow + fade so the button eases into the layout
-    // rather than popping in at full size (the previous fade never played in
-    // the footer, which mounted the button fresh only once it was needed). Both
-    // hosts — the app bar and the linked-entry footer — keep it mounted, so the
-    // transition animates; when there are no unsaved changes it collapses to
-    // zero size and reserves no space.
-    return AnimatedSize(
-      duration: const Duration(milliseconds: 300),
+    // No unsaved changes → render nothing and reserve NO space. (Keeping the
+    // button mounted at zero opacity/size left a wide empty band around the
+    // editor.)
+    if (!unsaved) return const SizedBox.shrink();
+
+    // Ease the button in (fade + a small upward slide) so it doesn't pop in at
+    // full size. TweenAnimationBuilder runs its tween once on mount, so the
+    // reveal animates even though the host only builds the button when it is
+    // actually needed — no persistent mount, no reserved layout space.
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('save-button-$entryId'),
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 260),
       curve: Curves.easeOutCubic,
-      alignment: Alignment.centerRight,
-      child: AnimatedOpacity(
-        curve: Curves.easeInOutQuint,
-        opacity: unsaved ? 1 : 0,
-        duration: const Duration(milliseconds: 300),
-        child: unsaved
-            ? DesignSystemButton(
-                label: context.messages.saveLabel,
-                onPressed: () {
-                  ref.read(provider.notifier).save();
-                  FocusManager.instance.primaryFocus?.unfocus();
-                },
-                variant: DesignSystemButtonVariant.dangerTertiary,
-                size: DesignSystemButtonSize.large,
-              )
-            : const SizedBox.shrink(),
+      builder: (context, t, child) => Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, 6 * (1 - t)),
+          child: child,
+        ),
+      ),
+      child: DesignSystemButton(
+        label: context.messages.saveLabel,
+        onPressed: () {
+          ref.read(provider.notifier).save();
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+        variant: DesignSystemButtonVariant.dangerTertiary,
+        size: DesignSystemButtonSize.large,
       ),
     );
   }

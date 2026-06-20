@@ -41,34 +41,32 @@ void main() {
         ],
       ),
     );
-    // Resolve the async controller value, then run the 500ms opacity
-    // animation to completion (bounded pumps, no settle).
+    // Resolve the async controller value, then run the reveal animation to
+    // completion (bounded pumps, no settle).
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pump(const Duration(milliseconds: 300));
     return controller;
   }
 
   group('SaveButton', () {
-    testWidgets('is invisible (opacity 0) when there are no unsaved changes', (
+    testWidgets('renders nothing (reserves no space) with no unsaved changes', (
       tester,
     ) async {
       await pumpButton(tester, unsaved: false);
 
-      final animatedOpacity = tester.widget<AnimatedOpacity>(
-        find.byType(AnimatedOpacity),
-      );
-      expect(animatedOpacity.opacity, 0);
+      // The button is not built at all when there is nothing to save, so it
+      // reserves no layout space around the editor.
+      expect(find.byType(DesignSystemButton), findsNothing);
+      expect(find.text('Save'), findsNothing);
     });
 
-    testWidgets('is visible (opacity 1) when there are unsaved changes', (
+    testWidgets('is shown once the reveal completes when there are unsaved '
+        'changes', (
       tester,
     ) async {
       await pumpButton(tester, unsaved: true);
 
-      final animatedOpacity = tester.widget<AnimatedOpacity>(
-        find.byType(AnimatedOpacity),
-      );
-      expect(animatedOpacity.opacity, 1);
+      expect(find.byType(DesignSystemButton), findsOneWidget);
       expect(find.text('Save'), findsOneWidget);
     });
 
