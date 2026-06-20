@@ -346,49 +346,53 @@ class EntryDetailsContent extends ConsumerWidget {
           : null,
     );
 
-    if (!isCollapsible) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          header,
-          if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
-          if (item is JournalImage) EntryImageWidget(item),
-          if (!shouldHideEditor) EditorWidget(entryId: itemId),
-          ?detailSection,
-          if (item is JournalAudio)
-            NestedAiResponsesWidget(
-              parentEntryId: itemId,
-              linkedFromEntity: item,
-            ),
-          EntryDetailFooter(
-            entryId: itemId,
-            linkedFrom: linkedFrom,
-            inLinkedEntries: linkedFrom != null,
-          ),
-        ],
-      );
-    }
+    // Only count labels that will actually render, so the rhythm never inserts
+    // a gap before an empty (collapsed) labels row.
+    final hasLabels = showLabels && (item.meta.labelIds?.isNotEmpty ?? false);
 
-    // Collapsible layout for image/audio entries in linked context
-    // Date is now shown in the header (Step 2), no longer duplicated here
-    final expandedContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    final footer = EntryDetailFooter(
+      entryId: itemId,
+      linkedFrom: linkedFrom,
+      inLinkedEntries: linkedFrom != null,
+    );
+
+    if (!isCollapsible) {
+      final body = <Widget>[
+        if (hasLabels) EntryLabelsDisplay(entryId: itemId),
         if (item is JournalImage) EntryImageWidget(item),
-        if (item is JournalAudio && detailSection != null) detailSection,
-        if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
         if (!shouldHideEditor) EditorWidget(entryId: itemId),
+        ?detailSection,
         if (item is JournalAudio)
           NestedAiResponsesWidget(
             parentEntryId: itemId,
             linkedFromEntity: item,
           ),
-        EntryDetailFooter(
-          entryId: itemId,
-          linkedFrom: linkedFrom,
-          inLinkedEntries: linkedFrom != null,
-        ),
-      ],
+      ];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          header,
+          ..._withRhythm(context, body),
+          // Footer self-collapses to zero when there is nothing to show, so it
+          // carries its own (small) leading gap rather than a rhythm step.
+          footer,
+        ],
+      );
+    }
+
+    // Collapsible layout for image/audio entries in linked context.
+    // Date is shown in the header, not duplicated here.
+    final collapsibleBody = <Widget>[
+      if (item is JournalImage) EntryImageWidget(item),
+      if (item is JournalAudio && detailSection != null) detailSection,
+      if (hasLabels) EntryLabelsDisplay(entryId: itemId),
+      if (!shouldHideEditor) EditorWidget(entryId: itemId),
+      if (item is JournalAudio)
+        NestedAiResponsesWidget(parentEntryId: itemId, linkedFromEntity: item),
+    ];
+    final expandedContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [..._withRhythm(context, collapsibleBody), footer],
     );
 
     return Column(
@@ -401,6 +405,25 @@ class EntryDetailsContent extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// Interleaves the one shared vertical rhythm between the body sections: a
+  /// header→content step (`step4`) before the first section, then a tighter
+  /// content step (`step3`) between sections, so every card type stacks with
+  /// the same two-tier rhythm instead of per-widget ad-hoc gaps.
+  List<Widget> _withRhythm(BuildContext context, List<Widget> sections) {
+    final tokens = context.designTokens;
+    final out = <Widget>[];
+    for (var i = 0; i < sections.length; i++) {
+      out
+        ..add(
+          SizedBox(
+            height: i == 0 ? tokens.spacing.step4 : tokens.spacing.step3,
+          ),
+        )
+        ..add(sections[i]);
+    }
+    return out;
   }
 }
 

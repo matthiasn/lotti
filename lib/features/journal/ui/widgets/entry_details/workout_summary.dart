@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -32,6 +33,7 @@ class WorkoutSummary extends StatelessWidget {
       }
     });
 
+    final tokens = context.designTokens;
     // No outer bottom padding — the card shell owns the symmetric inset.
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -44,6 +46,9 @@ class WorkoutSummary extends StatelessWidget {
               rangeEnd: getRangeEnd(),
             ),
           ),
+        // Separate the summary block from the chart frame(s) above it so the
+        // facts don't read as crammed under the chart.
+        if (showChart) SizedBox(height: tokens.spacing.step4),
         EntryTextWidget(entryTextForWorkout(data), padding: EdgeInsets.zero),
       ],
     );
