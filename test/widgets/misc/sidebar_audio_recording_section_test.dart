@@ -6,7 +6,6 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_orb.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
 import 'package:mocktail/mocktail.dart';
@@ -138,15 +137,6 @@ void main() {
     await tester.pump();
   }
 
-  BoxDecoration frameDecoration(WidgetTester tester) {
-    return tester
-            .widget<DecoratedBox>(
-              find.byKey(const Key('sidebar_audio_recording_card_frame')),
-            )
-            .decoration
-        as BoxDecoration;
-  }
-
   testWidgets('collapses when the recorder is not active', (tester) async {
     await pumpSection(
       tester,
@@ -155,11 +145,11 @@ void main() {
     await tester.pump(SidebarAudioRecordingSection.animationDuration);
 
     expect(find.byKey(const Key('sidebar_audio_recording_card')), findsNothing);
-    expect(find.byType(AudioRecordingOrb), findsNothing);
+    expect(find.byIcon(Icons.mic_rounded), findsNothing);
     expect(find.byIcon(Icons.stop_rounded), findsNothing);
   });
 
-  testWidgets('renders linked task title, duration, orb, and stop button', (
+  testWidgets('renders linked task title, duration, mic, and stop button', (
     tester,
   ) async {
     await pumpSection(
@@ -175,72 +165,21 @@ void main() {
 
     expect(find.text('Urgent voice note'), findsOneWidget);
     expect(find.text('01:02:03'), findsOneWidget);
-    expect(find.byType(AudioRecordingOrb), findsOneWidget);
+    expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
     expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
 
-    final orb = tester.widget<AudioRecordingOrb>(
-      find.byType(AudioRecordingOrb),
-    );
-    expect(orb.dBFS, -12);
-    expect(orb.size, dsTokensLight.spacing.step7);
+    // The static mic glyph carries the recording (red) accent — the only
+    // chroma in the otherwise neutral row (replacing the old reactive orb).
+    final micIcon = tester.widget<Icon>(find.byIcon(Icons.mic_rounded));
+    expect(micIcon.color, dsTokensLight.colors.alert.error.defaultColor);
 
-    final material = tester.widget<Material>(
+    // The card is a borderless row on the shared activity well; the well
+    // (not the row) provides the surface, so the row is an InkWell carrying
+    // the small interaction radius.
+    final inkWell = tester.widget<InkWell>(
       find.byKey(const Key('sidebar_audio_recording_card')),
     );
-    expect(material.borderRadius, BorderRadius.circular(dsTokensLight.radii.s));
-
-    final frame = frameDecoration(tester);
-    expect(frame.borderRadius, BorderRadius.circular(dsTokensLight.radii.s));
-  });
-
-  testWidgets('intensifies the card frame from live dBFS input', (
-    tester,
-  ) async {
-    await pumpSection(tester, recorderState(dBFS: -60));
-    final quietFrame = frameDecoration(tester);
-    final quietBorder = quietFrame.border! as Border;
-    final quietShadow = quietFrame.boxShadow!.single;
-
-    controller.state = controller.state.copyWith(dBFS: -12);
-    await tester.pump();
-    final loudFrame = frameDecoration(tester);
-    final loudBorder = loudFrame.border! as Border;
-    final loudShadow = loudFrame.boxShadow!.single;
-
-    expect(loudBorder.top.width, greaterThan(quietBorder.top.width));
-    expect(quietBorder.top.width, lessThan(dsTokensLight.spacing.step1 / 2));
-    expect(
-      loudBorder.top.width,
-      greaterThan(dsTokensLight.spacing.step1 * 0.6),
-    );
-    expect(
-      loudBorder.top.width,
-      lessThan(dsTokensLight.spacing.step1 * 0.75),
-    );
-    controller.state = controller.state.copyWith(dBFS: 0);
-    await tester.pump();
-    final fullScaleFrame = frameDecoration(tester);
-    final fullScaleBorder = fullScaleFrame.border! as Border;
-
-    expect(fullScaleBorder.top.width, dsTokensLight.spacing.step1);
-    expect(loudBorder.top.color.a, greaterThan(quietBorder.top.color.a));
-    expect(loudShadow.blurRadius, greaterThan(quietShadow.blurRadius));
-    expect(loudShadow.spreadRadius, greaterThan(quietShadow.spreadRadius));
-    expect(loudFrame.color!.a, greaterThan(quietFrame.color!.a));
-  });
-
-  testWidgets('keeps the card frame red when input is clipping', (
-    tester,
-  ) async {
-    await pumpSection(tester, recorderState(dBFS: -1));
-
-    final frame = frameDecoration(tester);
-    final border = frame.border! as Border;
-
-    expect(
-      border.top.color.withValues(alpha: 1),
-      dsTokensLight.colors.alert.error.defaultColor,
-    );
+    expect(inkWell.borderRadius, BorderRadius.circular(dsTokensLight.radii.s));
   });
 
   testWidgets('time text uses tabular figure features', (tester) async {

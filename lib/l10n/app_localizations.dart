@@ -13294,13 +13294,13 @@ abstract class AppLocalizations {
   /// No description provided for @sidebarWakesCancelTooltip.
   ///
   /// In en, this message translates to:
-  /// **'Cancel wake'**
+  /// **'Cancel agent'**
   String get sidebarWakesCancelTooltip;
 
   /// No description provided for @sidebarWakesHeader.
   ///
   /// In en, this message translates to:
-  /// **'Wakes'**
+  /// **'Agents'**
   String get sidebarWakesHeader;
 
   /// No description provided for @sidebarWakesNow.
@@ -13434,6 +13434,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preview voice'**
   String get speechVoicePreviewTooltip;
+
+  /// No description provided for @syncActivityInboxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox'**
+  String get syncActivityInboxLabel;
+
+  /// No description provided for @syncActivityOutboxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbox'**
+  String get syncActivityOutboxLabel;
 
   /// No description provided for @syncActivityIndicatorSemantics.
   ///

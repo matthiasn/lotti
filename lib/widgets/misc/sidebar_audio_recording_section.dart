@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,7 +10,6 @@ import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_modal.dart';
-import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_orb.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
@@ -36,10 +34,12 @@ bool _recordingIsVisible(AudioRecorderState state) {
 /// `aboveSettings` slot whenever the microphone is active and the modal is
 /// not already open.
 ///
-/// The card intentionally mirrors `SidebarTimerSection`: title row, live
-/// elapsed time, and a stop button. The leading orb is driven by the recorder's
-/// live dBFS stream so background sidebar recording remains visually active
-/// even when the user is working in another tab or route.
+/// The card intentionally mirrors `SidebarTimerSection`: the same neutral
+/// recessed surface, a leading type glyph, the linked title, a live elapsed
+/// clock, and a stop button. A static red microphone glyph (record
+/// convention) identifies it and distinguishes it from the teal running
+/// timer — there is no animated orb or signal-reactive frame, keeping the
+/// sidebar calm while a background recording runs in another tab or route.
 class SidebarAudioRecordingSection extends ConsumerWidget {
   const SidebarAudioRecordingSection({super.key});
 
@@ -83,8 +83,17 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
     final linkedId = ref.watch(
       audioRecorderControllerProvider.select((state) => state.linkedId),
     );
+    final body = ref.watch(
+      audioRecorderControllerProvider.select(
+        (state) => (
+          progress: state.progress,
+          isRealtimeMode: state.isRealtimeMode,
+        ),
+      ),
+    );
     final tokens = context.designTokens;
     final messages = context.messages;
+    final errorColor = tokens.colors.alert.error.defaultColor;
     final linkedEntry = linkedId == null
         ? null
         : ref.watch(sidebarAudioRecordingLinkedEntryProvider(linkedId)).value;
@@ -92,41 +101,65 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
       linkedEntry: linkedEntry,
       fallback: messages.taskActionBarAudioRecordingActive,
     );
+    final durationText = formatDuration(body.progress);
 
+    // Borderless single-line row — the surrounding activity well provides
+    // the shared recessed surface and the Material ancestor for the ink.
+    // A static red mic glyph (record convention) identifies it and keeps
+    // its stop button distinct from the teal running timer.
     return Semantics(
       container: true,
       liveRegion: true,
       label: messages.taskActionBarAudioRecordingActive,
-      child: _SignalReactiveCardFrame(
-        child: Material(
-          key: const Key('sidebar_audio_recording_card'),
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(tokens.radii.s),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: () => AudioRecordingModal.show(
-              context,
-              linkedId: linkedId,
-              categoryId: linkedEntry?.categoryId,
-              useRootNavigator: false,
-            ),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                tokens.spacing.step4,
-                tokens.spacing.step3,
-                tokens.spacing.step3,
-                tokens.spacing.step3,
+      child: InkWell(
+        key: const Key('sidebar_audio_recording_card'),
+        onTap: () => AudioRecordingModal.show(
+          context,
+          linkedId: linkedId,
+          categoryId: linkedEntry?.categoryId,
+          useRootNavigator: false,
+        ),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step5,
+            vertical: tokens.spacing.step3,
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.mic_rounded, size: 20, color: errorColor),
+              SizedBox(width: tokens.spacing.step4),
+              Expanded(
+                child: Tooltip(
+                  message: title,
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      // Lead the row at high emphasis, matching the running
+                      // timer, so the recorded task stays readable when
+                      // truncated.
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ),
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _RecordingTitleRow(title: title),
-                  SizedBox(height: tokens.spacing.step2),
-                  const _RecordingBodyRow(),
-                ],
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                durationText,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                  fontFeatures: numericBadgeFontFeatures,
+                ),
               ),
-            ),
+              SizedBox(width: tokens.spacing.step2),
+              _StopAudioRecordingButton(
+                onStop: () => unawaited(
+                  _stop(ref, isRealtimeMode: body.isRealtimeMode),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -145,115 +178,6 @@ class _SidebarAudioRecordingCard extends ConsumerWidget {
     final linkedText = linkedEntry?.entryText?.plainText.trim();
     if (linkedText != null && linkedText.isNotEmpty) return linkedText;
     return fallback;
-  }
-}
-
-class _SignalReactiveCardFrame extends ConsumerWidget {
-  const _SignalReactiveCardFrame({
-    required this.child,
-  });
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final dBFS = ref.watch(
-      audioRecorderControllerProvider.select((state) => state.dBFS),
-    );
-    final tokens = context.designTokens;
-    final signalLevel = AudioRecordingSignalLevel.fromDbfs(dBFS);
-    final signal = signalLevel.normalized;
-    final frameSignal = math.pow(signal, 3).toDouble();
-    final color = tokens.colors.alert.error.defaultColor;
-    final borderRadius = BorderRadius.circular(tokens.radii.s);
-    final borderWidth = tokens.spacing.step1 * (0.25 + frameSignal * 0.75);
-    final borderAlpha = (0.22 + frameSignal * 0.50).clamp(0.0, 0.78);
-    final shadowAlpha = (0.04 + frameSignal * 0.12).clamp(0.0, 0.18);
-    final backgroundAlpha = (0.08 + frameSignal * 0.05).clamp(0.0, 0.16);
-
-    return DecoratedBox(
-      key: const Key('sidebar_audio_recording_card_frame'),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: backgroundAlpha),
-        borderRadius: borderRadius,
-        border: Border.all(
-          color: color.withValues(alpha: borderAlpha),
-          width: borderWidth,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: color.withValues(alpha: shadowAlpha),
-            blurRadius:
-                tokens.spacing.step3 + frameSignal * tokens.spacing.step5,
-            spreadRadius: frameSignal * tokens.spacing.step1 * 0.5,
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-}
-
-class _RecordingTitleRow extends StatelessWidget {
-  const _RecordingTitleRow({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Text(
-      title,
-      maxLines: 2,
-      overflow: TextOverflow.ellipsis,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.text.mediumEmphasis,
-      ),
-    );
-  }
-}
-
-class _RecordingBodyRow extends ConsumerWidget {
-  const _RecordingBodyRow();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(
-      audioRecorderControllerProvider.select(
-        (state) => (
-          dBFS: state.dBFS,
-          progress: state.progress,
-          isRealtimeMode: state.isRealtimeMode,
-        ),
-      ),
-    );
-    final tokens = context.designTokens;
-    final errorColor = tokens.colors.alert.error.defaultColor;
-    final durationText = formatDuration(state.progress);
-
-    return Row(
-      children: [
-        AudioRecordingOrb(
-          dBFS: state.dBFS,
-          size: tokens.spacing.step7,
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Expanded(
-          child: Text(
-            durationText,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: errorColor,
-              fontFeatures: numericBadgeFontFeatures,
-            ),
-          ),
-        ),
-        _StopAudioRecordingButton(
-          onStop: () => unawaited(
-            _stop(ref, isRealtimeMode: state.isRealtimeMode),
-          ),
-        ),
-      ],
-    );
   }
 
   Future<void> _stop(
@@ -280,6 +204,8 @@ class _StopAudioRecordingButton extends StatelessWidget {
     final errorColor = tokens.colors.alert.error.defaultColor;
     final tooltip = context.messages.audioRecordingStop;
 
+    // Stopping a recording is consequential, so this control keeps the
+    // destructive red — the one place red survives in the calmed-down card.
     return Semantics(
       button: true,
       label: tooltip,
@@ -287,17 +213,18 @@ class _StopAudioRecordingButton extends StatelessWidget {
         message: tooltip,
         excludeFromSemantics: true,
         child: Material(
-          color: errorColor.withAlpha(40),
+          color: errorColor.withValues(alpha: 0.16),
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: onStop,
-            child: SizedBox.square(
-              dimension: tokens.spacing.step7,
+            child: SizedBox(
+              width: 28,
+              height: 28,
               child: Icon(
                 Icons.stop_rounded,
-                size: tokens.spacing.step5,
+                size: 16,
                 color: errorColor,
               ),
             ),

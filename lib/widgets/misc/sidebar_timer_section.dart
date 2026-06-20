@@ -116,38 +116,52 @@ class _SidebarTimerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final errorColor = tokens.colors.alert.error.defaultColor;
+    // Teal "live" accent — the app's interactive accent identifies a
+    // running timer and visually separates it from the red audio row so
+    // their stop buttons can never be confused.
+    final accent = tokens.colors.interactive.enabled;
     final title = _resolveTitle(messages.taskUntitled);
     final durationText = formatDuration(entryDuration(current));
 
+    // Borderless single-line row — the surrounding activity well
+    // (SidebarActivitySection) provides the shared recessed surface and
+    // the Material ancestor for the ink. Layout mirrors the nav rows and
+    // the audio/wake rows: leading glyph, title, trailing tabular clock,
+    // trailing action.
     return Semantics(
       container: true,
       label: messages.sidebarRunningTimerLabel,
-      child: Material(
-        color: errorColor.withAlpha(20),
+      child: InkWell(
+        onTap: onTapBody,
         borderRadius: BorderRadius.circular(tokens.radii.s),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTapBody,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              tokens.spacing.step4,
-              tokens.spacing.step3,
-              tokens.spacing.step3,
-              tokens.spacing.step3,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _TimerTitleRow(title: title),
-                SizedBox(height: tokens.spacing.step2),
-                _TimerBodyRow(
-                  durationText: durationText,
-                  onStop: onStop,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step5,
+            vertical: tokens.spacing.step3,
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.timer_outlined, size: 20, color: accent),
+              SizedBox(width: tokens.spacing.step4),
+              // Tooltip surfaces the full task name, which the single-line
+              // row truncates — so two concurrent timers stay distinguishable.
+              Expanded(
+                child: Tooltip(
+                  message: title,
+                  child: _TimerTitleRow(title: title),
                 ),
-              ],
-            ),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                durationText,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                  fontFeatures: numericBadgeFontFeatures,
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              _StopTimerButton(onStop: onStop),
+            ],
           ),
         ),
       ),
@@ -177,47 +191,14 @@ class _TimerTitleRow extends StatelessWidget {
     final tokens = context.designTokens;
     return Text(
       title,
-      maxLines: 2,
+      maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.text.mediumEmphasis,
+      style: tokens.typography.styles.body.bodySmall.copyWith(
+        // High-emphasis so the running task — the most important live object
+        // in the well — leads its row alongside the clock, and stays readable
+        // even when truncated.
+        color: tokens.colors.text.highEmphasis,
       ),
-    );
-  }
-}
-
-class _TimerBodyRow extends StatelessWidget {
-  const _TimerBodyRow({
-    required this.durationText,
-    required this.onStop,
-  });
-
-  final String durationText;
-  final VoidCallback onStop;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final errorColor = tokens.colors.alert.error.defaultColor;
-    return Row(
-      children: [
-        Icon(
-          Icons.timer_outlined,
-          size: 20,
-          color: errorColor,
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Expanded(
-          child: Text(
-            durationText,
-            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: errorColor,
-              fontFeatures: numericBadgeFontFeatures,
-            ),
-          ),
-        ),
-        _StopTimerButton(onStop: onStop),
-      ],
     );
   }
 }
@@ -230,9 +211,11 @@ class _StopTimerButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final errorColor = tokens.colors.alert.error.defaultColor;
     final tooltip = context.messages.sidebarRunningTimerStopTooltip;
 
+    // Neutral stop control — stopping a timer is not destructive, so the
+    // glyph stays medium-emphasis on a subtle surface rather than shouting
+    // in red. (Red is reserved for the audio recording's stop button.)
     return Semantics(
       button: true,
       label: tooltip,
@@ -240,19 +223,19 @@ class _StopTimerButton extends StatelessWidget {
         message: tooltip,
         excludeFromSemantics: true,
         child: Material(
-          color: errorColor.withAlpha(40),
+          color: tokens.colors.surface.enabled,
           shape: const CircleBorder(),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: onStop,
             child: SizedBox(
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               child: Icon(
                 Icons.stop_rounded,
-                size: 18,
-                color: errorColor,
+                size: 16,
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           ),

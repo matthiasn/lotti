@@ -12,7 +12,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
-import 'package:lotti/ui/app_fonts.dart';
 
 /// Settings sub-route that opens the full Wake Cycles list.
 const String kSidebarWakeQueueListRoute = '/settings/agents/pending-wakes';
@@ -89,7 +88,6 @@ class SidebarWakeQueue extends ConsumerWidget {
     final ongoingAsync = ref.watch(ongoingWakeRecordsProvider);
     final allScheduled = wakesAsync.value ?? const <PendingWakeRecord>[];
     final ongoing = ongoingAsync.value ?? const <OngoingWakeRecord>[];
-    final tokens = context.designTokens;
 
     final now = clock.now();
     final cutoff = now.add(kSidebarWakeQueueScheduledLookahead);
@@ -105,45 +103,22 @@ class SidebarWakeQueue extends ConsumerWidget {
 
     final child = totalCount == 0
         ? const SizedBox.shrink(key: _hiddenKey)
-        : Material(
+        : Column(
             key: _visibleKey,
-            color: tokens.colors.background.level02,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(tokens.radii.s),
-              // Hairline (0.5 px) — `decorative.level01` is already the
-              // faintest decorative token, so the only remaining axis for
-              // "fainter" is stroke thickness.
-              side: BorderSide(
-                color: tokens.colors.decorative.level01,
-                width: 0.5,
-              ),
-            ),
-            clipBehavior: Clip.antiAlias,
-            child: Padding(
-              // Matches the running-timer card's vertical rhythm and adds
-              // enough horizontal gutter that the dot+title cluster and
-              // the trailing × do not hug the card border.
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step2,
-                vertical: tokens.spacing.step3,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Header(count: totalCount),
-                  if (ongoing.isNotEmpty) ...[
-                    SizedBox(height: tokens.spacing.step1),
-                    for (final record in ongoing)
-                      _OngoingWakeRow(record: record),
-                  ],
-                  if (visibleScheduled.isNotEmpty) ...[
-                    SizedBox(height: tokens.spacing.step1),
-                    for (final record in visibleScheduled)
-                      _WakeRow(record: record),
-                  ],
-                ],
-              ),
-            ),
+            // Borderless — the surrounding activity well
+            // (SidebarActivitySection) provides the shared recessed surface,
+            // the Material ancestor for the ink, and the horizontal gutter.
+            // Rows carry their own horizontal padding so the leading dot
+            // aligns to the same icon column as the nav and the timer/audio
+            // rows.
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Header(count: totalCount),
+              if (ongoing.isNotEmpty)
+                for (final record in ongoing) _OngoingWakeRow(record: record),
+              if (visibleScheduled.isNotEmpty)
+                for (final record in visibleScheduled) _WakeRow(record: record),
+            ],
           );
 
     return AnimatedSize(
@@ -169,47 +144,42 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final labelStyle = AppFonts.inconsolata(
-      fontSize: 10,
-      fontWeight: FontWeight.w600,
+    // Sentence-case caption in the app's voice — a quiet low-emphasis tier-2
+    // sublabel that sits clearly below the high-emphasis live rows above and
+    // the medium-emphasis wake titles below, not a wide-tracked console
+    // header. The count rides the same style so it reads as one calm
+    // "Wakes N" cluster.
+    final labelStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
-      letterSpacing: 1.2,
     );
-    final countStyle = AppFonts.inconsolata(
-      fontSize: 10,
-      fontWeight: FontWeight.w700,
-      color: count > 0
-          ? tokens.colors.alert.warning.defaultColor
-          : tokens.colors.text.lowEmphasis,
-      letterSpacing: 0.4,
-    ).copyWith(fontFeatures: numericBadgeFontFeatures);
+    final countStyle = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+      fontFeatures: numericBadgeFontFeatures,
+    );
 
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
-      child: InkWell(
-        onTap: _openWakesList,
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
-          child: Row(
-            children: [
-              Text(
-                messages.sidebarWakesHeader.toUpperCase(),
-                style: labelStyle,
+    return InkWell(
+      onTap: _openWakesList,
+      borderRadius: BorderRadius.circular(tokens.radii.xs),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step5,
+          vertical: tokens.spacing.step2,
+        ),
+        child: Row(
+          children: [
+            Text(messages.sidebarWakesHeader, style: labelStyle),
+            SizedBox(width: tokens.spacing.step2),
+            Text('$count', style: countStyle),
+            const Spacer(),
+            Tooltip(
+              message: messages.sidebarWakesOpenList,
+              child: Icon(
+                Icons.open_in_new_rounded,
+                size: 14,
+                color: tokens.colors.text.lowEmphasis,
               ),
-              SizedBox(width: tokens.spacing.step2),
-              Text('$count', style: countStyle),
-              const Spacer(),
-              Tooltip(
-                message: messages.sidebarWakesOpenList,
-                child: Icon(
-                  Icons.open_in_new_rounded,
-                  size: 12,
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -259,17 +229,16 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final record = widget.record;
+    // Green dot = "running now"; the elapsed clock itself stays neutral so
+    // it reads as data, not a second green signal.
     final accent = tokens.colors.alert.success.defaultColor;
-    final titleStyle = AppFonts.inconsolata(
-      fontSize: 11,
-      fontWeight: FontWeight.w600,
+    final titleStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
-    final durationStyle = AppFonts.inconsolata(
-      fontSize: 10,
-      fontWeight: FontWeight.w600,
-      color: accent,
-    ).copyWith(fontFeatures: numericBadgeFontFeatures);
+    final durationStyle = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+      fontFeatures: numericBadgeFontFeatures,
+    );
 
     final elapsed = ref.watch(
       wakeCountdownTickerProvider.select((async) {
@@ -293,47 +262,58 @@ class _OngoingWakeRowState extends ConsumerState<_OngoingWakeRow> {
         ? liveSubjectTitle
         : record.title;
 
-    return Row(
-      children: [
-        Expanded(
-          child: InkWell(
-            onTap: () => _navigateToAgentRoute(
-              agentInstanceRoute(record.agentId),
-            ),
-            borderRadius: BorderRadius.circular(tokens.radii.xs),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step2,
-                vertical: tokens.spacing.step1,
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step1,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () => _navigateToAgentRoute(
+                agentInstanceRoute(record.agentId),
               ),
+              borderRadius: BorderRadius.circular(tokens.radii.xs),
               child: Row(
                 children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: accent,
-                      shape: BoxShape.circle,
+                  // 20px leading slot so the dot aligns to the same icon
+                  // column as the nav and the timer/audio glyphs.
+                  SizedBox(
+                    width: 20,
+                    child: Center(
+                      child: Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: accent,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
                     ),
                   ),
-                  SizedBox(width: tokens.spacing.step2),
+                  SizedBox(width: tokens.spacing.step4),
                   Expanded(
-                    child: Text(
-                      title,
-                      style: titleStyle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                    child: Tooltip(
+                      message: title,
+                      child: Text(
+                        title,
+                        style: titleStyle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ),
-                  SizedBox(width: tokens.spacing.step2),
+                  SizedBox(width: tokens.spacing.step3),
                   Text(elapsed, style: durationStyle),
                 ],
               ),
             ),
           ),
-        ),
-        _CancelWakeButton(onPressed: _abortWake, cancelling: _cancelling),
-      ],
+          SizedBox(width: tokens.spacing.step2),
+          _CancelWakeButton(onPressed: _abortWake, cancelling: _cancelling),
+        ],
+      ),
     );
   }
 }
@@ -410,57 +390,77 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
     );
     final eta = _formatEta(context, remainingSeconds);
     final imminent = remainingSeconds < 5 * 60;
+    // Amber only when the wake is imminent (<5 min) — otherwise the ETA is
+    // quiet, low-emphasis data, not a standing alert.
     final etaColor = imminent
         ? tokens.colors.alert.warning.defaultColor
         : tokens.colors.text.lowEmphasis;
 
-    final titleStyle = AppFonts.inconsolata(
-      fontSize: 11,
-      fontWeight: FontWeight.w500,
+    final titleStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
-    final etaStyle = AppFonts.inconsolata(
-      fontSize: 10,
-      fontWeight: FontWeight.w600,
+    final etaStyle = tokens.typography.styles.others.caption.copyWith(
       color: etaColor,
-    ).copyWith(fontFeatures: numericBadgeFontFeatures);
+      fontFeatures: numericBadgeFontFeatures,
+    );
 
-    return Row(
-      children: [
-        Expanded(
-          child: Semantics(
-            button: true,
-            label: '$title · $eta',
-            child: InkWell(
-              onTap: () => _navigateToAgentRoute(
-                agentInstanceRoute(record.agent.agentId),
-              ),
-              borderRadius: BorderRadius.circular(tokens.radii.xs),
-              child: Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: tokens.spacing.step2,
-                  vertical: tokens.spacing.step1,
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step5,
+        vertical: tokens.spacing.step1,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Semantics(
+              button: true,
+              label: '$title · $eta',
+              child: InkWell(
+                onTap: () => _navigateToAgentRoute(
+                  agentInstanceRoute(record.agent.agentId),
                 ),
+                borderRadius: BorderRadius.circular(tokens.radii.xs),
                 child: Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: titleStyle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    // Neutral dot in the shared 20px icon column — marks a
+                    // scheduled (not-yet-running) wake, vs the green dot the
+                    // ongoing row uses.
+                    SizedBox(
+                      width: 20,
+                      child: Center(
+                        child: Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: tokens.colors.text.lowEmphasis,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
                       ),
                     ),
-                    SizedBox(width: tokens.spacing.step2),
+                    SizedBox(width: tokens.spacing.step4),
+                    Expanded(
+                      child: Tooltip(
+                        message: title,
+                        child: Text(
+                          title,
+                          style: titleStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: tokens.spacing.step3),
                     Text(eta, style: etaStyle),
                   ],
                 ),
               ),
             ),
           ),
-        ),
-        _CancelWakeButton(onPressed: _cancelWake, cancelling: _cancelling),
-      ],
+          SizedBox(width: tokens.spacing.step2),
+          _CancelWakeButton(onPressed: _cancelWake, cancelling: _cancelling),
+        ],
+      ),
     );
   }
 }

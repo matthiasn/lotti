@@ -3320,8 +3320,8 @@
   "sidebarRunningTimerStopTooltip": "Oprește cronometrul",
   "sidebarToggleCollapseLabel": "Restrânge bara laterală",
   "sidebarToggleExpandLabel": "Extinde bara laterală",
-  "sidebarWakesCancelTooltip": "Anulează trezirea",
-  "sidebarWakesHeader": "Treziri",
+  "sidebarWakesCancelTooltip": "Anulați agentul",
+  "sidebarWakesHeader": "Agenți",
   "sidebarWakesNow": "acum",
   "sidebarWakesOpenList": "Deschide lista",
   "skillsSectionTitle": "Competențe",
@@ -3344,6 +3344,8 @@
   "speechVoiceGenderFemale": "Feminină",
   "speechVoiceGenderMale": "Masculină",
   "speechVoicePreviewTooltip": "Ascultați vocea",
+  "syncActivityInboxLabel": "Intrare",
+  "syncActivityOutboxLabel": "Ieșire",
   "syncActivityIndicatorSemantics": "Activitate sincronizare. Coadă de ieșire: {outbox}. Coadă de intrare: {inbox}. Deschide coada de ieșire pentru sincronizare.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {

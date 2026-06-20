@@ -183,14 +183,25 @@ Wakes page, surfacing running wakes plus the next three scheduled wakes within
 the one-hour sidebar lookahead so the queue is visible
 without leaving whatever tab the operator is on:
 
-- a `WAKES N` mono header with the visible count and an open-in-new icon,
-- one row per currently running wake with the linked task/project title and
-  live elapsed time,
-- up to three compact scheduled rows with the linked task/project title and a
-  per-row ETA (`now` once due, `m:ss` inside the one-hour lookahead,
-  switching to the warning colour inside the last five minutes),
+- a quiet sentence-case `Agents N` sublabel (Inter `caption`, low emphasis)
+  with the visible count and an open-in-new icon,
+- one row per currently running wake with a green status dot, the linked
+  task/project title, and live elapsed time,
+- up to three compact scheduled rows with a neutral status dot, the linked
+  task/project title, and a per-row ETA (`now` once due, `m:ss` inside the
+  one-hour lookahead, switching to the warning colour inside the last five
+  minutes),
 - the header link switches to the Settings tab and beams to
   `/settings/agents/pending-wakes` for the full list.
+
+The widget renders as borderless rows (no card of its own); the desktop
+sidebar composer wraps it — together with the running-timer and audio rows —
+in one shared recessed "activity" well, so the agents block reads as part of a
+single calm live-status group rather than a separate bordered card. Every row
+aligns its leading dot/glyph to the same icon column as the nav rows above.
+Type is the app's Inter family throughout (no monospace); elapsed times use
+tabular figures. Titles surface in full via a hover tooltip when the row
+truncates them.
 
 Rows are driven by the page-scoped `wakeCountdownTickerProvider`, so the
 sidebar shares a one-second ticker instead of spawning a timer per row. Wakes

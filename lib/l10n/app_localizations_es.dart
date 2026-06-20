@@ -7894,10 +7894,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get sidebarToggleExpandLabel => 'Expandir barra lateral';
 
   @override
-  String get sidebarWakesCancelTooltip => 'Cancelar despertar';
+  String get sidebarWakesCancelTooltip => 'Cancelar agente';
 
   @override
-  String get sidebarWakesHeader => 'Despertares';
+  String get sidebarWakesHeader => 'Agentes';
 
   @override
   String get sidebarWakesNow => 'ahora';
@@ -7971,6 +7971,12 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Escuchar la voz';
+
+  @override
+  String get syncActivityInboxLabel => 'Entrada';
+
+  @override
+  String get syncActivityOutboxLabel => 'Salida';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {

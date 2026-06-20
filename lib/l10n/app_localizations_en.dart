@@ -7695,10 +7695,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sidebarToggleExpandLabel => 'Expand sidebar';
 
   @override
-  String get sidebarWakesCancelTooltip => 'Cancel wake';
+  String get sidebarWakesCancelTooltip => 'Cancel agent';
 
   @override
-  String get sidebarWakesHeader => 'Wakes';
+  String get sidebarWakesHeader => 'Agents';
 
   @override
   String get sidebarWakesNow => 'now';
@@ -7770,6 +7770,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Preview voice';
+
+  @override
+  String get syncActivityInboxLabel => 'Inbox';
+
+  @override
+  String get syncActivityOutboxLabel => 'Outbox';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {

@@ -85,7 +85,7 @@ void main() {
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       expect(
-        find.text(element.messages.sidebarWakesHeader.toUpperCase()),
+        find.text(element.messages.sidebarWakesHeader),
         findsNothing,
       );
       expect(find.byIcon(Icons.open_in_new_rounded), findsNothing);
@@ -107,7 +107,7 @@ void main() {
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       expect(
-        find.text(element.messages.sidebarWakesHeader.toUpperCase()),
+        find.text(element.messages.sidebarWakesHeader),
         findsNothing,
       );
       expect(find.byIcon(Icons.open_in_new_rounded), findsNothing);
@@ -160,7 +160,7 @@ void main() {
     // as a small-caps mono treatment regardless of the translator's
     // capitalization choices.
     expect(
-      find.text(messages.sidebarWakesHeader.toUpperCase()),
+      find.text(messages.sidebarWakesHeader),
       findsOneWidget,
     );
     // Only wakes within the 1h lookahead window count toward the

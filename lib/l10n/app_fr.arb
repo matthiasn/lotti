@@ -3320,8 +3320,8 @@
   "sidebarRunningTimerStopTooltip": "Arrêter le minuteur",
   "sidebarToggleCollapseLabel": "Réduire la barre latérale",
   "sidebarToggleExpandLabel": "Développer la barre latérale",
-  "sidebarWakesCancelTooltip": "Annuler le réveil",
-  "sidebarWakesHeader": "Réveils",
+  "sidebarWakesCancelTooltip": "Annuler l'agent",
+  "sidebarWakesHeader": "Agents",
   "sidebarWakesNow": "maintenant",
   "sidebarWakesOpenList": "Ouvrir la liste",
   "skillsSectionTitle": "Compétences",
@@ -3344,6 +3344,8 @@
   "speechVoiceGenderFemale": "Féminine",
   "speechVoiceGenderMale": "Masculine",
   "speechVoicePreviewTooltip": "Écouter la voix",
+  "syncActivityInboxLabel": "Entrée",
+  "syncActivityOutboxLabel": "Sortie",
   "syncActivityIndicatorSemantics": "Activité de synchronisation. Boîte d'envoi : {outbox}. Boîte de réception : {inbox}. Ouvrir la boîte d'envoi de synchronisation.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {

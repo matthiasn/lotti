@@ -1136,11 +1136,18 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
   }
 }
 
-/// Composer for the desktop sidebar's `aboveSettings` slot. Stacks the
-/// optional inline Wake Queue (when its config flag is enabled), audio
-/// recording panel, and running-timer panel, so the running timer still sits
-/// closest to the Settings entry below. Separators are rendered only between
-/// sections that are actually visible.
+/// Composer for the desktop sidebar's `aboveSettings` slot. Groups the
+/// active-status surfaces — audio recording, running timer, and the optional
+/// inline Wake Queue — inside ONE shared recessed "activity" well so they
+/// read as a single calm cluster that belongs with the nav rows above,
+/// rather than three separately-bordered cards.
+///
+/// The well itself is the Material ancestor and the shared neutral surface;
+/// each child renders as a borderless row and self-collapses when its own
+/// state is inactive, so the well shows only while at least one item is live
+/// and grows/shrinks smoothly as items come and go. Items are ordered
+/// live-first (recording → timer → wakes), since a recording is the most
+/// volatile thing to surface and scheduled wakes are the most ambient.
 class _DesktopSidebarAboveSettings extends ConsumerWidget {
   const _DesktopSidebarAboveSettings({required this.showWakeQueue});
 
@@ -1158,37 +1165,41 @@ class _DesktopSidebarAboveSettings extends ConsumerWidget {
       stream: getIt<TimeService>().getStream(),
       builder: (context, snapshot) {
         final hasTimer = snapshot.data != null;
-        final hasBelowWake = audioVisible || hasTimer;
-        return Column(
+        // `wakesVisible`/`audioVisible` already fold in `showWakeQueue` and
+        // `!_isRunningInFlatpak()` (above), so `anyVisible` respects both
+        // flags: whenever it is true, at least one of the three rows below
+        // renders non-empty content and the well is never shown empty.
+        final anyVisible = wakesVisible || audioVisible || hasTimer;
+
+        final content = Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            if (showWakeQueue) const SidebarWakeQueue(),
-            // Animate the gap height so it grows/collapses in sync with
-            // the wake card's own AnimatedSize transition; a static
-            // SizedBox would otherwise pop in or out the instant either
-            // side's visibility flipped.
-            AnimatedSize(
-              duration: SidebarWakeQueue.animationDuration,
-              curve: Curves.easeInOut,
-              alignment: Alignment.bottomCenter,
-              child: SizedBox(
-                height: (wakesVisible && hasBelowWake)
-                    ? tokens.spacing.step3
-                    : 0,
-              ),
-            ),
             if (!_isRunningInFlatpak()) const SidebarAudioRecordingSection(),
-            AnimatedSize(
-              duration: SidebarAudioRecordingSection.animationDuration,
-              curve: Curves.easeInOut,
-              alignment: Alignment.bottomCenter,
-              child: SizedBox(
-                height: (audioVisible && hasTimer) ? tokens.spacing.step3 : 0,
-              ),
-            ),
             const SidebarTimerSection(),
+            if (showWakeQueue) const SidebarWakeQueue(),
           ],
+        );
+
+        final well = anyVisible
+            ? Material(
+                color: tokens.colors.background.level01,
+                borderRadius: BorderRadius.circular(tokens.radii.m),
+                clipBehavior: Clip.antiAlias,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    vertical: tokens.spacing.step3,
+                  ),
+                  child: content,
+                ),
+              )
+            : const SizedBox.shrink();
+
+        return AnimatedSize(
+          duration: SidebarAudioRecordingSection.animationDuration,
+          curve: Curves.easeInOut,
+          alignment: Alignment.bottomCenter,
+          child: well,
         );
       },
     );

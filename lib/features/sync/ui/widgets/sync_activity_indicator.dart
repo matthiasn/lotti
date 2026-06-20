@@ -8,7 +8,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
-import 'package:lotti/ui/app_fonts.dart';
 
 /// Test hook used by widget tests to invoke the indicator's tap action
 /// without depending on the live router. Has no instances — its only
@@ -25,38 +24,21 @@ abstract final class SyncActivityIndicatorTestHooks {
 /// into the outbox monitor, queue depth, backfill, and sync stats.
 const String kSyncOutboxRoute = '/settings/sync';
 
-/// Hold duration for an LED flash. Per the design handoff the LED is
-/// on for roughly 140 ms per packet, then fades to its idle state.
+/// Hold duration for an LED flash. The LED is on for roughly 140 ms per
+/// packet, then fades to its idle state.
 const Duration kSyncActivityLedHold = Duration(milliseconds: 140);
 
-/// LED active background colors. Sourced directly from the design
-/// handoff in `docs/design/README.md` (variant D4a) — the spec calls
-/// these out as intentionally outside the normal `--fg-*` ramp because
-/// the indicator must read quieter than disabled text. The TX amber
-/// has no design-system equivalent (the closest token, `warning`, is
-/// far more saturated) so it stays as a literal pending a token
-/// decision; RX is `interactive.enabled` and the focus ring follows
-/// it (resolved from the active theme at build time).
-const Color kSyncActivityTxColor = Color(0xFFC99A4E); // muted amber
-
-/// Pure-white-with-alpha values for the muted "ambient awareness, not
-/// notification" feel. The handoff calls for these to stay quieter
-/// than the softest design-system text token (64% white), so they are
-/// intentionally below the existing token ramp.
-const Color _ledIdle = Color(0x1AFFFFFF); // 10% white
-const Color _labelColor = Color(0x4DFFFFFF); // 30% white
-const Color _valueActive = Color(0x8CFFFFFF); // 55% white
-const Color _valueIdle = Color(0x52FFFFFF); // 32% white
-const Color _hoverWash = Color(0x0AFFFFFF); // 4% white
-
-/// Ambient sidebar indicator showing live Matrix sync traffic. A single
-/// monospace row (`• tx 0   • rx 0`) with two 5×5 LEDs that flash
-/// briefly per packet committed on the matching channel.
+/// Ambient sidebar footer showing live Matrix sync traffic: two quiet
+/// Inter rows (`• Outbox` / `• Inbox`, localized) whose small LEDs flash on
+/// the brand teal accent per packet committed on the matching channel, and
+/// whose numeric count appears only when that queue is non-empty.
 ///
-/// Variant **D4a** in `docs/design/`. Visual semantics — colors,
-/// timings, LED sizes — stay pinned to the handoff. The row layout was
-/// adopted later (sidebar Wake Queue handoff, S1) so the indicator can
-/// sit at the very bottom of the rail without claiming two lines.
+/// The treatment deliberately matches the rest of the sidebar — Inter
+/// type, design-system text colors, and the teal `interactive.enabled`
+/// accent (no monospace, no off-token amber) — so it reads as a calm part
+/// of the rail rather than a terminal readout. It is quiet at rest (dim
+/// neutral dots, no counts) and only "speaks" colour/numbers when there is
+/// actually a queue to drain.
 ///
 /// The numeric slot for each channel is fixed-width so the row never
 /// reflows as the queue depths grow or shrink — the LED, label and
@@ -144,11 +126,17 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
       outbox,
       inbox,
     );
+    final outboxLabel = context.messages.syncActivityOutboxLabel;
+    final inboxLabel = context.messages.syncActivityInboxLabel;
 
-    // RX dot and focus ring follow the active theme's interactive
-    // accent (`#5ED4B7` in dark mode), so they read consistently with
-    // every other primary affordance in the sidebar.
-    final rxColor = context.designTokens.colors.interactive.enabled;
+    final tokens = context.designTokens;
+    // Both channels flash on the brand teal accent and the focus ring
+    // follows it, so the footer reads consistently with every other
+    // affordance in the sidebar. State is carried by brightness + count,
+    // not by a second hue.
+    final accent = tokens.colors.interactive.enabled;
+    final ledIdle = tokens.colors.decorative.level01;
+    final hoverWash = tokens.colors.surface.enabled;
 
     return Semantics(
       button: true,
@@ -176,19 +164,21 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 180),
                 curve: Curves.easeOut,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
+                // Align the LED column to the same left inset as the nav
+                // icons and the activity-well glyphs above.
+                padding: EdgeInsets.symmetric(
+                  horizontal: tokens.spacing.step5,
+                  vertical: tokens.spacing.step2,
                 ),
                 decoration: BoxDecoration(
-                  color: _hovered ? _hoverWash : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
+                  color: _hovered ? hoverWash : Colors.transparent,
+                  borderRadius: BorderRadius.circular(tokens.radii.s),
                   // Always render a 2 px border and toggle its color
                   // on focus — keeps the strip's outer dimensions
                   // stable so neighbouring rows don't jump on
                   // focus-in / focus-out.
                   border: Border.all(
-                    color: focused ? rxColor : Colors.transparent,
+                    color: focused ? accent : Colors.transparent,
                     width: 2,
                   ),
                 ),
@@ -196,15 +186,17 @@ class _SyncActivityIndicatorState extends ConsumerState<SyncActivityIndicator> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     _SyncActivityChannel(
-                      label: 'tx',
+                      label: outboxLabel,
                       on: _txOn,
-                      color: kSyncActivityTxColor,
+                      color: accent,
+                      idleColor: ledIdle,
                       value: outbox,
                     ),
                     _SyncActivityChannel(
-                      label: 'rx',
+                      label: inboxLabel,
                       on: _rxOn,
-                      color: rxColor,
+                      color: accent,
+                      idleColor: ledIdle,
                       value: inbox,
                     ),
                   ],
@@ -229,42 +221,38 @@ class _SyncActivityChannel extends StatelessWidget {
     required this.label,
     required this.on,
     required this.color,
+    required this.idleColor,
     required this.value,
   });
 
   final String label;
   final bool on;
   final Color color;
+  final Color idleColor;
   final int value;
 
   @override
   Widget build(BuildContext context) {
-    final valueStyle =
-        AppFonts.inconsolata(
-          fontSize: 10,
-          fontWeight: FontWeight.w400,
-          color: value > 0 ? _valueActive : _valueIdle,
-          letterSpacing: 0.3,
-        ).copyWith(
-          fontFeatures: numericBadgeFontFeatures,
-          height: 1.4,
-        );
-    final labelStyle = AppFonts.inconsolata(
-      fontSize: 10,
-      fontWeight: FontWeight.w400,
-      color: _labelColor,
-      letterSpacing: 0.3,
-    ).copyWith(height: 1.4);
+    final tokens = context.designTokens;
+    final valueStyle = tokens.typography.styles.others.caption.copyWith(
+      color: value > 0
+          ? tokens.colors.text.mediumEmphasis
+          : tokens.colors.text.lowEmphasis,
+      fontFeatures: numericBadgeFontFeatures,
+    );
+    final labelStyle = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
 
     return SizedBox(
-      height: 14,
+      height: 18,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _SyncActivityLed(on: on, color: color),
-          const SizedBox(width: 6),
+          _SyncActivityLed(on: on, color: color, idleColor: idleColor),
+          const SizedBox(width: 8),
           ExcludeSemantics(child: Text(label, style: labelStyle)),
-          const SizedBox(width: 6),
+          const SizedBox(width: 8),
           // Fixed-width numeric slot — the value is right-aligned so the
           // LED + label stay anchored regardless of digit count.
           SizedBox(
@@ -287,28 +275,27 @@ class _SyncActivityChannel extends StatelessWidget {
 }
 
 class _SyncActivityLed extends StatelessWidget {
-  const _SyncActivityLed({required this.on, required this.color});
+  const _SyncActivityLed({
+    required this.on,
+    required this.color,
+    required this.idleColor,
+  });
 
   final bool on;
   final Color color;
+  final Color idleColor;
 
   @override
   Widget build(BuildContext context) {
+    // No glow/boxShadow — the colour swap alone carries the packet flash,
+    // keeping the footer free of peripheral motion-noise.
     return AnimatedContainer(
       duration: const Duration(milliseconds: 90),
-      width: 5,
-      height: 5,
+      width: 6,
+      height: 6,
       decoration: BoxDecoration(
-        color: on ? color : _ledIdle,
+        color: on ? color : idleColor,
         shape: BoxShape.circle,
-        boxShadow: on
-            ? [
-                BoxShadow(
-                  color: color,
-                  blurRadius: 5,
-                ),
-              ]
-            : null,
       ),
     );
   }

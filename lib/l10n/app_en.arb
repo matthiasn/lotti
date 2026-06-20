@@ -3832,8 +3832,8 @@
   "sidebarRunningTimerStopTooltip": "Stop timer",
   "sidebarToggleCollapseLabel": "Collapse sidebar",
   "sidebarToggleExpandLabel": "Expand sidebar",
-  "sidebarWakesCancelTooltip": "Cancel wake",
-  "sidebarWakesHeader": "Wakes",
+  "sidebarWakesCancelTooltip": "Cancel agent",
+  "sidebarWakesHeader": "Agents",
   "sidebarWakesNow": "now",
   "sidebarWakesOpenList": "Open list",
   "skillsSectionTitle": "Skills",
@@ -3856,6 +3856,8 @@
   "speechVoiceGenderFemale": "Female",
   "speechVoiceGenderMale": "Male",
   "speechVoicePreviewTooltip": "Preview voice",
+  "syncActivityInboxLabel": "Inbox",
+  "syncActivityOutboxLabel": "Outbox",
   "syncActivityIndicatorSemantics": "Sync activity. Outbox: {outbox}. Inbox: {inbox}. Open sync outbox.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {

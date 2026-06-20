@@ -7895,10 +7895,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get sidebarToggleExpandLabel => 'Extinde bara laterală';
 
   @override
-  String get sidebarWakesCancelTooltip => 'Anulează trezirea';
+  String get sidebarWakesCancelTooltip => 'Anulați agentul';
 
   @override
-  String get sidebarWakesHeader => 'Treziri';
+  String get sidebarWakesHeader => 'Agenți';
 
   @override
   String get sidebarWakesNow => 'acum';
@@ -7971,6 +7971,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get speechVoicePreviewTooltip => 'Ascultați vocea';
+
+  @override
+  String get syncActivityInboxLabel => 'Intrare';
+
+  @override
+  String get syncActivityOutboxLabel => 'Ieșire';
 
   @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {

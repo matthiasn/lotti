@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_activity_indicator.dart';
 import 'package:lotti/get_it.dart';
@@ -29,6 +30,17 @@ void main() {
       await rxCtl.close();
     });
 
+    // Both channels now flash on the brand teal accent (interactive.enabled);
+    // the idle dot is decorative.level01 and the hover wash is surface.enabled.
+    // Resolve them from the rendered theme so a token tweak doesn't silently
+    // break these assertions.
+    DsTokens tokensOf(WidgetTester tester) =>
+        tester.element(find.byType(SyncActivityIndicator)).designTokens;
+    Color accentOf(WidgetTester tester) =>
+        tokensOf(tester).colors.interactive.enabled;
+    Color ledIdleOf(WidgetTester tester) =>
+        tokensOf(tester).colors.decorative.level01;
+
     Future<void> pumpIndicator(
       WidgetTester tester, {
       int outbox = 0,
@@ -52,13 +64,13 @@ void main() {
       await tester.pump();
     }
 
-    testWidgets('renders both tx and rx channels with their counts', (
+    testWidgets('renders both Outbox and Inbox channels with their counts', (
       tester,
     ) async {
       await pumpIndicator(tester, outbox: 289, inbox: 14);
 
-      expect(find.text('tx'), findsOneWidget);
-      expect(find.text('rx'), findsOneWidget);
+      expect(find.text('Outbox'), findsOneWidget);
+      expect(find.text('Inbox'), findsOneWidget);
       expect(find.text('289'), findsOneWidget);
       expect(find.text('14'), findsOneWidget);
     });
@@ -70,8 +82,8 @@ void main() {
 
       // Channels still render so the affordance stays clickable, but the
       // numeric "0" is suppressed — the LEDs alone carry the idle state.
-      expect(find.text('tx'), findsOneWidget);
-      expect(find.text('rx'), findsOneWidget);
+      expect(find.text('Outbox'), findsOneWidget);
+      expect(find.text('Inbox'), findsOneWidget);
       expect(find.text('0'), findsNothing);
     });
 
@@ -89,12 +101,12 @@ void main() {
       'grows or shrinks (no jumpiness)',
       (tester) async {
         await pumpIndicator(tester, outbox: 1, inbox: 1);
-        final txLabelXSmall = tester.getTopLeft(find.text('tx')).dx;
-        final rxLabelXSmall = tester.getTopLeft(find.text('rx')).dx;
+        final txLabelXSmall = tester.getTopLeft(find.text('Outbox')).dx;
+        final rxLabelXSmall = tester.getTopLeft(find.text('Inbox')).dx;
 
         await pumpIndicator(tester, outbox: 9999, inbox: 9999);
-        final txLabelXLarge = tester.getTopLeft(find.text('tx')).dx;
-        final rxLabelXLarge = tester.getTopLeft(find.text('rx')).dx;
+        final txLabelXLarge = tester.getTopLeft(find.text('Outbox')).dx;
+        final rxLabelXLarge = tester.getTopLeft(find.text('Inbox')).dx;
 
         expect(txLabelXLarge, equals(txLabelXSmall));
         expect(rxLabelXLarge, equals(rxLabelXSmall));
@@ -200,46 +212,46 @@ void main() {
           .toList();
     }
 
-    testWidgets('TX pulse turns the LED on, then off after the hold window', (
-      tester,
-    ) async {
-      await pumpIndicator(tester, outbox: 1);
+    testWidgets(
+      'Outbox pulse turns the LED on, then off after the hold window',
+      (tester) async {
+        await pumpIndicator(tester, outbox: 1);
+        final accent = accentOf(tester);
 
-      // Idle: neither LED is amber.
-      expect(ledColors(tester).first, isNot(equals(kSyncActivityTxColor)));
+        // Idle: the LED is not lit with the accent.
+        expect(ledColors(tester).first, isNot(equals(accent)));
 
-      txCtl.add(DateTime(2026, 5, 2, 10));
-      await tester.pump();
-      await tester.pump();
+        txCtl.add(DateTime(2026, 5, 2, 10));
+        await tester.pump();
+        await tester.pump();
 
-      expect(ledColors(tester).first, equals(kSyncActivityTxColor));
+        expect(ledColors(tester).first, equals(accent));
 
-      await tester.pump(
-        kSyncActivityLedHold + const Duration(milliseconds: 5),
-      );
+        await tester.pump(
+          kSyncActivityLedHold + const Duration(milliseconds: 5),
+        );
 
-      expect(ledColors(tester).first, isNot(equals(kSyncActivityTxColor)));
-    });
+        expect(ledColors(tester).first, isNot(equals(accent)));
+      },
+    );
 
-    testWidgets('RX pulse only lights the RX LED, leaving TX dark', (
+    testWidgets('Inbox pulse only lights the Inbox LED, leaving Outbox dark', (
       tester,
     ) async {
       await pumpIndicator(tester, inbox: 3);
+      final accent = accentOf(tester);
+      final idle = ledIdleOf(tester);
 
       rxCtl.add(DateTime(2026, 5, 2, 10));
       await tester.pump();
       await tester.pump();
 
       final colors = ledColors(tester);
-      // First LED is TX, second is RX (row order, left → right). The RX
-      // color is resolved from `tokens.colors.interactive.enabled` at
-      // build time — assert against "active" rather than against an
-      // imported literal so a token tweak doesn't silently fail this
-      // assertion.
-      expect(colors[0], isNot(equals(kSyncActivityTxColor)));
-      expect(colors[1], isNotNull);
-      expect(colors[1], isNot(equals(const Color(0x1AFFFFFF))));
-      expect(colors[1], isNot(equals(kSyncActivityTxColor)));
+      // First LED is Outbox (stays idle), second is Inbox (lit on the brand
+      // teal accent). Both channels share one accent now — direction is
+      // carried by which LED lights, not by a second hue.
+      expect(colors[0], equals(idle));
+      expect(colors[1], equals(accent));
 
       await tester.pump(
         kSyncActivityLedHold + const Duration(milliseconds: 5),
@@ -248,6 +260,7 @@ void main() {
 
     testWidgets('rapid pulses extend the LED hold window', (tester) async {
       await pumpIndicator(tester, outbox: 5);
+      final accent = accentOf(tester);
 
       txCtl.add(DateTime(2026, 5, 2, 10));
       await tester.pump();
@@ -261,7 +274,7 @@ void main() {
       // After the original hold window would have expired (140 ms), the
       // LED is still on because the second pulse re-armed the timer.
       await tester.pump(const Duration(milliseconds: 80));
-      expect(ledColors(tester).first, equals(kSyncActivityTxColor));
+      expect(ledColors(tester).first, equals(accent));
 
       // Drain the timer so the test exits clean.
       await tester.pump(
@@ -275,7 +288,7 @@ void main() {
           .firstWhere(
             (c) =>
                 c.padding ==
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
           );
     }
 
@@ -293,6 +306,7 @@ void main() {
       'transparent — covers the `onShowHoverHighlight` callback',
       (tester) async {
         await pumpIndicator(tester, outbox: 1);
+        final wash = tokensOf(tester).colors.surface.enabled;
 
         // Pull the hover callback off the FocusableActionDetector
         // widget directly. The flutter_test mouse pointer simulation
@@ -310,8 +324,8 @@ void main() {
 
         expect(
           (outerContainer(tester).decoration! as BoxDecoration).color,
-          equals(const Color(0x0AFFFFFF)),
-          reason: 'hovered state paints `_hoverWash` (4 % white)',
+          equals(wash),
+          reason: 'hovered state paints the surface.enabled hover wash',
         );
 
         detector.onShowHoverHighlight!(false);

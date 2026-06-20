@@ -180,6 +180,33 @@ void main() {
     expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
   });
 
+  testWidgets(
+    'exposes the full task title via a tooltip (truncation safety net)',
+    (
+      tester,
+    ) async {
+      const longTitle = 'A very long running task title that the row truncates';
+      final task = makeTask('task-tip', title: longTitle);
+      final timer = makeTimerEntry('timer-tip');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(const SidebarTimerSection()),
+      );
+
+      timeService.emit(timer, linkedFrom: task);
+      await tester.pump();
+      await tester.pump(SidebarTimerSection.animationDuration);
+
+      final tooltip = tester.widget<Tooltip>(
+        find.ancestor(
+          of: find.text(longTitle),
+          matching: find.byType(Tooltip),
+        ),
+      );
+      expect(tooltip.message, longTitle);
+    },
+  );
+
   testWidgets('time text uses Inter font features (tabular + open digits)', (
     tester,
   ) async {
