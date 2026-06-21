@@ -1293,15 +1293,24 @@ detection and again in the workflow's success transaction).
 
 ### Event Tools
 
-Event agents (v1, narrate-only) have exactly two immediate local tools, reusing
-the task agent's scope-agnostic contract:
+Event agents have two immediate local tools, reusing the task agent's
+scope-agnostic contract:
 
 - `update_report` (`oneLiner` / `tldr` / `content`)
 - `record_observations`
 
-There are no deferred tools yet and, by construction, no rating/cover tool.
-Status and follow-up write actions are planned as deferred (accept/reject)
-tools.
+plus one **deferred** tool:
+
+- `suggest_follow_up_task` — proposes a concrete follow-up the event implies.
+  It is accumulated as a pending `ChangeSet` (keyed by the event id), surfaced
+  on the detail page as an accept/reject row (`ChangeSetSummaryCard.event`), and
+  on accept applied by `EventToolDispatcher` — which creates a follow-up task
+  linked to the event (inheriting its category + default profile). Rejection
+  only records the decision.
+
+By construction there is no rating/cover tool. Accepting a follow-up does not
+re-wake the agent (the new task is its own entity); a future status write-action
+that edits the event itself would re-wake it through the event subscription.
 
 ### Auto-attach
 

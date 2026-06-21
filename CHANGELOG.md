@@ -22,8 +22,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   template (Settings → Categories → AI defaults) and new events in that category
   get a quiet writing companion: once the event has a photo or a note, it weaves
   the linked photos, notes and voice memos into a short, warm recap shown on the
-  event's detail page, with a refresh to rewrite it. It only ever narrates — your
-  star rating and cover photo stay entirely yours and are never touched.
+  event's detail page, with a refresh to rewrite it. It can also propose the
+  occasional concrete follow-up — a thank-you to send, an album to share — which
+  you accept or dismiss with a swipe; accepting turns it into a task linked to
+  the event. It never touches your star rating or cover photo — those stay
+  entirely yours.
 
 ### Changed
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of
