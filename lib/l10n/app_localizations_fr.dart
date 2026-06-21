@@ -9,51 +9,6 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
-  String get onboardingWelcomeTitle => 'Parle. Lotti en fait un plan.';
-
-  @override
-  String get onboardingWelcomeMessage =>
-      'Connecte ton cerveau IA, exprime une pensée et regarde-la devenir une tâche structurée.';
-
-  @override
-  String get onboardingWelcomeConnectButton => 'Connecter ton cerveau';
-
-  @override
-  String get onboardingWelcomeSkipButton => 'Explorer d\'abord';
-
-  @override
-  String get onboardingConnectTitle =>
-      'Choisis le cerveau qui transforme tes mots en tâches';
-
-  @override
-  String get onboardingConnectMoreOptions => 'Plus d\'options';
-
-  @override
-  String get onboardingConnectGeminiName => 'Gemini';
-
-  @override
-  String get onboardingConnectGeminiTagline =>
-      'Google · rapide, offre gratuite généreuse';
-
-  @override
-  String get onboardingConnectMistralName => 'Mistral';
-
-  @override
-  String get onboardingConnectMistralTagline => 'Idéal pour la voix (Voxtral)';
-
-  @override
-  String get onboardingConnectQwenName => 'Qwen';
-
-  @override
-  String get onboardingConnectQwenTagline => 'Alibaba · voix, chat et images';
-
-  @override
-  String get onboardingConnectOpenAiName => 'OpenAI';
-
-  @override
-  String get onboardingConnectOllamaName => 'Ollama';
-
-  @override
   String get activeLabel => 'Actif';
 
   @override
@@ -6471,6 +6426,51 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get onboardingConnectGeminiName => 'Gemini';
+
+  @override
+  String get onboardingConnectGeminiTagline =>
+      'Google · rapide, offre gratuite généreuse';
+
+  @override
+  String get onboardingConnectMistralName => 'Mistral';
+
+  @override
+  String get onboardingConnectMistralTagline => 'Idéal pour la voix (Voxtral)';
+
+  @override
+  String get onboardingConnectMoreOptions => 'Plus d\'options';
+
+  @override
+  String get onboardingConnectOllamaName => 'Ollama';
+
+  @override
+  String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectQwenName => 'Qwen';
+
+  @override
+  String get onboardingConnectQwenTagline => 'Alibaba · voix, chat et images';
+
+  @override
+  String get onboardingConnectTitle =>
+      'Choisis le cerveau qui transforme tes mots en tâches';
+
+  @override
+  String get onboardingWelcomeConnectButton => 'Connecter ton cerveau';
+
+  @override
+  String get onboardingWelcomeMessage =>
+      'Connecte ton cerveau IA, exprime une pensée et regarde-la devenir une tâche structurée.';
+
+  @override
+  String get onboardingWelcomeSkipButton => 'Explorer d\'abord';
+
+  @override
+  String get onboardingWelcomeTitle => 'Parle. Lotti en fait un plan.';
 
   @override
   String get optionalCategoryLabel => 'Catégorie (facultatif)';

@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/embedding_backfill_modal.dart';
 import 'package:lotti/features/ai/ui/settings/services/gemini_setup_prompt_service.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
@@ -11,6 +13,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/ui/fts5_recreate_modal.dart';
@@ -53,6 +56,23 @@ class MaintenanceBody extends ConsumerWidget {
 
     final items =
         <({String title, String subtitle, IconData icon, VoidCallback onTap})>[
+          (
+            title: 'Show onboarding welcome',
+            subtitle: 'Preview the FTUE welcome + provider tiles (debug)',
+            icon: Icons.auto_awesome_motion_rounded,
+            onTap: () => unawaited(
+              OnboardingWelcomeModal.show(
+                context,
+                onProviderSelected: (type) =>
+                    const AiSettingsNavigationService()
+                        .navigateToCreateProvider(
+                          context,
+                          preselectedType: type,
+                        ),
+                onDismiss: () {},
+              ),
+            ),
+          ),
           (
             title: context.messages.settingsResetHintsTitle,
             subtitle: context.messages.settingsResetHintsSubtitle,
