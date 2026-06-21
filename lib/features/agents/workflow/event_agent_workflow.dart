@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart'
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -22,6 +23,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Assembles context, runs a conversation, and persists results for a single
@@ -244,7 +246,7 @@ class EventAgentWorkflow {
       }
 
       // 6. Run the conversation.
-      final usage = await conversationRepository.sendMessage(
+      var usage = await conversationRepository.sendMessage(
         conversationId: conversationId,
         message: userMessage,
         model: modelId,
@@ -254,6 +256,23 @@ class EventAgentWorkflow {
         temperature: 0.3,
         strategy: strategy,
       );
+
+      // 6b. Forced-report retry: if the model stopped without publishing a
+      // recap, give it one more pass with `update_report` pinned. Without this,
+      // a flubbed wake would clear the content gate having produced nothing.
+      if (strategy.extractReportContent().isEmpty) {
+        final retryUsage = await _forceUpdateReportIfMissing(
+          conversationId: conversationId,
+          modelId: modelId,
+          provider: provider,
+          inferenceRepo: inferenceRepo,
+          tools: tools,
+          strategy: strategy,
+        );
+        if (retryUsage != null) {
+          usage = usage == null ? retryUsage : usage.merge(retryUsage);
+        }
+      }
 
       await _persistTokenUsage(
         usage: usage,
@@ -488,6 +507,62 @@ class EventAgentWorkflow {
       );
     } catch (e, s) {
       _logError('failed to persist token usage', error: e, stackTrace: s);
+    }
+  }
+
+  /// Issues a second, forced inference pass to recover a missing recap.
+  ///
+  /// When the model stops without calling `update_report`, this sends one more
+  /// `sendMessage` with `toolChoice` pinned to `update_report` and the tool list
+  /// restricted to it, mirroring the task agent. Any failure inside the retry is
+  /// swallowed (a partial wake is persisted); returns the retry's token usage.
+  Future<InferenceUsage?> _forceUpdateReportIfMissing({
+    required String conversationId,
+    required String modelId,
+    required AiConfigInferenceProvider provider,
+    required CloudInferenceWrapper inferenceRepo,
+    required List<ChatCompletionTool> tools,
+    required EventAgentStrategy strategy,
+  }) async {
+    _log(
+      'no recap published — retrying with forced update_report',
+      subDomain: 'execute',
+    );
+    const forcedToolChoice = ChatCompletionToolChoiceOption.tool(
+      ChatCompletionNamedToolChoice(
+        type: ChatCompletionNamedToolChoiceType.function,
+        function: ChatCompletionFunctionCallOption(
+          name: EventAgentToolNames.updateReport,
+        ),
+      ),
+    );
+    final reportOnlyTools = tools
+        .where((tool) => tool.function.name == EventAgentToolNames.updateReport)
+        .toList(growable: false);
+
+    try {
+      return await conversationRepository.sendMessage(
+        conversationId: conversationId,
+        message:
+            'You did not call `update_report` before stopping. Call it now '
+            'with a concise `oneLiner`, a 1-2 sentence `tldr`, and the full '
+            'markdown `content`. This is the final, mandatory step of the '
+            'recap — respond with nothing else.',
+        model: modelId,
+        provider: provider,
+        inferenceRepo: inferenceRepo,
+        tools: reportOnlyTools,
+        toolChoice: forcedToolChoice,
+        temperature: 0.3,
+        strategy: strategy,
+      );
+    } catch (e, s) {
+      _logError(
+        'forced update_report retry failed — persisting partial wake',
+        error: e,
+        stackTrace: s,
+      );
+      return null;
     }
   }
 

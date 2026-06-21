@@ -290,6 +290,7 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.error, contains('No agent state'));
+      verifyNever(() => mockSyncService.upsertEntity(any()));
     });
 
     test('fails when there is no active event id', () async {
@@ -301,6 +302,7 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.error, contains('No active event ID'));
+      verifyNever(() => mockSyncService.upsertEntity(any()));
     });
 
     test('fails when the event entity is not found', () async {
@@ -315,6 +317,7 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.error, contains('Event not found'));
+      verifyNever(() => mockSyncService.upsertEntity(any()));
     });
 
     test('fails when no inference provider can be resolved', () async {
@@ -332,6 +335,7 @@ void main() {
 
       expect(result.success, isFalse);
       expect(result.error, contains('No inference provider'));
+      verifyNever(() => mockSyncService.upsertEntity(any()));
     });
   });
 
@@ -417,6 +421,96 @@ void main() {
         expect(item.humanSummary, contains('Share the album with the group'));
       },
     );
+
+    test('forces a recap when the first pass publishes none', () async {
+      mockConversationRepository.maxDelegateCalls = 2;
+      var calls = 0;
+      mockConversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            calls++;
+            if (strategy != null) {
+              final manager = mockConversationRepository.getConversation(
+                conversationId,
+              )!;
+              when(
+                () => manager.addToolResponse(
+                  toolCallId: any(named: 'toolCallId'),
+                  response: any(named: 'response'),
+                ),
+              ).thenReturn(null);
+              // First pass: publish nothing. Forced retry (call 2): publish.
+              if (calls >= 2) {
+                await strategy.processToolCalls(
+                  toolCalls: [
+                    ChatCompletionMessageToolCall(
+                      id: 'call-rpt',
+                      type: ChatCompletionMessageToolCallType.function,
+                      function: ChatCompletionMessageFunctionCall(
+                        name: EventAgentToolNames.updateReport,
+                        arguments: jsonEncode({
+                          'oneLiner': 'forced',
+                          'tldr': 'forced recap',
+                          'content': '# Forced\nrecovered.',
+                        }),
+                      ),
+                    ),
+                  ],
+                  manager: manager,
+                );
+              }
+            }
+            return null;
+          };
+
+      final result = await run();
+      expect(result.success, isTrue);
+      expect(calls, 2); // the forced retry fired
+
+      final captured = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured;
+      final reports = captured.whereType<AgentReportEntity>().toList();
+      expect(reports, hasLength(1));
+      expect(reports.single.content, '# Forced\nrecovered.');
+    });
+
+    test('clears the gate and persists no recap when even the retry produces '
+        'none', () async {
+      mockConversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async => null; // never publishes a recap
+
+      final result = await run();
+      expect(result.success, isTrue);
+
+      final captured = verify(
+        () => mockSyncService.upsertEntity(captureAny()),
+      ).captured;
+      expect(captured.whereType<AgentReportEntity>(), isEmpty);
+      // The gate is still cleared (content has arrived); the agent will re-wake
+      // on the next event edit via its (now live) subscription.
+      final states = captured.whereType<AgentStateEntity>().toList();
+      expect(states.last.awaitingContent, isFalse);
+    });
 
     test('increments the failure count when the conversation throws', () async {
       mockConversationRepository.sendMessageDelegate =
