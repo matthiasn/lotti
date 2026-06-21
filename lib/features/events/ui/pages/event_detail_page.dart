@@ -146,16 +146,14 @@ class EventDetailPage extends ConsumerWidget {
       beamToNamed('/tasks/${task.meta.id}');
     }
 
-    // The event's linked photos, any of which can become the cover.
+    // The event's linked photos, any of which can become the cover. Only wired
+    // up (via onChangeCover) once a cover exists, which implies at least one
+    // linked photo — so the picker always has something to choose from.
     final linkedImages = linked.whereType<JournalImage>().toList();
 
     // Opens a sheet to pick a different linked photo as the cover (or add a new
-    // one). Falls back to adding a photo when none are linked yet.
+    // one).
     void changeCover() {
-      if (linkedImages.isEmpty) {
-        addLinkedEntry();
-        return;
-      }
       showEventCoverPicker(
         context: context,
         currentCoverId: entry.data.coverArtId,

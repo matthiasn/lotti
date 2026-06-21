@@ -145,6 +145,34 @@ void main() {
       expect(find.text('Wandered the festival.'), findsOneWidget);
     });
 
+    testWidgets(
+      'a time-recording beat without span labels falls back to text',
+      (
+        tester,
+      ) async {
+        await pumpEventScreen(
+          tester,
+          EventDetailView(
+            data: buildEventDetailData(
+              timeline: const [
+                EventTimelineEntry(
+                  timeLabel: '13:00',
+                  kind: EventTimelineKind.timeRecording,
+                  entryId: 'tr-x',
+                  text: 'A note with no span labels.',
+                  // endTimeLabel / durationLabel intentionally omitted.
+                ),
+              ],
+            ),
+          ),
+          size: _tallMobile,
+        );
+
+        expect(find.text('A note with no span labels.'), findsOneWidget);
+        expect(find.byType(TimeSpanBar), findsNothing);
+      },
+    );
+
     testWidgets('renders tasks with done/undone states and due labels', (
       tester,
     ) async {

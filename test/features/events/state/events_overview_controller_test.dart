@@ -176,6 +176,30 @@ void main() {
   });
 
   test(
+    'refresh reloads the full window when the loaded page is full',
+    () async {
+      final master = [for (var i = 0; i < eventsPageSize; i++) _event('e$i')];
+      stubPaged(master);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final first = await container.read(
+        eventsOverviewControllerProvider.future,
+      );
+      expect(first.events, hasLength(eventsPageSize));
+
+      // A newer event arrives; refresh reloads the full loaded window
+      // (count == events.length — the >= eventsPageSize branch).
+      master.insert(0, _event('newest'));
+      updates.add({eventNotification});
+      await pumpEventQueue();
+
+      final state = container.read(eventsOverviewControllerProvider).value!;
+      expect(state.events.first.event.meta.id, 'newest');
+      expect(state.events, hasLength(eventsPageSize));
+    },
+  );
+
+  test(
     'loadMore clears the loading flag and keeps paging open on error',
     () async {
       // First page (build) succeeds and is full; the next page (loadMore) throws.
@@ -217,4 +241,22 @@ void main() {
       expect(state.events, hasLength(eventsPageSize));
     },
   );
+
+  test('copyWith preserves fields that are not overridden', () {
+    const base = EventsOverviewState(
+      events: [],
+      hasMore: true,
+      isLoadingMore: true,
+      categoryId: 'cat-x',
+    );
+
+    final copy = base.copyWith(hasMore: false);
+
+    // Only hasMore changed; the rest (including isLoadingMore) fall back to the
+    // original via `?? this.x`.
+    expect(copy.hasMore, isFalse);
+    expect(copy.isLoadingMore, isTrue);
+    expect(copy.events, same(base.events));
+    expect(copy.categoryId, 'cat-x');
+  });
 }
