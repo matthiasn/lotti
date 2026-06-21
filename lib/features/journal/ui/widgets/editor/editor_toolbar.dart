@@ -46,10 +46,10 @@ class ToolbarWidget extends ConsumerWidget {
     final savePad = tokens.spacing.step3;
 
     // The toolbar shares the editor card's surface so the strip and the text
-    // area read as one panel rather than a brighter bar bolted onto a darker
-    // box; a single hairline divider (below) marks the seam instead of a
-    // brightness jump + shadow. QuillSimpleToolbar paints its own background, so
-    // this colour is also threaded into each config.
+    // area read as one continuous panel rather than a brighter bar bolted onto a
+    // darker box (no brightness jump, no shadow, no divider — the icon row alone
+    // signals the toolbar). QuillSimpleToolbar paints its own background, so this
+    // colour is also threaded into each config.
     final toolbarColor = context.colorScheme.surface.brighten();
 
     return LayoutBuilder(
@@ -60,49 +60,40 @@ class ToolbarWidget extends ConsumerWidget {
         final showAll = constraints.maxWidth >= fullToolbarMinWidth;
 
         final toolbar = Material(
-          // No elevation: the toolbar and the text area share one flat surface,
-          // separated only by the hairline below.
+          // No elevation and no divider: the toolbar shares the editor card's
+          // surface so the strip and the text area read as one continuous panel.
           color: toolbarColor,
           surfaceTintColor: Colors.transparent,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              // One hairline marks the toolbar/content seam; the strip and the
-              // text area otherwise share a single surface.
-              border: Border(
-                bottom: BorderSide(color: context.colorScheme.outlineVariant),
-              ),
-            ),
-            child: SizedBox(
-              height: height,
-              child: Row(
-                children: [
-                  Expanded(
-                    child: QuillSimpleToolbar(
-                      controller: controller,
-                      config: showAll
-                          ? _fullConfig(
-                              context,
-                              controller,
-                              notifier,
-                              tokens,
-                              toolbarColor,
-                            )
-                          : _essentialsConfig(notifier, tokens, toolbarColor),
-                    ),
+          child: SizedBox(
+            height: height,
+            child: Row(
+              children: [
+                Expanded(
+                  child: QuillSimpleToolbar(
+                    controller: controller,
+                    config: showAll
+                        ? _fullConfig(
+                            context,
+                            controller,
+                            notifier,
+                            tokens,
+                            toolbarColor,
+                          )
+                        : _essentialsConfig(notifier, tokens, toolbarColor),
                   ),
-                  if (!showAll)
-                    _MoreFormattingButton(
-                      controller: controller,
-                      notifier: notifier,
-                    ),
-                  // A generous, deterministic gap fences the save/discard actions
-                  // off from the formatting controls so they read as the pinned,
-                  // primary cluster and an overshoot can't land on them (no orphan
-                  // divider glyph).
-                  SizedBox(width: tokens.spacing.step5),
-                  _ToolbarActions(entryId: entryId, savePad: savePad),
-                ],
-              ),
+                ),
+                if (!showAll)
+                  _MoreFormattingButton(
+                    controller: controller,
+                    notifier: notifier,
+                  ),
+                // A generous, deterministic gap fences the save/discard actions
+                // off from the formatting controls so they read as the pinned,
+                // primary cluster and an overshoot can't land on them (no orphan
+                // divider glyph).
+                SizedBox(width: tokens.spacing.step5),
+                _ToolbarActions(entryId: entryId, savePad: savePad),
+              ],
             ),
           ),
         );
