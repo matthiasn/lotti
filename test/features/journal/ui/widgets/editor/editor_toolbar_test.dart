@@ -3,11 +3,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/save_button_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_toolbar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -31,6 +33,24 @@ class _TestEntryController extends EntryController {
       formKey: formKey,
     );
   }
+}
+
+/// Records whether [discard] was invoked so the toolbar's discard control can be
+/// asserted to call through to the controller.
+class _SpyEntryController extends _TestEntryController {
+  bool discardCalled = false;
+
+  @override
+  Future<void> discard() async {
+    discardCalled = true;
+  }
+}
+
+/// Forces the save-button state to "unsaved" so the dirty-state controls (the
+/// teal save + the discard "X") render regardless of the entry's real state.
+class _UnsavedSaveButtonController extends SaveButtonController {
+  @override
+  Future<bool?> build({required String id}) async => true;
 }
 
 void main() {
@@ -63,12 +83,16 @@ void main() {
   /// real editor page watches it; without a listener the autoDispose family
   /// recreates the notifier between frames and the animation-complete write
   /// lands on a discarded instance).
-  ProviderContainer makeKeptAliveContainer() {
+  ProviderContainer makeKeptAliveContainer({
+    EntryController Function()? controllerFactory,
+    List<Override> extraOverrides = const [],
+  }) {
     final container = ProviderContainer(
       overrides: [
         entryControllerProvider(id: entryId).overrideWith(
-          _TestEntryController.new,
+          controllerFactory ?? _TestEntryController.new,
         ),
+        ...extraOverrides,
       ],
     );
     addTearDown(container.dispose);
@@ -206,6 +230,47 @@ void main() {
           find.byType(DesignSystemButton),
         );
         expect(saveButton.onPressed, isNull);
+
+        // Nothing to discard when clean: the discard control is absent (its slot
+        // stays reserved, so the formatting controls don't shift).
+        expect(find.byIcon(Icons.close_rounded), findsNothing);
+
+        await tester.pump(const Duration(seconds: 1));
+      },
+    );
+
+    testWidgets(
+      'discard control appears when dirty and calls discard on the controller',
+      (tester) async {
+        final spy = _SpyEntryController();
+        final container = makeKeptAliveContainer(
+          controllerFactory: () => spy,
+          extraOverrides: [
+            saveButtonControllerProvider(id: entryId).overrideWith(
+              _UnsavedSaveButtonController.new,
+            ),
+          ],
+        );
+        container
+                .read(entryControllerProvider(id: entryId).notifier)
+                .animationCompleted =
+            true;
+        await tester.pumpWidget(buildSubject(container));
+        await tester.pump();
+
+        // With unsaved changes the discard "X" is shown and the save button is
+        // active.
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+        final saveButton = tester.widget<DesignSystemButton>(
+          find.byType(DesignSystemButton),
+        );
+        expect(saveButton.onPressed, isNotNull);
+
+        // Tapping it routes to the controller's discard().
+        expect(spy.discardCalled, isFalse);
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.pump();
+        expect(spy.discardCalled, isTrue);
 
         await tester.pump(const Duration(seconds: 1));
       },

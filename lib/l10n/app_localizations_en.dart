@@ -4770,6 +4770,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editMenuTitle => 'Edit';
 
   @override
+  String get editorDiscardChanges => 'Discard changes';
+
+  @override
   String get editorInsertDivider => 'Insert divider';
 
   @override

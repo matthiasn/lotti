@@ -4859,6 +4859,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editMenuTitle => 'Editar';
 
   @override
+  String get editorDiscardChanges => 'Descartar cambios';
+
+  @override
   String get editorInsertDivider => 'Insertar separador';
 
   @override

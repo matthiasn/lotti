@@ -296,6 +296,31 @@ class EntryController extends _$EntryController {
     await HapticFeedback.heavyImpact();
   }
 
+  /// Discards unsaved edits: the inverse of [save] without persisting anything.
+  ///
+  /// Drops the in-memory and persisted draft, rebuilds the editor [controller]
+  /// from the last saved entry text, drops focus, hides the toolbar and clears
+  /// the dirty flag — so the editor returns to exactly the saved state.
+  Future<void> discard() async {
+    final entry = state.value?.entry;
+    if (entry == null) {
+      return;
+    }
+
+    await _editorStateService.dropDraft(
+      id: id,
+      lastSaved: entry.meta.updatedAt,
+    );
+    // Rebuild from the saved text: with the draft gone, setController falls back
+    // to entry.entryText, reverting any unsaved edits.
+    setController();
+
+    focusNode.unfocus();
+    _shouldShowEditorToolBar = false;
+    _dirty = false;
+    emitState();
+  }
+
   Future<void> updateTaskStatus(String? status) async {
     final task = state.value?.entry;
 

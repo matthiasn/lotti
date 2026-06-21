@@ -2009,6 +2009,7 @@
   },
   "doneButton": "Hotovo",
   "editMenuTitle": "Upravit",
+  "editorDiscardChanges": "Zahodit změny",
   "editorInsertDivider": "Vložit oddělovač",
   "editorMoreFormatting": "Více formátování",
   "editorPlaceholder": "Zadejte poznámky...",

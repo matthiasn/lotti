@@ -260,6 +260,12 @@ void main() {
     when(() => mockEditorStateService.getDelta(any())).thenReturn(null);
     when(() => mockEditorStateService.getSelection(any())).thenReturn(null);
     when(() => mockEditorStateService.entryIsUnsaved(any())).thenReturn(false);
+    when(
+      () => mockEditorStateService.dropDraft(
+        id: any(named: 'id'),
+        lastSaved: any(named: 'lastSaved'),
+      ),
+    ).thenAnswer((_) async {});
 
     getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
@@ -800,6 +806,65 @@ void main() {
         expect(plainText, 'PREFIXED: test entry text\n');
       },
     );
+
+    test('discard reverts unsaved edits and drops the draft', () async {
+      final container = makeProviderContainer();
+      final entryId = testTextEntry.meta.id;
+      final testEntryProvider = entryControllerProvider(id: entryId);
+      final notifier = container.read(testEntryProvider.notifier);
+
+      await expectLater(
+        container.read(testEntryProvider.future),
+        completion(
+          EntryState.saved(
+            entryId: entryId,
+            entry: testTextEntry,
+            showMap: false,
+            isFocused: false,
+            shouldShowEditorToolBar: false,
+            formKey: notifier.formKey,
+          ),
+        ),
+      );
+
+      // Edit the document → dirty.
+      notifier.controller.document.insert(0, 'PREFIXED: ');
+      await container.pump();
+      expect(
+        entryTextFromController(notifier.controller).plainText,
+        'PREFIXED: test entry text\n',
+      );
+
+      await notifier.discard();
+      await container.pump();
+
+      // The draft is dropped and the controller is rebuilt from the saved text,
+      // so the unsaved prefix is gone and the state is back to saved.
+      verify(
+        () => mockEditorStateService.dropDraft(
+          id: entryId,
+          lastSaved: testTextEntry.meta.updatedAt,
+        ),
+      ).called(1);
+      verifyNever(
+        () => mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
+      );
+      expect(
+        entryTextFromController(notifier.controller).plainText,
+        'test entry text\n',
+      );
+      expect(
+        container.read(testEntryProvider).value,
+        EntryState.saved(
+          entryId: entryId,
+          entry: testTextEntry,
+          showMap: false,
+          isFocused: false,
+          shouldShowEditorToolBar: false,
+          formKey: notifier.formKey,
+        ),
+      );
+    });
 
     test('focusNodeListener maintains editor toolbar visibility', () async {
       final container = makeProviderContainer();

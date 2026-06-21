@@ -4870,6 +4870,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editMenuTitle => 'Modifier';
 
   @override
+  String get editorDiscardChanges => 'Annuler les modifications';
+
+  @override
   String get editorInsertDivider => 'Insérer un séparateur';
 
   @override

@@ -138,6 +138,7 @@ stateDiagram-v2
   [*] --> Saved: entry loaded
   Saved --> Dirty: editor draft or local mutation
   Dirty --> Saved: save succeeds
+  Dirty --> Saved: discard (revert to saved text)
   Saved --> Saved: external update while clean
   Dirty --> Dirty: external update while unsaved
 ```
@@ -186,6 +187,7 @@ A few detail-level behaviors are worth calling out because they are easy to miss
 - saving with `stopRecording: true` updates the text first and then stops the timer after a short delay
 - when an external update arrives and the entry is not dirty, the editor controller is rebuilt from the saved value
 - when the entry is dirty, the controller keeps the user's unsaved editor state instead of bluntly resetting it
+- `discard()` is the inverse of `save()` without persisting: it drops the in-memory and persisted draft (`EditorStateService.dropDraft`), rebuilds the editor controller from the saved text, drops focus, hides the toolbar, and clears the dirty flag. The editor toolbar surfaces it as a discard control that appears beside Save only while there are unsaved changes.
 
 ### Start/End Date-Time Editor
 

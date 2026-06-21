@@ -2200,6 +2200,7 @@
   },
   "doneButton": "Fertig",
   "editMenuTitle": "Bearbeiten",
+  "editorDiscardChanges": "Änderungen verwerfen",
   "editorInsertDivider": "Trennlinie einfügen",
   "editorMoreFormatting": "Mehr Formatierung",
   "editorPlaceholder": "Notizen eingeben...",

@@ -83,14 +83,12 @@ class ToolbarWidget extends ConsumerWidget {
                     controller: controller,
                     notifier: notifier,
                   ),
-                // A generous, deterministic gap fences the save action off from
-                // the formatting controls so it reads as a pinned, primary action
-                // and an overshoot can't land on it (no orphan divider glyph).
+                // A generous, deterministic gap fences the save/discard actions
+                // off from the formatting controls so they read as the pinned,
+                // primary cluster and an overshoot can't land on them (no orphan
+                // divider glyph).
                 SizedBox(width: tokens.spacing.step5),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: savePad),
-                  child: _ToolbarSaveButton(entryId: entryId),
-                ),
+                _ToolbarActions(entryId: entryId, savePad: savePad),
               ],
             ),
           ),
@@ -313,40 +311,90 @@ class _MoreFormattingButton extends StatelessWidget {
   }
 }
 
-/// Pinned save control: always present while editing, quiet/disabled until there
-/// are unsaved changes, then a clear accent.
-class _ToolbarSaveButton extends ConsumerWidget {
-  const _ToolbarSaveButton({required this.entryId});
+/// The pinned trailing cluster: a discard control that appears only when there
+/// are unsaved changes, followed by the always-present save control.
+///
+/// The discard slot is reserved (a fixed-width box) in both states so the
+/// toolbar never reflows the moment editing begins — only the icon inside it
+/// appears/disappears. A single watch of the save state drives both controls.
+class _ToolbarActions extends ConsumerWidget {
+  const _ToolbarActions({required this.entryId, required this.savePad});
 
   final String entryId;
+  final double savePad;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = saveButtonControllerProvider(id: entryId);
-    final unsaved = ref.watch(provider).value ?? false;
+    final unsaved =
+        ref.watch(saveButtonControllerProvider(id: entryId)).value ?? false;
+    final tokens = context.designTokens;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Reserved, fixed-width discard slot. Discarding only makes sense when
+        // there are edits to throw away, but reserving the width in both states
+        // keeps the formatting controls from shifting when editing begins. A
+        // square slot (== toolbar height) gives the icon a ≥48px tap target.
+        SizedBox(
+          width: ToolbarWidget.height,
+          child: unsaved
+              ? IconButton(
+                  icon: const Icon(Icons.close_rounded),
+                  color: tokens.colors.text.mediumEmphasis,
+                  tooltip: context.messages.editorDiscardChanges,
+                  onPressed: () => ref
+                      .read(entryControllerProvider(id: entryId).notifier)
+                      .discard(),
+                )
+              : null,
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: savePad),
+          child: _ToolbarSaveButton(entryId: entryId, unsaved: unsaved),
+        ),
+      ],
+    );
+  }
+}
+
+/// Pinned save control: always present while editing, quiet/disabled until there
+/// are unsaved changes, then a clear accent.
+class _ToolbarSaveButton extends ConsumerWidget {
+  const _ToolbarSaveButton({required this.entryId, required this.unsaved});
+
+  final String entryId;
+  final bool unsaved;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
 
     // A persistent pill container with an always-visible outline (matching the
-    // small button's corner radius) gives the control a perceivable shape in
-    // BOTH states. So the clean→dirty change is figure-ground (the outline fills
-    // with teal) plus a leading save glyph — never carried by the teal hue
-    // alone, and the clean state never has a near-invisible (1:1) boundary.
+    // button's corner radius) gives the control a perceivable shape in BOTH
+    // states. So the clean→dirty change is figure-ground (the outline fills with
+    // teal) plus a leading save glyph — never carried by the teal hue alone, and
+    // the clean state never has a near-invisible (1:1) boundary. The medium size
+    // gives a ~44px tap target that also aligns with the toolbar's icon row.
     return DecoratedBox(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(tokens.radii.l),
+        borderRadius: BorderRadius.circular(tokens.radii.xl),
         border: Border.all(
           color: unsaved ? Colors.transparent : tokens.colors.text.lowEmphasis,
         ),
       ),
       child: DesignSystemButton(
         label: context.messages.saveLabel,
+        size: DesignSystemButtonSize.medium,
         // Always present (greyed when clean) so the chip keeps a fixed width and
         // the narrow toolbar never reflows between clean and dirty states.
         leadingIcon: Icons.save_rounded,
         // null onPressed → the button renders its disabled (quiet) state.
         onPressed: unsaved
             ? () {
-                ref.read(provider.notifier).save();
+                ref
+                    .read(saveButtonControllerProvider(id: entryId).notifier)
+                    .save();
                 FocusManager.instance.primaryFocus?.unfocus();
               }
             : null,

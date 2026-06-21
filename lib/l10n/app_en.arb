@@ -2481,6 +2481,7 @@
   },
   "doneButton": "Done",
   "editMenuTitle": "Edit",
+  "editorDiscardChanges": "Discard changes",
   "editorInsertDivider": "Insert divider",
   "editorMoreFormatting": "More formatting",
   "editorPlaceholder": "Enter notes...",

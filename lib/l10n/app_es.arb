@@ -2200,6 +2200,7 @@
   },
   "doneButton": "Listo",
   "editMenuTitle": "Editar",
+  "editorDiscardChanges": "Descartar cambios",
   "editorInsertDivider": "Insertar separador",
   "editorMoreFormatting": "Más formato",
   "editorPlaceholder": "Introducir notas...",

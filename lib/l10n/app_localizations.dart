@@ -8322,6 +8322,12 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get editMenuTitle;
 
+  /// No description provided for @editorDiscardChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get editorDiscardChanges;
+
   /// No description provided for @editorInsertDivider.
   ///
   /// In en, this message translates to:

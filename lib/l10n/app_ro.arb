@@ -2200,6 +2200,7 @@
   },
   "doneButton": "Gata",
   "editMenuTitle": "Editează",
+  "editorDiscardChanges": "Renunțați la modificări",
   "editorInsertDivider": "Inserează separator",
   "editorMoreFormatting": "Mai multă formatare",
   "editorPlaceholder": "Introduceți notițe...",

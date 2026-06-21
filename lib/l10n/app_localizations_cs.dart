@@ -4834,6 +4834,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get editMenuTitle => 'Upravit';
 
   @override
+  String get editorDiscardChanges => 'Zahodit změny';
+
+  @override
   String get editorInsertDivider => 'Vložit oddělovač';
 
   @override

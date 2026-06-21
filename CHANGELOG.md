@@ -38,6 +38,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one-line notice under their title instead of holding open a full-height empty
   card. On a dashboard with several charts, the ones that actually have data get
   the room, and you no longer scroll past tall blank panels to reach them.
+- **Editing a note now has a calmer, clearer toolbar.** Saving moved out of the
+  card footer and into the editor toolbar: a pinned Save button that holds one
+  spot the whole time you edit — quiet and greyed when there's nothing to save,
+  and waking to a teal accent the moment you change something (the disk icon is
+  always there, so the change reads as more than just colour). When you have
+  unsaved edits, a discard control appears next to Save to throw them away and
+  drop back to the saved text. The toolbar also adapts to width: on a roomy
+  desktop window every formatting control is one click away, while on narrow
+  screens it shows the essentials plus a "…" button that opens the rest.
 
 ## [0.9.1030]
 ### Changed

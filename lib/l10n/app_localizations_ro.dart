@@ -4868,6 +4868,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get editMenuTitle => 'Editează';
 
   @override
+  String get editorDiscardChanges => 'Renunțați la modificări';
+
+  @override
   String get editorInsertDivider => 'Inserează separator';
 
   @override

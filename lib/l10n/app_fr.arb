@@ -2200,6 +2200,7 @@
   },
   "doneButton": "Terminé",
   "editMenuTitle": "Modifier",
+  "editorDiscardChanges": "Annuler les modifications",
   "editorInsertDivider": "Insérer un séparateur",
   "editorMoreFormatting": "Plus de mise en forme",
   "editorPlaceholder": "Saisir des notes...",

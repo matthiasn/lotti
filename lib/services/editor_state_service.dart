@@ -135,5 +135,23 @@ class EditorStateService {
     }
   }
 
+  /// Drops any unsaved draft for [id] without persisting it.
+  ///
+  /// The reverse of editing: cancels the pending debounced write, clears the
+  /// in-memory delta and selection, marks the latest persisted draft as saved
+  /// (so it is not restored on reopen), and emits `false` on the unsaved stream.
+  /// Used by "discard changes" — the saved entry text becomes the source of
+  /// truth again.
+  Future<void> dropDraft({
+    required String id,
+    required DateTime lastSaved,
+  }) async {
+    EasyDebounce.cancel('persistDraftState-$id');
+    editorStateById.remove(id);
+    selectionById.remove(id);
+    await _editorDb.setDraftSaved(entryId: id, lastSaved: lastSaved);
+    unsavedStreamById[id]?.add(false);
+  }
+
   bool entryIsUnsaved(String id) => editorStateById.containsKey(id);
 }

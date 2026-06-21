@@ -4829,6 +4829,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editMenuTitle => 'Bearbeiten';
 
   @override
+  String get editorDiscardChanges => 'Änderungen verwerfen';
+
+  @override
   String get editorInsertDivider => 'Trennlinie einfügen';
 
   @override
