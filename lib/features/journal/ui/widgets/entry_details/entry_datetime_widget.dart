@@ -30,16 +30,16 @@ class EntryDatetimeWidget extends ConsumerWidget {
     }
 
     // Timestamp metadata: the least-important line on the card, so it sits at
-    // the smallest type tier (caption, 12) — the same size as the audio
-    // timecodes — and never larger than the body, the value, or any other
-    // content. mediumEmphasis (white @ 80% ≈ 10:1) keeps it a calm, recessive
-    // metadata line; users who need everything bigger use OS text scaling rather
-    // than this one element being inflated. Shared numeric badge features
-    // (tabular + open four/six/nine + slashed zero) keep the date digits steady
-    // and legible at this small size, matching the audio timecodes.
+    // the smallest type tier (caption, 12) AND the quietest text tone
+    // (lowEmphasis ≈ 6:1 — still above the 4.5:1 AA floor) so it recedes to the
+    // bottom of the visual hierarchy, never competing with the value, body, or
+    // even the timecodes. It is never larger than any content; users who need
+    // everything bigger use OS text scaling rather than this one element being
+    // inflated. Shared numeric badge features (tabular + open four/six/nine +
+    // slashed zero) keep the date digits steady and legible at this small size.
     final tokens = context.designTokens;
     final style = tokens.typography.styles.others.caption.copyWith(
-      color: tokens.colors.text.mediumEmphasis,
+      color: tokens.colors.text.lowEmphasis,
       fontFeatures: numericBadgeFontFeatures,
     );
 

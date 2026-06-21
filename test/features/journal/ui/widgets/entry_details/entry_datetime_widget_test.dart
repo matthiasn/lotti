@@ -102,10 +102,11 @@ void main() {
       // for steady, legible digits — matching the audio timecodes and duration.
       expect(text.style?.fontFeatures, numericBadgeFontFeatures);
 
-      // Legible secondary colour (mediumEmphasis ≈ 10:1 on the card), not the
-      // faint decorative hairline tone the timestamp used to inherit.
+      // Quiet, recessive metadata tone (lowEmphasis ≈ 6:1, still above the AA
+      // floor) — the timestamp is the least-important line and must not compete
+      // with the value or body.
       final BuildContext ctx = tester.element(finder);
-      expect(text.style?.color, ctx.designTokens.colors.text.mediumEmphasis);
+      expect(text.style?.color, ctx.designTokens.colors.text.lowEmphasis);
     });
   });
 }
