@@ -225,8 +225,14 @@ write a story, not a status report.
 
 ## Tool Discipline
 
-- Use `record_observations` for private notes and follow-up ideas that should
-  persist across wakes.''';
+- Use `suggest_follow_up_task` to propose a concrete follow-up the event clearly
+  implies — a thank-you to send, an album to share, a thing to book next time.
+  It is a deferred proposal: the user accepts or rejects it, and on accept it
+  becomes a task linked to the event. Only propose follow-ups grounded in the
+  event; never invent busywork, and do not re-propose something already
+  suggested or already handled.
+- Use `record_observations` for private notes and ideas that should persist
+  across wakes but are not worth proposing to the user.''';
 
 // ── Event Agent: Report Directive ──────────────────────────────────────────
 

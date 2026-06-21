@@ -27,10 +27,11 @@ import 'package:uuid/uuid.dart';
 /// Assembles context, runs a conversation, and persists results for a single
 /// Event Agent wake cycle.
 ///
-/// Mirrors `ProjectAgentWorkflow` but is leaner: v1 events are narrate-only
-/// recaps, so there is no compaction / input-capture log, no daily-digest
-/// scheduling, no deferred change sets, and no health band. After a successful
-/// run the content gate is cleared (`awaitingContent = false`).
+/// Mirrors `ProjectAgentWorkflow` but is leaner: v1 events are narrate-led, so
+/// there is no compaction / input-capture log, no daily-digest scheduling, and
+/// no health band. It does persist deferred proposals (follow-up tasks) as a
+/// pending change set. After a successful run the content gate is cleared
+/// (`awaitingContent = false`).
 class EventAgentWorkflow {
   EventAgentWorkflow({
     required this.agentRepository,
@@ -58,11 +59,12 @@ class EventAgentWorkflow {
 
   static const _uuid = Uuid();
 
-  late final EventAgentContextBuilder _contextBuilder = EventAgentContextBuilder(
-    agentRepository: agentRepository,
-    journalRepository: journalRepository,
-    logError: _logError,
-  );
+  late final EventAgentContextBuilder _contextBuilder =
+      EventAgentContextBuilder(
+        agentRepository: agentRepository,
+        journalRepository: journalRepository,
+        logError: _logError,
+      );
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(LogDomain.agentWorkflow, message, subDomain: subDomain);
@@ -157,12 +159,14 @@ class EventAgentWorkflow {
     final provider = resolvedProfile.thinkingProvider;
 
     // 4. Assemble system prompt and user message.
-    final observationPayloads = await _contextBuilder.resolveObservationPayloads(
-      observations,
-    );
-    final linkedEntriesContext = await _contextBuilder.buildLinkedEntriesContext(
-      eventId,
-    );
+    final observationPayloads = await _contextBuilder
+        .resolveObservationPayloads(
+          observations,
+        );
+    final linkedEntriesContext = await _contextBuilder
+        .buildLinkedEntriesContext(
+          eventId,
+        );
     final systemPrompt = _contextBuilder.buildSystemPrompt(
       version: templateCtx?.version,
       soulVersion: templateCtx?.soulVersion,
@@ -262,7 +266,9 @@ class EventAgentWorkflow {
       );
 
       final manager = conversationRepository.getConversation(conversationId);
-      final finalContent = _contextBuilder.extractFinalAssistantContent(manager);
+      final finalContent = _contextBuilder.extractFinalAssistantContent(
+        manager,
+      );
       strategy.recordFinalResponse(finalContent);
 
       // 7. Persist all wake outputs.
