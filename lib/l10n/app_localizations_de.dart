@@ -2421,6 +2421,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get categoryDayPlanLabel => 'Tagesplanung';
 
   @override
+  String get categoryDefaultEventTemplateHint => 'Vorlage auswählen…';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Standard-Ereignis-Agenten-Vorlage';
+
+  @override
   String get categoryDefaultLanguageDescription =>
       'Standardsprache für Aufgaben in dieser Kategorie festlegen';
 

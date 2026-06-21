@@ -1351,6 +1351,8 @@
   "categoryCreationError": "Failed to create category. Please try again.",
   "categoryDayPlanDescription": "Make this category available for selection in the day plan",
   "categoryDayPlanLabel": "Day planning",
+  "categoryDefaultEventTemplateHint": "Select a template",
+  "categoryDefaultEventTemplateLabel": "Default event agent template",
   "categoryDefaultLanguageDescription": "Set a default language for tasks in this category",
   "categoryDefaultProfileHint": "Select a profile",
   "categoryDefaultTemplateHint": "Select a template",

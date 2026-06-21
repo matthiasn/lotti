@@ -243,6 +243,45 @@ void main() {
     });
 
     test(
+      'setDefaultEventTemplateId flips hasChanges, updates the pending '
+      'category, and un-dirties when cleared back to the original',
+      () async {
+        final category = CategoryTestUtils.createTestCategory();
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => Stream.value(category),
+        );
+
+        final container = makeContainer();
+        final controller = await loadCategory(container);
+
+        expect(
+          container
+              .read(categoryDetailsControllerProvider(testCategoryId))
+              .hasChanges,
+          isFalse,
+        );
+
+        controller.setDefaultEventTemplateId('event-tpl-1');
+
+        final state = container.read(
+          categoryDetailsControllerProvider(testCategoryId),
+        );
+        expect(state.hasChanges, isTrue);
+        expect(state.category?.defaultEventTemplateId, equals('event-tpl-1'));
+
+        // Clearing it back to the original (null) leaves no pending change.
+        controller.setDefaultEventTemplateId(null);
+        expect(
+          container
+              .read(categoryDetailsControllerProvider(testCategoryId))
+              .hasChanges,
+          isFalse,
+        );
+      },
+    );
+
+    test(
       'toggling only isAvailableForDayPlan flips hasChanges and updates '
       'the pending category',
       () async {

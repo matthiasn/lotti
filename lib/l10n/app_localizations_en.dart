@@ -2390,6 +2390,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get categoryDayPlanLabel => 'Day planning';
 
   @override
+  String get categoryDefaultEventTemplateHint => 'Select a template';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Default event agent template';
+
+  @override
   String get categoryDefaultLanguageDescription =>
       'Set a default language for tasks in this category';
 

@@ -2426,6 +2426,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get categoryDayPlanLabel => 'Plan del día';
 
   @override
+  String get categoryDefaultEventTemplateHint => 'Seleccionar una plantilla…';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Plantilla de agente de eventos predeterminada';
+
+  @override
   String get categoryDefaultLanguageDescription =>
       'Establecer un idioma predeterminado para las tareas de esta categoría';
 

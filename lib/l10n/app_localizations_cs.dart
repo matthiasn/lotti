@@ -2429,6 +2429,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryDayPlanLabel => 'Denní plánování';
 
   @override
+  String get categoryDefaultEventTemplateHint => 'Vyberte šablonu…';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Výchozí šablona agenta událostí';
+
+  @override
   String get categoryDefaultLanguageDescription =>
       'Nastavte výchozí jazyk pro úkoly v této kategorii';
 

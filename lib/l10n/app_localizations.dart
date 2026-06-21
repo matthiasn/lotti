@@ -4129,6 +4129,18 @@ abstract class AppLocalizations {
   /// **'Day planning'**
   String get categoryDayPlanLabel;
 
+  /// No description provided for @categoryDefaultEventTemplateHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a template'**
+  String get categoryDefaultEventTemplateHint;
+
+  /// No description provided for @categoryDefaultEventTemplateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Default event agent template'**
+  String get categoryDefaultEventTemplateLabel;
+
   /// No description provided for @categoryDefaultLanguageDescription.
   ///
   /// In en, this message translates to:

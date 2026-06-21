@@ -134,6 +134,20 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
     );
   }
 
+  Widget _buildDefaultEventTemplatePicker(CategoryDefinition category) {
+    final controller = ref.read(
+      categoryDetailsControllerProvider(widget.categoryId!).notifier,
+    );
+
+    return TemplateSelector(
+      selectedTemplateId: category.defaultEventTemplateId,
+      onTemplateSelected: controller.setDefaultEventTemplateId,
+      kind: AgentTemplateKind.eventAgent,
+      labelText: context.messages.categoryDefaultEventTemplateLabel,
+      hintText: context.messages.categoryDefaultEventTemplateHint,
+    );
+  }
+
   Widget _buildSpeechDictionary(CategoryDefinition category) {
     final controller = ref.read(
       categoryDetailsControllerProvider(widget.categoryId!).notifier,

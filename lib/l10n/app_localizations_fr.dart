@@ -2436,6 +2436,13 @@ class AppLocalizationsFr extends AppLocalizations {
   String get categoryDayPlanLabel => 'Planification du jour';
 
   @override
+  String get categoryDefaultEventTemplateHint => 'Sélectionner un modèle…';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Modèle d\'agent d\'événement par défaut';
+
+  @override
   String get categoryDefaultLanguageDescription =>
       'Définir une langue par défaut pour les tâches de cette catégorie';
 

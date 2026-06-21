@@ -995,6 +995,8 @@
   "categoryCreationError": "Nepodařilo se vytvořit kategorii.",
   "categoryDayPlanDescription": "Zpřístupnit tuto kategorii pro výběr v denním plánu",
   "categoryDayPlanLabel": "Denní plánování",
+  "categoryDefaultEventTemplateHint": "Vyberte šablonu…",
+  "categoryDefaultEventTemplateLabel": "Výchozí šablona agenta událostí",
   "categoryDefaultLanguageDescription": "Nastavte výchozí jazyk pro úkoly v této kategorii",
   "categoryDefaultProfileHint": "Vyberte profil…",
   "categoryDefaultTemplateHint": "Vyberte šablonu…",

@@ -1155,6 +1155,8 @@
   "categoryCreationError": "Nu s-a putut crea categoria. Vă rugăm să încercați din nou.",
   "categoryDayPlanDescription": "Faceți această categorie disponibilă pentru selecție în planul zilei",
   "categoryDayPlanLabel": "Planificarea zilei",
+  "categoryDefaultEventTemplateHint": "Selectați un șablon…",
+  "categoryDefaultEventTemplateLabel": "Șablon implicit de agent de eveniment",
   "categoryDefaultLanguageDescription": "Setați o limbă implicită pentru sarcinile din această categorie",
   "categoryDefaultProfileHint": "Selectați un profil…",
   "categoryDefaultTemplateHint": "Selectați un șablon…",

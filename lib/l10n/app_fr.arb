@@ -1155,6 +1155,8 @@
   "categoryCreationError": "Impossible de créer la catégorie. Réessaie s'il te plaît.",
   "categoryDayPlanDescription": "Rendre cette catégorie disponible à la sélection dans le plan de ta journée",
   "categoryDayPlanLabel": "Planification du jour",
+  "categoryDefaultEventTemplateHint": "Sélectionner un modèle…",
+  "categoryDefaultEventTemplateLabel": "Modèle d'agent d'événement par défaut",
   "categoryDefaultLanguageDescription": "Définir une langue par défaut pour les tâches de cette catégorie",
   "categoryDefaultProfileHint": "Sélectionner un profil…",
   "categoryDefaultTemplateHint": "Sélectionner un modèle…",

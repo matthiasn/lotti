@@ -2440,6 +2440,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get categoryDayPlanLabel => 'Planificarea zilei';
 
   @override
+  String get categoryDefaultEventTemplateHint => 'Selectați un șablon…';
+
+  @override
+  String get categoryDefaultEventTemplateLabel =>
+      'Șablon implicit de agent de eveniment';
+
+  @override
   String get categoryDefaultLanguageDescription =>
       'Setați o limbă implicită pentru sarcinile din această categorie';
 

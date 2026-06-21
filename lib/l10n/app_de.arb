@@ -1155,6 +1155,8 @@
   "categoryCreationError": "Kategorie konnte nicht erstellt werden. Bitte versuche es erneut.",
   "categoryDayPlanDescription": "Diese Kategorie für die Auswahl im Tagesplan verfügbar machen",
   "categoryDayPlanLabel": "Tagesplanung",
+  "categoryDefaultEventTemplateHint": "Vorlage auswählen…",
+  "categoryDefaultEventTemplateLabel": "Standard-Ereignis-Agenten-Vorlage",
   "categoryDefaultLanguageDescription": "Standardsprache für Aufgaben in dieser Kategorie festlegen",
   "categoryDefaultProfileHint": "Profil auswählen…",
   "categoryDefaultTemplateHint": "Vorlage auswählen…",
