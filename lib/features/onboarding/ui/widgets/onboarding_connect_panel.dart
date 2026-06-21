@@ -51,7 +51,8 @@ String onboardingProviderTagline(
 
 /// The cinematic connect page: an always-dark panel matching the welcome, with
 /// an ambient **aurora** backdrop (a different motion from the welcome's
-/// constellation) behind a back/title header and stylish dark provider tiles.
+/// constellation) behind a back/title header and clean, Apple-style provider
+/// tiles — soft brand-tinted fills, no outlines.
 class OnboardingConnectPanel extends StatefulWidget {
   const OnboardingConnectPanel({
     required this.onSelect,
@@ -135,7 +136,7 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                 for (final type in onboardingPrimaryProviders)
                   Padding(
                     padding: EdgeInsets.only(bottom: tokens.spacing.step3),
-                    child: _DarkProviderTile(
+                    child: _ProviderTile(
                       type: type,
                       onTap: () => widget.onSelect(type),
                     ),
@@ -172,7 +173,7 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                   for (final type in onboardingMoreProviders)
                     Padding(
                       padding: EdgeInsets.only(top: tokens.spacing.step2),
-                      child: _DarkProviderTile(
+                      child: _ProviderTile(
                         type: type,
                         onTap: () => widget.onSelect(type),
                       ),
@@ -211,11 +212,11 @@ class _IconBtn extends StatelessWidget {
   }
 }
 
-/// A stylish provider tile for the dark connect panel: a near-opaque dark card
-/// with a faint light hairline + soft shadow (so it floats above the aurora),
-/// a brand-coloured icon badge, name + tagline, and a chevron.
-class _DarkProviderTile extends StatelessWidget {
-  const _DarkProviderTile({required this.type, required this.onTap});
+/// Clean, Apple-style provider tile: a soft brand-tinted gradient fill with
+/// rounded corners and NO outline/border, a brand icon in a soft chip, name +
+/// tagline, and a quiet chevron.
+class _ProviderTile extends StatelessWidget {
+  const _ProviderTile({required this.type, required this.onTap});
 
   final InferenceProviderType type;
   final VoidCallback onTap;
@@ -225,7 +226,6 @@ class _DarkProviderTile extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
     final accent = aiProviderAccent(type: type, tokens: dsTokensDark);
-    final surface = aiProviderSurface(type: type, tokens: dsTokensDark);
     final textHigh = dsTokensDark.colors.text.highEmphasis;
     final textMed = dsTokensDark.colors.text.mediumEmphasis;
     final tagline = onboardingProviderTagline(messages, type);
@@ -235,19 +235,23 @@ class _DarkProviderTile extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(tokens.spacing.step4),
         decoration: BoxDecoration(
-          // Light translucent "glass" so the aurora bleeds through — bright and
-          // premium, never a dull dark card.
-          color: textHigh.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-          border: Border.all(color: textHigh.withValues(alpha: 0.2)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              accent.withValues(alpha: 0.26),
+              accent.withValues(alpha: 0.12),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(tokens.radii.l),
         ),
         child: Row(
           children: [
             Container(
               padding: EdgeInsets.all(tokens.spacing.step3),
               decoration: BoxDecoration(
-                color: surface,
-                borderRadius: BorderRadius.circular(tokens.radii.s),
+                color: textHigh.withValues(alpha: 0.14),
+                borderRadius: BorderRadius.circular(tokens.radii.m),
               ),
               child: Icon(aiProviderIcon(type), color: accent),
             ),
@@ -277,7 +281,7 @@ class _DarkProviderTile extends StatelessWidget {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: dsTokensDark.colors.text.lowEmphasis,
+              color: textHigh.withValues(alpha: 0.5),
             ),
           ],
         ),
