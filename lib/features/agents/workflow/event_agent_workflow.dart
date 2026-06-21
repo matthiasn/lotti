@@ -294,6 +294,10 @@ class EventAgentWorkflow {
       final reportContent = strategy.extractReportContent();
       final reportTldr = strategy.extractReportTldr();
       final reportOneLiner = strategy.extractReportOneLiner();
+      // A recap is the whole point of the wake. If it is still empty here, the
+      // forced `update_report` retry above also produced nothing, so this wake
+      // is a failure — not a no-op success.
+      final hasReport = reportContent.isNotEmpty;
       final extractedObservations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
 
@@ -416,26 +420,33 @@ class EventAgentWorkflow {
           );
         }
 
-        // Update state: the run reached inference, so content has arrived —
-        // clear the content gate.
+        // Only a wake that produced a recap clears the content gate and counts
+        // as a success. When the recap is still empty (the forced retry also
+        // failed), keep `awaitingContent` armed and bump the failure count so a
+        // later content arrival re-triggers the agent instead of leaving the
+        // event with a permanently empty recap.
         final hostId = await syncService.localHost();
         await syncService.upsertEntity(
           latestState.copyWith(
             lastWakeAt: now,
             updatedAt: now,
-            awaitingContent: false,
-            consecutiveFailureCount: 0,
+            awaitingContent: !hasReport && latestState.awaitingContent,
+            consecutiveFailureCount: hasReport
+                ? 0
+                : latestState.consecutiveFailureCount + 1,
             wakeCounter: latestState.wakeCounter.increment(hostId),
           ),
         );
 
-        await syncService.appendMilestone(
-          agentId: agentId,
-          milestone: AgentMilestone.wakeCompleted,
-          createdAt: now,
-          threadId: threadId,
-          runKey: runKey,
-        );
+        if (hasReport) {
+          await syncService.appendMilestone(
+            agentId: agentId,
+            milestone: AgentMilestone.wakeCompleted,
+            createdAt: now,
+            threadId: threadId,
+            runKey: runKey,
+          );
+        }
       });
       onPersistedStateChanged?.call(agentId);
 
@@ -444,7 +455,12 @@ class EventAgentWorkflow {
         subDomain: 'execute',
       );
 
-      return const WakeResult(success: true);
+      return hasReport
+          ? const WakeResult(success: true)
+          : const WakeResult(
+              success: false,
+              error: 'event agent produced no recap',
+            );
     } catch (e, s) {
       _logError('wake failed', error: e, stackTrace: s);
 

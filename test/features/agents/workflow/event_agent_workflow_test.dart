@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_workflow.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
@@ -141,6 +142,7 @@ void main() {
   void stubReportPublishingRun({
     List<String> observations = const [],
     List<String> followUpTitles = const [],
+    InferenceUsage? usage,
   }) {
     mockConversationRepository.sendMessageDelegate =
         ({
@@ -200,7 +202,7 @@ void main() {
 
             await strategy.processToolCalls(toolCalls: calls, manager: manager);
           }
-          return null;
+          return usage;
         };
   }
 
@@ -401,6 +403,56 @@ void main() {
     });
 
     test(
+      'persists the final assistant thought and the wake token usage',
+      () async {
+        // The conversation leaves a final assistant message (the agent's thought)
+        // and reports token usage with data.
+        when(() => mockConversationManager.messages).thenReturn(const [
+          ChatCompletionMessage.assistant(
+            content: 'I wove the linked photos and notes into a warm recap.',
+          ),
+        ]);
+        stubReportPublishingRun(
+          usage: const InferenceUsage(inputTokens: 120, outputTokens: 80),
+        );
+
+        final result = await run();
+        expect(result.success, isTrue);
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+
+        // The final response is persisted as a thought payload + a thought-kind
+        // message that links to it.
+        final thoughtPayloads = captured
+            .whereType<AgentMessagePayloadEntity>()
+            .where(
+              (p) =>
+                  p.content['text'] ==
+                  'I wove the linked photos and notes into a warm recap.',
+            )
+            .toList();
+        expect(thoughtPayloads, hasLength(1));
+        final thoughtMessages = captured
+            .whereType<AgentMessageEntity>()
+            .where(
+              (m) =>
+                  m.kind == AgentMessageKind.thought &&
+                  m.contentEntryId == thoughtPayloads.single.id,
+            )
+            .toList();
+        expect(thoughtMessages, hasLength(1));
+
+        // Token usage is event-sourced for accounting.
+        final usage = captured.whereType<WakeTokenUsageEntity>().toList();
+        expect(usage, hasLength(1));
+        expect(usage.single.inputTokens, 120);
+        expect(usage.single.outputTokens, 80);
+      },
+    );
+
+    test(
       'persists suggested follow-ups as a pending change set on the event',
       () async {
         stubReportPublishingRun(
@@ -484,8 +536,8 @@ void main() {
       expect(reports.single.content, '# Forced\nrecovered.');
     });
 
-    test('clears the gate and persists no recap when even the retry produces '
-        'none', () async {
+    test('keeps the gate armed and counts a failure when even the retry '
+        'produces no recap', () async {
       mockConversationRepository.sendMessageDelegate =
           ({
             required conversationId,
@@ -500,16 +552,32 @@ void main() {
           }) async => null; // never publishes a recap
 
       final result = await run();
-      expect(result.success, isTrue);
+      // A wake that produced no recap — even after the forced retry — is a
+      // failure, not a no-op success.
+      expect(result.success, isFalse);
 
       final captured = verify(
         () => mockSyncService.upsertEntity(captureAny()),
       ).captured;
       expect(captured.whereType<AgentReportEntity>(), isEmpty);
-      // The gate is still cleared (content has arrived); the agent will re-wake
-      // on the next event edit via its (now live) subscription.
+
+      // The content gate stays armed (input state had awaitingContent: true) so
+      // a later content arrival re-triggers the agent instead of leaving the
+      // event with a permanently empty recap, and the failure is counted.
       final states = captured.whereType<AgentStateEntity>().toList();
-      expect(states.last.awaitingContent, isFalse);
+      expect(states.last.awaitingContent, isTrue);
+      expect(states.last.consecutiveFailureCount, 1);
+
+      // No wake-completed milestone for a wake that completed nothing.
+      verifyNever(
+        () => mockSyncService.appendMilestone(
+          agentId: any(named: 'agentId'),
+          milestone: AgentMilestone.wakeCompleted,
+          createdAt: any(named: 'createdAt'),
+          threadId: any(named: 'threadId'),
+          runKey: any(named: 'runKey'),
+        ),
+      );
     });
 
     test('increments the failure count when the conversation throws', () async {

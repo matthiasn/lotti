@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
@@ -79,16 +80,22 @@ void main() {
     );
   }
 
-  Task taskEntity({String id = 'task-1', String title = 'Book the venue'}) {
+  Task taskEntity({
+    String id = 'task-1',
+    String title = 'Book the venue',
+    TaskStatus? status,
+  }) {
     return Task(
       meta: meta(id),
       data: TaskData(
         title: title,
-        status: TaskStatus.done(
-          id: 's',
-          createdAt: eventTime,
-          utcOffset: 0,
-        ),
+        status:
+            status ??
+            TaskStatus.done(
+              id: 's',
+              createdAt: eventTime,
+              utcOffset: 0,
+            ),
         dateFrom: eventTime,
         dateTo: eventTime,
         statusHistory: const [],
@@ -223,6 +230,22 @@ void main() {
       expect(message, isNot(contains('## Recent Observations')));
       expect(message, isNot(contains('## Trigger Tokens')));
     });
+
+    test('falls back to a bare entity line for a non-event entity', () {
+      // Defensive: the slot should always point at an event, but if it ever
+      // resolves to a different journal entity the builder must not blow up.
+      final message = builder.buildUserMessage(
+        eventEntity: note(text: 'not an event', id: 'note-x'),
+        lastReport: null,
+        observations: const [],
+        observationPayloads: const {},
+        linkedEntriesContext: '',
+        triggerTokens: const {},
+      );
+
+      expect(message, contains('Event entity: note-x'));
+      expect(message, isNot(contains('**Title**')));
+    });
   });
 
   group('buildLinkedEntriesContext', () {
@@ -254,6 +277,27 @@ void main() {
       },
     );
 
+    test('labels a linked task by its status (rejected)', () async {
+      when(
+        () => journalRepository.getLinkedEntities(linkedTo: 'event-001'),
+      ).thenAnswer(
+        (_) async => [
+          taskEntity(
+            title: 'Cancel the caterer',
+            status: TaskStatus.rejected(
+              id: 's',
+              createdAt: eventTime,
+              utcOffset: 0,
+            ),
+          ),
+        ],
+      );
+
+      final context = await builder.buildLinkedEntriesContext('event-001');
+
+      expect(context, contains('- Cancel the caterer (rejected)'));
+    });
+
     test('excludes soft-deleted linked entries', () async {
       final deletedNote = JournalEntity.journalEntry(
         meta: meta('note-del').copyWith(deletedAt: eventTime),
@@ -278,6 +322,32 @@ void main() {
 
       expect(context, isEmpty);
       expect(loggedErrors, hasLength(1));
+    });
+  });
+
+  group('extractFinalAssistantContent', () {
+    test('returns null when the manager is null', () {
+      expect(builder.extractFinalAssistantContent(null), isNull);
+    });
+
+    test('returns the last non-empty assistant content', () {
+      final manager = MockConversationManager();
+      when(() => manager.messages).thenReturn(const [
+        ChatCompletionMessage.assistant(content: 'first'),
+        ChatCompletionMessage.assistant(content: 'final answer'),
+      ]);
+
+      expect(builder.extractFinalAssistantContent(manager), 'final answer');
+    });
+
+    test('skips trailing empty assistant messages', () {
+      final manager = MockConversationManager();
+      when(() => manager.messages).thenReturn(const [
+        ChatCompletionMessage.assistant(content: 'real content'),
+        ChatCompletionMessage.assistant(content: ''),
+      ]);
+
+      expect(builder.extractFinalAssistantContent(manager), 'real content');
     });
   });
 

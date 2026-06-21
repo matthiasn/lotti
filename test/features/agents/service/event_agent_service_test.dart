@@ -420,5 +420,51 @@ void main() {
         {eventId},
       );
     });
+
+    test('swallows a per-agent restore failure and keeps going (logged via '
+        'the domain logger)', () async {
+      final eventAgent = makeIdentity(agentId: 'agent-event');
+
+      when(
+        () => mockAgentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async => [eventAgent]);
+      when(
+        () => mockRepository.getLinksFrom(
+          'agent-event',
+          type: AgentLinkTypes.agentEvent,
+        ),
+      ).thenThrow(Exception('boom'));
+
+      // Must not rethrow — a single bad agent cannot abort startup restore.
+      await service.restoreSubscriptions();
+
+      // The failure happened before any subscription could be registered.
+      verifyNever(() => mockOrchestrator.addSubscription(any()));
+    });
+
+    test('swallows a per-agent restore failure when no domain logger is '
+        'configured (developer.log fallback)', () async {
+      final loggerlessService = EventAgentService(
+        agentService: mockAgentService,
+        repository: mockRepository,
+        orchestrator: mockOrchestrator,
+        syncService: mockSyncService,
+      );
+      final eventAgent = makeIdentity(agentId: 'agent-event');
+
+      when(
+        () => mockAgentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async => [eventAgent]);
+      when(
+        () => mockRepository.getLinksFrom(
+          'agent-event',
+          type: AgentLinkTypes.agentEvent,
+        ),
+      ).thenThrow(Exception('boom'));
+
+      await loggerlessService.restoreSubscriptions();
+
+      verifyNever(() => mockOrchestrator.addSubscription(any()));
+    });
   });
 }

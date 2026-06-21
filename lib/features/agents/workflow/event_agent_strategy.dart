@@ -267,6 +267,20 @@ class EventAgentStrategy extends ConversationStrategy
       }
     }
 
+    // Every array item was empty/invalid: reject rather than acknowledge a
+    // no-op, so the model resends valid observations instead of wasting a turn.
+    if (accepted == 0) {
+      await _rejectToolCall(
+        callId: callId,
+        toolName: EventAgentToolNames.recordObservations,
+        errorMsg:
+            'Error: no valid observations found. '
+            'Provide non-empty observation text.',
+        manager: manager,
+      );
+      return;
+    }
+
     manager.addToolResponse(
       toolCallId: callId,
       response: 'Recorded $accepted observation(s).',

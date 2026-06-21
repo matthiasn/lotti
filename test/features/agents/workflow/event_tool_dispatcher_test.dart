@@ -7,6 +7,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_tool_dispatcher.dart';
+import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -127,6 +129,36 @@ void main() {
     expect(captured[2], eventId); // linkedId links the task to the event
     expect(captured[3], categoryId);
   });
+
+  test(
+    'logs the follow-up creation when a domain logger is configured',
+    () async {
+      final loggingDispatcher = EventToolDispatcher(
+        journalRepository: mockJournalRepository,
+        persistenceLogic: mockPersistenceLogic,
+        entitiesCacheService: mockCache,
+        domainLogger: DomainLogger(loggingService: LoggingService())
+          ..enabledDomains.add(LogDomain.agentRuntime),
+      );
+      when(
+        () => mockPersistenceLogic.createTaskEntry(
+          data: any(named: 'data'),
+          entryText: any(named: 'entryText'),
+          linkedId: any(named: 'linkedId'),
+          categoryId: any(named: 'categoryId'),
+        ),
+      ).thenAnswer((_) async => createdTask);
+
+      final result = await loggingDispatcher.dispatch(
+        EventAgentToolNames.suggestFollowUpTask,
+        {'title': 'Share the album'},
+        eventId,
+      );
+
+      expect(result.success, isTrue);
+      expect(result.mutatedEntityId, 'task-9');
+    },
+  );
 
   test('rejects an empty title and creates nothing', () async {
     final result = await dispatcher.dispatch(

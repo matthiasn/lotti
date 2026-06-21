@@ -21,13 +21,19 @@ Map<String, dynamic> parseAgentToolArguments(String raw) {
     if (decoded is Map<String, dynamic>) return decoded;
   } catch (_) {}
 
-  // Handle markdown-wrapped JSON.
+  // Handle markdown-wrapped JSON. Guard the decode so a malformed fence falls
+  // through to the sanitized exception below rather than letting jsonDecode
+  // throw a FormatException that embeds the raw (possibly user-authored) source.
   final markdownRegex = RegExp(r'```(?:json)?\s*([\s\S]*?)\s*```');
   final match = markdownRegex.firstMatch(trimmed);
   if (match != null) {
-    final inner = match.group(1)!.trim();
-    final decoded = jsonDecode(inner);
-    if (decoded is Map<String, dynamic>) return decoded;
+    try {
+      final inner = match.group(1)!.trim();
+      final decoded = jsonDecode(inner);
+      if (decoded is Map<String, dynamic>) return decoded;
+    } catch (_) {
+      // Fall through to the sanitized exception below.
+    }
   }
 
   throw const FormatException('Cannot parse tool arguments');

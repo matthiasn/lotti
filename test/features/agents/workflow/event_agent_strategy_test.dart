@@ -191,6 +191,44 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'rejects a non-empty array whose items are all blank/invalid',
+      () async {
+        await strategy.processToolCalls(
+          toolCalls: [
+            _makeToolCall(
+              name: EventAgentToolNames.recordObservations,
+              args: {
+                'observations': [
+                  '   ',
+                  {'text': ''},
+                  42, // wrong type
+                ],
+              },
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        // Nothing accepted → reject instead of acknowledging a no-op success.
+        expect(strategy.extractObservations(), isEmpty);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response:
+                'Error: no valid observations found. '
+                'Provide non-empty observation text.',
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: 'Recorded 0 observation(s).',
+          ),
+        );
+      },
+    );
   });
 
   group('suggest_follow_up_task (deferred)', () {
@@ -302,6 +340,14 @@ void main() {
       expect(strategy.finalResponse, isNull);
       strategy.recordFinalResponse('done narrating');
       expect(strategy.finalResponse, 'done narrating');
+    });
+
+    test('shouldContinue delegates to the manager', () {
+      when(() => mockManager.canContinue()).thenReturn(true);
+      expect(strategy.shouldContinue(mockManager), isTrue);
+
+      when(() => mockManager.canContinue()).thenReturn(false);
+      expect(strategy.shouldContinue(mockManager), isFalse);
     });
   });
 }
