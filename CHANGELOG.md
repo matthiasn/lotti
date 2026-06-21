@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   recording reads as a span with its elapsed duration); and the prep/follow-up
   tasks tied to the event. Add photos, notes, voice memos and tasks straight from the page —
   even a brand-new event shows what to do next instead of an empty screen.
+- An optional **AI recap** for events. Point a category at an event-agent
+  template (Settings → Categories → AI defaults) and new events in that category
+  get a quiet writing companion: once the event has a photo or a note, it weaves
+  the linked photos, notes and voice memos into a short, warm recap shown on the
+  event's detail page, with a refresh to rewrite it. It only ever narrates — your
+  star rating and cover photo stay entirely yours and are never touched.
 
 ### Changed
 - **Accepting or dismissing an AI suggestion is now smooth and calm instead of
