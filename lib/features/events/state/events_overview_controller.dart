@@ -50,6 +50,11 @@ final eventsOverviewControllerProvider =
     );
 
 class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
+  /// Bumped whenever a reload supersedes in-flight work (a category switch or a
+  /// sync refresh), so a late `loadMore` page-append can't overwrite the newer
+  /// state with a stale list.
+  int _generation = 0;
+
   @override
   Future<EventsOverviewState> build() async {
     final sub = getIt<UpdateNotifications>().updateStream.listen((affected) {
@@ -80,19 +85,31 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
     final current = state.value;
     if (current == null || !current.hasMore || current.isLoadingMore) return;
 
+    final generation = _generation;
     state = AsyncData(current.copyWith(isLoadingMore: true));
-    final next = await loadResolvedEventsPage(
-      limit: eventsPageSize,
-      offset: current.events.length,
-      categoryId: current.categoryId,
-    );
-    state = AsyncData(
-      EventsOverviewState(
-        events: [...current.events, ...next],
-        hasMore: next.length == eventsPageSize,
+    try {
+      final next = await loadResolvedEventsPage(
+        limit: eventsPageSize,
+        offset: current.events.length,
         categoryId: current.categoryId,
-      ),
-    );
+      );
+      // Drop a page that arrived after a category switch / refresh, or after the
+      // notifier was disposed — it would otherwise clobber newer state.
+      if (!ref.mounted || generation != _generation) return;
+      state = AsyncData(
+        current.copyWith(
+          events: [...current.events, ...next],
+          hasMore: next.length == eventsPageSize,
+          isLoadingMore: false,
+        ),
+      );
+    } catch (_) {
+      // Always clear the in-flight flag so a failed page doesn't deadlock
+      // pagination; keep the events already shown.
+      if (ref.mounted && generation == _generation) {
+        state = AsyncData(current.copyWith(isLoadingMore: false));
+      }
+    }
   }
 
   /// Switches the category filter and reloads from the first page. The previous
@@ -100,6 +117,7 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
   /// full-screen spinner flash.
   Future<void> setCategory(String? categoryId) async {
     if (state.value?.categoryId == categoryId) return;
+    _generation++;
     state = await AsyncValue.guard(() => _loadFirstPage(categoryId));
   }
 
@@ -108,20 +126,27 @@ class EventsOverviewController extends AsyncNotifier<EventsOverviewState> {
   Future<void> _refresh() async {
     final current = state.value;
     if (current == null) return;
+    final generation = ++_generation;
     final count = current.events.length < eventsPageSize
         ? eventsPageSize
         : current.events.length;
-    final reloaded = await loadResolvedEventsPage(
-      limit: count,
-      offset: 0,
-      categoryId: current.categoryId,
-    );
-    state = AsyncData(
-      EventsOverviewState(
-        events: reloaded,
-        hasMore: reloaded.length == count,
+    try {
+      final reloaded = await loadResolvedEventsPage(
+        limit: count,
+        offset: 0,
         categoryId: current.categoryId,
-      ),
-    );
+      );
+      if (!ref.mounted || generation != _generation) return;
+      state = AsyncData(
+        EventsOverviewState(
+          events: reloaded,
+          hasMore: reloaded.length == count,
+          categoryId: current.categoryId,
+        ),
+      );
+    } catch (_) {
+      // A background refresh failure keeps the current list rather than
+      // flashing an error over established content.
+    }
   }
 }

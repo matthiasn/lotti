@@ -2321,6 +2321,33 @@ void main() {
       expect(data.title, testEventEntry.data.title);
     });
 
+    test('clamps an out-of-range cropX before persisting', () async {
+      final container = makeProviderContainer();
+      final entryId = testEventEntry.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      when(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.updateEventCover('img-1', cropX: 1.8);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: captureAny(named: 'data'),
+        ),
+      ).captured;
+      expect((captured.single as EventData).coverArtCropX, 1.0);
+    });
+
     test('does nothing when entry is not a JournalEvent', () async {
       final container = makeProviderContainer();
       final provider = entryControllerProvider(id: testTextEntry.meta.id);

@@ -431,7 +431,9 @@ class EntryController extends _$EntryController {
       _updateEventData(
         (data) => data.copyWith(
           coverArtId: imageId,
-          coverArtCropX: cropX ?? data.coverArtCropX,
+          // coverArtCropX is a normalized 0..1 horizontal offset; clamp so a
+          // malformed value can't persist an out-of-range crop.
+          coverArtCropX: cropX?.clamp(0.0, 1.0) ?? data.coverArtCropX,
         ),
       );
 

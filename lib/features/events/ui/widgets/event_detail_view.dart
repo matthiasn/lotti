@@ -1102,6 +1102,19 @@ class _TimelineContent extends StatelessWidget {
           style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
         );
       case EventTimelineKind.timeRecording:
+        final endLabel = entry.endTimeLabel;
+        final durationLabel = entry.durationLabel;
+        // A well-formed time recording carries both span labels; without them
+        // fall back to a plain note rather than a broken, blank span bar.
+        if (endLabel == null ||
+            endLabel.isEmpty ||
+            durationLabel == null ||
+            durationLabel.isEmpty) {
+          return Text(
+            entry.text ?? '',
+            style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
+          );
+        }
         // A time recording reads as a span (start → end · elapsed), with its
         // note beneath, rather than a bare observation.
         return Column(
@@ -1109,8 +1122,8 @@ class _TimelineContent extends StatelessWidget {
           children: [
             TimeSpanBar(
               startLabel: entry.timeLabel,
-              endLabel: entry.endTimeLabel ?? '',
-              durationLabel: entry.durationLabel ?? '',
+              endLabel: endLabel,
+              durationLabel: durationLabel,
             ),
             if (entry.text != null) ...[
               SizedBox(height: tokens.spacing.step2),

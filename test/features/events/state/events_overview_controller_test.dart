@@ -174,4 +174,47 @@ void main() {
     expect(state.events.first.event.meta.id, 'new');
     expect(state.events, hasLength(4));
   });
+
+  test(
+    'loadMore clears the loading flag and keeps paging open on error',
+    () async {
+      // First page (build) succeeds and is full; the next page (loadMore) throws.
+      var calls = 0;
+      when(
+        () => db.getJournalEntities(
+          types: any(named: 'types'),
+          ids: any(named: 'ids'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((_) async {
+        calls++;
+        if (calls == 1) {
+          return [for (var i = 0; i < eventsPageSize; i++) _event('e$i')];
+        }
+        throw Exception('boom');
+      });
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      final first = await container.read(
+        eventsOverviewControllerProvider.future,
+      );
+      expect(first.hasMore, isTrue);
+
+      await container
+          .read(eventsOverviewControllerProvider.notifier)
+          .loadMore();
+
+      final state = container.read(eventsOverviewControllerProvider).value!;
+      // Not stuck, still retryable, and the loaded page is preserved.
+      expect(state.isLoadingMore, isFalse);
+      expect(state.hasMore, isTrue);
+      expect(state.events, hasLength(eventsPageSize));
+    },
+  );
 }

@@ -74,7 +74,10 @@ class EventsOverviewView extends StatelessWidget {
               // is fully loaded, so firing on every scroll tick is safe.
               onNotification: (notification) {
                 final loadMore = onLoadMore;
+                // depth == 0 keeps nested scrollables (the horizontal category
+                // chip row) from triggering pagination.
                 if (loadMore != null &&
+                    notification.depth == 0 &&
                     notification.metrics.axis == Axis.vertical &&
                     notification.metrics.pixels >=
                         notification.metrics.maxScrollExtent - 600) {

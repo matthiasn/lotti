@@ -62,7 +62,7 @@ EventTimelineEntry _journalEntryBeat(JournalEntry entry, String timeLabel) {
       timeLabel: timeLabel,
       kind: EventTimelineKind.timeRecording,
       entryId: entry.meta.id,
-      endTimeLabel: DateFormat('HH:mm').format(entry.meta.dateTo),
+      endTimeLabel: DateFormat('HH:mm').format(entry.meta.dateTo.toLocal()),
       durationLabel: formatRangeDuration(span),
       text: _trimmedNote(entry),
     );
@@ -142,7 +142,7 @@ EventDetailData eventDetailDataFromEntities({
   for (final entity in sorted) {
     final timelineEntry = eventTimelineEntryFor(
       entity,
-      timeLabel: DateFormat('HH:mm').format(entity.meta.dateFrom),
+      timeLabel: DateFormat('HH:mm').format(entity.meta.dateFrom.toLocal()),
       imageProviderFor: imageProviderFor,
     );
     if (timelineEntry != null) timeline.add(timelineEntry);

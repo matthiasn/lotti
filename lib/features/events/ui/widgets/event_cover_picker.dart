@@ -57,20 +57,31 @@ class EventCoverPicker extends StatelessWidget {
               ),
             ),
             SizedBox(height: tokens.spacing.step4),
-            Wrap(
-              spacing: tokens.spacing.step2,
-              runSpacing: tokens.spacing.step2,
-              children: [
-                for (final choice in choices)
-                  _CoverTile(
-                    choice: choice,
-                    selected: choice.id == currentCoverId,
-                    size: _tile,
-                    onTap: onSelect == null ? null : () => onSelect!(choice.id),
-                  ),
-                if (onAddPhoto != null)
-                  _AddPhotoTile(size: _tile, onTap: onAddPhoto!),
-              ],
+            // Cap the grid and let it scroll so a long photo list stays fully
+            // reachable instead of overflowing the sheet.
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.6,
+              ),
+              child: SingleChildScrollView(
+                child: Wrap(
+                  spacing: tokens.spacing.step2,
+                  runSpacing: tokens.spacing.step2,
+                  children: [
+                    for (final choice in choices)
+                      _CoverTile(
+                        choice: choice,
+                        selected: choice.id == currentCoverId,
+                        size: _tile,
+                        onTap: onSelect == null
+                            ? null
+                            : () => onSelect!(choice.id),
+                      ),
+                    if (onAddPhoto != null)
+                      _AddPhotoTile(size: _tile, onTap: onAddPhoto!),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

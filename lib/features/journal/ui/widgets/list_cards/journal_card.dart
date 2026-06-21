@@ -298,8 +298,8 @@ class _EntryCardContent extends StatelessWidget {
       ),
       secondary: isTimeRecording
           ? TimeSpanBar(
-              startLabel: hhMmFormat.format(e.meta.dateFrom),
-              endLabel: hhMmFormat.format(e.meta.dateTo),
+              startLabel: hhMmFormat.format(e.meta.dateFrom.toLocal()),
+              endLabel: hhMmFormat.format(e.meta.dateTo.toLocal()),
               durationLabel: formatRangeDuration(span),
             )
           : null,
