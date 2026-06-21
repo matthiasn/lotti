@@ -1262,8 +1262,10 @@ event does not burn an inference run.
 3. creates the agent identity and state
 4. sets `slots.activeEventId` and the `awaitingContent` gate flag
 5. creates `agent_event` and `template_assignment` links
-6. mirrors `awaitingContent` into the orchestrator and registers a direct
-   event-edit subscription (`EVENT_ENTITY_UPDATE:<eventId>`)
+6. mirrors `awaitingContent` into the orchestrator and registers a subscription
+   on the bare `eventId` — exactly like the task agent matches its bare task id,
+   so the agent wakes on direct event edits and on content arrival (linking a
+   photo/note emits the event id), which is what clears the content gate
 7. enqueues a creation wake
 
 ### Content gate
