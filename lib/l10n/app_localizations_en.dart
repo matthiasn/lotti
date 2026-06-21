@@ -9,11 +9,49 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String get settingsOnboardingMetricsTitle => 'Onboarding Metrics';
+  String get onboardingWelcomeTitle => 'Talk. Lotti turns it into a plan.';
 
   @override
-  String get settingsOnboardingMetricsSubtitle =>
-      'FTUE funnel — install, activation, retention (debug)';
+  String get onboardingWelcomeMessage =>
+      'Connect your AI brain, then speak a thought and watch it become a structured task.';
+
+  @override
+  String get onboardingWelcomeConnectButton => 'Connect your brain';
+
+  @override
+  String get onboardingWelcomeSkipButton => 'Look around first';
+
+  @override
+  String get onboardingConnectTitle =>
+      'Pick the brain that turns your words into tasks';
+
+  @override
+  String get onboardingConnectMoreOptions => 'More options';
+
+  @override
+  String get onboardingConnectGeminiName => 'Gemini';
+
+  @override
+  String get onboardingConnectGeminiTagline =>
+      'Google · fast, generous free tier';
+
+  @override
+  String get onboardingConnectMistralName => 'Mistral';
+
+  @override
+  String get onboardingConnectMistralTagline => 'Best for voice (Voxtral)';
+
+  @override
+  String get onboardingConnectQwenName => 'Qwen';
+
+  @override
+  String get onboardingConnectQwenTagline => 'Alibaba · voice, chat & images';
+
+  @override
+  String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOllamaName => 'Ollama';
 
   @override
   String get activeLabel => 'Active';
@@ -7660,6 +7698,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Unit abbreviation (optional)';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'FTUE funnel — install, activation, retention (debug)';
+
+  @override
+  String get settingsOnboardingMetricsTitle => 'Onboarding Metrics';
 
   @override
   String get settingsResetGeminiConfirm => 'Reset';

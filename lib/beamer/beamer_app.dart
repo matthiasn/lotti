@@ -16,7 +16,6 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
-import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
@@ -27,6 +26,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_sidebar_entry.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
@@ -270,7 +270,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
   void _showAiSetupPrompt(BuildContext context, WidgetRef ref) {
     if (!mounted) return;
-    AiProviderSelectionModal.show(
+    // The FTUE "connect your brain" welcome owns the first-run provider setup.
+    // It reuses the existing per-provider FTUE setup downstream via
+    // navigateToCreateProvider, and the existing dismissal flag for "skip".
+    OnboardingWelcomeModal.show(
       context,
       onProviderSelected: (providerType) {
         // Modal closes itself, then we navigate

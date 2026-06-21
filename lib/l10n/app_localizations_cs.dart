@@ -9,11 +9,49 @@ class AppLocalizationsCs extends AppLocalizations {
   AppLocalizationsCs([String locale = 'cs']) : super(locale);
 
   @override
-  String get settingsOnboardingMetricsTitle => 'Metriky onboardingu';
+  String get onboardingWelcomeTitle => 'Mluv. Lotti z toho udělá plán.';
 
   @override
-  String get settingsOnboardingMetricsSubtitle =>
-      'FTUE trychtýř — instalace, aktivace, retence (ladění)';
+  String get onboardingWelcomeMessage =>
+      'Připoj svůj AI mozek, vyslov myšlenku a sleduj, jak se mění ve strukturovaný úkol.';
+
+  @override
+  String get onboardingWelcomeConnectButton => 'Připojit mozek';
+
+  @override
+  String get onboardingWelcomeSkipButton => 'Nejdřív se rozhlédnout';
+
+  @override
+  String get onboardingConnectTitle =>
+      'Vyber mozek, který promění tvá slova v úkoly';
+
+  @override
+  String get onboardingConnectMoreOptions => 'Další možnosti';
+
+  @override
+  String get onboardingConnectGeminiName => 'Gemini';
+
+  @override
+  String get onboardingConnectGeminiTagline =>
+      'Google · rychlé, štědrá bezplatná verze';
+
+  @override
+  String get onboardingConnectMistralName => 'Mistral';
+
+  @override
+  String get onboardingConnectMistralTagline => 'Nejlepší pro hlas (Voxtral)';
+
+  @override
+  String get onboardingConnectQwenName => 'Qwen';
+
+  @override
+  String get onboardingConnectQwenTagline => 'Alibaba · hlas, chat a obrázky';
+
+  @override
+  String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOllamaName => 'Ollama';
 
   @override
   String get activeLabel => 'Aktivní';
@@ -7808,6 +7846,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Zkratka jednotky (volitelné)';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'FTUE trychtýř — instalace, aktivace, retence (ladění)';
+
+  @override
+  String get settingsOnboardingMetricsTitle => 'Metriky onboardingu';
 
   @override
   String get settingsResetGeminiConfirm => 'Obnovit';

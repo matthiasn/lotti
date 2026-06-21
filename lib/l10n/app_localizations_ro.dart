@@ -9,11 +9,51 @@ class AppLocalizationsRo extends AppLocalizations {
   AppLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
-  String get settingsOnboardingMetricsTitle => 'Valori de onboarding';
+  String get onboardingWelcomeTitle =>
+      'Vorbiți. Lotti transformă totul într-un plan.';
 
   @override
-  String get settingsOnboardingMetricsSubtitle =>
-      'Pâlnie FTUE — instalare, activare, retenție (depanare)';
+  String get onboardingWelcomeMessage =>
+      'Conectați-vă creierul AI, rostiți un gând și urmăriți-l devenind o sarcină structurată.';
+
+  @override
+  String get onboardingWelcomeConnectButton => 'Conectați-vă creierul';
+
+  @override
+  String get onboardingWelcomeSkipButton => 'Explorați mai întâi';
+
+  @override
+  String get onboardingConnectTitle =>
+      'Alegeți creierul care vă transformă cuvintele în sarcini';
+
+  @override
+  String get onboardingConnectMoreOptions => 'Mai multe opțiuni';
+
+  @override
+  String get onboardingConnectGeminiName => 'Gemini';
+
+  @override
+  String get onboardingConnectGeminiTagline =>
+      'Google · rapid, nivel gratuit generos';
+
+  @override
+  String get onboardingConnectMistralName => 'Mistral';
+
+  @override
+  String get onboardingConnectMistralTagline =>
+      'Cel mai bun pentru voce (Voxtral)';
+
+  @override
+  String get onboardingConnectQwenName => 'Qwen';
+
+  @override
+  String get onboardingConnectQwenTagline => 'Alibaba · voce, chat și imagini';
+
+  @override
+  String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOllamaName => 'Ollama';
 
   @override
   String get activeLabel => 'Activ';
@@ -7855,6 +7895,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Unitatea abrevierii';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'Pâlnie FTUE — instalare, activare, retenție (depanare)';
+
+  @override
+  String get settingsOnboardingMetricsTitle => 'Valori de onboarding';
 
   @override
   String get settingsResetGeminiConfirm => 'Resetează';

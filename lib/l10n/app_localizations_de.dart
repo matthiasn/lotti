@@ -9,11 +9,50 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
-  String get settingsOnboardingMetricsTitle => 'Onboarding-Metriken';
+  String get onboardingWelcomeTitle => 'Sprich. Lotti macht einen Plan daraus.';
 
   @override
-  String get settingsOnboardingMetricsSubtitle =>
-      'FTUE-Funnel – Installation, Aktivierung, Bindung (Debug)';
+  String get onboardingWelcomeMessage =>
+      'Verbinde dein KI-Gehirn, sprich einen Gedanken aus und sieh zu, wie er zur strukturierten Aufgabe wird.';
+
+  @override
+  String get onboardingWelcomeConnectButton => 'Gehirn verbinden';
+
+  @override
+  String get onboardingWelcomeSkipButton => 'Erst umsehen';
+
+  @override
+  String get onboardingConnectTitle =>
+      'Wähle das Gehirn, das deine Worte in Aufgaben verwandelt';
+
+  @override
+  String get onboardingConnectMoreOptions => 'Mehr Optionen';
+
+  @override
+  String get onboardingConnectGeminiName => 'Gemini';
+
+  @override
+  String get onboardingConnectGeminiTagline =>
+      'Google · schnell, großzügiges Gratiskontingent';
+
+  @override
+  String get onboardingConnectMistralName => 'Mistral';
+
+  @override
+  String get onboardingConnectMistralTagline =>
+      'Am besten für Sprache (Voxtral)';
+
+  @override
+  String get onboardingConnectQwenName => 'Qwen';
+
+  @override
+  String get onboardingConnectQwenTagline => 'Alibaba · Sprache, Chat & Bilder';
+
+  @override
+  String get onboardingConnectOpenAiName => 'OpenAI';
+
+  @override
+  String get onboardingConnectOllamaName => 'Ollama';
 
   @override
   String get activeLabel => 'Aktiv';
@@ -7753,6 +7792,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get settingsMeasurableUnitLabel => 'Einheitenabkürzung (optional)';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'FTUE-Funnel – Installation, Aktivierung, Bindung (Debug)';
+
+  @override
+  String get settingsOnboardingMetricsTitle => 'Onboarding-Metriken';
 
   @override
   String get settingsResetGeminiConfirm => 'Zurücksetzen';

@@ -107,17 +107,89 @@ abstract class AppLocalizations {
     Locale('ro'),
   ];
 
-  /// No description provided for @settingsOnboardingMetricsTitle.
+  /// No description provided for @onboardingWelcomeTitle.
   ///
   /// In en, this message translates to:
-  /// **'Onboarding Metrics'**
-  String get settingsOnboardingMetricsTitle;
+  /// **'Talk. Lotti turns it into a plan.'**
+  String get onboardingWelcomeTitle;
 
-  /// No description provided for @settingsOnboardingMetricsSubtitle.
+  /// No description provided for @onboardingWelcomeMessage.
   ///
   /// In en, this message translates to:
-  /// **'FTUE funnel — install, activation, retention (debug)'**
-  String get settingsOnboardingMetricsSubtitle;
+  /// **'Connect your AI brain, then speak a thought and watch it become a structured task.'**
+  String get onboardingWelcomeMessage;
+
+  /// No description provided for @onboardingWelcomeConnectButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect your brain'**
+  String get onboardingWelcomeConnectButton;
+
+  /// No description provided for @onboardingWelcomeSkipButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Look around first'**
+  String get onboardingWelcomeSkipButton;
+
+  /// No description provided for @onboardingConnectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick the brain that turns your words into tasks'**
+  String get onboardingConnectTitle;
+
+  /// No description provided for @onboardingConnectMoreOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'More options'**
+  String get onboardingConnectMoreOptions;
+
+  /// No description provided for @onboardingConnectGeminiName.
+  ///
+  /// In en, this message translates to:
+  /// **'Gemini'**
+  String get onboardingConnectGeminiName;
+
+  /// No description provided for @onboardingConnectGeminiTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Google · fast, generous free tier'**
+  String get onboardingConnectGeminiTagline;
+
+  /// No description provided for @onboardingConnectMistralName.
+  ///
+  /// In en, this message translates to:
+  /// **'Mistral'**
+  String get onboardingConnectMistralName;
+
+  /// No description provided for @onboardingConnectMistralTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Best for voice (Voxtral)'**
+  String get onboardingConnectMistralTagline;
+
+  /// No description provided for @onboardingConnectQwenName.
+  ///
+  /// In en, this message translates to:
+  /// **'Qwen'**
+  String get onboardingConnectQwenName;
+
+  /// No description provided for @onboardingConnectQwenTagline.
+  ///
+  /// In en, this message translates to:
+  /// **'Alibaba · voice, chat & images'**
+  String get onboardingConnectQwenTagline;
+
+  /// No description provided for @onboardingConnectOpenAiName.
+  ///
+  /// In en, this message translates to:
+  /// **'OpenAI'**
+  String get onboardingConnectOpenAiName;
+
+  /// No description provided for @onboardingConnectOllamaName.
+  ///
+  /// In en, this message translates to:
+  /// **'Ollama'**
+  String get onboardingConnectOllamaName;
 
   /// No description provided for @activeLabel.
   ///
@@ -13224,6 +13296,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Unit abbreviation (optional)'**
   String get settingsMeasurableUnitLabel;
+
+  /// No description provided for @settingsOnboardingMetricsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FTUE funnel — install, activation, retention (debug)'**
+  String get settingsOnboardingMetricsSubtitle;
+
+  /// No description provided for @settingsOnboardingMetricsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding Metrics'**
+  String get settingsOnboardingMetricsTitle;
 
   /// No description provided for @settingsResetGeminiConfirm.
   ///
