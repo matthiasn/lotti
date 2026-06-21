@@ -260,6 +260,101 @@ Measured delta: 1,785 fewer prompt characters (11.9%), 666 fewer input tokens
 prompt shape. The latency measurement is a microbenchmark, not an end-to-end
 agent SLA; the token reduction is the stable contract change.
 
+## App-Shaped Task-Agent Eval Follow-Up
+
+The original Qwen local eval intentionally tested a narrow surface: direct
+inference repository streaming, the task-agent tool definitions, expected tool
+selection, and expected argument values. It did not prove that a local model can
+survive a real Task Agent wake, because it bypassed the conversation loop,
+continuation prompts, production system prompt scaffold, and final report
+contract.
+
+The follow-up eval adds:
+
+- `lib/features/ai/eval/local_task_agent_inference_eval.dart`
+- `test/features/ai/eval/local_task_agent_inference_eval_test.dart`
+- `test/features/ai/eval/local_task_agent_inference_eval_live_test.dart`
+- `tool/local_task_agent_inference_eval.sh`
+
+This stronger eval sends a production-style first-wake task context through
+`ConversationRepository`, `TaskAgentPromptBuilder`, the full enabled
+`AgentToolRegistry.taskAgentTools` surface, `CloudInferenceWrapper`, and the
+same continuation mechanism used by agent workflows. The default live matrix
+compares `Qwen3.6-35B-A3B-4bit` against
+`gemma-4-26B-A4B-it-QAT-MLX-4bit`. A passing model must call the expected task
+metadata tools with the requested values and finish with a valid `update_report`.
+
+Run it with:
+
+```bash
+LOCAL_TASK_AGENT_EVAL_API_KEY=$(jq -r '.auth.api_key' /Users/mn/.omlx/settings.json) \
+tool/local_task_agent_inference_eval.sh
+```
+
+To run only Gemma:
+
+```bash
+LOCAL_TASK_AGENT_EVAL_PROFILES='gemma4=gemma-4-26B-A4B-it-QAT-MLX-4bit' \
+LOCAL_TASK_AGENT_EVAL_API_KEY=$(jq -r '.auth.api_key' /Users/mn/.omlx/settings.json) \
+tool/local_task_agent_inference_eval.sh
+```
+
+This still is not full end-to-end app execution: the eval strategy accepts tool
+calls instead of mutating task rows through write dispatchers, and it does not
+exercise UI, database side effects, images, or sync.
+
+Manual local oMLX run on 2026-06-21, after a prior Gemma-only probe:
+
+| Profile | Pass | Latency | Tool calls |
+| --- | ---: | ---: | --- |
+| `qwen36-a35b-a3b-mlx4` | yes | 33,056 ms | `set_task_title`, `update_task_priority`, `update_task_due_date`, `update_task_estimate`, `update_report` |
+| `gemma4-26b-a4b-qat-mlx4` | yes | 5,236 ms | `set_task_title`, `update_task_priority`, `update_task_due_date`, `update_task_estimate`, `record_observations`, `update_report` |
+
+The latency numbers are a single local run, useful for sanity-checking the
+model/server path but not sufficient as a benchmark distribution or fair
+cold-start comparison.
+
+## Real Workflow Eval Follow-Up
+
+The stronger conversation eval still was not the in-app wake path: it used a
+test strategy that accepted tool calls instead of running
+`TaskAgentWorkflow.execute`. The next eval adds:
+
+- `test/features/ai/eval/local_task_agent_workflow_eval_live_test.dart`
+- `tool/local_task_agent_workflow_eval.sh`
+
+This app-path eval calls `TaskAgentWorkflow.execute` with the seeded Laura
+task-agent directives, real workflow prompt assembly, `TaskAgentStrategy`,
+`ChangeSetBuilder`, `WakeOutputWriter`, and live oMLX inference via
+`CloudInferenceWrapper`. The repository layer is still deterministic test
+fixture data rather than the user's real database, but the wake has to persist
+the same app-visible artifacts as production: a `ChangeSetEntity` with the
+expected metadata suggestions and an `AgentReportEntity` from `update_report`.
+
+Run it with:
+
+```bash
+LOCAL_TASK_AGENT_WORKFLOW_EVAL_API_KEY=$(jq -r '.auth.api_key' /Users/mn/.omlx/settings.json) \
+tool/local_task_agent_workflow_eval.sh
+```
+
+This is the correct boundary for reproducing "the model goes on and on but the
+app shows no suggestions or summary" against controlled task data. If it passes
+while a real in-app task fails, the remaining gap is the user's actual persisted
+task/log/proposal context, not the core wake mechanics.
+
+Manual Gemma workflow runs on 2026-06-21:
+
+| Model | Wake success | Latency | System prompt chars | User prompt chars | Change-set tools | Reports |
+| --- | ---: | ---: | ---: | ---: | --- | ---: |
+| `gemma-4-26B-A4B-it-QAT-MLX-4bit` | yes | 16,965 ms | 17,940 | 1,915 | `set_task_title`, `update_task_priority`, `update_task_due_date`, `update_task_estimate` | 1 |
+| `gemma-4-26B-A4B-it-QAT-MLX-4bit` | yes | 7,623 ms | 17,940 | 1,915 | `set_task_title`, `update_task_priority`, `update_task_due_date`, `update_task_estimate` | 1 |
+
+This proves the seeded Laura task-agent prompt plus real workflow mechanics can
+produce app-visible suggestions and a report for controlled task data. It does
+not yet replay the user's real task, proposal ledger, prior reports,
+observations, or any UI state.
+
 ## Analyzer Issue And Fix
 
 The analyzer initially failed with analysis server exit code `-9`, then macOS
