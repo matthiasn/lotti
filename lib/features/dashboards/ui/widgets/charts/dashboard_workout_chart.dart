@@ -17,16 +17,19 @@ import 'package:lotti/widgets/charts/utils.dart';
 class WorkoutChartInfoWidget extends StatelessWidget {
   const WorkoutChartInfoWidget(
     this.chartConfig, {
+    this.embedded = false,
     super.key,
   });
 
   final DashboardWorkoutItem chartConfig;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
     return DashboardChartHeader(
       title: chartConfig.displayName,
       subtitle: workoutUnitLabel(chartConfig.valueType),
+      embedded: embedded,
     );
   }
 }
@@ -56,12 +59,14 @@ class DashboardWorkoutChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    this.embedded = false,
     super.key,
   });
 
   final DashboardWorkoutItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -90,11 +95,12 @@ class DashboardWorkoutChart extends ConsumerWidget {
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
           ),
-          chartHeader: WorkoutChartInfoWidget(chartConfig),
+          chartHeader: WorkoutChartInfoWidget(chartConfig, embedded: embedded),
           isLoading: isInitialLoading,
           isEmpty: observations.isEmpty,
           emptyMessage: context.messages.dashboardChartNoData,
-          height: 120,
+          embedded: embedded,
+          height: embedded ? 96 : 120,
         );
       },
     );

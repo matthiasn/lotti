@@ -38,6 +38,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one-line notice under their title instead of holding open a full-height empty
   card. On a dashboard with several charts, the ones that actually have data get
   the room, and you no longer scroll past tall blank panels to reach them.
+- **Editing a note now has a calmer, clearer toolbar.** Saving moved out of the
+  card footer and into the editor toolbar: a pinned Save button that holds one
+  spot the whole time you edit — quiet and greyed when there's nothing to save,
+  and waking to a teal accent the moment you change something (the disk icon is
+  always there, so the change reads as more than just colour). When you have
+  unsaved edits, a discard control appears next to Save to throw them away and
+  drop back to the saved text. The toolbar also adapts to width: on a roomy
+  desktop window every formatting control is one click away, while on narrow
+  screens it shows the essentials plus a "…" button that opens the rest.
 
 ## [0.9.1030]
 ### Changed
@@ -52,6 +61,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   quieter card. Hovering a shortened task name shows it in full, and at the very
   bottom the sync readout is now labelled "Outbox / Inbox" (instead of
   "tx / rx") and stays quiet until there's something to sync.
+- The **entry cards on a task's timeline** got a whitespace-and-typography
+  pass so the different entry types (text, audio, image, measurement, health,
+  workout, habit, rating) read as one calm, legible family. The timestamp is
+  now a quiet but readable caption (it used to be a faint, monospace-looking
+  stamp), and every "label: value" line shares one treatment — a quiet label
+  with the number itself as the bold, high-contrast value — left-aligned to a
+  single content gutter. Measurements no longer print their note twice, "55 %"
+  reads "55%", health/measurement values stop floating centered, the rating
+  card now shows a number next to each bar (e.g. 80%), and faint header/footer
+  controls (the timestamp, duration, overflow ⋯, expand chevron, audio
+  timecodes, the AI button) were lifted to a legible contrast. Cards also hug
+  their content with one symmetric padding instead of reserving an empty band
+  at the bottom.
 - The task details **header** was reworked for a calmer, more responsive
   layout. The status control no longer floats in empty space — it leads a
   two-lane metadata block (status · priority · due · time estimate on the first

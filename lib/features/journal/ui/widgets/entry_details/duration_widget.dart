@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -137,9 +136,12 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
       isRecording = true;
     }
 
+    // Non-recording duration uses mediumEmphasis text (≈10:1), not the
+    // decorative hairline tone colorScheme.outline resolves to (far too faint
+    // to read as a value).
     final labelColor = isRecording
         ? context.colorScheme.error
-        : context.colorScheme.outline;
+        : context.designTokens.colors.text.mediumEmphasis;
 
     final saveFn = ref.read(provider.notifier).save;
 
@@ -152,15 +154,11 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
         visible: entryDuration(displayed).inMilliseconds > 0 || isRecent,
         child: Row(
           children: [
-            Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: Icon(
-                MdiIcons.timerOutline,
-                color: labelColor,
-                size: 15,
-              ),
+            FormattedTime(
+              labelColor: labelColor,
+              isRecording: isRecording,
+              displayed: displayed,
             ),
-            FormattedTime(labelColor: labelColor, displayed: displayed),
             Visibility(
               visible: isRecent && showRecordIcon && !isRecording,
               child: IconButton(
@@ -209,20 +207,41 @@ class FormattedTime extends StatelessWidget {
   const FormattedTime({
     required this.labelColor,
     required this.displayed,
+    this.isRecording = false,
     super.key,
   });
 
   final Color? labelColor;
+  final bool isRecording;
   final JournalEntity displayed;
 
   @override
   Widget build(BuildContext context) {
-    final style = context.designTokens.typography.styles.body.bodySmall
-        .copyWith(
-          color: labelColor,
-          fontFeatures: numericBadgeFontFeatures,
-        );
+    final tokens = context.designTokens;
+    // Same "label: value" grammar as the other cards — a quiet "Duration:"
+    // label and the time as the bold value. Shared numeric badge features
+    // (tabular + open four/six/nine + slashed zero) so the running counter keeps
+    // a constant digit width and stays legible, instead of a bare unlabelled
+    // time + glyph.
+    final labelStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: labelColor,
+    );
+    final valueStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: isRecording ? labelColor : tokens.colors.text.highEmphasis,
+      fontWeight: FontWeight.w600,
+      fontFeatures: numericBadgeFontFeatures,
+    );
     final text = formatDuration(entryDuration(displayed));
-    return Text(text, style: style);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '${context.messages.journalDurationLabel}: ',
+            style: labelStyle,
+          ),
+          TextSpan(text: text, style: valueStyle),
+        ],
+      ),
+    );
   }
 }

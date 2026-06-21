@@ -22,10 +22,27 @@ class SaveButton extends ConsumerWidget {
     final provider = saveButtonControllerProvider(id: entryId);
     final unsaved = ref.watch(provider).value ?? false;
 
-    return AnimatedOpacity(
-      curve: Curves.easeInOutQuint,
-      opacity: unsaved ? 1 : 0,
-      duration: const Duration(milliseconds: 500),
+    // No unsaved changes → render nothing and reserve NO space. (Keeping the
+    // button mounted at zero opacity/size left a wide empty band around the
+    // editor.)
+    if (!unsaved) return const SizedBox.shrink();
+
+    // Ease the button in (fade + a small upward slide) so it doesn't pop in at
+    // full size. TweenAnimationBuilder runs its tween once on mount, so the
+    // reveal animates even though the host only builds the button when it is
+    // actually needed — no persistent mount, no reserved layout space.
+    return TweenAnimationBuilder<double>(
+      key: ValueKey('save-button-$entryId'),
+      tween: Tween<double>(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeOutCubic,
+      builder: (context, t, child) => Opacity(
+        opacity: t.clamp(0.0, 1.0),
+        child: Transform.translate(
+          offset: Offset(0, 6 * (1 - t)),
+          child: child,
+        ),
+      ),
       child: DesignSystemButton(
         label: context.messages.saveLabel,
         onPressed: () {

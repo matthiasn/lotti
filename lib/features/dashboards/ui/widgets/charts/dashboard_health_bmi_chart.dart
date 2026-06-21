@@ -22,14 +22,21 @@ class BmiChartInfoWidget extends ConsumerWidget {
   const BmiChartInfoWidget({
     required this.minInRange,
     required this.maxInRange,
+    this.embedded = false,
     super.key,
   });
 
   final num minInRange;
   final num maxInRange;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Embedded in an entry card the host's value line already states the weight
+    // (e.g. "Weight: 94.5 kg"), so the chart's own "Weight" title + unit would
+    // just duplicate it — drop the header and let the trend stand alone.
+    if (embedded) return const SizedBox.shrink();
+
     final tokens = context.designTokens;
     final minWeight = '${NumberFormat('#,###.#').format(minInRange)} kg';
     final maxWeight = '${NumberFormat('#,###.#').format(maxInRange)} kg';
@@ -40,6 +47,7 @@ class BmiChartInfoWidget extends ConsumerWidget {
       // misleading "Weight vs. Body Mass Index".
       title: healthTypes['HealthDataType.WEIGHT']?.displayName ?? 'Weight',
       subtitle: 'kg',
+      embedded: embedded,
       trailing: Text(
         '$minWeight – $maxWeight',
         style: tokens.typography.styles.others.caption.copyWith(
@@ -61,12 +69,14 @@ class DashboardHealthBmiChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    this.embedded = false,
     super.key,
   });
 
   final DashboardHealthItem chartConfig;
   final DateTime rangeStart;
   final DateTime rangeEnd;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -95,11 +105,13 @@ class DashboardHealthBmiChart extends ConsumerWidget {
           chartHeader: BmiChartInfoWidget(
             minInRange: minInRange,
             maxInRange: maxInRange,
+            embedded: embedded,
           ),
           isLoading: isInitialLoading,
           isEmpty: weightData.isEmpty,
           emptyMessage: context.messages.dashboardChartNoData,
-          height: 320,
+          embedded: embedded,
+          height: embedded ? 132 : 320,
         );
       },
     );

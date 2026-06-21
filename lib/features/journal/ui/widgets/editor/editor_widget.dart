@@ -135,13 +135,18 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
           : Colors.transparent,
       elevation: 0,
       clipBehavior: shouldShowEditorToolBar ? Clip.hardEdge : Clip.none,
+      // While editing, the panel sits on the same dark surface as the entry card
+      // around it, so a brightness step alone is imperceptible. A clear outline
+      // bounds the whole editing panel (toolbar + text) so it reads as a single,
+      // distinct edit zone within the card — the toolbar and text stay one
+      // surface inside that boundary. Transparent (no box) when read-only.
       shape: RoundedRectangleBorder(
         borderRadius: const BorderRadius.all(
           Radius.circular(inputBorderRadius),
         ),
         side: BorderSide(
           color: shouldShowEditorToolBar
-              ? context.colorScheme.outline.withAlpha(100)
+              ? context.colorScheme.outline
               : Colors.transparent,
         ),
       ),
@@ -180,7 +185,11 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
                     formatHeader2ToHeaderStyle,
                     formatHeader3ToHeaderStyle,
                   ],
-                  minHeight: widget.minHeight,
+                  // When read-only/unfocused the editor hugs its content — no
+                  // reserved blank band beneath a short note (which left the
+                  // following value line floating over a void). The min tap
+                  // height only applies while it is being edited.
+                  minHeight: shouldShowEditorToolBar ? widget.minHeight : 0,
                   placeholder: context.messages.editorPlaceholder,
                   padding: contentPadding,
                   keyboardAppearance: Theme.of(context).brightness,

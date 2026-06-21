@@ -387,14 +387,11 @@ void main() {
 
     Future<double> pumpAndMeasure(Duration d) async {
       await tester.pumpWidget(
-        MaterialApp(
-          theme: resolveTestTheme(),
-          home: Scaffold(
-            body: Center(
-              child: FormattedTime(
-                labelColor: Colors.blueGrey,
-                displayed: makeEntry(d),
-              ),
+        makeTestableWidgetWithScaffold(
+          Center(
+            child: FormattedTime(
+              labelColor: Colors.blueGrey,
+              displayed: makeEntry(d),
             ),
           ),
         ),

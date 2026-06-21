@@ -1,14 +1,14 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
@@ -81,7 +81,7 @@ void main() {
       await tester.pumpAndSettle();
     });
 
-    testWidgets('date text uses tabular figures style', (
+    testWidgets('date text uses the shared numeric badge font features', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
@@ -97,12 +97,16 @@ void main() {
       expect(finder, findsOneWidget);
 
       final text = tester.widget<Text>(finder);
-      final hasTabular =
-          text.style?.fontFeatures?.any(
-            (ui.FontFeature ff) => ff.feature == 'tnum',
-          ) ??
-          false;
-      expect(hasTabular, isTrue);
+      // The date is a small numeric readout, so it carries the shared
+      // numericBadgeFontFeatures (tabular + open four/six/nine + slashed zero)
+      // for steady, legible digits — matching the audio timecodes and duration.
+      expect(text.style?.fontFeatures, numericBadgeFontFeatures);
+
+      // Quiet, recessive metadata tone (lowEmphasis ≈ 6:1, still above the AA
+      // floor) — the timestamp is the least-important line and must not compete
+      // with the value or body.
+      final BuildContext ctx = tester.element(finder);
+      expect(text.style?.color, ctx.designTokens.colors.text.lowEmphasis);
     });
   });
 }

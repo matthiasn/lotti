@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_health_chart.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/health_summary.dart';
+import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -77,10 +78,11 @@ void main() {
       await tester.pump();
 
       expect(find.byType(DashboardHealthChart), findsNothing);
-      // The info text still renders.
-      expect(find.byType(InfoText), findsOneWidget);
+      // The value line still renders (label + bold value via the shared
+      // EntryTextWidget, which renders the line as a RichText).
+      expect(find.byType(EntryTextWidget), findsOneWidget);
       expect(
-        find.text(entryTextForQuant(testWeightEntry)),
+        find.textContaining(entryTextForQuant(testWeightEntry)),
         findsOneWidget,
       );
     });

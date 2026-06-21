@@ -10,6 +10,7 @@ import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
@@ -119,11 +120,15 @@ class EntryDetailsWidget extends ConsumerWidget {
     final card = TaskDetailSectionCard(
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
-      // Even vertical padding (was a cramped top 4 / bottom 2) so the entry
-      // content sits balanced inside the card.
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step4,
-        vertical: tokens.spacing.step3,
+      // One shared shell inset: a consistent left/right gutter so every card
+      // type aligns to a single content edge. The top is tighter (step3) because
+      // the header's tap targets already supply visual air; the bottom takes the
+      // full gutter (step4) so the last content line does not crowd the edge.
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step4,
+        tokens.spacing.step3,
+        tokens.spacing.step4,
+        tokens.spacing.step4,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,7 +214,7 @@ class EntryDetailsWidget extends ConsumerWidget {
 /// and the entry is image/audio/text, the body becomes collapsible and the
 /// header drives an animated expand/collapse plus a best-effort auto-scroll so
 /// a newly expanded card is brought into view.
-class EntryDetailsContent extends ConsumerWidget {
+class EntryDetailsContent extends ConsumerStatefulWidget {
   const EntryDetailsContent(
     this.itemId, {
     this.linkedFrom,
@@ -223,10 +228,33 @@ class EntryDetailsContent extends ConsumerWidget {
   final EntryLink? link;
 
   @override
-  Widget build(
-    BuildContext context,
-    WidgetRef ref,
-  ) {
+  ConsumerState<EntryDetailsContent> createState() =>
+      _EntryDetailsContentState();
+}
+
+class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
+  // Optimistic collapse state: flipped instantly on tap so a collapsed entry
+  // expands the moment it is tapped, while the persisted `link.collapsed`
+  // catches up asynchronously. Persisting runs inside a vector-clock scope that
+  // can lag behind a large sync backlog, which made the tap feel unresponsive;
+  // the override is cleared once the persisted value matches it again.
+  bool? _collapsedOverride;
+
+  @override
+  void didUpdateWidget(EntryDetailsContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_collapsedOverride != null &&
+        (widget.link?.collapsed ?? false) == _collapsedOverride) {
+      _collapsedOverride = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final itemId = widget.itemId;
+    final linkedFrom = widget.linkedFrom;
+    final link = widget.link;
+
     final provider = entryControllerProvider(id: itemId);
     final entryState = ref.watch(provider).value;
 
@@ -238,7 +266,8 @@ class EntryDetailsContent extends ConsumerWidget {
     final isCollapsible =
         linkedFrom != null &&
         (item is JournalImage || item is JournalAudio || item is JournalEntry);
-    final isCollapsed = isCollapsible && (link?.collapsed ?? false);
+    final isCollapsed =
+        isCollapsible && (_collapsedOverride ?? (link?.collapsed ?? false));
 
     final shouldHideEditor = switch (item) {
       JournalEvent() ||
@@ -258,13 +287,9 @@ class EntryDetailsContent extends ConsumerWidget {
       QuantitativeEntry() => HealthSummary(item),
       MeasurementEntry() => MeasurementSummary(item),
       JournalEvent() => EventForm(item),
-      HabitCompletionEntry() => HabitSummary(
-        item,
-        paddingLeft: 10,
-        paddingBottom: 5,
-        showIcon: true,
-        showText: false,
-      ),
+      // No leading avatar glyph — the habit line uses the same plain
+      // "label: value" grammar as the other value cards.
+      HabitCompletionEntry() => HabitSummary(item, showText: false),
       AiResponseEntry() => AiResponseSummary(
         item,
         linkedFromId: linkedFrom?.id,
@@ -282,7 +307,7 @@ class EntryDetailsContent extends ConsumerWidget {
         checklistId: item.data.linkedChecklists.isEmpty
             ? ''
             : item.data.linkedChecklists.first,
-        taskId: linkedFrom is Task ? linkedFrom!.id : '',
+        taskId: linkedFrom is Task ? linkedFrom.id : '',
         index: 0,
       ),
       RatingEntry() => RatingSummary(item),
@@ -302,14 +327,15 @@ class EntryDetailsContent extends ConsumerWidget {
       isCollapsed: isCollapsed,
       onToggleCollapse: isCollapsible && currentLink != null
           ? () async {
-              final isExpanding = currentLink.collapsed ?? false;
+              final isExpanding = isCollapsed;
+              // Flip the displayed state immediately so the tap is responsive
+              // even if the persist (below) lags behind a sync backlog.
+              setState(() => _collapsedOverride = !isCollapsed);
               try {
                 await ref
                     .read(journalRepositoryProvider)
                     .updateLink(
-                      currentLink.copyWith(
-                        collapsed: !(currentLink.collapsed ?? false),
-                      ),
+                      currentLink.copyWith(collapsed: !isCollapsed),
                     );
               } catch (e, s) {
                 getIt<DomainLogger>().error(
@@ -349,53 +375,77 @@ class EntryDetailsContent extends ConsumerWidget {
           : null,
     );
 
-    if (!isCollapsible) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          header,
-          if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
-          if (item is JournalImage) EntryImageWidget(item),
-          if (!shouldHideEditor) EditorWidget(entryId: itemId),
-          ?detailSection,
-          if (item is JournalAudio)
-            NestedAiResponsesWidget(
-              parentEntryId: itemId,
-              linkedFromEntity: item,
-            ),
-          EntryDetailFooter(
-            entryId: itemId,
-            linkedFrom: linkedFrom,
-            inLinkedEntries: linkedFrom != null,
-          ),
-        ],
-      );
-    }
+    // Only count labels that will actually render, so the rhythm never inserts
+    // a gap before an empty (collapsed) labels row.
+    final hasLabels = showLabels && (item.meta.labelIds?.isNotEmpty ?? false);
 
-    // Collapsible layout for image/audio entries in linked context
-    // Date is now shown in the header (Step 2), no longer duplicated here
-    final expandedContent = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
+    // Only mount the nested AI responses section when there are responses to
+    // show. The widget hides itself when empty, but it is still a body section,
+    // so the rhythm step in front of it left a wasted gap above the footer
+    // (most visible as the dead band over the Save button on audio entries).
+    final hasNestedAiResponses =
+        item is JournalAudio &&
+        (ref
+                .watch(linkedAiResponsesControllerProvider(itemId))
+                .value
+                ?.isNotEmpty ??
+            false);
+
+    final footer = EntryDetailFooter(
+      entryId: itemId,
+      linkedFrom: linkedFrom,
+    );
+
+    if (!isCollapsible) {
+      final body = <Widget>[
+        if (hasLabels) EntryLabelsDisplay(entryId: itemId),
         if (item is JournalImage) EntryImageWidget(item),
-        if (item is JournalAudio && detailSection != null) detailSection,
-        if (showLabels) EntryLabelsDisplay(entryId: itemId, bottomPadding: 8),
-        if (!shouldHideEditor) EditorWidget(entryId: itemId),
-        if (item is JournalAudio)
+        // Payload-first read order: the structured value / summary line (e.g.
+        // "Habit completed: Flossing", "Coverage: 55%", the health value, the
+        // audio player) leads directly under the timestamp, and the free-text
+        // note (the editor) sits beneath it — the eye should land on the card's
+        // defining value before any prose. For audio this also puts the player
+        // above its transcript, matching the collapsible layout.
+        ?detailSection,
+        if (!shouldHideEditor) _bodyEditor(itemId),
+        if (hasNestedAiResponses)
           NestedAiResponsesWidget(
             parentEntryId: itemId,
             linkedFromEntity: item,
           ),
-        EntryDetailFooter(
-          entryId: itemId,
-          linkedFrom: linkedFrom,
-          inLinkedEntries: linkedFrom != null,
-        ),
-      ],
+      ];
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          header,
+          ..._withRhythm(context, body),
+          // Footer self-collapses to zero when there is nothing to show, so it
+          // carries its own (small) leading gap rather than a rhythm step.
+          footer,
+        ],
+      );
+    }
+
+    // Collapsible layout for image/audio entries in linked context.
+    // Date is shown in the header, not duplicated here.
+    final collapsibleBody = <Widget>[
+      if (item is JournalImage) EntryImageWidget(item),
+      if (item is JournalAudio && detailSection != null) detailSection,
+      if (hasLabels) EntryLabelsDisplay(entryId: itemId),
+      if (!shouldHideEditor) _bodyEditor(itemId),
+      if (hasNestedAiResponses)
+        NestedAiResponsesWidget(parentEntryId: itemId, linkedFromEntity: item),
+    ];
+    final expandedContent = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [..._withRhythm(context, collapsibleBody), footer],
     );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
         header,
         _CollapsibleBody(
@@ -404,6 +454,36 @@ class EntryDetailsContent extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  /// The entry's body/note editor, nudged left so its text hangs from the same
+  /// content gutter as the timestamp and value lines. flutter_quill insets a
+  /// read-only line's text ~3px from the editor's own left edge; without this
+  /// the body sat on a second, inboard left rail (the most-flagged break in the
+  /// card family's alignment).
+  // Zero the Material Card's default margin (EdgeInsets.all(4)): the stray
+  // vertical band sat above the read-only markdown, and the horizontal inset
+  // shifted the body off the shared content gutter. With no margin the read-only
+  // text and the (now outlined) editing panel both sit flush on the gutter,
+  // aligned with the timestamp/labels and symmetric within the card.
+  Widget _bodyEditor(String itemId) =>
+      EditorWidget(entryId: itemId, margin: EdgeInsets.zero);
+
+  /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) *between*
+  /// stacked body sections — but not before the first one. The header row is
+  /// taller than its timestamp text (its 48px icon-button tap targets overhang
+  /// below the baseline), so an explicit leading gap stacked on top of that
+  /// overhang made the header→body gap visibly larger than every body→body and
+  /// body→value gap, leaving the card front-loaded. Letting the overhang serve
+  /// as the header→first-content gap evens the cadence top to bottom.
+  List<Widget> _withRhythm(BuildContext context, List<Widget> sections) {
+    final tokens = context.designTokens;
+    final out = <Widget>[];
+    for (var i = 0; i < sections.length; i++) {
+      if (i > 0) out.add(SizedBox(height: tokens.spacing.cardItemSpacing));
+      out.add(sections[i]);
+    }
+    return out;
   }
 }
 
@@ -438,16 +518,22 @@ class _CollapsibleBodyState extends State<_CollapsibleBody>
       vsync: this,
       value: widget.isCollapsed ? 0.0 : 1.0,
     );
+    // Symmetric smooth easing in BOTH directions. The old easeOutCubic reverse
+    // curve front-loaded the collapse (most of the height vanished in the first
+    // frames), so it lurched and felt abrupt next to the eased expand;
+    // easeInOutCubic both ways gives the same calm accel/decel opening and
+    // closing.
     _sizeAnimation = CurvedAnimation(
       parent: _controller,
       curve: Curves.easeInOutCubic,
-      reverseCurve: Curves.easeOutCubic,
     );
+    // Tie content opacity to the box being open in BOTH directions (no separate
+    // reverse curve): it fades in only once the box has grown on expand, and
+    // fades out before the box shrinks on collapse, so the content never
+    // visibly squishes as the height changes.
     _opacityAnimation = CurvedAnimation(
       parent: _controller,
-      // Delay fade-in so content becomes visible after size has grown enough
-      curve: const Interval(0.3, 1, curve: Curves.easeInOutCubic),
-      reverseCurve: Curves.easeOutCubic,
+      curve: const Interval(0.3, 1, curve: Curves.easeInOut),
     );
   }
 

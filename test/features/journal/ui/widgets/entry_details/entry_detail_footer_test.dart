@@ -11,7 +11,6 @@ import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/duration_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_detail_footer.dart';
-import 'package:lotti/features/journal/ui/widgets/entry_details/save_button.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -198,7 +197,8 @@ void main() {
       expect(recordIconFinder, findsOneWidget);
       expect(stopIconFinder, findsNothing);
 
-      final durationZeroFinder = find.text('00:00:00');
+      // Rendered as the labeled value line "Duration: 00:00:00".
+      final durationZeroFinder = find.textContaining('00:00:00');
       expect(durationZeroFinder, findsOneWidget);
 
       await tester.tap(recordIconFinder);
@@ -245,7 +245,8 @@ void main() {
       expect(recordIconFinder, findsNothing);
       expect(stopIconFinder, findsOneWidget);
 
-      final durationZeroFinder = find.text('00:00:05');
+      // Rendered as the labeled value line "Duration: 00:00:05".
+      final durationZeroFinder = find.textContaining('00:00:05');
       expect(durationZeroFinder, findsOneWidget);
 
       await tester.tap(stopIconFinder);
@@ -254,33 +255,7 @@ void main() {
       verify(mockStopTimer).called(1);
     });
 
-    testWidgets('shows DurationWidget but no SaveButton when not in linked '
-        'entries', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailFooter(
-            entryId: testTextEntryNoGeo.meta.id,
-            linkedFrom: null,
-          ),
-          overrides: [
-            entryControllerProvider(
-              id: testTextEntryNoGeo.meta.id,
-            ).overrideWith(
-              () => FakeEntryController(testTextEntryNoGeo),
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 10));
-
-      // A JournalEntry always renders the DurationWidget; the save button is
-      // only present inside linked-entries lists.
-      expect(find.byType(DurationWidget), findsOneWidget);
-      expect(find.byType(SaveButton), findsNothing);
-    });
-
-    testWidgets('shows SaveButton when rendered inside linked entries', (
+    testWidgets('shows the DurationWidget and carries no save action', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -288,7 +263,6 @@ void main() {
           EntryDetailFooter(
             entryId: testTextEntryNoGeo.meta.id,
             linkedFrom: null,
-            inLinkedEntries: true,
           ),
           overrides: [
             entryControllerProvider(
@@ -302,7 +276,10 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 10));
 
-      expect(find.byType(SaveButton), findsOneWidget);
+      // A JournalEntry renders the DurationWidget. Saving now lives in the
+      // editor toolbar, so the footer never renders a Save action.
+      expect(find.byType(DurationWidget), findsOneWidget);
+      expect(find.text('Save'), findsNothing);
     });
 
     testWidgets('map child is built and visible when showMap is true', (
@@ -328,20 +305,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 10));
 
-      // With showMap true the Visibility child is built, so MapWidget is in the
-      // tree, and its enclosing Visibility reports visible == true.
+      // With showMap true the footer renders the map (it is conditionally
+      // built — `if (showMap)` — rather than wrapped in a Visibility).
       final mapFinder = find.byType(MapWidget);
       expect(mapFinder, findsOneWidget);
       // No geolocation -> no FlutterMap (no network tile loading).
       expect(find.byType(FlutterMap), findsNothing);
-
-      // The closest Visibility ancestor of MapWidget is the footer's own
-      // map wrapper; first() avoids matching framework Visibility widgets
-      // higher up the tree.
-      final visibility = tester.widget<Visibility>(
-        find.ancestor(of: mapFinder, matching: find.byType(Visibility)).first,
-      );
-      expect(visibility.visible, isTrue);
     });
 
     testWidgets('renders nothing when the entry is null', (tester) async {
@@ -366,7 +335,6 @@ void main() {
       // The footer short-circuits to SizedBox.shrink, so none of its content
       // widgets are present.
       expect(find.byType(DurationWidget), findsNothing);
-      expect(find.byType(SaveButton), findsNothing);
       expect(find.byType(MapWidget), findsNothing);
     });
   });

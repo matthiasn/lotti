@@ -64,8 +64,10 @@ AudioProgressColors resolveAudioProgressColors(
   final progressBase =
       activeTokens?.colors.interactive.enabled ?? theme.colorScheme.primary;
 
+  // The unfilled scrubber track must read as a control boundary (WCAG 1.4.11
+  // >=3:1), not a hairline — decorative.level02 sat ~2.2:1 against the card.
   final track = activeTokens != null
-      ? activeTokens.colors.decorative.level02
+      ? activeTokens.colors.text.lowEmphasis
       : theme.colorScheme.onSurfaceVariant.withValues(
           alpha: isDark ? 0.32 : 0.24,
         );
@@ -94,7 +96,9 @@ Color _resolveThumbColor(Color base, {required bool isDark}) {
   }
 
   if (isDark) {
-    return Color.lerp(base, Colors.white, 0.2)!;
+    // Lerp well toward white so the thumb is a clearly-brighter grab point
+    // against the now-slimmer, quieter rest-state track.
+    return Color.lerp(base, Colors.white, 0.35)!;
   }
 
   // Very-bright primaries (e.g. yellow) need to be darkened so the thumb
@@ -157,8 +161,13 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<DsTokens>();
-    final trackHeight = widget.compact ? 6.0 : 8.0;
-    final thumbRadius = widget.compact ? 6.0 : 7.5;
+    // A slim, quiet rest-state track paired with a large, high-contrast thumb.
+    // The previous thick bright rail was the loudest element on an audio card
+    // despite being the least informative; slimming it lets the content lead,
+    // while the grab affordance moves into the prominent thumb so the scrubber
+    // stays easy to see and drag without precise aim (low-vision / motor).
+    final trackHeight = widget.compact ? 4.0 : 5.0;
+    final thumbRadius = widget.compact ? 7.5 : 9.0;
 
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
@@ -367,28 +376,41 @@ class _ProgressBarPainter extends CustomPainter {
       final progressPaint = Paint()
         ..shader = gradient.createShader(progressRect.outerRect);
       canvas.drawRRect(progressRect, progressPaint);
+    }
 
-      final thumbCenter = Offset(
-        progressRect.outerRect.right,
-        trackRect.center.dy,
-      );
+    // The scrub thumb is always drawn (at the start when at rest) so the
+    // control reads as a draggable scrubber rather than a bare track — a
+    // thumb that only appeared after playback began left no grab affordance.
+    // Keep it inset by a thumb radius so it is not clipped at the track ends,
+    // but never let the lower clamp bound exceed the (possibly tiny) width.
+    final thumbInset = thumbRadius > size.width ? size.width : thumbRadius;
+    final thumbCenter = Offset(
+      (size.width * progressRatio).clamp(thumbInset, size.width),
+      trackRect.center.dy,
+    );
 
-      if (glowColor.a > 0) {
-        final glowPaint = Paint()
-          ..color = glowColor
-          ..maskFilter = const ui.MaskFilter.blur(
-            ui.BlurStyle.normal,
-            6,
-          );
-        canvas.drawCircle(thumbCenter, thumbRadius + 3, glowPaint);
-      }
+    if (glowColor.a > 0) {
+      final glowPaint = Paint()
+        ..color = glowColor
+        ..maskFilter = const ui.MaskFilter.blur(
+          ui.BlurStyle.normal,
+          6,
+        );
+      canvas.drawCircle(thumbCenter, thumbRadius + 3, glowPaint);
+    }
 
-      canvas.drawCircle(
+    // A soft drop shadow gives the thumb a defined edge so it is perceivable
+    // against the light unfilled track (where a teal-on-grey fill alone is low
+    // luminance contrast) — the same definition a Material slider thumb carries.
+    final thumbPath = Path()
+      ..addOval(Rect.fromCircle(center: thumbCenter, radius: thumbRadius));
+    canvas
+      ..drawShadow(thumbPath, const Color(0xFF000000), 2, true)
+      ..drawCircle(
         thumbCenter,
         thumbRadius,
         Paint()..color = thumbColor,
       );
-    }
   }
 
   @override

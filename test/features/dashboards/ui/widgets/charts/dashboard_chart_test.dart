@@ -259,6 +259,35 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'embedded drops its own frame so it sits flush in a host card',
+      (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            const DashboardChart(
+              chart: Text('Chart Content'),
+              chartHeader: Text('Chart Header'),
+              height: 200,
+              embedded: true,
+            ),
+          ),
+        );
+
+        expect(find.text('Chart Content'), findsOneWidget);
+        // No surface/border DecoratedBox of its own when embedded — it reads as
+        // part of the host card rather than a nested tile.
+        expect(
+          find.descendant(
+            of: find.byType(DashboardChart),
+            matching: find.byType(DecoratedBox),
+          ),
+          findsNothing,
+        );
+      },
+    );
   });
 
   group('DashboardChartHeader', () {
@@ -313,6 +342,26 @@ void main() {
           matching: find.byType(Text),
         ),
         findsOneWidget,
+      );
+    });
+
+    testWidgets('embedded demotes the title to a quiet, regular-weight label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const DashboardChartHeader(title: 'Steps', embedded: true),
+        ),
+      );
+
+      final titleStyle = tester.widget<Text>(find.text('Steps')).style!;
+      // Demoted: medium-emphasis (not the high-emphasis value colour) and a
+      // regular body weight (not the semibold subtitle1 used unembedded), so it
+      // reads as subordinate to the host card's own bold value line.
+      expect(titleStyle.color, dsTokensLight.colors.text.mediumEmphasis);
+      expect(
+        titleStyle.fontWeight,
+        dsTokensLight.typography.styles.body.bodySmall.fontWeight,
       );
     });
   });

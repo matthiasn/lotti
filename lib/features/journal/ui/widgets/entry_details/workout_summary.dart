@@ -3,6 +3,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_workout_chart.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/widgets/charts/utils.dart';
@@ -32,23 +33,36 @@ class WorkoutSummary extends StatelessWidget {
       }
     });
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (showChart)
-            ...items.map(
-              (DashboardWorkoutItem item) => DashboardWorkoutChart(
-                chartConfig: item,
-                rangeStart: getRangeStart(context: context),
-                rangeEnd: getRangeEnd(),
-              ),
+    final tokens = context.designTokens;
+    // Lead with the Energy/Duration value lines (the facts users scan for);
+    // the per-metric trend charts are secondary context below them. When the
+    // charts are shown they already title the workout type, so drop the
+    // redundant heading line. No outer bottom padding — the card shell owns
+    // the symmetric inset.
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        EntryTextWidget(
+          entryTextForWorkout(data, includeTitle: !showChart),
+          padding: EdgeInsets.zero,
+        ),
+        // One uniform rhythm step (cardItemSpacing) separates every element —
+        // value line → first chart and chart → chart alike. The earlier
+        // section-gap before the first chart double-counted against this step
+        // and read as a dead band over the (short) chart titles; this also
+        // matches the health card, the other chart-bearing summary, so the two
+        // read as one system.
+        if (showChart)
+          for (final item in items) ...[
+            SizedBox(height: tokens.spacing.cardItemSpacing),
+            DashboardWorkoutChart(
+              chartConfig: item,
+              rangeStart: getRangeStart(context: context),
+              rangeEnd: getRangeEnd(),
+              embedded: true,
             ),
-          const SizedBox(height: 8),
-          EntryTextWidget(entryTextForWorkout(data)),
-        ],
-      ),
+          ],
+      ],
     );
   }
 }

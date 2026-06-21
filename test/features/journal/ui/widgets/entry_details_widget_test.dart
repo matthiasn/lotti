@@ -13,9 +13,11 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_ai_responses_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/habit_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
@@ -23,6 +25,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/measurement_summ
 import 'package:lotti/features/journal/ui/widgets/entry_details_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
+import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
@@ -77,6 +80,36 @@ class _NullEntryController extends EntryController {
     return SynchronousFuture(null);
   }
 }
+
+/// Pins the linked AI responses for an entry so the nested-responses section can
+/// be tested in both its empty (gated out) and populated states without the
+/// repository/notification graph.
+class _FakeLinkedAiResponsesController extends LinkedAiResponsesController {
+  _FakeLinkedAiResponsesController(super.entryId, this._responses);
+
+  final List<AiResponseEntry> _responses;
+
+  @override
+  Future<List<AiResponseEntry>> build() async => _responses;
+}
+
+final _testLinkedAiResponse = AiResponseEntry(
+  meta: Metadata(
+    id: 'linked-ai-response-1',
+    createdAt: DateTime(2024, 1, 15, 10),
+    dateFrom: DateTime(2024, 1, 15, 10),
+    dateTo: DateTime(2024, 1, 15, 10, 5),
+    updatedAt: DateTime(2024, 1, 15, 10, 5),
+  ),
+  data: const AiResponseData(
+    model: 'test-model',
+    systemMessage: 'System message',
+    prompt: 'Test prompt',
+    thoughts: 'Test thoughts',
+    response: 'Test response',
+    type: AiResponseType.audioTranscription,
+  ),
+);
 
 /// Finds private widget types (e.g. `_PulsingBorder`) by runtime type name.
 Finder _byPrivateType(String typeName) =>
@@ -1044,11 +1077,12 @@ void main() {
       },
     );
 
-    // Lines 575-576: NestedAiResponsesWidget is rendered for non-collapsible
-    // audio entries (the non-collapsible column path, line 574-578).
+    // Audio entries only mount NestedAiResponsesWidget when there are linked AI
+    // responses — otherwise the empty section's rhythm gap left a dead band
+    // above the footer (the Save-button void).
     testWidgets(
-      'EntryDetailsContent renders NestedAiResponsesWidget for JournalAudio '
-      'in non-collapsible layout',
+      'EntryDetailsContent omits NestedAiResponsesWidget for JournalAudio with '
+      'no linked AI responses',
       (tester) async {
         final mockJournalRepository = MockJournalRepository();
         when(
@@ -1065,6 +1099,14 @@ void main() {
                 journalRepositoryProvider.overrideWithValue(
                   mockJournalRepository,
                 ),
+                linkedAiResponsesControllerProvider(
+                  testAudioEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeLinkedAiResponsesController(
+                    testAudioEntry.meta.id,
+                    const [],
+                  ),
+                ),
               ],
               child: EntryDetailsWidget(
                 itemId: testAudioEntry.meta.id,
@@ -1076,11 +1118,188 @@ void main() {
 
         await tester.pump();
 
-        // NestedAiResponsesWidget is always included in the widget tree for
-        // audio entries (even if it renders as SizedBox.shrink internally).
-        expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
-        // AudioPlayerWidget is the detail section for audio entries.
+        // No responses → the nested section is not mounted (no wasted gap).
+        expect(find.byType(NestedAiResponsesWidget), findsNothing);
+        // AudioPlayerWidget is still the detail section for audio entries.
         expect(find.byType(AudioPlayerWidget), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'EntryDetailsContent renders NestedAiResponsesWidget for JournalAudio '
+      'when linked AI responses exist',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => <EntryLink>[]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testAudioEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testAudioEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+                linkedAiResponsesControllerProvider(
+                  testAudioEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeLinkedAiResponsesController(
+                    testAudioEntry.meta.id,
+                    [_testLinkedAiResponse],
+                  ),
+                ),
+              ],
+              child: EntryDetailsWidget(
+                itemId: testAudioEntry.meta.id,
+                showAiEntry: false,
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+
+        // Responses present → the nested section is mounted.
+        expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
+        expect(find.byType(AudioPlayerWidget), findsOneWidget);
+      },
+    );
+
+    // Collapsible nested-AI branch: an audio entry in a parent's linked list
+    // (linkedFrom set) that is expanded mounts the nested section inside the
+    // collapsible body.
+    testWidgets(
+      'EntryDetailsContent renders nested AI responses for a collapsible '
+      'audio entry',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.getLinksFromId(testAudioEntry.meta.id),
+        ).thenAnswer((_) async => <EntryLink>[]);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testAudioEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testAudioEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+                linkedAiResponsesControllerProvider(
+                  testAudioEntry.meta.id,
+                ).overrideWith(
+                  () => _FakeLinkedAiResponsesController(
+                    testAudioEntry.meta.id,
+                    [_testLinkedAiResponse],
+                  ),
+                ),
+              ],
+              child: EntryDetailsContent(
+                testAudioEntry.meta.id,
+                linkedFrom: testTask,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Two chevrons confirm the collapsible code path: the header's collapse
+        // chevron (absent on the non-collapsible header) plus the nested
+        // section's own. The nested section + audio player render in the body.
+        expect(find.byIcon(Icons.expand_more), findsNWidgets(2));
+        expect(find.byType(NestedAiResponsesWidget), findsOneWidget);
+        expect(find.byType(AudioPlayerWidget), findsOneWidget);
+      },
+    );
+
+    // hasLabels branch (non-collapsible): an entry whose meta carries labelIds
+    // renders the label chips.
+    testWidgets(
+      'EntryDetailsContent renders label chips for a labelled entry',
+      (tester) async {
+        final labelled = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(labelIds: const ['label-1']),
+        );
+        final cache = getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+        when(() => cache.getLabelById('label-1')).thenReturn(
+          LabelDefinition(
+            id: 'label-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            name: 'Important',
+            color: '#FF0000',
+            vectorClock: null,
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: labelled.meta.id,
+                ).overrideWith(() => _FakeEntryController(labelled)),
+                labelsStreamProvider.overrideWith(
+                  (ref) => Stream.value(const <LabelDefinition>[]),
+                ),
+              ],
+              child: EntryDetailsContent(labelled.meta.id),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Important'), findsOneWidget);
+      },
+    );
+
+    // hasLabels branch (collapsible): same, but inside a parent's linked list so
+    // the chips render in the collapsible body.
+    testWidgets(
+      'EntryDetailsContent renders label chips for a collapsible labelled entry',
+      (tester) async {
+        final labelled = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(labelIds: const ['label-1']),
+        );
+        final cache = getIt<EntitiesCacheService>() as MockEntitiesCacheService;
+        when(() => cache.getLabelById('label-1')).thenReturn(
+          LabelDefinition(
+            id: 'label-1',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            name: 'Urgent',
+            color: '#00FF00',
+            vectorClock: null,
+          ),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: labelled.meta.id,
+                ).overrideWith(() => _FakeEntryController(labelled)),
+                labelsStreamProvider.overrideWith(
+                  (ref) => Stream.value(const <LabelDefinition>[]),
+                ),
+              ],
+              child: EntryDetailsContent(
+                labelled.meta.id,
+                linkedFrom: testTask,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(find.text('Urgent'), findsOneWidget);
       },
     );
 
@@ -1756,6 +1975,235 @@ void main() {
 
         // Scroll position is unchanged — no auto-scroll occurred.
         expect(scrollController.position.pixels, 0);
+
+        await tester.pumpAndSettle();
+      },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Regression: optimistic collapse override.
+  //
+  // The toggle must drive the body open/closed from local state the instant the
+  // chevron is tapped — the persisted `collapsed` flip only arrives later, via a
+  // sync round-trip that can lag behind a large backlog. These tests pass a
+  // FIXED `link` prop (never updated) so any expand/collapse can only come from
+  // the local override; before the override a collapsed card whose persist lagged
+  // never visibly expanded on tap.
+  // ---------------------------------------------------------------------------
+  group('EntryDetailsContent coverage – optimistic collapse override', () {
+    setUpAll(() {
+      setFakeDocumentsPath();
+      registerFallbackValue(
+        EntryLink.basic(
+          id: 'fallback-link',
+          fromId: 'fallback-from',
+          toId: 'fallback-to',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        ),
+      );
+    });
+
+    setUp(() async {
+      await _registerEntryDetailsMocks();
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    double sizeFactor(WidgetTester tester) => tester
+        .widget<SizeTransition>(find.byType(SizeTransition))
+        .sizeFactor
+        .value;
+
+    testWidgets(
+      'tapping a collapsed entry expands it before the link prop flips',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.updateLink(any()),
+        ).thenAnswer((_) async => true);
+
+        final collapsedLink = EntryLink.basic(
+          id: 'link-optimistic-expand',
+          fromId: testTask.meta.id,
+          toId: testTextEntry.meta.id,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          collapsed: true,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+              ],
+              child: EntryDetailsContent(
+                testTextEntry.meta.id,
+                linkedFrom: testTask,
+                link: collapsedLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Starts fully folded away.
+        expect(sizeFactor(tester), 0.0);
+
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+        await tester.pump(AppTheme.collapseAnimationDuration);
+
+        // Expanded from the local override even though `link` is still collapsed,
+        // and the flip was persisted exactly once.
+        expect(sizeFactor(tester), 1.0);
+        final captured = verify(
+          () => mockJournalRepository.updateLink(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        expect((captured.first as EntryLink).collapsed, isFalse);
+
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'tapping an expanded entry collapses it before the link prop flips',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.updateLink(any()),
+        ).thenAnswer((_) async => true);
+
+        // Expanded link (collapsed defaults to false).
+        final expandedLink = EntryLink.basic(
+          id: 'link-optimistic-collapse',
+          fromId: testTask.meta.id,
+          toId: testTextEntry.meta.id,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+              ],
+              child: EntryDetailsContent(
+                testTextEntry.meta.id,
+                linkedFrom: testTask,
+                link: expandedLink,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Starts fully expanded.
+        expect(sizeFactor(tester), 1.0);
+
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+        await tester.pump(AppTheme.collapseAnimationDuration);
+
+        // Folded away from the local override even though `link` is still
+        // expanded, and the flip was persisted exactly once.
+        expect(sizeFactor(tester), 0.0);
+        final captured = verify(
+          () => mockJournalRepository.updateLink(captureAny()),
+        ).captured;
+        expect(captured, hasLength(1));
+        expect((captured.first as EntryLink).collapsed, isTrue);
+
+        await tester.pumpAndSettle();
+      },
+    );
+
+    testWidgets(
+      'clears the override once the persisted value catches up so later '
+      'external changes are honored',
+      (tester) async {
+        final mockJournalRepository = MockJournalRepository();
+        when(
+          () => mockJournalRepository.updateLink(any()),
+        ).thenAnswer((_) async => true);
+
+        EntryLink linkWith({required bool collapsed}) => EntryLink.basic(
+          id: 'link-reconcile',
+          fromId: testTask.meta.id,
+          toId: testTextEntry.meta.id,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          vectorClock: null,
+          collapsed: collapsed,
+        );
+
+        late StateSetter setOuter;
+        var link = linkWith(collapsed: true);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            ProviderScope(
+              overrides: [
+                entryControllerProvider(
+                  id: testTextEntry.meta.id,
+                ).overrideWith(() => _FakeEntryController(testTextEntry)),
+                journalRepositoryProvider.overrideWithValue(
+                  mockJournalRepository,
+                ),
+              ],
+              child: StatefulBuilder(
+                builder: (context, setState) {
+                  setOuter = setState;
+                  return EntryDetailsContent(
+                    testTextEntry.meta.id,
+                    linkedFrom: testTask,
+                    link: link,
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        expect(sizeFactor(tester), 0.0);
+
+        // Tap to expand → optimistic override flips open while `link` still
+        // reads collapsed.
+        await tester.tap(find.byIcon(Icons.expand_more));
+        await tester.pump();
+        await tester.pump(AppTheme.collapseAnimationDuration);
+        expect(sizeFactor(tester), 1.0);
+
+        // The persisted value catches up (parent pushes collapsed:false). The
+        // now-redundant override is reconciled away in didUpdateWidget.
+        setOuter(() => link = linkWith(collapsed: false));
+        await tester.pump();
+        await tester.pump(AppTheme.collapseAnimationDuration);
+        expect(sizeFactor(tester), 1.0);
+
+        // A later external re-collapse must be honored: had the override stuck,
+        // the card would stay stranded open and this would fail.
+        setOuter(() => link = linkWith(collapsed: true));
+        await tester.pump();
+        await tester.pump(AppTheme.collapseAnimationDuration);
+        expect(sizeFactor(tester), 0.0);
 
         await tester.pumpAndSettle();
       },

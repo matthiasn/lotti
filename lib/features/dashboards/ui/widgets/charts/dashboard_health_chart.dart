@@ -22,13 +22,20 @@ import 'package:lotti/widgets/charts/utils.dart';
 class HealthChartInfoWidget extends StatelessWidget {
   const HealthChartInfoWidget(
     this.chartConfig, {
+    this.embedded = false,
     super.key,
   });
 
   final DashboardHealthItem chartConfig;
+  final bool embedded;
 
   @override
   Widget build(BuildContext context) {
+    // Embedded in an entry card, the host's value line already names the metric
+    // (e.g. "Steps: 8,000"), so the chart's own title would just duplicate it —
+    // drop the header entirely and let the trend stand on its own.
+    if (embedded) return const SizedBox.shrink();
+
     final healthType = healthTypes[chartConfig.healthType];
     final unit = healthType?.unit ?? '';
 
@@ -53,10 +60,12 @@ class DashboardHealthChart extends ConsumerWidget {
     required this.chartConfig,
     required this.rangeStart,
     required this.rangeEnd,
+    this.embedded = false,
     super.key,
   });
 
   final DashboardHealthItem chartConfig;
+  final bool embedded;
   final DateTime rangeStart;
   final DateTime rangeEnd;
 
@@ -70,6 +79,7 @@ class DashboardHealthChart extends ConsumerWidget {
       return DashboardHealthBpChart(
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
+        embedded: embedded,
       );
     }
 
@@ -78,6 +88,7 @@ class DashboardHealthChart extends ConsumerWidget {
         chartConfig: chartConfig,
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
+        embedded: embedded,
       );
     }
 
@@ -114,11 +125,14 @@ class DashboardHealthChart extends ConsumerWidget {
             rangeStart: rangeStart,
             rangeEnd: rangeEnd,
           ),
-          chartHeader: HealthChartInfoWidget(chartConfig),
+          chartHeader: HealthChartInfoWidget(chartConfig, embedded: embedded),
           isLoading: isInitialLoading,
           isEmpty: data.isEmpty,
           emptyMessage: context.messages.dashboardChartNoData,
-          height: isBarChart ? 180 : 150,
+          embedded: embedded,
+          height: embedded
+              ? (isBarChart ? 132 : 116)
+              : (isBarChart ? 180 : 150),
         );
       },
     );

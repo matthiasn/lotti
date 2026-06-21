@@ -423,10 +423,17 @@ void main() {
     final speedButton = find.text('1.5x');
     expect(speedButton, findsOneWidget);
 
-    final opacity = tester.widget<Opacity>(
+    // Kept at full contrast (no dimming wrapper) so it stays a clearly legible
+    // control in the resting card, but not interactive until playback is active
+    // (no InkWell wrapping it).
+    expect(
       find.ancestor(of: speedButton, matching: find.byType(Opacity)),
+      findsNothing,
     );
-    expect(opacity.opacity, 0.5);
+    expect(
+      find.ancestor(of: speedButton, matching: find.byType(InkWell)),
+      findsNothing,
+    );
   });
 
   // Every transition in the speed sequence is exercised here, including the
@@ -531,8 +538,9 @@ void main() {
 
     await pumpPlayer(tester, journalAudio: journalAudio, state: state);
 
-    // Should display state totalDuration (03:00), not journalAudio duration (05:00)
-    expect(find.text('03:00'), findsOneWidget);
+    // Should display state totalDuration (03:00), not journalAudio duration
+    // (05:00) — rendered as the "elapsed / total" value line.
+    expect(find.textContaining('03:00'), findsOneWidget);
   });
 
   testWidgets('progress ratio is clamped between 0 and 1', (
@@ -718,11 +726,14 @@ void main() {
         expect(progressBar.progress, c.expectedProgress);
         expect(progressBar.enabled, c.active);
 
-        // The total-duration label is always rendered from totalDuration.
-        expect(find.text(formatAudioDuration(totalDuration)), findsOneWidget);
-        // The leading label shows the current playback position.
+        // Elapsed and total render together as one "elapsed / total" line.
         expect(
-          find.text(formatAudioDuration(c.expectedProgress)),
+          find.textContaining(formatAudioDuration(totalDuration)),
+          findsOneWidget,
+        );
+        // The leading position is shown in that same combined line.
+        expect(
+          find.textContaining(formatAudioDuration(c.expectedProgress)),
           findsWidgets,
         );
       });
@@ -794,14 +805,16 @@ void main() {
       expect(colors.progress, dsTokensLight.colors.interactive.enabled);
     });
 
-    test('progress track uses decorative token instead of variant overlay', () {
+    test('progress track uses a perceivable (>=3:1) token, not a hairline', () {
       final colors = resolveAudioProgressColors(
         ThemeData(useMaterial3: true).copyWith(
           extensions: const [dsTokensDark],
         ),
       );
 
-      expect(colors.track, dsTokensDark.colors.decorative.level02);
+      // lowEmphasis reads as a control boundary (WCAG 1.4.11); the old
+      // decorative.level02 sat ~2.2:1 against the card surface.
+      expect(colors.track, dsTokensDark.colors.text.lowEmphasis);
       expect(colors.progress, dsTokensDark.colors.interactive.enabled);
     });
 

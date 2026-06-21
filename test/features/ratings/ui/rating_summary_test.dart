@@ -78,9 +78,11 @@ void main() {
         tester.element(find.byType(RatingSummary)),
       )!;
 
-      expect(find.text(l10n.sessionRatingDifficultyLabel), findsOneWidget);
+      // Segmented dimensions render as one "Label: value" line (shared value-
+      // line grammar), with the prompt's trailing ellipsis stripped.
+      expect(find.textContaining('This work felt'), findsOneWidget);
       expect(
-        find.text(l10n.sessionRatingChallengeJustRight),
+        find.textContaining(l10n.sessionRatingChallengeJustRight),
         findsOneWidget,
       );
     });
@@ -114,7 +116,10 @@ void main() {
         tester.element(find.byType(RatingSummary)),
       )!;
 
-      expect(find.text(l10n.sessionRatingChallengeTooEasy), findsOneWidget);
+      expect(
+        find.textContaining(l10n.sessionRatingChallengeTooEasy),
+        findsOneWidget,
+      );
     });
 
     testWidgets('renders challenge-skill "Too challenging" from catalog', (
@@ -147,7 +152,7 @@ void main() {
       )!;
 
       expect(
-        find.text(l10n.sessionRatingChallengeTooHard),
+        find.textContaining(l10n.sessionRatingChallengeTooHard),
         findsOneWidget,
       );
     });
@@ -185,26 +190,16 @@ void main() {
       expect(find.text('Great session!'), findsNothing);
     });
 
-    testWidgets('renders edit button with icon', (tester) async {
+    testWidgets('does not render an inline edit button (moved to the header)', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
-      expect(find.byType(IconButton), findsOneWidget);
-    });
-
-    testWidgets('edit button has correct tooltip', (tester) async {
-      await tester.pumpWidget(buildSubject());
-      await tester.pump();
-
-      final l10n = AppLocalizations.of(
-        tester.element(find.byType(RatingSummary)),
-      )!;
-
-      final iconButton = tester.widget<IconButton>(
-        find.byType(IconButton),
-      );
-      expect(iconButton.tooltip, l10n.sessionRatingEditButton);
+      // The edit affordance now lives in the entry header's action cluster, so
+      // the summary body no longer carries an orphaned, misaligned pencil.
+      expect(find.byIcon(Icons.edit_outlined), findsNothing);
+      expect(find.byType(IconButton), findsNothing);
     });
   });
 
@@ -268,9 +263,10 @@ void main() {
       await tester.pumpWidget(buildSubject(entry: entry));
       await tester.pump();
 
-      // Should use stored optionLabels
-      expect(find.text('Perfect'), findsOneWidget);
-      expect(find.text('How did the work feel?'), findsOneWidget);
+      // Should use stored optionLabels, rendered as one "Label: value" line
+      // (the prompt's trailing "?" is stripped for the colon grammar).
+      expect(find.textContaining('Perfect'), findsOneWidget);
+      expect(find.textContaining('How did the work feel'), findsOneWidget);
     });
   });
 
@@ -376,8 +372,9 @@ void main() {
       await tester.pumpWidget(buildSubject(entry: entry));
       await tester.pump();
 
-      // Value 0.37 doesn't match any of [0.0, 0.5, 1.0], falls back to %
-      expect(find.text('37%'), findsOneWidget);
+      // Value 0.37 doesn't match any of [0.0, 0.5, 1.0], falls back to the
+      // "37%" string, rendered as the value in the "Label: value" line.
+      expect(find.textContaining('37%'), findsOneWidget);
     });
 
     testWidgets('segmented dimension without options falls back to '
@@ -446,9 +443,10 @@ void main() {
       await tester.pumpWidget(buildSubject(entry: entry));
       await tester.pump();
 
-      // With stored optionValues, 0.2 matches index 1 → "Moderate"
-      expect(find.text('Moderate'), findsOneWidget);
-      expect(find.text('How severe?'), findsOneWidget);
+      // With stored optionValues, 0.2 matches index 1 → "Moderate", rendered
+      // as one "Label: value" line (trailing "?" stripped for colon grammar).
+      expect(find.textContaining('Moderate'), findsOneWidget);
+      expect(find.textContaining('How severe'), findsOneWidget);
     });
   });
 

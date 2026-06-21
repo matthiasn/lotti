@@ -4834,7 +4834,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get editMenuTitle => 'Upravit';
 
   @override
+  String get editorDiscardChanges => 'Zahodit změny';
+
+  @override
   String get editorInsertDivider => 'Vložit oddělovač';
+
+  @override
+  String get editorMoreFormatting => 'Více formátování';
 
   @override
   String get editorPlaceholder => 'Zadejte poznámky...';
@@ -5700,9 +5706,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get journalEndTimeLabel => 'Čas konce';
 
   @override
-  String get journalFavoriteTooltip => 'pouze oblíbené';
-
-  @override
   String get journalFilterEntryTypesTitle => 'Typy záznamů';
 
   @override
@@ -5716,9 +5719,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get journalFilterStarred => 'Oblíbené';
-
-  @override
-  String get journalFlaggedTooltip => 'pouze označené';
 
   @override
   String get journalHideLinkHint => 'Skrýt odkaz';

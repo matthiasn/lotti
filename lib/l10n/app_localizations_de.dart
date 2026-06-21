@@ -4829,7 +4829,13 @@ class AppLocalizationsDe extends AppLocalizations {
   String get editMenuTitle => 'Bearbeiten';
 
   @override
+  String get editorDiscardChanges => 'Änderungen verwerfen';
+
+  @override
   String get editorInsertDivider => 'Trennlinie einfügen';
+
+  @override
+  String get editorMoreFormatting => 'Mehr Formatierung';
 
   @override
   String get editorPlaceholder => 'Notizen eingeben...';
@@ -5691,9 +5697,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get journalEndTimeLabel => 'Endzeit';
 
   @override
-  String get journalFavoriteTooltip => 'nur Favoriten';
-
-  @override
   String get journalFilterEntryTypesTitle => 'Eintragstypen';
 
   @override
@@ -5707,9 +5710,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get journalFilterStarred => 'Favoriten';
-
-  @override
-  String get journalFlaggedTooltip => 'nur markiert';
 
   @override
   String get journalHideLinkHint => 'Link ausblenden';

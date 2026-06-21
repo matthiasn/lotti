@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
-/// Plain-text label with the app's tabular-figure style, clamped to `maxLines`.
-/// Used by the health/workout/measurement summaries to render their formatted
-/// value lines.
+/// The shared value-line renderer for entry summaries (health, workout,
+/// measurement, habit). Each line is split on its first `": "` into a quiet
+/// label and a dominant value, so the number the user came for is the boldest
+/// thing on the line — e.g. `Weight: 94.49 kg` renders "Weight" in a quiet
+/// secondary caption and "94.49 kg" in a high-emphasis subtitle with tabular
+/// figures. Lines without a colon render entirely in the value style. Always
+/// left-aligned so values line up under the card's content gutter.
 class EntryTextWidget extends StatelessWidget {
   const EntryTextWidget(
     this.text, {
@@ -18,17 +22,75 @@ class EntryTextWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final labelStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
+    // heading3 (20/w700) lifts the measured value a full type rung above the
+    // 14px label and the 16px timestamp, so the number the user came for is
+    // unmistakably the card's primary figure — hierarchy carried by SIZE, not
+    // weight alone (the value was previously only bolder, not bigger, so the
+    // timestamp competed with it for first fixation).
+    final valueStyle = tokens.typography.styles.heading.heading3.copyWith(
+      color: tokens.colors.text.highEmphasis,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+
+    final lines = text.split('\n');
     return Padding(
       padding: padding,
-      child: Text(
-        text,
-        maxLines: maxLines,
-        softWrap: true,
-        style: tabularFigureStyle(
-          fontSize: fontSizeMedium,
-          fontWeight: FontWeight.w300,
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < lines.length; i++) ...[
+            // Breathing room between stacked value rows (e.g. the workout
+            // summary's energy / duration) so a multi-line block reads as
+            // distinct facts rather than a cramped clump.
+            if (i > 0) SizedBox(height: tokens.spacing.step3),
+            _ValueLine(
+              line: lines[i],
+              labelStyle: labelStyle,
+              valueStyle: valueStyle,
+              maxLines: maxLines,
+            ),
+          ],
+        ],
       ),
+    );
+  }
+}
+
+class _ValueLine extends StatelessWidget {
+  const _ValueLine({
+    required this.line,
+    required this.labelStyle,
+    required this.valueStyle,
+    required this.maxLines,
+  });
+
+  final String line;
+  final TextStyle labelStyle;
+  final TextStyle valueStyle;
+  final int maxLines;
+
+  @override
+  Widget build(BuildContext context) {
+    final idx = line.indexOf(': ');
+    if (idx < 0) {
+      return Text(line, maxLines: maxLines, softWrap: true, style: valueStyle);
+    }
+    final label = line.substring(0, idx + 1); // keep the colon
+    final value = line.substring(idx + 2);
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: '$label ', style: labelStyle),
+          TextSpan(text: value, style: valueStyle),
+        ],
+      ),
+      maxLines: maxLines,
+      softWrap: true,
     );
   }
 }

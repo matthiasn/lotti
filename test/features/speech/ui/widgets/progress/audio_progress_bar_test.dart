@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
+import '../../../../../widget_test_utils.dart';
 import 'audio_progress_bar_test_helpers.dart';
 
 void main() {
@@ -236,6 +237,35 @@ void main() {
         colors.thumb.computeLuminance(),
         lessThan(colors.progress.computeLuminance()),
       );
+    });
+  });
+
+  group('AudioProgressBar painting', () {
+    testWidgets('paints without throwing when narrower than the thumb radius', (
+      tester,
+    ) async {
+      // The always-drawn thumb clamps its centre to a thumb-radius inset; when
+      // the bar is laid out narrower than that radius the lower clamp bound
+      // must not exceed the width (a regression that threw ArgumentError in
+      // paint()).
+      await tester.pumpWidget(
+        makeTestableWidget(
+          SizedBox(
+            width: 4,
+            child: AudioProgressBar(
+              progress: const Duration(seconds: 30),
+              buffered: const Duration(seconds: 40),
+              total: const Duration(minutes: 1),
+              onSeek: (_) {},
+              enabled: true,
+              compact: false,
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(AudioProgressBar), findsOneWidget);
     });
   });
 }

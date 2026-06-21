@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/classes/rating_question.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/helpers.dart';
 import 'package:lotti/features/ratings/data/rating_catalogs.dart';
 import 'package:lotti/features/ratings/ui/rating_utils.dart';
-import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
@@ -17,7 +18,8 @@ import 'package:lotti/themes/theme.dart';
 ///   2. Catalog lookup (if catalogId is registered)
 ///   3. Dimension `key` (last resort)
 ///
-/// Displays an edit button to re-open the [RatingModal].
+/// Read-only: the edit affordance that re-opens the rating modal lives in the
+/// entry header's action cluster, not in this body.
 class RatingSummary extends StatelessWidget {
   const RatingSummary(this.ratingEntry, {super.key});
 
@@ -29,51 +31,35 @@ class RatingSummary extends StatelessWidget {
     final messages = context.messages;
     final colorScheme = context.colorScheme;
 
+    final tokens = context.designTokens;
+
     // Resolve catalog for label fallback (may be null for unknown catalogs)
     final catalog = ratingCatalogRegistry[data.catalogId]?.call(messages);
 
-    return Padding(
-      padding: const EdgeInsets.only(
-        top: AppTheme.spacingSmall,
-        bottom: AppTheme.spacingMedium,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final dim in data.dimensions)
-            _buildDimensionRow(
-              context,
-              dim,
-              catalog: catalog,
-              colorScheme: colorScheme,
-              messages: messages,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (final dim in data.dimensions)
+          _buildDimensionRow(
+            context,
+            dim,
+            catalog: catalog,
+            colorScheme: colorScheme,
+            messages: messages,
+          ),
 
-          // Note
-          if (data.note != null && data.note!.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
-              child: Text(
-                data.note!,
-                style: context.textTheme.bodyMedium,
-              ),
-            ),
-
-          // Edit button (only for known catalogs)
-          Align(
-            alignment: Alignment.centerRight,
-            child: IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: messages.sessionRatingEditButton,
-              onPressed: () => RatingModal.show(
-                context,
-                data.targetId,
-                catalogId: data.catalogId,
-              ),
+        // The free-text verdict closes the card as a quiet caption on the same
+        // left gutter (the last rating row already carries the inter-block gap).
+        // The edit affordance now lives in the header action cluster, so the
+        // note is no longer paired with an orphaned, misaligned pencil.
+        if (data.note != null && data.note!.isNotEmpty)
+          Text(
+            data.note!,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 
@@ -99,25 +85,17 @@ class RatingSummary extends StatelessWidget {
       );
 
       if (valueText != null) {
+        final tokens = context.designTokens;
+        // Render through the shared value-line widget so the categorical answer
+        // parses with the exact same "quiet Label: bold value" colon grammar as
+        // every other card (Duration:, Weight:, Coverage:) — the prompt's
+        // trailing ellipsis is stripped so "This work felt…" reads as
+        // "This work felt: Just right".
         return Padding(
-          padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  label,
-                  style: context.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-              Text(
-                valueText,
-                style: context.textTheme.bodySmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
+          child: EntryTextWidget(
+            '${_stripTrailingPunctuation(label)}: $valueText',
+            padding: EdgeInsets.zero,
           ),
         );
       }
@@ -131,6 +109,37 @@ class RatingSummary extends StatelessWidget {
     );
   }
 }
+
+/// Strips trailing sentence punctuation (ellipsis, period, question/exclamation
+/// mark) from a rating prompt so a statement- or question-style label joins the
+/// colon value-line grammar cleanly — "This work felt…" becomes "This work felt"
+/// and "How did the work feel?" becomes "How did the work feel" before the
+/// ": value" is appended.
+String _stripTrailingPunctuation(String label) {
+  var out = label.trimRight();
+  while (out.isNotEmpty &&
+      (out.endsWith('…') ||
+          out.endsWith('.') ||
+          out.endsWith('?') ||
+          out.endsWith('!'))) {
+    out = out.substring(0, out.length - 1).trimRight();
+  }
+  return out;
+}
+
+TextStyle _labelStyle(DsTokens tokens) =>
+    tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.mediumEmphasis,
+    );
+
+// heading3 (20/w700) matches the shared value-line hero size used by every
+// other card (see EntryTextWidget), so the rating percentages read as the same
+// "value" tier rather than a one-off size.
+TextStyle _valueStyle(DsTokens tokens) =>
+    tokens.typography.styles.heading.heading3.copyWith(
+      color: tokens.colors.text.highEmphasis,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
 
 /// Resolves the inputType for a dimension using the fallback chain:
 /// stored inputType → catalog lookup → null (defaults to progress bar).
@@ -221,25 +230,35 @@ class _DimensionRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final percent = (value.clamp(0.0, 1.0) * 100).round();
+    // Tight label→bar coupling (step1) inside a larger between-row gap
+    // (cardItemSpacing) so each question + bar reads as one grouped unit.
     return Padding(
-      padding: const EdgeInsets.only(bottom: AppTheme.spacingSmall),
+      padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: context.textTheme.bodySmall?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
-            ),
+          Row(
+            children: [
+              Expanded(child: Text(label, style: _labelStyle(tokens))),
+              // The numeric value next to the bar, so the score is not encoded
+              // by bar length / colour alone (low-vision + clarity).
+              Text('$percent%', style: _valueStyle(tokens)),
+            ],
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: tokens.spacing.step1),
           ClipRRect(
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(tokens.radii.xs),
             child: LinearProgressIndicator(
               value: value.clamp(0.0, 1.0),
-              backgroundColor: context.colorScheme.surfaceContainerHighest,
+              // A perceivable unfilled track (>=3:1 against the card, same token
+              // as the audio scrubber) so the bar's scale — the unfilled extent
+              // behind the fill — is visible, not carried by the fill length and
+              // the numeric % alone (WCAG 1.4.11).
+              backgroundColor: tokens.colors.text.lowEmphasis,
               valueColor: AlwaysStoppedAnimation<Color>(color),
-              minHeight: 8,
+              minHeight: tokens.spacing.step3,
             ),
           ),
         ],

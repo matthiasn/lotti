@@ -144,8 +144,14 @@ void main() {
         ),
       );
 
-      // The toolbar build chain must fully settle before the divider
-      // button is hit-testable.
+      // The toolbar build chain must fully settle before the buttons are
+      // hit-testable.
+      await tester.pumpAndSettle();
+
+      // At this (narrow) width the divider lives behind the "…" overflow, not
+      // inline; open the sheet first.
+      expect(find.byIcon(Icons.horizontal_rule), findsNothing);
+      await tester.tap(find.byIcon(Icons.more_horiz));
       await tester.pumpAndSettle();
 
       final dividerButton = find.byIcon(Icons.horizontal_rule);

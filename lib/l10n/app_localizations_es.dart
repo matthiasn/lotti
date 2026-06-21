@@ -4859,7 +4859,13 @@ class AppLocalizationsEs extends AppLocalizations {
   String get editMenuTitle => 'Editar';
 
   @override
+  String get editorDiscardChanges => 'Descartar cambios';
+
+  @override
   String get editorInsertDivider => 'Insertar separador';
+
+  @override
+  String get editorMoreFormatting => 'Más formato';
 
   @override
   String get editorPlaceholder => 'Introducir notas...';
@@ -5737,9 +5743,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get journalEndTimeLabel => 'Hora de fin';
 
   @override
-  String get journalFavoriteTooltip => 'solo destacados';
-
-  @override
   String get journalFilterEntryTypesTitle => 'Tipos de entrada';
 
   @override
@@ -5753,9 +5756,6 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get journalFilterStarred => 'Destacados';
-
-  @override
-  String get journalFlaggedTooltip => 'solo marcados';
 
   @override
   String get journalHideLinkHint => 'Ocultar enlace';

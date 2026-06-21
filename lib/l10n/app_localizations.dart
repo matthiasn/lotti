@@ -8322,11 +8322,23 @@ abstract class AppLocalizations {
   /// **'Edit'**
   String get editMenuTitle;
 
+  /// No description provided for @editorDiscardChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Discard changes'**
+  String get editorDiscardChanges;
+
   /// No description provided for @editorInsertDivider.
   ///
   /// In en, this message translates to:
   /// **'Insert divider'**
   String get editorInsertDivider;
+
+  /// No description provided for @editorMoreFormatting.
+  ///
+  /// In en, this message translates to:
+  /// **'More formatting'**
+  String get editorMoreFormatting;
 
   /// No description provided for @editorPlaceholder.
   ///
@@ -9840,12 +9852,6 @@ abstract class AppLocalizations {
   /// **'End time'**
   String get journalEndTimeLabel;
 
-  /// No description provided for @journalFavoriteTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'starred only'**
-  String get journalFavoriteTooltip;
-
   /// No description provided for @journalFilterEntryTypesTitle.
   ///
   /// In en, this message translates to:
@@ -9875,12 +9881,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Starred'**
   String get journalFilterStarred;
-
-  /// No description provided for @journalFlaggedTooltip.
-  ///
-  /// In en, this message translates to:
-  /// **'flagged only'**
-  String get journalFlaggedTooltip;
 
   /// No description provided for @journalHideLinkHint.
   ///

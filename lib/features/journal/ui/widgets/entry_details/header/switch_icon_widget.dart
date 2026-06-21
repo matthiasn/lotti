@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 class SwitchIconWidget extends StatelessWidget {
   const SwitchIconWidget({
@@ -10,6 +10,7 @@ class SwitchIconWidget extends StatelessWidget {
     required this.icon,
     required this.activeIcon,
     required this.activeColor,
+    this.iconSize,
     super.key,
   });
 
@@ -21,10 +22,15 @@ class SwitchIconWidget extends StatelessWidget {
   final IconData activeIcon;
   final Color activeColor;
 
+  /// Glyph size; defaults to the [IconButton] default when null.
+  final double? iconSize;
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 40,
+      // 48px to match the other header controls' tap target so the favorite
+      // toggle is not the one cramped, harder-to-hit control in the cluster.
+      width: 48,
       child: IconButton(
         splashColor: Colors.transparent,
         focusColor: Colors.transparent,
@@ -42,11 +48,17 @@ class SwitchIconWidget extends StatelessWidget {
         icon: value
             ? Icon(
                 activeIcon,
+                size: iconSize,
                 color: activeColor,
               )
             : Icon(
                 icon,
-                color: context.colorScheme.outline,
+                size: iconSize,
+                // mediumEmphasis (white @ 80%, ~10:1) keeps the OFF control
+                // quiet so it does not out-compete the card's value for first
+                // fixation. Perceptibility for low-vision users is carried by
+                // the larger glyph size (headerActionIconSize), not brightness.
+                color: context.designTokens.colors.text.mediumEmphasis,
               ),
       ),
     );

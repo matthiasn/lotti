@@ -4868,7 +4868,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get editMenuTitle => 'Editează';
 
   @override
+  String get editorDiscardChanges => 'Renunțați la modificări';
+
+  @override
   String get editorInsertDivider => 'Inserează separator';
+
+  @override
+  String get editorMoreFormatting => 'Mai multă formatare';
 
   @override
   String get editorPlaceholder => 'Introduceți notițe...';
@@ -5752,9 +5758,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalEndTimeLabel => 'Oră de sfârșit';
 
   @override
-  String get journalFavoriteTooltip => 'Favorit';
-
-  @override
   String get journalFilterEntryTypesTitle => 'Tipuri de intrare';
 
   @override
@@ -5768,9 +5771,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalFilterStarred => 'Favorite';
-
-  @override
-  String get journalFlaggedTooltip => 'Marcat';
 
   @override
   String get journalHideLinkHint => 'Ascunde linkul';

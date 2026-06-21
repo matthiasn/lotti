@@ -11,6 +11,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/extended_header_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/switch_icon_widget.dart';
+import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -61,11 +62,26 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     final entry = entryState.entry;
     final id = entryState.entryId;
 
-    if (widget.isCollapsible) {
-      return _buildCollapsibleHeader(context, entry, id, notifier);
-    }
+    final header = widget.isCollapsible
+        ? _buildCollapsibleHeader(context, entry, id, notifier)
+        : _buildDefaultHeader(context, entry, id, notifier);
 
-    return _buildDefaultHeader(context, entry, id, notifier);
+    // Slim the action-button tap targets to a shorter oval (48 wide × 40 tall,
+    // down from the default 48 × 48 square). The square hit areas made the
+    // header row taller than its content, so the small timestamp was centred in
+    // a tall row with noticeable dead space above it — unbalancing the card
+    // against its bottom gutter. Width stays 48 to preserve horizontal tap
+    // separation for motor-impaired users; only the height is reduced.
+    return IconButtonTheme(
+      data: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: const Size(48, 40),
+          padding: EdgeInsets.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ),
+      child: header,
+    );
   }
 
   Widget _buildDefaultHeader(
@@ -74,60 +90,131 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     String id,
     EntryController notifier,
   ) {
+    final tokens = context.designTokens;
+    final showCategory =
+        entry != null &&
+        entry is! Task &&
+        entry is! JournalEvent &&
+        !widget.inLinkedEntries;
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         EntryDatetimeWidget(entryId: widget.entryId),
-        const SizedBox.shrink(),
-        if (entry != null &&
-            entry is! Task &&
-            entry is! JournalEvent &&
-            !widget.inLinkedEntries)
+        if (showCategory) ...[
+          SizedBox(width: tokens.spacing.step3),
           CategorySelectionIconButton(entry: entry),
-        const SizedBox(width: 10),
+        ],
         const Spacer(),
-        if (entry is! JournalEvent && (entry?.meta.starred ?? false))
-          SwitchIconWidget(
-            tooltip: context.messages.journalFavoriteTooltip,
-            onPressed: notifier.toggleStarred,
-            value: entry?.meta.starred ?? false,
-            icon: Icons.star_outline_rounded,
-            activeIcon: Icons.star_rounded,
-            activeColor: starredGold,
-          ),
-        if (entry?.meta.flag == EntryFlag.import)
-          SwitchIconWidget(
-            tooltip: context.messages.journalFlaggedTooltip,
-            onPressed: notifier.toggleFlagged,
-            value: entry?.meta.flag == EntryFlag.import,
-            icon: Icons.flag_outlined,
-            activeIcon: Icons.flag,
-            activeColor: context.colorScheme.error,
-          ),
-        if (entry != null &&
-            (entry is Task ||
-                entry is JournalImage ||
-                entry is JournalAudio ||
-                entry is JournalEntry))
-          UnifiedAiPopUpMenu(
-            journalEntity: entry,
-            linkedFromId: widget.linkedFromId,
-          ),
-        IconButton(
-          icon: Icon(
-            Icons.more_horiz,
-            color: context.colorScheme.outline,
-          ),
-          onPressed: () => ExtendedHeaderModal.show(
-            context: context,
-            entryId: id,
-            inLinkedEntries: widget.inLinkedEntries,
-            linkedFromId: widget.linkedFromId,
-            link: widget.link,
-          ),
+        ..._spacedTrailing(
+          context,
+          _trailingActions(context, entry, id, notifier, tokens),
         ),
       ],
     );
+  }
+
+  /// The trailing action controls shared by both header layouts.
+  ///
+  /// The two universal controls — favorite, then overflow — are pinned as the
+  /// rightmost two slots so they sit at an identical x on every card type and a
+  /// user can build muscle memory for them. The type-specific affordances
+  /// ([collapseChevron], AI, flag) grow *inward* from that fixed anchor, so the
+  /// star/overflow pair never shifts and the collapse chevron is kept well clear
+  /// of the overflow `…` (the near-identical grey pair was a mis-tap hazard).
+  List<Widget> _trailingActions(
+    BuildContext context,
+    JournalEntity? entry,
+    String id,
+    EntryController notifier,
+    DsTokens tokens, {
+    Widget? collapseChevron,
+  }) {
+    return <Widget>[
+      // --- type-specific slot, grows inward (left) from the fixed anchor ---
+      ?collapseChevron,
+      if (entry != null &&
+          (entry is Task ||
+              entry is JournalImage ||
+              entry is JournalAudio ||
+              entry is JournalEntry))
+        UnifiedAiPopUpMenu(
+          journalEntity: entry,
+          linkedFromId: widget.linkedFromId,
+          // mediumEmphasis keeps the assistant glyph a quiet header control
+          // that does not steal first fixation from the value; the larger
+          // headerActionIconSize (not brightness) carries its legibility.
+          iconColor: tokens.colors.text.mediumEmphasis,
+          iconSize: AppTheme.headerActionIconSize,
+        ),
+      // The rating edit affordance lives in the header action cluster (a real,
+      // aligned, comfortably-sized control) rather than as a small icon orphaned
+      // beside the note at the bottom of the card.
+      if (entry is RatingEntry)
+        IconButton(
+          tooltip: context.messages.sessionRatingEditButton,
+          iconSize: AppTheme.headerActionIconSize,
+          icon: Icon(
+            Icons.edit_outlined,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          onPressed: () => RatingModal.show(
+            context,
+            entry.data.targetId,
+            catalogId: entry.data.catalogId,
+          ),
+        ),
+      if (entry?.meta.flag == EntryFlag.import)
+        SwitchIconWidget(
+          tooltip: context.messages.journalToggleFlaggedTitle,
+          onPressed: notifier.toggleFlagged,
+          value: entry?.meta.flag == EntryFlag.import,
+          icon: Icons.flag_outlined,
+          activeIcon: Icons.flag,
+          activeColor: context.colorScheme.error,
+          iconSize: AppTheme.headerActionIconSize,
+        ),
+      // --- fixed trailing anchor: identical x on every card type ---
+      // Favorite is shown on every (non-event) entry — outline when not
+      // starred, gold when starred — so the action set never changes shape.
+      if (entry != null && entry is! JournalEvent)
+        SwitchIconWidget(
+          tooltip: context.messages.journalToggleStarredTitle,
+          onPressed: notifier.toggleStarred,
+          value: entry.meta.starred ?? false,
+          icon: Icons.star_outline_rounded,
+          activeIcon: Icons.star_rounded,
+          activeColor: starredGold,
+          iconSize: AppTheme.headerActionIconSize,
+        ),
+      IconButton(
+        iconSize: AppTheme.headerActionIconSize,
+        icon: Icon(Icons.more_horiz, color: tokens.colors.text.mediumEmphasis),
+        onPressed: () => ExtendedHeaderModal.show(
+          context: context,
+          entryId: id,
+          inLinkedEntries: widget.inLinkedEntries,
+          linkedFromId: widget.linkedFromId,
+          link: widget.link,
+        ),
+      ),
+    ];
+  }
+
+  /// Interleaves one wide, uniform inter-control gap (step5) between every
+  /// adjacent header control. The enlarged glyphs left less whitespace inside
+  /// each 48px tap target, so a wider visible gap (on top of the 48px hit area)
+  /// is what keeps the crowded 4-control headers from being a mis-tap hazard for
+  /// motor-impaired users and keeps the favorite toggle clear of the
+  /// (destructive-capable) overflow menu.
+  List<Widget> _spacedTrailing(BuildContext context, List<Widget> actions) {
+    final spacing = context.designTokens.spacing;
+    final out = <Widget>[];
+    for (var i = 0; i < actions.length; i++) {
+      if (i > 0) {
+        out.add(SizedBox(width: spacing.step5));
+      }
+      out.add(actions[i]);
+    }
+    return out;
   }
 
   Widget _buildCollapsibleHeader(
@@ -137,73 +224,58 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     EntryController notifier,
   ) {
     final tokens = context.designTokens;
+    final chevron = AnimatedRotation(
+      turns: widget.isCollapsed ? -0.25 : 0.0,
+      duration: AppTheme.chevronRotationDuration,
+      child: IconButton(
+        iconSize: AppTheme.headerActionIconSize,
+        icon: Icon(
+          Icons.expand_more,
+          color: tokens.colors.text.mediumEmphasis,
+        ),
+        onPressed: widget.onToggleCollapse,
+      ),
+    );
+
+    if (widget.isCollapsed) {
+      // Collapsed preview: thumbnail/icon + date + duration, chevron trailing.
+      // The whole preview row is a tap target (not just the small caret) so a
+      // collapsed entry reliably expands wherever it's tapped.
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onToggleCollapse,
+        child: Row(
+          children: [
+            if (entry is JournalImage) _buildImageThumbnail(entry),
+            if (entry is JournalAudio) _buildAudioIcon(context),
+            if (entry is JournalEntry) _buildTextIcon(context),
+            SizedBox(width: tokens.spacing.step3),
+            EntryDatetimeWidget(entryId: widget.entryId),
+            if (entry is JournalAudio) _buildDurationLabel(context, entry),
+            const Spacer(),
+            chevron,
+          ],
+        ),
+      );
+    }
+
+    // Expanded: date on left, the same fixed trailing rail as the default
+    // header — favorite + overflow pinned right, the collapse chevron folded
+    // into the inward type-specific slot so the star/overflow anchor stays at
+    // the same x as every other card type.
     return Row(
       children: [
-        if (widget.isCollapsed) ...[
-          // Collapsed preview: thumbnail/icon + date + duration
-          if (entry is JournalImage) _buildImageThumbnail(entry),
-          if (entry is JournalAudio) _buildAudioIcon(context),
-          if (entry is JournalEntry) _buildTextIcon(context),
-          SizedBox(width: tokens.spacing.step3),
-          EntryDatetimeWidget(entryId: widget.entryId),
-          if (entry is JournalAudio) _buildDurationLabel(context, entry),
-        ],
-        if (!widget.isCollapsed)
-          // Expanded: date on left, actions on right
-          EntryDatetimeWidget(entryId: widget.entryId),
+        EntryDatetimeWidget(entryId: widget.entryId),
         const Spacer(),
-        if (!widget.isCollapsed) ...[
-          // Action icons only when expanded
-          if (entry is! JournalEvent && (entry?.meta.starred ?? false))
-            SwitchIconWidget(
-              tooltip: context.messages.journalFavoriteTooltip,
-              onPressed: notifier.toggleStarred,
-              value: entry?.meta.starred ?? false,
-              icon: Icons.star_outline_rounded,
-              activeIcon: Icons.star_rounded,
-              activeColor: starredGold,
-            ),
-          if (entry?.meta.flag == EntryFlag.import)
-            SwitchIconWidget(
-              tooltip: context.messages.journalFlaggedTooltip,
-              onPressed: notifier.toggleFlagged,
-              value: entry?.meta.flag == EntryFlag.import,
-              icon: Icons.flag_outlined,
-              activeIcon: Icons.flag,
-              activeColor: context.colorScheme.error,
-            ),
-          if (entry != null &&
-              (entry is Task ||
-                  entry is JournalImage ||
-                  entry is JournalAudio ||
-                  entry is JournalEntry))
-            UnifiedAiPopUpMenu(
-              journalEntity: entry,
-              linkedFromId: widget.linkedFromId,
-            ),
-          IconButton(
-            icon: Icon(
-              Icons.more_horiz,
-              color: context.colorScheme.outline,
-            ),
-            onPressed: () => ExtendedHeaderModal.show(
-              context: context,
-              entryId: id,
-              inLinkedEntries: widget.inLinkedEntries,
-              linkedFromId: widget.linkedFromId,
-              link: widget.link,
-            ),
-          ),
-        ],
-        AnimatedRotation(
-          turns: widget.isCollapsed ? -0.25 : 0.0,
-          duration: AppTheme.chevronRotationDuration,
-          child: IconButton(
-            icon: Icon(
-              Icons.expand_more,
-              color: context.colorScheme.outline,
-            ),
-            onPressed: widget.onToggleCollapse,
+        ..._spacedTrailing(
+          context,
+          _trailingActions(
+            context,
+            entry,
+            id,
+            notifier,
+            tokens,
+            collapseChevron: chevron,
           ),
         ),
       ],
@@ -256,12 +328,14 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         ? '${duration.inHours}:${minutes.remainder(60).toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}'
         : '$minutes:${seconds.toString().padLeft(2, '0')}';
 
+    final tokens = context.designTokens;
     return Padding(
-      padding: const EdgeInsets.only(left: AppTheme.spacingSmall),
+      padding: EdgeInsets.only(left: tokens.spacing.step3),
       child: Text(
         label,
-        style: context.textTheme.bodySmall?.copyWith(
-          color: context.colorScheme.outline,
+        style: tokens.typography.styles.body.bodySmall.copyWith(
+          color: tokens.colors.text.mediumEmphasis,
+          fontFeatures: numericBadgeFontFeatures,
         ),
       ),
     );

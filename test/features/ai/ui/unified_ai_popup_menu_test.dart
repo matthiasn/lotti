@@ -217,7 +217,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
-      expect(find.byIcon(Icons.assistant_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.assistant_outlined), findsOneWidget);
       expect(find.byType(IconButton), findsOneWidget);
     });
 
@@ -243,7 +243,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
-      expect(find.byIcon(Icons.assistant_rounded), findsNothing);
+      expect(find.byIcon(Icons.assistant_outlined), findsNothing);
       expect(find.byType(IconButton), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
     });
@@ -270,7 +270,7 @@ void main() {
       await tester.pump();
 
       // Assert
-      expect(find.byIcon(Icons.assistant_rounded), findsNothing);
+      expect(find.byIcon(Icons.assistant_outlined), findsNothing);
       expect(find.byType(IconButton), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
 
@@ -302,7 +302,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
-      expect(find.byIcon(Icons.assistant_rounded), findsNothing);
+      expect(find.byIcon(Icons.assistant_outlined), findsNothing);
       expect(find.byType(IconButton), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
     });
@@ -333,7 +333,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       // Act
-      await tester.tap(find.byIcon(Icons.assistant_rounded));
+      await tester.tap(find.byIcon(Icons.assistant_outlined));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -342,11 +342,12 @@ void main() {
     });
 
     testWidgets(
-      'renders GlassActionButton (not IconButton) when iconColor is set, and '
-      'tapping it opens the modal',
+      'renders a plain IconButton with the given color when iconColor is set '
+      '(no glass badge on a flat surface), and tapping it opens the modal',
       (tester) async {
-        // Arrange — passing a non-null iconColor selects the
-        // GlassActionButton branch used when the menu sits over an image.
+        // Arrange — a non-null iconColor on a normal card surface should NOT
+        // select the glass badge (its blur reads as a dim badge on a flat
+        // card); it stays a standard IconButton tinted with the color.
         await tester.pumpWidget(
           buildTestWidget(
             UnifiedAiPopUpMenu(
@@ -368,25 +369,53 @@ void main() {
         );
 
         await tester.pump();
-
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Assert — the GlassActionButton branch is taken, not the
-        // standard IconButton branch, and the icon adopts the passed color.
-        expect(find.byType(GlassActionButton), findsOneWidget);
-        expect(find.byType(IconButton), findsNothing);
+        // Assert — standard IconButton (not glass), icon adopts the color.
+        expect(find.byType(IconButton), findsOneWidget);
+        expect(find.byType(GlassActionButton), findsNothing);
         final icon = tester.widget<Icon>(
-          find.byIcon(Icons.assistant_rounded),
+          find.byIcon(Icons.assistant_outlined),
         );
         expect(icon.color, const Color(0xFF00FF00));
 
-        // Act — tapping the glass button opens the unified AI modal.
-        await tester.tap(find.byType(GlassActionButton));
+        // Act — tapping opens the unified AI modal.
+        await tester.tap(find.byType(IconButton));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'renders GlassActionButton when useGlassButton is true (over an image)',
+      (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testTaskEntity,
+              linkedFromId: null,
+              iconColor: const Color(0xFF00FF00),
+              useGlassButton: true,
+            ),
+            overrides: [
+              hasAvailableSkillsProvider((
+                entityId: testTaskEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value(true)),
+              availableSkillsForEntityProvider((
+                entityId: testTaskEntity.id,
+                linkedFromId: null,
+              )).overrideWith((ref) => Future.value(testSkills)),
+            ],
+          ),
+        );
+
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Assert — onTap wired through to UnifiedAiModal.show.
-        expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
+        expect(find.byType(GlassActionButton), findsOneWidget);
+        expect(find.byType(IconButton), findsNothing);
       },
     );
   });

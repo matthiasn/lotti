@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 
@@ -12,6 +13,8 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
     required this.journalEntity,
     required this.linkedFromId,
     this.iconColor,
+    this.iconSize,
+    this.useGlassButton = false,
     super.key,
   });
 
@@ -20,6 +23,14 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
 
   /// Optional icon color. Defaults to the theme's outline color.
   final Color? iconColor;
+
+  /// Optional glyph size. Defaults to the [IconButton] default when null.
+  final double? iconSize;
+
+  /// Whether to render the glass/blur action button (only appropriate when the
+  /// control sits *over an image*). On a normal card surface this leaves the
+  /// glyph reading as a dim badge, so the default is a plain [IconButton].
+  final bool useGlassButton;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,8 +45,12 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
     // Since the provider is now keyed by entityId (stable), updates to
     // the same entry will reuse the provider and maintain previous value.
     if (hasPromptsAsync.hasValue && hasPromptsAsync.value!) {
+      // Outlined (not filled) glyph at the same optical weight as the other
+      // header controls — a filled high-contrast badge made the AI action the
+      // heaviest element on the card, out-ranking the timestamp and payload.
       final icon = Icon(
-        Icons.assistant_rounded,
+        Icons.assistant_outlined,
+        size: iconSize,
         color: iconColor ?? context.colorScheme.outline,
       );
 
@@ -46,9 +61,9 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
         ref: ref,
       );
 
-      // Use GlassActionButton for proper clipped splash effect when iconColor
-      // is specified (used over images), otherwise use standard IconButton
-      if (iconColor != null) {
+      // GlassActionButton only over images (its blur reads as a dim badge on a
+      // flat card); everywhere else a plain IconButton with the given color.
+      if (iconColor != null && useGlassButton) {
         return GlassActionButton(
           onTap: onTap,
           child: icon,
@@ -57,6 +72,9 @@ class UnifiedAiPopUpMenu extends ConsumerWidget {
 
       return IconButton(
         icon: icon,
+        // Label the otherwise-cryptic sparkle glyph so a new user knows what
+        // the action does before tapping it.
+        tooltip: context.messages.aiAssistantTitle,
         onPressed: onTap,
       );
     }

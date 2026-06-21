@@ -439,6 +439,60 @@ void main() {
       await expectation;
     });
 
+    test(
+      'dropDraft clears in-memory state and marks the draft saved',
+      () async {
+        const entryId = 'test-entry-id';
+
+        editorStateService.editorStateById[entryId] =
+            '{"ops":[{"insert":"test"}]}';
+        editorStateService.selectionById[entryId] =
+            const TextSelection.collapsed(offset: 0);
+
+        await editorStateService.dropDraft(
+          id: entryId,
+          lastSaved: testEpochDateTime,
+        );
+
+        expect(editorStateService.editorStateById[entryId], isNull);
+        expect(editorStateService.selectionById[entryId], isNull);
+        expect(editorStateService.entryIsUnsaved(entryId), false);
+        verify(
+          () => mockEditorDb.setDraftSaved(
+            entryId: entryId,
+            lastSaved: testEpochDateTime,
+          ),
+        ).called(1);
+      },
+    );
+
+    test('dropDraft emits false on the unsaved stream', () async {
+      const entryId = 'test-entry-id';
+
+      when(
+        () => mockEditorDb.getLatestDraft(
+          any(),
+          lastSaved: any(named: 'lastSaved'),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final stream = editorStateService.getUnsavedStream(
+        entryId,
+        testEpochDateTime,
+      );
+      final expectation = expectLater(stream, emitsInOrder([false, false]));
+
+      editorStateService.editorStateById[entryId] =
+          '{"ops":[{"insert":"test"}]}';
+
+      await editorStateService.dropDraft(
+        id: entryId,
+        lastSaved: testEpochDateTime,
+      );
+
+      await expectation;
+    });
+
     test('entryIsUnsaved returns true when entry has unsaved state', () {
       const entryId = 'test-entry-id';
 

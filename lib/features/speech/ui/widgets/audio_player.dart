@@ -7,7 +7,7 @@ import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
-import 'package:lotti/themes/theme.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 const List<double> _speedSequence = <double>[
   0.5,
@@ -18,6 +18,13 @@ const List<double> _speedSequence = <double>[
   1.75,
   2,
 ];
+
+/// Diameter of the circular play/pause control. The timecode/speed row is
+/// indented by this width (plus the control gap) so it aligns under the
+/// waveform rather than sitting under — and visually colliding with — the
+/// play button.
+const double _playControlDiameter = 48;
+const double _playControlDiameterCompact = 40;
 
 /// Minimal audio player card embedding play controls, progress, and speed toggle.
 class AudioPlayerWidget extends ConsumerWidget {
@@ -31,16 +38,15 @@ class AudioPlayerWidget extends ConsumerWidget {
     final controller = ref.read(audioPlayerControllerProvider.notifier);
     final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: AppTheme.cardPadding * 0.4,
-      ),
-      child: _AudioPlayerCardShell(
-        journalAudio: journalAudio,
-        state: state,
-        controller: controller,
-        isActive: isActive,
-      ),
+    // No outer vertical padding: the player is a body section whose surrounding
+    // spacing is owned by its container (the entry card's vertical rhythm, the
+    // captures panel's explicit gaps). Self-padding here double-counted against
+    // that rhythm and bloated the gap above an audio entry's transcript.
+    return _AudioPlayerCardShell(
+      journalAudio: journalAudio,
+      state: state,
+      controller: controller,
+      isActive: isActive,
     );
   }
 }
@@ -119,17 +125,20 @@ class _PlayerBody extends StatelessWidget {
 
     final theme = Theme.of(context);
     final tokens = theme.extension<DsTokens>();
+    // lowEmphasis so the timecode recedes to the same quiet tone as the card's
+    // timestamp — it is supporting metadata, not a payload value.
     final timeColor =
-        tokens?.colors.text.mediumEmphasis ??
-        theme.colorScheme.onSurfaceVariant;
+        tokens?.colors.text.lowEmphasis ?? theme.colorScheme.onSurfaceVariant;
     final captionStyle = tokens?.typography.styles.others.caption;
+    // Shared numeric badge features (tabular + open four/six/nine + slashed
+    // zero): constant digit advance so the elapsed counter does not "breathe"
+    // as it ticks, and open-digit glyphs that stay legible at this small size.
     final timeStyle = (captionStyle ?? const TextStyle(fontSize: 12)).copyWith(
       color: timeColor,
       fontFeatures: numericBadgeFontFeatures,
     );
 
     final controlSpacing = tokens?.spacing.step2 ?? 4.0;
-    final timeRowLeftInset = (isCompact ? 40 : 48).toDouble() + controlSpacing;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -157,23 +166,40 @@ class _PlayerBody extends StatelessWidget {
             ),
           ],
         ),
-        Padding(
-          padding: EdgeInsets.only(left: timeRowLeftInset),
-          child: Row(
-            children: <Widget>[
-              Text(formatAudioDuration(progress), style: timeStyle),
-              Expanded(
-                child: Align(
-                  child: _SpeedButton(
-                    controller: controller,
-                    currentSpeed: state.speed,
-                    isActive: isActive,
-                  ),
-                ),
+        Row(
+          children: <Widget>[
+            // Indent the elapsed/total + speed pill to line up under the
+            // waveform's left edge (past the play button + its gap) so the
+            // timecode no longer sits under and collides with the play control.
+            SizedBox(
+              width:
+                  (isCompact
+                      ? _playControlDiameterCompact
+                      : _playControlDiameter) +
+                  controlSpacing,
+            ),
+            // Elapsed / total and the speed pill are grouped together with an
+            // explicit separator so the pair reads unambiguously as
+            // elapsed-vs-total; the speed pill sits right beside them and
+            // trailing space falls to the right like every other value line.
+            // The timecode is Flexible so it gives way (rather than overflowing)
+            // once the indent + pill leave too little room on very narrow cards.
+            Flexible(
+              child: Text(
+                '${formatAudioDuration(progress)} / '
+                '${formatAudioDuration(totalDuration)}',
+                style: timeStyle,
+                maxLines: 1,
+                overflow: TextOverflow.clip,
               ),
-              Text(formatAudioDuration(totalDuration), style: timeStyle),
-            ],
-          ),
+            ),
+            SizedBox(width: tokens?.spacing.step4 ?? 12.0),
+            _SpeedButton(
+              controller: controller,
+              currentSpeed: state.speed,
+              isActive: isActive,
+            ),
+          ],
         ),
       ],
     );
@@ -284,7 +310,9 @@ class _PlayButton extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<DsTokens>();
     final scheme = theme.colorScheme;
-    final diameter = (isCompact ? 40 : 48).toDouble();
+    final diameter = isCompact
+        ? _playControlDiameterCompact
+        : _playControlDiameter;
     final isLoading = status == AudioPlayerStatus.initializing && isActive;
 
     final iconColor = tokens?.colors.text.highEmphasis ?? scheme.onSurface;
@@ -317,7 +345,15 @@ class _PlayButton extends StatelessWidget {
         child: Material(
           key: const Key('audio_player_play_button_surface'),
           color: surfaceColor,
-          shape: const CircleBorder(),
+          // A visible accent ring makes the play control the focal point and
+          // gives the button SHAPE a >=3:1 boundary (WCAG 1.4.11) — the bare
+          // low-contrast fill alone read as nearly invisible chrome.
+          shape: CircleBorder(
+            side: BorderSide(
+              color: tokens?.colors.interactive.enabled ?? scheme.primary,
+              width: 1.5,
+            ),
+          ),
           clipBehavior: Clip.antiAlias,
           child: InkWell(
             onTap: onPressed,
@@ -359,22 +395,28 @@ class _SpeedButton extends StatelessWidget {
           fontFeatures: numericBadgeFontFeatures,
         );
 
+    // A filled chip with a mediumEmphasis boundary (well above the WCAG 1.4.11
+    // 3:1 floor) so the speed control reads as a real, tappable pill rather than
+    // near-invisible chrome — important because the entry card's resting state
+    // shows this control while playback is inactive.
+    final pillBorder =
+        tokens?.colors.text.mediumEmphasis ?? scheme.outlineVariant;
     final child = Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: currentSpeed != 1
-              ? scheme.error.withValues(alpha: 0.4)
-              : scheme.primary.withValues(alpha: 0.18),
+          color: currentSpeed != 1 ? scheme.error : pillBorder,
         ),
-        color: scheme.surfaceTint.withValues(alpha: 0.05),
+        color: scheme.surfaceTint.withValues(alpha: 0.14),
       ),
       child: Text(label, style: speedTextStyle),
     );
 
     if (!isActive) {
-      return Opacity(opacity: 0.5, child: child);
+      // Not tappable until playback is active, but kept at full contrast (not a
+      // dimmed ghost) so it always reads as a real control in the resting card.
+      return child;
     }
 
     return Semantics(
