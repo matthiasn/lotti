@@ -4928,10 +4928,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Titelbild hinzufügen';
 
   @override
-  String get eventsChangeCover => 'Titelbild ändern';
+  String get eventsAddLabel => 'Hinzufügen';
 
   @override
-  String get eventsAddLabel => 'Hinzufügen';
+  String get eventsChangeCover => 'Titelbild ändern';
 
   @override
   String get eventsDeleteEvent => 'Event löschen';
@@ -6366,11 +6366,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get onboardingApiKeyGetKeyAt => 'Schlüssel erhältst du bei';
 
   @override
+  String get onboardingApiKeyInvalid =>
+      'Dieser Schlüssel wurde abgelehnt. Prüf ihn und füg ihn noch mal ein.';
+
+  @override
   String get onboardingApiKeyLocalNote =>
       'Läuft auf deinem Gerät – kein Schlüssel nötig.';
 
   @override
   String get onboardingApiKeyTitle => 'Füge deinen API-Schlüssel ein';
+
+  @override
+  String onboardingApiKeyUnreachable(String providerName) {
+    return '$providerName ist nicht erreichbar. Prüf den Schlüssel oder deine Verbindung und versuch es noch mal.';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';

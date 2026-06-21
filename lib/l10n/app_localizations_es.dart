@@ -4958,10 +4958,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Añadir foto de portada';
 
   @override
-  String get eventsChangeCover => 'Cambiar portada';
+  String get eventsAddLabel => 'Añadir';
 
   @override
-  String get eventsAddLabel => 'Añadir';
+  String get eventsChangeCover => 'Cambiar portada';
 
   @override
   String get eventsDeleteEvent => 'Eliminar evento';
@@ -6437,11 +6437,20 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingApiKeyGetKeyAt => 'Consigue una clave en';
 
   @override
+  String get onboardingApiKeyInvalid =>
+      'Esa clave fue rechazada. Revísala y pégala de nuevo.';
+
+  @override
   String get onboardingApiKeyLocalNote =>
       'Se ejecuta en tu dispositivo: no necesitas clave.';
 
   @override
   String get onboardingApiKeyTitle => 'Pega tu clave de API';
+
+  @override
+  String onboardingApiKeyUnreachable(String providerName) {
+    return 'No se pudo conectar con $providerName. Revisa la clave o tu conexión e inténtalo de nuevo.';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';

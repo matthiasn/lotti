@@ -4933,10 +4933,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Přidat titulní fotku';
 
   @override
-  String get eventsChangeCover => 'Změnit obálku';
+  String get eventsAddLabel => 'Přidat';
 
   @override
-  String get eventsAddLabel => 'Přidat';
+  String get eventsChangeCover => 'Změnit obálku';
 
   @override
   String get eventsDeleteEvent => 'Smazat událost';
@@ -6395,11 +6395,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingApiKeyGetKeyAt => 'Klíč získáš na';
 
   @override
+  String get onboardingApiKeyInvalid =>
+      'Tento klíč byl odmítnut. Zkontroluj ho a vlož ho znovu.';
+
+  @override
   String get onboardingApiKeyLocalNote =>
       'Běží na tvém zařízení – klíč není potřeba.';
 
   @override
   String get onboardingApiKeyTitle => 'Vlož svůj API klíč';
+
+  @override
+  String onboardingApiKeyUnreachable(String providerName) {
+    return 'Nepodařilo se spojit s $providerName. Zkontroluj klíč nebo připojení a zkus to znovu.';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';

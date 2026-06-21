@@ -2513,8 +2513,8 @@
   "entryTypeLabelWorkoutEntry": "Workout",
   "eventNameLabel": "Event:",
   "eventsAddCoverPhoto": "Add cover photo",
-  "eventsChangeCover": "Change cover",
   "eventsAddLabel": "Add",
+  "eventsChangeCover": "Change cover",
   "eventsDeleteEvent": "Delete event",
   "eventsFilterAll": "All",
   "eventsMetricPhotos": "{count, plural, =1{1 photo} other{{count} photos}}",
@@ -3172,8 +3172,17 @@
   "onboardingApiKeyError": "Couldn't connect. Check your key and try again.",
   "onboardingApiKeyField": "API key",
   "onboardingApiKeyGetKeyAt": "Get a key at",
+  "onboardingApiKeyInvalid": "That key was rejected. Double-check it and paste it again.",
   "onboardingApiKeyLocalNote": "Runs on your device — no key needed.",
   "onboardingApiKeyTitle": "Paste your API key",
+  "onboardingApiKeyUnreachable": "Couldn't reach {providerName}. Check the key or your connection and try again.",
+  "@onboardingApiKeyUnreachable": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
   "onboardingConnectGeminiName": "Gemini",
   "onboardingConnectGeminiTagline": "United States",
   "onboardingConnectLessOptions": "Less options",

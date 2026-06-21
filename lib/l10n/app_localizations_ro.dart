@@ -4967,10 +4967,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Adăugați o fotografie de copertă';
 
   @override
-  String get eventsChangeCover => 'Schimbați coperta';
+  String get eventsAddLabel => 'Adăugați';
 
   @override
-  String get eventsAddLabel => 'Adăugați';
+  String get eventsChangeCover => 'Schimbați coperta';
 
   @override
   String get eventsDeleteEvent => 'Ștergeți evenimentul';
@@ -6440,11 +6440,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingApiKeyGetKeyAt => 'Obțineți o cheie la';
 
   @override
+  String get onboardingApiKeyInvalid =>
+      'Cheia a fost respinsă. Verificați-o și lipiți-o din nou.';
+
+  @override
   String get onboardingApiKeyLocalNote =>
       'Rulează pe dispozitiv – nu e nevoie de cheie.';
 
   @override
   String get onboardingApiKeyTitle => 'Introduceți cheia API';
+
+  @override
+  String onboardingApiKeyUnreachable(String providerName) {
+    return 'Nu s-a putut contacta $providerName. Verificați cheia sau conexiunea și încercați din nou.';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';

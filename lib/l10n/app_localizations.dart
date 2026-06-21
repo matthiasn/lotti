@@ -8514,17 +8514,17 @@ abstract class AppLocalizations {
   /// **'Add cover photo'**
   String get eventsAddCoverPhoto;
 
-  /// No description provided for @eventsChangeCover.
-  ///
-  /// In en, this message translates to:
-  /// **'Change cover'**
-  String get eventsChangeCover;
-
   /// No description provided for @eventsAddLabel.
   ///
   /// In en, this message translates to:
   /// **'Add'**
   String get eventsAddLabel;
+
+  /// No description provided for @eventsChangeCover.
+  ///
+  /// In en, this message translates to:
+  /// **'Change cover'**
+  String get eventsChangeCover;
 
   /// No description provided for @eventsDeleteEvent.
   ///
@@ -11002,6 +11002,12 @@ abstract class AppLocalizations {
   /// **'Get a key at'**
   String get onboardingApiKeyGetKeyAt;
 
+  /// No description provided for @onboardingApiKeyInvalid.
+  ///
+  /// In en, this message translates to:
+  /// **'That key was rejected. Double-check it and paste it again.'**
+  String get onboardingApiKeyInvalid;
+
   /// No description provided for @onboardingApiKeyLocalNote.
   ///
   /// In en, this message translates to:
@@ -11013,6 +11019,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Paste your API key'**
   String get onboardingApiKeyTitle;
+
+  /// No description provided for @onboardingApiKeyUnreachable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach {providerName}. Check the key or your connection and try again.'**
+  String onboardingApiKeyUnreachable(String providerName);
 
   /// No description provided for @onboardingConnectGeminiName.
   ///

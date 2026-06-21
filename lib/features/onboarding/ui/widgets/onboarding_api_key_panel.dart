@@ -368,16 +368,25 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                     ),
                   ),
                 SizedBox(height: tokens.spacing.step3),
-                // Fixed-height status slot: the live states (link → checking →
-                // verified/rejected) crossfade in place rather than reflowing —
-                // and shoving — the bottom-anchored panel as they swap.
-                SizedBox(
-                  height: tokens.spacing.step7,
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: AnimatedSwitcher(
-                      duration: MotionDurations.short3,
-                      child: statusChild,
+                // Status slot: a stable one-line minimum height so the common
+                // states (link → checking → verified) crossfade in place
+                // without shoving the panel, and an AnimatedSize so a longer
+                // (multi-line) error message eases the slot taller rather than
+                // snapping.
+                AnimatedSize(
+                  duration: MotionDurations.short4,
+                  curve: MotionCurves.standard,
+                  alignment: Alignment.topLeft,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: tokens.spacing.step7,
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: AnimatedSwitcher(
+                        duration: MotionDurations.short3,
+                        child: statusChild,
+                      ),
                     ),
                   ),
                 ),
@@ -542,7 +551,12 @@ class _VerifyStatus extends StatelessWidget {
           text: messages.aiProviderConnectionVerifiedTitle,
           color: success,
         );
-      case ConnectionCheckFailedHttp(:final message):
+      case ConnectionCheckFailedHttp(:final status):
+        // Show our own clean, localized message rather than the provider's raw
+        // body — which varies wildly (raw JSON, echoes the pasted key back,
+        // etc.). 401/403 means the key was rejected; anything else is treated
+        // as "couldn't reach the provider".
+        final rejected = status == 401 || status == 403;
         return _line(
           context,
           leading: Icon(
@@ -550,11 +564,9 @@ class _VerifyStatus extends StatelessWidget {
             color: danger,
             size: tokens.spacing.step5,
           ),
-          // Prefer the provider's own message ("Invalid API key …") so the
-          // user sees exactly why the key was rejected.
-          text: message.isNotEmpty
-              ? message
-              : messages.aiProviderConnectionFailedTitle(providerName),
+          text: rejected
+              ? messages.onboardingApiKeyInvalid
+              : messages.onboardingApiKeyUnreachable(providerName),
           color: danger,
         );
       case ConnectionCheckFailedNetwork():
@@ -565,7 +577,7 @@ class _VerifyStatus extends StatelessWidget {
             color: danger,
             size: tokens.spacing.step5,
           ),
-          text: messages.aiProviderConnectionFailedTitle(providerName),
+          text: messages.onboardingApiKeyUnreachable(providerName),
           color: danger,
         );
     }
@@ -591,7 +603,7 @@ class _VerifyStatus extends StatelessWidget {
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: color,
             ),
-            maxLines: 1,
+            maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
         ),

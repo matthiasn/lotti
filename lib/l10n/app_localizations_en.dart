@@ -4869,10 +4869,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Add cover photo';
 
   @override
-  String get eventsChangeCover => 'Change cover';
+  String get eventsAddLabel => 'Add';
 
   @override
-  String get eventsAddLabel => 'Add';
+  String get eventsChangeCover => 'Change cover';
 
   @override
   String get eventsDeleteEvent => 'Delete event';
@@ -6286,11 +6286,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingApiKeyGetKeyAt => 'Get a key at';
 
   @override
+  String get onboardingApiKeyInvalid =>
+      'That key was rejected. Double-check it and paste it again.';
+
+  @override
   String get onboardingApiKeyLocalNote =>
       'Runs on your device — no key needed.';
 
   @override
   String get onboardingApiKeyTitle => 'Paste your API key';
+
+  @override
+  String onboardingApiKeyUnreachable(String providerName) {
+    return 'Couldn\'t reach $providerName. Check the key or your connection and try again.';
+  }
 
   @override
   String get onboardingConnectGeminiName => 'Gemini';
