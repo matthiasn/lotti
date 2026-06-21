@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
 import 'package:meta/meta.dart';
@@ -26,7 +27,8 @@ import 'package:uuid/uuid.dart';
 /// and user review.
 ///
 /// Each message is persisted to `agent.sqlite` as an [AgentMessageEntity].
-class ProjectAgentStrategy extends ConversationStrategy {
+class ProjectAgentStrategy extends ConversationStrategy
+    with ObservationRecordParsing {
   ProjectAgentStrategy({
     required this.syncService,
     required this.agentId,
@@ -71,7 +73,7 @@ class ProjectAgentStrategy extends ConversationStrategy {
 
       Map<String, dynamic> args;
       try {
-        args = _parseToolArguments(call.function.arguments);
+        args = parseAgentToolArguments(call.function.arguments);
       } catch (e) {
         final rawBytes = utf8.encode(call.function.arguments).length;
         developer.log(
@@ -284,10 +286,10 @@ class ProjectAgentStrategy extends ConversationStrategy {
         final text = textValue is String ? textValue.trim() : '';
         if (text.isEmpty) continue;
 
-        final priority = _parseObservationPriority(
+        final priority = parseObservationPriority(
           item['priority'] is String ? item['priority'] as String : null,
         );
-        final category = _parseObservationCategory(
+        final category = parseObservationCategory(
           item['category'] is String ? item['category'] as String : null,
         );
 
@@ -311,24 +313,6 @@ class ProjectAgentStrategy extends ConversationStrategy {
     );
   }
 
-  ObservationPriority _parseObservationPriority(String? raw) {
-    if (raw == null) return ObservationPriority.routine;
-    final normalized = raw.trim().toLowerCase();
-    for (final value in ObservationPriority.values) {
-      if (value.name.toLowerCase() == normalized) return value;
-    }
-    return ObservationPriority.routine;
-  }
-
-  ObservationCategory _parseObservationCategory(String? raw) {
-    if (raw == null) return ObservationCategory.operational;
-    final normalized = raw.trim().replaceAll('_', '').toLowerCase();
-    for (final value in ObservationCategory.values) {
-      if (value.name.toLowerCase() == normalized) return value;
-    }
-    return ObservationCategory.operational;
-  }
-
   // ── Error helpers ──────────────────────────────────────────────────────────
 
   Future<void> _rejectToolCall({
@@ -341,36 +325,10 @@ class ProjectAgentStrategy extends ConversationStrategy {
     await _recordToolResultMessage(toolName: toolName, errorMessage: errorMsg);
   }
 
-  // ── JSON argument parsing ──────────────────────────────────────────────────
-
-  /// Test seam for the JSON/markdown argument parser — pure, no state.
+  /// Test seam for the shared JSON/markdown argument parser.
   @visibleForTesting
   Map<String, dynamic> debugParseToolArguments(String raw) =>
-      _parseToolArguments(raw);
-
-  Map<String, dynamic> _parseToolArguments(String raw) {
-    final trimmed = raw.trim();
-    if (trimmed.isEmpty || trimmed == '{}') return {};
-
-    // Try direct parse first.
-    try {
-      final decoded = jsonDecode(trimmed);
-      if (decoded is Map<String, dynamic>) return decoded;
-    } catch (_) {}
-
-    // Handle markdown-wrapped JSON.
-    final markdownRegex = RegExp(r'```(?:json)?\s*([\s\S]*?)\s*```');
-    final match = markdownRegex.firstMatch(trimmed);
-    if (match != null) {
-      final inner = match.group(1)!.trim();
-      final decoded = jsonDecode(inner);
-      if (decoded is Map<String, dynamic>) return decoded;
-    }
-
-    // Do not include [trimmed] in the exception. Tool arguments can contain
-    // user-authored content, and exception strings can be routed to logs.
-    throw const FormatException('Cannot parse tool arguments');
-  }
+      parseAgentToolArguments(raw);
 
   // ── Message persistence ────────────────────────────────────────────────────
 
