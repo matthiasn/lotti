@@ -4850,6 +4850,103 @@ class AppLocalizationsEn extends AppLocalizations {
   String get eventNameLabel => 'Event:';
 
   @override
+  String get eventsAddCoverPhoto => 'Add cover photo';
+
+  @override
+  String get eventsAddLabel => 'Add';
+
+  @override
+  String get eventsDeleteEvent => 'Delete event';
+
+  @override
+  String get eventsFilterAll => 'All';
+
+  @override
+  String eventsMetricPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count photos',
+      one: '1 photo',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventsMetricTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tasks',
+      one: '1 task',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventsNewEvent => 'New event';
+
+  @override
+  String get eventsPageTitle => 'Events';
+
+  @override
+  String get eventsPhotosSection => 'Photos';
+
+  @override
+  String get eventsRegenerateSummary => 'Regenerate summary';
+
+  @override
+  String get eventsSearchHint => 'Search events';
+
+  @override
+  String get eventsSectionUpcoming => 'Upcoming';
+
+  @override
+  String get eventsStatusCancelled => 'Cancelled';
+
+  @override
+  String get eventsStatusCompleted => 'Completed';
+
+  @override
+  String get eventsStatusMissed => 'Missed';
+
+  @override
+  String get eventsStatusOngoing => 'Ongoing';
+
+  @override
+  String get eventsStatusPlanned => 'Planned';
+
+  @override
+  String get eventsStatusPostponed => 'Postponed';
+
+  @override
+  String get eventsStatusRescheduled => 'Rescheduled';
+
+  @override
+  String get eventsStatusTentative => 'Tentative';
+
+  @override
+  String get eventsSummaryTitle => 'Summary';
+
+  @override
+  String get eventsTasksEmpty => 'Link a prep or follow-up task';
+
+  @override
+  String get eventsTasksSection => 'Tasks';
+
+  @override
+  String get eventsTimelineEmpty => 'Add photos, notes or a voice memo';
+
+  @override
+  String get eventsTimelineSection => 'Timeline';
+
+  @override
+  String get eventsTitleHint => 'Event title';
+
+  @override
+  String get eventsVoiceNote => 'Voice note';
+
+  @override
   String get favoriteLabel => 'Favorite';
 
   @override
@@ -6062,6 +6159,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get navTabTitleCalendar => 'DailyOS';
+
+  @override
+  String get navTabTitleEvents => 'Events';
 
   @override
   String get navTabTitleHabits => 'Habits';
@@ -7775,12 +7875,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncActivityInboxLabel => 'Inbox';
 
   @override
-  String get syncActivityOutboxLabel => 'Outbox';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Sync activity. Outbox: $outbox. Inbox: $inbox. Open sync outbox.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Outbox';
 
   @override
   String get syncDeleteConfigConfirm => 'YES, I\'M SURE';

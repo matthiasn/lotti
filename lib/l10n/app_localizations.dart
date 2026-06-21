@@ -8478,6 +8478,168 @@ abstract class AppLocalizations {
   /// **'Event:'**
   String get eventNameLabel;
 
+  /// No description provided for @eventsAddCoverPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'Add cover photo'**
+  String get eventsAddCoverPhoto;
+
+  /// No description provided for @eventsAddLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get eventsAddLabel;
+
+  /// No description provided for @eventsDeleteEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete event'**
+  String get eventsDeleteEvent;
+
+  /// No description provided for @eventsFilterAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get eventsFilterAll;
+
+  /// No description provided for @eventsMetricPhotos.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 photo} other{{count} photos}}'**
+  String eventsMetricPhotos(int count);
+
+  /// No description provided for @eventsMetricTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 task} other{{count} tasks}}'**
+  String eventsMetricTasks(int count);
+
+  /// No description provided for @eventsNewEvent.
+  ///
+  /// In en, this message translates to:
+  /// **'New event'**
+  String get eventsNewEvent;
+
+  /// No description provided for @eventsPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get eventsPageTitle;
+
+  /// No description provided for @eventsPhotosSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos'**
+  String get eventsPhotosSection;
+
+  /// No description provided for @eventsRegenerateSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Regenerate summary'**
+  String get eventsRegenerateSummary;
+
+  /// No description provided for @eventsSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Search events'**
+  String get eventsSearchHint;
+
+  /// No description provided for @eventsSectionUpcoming.
+  ///
+  /// In en, this message translates to:
+  /// **'Upcoming'**
+  String get eventsSectionUpcoming;
+
+  /// No description provided for @eventsStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get eventsStatusCancelled;
+
+  /// No description provided for @eventsStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get eventsStatusCompleted;
+
+  /// No description provided for @eventsStatusMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get eventsStatusMissed;
+
+  /// No description provided for @eventsStatusOngoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing'**
+  String get eventsStatusOngoing;
+
+  /// No description provided for @eventsStatusPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get eventsStatusPlanned;
+
+  /// No description provided for @eventsStatusPostponed.
+  ///
+  /// In en, this message translates to:
+  /// **'Postponed'**
+  String get eventsStatusPostponed;
+
+  /// No description provided for @eventsStatusRescheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescheduled'**
+  String get eventsStatusRescheduled;
+
+  /// No description provided for @eventsStatusTentative.
+  ///
+  /// In en, this message translates to:
+  /// **'Tentative'**
+  String get eventsStatusTentative;
+
+  /// No description provided for @eventsSummaryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get eventsSummaryTitle;
+
+  /// No description provided for @eventsTasksEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a prep or follow-up task'**
+  String get eventsTasksEmpty;
+
+  /// No description provided for @eventsTasksSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get eventsTasksSection;
+
+  /// No description provided for @eventsTimelineEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Add photos, notes or a voice memo'**
+  String get eventsTimelineEmpty;
+
+  /// No description provided for @eventsTimelineSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Timeline'**
+  String get eventsTimelineSection;
+
+  /// No description provided for @eventsTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Event title'**
+  String get eventsTitleHint;
+
+  /// No description provided for @eventsVoiceNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Voice note'**
+  String get eventsVoiceNote;
+
   /// No description provided for @favoriteLabel.
   ///
   /// In en, this message translates to:
@@ -10647,6 +10809,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'DailyOS'**
   String get navTabTitleCalendar;
+
+  /// No description provided for @navTabTitleEvents.
+  ///
+  /// In en, this message translates to:
+  /// **'Events'**
+  String get navTabTitleEvents;
 
   /// No description provided for @navTabTitleHabits.
   ///
@@ -13441,17 +13609,17 @@ abstract class AppLocalizations {
   /// **'Inbox'**
   String get syncActivityInboxLabel;
 
-  /// No description provided for @syncActivityOutboxLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Outbox'**
-  String get syncActivityOutboxLabel;
-
   /// No description provided for @syncActivityIndicatorSemantics.
   ///
   /// In en, this message translates to:
   /// **'Sync activity. Outbox: {outbox}. Inbox: {inbox}. Open sync outbox.'**
   String syncActivityIndicatorSemantics(int outbox, int inbox);
+
+  /// No description provided for @syncActivityOutboxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbox'**
+  String get syncActivityOutboxLabel;
 
   /// No description provided for @syncDeleteConfigConfirm.
   ///

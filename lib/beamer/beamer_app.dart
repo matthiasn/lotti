@@ -157,6 +157,7 @@ enum _AppNavigationDestinationKind {
   habits,
   dashboards,
   journal,
+  events,
   settings,
 }
 
@@ -188,6 +189,7 @@ class _AppNavigationDestination {
     _AppNavigationDestinationKind.projects ||
     _AppNavigationDestinationKind.habits ||
     _AppNavigationDestinationKind.dashboards ||
+    _AppNavigationDestinationKind.events ||
     _AppNavigationDestinationKind.settings => false,
   };
 
@@ -377,6 +379,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         final isDailyOsPageEnabled = navService.isDailyOsPageEnabled;
         final isHabitsPageEnabled = navService.isHabitsPageEnabled;
         final isDashboardsPageEnabled = navService.isDashboardsPageEnabled;
+        final isEventsPageEnabled = navService.isEventsPageEnabled;
 
         final destinations = _buildNavigationDestinations(
           context: context,
@@ -384,6 +387,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           isDailyOsPageEnabled: isDailyOsPageEnabled,
           isHabitsPageEnabled: isHabitsPageEnabled,
           isDashboardsPageEnabled: isDashboardsPageEnabled,
+          isEventsPageEnabled: isEventsPageEnabled,
         );
         final itemCount = destinations.length;
 
@@ -408,6 +412,8 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           if (isDashboardsPageEnabled)
             Beamer(routerDelegate: navService.dashboardsDelegate),
           Beamer(routerDelegate: navService.journalDelegate),
+          if (isEventsPageEnabled)
+            Beamer(routerDelegate: navService.eventsDelegate),
           Beamer(routerDelegate: navService.settingsDelegate),
         ];
 
@@ -793,6 +799,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     required bool isDailyOsPageEnabled,
     required bool isHabitsPageEnabled,
     required bool isDashboardsPageEnabled,
+    required bool isEventsPageEnabled,
   }) {
     final allDestinations = <_AppNavigationDestination>[
       _AppNavigationDestination(
@@ -848,6 +855,12 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         ),
       ),
       _AppNavigationDestination(
+        kind: _AppNavigationDestinationKind.events,
+        label: context.messages.navTabTitleEvents,
+        iconBuilder: ({required active}) =>
+            Icon(active ? Icons.event_rounded : Icons.event_outlined),
+      ),
+      _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.settings,
         label: context.messages.navTabTitleSettings,
         iconBuilder: ({required active}) => const Icon(Icons.settings_rounded),
@@ -861,6 +874,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       isDailyOsPageEnabled: isDailyOsPageEnabled,
       isHabitsPageEnabled: isHabitsPageEnabled,
       isDashboardsPageEnabled: isDashboardsPageEnabled,
+      isEventsPageEnabled: isEventsPageEnabled,
     );
     final result = allDestinations
         .where((destination) => enabledKinds.contains(destination.kind))
@@ -891,6 +905,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       isDailyOsPageEnabled: navService.isDailyOsPageEnabled,
       isHabitsPageEnabled: navService.isHabitsPageEnabled,
       isDashboardsPageEnabled: navService.isDashboardsPageEnabled,
+      isEventsPageEnabled: navService.isEventsPageEnabled,
     ).indexOf(kind);
     return index == -1 ? null : index;
   }
@@ -1005,6 +1020,7 @@ List<_AppNavigationDestinationKind> _enabledDestinationKinds({
   required bool isDailyOsPageEnabled,
   required bool isHabitsPageEnabled,
   required bool isDashboardsPageEnabled,
+  required bool isEventsPageEnabled,
 }) {
   return [
     _AppNavigationDestinationKind.tasks,
@@ -1013,6 +1029,7 @@ List<_AppNavigationDestinationKind> _enabledDestinationKinds({
     if (isHabitsPageEnabled) _AppNavigationDestinationKind.habits,
     if (isDashboardsPageEnabled) _AppNavigationDestinationKind.dashboards,
     _AppNavigationDestinationKind.journal,
+    if (isEventsPageEnabled) _AppNavigationDestinationKind.events,
     _AppNavigationDestinationKind.settings,
   ];
 }

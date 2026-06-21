@@ -1,0 +1,191 @@
+# Events
+
+A first-class home for **events** — the meaningful moments (a birthday, a trip, a
+wedding, an upcoming race) you want to remember and revisit, not just another
+row in the logbook. The feature promotes events from a bare journal entry type
+to their own destination with a memory-forward overview and a photographic
+detail page.
+
+Gated behind the `enableEventsFlag` config flag (Settings → Advanced → Flags →
+"Enable Events"). When on, an **Events** destination appears in navigation
+(under *More* on mobile, as a sidebar item on desktop) alongside the existing
+event entry-type creation.
+
+## Why an entity, not a Task subtype
+
+An event stays its own `JournalEntity.event` (`EventData`) — it is *not* a Task
+subtype. It reuses the generic infrastructure that tasks happen to use rather
+than inheriting task semantics:
+
+- **Timeline** → the event's outgoing `EntryLink`s (photos, notes, audio),
+  resolved via `resolvedOutgoingLinkedEntriesProvider`.
+- **Associated tasks** → linked `Task` entries (prep / follow-up), surfaced in
+  their own section instead of subtyping.
+- **Cover art** → `EventData.coverArtId` / `coverArtCropX`, mirroring the
+  Task/Project cover-art pattern.
+- **Summary** → the latest linked AI response, falling back to the event's own
+  note.
+
+This keeps the agent, knowledge-graph, and task-list code free of "tasks that
+are really events" special cases.
+
+## Architecture
+
+The visual layer is pure and deterministic: presentational widgets render plain
+view models (`event_view_data.dart`). Pages own the glue — they watch providers,
+apply the locale-dependent labelling/grouping the view models can't, and feed
+the result to the widgets. The pure mapping/grouping logic lives in
+`state/event_view_mapping.dart` and is unit-tested in isolation.
+
+```mermaid
+flowchart TD
+    DB[(JournalDb + EntitiesCacheService)]
+
+    subgraph Overview
+      ESP[eventsStreamProvider<br/>loadResolvedEvents] -->|ResolvedEvent list| OP[EventsOverviewPage]
+      OP -->|eventCardDataFromEvent<br/>+ groupEventsIntoSections| OV[EventsOverviewView]
+      OV --> CARD[EventCard / EventFeatureCard]
+    end
+
+    subgraph Detail
+      EC[entryControllerProvider] --> DP[EventDetailPage]
+      RLE[resolvedOutgoingLinkedEntriesProvider] --> DP
+      DP -->|eventTimelineEntryFor<br/>eventTaskRefFor| DV[EventDetailView]
+    end
+
+    DB --> ESP
+    DB --> EC
+    OV -->|tap card → /events/:id| DP
+    OP -->|New event → createEvent → /events/:id| DP
+    DP -->|edit / add → /journal/:id| LEGACY[Entry detail surface]
+```
+
+### Overview
+
+`EventsOverviewView` is a photo-led wall: a width-filling responsive grid of
+`EventCard`s, with the *Upcoming* section promoted to a full-bleed
+`EventFeatureCard` hero (which degrades to a vertical card on phones). A search
+bar and category-filter chips sit in the header; the primary "New event" action
+is a header button on wide layouts and a FAB on phones.
+
+`groupEventsIntoSections` splits resolved cards into a featured **Upcoming**
+section (events dated after now, soonest first) followed by past events grouped
+by year, newest first.
+
+### Detail
+
+`EventDetailView` leads with a capped photographic hero (cover, title,
+when/where, category, rating over a strong scrim), then an AI summary card (the
+newest linked `AiResponseEntry` by `meta.dateFrom`, else the event note), a
+**Photos** gallery, a vertical timeline of linked entries (lead photo +
+supporting cluster + caption, notes, voice notes), and a linked-tasks section.
+On wide screens the body splits into a main column (summary + photos + timeline)
+and a tasks rail; on phones it stacks.
+
+#### Photos gallery
+
+`EventPhotoGrid` (in `event_photo_gallery.dart`) renders every linked image as a
+flat, scannable wall of uniform cover-cropped squares — distinct from the
+narrative timeline. The column count is width-derived; thumbnails are downsampled
+via `ResizeImage`. Beyond a 3-row preview the grid caps and the last tile shows a
+"+N" overflow badge. Tapping any tile opens `EventPhotoGalleryViewer`, a
+full-screen, swipeable, pinch-zoom `PhotoViewGallery` with a page indicator and a
+close button (mirroring the journal entry image viewer). A uniform grid is used
+deliberately: `ImageData` carries no intrinsic dimensions, so an
+aspect-preserving/masonry layout would require decoding every image to measure
+it — and the full, uncropped photo is always one tap away in the viewer.
+
+Each timeline row carries the source entry's id and is tappable when the page
+wires `onOpenTimelineEntry` (it beams to `/journal/<entryId>`); the trailing
+"open" chevron renders only when that handler is present, so the affordance
+always matches the behavior. Linked **task** rows follow the same pattern: each
+`EventTaskRef` carries its task id, and when the page wires `onOpenTask` the row
+gains the "open" chevron and beams to `/tasks/<id>` (the same cross-location
+navigation a task card uses, which surfaces correctly from the Events
+destination).
+
+#### Inline editing
+
+The detail page is a full editor, not a viewer — nothing bounces to the old
+entry form. `EventDetailView` is presentational and surfaces every mutation as a
+callback; `EventDetailPage` wires them to `EntryController` and the shared
+pickers/create flows.
+
+The title/status/rating writes go through `EntryController`'s direct event-data
+setters (`updateEventTitle` / `updateEventStatus` / `updateRating`, all built on
+the private `_updateEventData` helper: optimistic local state → `updateEvent` →
+haptic). These supersede the legacy `EventForm` + `EntryController.save()`
+FormBuilder path (`lib/widgets/events/event_form.dart`): the new Events surface
+never mounts a `FormBuilder`, so `save()`'s event branch is dead for it and
+should be removed once the old form route is retired (don't "fix" it).
+
+- **Title** — tap to swap in a borderless field; commit on submit/blur →
+  `updateEventTitle`.
+- **Category / Status** — the hero pills open `showCategoryPicker` /
+  `showEventStatusPicker` → `updateCategoryId` / `updateEventStatus`. The
+  category pill shows an additive "+ Category" placeholder when none is assigned.
+- **Date / time** — the hero date line opens the shared
+  `EntryDateTimeMultiPageModal` → `updateFromTo`; it is the single source of the
+  event's when (the body no longer repeats it).
+- **Rating** — the hero stars are interactive → `updateRating`, and only appear
+  once the event has happened (`status == completed`) or already carries a
+  rating, so a fresh/tentative event isn't pushed gold stars.
+- **Cover** — while the event has no cover, an "add cover photo" action opens the
+  create-entry menu; the first linked photo then becomes the cover automatically.
+- **Add to timeline** — opens the shared `CreateEntryModal` scoped to the event
+  (`linkedFromId`), so new notes, photos and audio link straight back.
+- **Add task** — mirrors the linked-tasks flow: `createTask(linkedId: eventId)`
+  (which writes the `event → task` link, so the event surfaces under the task's
+  "Linked from"), then `autoAssignCategoryAgent` assigns the category's default
+  agent, then it beams to `/tasks/<id>` to open the new task.
+- **Delete** — the overflow menu confirms via the standard delete sheet →
+  `delete(beamBack: true)`.
+
+When a callback is null the corresponding control is read-only (or hidden), so
+the same widget renders cleanly in screenshots and tests. Empty events still
+render the Timeline and Tasks section scaffolding with tappable "add" hints
+rather than a blank void.
+
+## Files
+
+| Path | Role |
+| --- | --- |
+| `ui/model/event_view_data.dart` | Pure presentation view models. |
+| `ui/widgets/event_cover_image.dart` | Cover image: crop + scrim variants + category-tinted fallback. |
+| `ui/widgets/event_overlay_pill.dart` | Translucent pill for chrome over a cover. |
+| `ui/widgets/event_card.dart` | Overview card + cover overlay + meta/footer. |
+| `ui/widgets/event_feature_card.dart` | Full-bleed featured hero (→ vertical card when narrow). |
+| `ui/widgets/events_overview_view.dart` | Overview layout: header, search, chips, sections, grid. |
+| `ui/widgets/event_detail_view.dart` | Detail layout: inline-editable hero, summary, timeline, tasks. |
+| `ui/widgets/event_status_picker.dart` | `showEventStatusPicker` modal + `eventStatusLabel` helper. |
+| `ui/widgets/event_summary_card.dart` | Dense list-context summary card (cover + meta + metrics) for the logbook / task timeline. |
+| `ui/widgets/event_photo_gallery.dart` | `EventPhotoGrid` (photo wall + "+N" overflow) + full-screen `EventPhotoGalleryViewer`. |
+| `state/event_view_mapping.dart` | Pure entity→view-model mapping, date labels, grouping. |
+| `state/events_controller.dart` | `eventsStreamProvider` + `loadResolvedEvents` (DB → resolved events). |
+| `ui/pages/events_overview_page.dart` | Route page: provider → localized sections → view. |
+| `ui/pages/event_detail_page.dart` | Route page: event + links → `EventDetailData` → view. |
+
+Navigation is registered in `lib/beamer/locations/events_location.dart`
+(`/events`, `/events/:eventId`), `lib/beamer/beamer_delegates.dart`,
+`lib/services/nav_service.dart`, and `lib/beamer/beamer_app.dart`.
+
+## Localization
+
+User-visible strings are localized via `context.messages`: `navTabTitleEvents`,
+`eventsPageTitle`, `eventsSearchHint`, `eventsNewEvent`, `eventsFilterAll`,
+`eventsSectionUpcoming`, `eventsSummaryTitle`, `eventsTimelineSection`,
+`eventsTasksSection`, `eventsAddLabel`, `eventsRegenerateSummary`,
+`eventsVoiceNote`, `eventsTitleHint`, `eventsAddCoverPhoto`, `eventsDeleteEvent`,
+`eventsTimelineEmpty`, `eventsTasksEmpty`, `eventsPhotosSection`,
+`eventsMetricPhotos`, `eventsMetricTasks` (the last two pluralized count words
+for the summary card's contents line). (The event status picker reuses
+`EventStatus.label`; the category picker reuses `habitCategoryLabel`.)
+
+## Testing
+
+The pure layers carry the bulk of coverage: `event_view_mapping_test`
+(grouping, date labels, entity→view-model mapping for every timeline/task kind)
+and the widget tests for each presentational widget. `events_controller_test`
+covers DB query + cover/category resolution; the page tests cover the
+provider-driven glue (sections, filtering, loading/error states). Screenshots
+of the surfaces are produced on demand with the `app-screenshots` workflow.

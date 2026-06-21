@@ -170,6 +170,7 @@ class _NavFlagBench {
         enableDailyOsPageFlag => dailyOs.stream,
         enableHabitsPageFlag => habits.stream,
         enableDashboardsPageFlag => dashboards.stream,
+        enableEventsFlag => events.stream,
         _ => Stream<bool>.value(false),
       };
     });
@@ -184,14 +185,18 @@ class _NavFlagBench {
   final dailyOs = StreamController<bool>.broadcast(sync: true);
   final habits = StreamController<bool>.broadcast(sync: true);
   final dashboards = StreamController<bool>.broadcast(sync: true);
+  final events = StreamController<bool>.broadcast(sync: true);
   late final NavService navService;
 
-  /// Emits all four flags at once.
+  /// Emits the four optional-tab flags at once; the Events flag stays off so
+  /// existing tab indices/delegates are unaffected (toggle [events] directly to
+  /// exercise the Events destination).
   void emitAll({required bool enabled}) {
     projects.add(enabled);
     dailyOs.add(enabled);
     habits.add(enabled);
     dashboards.add(enabled);
+    events.add(false);
   }
 
   Future<void> dispose() async {
@@ -201,6 +206,7 @@ class _NavFlagBench {
       dailyOs.close(),
       habits.close(),
       dashboards.close(),
+      events.close(),
     ]);
   }
 }
@@ -369,6 +375,7 @@ void main() {
         bench.dailyOs.add(scenario.dailyOs);
         bench.habits.add(scenario.habits);
         bench.dashboards.add(scenario.dashboards);
+        bench.events.add(false);
         await pumpEventQueue();
 
         final expectedDelegates = [
@@ -634,6 +641,7 @@ void main() {
           expect(navService.isDashboardsPageEnabled, isFalse);
           expect(navService.isDailyOsPageEnabled, isFalse);
           expect(navService.isProjectsPageEnabled, isFalse);
+          expect(navService.isEventsPageEnabled, isFalse);
         },
       );
     });
@@ -762,6 +770,7 @@ void main() {
           final dashboardsController = StreamController<bool>.broadcast(
             sync: true,
           );
+          final eventsController = StreamController<bool>.broadcast(sync: true);
 
           when(
             () => localJournalDb.watchConfigFlag(any()),
@@ -772,6 +781,7 @@ void main() {
               enableDailyOsPageFlag => dailyOsController.stream,
               enableHabitsPageFlag => habitsController.stream,
               enableDashboardsPageFlag => dashboardsController.stream,
+              enableEventsFlag => eventsController.stream,
               _ => Stream<bool>.value(false),
             };
           });
@@ -787,6 +797,7 @@ void main() {
               dailyOsController.close(),
               habitsController.close(),
               dashboardsController.close(),
+              eventsController.close(),
             ]);
           });
 
@@ -795,6 +806,7 @@ void main() {
           dailyOsController.add(true);
           habitsController.add(true);
           dashboardsController.add(true);
+          eventsController.add(false);
 
           navService.beamToNamed('/habits');
           expect(navService.currentPath, '/habits');

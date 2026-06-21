@@ -10,6 +10,8 @@ _EventData _$EventDataFromJson(Map<String, dynamic> json) => _EventData(
   title: json['title'] as String,
   stars: (json['stars'] as num).toDouble(),
   status: $enumDecode(_$EventStatusEnumMap, json['status']),
+  coverArtId: json['coverArtId'] as String?,
+  coverArtCropX: (json['coverArtCropX'] as num?)?.toDouble() ?? 0.5,
 );
 
 Map<String, dynamic> _$EventDataToJson(_EventData instance) =>
@@ -17,6 +19,8 @@ Map<String, dynamic> _$EventDataToJson(_EventData instance) =>
       'title': instance.title,
       'stars': instance.stars,
       'status': _$EventStatusEnumMap[instance.status]!,
+      'coverArtId': instance.coverArtId,
+      'coverArtCropX': instance.coverArtCropX,
     };
 
 const _$EventStatusEnumMap = {

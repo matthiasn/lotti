@@ -177,6 +177,8 @@ Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
   return delegate;
 }
 
+bool _eventsDisabledByDefault() => false;
+
 Future<void> _stubNavService(
   MockNavService navService, {
   required Stream<int> indexStream,
@@ -184,6 +186,7 @@ Future<void> _stubNavService(
   required bool Function() isDailyOsEnabled,
   required bool Function() isHabitsEnabled,
   required bool Function() isDashboardsEnabled,
+  bool Function() isEventsEnabled = _eventsDisabledByDefault,
   BeamerDelegate? settingsDelegate,
 }) async {
   final tasksDelegate = await _createEmptyDelegate('/tasks');
@@ -192,6 +195,7 @@ Future<void> _stubNavService(
   final habitsDelegate = await _createEmptyDelegate('/habits');
   final dashboardsDelegate = await _createEmptyDelegate('/dashboards');
   final journalDelegate = await _createEmptyDelegate('/journal');
+  final eventsDelegate = await _createEmptyDelegate('/events');
   settingsDelegate ??= await _createEmptyDelegate('/settings');
 
   // Real NavService.getIndexStream returns a broadcast stream (multiple
@@ -221,6 +225,10 @@ Future<void> _stubNavService(
   when(() => navService.isDashboardsPageEnabled).thenAnswer(
     (_) => isDashboardsEnabled(),
   );
+  when(() => navService.eventsDelegate).thenReturn(eventsDelegate);
+  when(
+    () => navService.isEventsPageEnabled,
+  ).thenAnswer((_) => isEventsEnabled());
   when(() => navService.tapIndex(any())).thenReturn(null);
   when(() => navService.isDesktopMode).thenReturn(false);
   // The desktop tasks pane (`tasks_tab_page.dart`) reads
@@ -690,6 +698,72 @@ void main() {
         await tester.pump();
       },
     );
+  });
+
+  group('AppScreen events gating', () {
+    testWidgets('surfaces Events in the More sheet when the flag is enabled', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: const Stream<int>.empty(),
+        // All optional tabs on so the phone bar keeps the More overflow that
+        // holds the non-primary Events destination.
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+        isEventsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(tester, navService: mockNavService);
+
+      // Events never claims a primary bar slot — it appears in the More sheet.
+      expect(find.text('Events'), findsNothing);
+      final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+        find.byType(DesignSystemBottomNavigationBar),
+      );
+      expect(navBar.items.last.label, 'More');
+      navBar.items.last.onTap?.call();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Events'), findsOneWidget);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('keeps Events hidden when the flag is disabled', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(tester, navService: mockNavService);
+
+      final navBar = tester.widget<DesignSystemBottomNavigationBar>(
+        find.byType(DesignSystemBottomNavigationBar),
+      );
+      navBar.items.last.onTap?.call();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Events'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
   });
 
   group('Flatpak audio indicator gating', () {

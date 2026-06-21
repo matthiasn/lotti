@@ -2066,6 +2066,156 @@ void main() {
     });
   });
 
+  group('updateEventTitle method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
+      ).thenAnswer((_) async => testEventEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+    });
+
+    test('persists a trimmed rename, preserving status', () async {
+      final container = makeProviderContainer();
+      final entryId = testEventEntry.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      when(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.updateEventTitle('  Renamed  ');
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: captureAny(named: 'data'),
+        ),
+      ).captured;
+      final data = captured.single as EventData;
+      expect(data.title, 'Renamed');
+      expect(data.status, testEventEntry.data.status);
+    });
+
+    test('does nothing when the title is unchanged', () async {
+      final container = makeProviderContainer();
+      final provider = entryControllerProvider(id: testEventEntry.meta.id);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      await notifier.updateEventTitle(testEventEntry.data.title);
+
+      verifyNever(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: any(named: 'data'),
+        ),
+      );
+    });
+
+    test('does nothing when entry is not a JournalEvent', () async {
+      final container = makeProviderContainer();
+      final provider = entryControllerProvider(id: testTextEntry.meta.id);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      await notifier.updateEventTitle('whatever');
+
+      verifyNever(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: any(named: 'data'),
+        ),
+      );
+    });
+  });
+
+  group('updateEventStatus method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
+      ).thenAnswer((_) async => testEventEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+    });
+
+    test('persists a new status, preserving title', () async {
+      final container = makeProviderContainer();
+      final entryId = testEventEntry.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      when(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.updateEventStatus(EventStatus.completed);
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: captureAny(named: 'data'),
+        ),
+      ).captured;
+      final data = captured.single as EventData;
+      expect(data.status, EventStatus.completed);
+      expect(data.title, testEventEntry.data.title);
+    });
+
+    test('does nothing when the status is unchanged', () async {
+      final container = makeProviderContainer();
+      final provider = entryControllerProvider(id: testEventEntry.meta.id);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      await notifier.updateEventStatus(testEventEntry.data.status);
+
+      verifyNever(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: any(named: 'data'),
+        ),
+      );
+    });
+
+    test('does nothing when entry is not a JournalEvent', () async {
+      final container = makeProviderContainer();
+      final provider = entryControllerProvider(id: testTextEntry.meta.id);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      await notifier.updateEventStatus(EventStatus.cancelled);
+
+      verifyNever(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: any(named: 'data'),
+        ),
+      );
+    });
+  });
+
   group('taskTitleFocusNodeListener method', () {
     setUp(() {
       // Ensure mocks are set up for this group

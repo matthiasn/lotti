@@ -285,6 +285,7 @@ void main() {
       when(() => nav.isDailyOsPageEnabled).thenReturn(false);
       when(() => nav.isHabitsPageEnabled).thenReturn(false);
       when(() => nav.isDashboardsPageEnabled).thenReturn(false);
+      when(() => nav.isEventsPageEnabled).thenReturn(false);
       when(() => nav.tapIndex(any())).thenReturn(null);
       when(() => nav.isDesktopMode).thenReturn(false);
       when(

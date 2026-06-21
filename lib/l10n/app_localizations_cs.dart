@@ -4914,6 +4914,106 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventNameLabel => 'Událost:';
 
   @override
+  String get eventsAddCoverPhoto => 'Přidat titulní fotku';
+
+  @override
+  String get eventsAddLabel => 'Přidat';
+
+  @override
+  String get eventsDeleteEvent => 'Smazat událost';
+
+  @override
+  String get eventsFilterAll => 'Vše';
+
+  @override
+  String eventsMetricPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fotek',
+      few: '$count fotky',
+      one: '1 fotka',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventsMetricTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úkolů',
+      few: '$count úkoly',
+      one: '1 úkol',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventsNewEvent => 'Nová událost';
+
+  @override
+  String get eventsPageTitle => 'Události';
+
+  @override
+  String get eventsPhotosSection => 'Fotky';
+
+  @override
+  String get eventsRegenerateSummary => 'Znovu vytvořit shrnutí';
+
+  @override
+  String get eventsSearchHint => 'Hledat události';
+
+  @override
+  String get eventsSectionUpcoming => 'Nadcházející';
+
+  @override
+  String get eventsStatusCancelled => 'Zrušeno';
+
+  @override
+  String get eventsStatusCompleted => 'Dokončeno';
+
+  @override
+  String get eventsStatusMissed => 'Zmeškáno';
+
+  @override
+  String get eventsStatusOngoing => 'Probíhá';
+
+  @override
+  String get eventsStatusPlanned => 'Naplánováno';
+
+  @override
+  String get eventsStatusPostponed => 'Odloženo';
+
+  @override
+  String get eventsStatusRescheduled => 'Přeplánováno';
+
+  @override
+  String get eventsStatusTentative => 'Předběžně';
+
+  @override
+  String get eventsSummaryTitle => 'Souhrn';
+
+  @override
+  String get eventsTasksEmpty => 'Propoj přípravný nebo navazující úkol';
+
+  @override
+  String get eventsTasksSection => 'Úkoly';
+
+  @override
+  String get eventsTimelineEmpty =>
+      'Přidej fotky, poznámky nebo hlasovou poznámku';
+
+  @override
+  String get eventsTimelineSection => 'Časová osa';
+
+  @override
+  String get eventsTitleHint => 'Název události';
+
+  @override
+  String get eventsVoiceNote => 'Hlasová poznámka';
+
+  @override
   String get favoriteLabel => 'Oblíbené';
 
   @override
@@ -6166,6 +6266,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get navTabTitleCalendar => 'DailyOS';
+
+  @override
+  String get navTabTitleEvents => 'Události';
 
   @override
   String get navTabTitleHabits => 'Zvyky';
@@ -7926,12 +8029,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncActivityInboxLabel => 'Příchozí';
 
   @override
-  String get syncActivityOutboxLabel => 'Odchozí';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Aktivita synchronizace. Odchozí: $outbox. Příchozí: $inbox. Otevřít odchozí frontu synchronizace.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Odchozí';
 
   @override
   String get syncDeleteConfigConfirm => 'ANO, JSEM SI JISTÝ';

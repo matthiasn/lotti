@@ -4948,6 +4948,107 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventNameLabel => 'Eveniment:';
 
   @override
+  String get eventsAddCoverPhoto => 'Adăugați o fotografie de copertă';
+
+  @override
+  String get eventsAddLabel => 'Adăugați';
+
+  @override
+  String get eventsDeleteEvent => 'Ștergeți evenimentul';
+
+  @override
+  String get eventsFilterAll => 'Toate';
+
+  @override
+  String eventsMetricPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de fotografii',
+      few: '$count fotografii',
+      one: '1 fotografie',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventsMetricTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sarcini',
+      few: '$count sarcini',
+      one: '1 sarcină',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventsNewEvent => 'Eveniment nou';
+
+  @override
+  String get eventsPageTitle => 'Evenimente';
+
+  @override
+  String get eventsPhotosSection => 'Fotografii';
+
+  @override
+  String get eventsRegenerateSummary => 'Regenerează rezumatul';
+
+  @override
+  String get eventsSearchHint => 'Căutați evenimente';
+
+  @override
+  String get eventsSectionUpcoming => 'Viitoare';
+
+  @override
+  String get eventsStatusCancelled => 'Anulat';
+
+  @override
+  String get eventsStatusCompleted => 'Finalizat';
+
+  @override
+  String get eventsStatusMissed => 'Ratat';
+
+  @override
+  String get eventsStatusOngoing => 'În desfășurare';
+
+  @override
+  String get eventsStatusPlanned => 'Planificat';
+
+  @override
+  String get eventsStatusPostponed => 'Amânat';
+
+  @override
+  String get eventsStatusRescheduled => 'Reprogramat';
+
+  @override
+  String get eventsStatusTentative => 'Provizoriu';
+
+  @override
+  String get eventsSummaryTitle => 'Rezumat';
+
+  @override
+  String get eventsTasksEmpty =>
+      'Asociați o sarcină de pregătire sau de urmărire';
+
+  @override
+  String get eventsTasksSection => 'Sarcini';
+
+  @override
+  String get eventsTimelineEmpty =>
+      'Adăugați fotografii, notițe sau o notă vocală';
+
+  @override
+  String get eventsTimelineSection => 'Cronologie';
+
+  @override
+  String get eventsTitleHint => 'Titlul evenimentului';
+
+  @override
+  String get eventsVoiceNote => 'Notă vocală';
+
+  @override
   String get favoriteLabel => 'Favorit';
 
   @override
@@ -6210,6 +6311,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get navTabTitleCalendar => 'DailyOS';
+
+  @override
+  String get navTabTitleEvents => 'Evenimente';
 
   @override
   String get navTabTitleHabits => 'Obiceiuri';
@@ -7976,12 +8080,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncActivityInboxLabel => 'Intrare';
 
   @override
-  String get syncActivityOutboxLabel => 'Ieșire';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Activitate sincronizare. Coadă de ieșire: $outbox. Coadă de intrare: $inbox. Deschide coada de ieșire pentru sincronizare.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Ieșire';
 
   @override
   String get syncDeleteConfigConfirm => 'DA, SUNT SIGUR';

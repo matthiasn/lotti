@@ -28,22 +28,31 @@ class NavService {
     _settingsDb = settingsDb ?? getIt<SettingsDb>();
 
     _navigationFlagsSub =
-        Rx.combineLatest4<
+        Rx.combineLatest5<
               bool,
               bool,
               bool,
               bool,
-              ({bool habits, bool dashboards, bool dailyOs, bool projects})
+              bool,
+              ({
+                bool habits,
+                bool dashboards,
+                bool dailyOs,
+                bool projects,
+                bool events,
+              })
             >(
               _journalDb.watchConfigFlag(enableHabitsPageFlag),
               _journalDb.watchConfigFlag(enableDashboardsPageFlag),
               _journalDb.watchConfigFlag(enableDailyOsPageFlag),
               _journalDb.watchConfigFlag(enableProjectsFlag),
-              (habits, dashboards, dailyOs, projects) => (
+              _journalDb.watchConfigFlag(enableEventsFlag),
+              (habits, dashboards, dailyOs, projects, events) => (
                 habits: habits,
                 dashboards: dashboards,
                 dailyOs: dailyOs,
                 projects: projects,
+                events: events,
               ),
             )
             .listen(_handleNavigationFlagsUpdated);
@@ -52,7 +61,13 @@ class NavService {
   late final JournalDb _journalDb;
   late final SettingsDb _settingsDb;
   late final StreamSubscription<
-    ({bool habits, bool dashboards, bool dailyOs, bool projects})
+    ({
+      bool habits,
+      bool dashboards,
+      bool dailyOs,
+      bool projects,
+      bool events,
+    })
   >
   _navigationFlagsSub;
 
@@ -98,6 +113,7 @@ class NavService {
   bool _isDashboardsPageEnabled = false;
   bool _isDailyOsPageEnabled = false;
   bool _isProjectsPageEnabled = false;
+  bool _isEventsPageEnabled = false;
 
   String currentPath = '/tasks';
   final indexStreamController = StreamController<int>.broadcast();
@@ -109,6 +125,7 @@ class NavService {
   final BeamerDelegate habitsDelegate = habitsBeamerDelegate;
   final BeamerDelegate dashboardsDelegate = dashboardsBeamerDelegate;
   final BeamerDelegate journalDelegate = journalBeamerDelegate;
+  final BeamerDelegate eventsDelegate = eventsBeamerDelegate;
   final BeamerDelegate projectsDelegate = projectsBeamerDelegate;
   final BeamerDelegate tasksDelegate = tasksBeamerDelegate;
   final BeamerDelegate calendarDelegate = calendarBeamerDelegate;
@@ -118,6 +135,7 @@ class NavService {
   bool get isDashboardsPageEnabled => _isDashboardsPageEnabled;
   bool get isDailyOsPageEnabled => _isDailyOsPageEnabled;
   bool get isProjectsPageEnabled => _isProjectsPageEnabled;
+  bool get isEventsPageEnabled => _isEventsPageEnabled;
 
   List<BeamerDelegate>? _cachedBeamerDelegates;
 
@@ -149,6 +167,11 @@ class NavService {
       delegate: dashboardsDelegate,
     );
     yield (enabled: true, rootPath: '/journal', delegate: journalDelegate);
+    yield (
+      enabled: _isEventsPageEnabled,
+      rootPath: '/events',
+      delegate: eventsDelegate,
+    );
     yield (enabled: true, rootPath: '/settings', delegate: settingsDelegate);
   }
 
@@ -183,12 +206,20 @@ class NavService {
   }
 
   void _handleNavigationFlagsUpdated(
-    ({bool habits, bool dashboards, bool dailyOs, bool projects}) flags,
+    ({
+      bool habits,
+      bool dashboards,
+      bool dailyOs,
+      bool projects,
+      bool events,
+    })
+    flags,
   ) {
     _isHabitsPageEnabled = flags.habits;
     _isDashboardsPageEnabled = flags.dashboards;
     _isDailyOsPageEnabled = flags.dailyOs;
     _isProjectsPageEnabled = flags.projects;
+    _isEventsPageEnabled = flags.events;
     _cachedBeamerDelegates = null;
 
     final previousPath = currentPath;

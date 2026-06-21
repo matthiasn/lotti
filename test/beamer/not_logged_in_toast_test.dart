@@ -95,6 +95,7 @@ Future<MockNavService> _stubNavService() async {
   when(() => mockNav.isDailyOsPageEnabled).thenReturn(true);
   when(() => mockNav.isHabitsPageEnabled).thenReturn(true);
   when(() => mockNav.isDashboardsPageEnabled).thenReturn(true);
+  when(() => mockNav.isEventsPageEnabled).thenReturn(false);
   when(() => mockNav.tasksDelegate).thenReturn(
     await _createEmptyDelegate('/tasks'),
   );

@@ -4939,6 +4939,104 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventNameLabel => 'Evento:';
 
   @override
+  String get eventsAddCoverPhoto => 'Añadir foto de portada';
+
+  @override
+  String get eventsAddLabel => 'Añadir';
+
+  @override
+  String get eventsDeleteEvent => 'Eliminar evento';
+
+  @override
+  String get eventsFilterAll => 'Todos';
+
+  @override
+  String eventsMetricPhotos(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count fotos',
+      one: '1 foto',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String eventsMetricTasks(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tareas',
+      one: '1 tarea',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get eventsNewEvent => 'Nuevo evento';
+
+  @override
+  String get eventsPageTitle => 'Eventos';
+
+  @override
+  String get eventsPhotosSection => 'Fotos';
+
+  @override
+  String get eventsRegenerateSummary => 'Regenerar resumen';
+
+  @override
+  String get eventsSearchHint => 'Buscar eventos';
+
+  @override
+  String get eventsSectionUpcoming => 'Próximos';
+
+  @override
+  String get eventsStatusCancelled => 'Cancelado';
+
+  @override
+  String get eventsStatusCompleted => 'Completado';
+
+  @override
+  String get eventsStatusMissed => 'Perdido';
+
+  @override
+  String get eventsStatusOngoing => 'En curso';
+
+  @override
+  String get eventsStatusPlanned => 'Planificado';
+
+  @override
+  String get eventsStatusPostponed => 'Pospuesto';
+
+  @override
+  String get eventsStatusRescheduled => 'Reprogramado';
+
+  @override
+  String get eventsStatusTentative => 'Tentativo';
+
+  @override
+  String get eventsSummaryTitle => 'Resumen';
+
+  @override
+  String get eventsTasksEmpty =>
+      'Vincula una tarea de preparación o seguimiento';
+
+  @override
+  String get eventsTasksSection => 'Tareas';
+
+  @override
+  String get eventsTimelineEmpty => 'Añade fotos, notas o una nota de voz';
+
+  @override
+  String get eventsTimelineSection => 'Cronología';
+
+  @override
+  String get eventsTitleHint => 'Título del evento';
+
+  @override
+  String get eventsVoiceNote => 'Nota de voz';
+
+  @override
   String get favoriteLabel => 'Favorito';
 
   @override
@@ -6211,6 +6309,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get navTabTitleCalendar => 'DailyOS';
+
+  @override
+  String get navTabTitleEvents => 'Eventos';
 
   @override
   String get navTabTitleHabits => 'Hábitos';
@@ -7976,12 +8077,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncActivityInboxLabel => 'Entrada';
 
   @override
-  String get syncActivityOutboxLabel => 'Salida';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Actividad de sincronización. Bandeja de salida: $outbox. Bandeja de entrada: $inbox. Abrir bandeja de salida de sincronización.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Salida';
 
   @override
   String get syncDeleteConfigConfirm => 'SÍ, ESTOY SEGURO';

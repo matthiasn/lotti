@@ -1,6 +1,7 @@
 import 'package:beamer/beamer.dart';
 import 'package:lotti/beamer/locations/calendar_location.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
+import 'package:lotti/beamer/locations/events_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
@@ -26,6 +27,21 @@ final dashboardsBeamerDelegate = BeamerDelegate(
   locationBuilder: (routeInformation, _) {
     if (routeInformation.uri.path.contains('dashboards')) {
       return DashboardsLocation(routeInformation);
+    }
+    return NotFound(path: routeInformation.uri.path);
+  },
+);
+
+final eventsBeamerDelegate = BeamerDelegate(
+  initialPath: '/events',
+  updateParent: false,
+  updateFromParent: false,
+  locationBuilder: (routeInformation, _) {
+    // Root-path match (not a substring) so unrelated paths like
+    // `/settings/events` or `/prevents` don't get routed to EventsLocation.
+    final path = routeInformation.uri.path;
+    if (path == '/events' || path.startsWith('/events/')) {
+      return EventsLocation(routeInformation);
     }
     return NotFound(path: routeInformation.uri.path);
   },
