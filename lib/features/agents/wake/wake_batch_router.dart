@@ -254,17 +254,22 @@ extension WakeBatchRouter on WakeOrchestrator {
   // ── Content-gating ────────────────────────────────────────────────────────
 
   /// Returns `true` if the job should be skipped because the agent is in
-  /// content-awaiting mode and the task doesn't have content yet.
+  /// content-awaiting mode and its subject entity doesn't have content yet.
   ///
   /// When content IS found, clears the `awaitingContent` flag on the agent
   /// state so subsequent wakes proceed normally.
   ///
   /// Whenever this method returns `false` because the persisted state shows
   /// the agent is no longer awaiting content (state missing, flag already
-  /// cleared, or no active task to gate on), the in-memory mirror is dropped
-  /// so it cannot stay falsely `true` and silence countdowns indefinitely.
-  /// Truly indeterminate paths (no `taskContentChecker`, exceptions) leave
-  /// the mirror untouched — they fail open without lying about state.
+  /// cleared, or no active entity slot to gate on), the in-memory mirror is
+  /// dropped so it cannot stay falsely `true` and silence countdowns
+  /// indefinitely. Truly indeterminate paths (no content checker for the
+  /// active slot, exceptions) leave the mirror untouched — they fail open
+  /// without lying about state.
+  ///
+  /// Dispatch is per-slot: a task slot routes to [taskContentChecker], an event
+  /// slot to [eventContentChecker]. There is no cross-slot fallback, so an
+  /// event id can never be handed to the task checker (or vice versa).
   Future<bool> _shouldSkipForAwaitingContent(WakeJob job) async {
     try {
       final state = await repository.getAgentState(job.agentId);
@@ -275,16 +280,32 @@ extension WakeBatchRouter on WakeOrchestrator {
         return false;
       }
 
-      final taskId = state.slots.activeTaskId;
-      if (taskId == null) {
-        // Awaiting flag is set but there is no task to gate on. The agent
-        // is about to run; drop the mirror so subsequent notifications use
-        // the normal throttle.
+      // Each agent kind links only its own entity type, so exactly one active
+      // slot is populated; the task-first ordering below is never exercised for
+      // a real event agent. If both were ever set, task wins and the wake still
+      // fails open — it can never starve a working agent.
+      final slots = state.slots;
+      final String? entityId;
+      final AgentContentChecker? checker;
+      if (slots.activeTaskId != null) {
+        entityId = slots.activeTaskId;
+        checker = taskContentChecker;
+      } else if (slots.activeEventId != null) {
+        entityId = slots.activeEventId;
+        checker = eventContentChecker;
+      } else {
+        entityId = null;
+        checker = null;
+      }
+
+      if (entityId == null) {
+        // Awaiting flag is set but there is no gated entity. The agent is
+        // about to run; drop the mirror so subsequent notifications use the
+        // normal throttle.
         _agentsAwaitingContent.remove(job.agentId);
         return false;
       }
 
-      final checker = taskContentChecker;
       if (checker == null) {
         // Indeterminate — we can't verify content state. Fail open and
         // leave the mirror as-is so the persisted flag still drives the
@@ -292,12 +313,12 @@ extension WakeBatchRouter on WakeOrchestrator {
         return false;
       }
 
-      final hasContent = await checker(taskId);
+      final hasContent = await checker(entityId);
       if (!hasContent) {
         _log(
           'content-gate: skipping wake for '
           '${DomainLogger.sanitizeId(job.agentId)} '
-          '(task has no content yet)',
+          '(no content yet)',
           subDomain: 'contentGate',
         );
         return true;
@@ -308,7 +329,7 @@ extension WakeBatchRouter on WakeOrchestrator {
       _log(
         'content-gate: activating '
         '${DomainLogger.sanitizeId(job.agentId)} '
-        '(task now has content)',
+        '(content present)',
         subDomain: 'contentGate',
       );
       final cleared = state.copyWith(

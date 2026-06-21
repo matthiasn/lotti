@@ -4835,6 +4835,126 @@ void main() {
         });
       });
 
+      test(
+        'skips wake when an event agent is awaitingContent and the event '
+        'has no content',
+        () {
+          fakeAsync((async) {
+            final state = makeTestState(
+              agentId: 'agent-evt',
+              awaitingContent: true,
+              slots: const AgentSlots(activeEventId: 'event-1'),
+            );
+            when(
+              () => mockRepository.getAgentState('agent-evt'),
+            ).thenAnswer((_) async => state);
+
+            var wakeExecuted = false;
+            final cg = WakeOrchestrator(
+              repository: mockRepository,
+              queue: queue,
+              runner: WakeRunner(),
+              eventContentChecker: (eventId) async => false,
+              wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                wakeExecuted = true;
+                return null;
+              },
+            )..enqueueManualWake(agentId: 'agent-evt', reason: 'creation');
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+
+            expect(wakeExecuted, isFalse);
+            cg.stop();
+          });
+        },
+      );
+
+      test('allows wake and clears flag when the event has content', () {
+        fakeAsync((async) {
+          final state = makeTestState(
+            agentId: 'agent-evt2',
+            awaitingContent: true,
+            slots: const AgentSlots(activeEventId: 'event-2'),
+          );
+          when(
+            () => mockRepository.getAgentState('agent-evt2'),
+          ).thenAnswer((_) async => state);
+
+          var wakeExecuted = false;
+          final cg = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: WakeRunner(),
+            eventContentChecker: (eventId) async => true,
+            wakeExecutor: (agentId, runKey, triggers, threadId) async {
+              wakeExecuted = true;
+              return null;
+            },
+          )..enqueueManualWake(agentId: 'agent-evt2', reason: 'creation');
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+
+          expect(wakeExecuted, isTrue);
+          verify(
+            () => mockRepository.upsertEntity(
+              any(
+                that: isA<AgentStateEntity>().having(
+                  (s) => s.awaitingContent,
+                  'awaitingContent',
+                  isFalse,
+                ),
+              ),
+            ),
+          ).called(1);
+          cg.stop();
+        });
+      });
+
+      test(
+        'an event slot routes only to the event checker, never the task '
+        'checker (no cross-slot fallback)',
+        () {
+          fakeAsync((async) {
+            final state = makeTestState(
+              agentId: 'agent-evt3',
+              awaitingContent: true,
+              slots: const AgentSlots(activeEventId: 'event-3'),
+            );
+            when(
+              () => mockRepository.getAgentState('agent-evt3'),
+            ).thenAnswer((_) async => state);
+
+            var taskCheckerCalled = false;
+            var wakeExecuted = false;
+            final cg = WakeOrchestrator(
+              repository: mockRepository,
+              queue: queue,
+              runner: WakeRunner(),
+              // The task checker would let the wake through — but the event
+              // slot must never reach it.
+              taskContentChecker: (taskId) async {
+                taskCheckerCalled = true;
+                return true;
+              },
+              eventContentChecker: (eventId) async => false,
+              wakeExecutor: (agentId, runKey, triggers, threadId) async {
+                wakeExecuted = true;
+                return null;
+              },
+            )..enqueueManualWake(agentId: 'agent-evt3', reason: 'creation');
+            async
+              ..elapse(WakeOrchestrator.throttleWindow)
+              ..flushMicrotasks();
+
+            expect(taskCheckerCalled, isFalse);
+            expect(wakeExecuted, isFalse);
+            cg.stop();
+          });
+        },
+      );
+
       test('uses syncEntityWriter instead of raw repository when provided', () {
         fakeAsync((async) {
           final state = makeTestState(

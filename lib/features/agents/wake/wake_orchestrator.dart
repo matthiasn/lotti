@@ -54,10 +54,11 @@ class AgentSubscription {
   final bool deferPropagatedMatches;
 }
 
-/// Checks whether a task (by ID) has meaningful content (at least one linked
-/// entry with non-empty text). Used by the content-gating logic for agents
-/// auto-created from category defaults.
-typedef TaskContentChecker = Future<bool> Function(String taskId);
+/// Checks whether a content-gated entity (by ID) has the content the agent is
+/// waiting for before its first run — a task with text, or an event with a
+/// linked photo/note. Used by the content-gating logic for agents auto-created
+/// from category defaults.
+typedef AgentContentChecker = Future<bool> Function(String entityId);
 
 /// Sync-aware entity writer that stamps the vector clock and enqueues
 /// an outbox message. Used when the orchestrator needs to persist a
@@ -111,6 +112,7 @@ class WakeOrchestrator {
     this.wakeExecutor,
     this.onPersistedStateChanged,
     this.taskContentChecker,
+    this.eventContentChecker,
     this.syncEntityWriter,
     this.onWakeStart,
   }) {
@@ -135,10 +137,16 @@ class WakeOrchestrator {
   /// after acquiring the run lock and persisting the wake-run entry.
   WakeExecutor? wakeExecutor;
 
-  /// Optional callback that checks whether a task has meaningful content.
-  /// Used to gate auto-assigned agents (awaitingContent flag) so they don't
-  /// run until the task actually has text content to analyze.
-  TaskContentChecker? taskContentChecker;
+  /// Optional callback that checks whether a content-gated task has meaningful
+  /// content (text). Used to gate auto-assigned task agents (awaitingContent
+  /// flag) so they don't run until the task has content.
+  AgentContentChecker? taskContentChecker;
+
+  /// Optional callback that checks whether a content-gated event has content
+  /// (a linked photo or note). Used to gate auto-assigned event agents the same
+  /// way. Each slot routes only to its own checker — never a cross-slot
+  /// fallback — so an event id can never reach the task checker.
+  AgentContentChecker? eventContentChecker;
 
   /// Optional sync-aware entity writer for state mutations that must
   /// propagate across devices (e.g. clearing the `awaitingContent` flag).

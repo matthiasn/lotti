@@ -236,6 +236,22 @@ WakeOrchestrator wakeOrchestrator(Ref ref) {
         (e) => e.entryText?.plainText.trim().isNotEmpty ?? false,
       );
     },
+    // An event "has content" once it carries a note or a linked photo/note —
+    // a bare title must not trigger inference on a static memory.
+    eventContentChecker: (eventId) async {
+      final journalDb = ref.read(journalDbProvider);
+      final event = await journalDb.journalEntityById(eventId);
+      if (event is JournalEvent &&
+          (event.entryText?.plainText.trim().isNotEmpty ?? false)) {
+        return true;
+      }
+      final linked = await journalDb.getLinkedEntities(eventId);
+      return linked.any(
+        (e) =>
+            e is JournalImage ||
+            (e.entryText?.plainText.trim().isNotEmpty ?? false),
+      );
+    },
   );
 }
 
