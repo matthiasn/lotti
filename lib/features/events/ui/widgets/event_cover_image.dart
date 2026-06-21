@@ -27,6 +27,7 @@ class EventCoverImage extends StatelessWidget {
     this.cropX = 0.5,
     this.icon = Icons.event_rounded,
     this.scrim = EventCoverScrim.card,
+    this.decodeWidth,
     this.child,
     super.key,
   });
@@ -37,6 +38,13 @@ class EventCoverImage extends StatelessWidget {
   final IconData icon;
   final EventCoverScrim scrim;
 
+  /// Logical width this cover is displayed at, used to cap how large the photo
+  /// is decoded. When null the decode is bounded to the screen width — a safe
+  /// ceiling that still keeps a full-resolution photo from blowing up memory.
+  /// Callers that know their box (e.g. a small list thumbnail) should pass it so
+  /// the decode is no larger than needed.
+  final double? decodeWidth;
+
   /// Overlaid content (chips, title, rating). Positioned by the caller.
   final Widget? child;
 
@@ -46,12 +54,14 @@ class EventCoverImage extends StatelessWidget {
     // outside the visible range.
     final alignmentX = (cropX.clamp(0.0, 1.0) * 2) - 1;
 
+    final provider = _decodeSized(context);
+
     return Stack(
       fit: StackFit.expand,
       children: [
-        if (image != null)
+        if (provider != null)
           Image(
-            image: image!,
+            image: provider,
             fit: BoxFit.cover,
             alignment: Alignment(alignmentX, 0),
             // A missing or corrupt cover file falls back to the calm gradient
@@ -99,6 +109,23 @@ class EventCoverImage extends StatelessWidget {
         ?child,
       ],
     );
+  }
+
+  /// Wraps [image] in a [ResizeImage] that decodes no wider than this cover is
+  /// displayed — the explicit [decodeWidth] when given, otherwise the screen
+  /// width — so a wall of covers (the overview can hold hundreds) can't decode
+  /// full-resolution photos all at once and OOM-kill the app on phones. Uses
+  /// [MediaQuery] rather than a [LayoutBuilder] so the widget still reports
+  /// intrinsic dimensions (it's placed inside [IntrinsicHeight] rows). Returns
+  /// null when there is no image (the caller paints the fallback).
+  ImageProvider? _decodeSized(BuildContext context) {
+    final source = image;
+    if (source == null) return null;
+    final logicalWidth = decodeWidth ?? MediaQuery.sizeOf(context).width;
+    final cap = (logicalWidth * MediaQuery.devicePixelRatioOf(context))
+        .round()
+        .clamp(1, 4096);
+    return ResizeImage(source, width: cap, policy: ResizeImagePolicy.fit);
   }
 }
 

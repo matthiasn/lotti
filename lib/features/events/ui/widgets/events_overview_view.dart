@@ -48,135 +48,147 @@ class EventsOverviewView extends StatelessWidget {
     return Scaffold(
       backgroundColor: dsPageSurface(context),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(
-                  edge,
-                  tokens.spacing.step4,
-                  edge,
-                  tokens.spacing.step2,
-                ),
-                child: _Header(
-                  subtitle: subtitle,
-                  categories: categories,
-                  selectedCategoryId: selectedCategoryId,
-                  onSelectCategory: onSelectCategory,
-                  onSearch: onSearch,
-                  onCreateInHeader: onCreate,
-                ),
-              ),
-            ),
-            for (final section in sections) ...[
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(
-                    edge,
-                    tokens.spacing.step7,
-                    edge,
-                    tokens.spacing.step2,
-                  ),
-                  child: Text(
-                    section.title,
-                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                      color: context.colorScheme.onSurface,
-                      fontWeight: FontWeight.w600,
+        // One LayoutBuilder at the top resolves the grid's column count from the
+        // viewport width, so the lazy slivers below can chunk events into rows
+        // without each re-measuring.
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final contentWidth = constraints.maxWidth - edge * 2;
+            final columns = (contentWidth / _targetCardWidth).floor().clamp(
+              1,
+              4,
+            );
+            return CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      edge,
+                      tokens.spacing.step4,
+                      edge,
+                      tokens.spacing.step2,
+                    ),
+                    child: _Header(
+                      subtitle: subtitle,
+                      categories: categories,
+                      selectedCategoryId: selectedCategoryId,
+                      onSelectCategory: onSelectCategory,
+                      onSearch: onSearch,
+                      onCreateInHeader: onCreate,
                     ),
                   ),
                 ),
-              ),
-              SliverPadding(
-                padding: EdgeInsets.symmetric(horizontal: edge),
-                sliver: SliverToBoxAdapter(
-                  child: section.featured
-                      ? _FeaturedColumn(
-                          section: section,
-                          gap: gap,
-                          onOpenEvent: onOpenEvent,
-                        )
-                      : _CardGrid(
-                          section: section,
-                          gap: gap,
-                          targetCardWidth: _targetCardWidth,
-                          onOpenEvent: onOpenEvent,
-                        ),
+                for (final section in sections) ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                        edge,
+                        tokens.spacing.step7,
+                        edge,
+                        tokens.spacing.step2,
+                      ),
+                      child: Text(
+                        section.title,
+                        style: tokens.typography.styles.subtitle.subtitle1
+                            .copyWith(
+                              color: context.colorScheme.onSurface,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                  ),
+                  SliverPadding(
+                    padding: EdgeInsets.symmetric(horizontal: edge),
+                    sliver: section.featured
+                        ? _featuredSliver(section, gap)
+                        : _gridSliver(
+                            section,
+                            columns: columns,
+                            contentWidth: contentWidth,
+                            gap: gap,
+                          ),
+                  ),
+                ],
+                SliverToBoxAdapter(
+                  child: SizedBox(height: tokens.spacing.step12),
                 ),
-              ),
-            ],
-            SliverToBoxAdapter(child: SizedBox(height: tokens.spacing.step12)),
-          ],
+              ],
+            );
+          },
         ),
       ),
     );
   }
-}
 
-class _FeaturedColumn extends StatelessWidget {
-  const _FeaturedColumn({
-    required this.section,
-    required this.gap,
-    required this.onOpenEvent,
-  });
-
-  final EventSection section;
-  final double gap;
-  final ValueChanged<EventCardData>? onOpenEvent;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        for (final event in section.events) ...[
-          EventFeatureCard(
-            data: event,
-            onTap: onOpenEvent == null ? null : () => onOpenEvent!(event),
-          ),
-          SizedBox(height: gap),
-        ],
-      ],
+  /// Featured sections (Upcoming) render one full-width hero card per row, built
+  /// lazily so a long upcoming list doesn't decode every cover up front.
+  Widget _featuredSliver(EventSection section, double gap) {
+    final events = section.events;
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
+          final event = events[index];
+          return Padding(
+            padding: EdgeInsets.only(bottom: gap),
+            child: EventFeatureCard(
+              data: event,
+              onTap: onOpenEvent == null ? null : () => onOpenEvent!(event),
+            ),
+          );
+        },
+        childCount: events.length,
+      ),
     );
   }
-}
 
-class _CardGrid extends StatelessWidget {
-  const _CardGrid({
-    required this.section,
-    required this.gap,
-    required this.targetCardWidth,
-    required this.onOpenEvent,
-  });
-
-  final EventSection section;
-  final double gap;
-  final double targetCardWidth;
-  final ValueChanged<EventCardData>? onOpenEvent;
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final columns = (constraints.maxWidth / targetCardWidth).floor().clamp(
-          1,
-          4,
-        );
-        final cardWidth =
-            (constraints.maxWidth - gap * (columns - 1)) / columns;
-        return Wrap(
-          spacing: gap,
-          runSpacing: gap,
-          children: [
-            for (final event in section.events)
-              SizedBox(
-                width: cardWidth,
-                child: EventCard(
-                  data: event,
-                  onTap: onOpenEvent == null ? null : () => onOpenEvent!(event),
-                ),
-              ),
-          ],
-        );
-      },
+  /// Ordinary sections render a width-filling card grid as a lazy [SliverList]
+  /// of row chunks: only rows near the viewport are built, so hundreds of events
+  /// never instantiate hundreds of cards (and decode hundreds of cover photos)
+  /// at once — the cause of the mobile OOM crash. Off-screen rows stay unbuilt.
+  Widget _gridSliver(
+    EventSection section, {
+    required int columns,
+    required double contentWidth,
+    required double gap,
+  }) {
+    final events = section.events;
+    final rawWidth = columns <= 1
+        ? contentWidth
+        : (contentWidth - gap * (columns - 1)) / columns;
+    final cardWidth = rawWidth.isFinite && rawWidth > 0
+        ? rawWidth
+        : contentWidth;
+    final rowCount = (events.length + columns - 1) ~/ columns;
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, rowIndex) {
+          final start = rowIndex * columns;
+          final end = (start + columns) > events.length
+              ? events.length
+              : start + columns;
+          return Padding(
+            padding: EdgeInsets.only(bottom: gap),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = start; i < end; i++) ...[
+                  if (i > start) SizedBox(width: gap),
+                  SizedBox(
+                    width: cardWidth,
+                    child: EventCard(
+                      data: events[i],
+                      onTap: onOpenEvent == null
+                          ? null
+                          : () => onOpenEvent!(events[i]),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          );
+        },
+        childCount: rowCount,
+      ),
     );
   }
 }

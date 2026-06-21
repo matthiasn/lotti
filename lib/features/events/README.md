@@ -72,6 +72,16 @@ is a header button on wide layouts and a FAB on phones.
 section (events dated after now, soonest first) followed by past events grouped
 by year, newest first.
 
+The grid renders **lazily**: each section is a builder-driven `SliverList` of
+row chunks (`columns` derived once from the viewport width), so only the rows
+near the viewport are built. This matters because the overview can hold hundreds
+of events — eager rendering would mount every card and decode every cover photo
+at once, spiking memory enough for the OS to kill the app on phones. Cover
+decoding is bounded too: `EventCoverImage` decodes each photo no wider than it is
+displayed (the screen width, or an explicit `decodeWidth` for small thumbnails)
+via `ResizeImage`, never at full camera resolution. (The query layer still loads
+up to `eventsQueryLimit` events up front; true paged DB loading is a follow-up.)
+
 ### Detail
 
 `EventDetailView` leads with a capped photographic hero (cover, title,
