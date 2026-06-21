@@ -160,10 +160,36 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
   Widget build(BuildContext context) {
     return AnimatedSize(
       duration: MotionDurations.medium4,
-      curve: MotionCurves.emphasizedDecelerate,
+      curve: MotionCurves.standard,
       alignment: Alignment.topCenter,
       child: AnimatedSwitcher(
         duration: MotionDurations.medium2,
+        // Fade-through: the outgoing step accelerates away in the first half,
+        // the incoming decelerates in over the second — so two dark panels
+        // never sit at full opacity at once.
+        switchOutCurve: const Interval(0, 0.5, curve: MotionCurves.standard),
+        switchInCurve: const Interval(
+          0.35,
+          1,
+          curve: MotionCurves.emphasizedDecelerate,
+        ),
+        // Size to the *incoming* child (top-aligned to match AnimatedSize) so
+        // the height animates concurrently with the fade. The default
+        // (centered Stack sized to the taller child) made the box stay tall
+        // through the fade and only collapse afterwards, with the content
+        // drifting centre→top — which read as an overshoot/weird settle.
+        layoutBuilder: (currentChild, previousChildren) => Stack(
+          alignment: Alignment.topCenter,
+          children: [
+            // Outgoing steps are pinned to the top at their own (loose) height
+            // — NOT `Positioned.fill`, which would tighten a taller step into
+            // the shorter incoming box and overflow it. The Stack clips the
+            // overhang as the step fades out.
+            for (final child in previousChildren)
+              Positioned(top: 0, left: 0, right: 0, child: child),
+            ?currentChild,
+          ],
+        ),
         child: _buildStep(),
       ),
     );

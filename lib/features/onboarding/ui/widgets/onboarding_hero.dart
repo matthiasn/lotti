@@ -49,24 +49,32 @@ List<Color> onboardingAuroraColors(Color accent) {
 /// The shared alive dark backdrop for the connect + API-key pages: a toned-down
 /// aurora wash layered under the neural constellation, on the dark panel
 /// background. Keeps the post-welcome steps as alive as the welcome itself.
+///
+/// [accent] tints the aurora + constellation; it defaults to the brand teal but
+/// the API-key step passes the chosen provider's brand colour so the backdrop
+/// shifts to that provider's hue once the user has picked one.
 class OnboardingBackdrop extends StatelessWidget {
-  const OnboardingBackdrop({this.nodeCount = 26, super.key});
+  const OnboardingBackdrop({this.nodeCount = 26, this.accent, super.key});
 
   final int nodeCount;
+  final Color? accent;
 
   @override
   Widget build(BuildContext context) {
-    final accent = dsTokensDark.colors.interactive.enabled;
+    final accentColor = accent ?? dsTokensDark.colors.interactive.enabled;
     return ColoredBox(
       color: dsTokensDark.colors.background.level01,
       child: Stack(
         fit: StackFit.expand,
         children: [
-          AuroraHero(colors: onboardingAuroraColors(accent), maxAlpha: 0.16),
+          AuroraHero(
+            colors: onboardingAuroraColors(accentColor),
+            maxAlpha: 0.16,
+          ),
           NeuralConstellation(
-            nodeColor: accent,
-            lineColor: accent.withValues(alpha: 0.55),
-            pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
+            nodeColor: accentColor,
+            lineColor: accentColor.withValues(alpha: 0.55),
+            pulseColor: Color.lerp(accentColor, Colors.white, 0.45)!,
             nodeCount: nodeCount,
           ),
         ],
