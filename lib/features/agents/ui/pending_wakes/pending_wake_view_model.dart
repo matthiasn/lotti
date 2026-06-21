@@ -116,6 +116,7 @@ String pendingWakeKindLabel(AppLocalizations messages, String kind) {
     AgentKinds.taskAgent => messages.agentInstancesKindTaskAgent,
     AgentKinds.dayAgent => messages.agentTemplateKindDayAgent,
     AgentKinds.projectAgent => messages.agentTemplateKindProjectAgent,
+    AgentKinds.eventAgent => messages.agentTemplateKindEventAgent,
     AgentKinds.templateImprover => messages.agentTemplateKindImprover,
     _ => kind,
   };

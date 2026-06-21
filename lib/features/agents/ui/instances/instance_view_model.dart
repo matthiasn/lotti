@@ -14,6 +14,7 @@ String instanceTypeLabel(AppLocalizations messages, InstanceType t) {
     InstanceType.taskAgent => messages.agentTemplateKindTaskAgent,
     InstanceType.dayAgent => messages.agentTemplateKindDayAgent,
     InstanceType.projectAgent => messages.agentTemplateKindProjectAgent,
+    InstanceType.eventAgent => messages.agentTemplateKindEventAgent,
     InstanceType.templateImprover => messages.agentTemplateKindImprover,
     InstanceType.evolution => messages.agentInstancesKindEvolution,
   };
@@ -41,6 +42,7 @@ enum InstanceType {
   taskAgent,
   dayAgent,
   projectAgent,
+  eventAgent,
   templateImprover,
   evolution,
 }
@@ -50,6 +52,7 @@ InstanceType? instanceTypeFromAgentKind(String kind) {
     AgentKinds.taskAgent => InstanceType.taskAgent,
     AgentKinds.dayAgent => InstanceType.dayAgent,
     AgentKinds.projectAgent => InstanceType.projectAgent,
+    AgentKinds.eventAgent => InstanceType.eventAgent,
     AgentKinds.templateImprover => InstanceType.templateImprover,
     _ => null,
   };

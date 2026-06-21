@@ -17,6 +17,7 @@ enum _GeneratedInstanceKindSlot {
   taskAgent,
   dayAgent,
   projectAgent,
+  eventAgent,
   templateImprover,
   unknown,
   empty,
@@ -29,6 +30,7 @@ String _generatedInstanceKind(_GeneratedInstanceKindSlot slot) {
     _GeneratedInstanceKindSlot.taskAgent => AgentKinds.taskAgent,
     _GeneratedInstanceKindSlot.dayAgent => AgentKinds.dayAgent,
     _GeneratedInstanceKindSlot.projectAgent => AgentKinds.projectAgent,
+    _GeneratedInstanceKindSlot.eventAgent => AgentKinds.eventAgent,
     _GeneratedInstanceKindSlot.templateImprover => AgentKinds.templateImprover,
     _GeneratedInstanceKindSlot.unknown => 'unknown_kind',
     _GeneratedInstanceKindSlot.empty => '',
@@ -40,6 +42,7 @@ InstanceType? _expectedInstanceType(_GeneratedInstanceKindSlot slot) {
     _GeneratedInstanceKindSlot.taskAgent => InstanceType.taskAgent,
     _GeneratedInstanceKindSlot.dayAgent => InstanceType.dayAgent,
     _GeneratedInstanceKindSlot.projectAgent => InstanceType.projectAgent,
+    _GeneratedInstanceKindSlot.eventAgent => InstanceType.eventAgent,
     _GeneratedInstanceKindSlot.templateImprover =>
       InstanceType.templateImprover,
     _GeneratedInstanceKindSlot.unknown => null,
