@@ -96,7 +96,9 @@ Color _resolveThumbColor(Color base, {required bool isDark}) {
   }
 
   if (isDark) {
-    return Color.lerp(base, Colors.white, 0.2)!;
+    // Lerp well toward white so the thumb is a clearly-brighter grab point
+    // against the now-slimmer, quieter rest-state track.
+    return Color.lerp(base, Colors.white, 0.35)!;
   }
 
   // Very-bright primaries (e.g. yellow) need to be darkened so the thumb
@@ -159,9 +161,12 @@ class _AudioProgressBarState extends State<AudioProgressBar> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final tokens = theme.extension<DsTokens>();
-    // A thicker track and larger thumb so the scrubber is easy to see and grab
-    // without precise aim (low-vision / limited-motor).
-    final trackHeight = widget.compact ? 7.0 : 9.0;
+    // A slim, quiet rest-state track paired with a large, high-contrast thumb.
+    // The previous thick bright rail was the loudest element on an audio card
+    // despite being the least informative; slimming it lets the content lead,
+    // while the grab affordance moves into the prominent thumb so the scrubber
+    // stays easy to see and drag without precise aim (low-vision / motor).
+    final trackHeight = widget.compact ? 4.0 : 5.0;
     final thumbRadius = widget.compact ? 7.5 : 9.0;
 
     return LayoutBuilder(

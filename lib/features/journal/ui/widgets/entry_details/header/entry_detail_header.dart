@@ -124,10 +124,10 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
         UnifiedAiPopUpMenu(
           journalEntity: entry,
           linkedFromId: widget.linkedFromId,
-          // mediumEmphasis (~10:1) so the outlined assistant glyph reads as a
-          // calm, co-equal header control rather than the heaviest element on
-          // the card — still well clear of the non-text-contrast floor.
-          iconColor: tokens.colors.text.mediumEmphasis,
+          // highEmphasis (pure white) so the outlined assistant glyph is a
+          // crisp, clearly-tappable control — at mediumEmphasis the thin
+          // outline read as faint for low-vision users.
+          iconColor: tokens.colors.text.highEmphasis,
         ),
       // The rating edit affordance lives in the header action cluster (a real,
       // aligned, comfortably-sized control) rather than as a small icon orphaned
@@ -137,7 +137,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           tooltip: context.messages.sessionRatingEditButton,
           icon: Icon(
             Icons.edit_outlined,
-            color: tokens.colors.text.mediumEmphasis,
+            color: tokens.colors.text.highEmphasis,
           ),
           onPressed: () => RatingModal.show(
             context,
@@ -167,7 +167,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           activeColor: starredGold,
         ),
       IconButton(
-        icon: Icon(Icons.more_horiz, color: tokens.colors.text.mediumEmphasis),
+        icon: Icon(Icons.more_horiz, color: tokens.colors.text.highEmphasis),
         onPressed: () => ExtendedHeaderModal.show(
           context: context,
           entryId: id,
@@ -179,20 +179,17 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     ];
   }
 
-  /// Interleaves the inter-control gap so adjacent header controls never sit
-  /// flush — the crowded 4-control headers were a mis-tap hazard for
-  /// motor-impaired users. The gap before the trailing overflow `…` is widened
-  /// further so the favorite toggle and the (destructive-capable) overflow menu
-  /// are not near-neighbours and a slipped tap can't catch the wrong one.
+  /// Interleaves one comfortable inter-control gap (step4) between every
+  /// adjacent header control so the crowded 4-control headers are no longer a
+  /// mis-tap hazard for motor-impaired users — a wider, uniform separation on
+  /// top of each control's 48px tap target keeps the favorite toggle and the
+  /// (destructive-capable) overflow menu from being easy to confuse.
   List<Widget> _spacedTrailing(BuildContext context, List<Widget> actions) {
     final spacing = context.designTokens.spacing;
     final out = <Widget>[];
     for (var i = 0; i < actions.length; i++) {
       if (i > 0) {
-        final beforeOverflow = i == actions.length - 1;
-        out.add(
-          SizedBox(width: beforeOverflow ? spacing.step4 : spacing.step3),
-        );
+        out.add(SizedBox(width: spacing.step4));
       }
       out.add(actions[i]);
     }
@@ -212,7 +209,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
       child: IconButton(
         icon: Icon(
           Icons.expand_more,
-          color: tokens.colors.text.mediumEmphasis,
+          color: tokens.colors.text.highEmphasis,
         ),
         onPressed: widget.onToggleCollapse,
       ),

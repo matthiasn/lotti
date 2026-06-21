@@ -404,8 +404,14 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
       final body = <Widget>[
         if (hasLabels) EntryLabelsDisplay(entryId: itemId),
         if (item is JournalImage) EntryImageWidget(item),
-        if (!shouldHideEditor) _bodyEditor(itemId),
+        // Payload-first read order: the structured value / summary line (e.g.
+        // "Habit completed: Flossing", "Coverage: 55%", the health value, the
+        // audio player) leads directly under the timestamp, and the free-text
+        // note (the editor) sits beneath it — the eye should land on the card's
+        // defining value before any prose. For audio this also puts the player
+        // above its transcript, matching the collapsible layout.
         ?detailSection,
+        if (!shouldHideEditor) _bodyEditor(itemId),
         if (hasNestedAiResponses)
           NestedAiResponsesWidget(
             parentEntryId: itemId,

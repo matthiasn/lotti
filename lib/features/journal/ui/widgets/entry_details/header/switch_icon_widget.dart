@@ -48,7 +48,11 @@ class SwitchIconWidget extends StatelessWidget {
               )
             : Icon(
                 icon,
-                color: context.designTokens.colors.text.mediumEmphasis,
+                // highEmphasis (pure white, ~15:1) for the OFF state: the thin
+                // outline glyph (e.g. the unfavorited star) read as a faint
+                // hairline at mediumEmphasis for low-vision users, so it was
+                // hard to tell the control was present and tappable.
+                color: context.designTokens.colors.text.highEmphasis,
               ),
       ),
     );
