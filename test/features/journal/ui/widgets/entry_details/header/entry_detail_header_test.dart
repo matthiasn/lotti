@@ -13,6 +13,8 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/entry_datetime_widget.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/entry_detail_header.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
+import 'package:lotti/features/ratings/repository/rating_repository.dart';
+import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -182,6 +184,50 @@ void main() {
       // The rating edit pencil lives in the header action cluster (not orphaned
       // in the summary body), so it renders for a RatingEntry header.
       expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
+    });
+
+    testWidgets('tapping the rating edit affordance opens the rating modal', (
+      WidgetTester tester,
+    ) async {
+      final ratingEntry = RatingEntry(
+        meta: Metadata(
+          id: 'rating-header-tap',
+          createdAt: DateTime(2024, 6, 15),
+          updatedAt: DateTime(2024, 6, 15),
+          dateFrom: DateTime(2024, 6, 15),
+          dateTo: DateTime(2024, 6, 15),
+        ),
+        data: const RatingData(targetId: 'target-1', dimensions: []),
+      );
+
+      when(
+        () => mockJournalDb.journalEntityById(ratingEntry.meta.id),
+      ).thenAnswer((_) async => ratingEntry);
+
+      // The opened modal loads the existing rating through the repository; a
+      // null result keeps it in the (empty) editable state.
+      final mockRatingRepository = MockRatingRepository();
+      when(
+        () => mockRatingRepository.getRatingForTargetEntry('target-1'),
+      ).thenAnswer((_) async => null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          EntryDetailHeader(entryId: ratingEntry.meta.id),
+          overrides: [
+            ratingRepositoryProvider.overrideWithValue(mockRatingRepository),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byIcon(Icons.edit_outlined));
+      await tester.pumpAndSettle();
+
+      // The header's onPressed routed into RatingModal.show with the entry's
+      // target/catalog, presenting the rating sheet.
+      expect(find.byType(RatingModal), findsOneWidget);
     });
 
     testWidgets('tap private icon', (WidgetTester tester) async {

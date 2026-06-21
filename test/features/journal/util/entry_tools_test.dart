@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 
 /// Glados generators for entry-tools property tests.
@@ -318,6 +320,136 @@ void main() {
       expect(
         humanWorkoutType('functionalStrengthTraining'),
         'Functional Strength Training',
+      );
+    });
+  });
+
+  group('entryTextForQuant', () {
+    QuantitativeEntry quant({
+      required String dataType,
+      required String unit,
+      required double value,
+    }) =>
+        JournalEntity.quantitative(
+              meta: Metadata(
+                id: 'quant-id',
+                createdAt: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+              ),
+              data: QuantitativeData.discreteQuantityData(
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                value: value,
+                dataType: dataType,
+                unit: unit,
+              ),
+            )
+            as QuantitativeEntry;
+
+    test('uses curated name + unit for a known type', () {
+      expect(
+        entryTextForQuant(
+          quant(
+            dataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+            unit: 'whatever',
+            value: 120,
+          ),
+        ),
+        'Systolic Blood Pressure: 120 mmHg',
+      );
+    });
+
+    test('rounds the value to a single decimal and cleans an unknown unit', () {
+      expect(
+        entryTextForQuant(
+          quant(
+            dataType: 'HealthDataType.SOME_NEW_METRIC',
+            unit: 'HealthDataUnit.KG',
+            value: 94.49,
+          ),
+        ),
+        'Some New Metric: 94.5 kg',
+      );
+    });
+  });
+
+  group('entryTextForWorkout', () {
+    WorkoutData workout({
+      required String workoutType,
+      required double? energy,
+      required int minutes,
+    }) => WorkoutData(
+      id: 'workout-id',
+      workoutType: workoutType,
+      energy: energy,
+      distance: null,
+      dateFrom: DateTime.fromMillisecondsSinceEpoch(0),
+      dateTo: DateTime.fromMillisecondsSinceEpoch(minutes * 60 * 1000),
+      source: '',
+    );
+
+    test('capitalizes the type and rounds energy to a whole number', () {
+      expect(
+        entryTextForWorkout(
+          workout(workoutType: 'running', energy: 632.02, minutes: 30),
+        ),
+        'Running\nEnergy: 632 kcal\nDuration: 30 min',
+      );
+    });
+
+    test('omits the title line and treats null energy as zero', () {
+      expect(
+        entryTextForWorkout(
+          workout(workoutType: '', energy: null, minutes: 12),
+          includeTitle: false,
+        ),
+        'Energy: 0 kcal\nDuration: 12 min',
+      );
+    });
+  });
+
+  group('entryTextForMeasurable', () {
+    MeasurableDataType dataType({
+      required String displayName,
+      required String unitName,
+    }) => MeasurableDataType(
+      id: 'measurable-id',
+      displayName: displayName,
+      description: '',
+      unitName: unitName,
+      createdAt: DateTime(2024, 3, 15),
+      updatedAt: DateTime(2024, 3, 15),
+      vectorClock: null,
+      version: 1,
+      aggregationType: AggregationType.dailySum,
+    );
+
+    MeasurementData measurement(double value) => MeasurementData(
+      value: value,
+      dateFrom: DateTime(2024, 3, 15),
+      dateTo: DateTime(2024, 3, 15),
+      dataTypeId: 'measurable-id',
+    );
+
+    test('separates a word unit from the value with a space', () {
+      expect(
+        entryTextForMeasurable(
+          measurement(94.49),
+          dataType(displayName: 'Weight', unitName: 'kg'),
+        ),
+        'Weight: 94.49 kg',
+      );
+    });
+
+    test('drops the space before a percent unit', () {
+      expect(
+        entryTextForMeasurable(
+          measurement(55),
+          dataType(displayName: 'Body Fat', unitName: '%'),
+        ),
+        'Body Fat: 55%',
       );
     });
   });
