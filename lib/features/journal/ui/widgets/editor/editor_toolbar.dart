@@ -42,7 +42,8 @@ class ToolbarWidget extends ConsumerWidget {
     final notifier = ref.read(entryControllerProvider(id: entryId).notifier);
     const duration = Duration(milliseconds: 400);
     const curve = Curves.easeInOutQuint;
-    final savePad = context.designTokens.spacing.step3;
+    final tokens = context.designTokens;
+    final savePad = tokens.spacing.step3;
 
     // QuillSimpleToolbar paints its own Container background; brighten the card
     // surface a touch so the bar reads as a distinct (but related) strip.
@@ -71,9 +72,10 @@ class ToolbarWidget extends ConsumerWidget {
                             context,
                             controller,
                             notifier,
+                            tokens,
                             toolbarColor,
                           )
-                        : _essentialsConfig(notifier, toolbarColor),
+                        : _essentialsConfig(notifier, tokens, toolbarColor),
                   ),
                 ),
                 if (!showAll)
@@ -81,10 +83,10 @@ class ToolbarWidget extends ConsumerWidget {
                     controller: controller,
                     notifier: notifier,
                   ),
-                // Fence the save action off from the formatting controls so it
-                // reads as a pinned, categorically-different primary action and
-                // can't be mis-tapped against the adjacent control.
-                const _ToolbarSeparator(),
+                // A generous, deterministic gap fences the save action off from
+                // the formatting controls so it reads as a pinned, primary action
+                // and an overshoot can't land on it (no orphan divider glyph).
+                SizedBox(width: tokens.spacing.step5),
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: savePad),
                   child: _ToolbarSaveButton(entryId: entryId),
@@ -117,23 +119,38 @@ class ToolbarWidget extends ConsumerWidget {
   }
 }
 
-/// A thin vertical rule that fences the save action off from the formatting
-/// controls (and matches Quill's own section dividers).
-class _ToolbarSeparator extends StatelessWidget {
-  const _ToolbarSeparator();
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step4),
-      child: Container(
-        width: 1,
-        height: tokens.spacing.sectionGap,
-        color: tokens.colors.text.lowEmphasis,
-      ),
-    );
-  }
+/// Shared button options for every config: brighten the icons toward white so
+/// they are legible on the toolbar strip (low-vision), light a toggled-on
+/// control teal so the active state is perceivable, and give code-block and
+/// checklist distinct glyphs so they don't collide with inline code / the
+/// bulleted list.
+QuillSimpleToolbarButtonOptions _buttonOptions(
+  EntryController notifier,
+  DsTokens tokens,
+) {
+  return QuillSimpleToolbarButtonOptions(
+    base:
+        QuillToolbarBaseButtonOptions<
+          dynamic,
+          QuillToolbarBaseButtonExtraOptions
+        >(
+          afterButtonPressed: notifier.focusNode.requestFocus,
+          iconTheme: QuillIconTheme(
+            iconButtonUnselectedData: IconButtonData(
+              color: tokens.colors.text.highEmphasis,
+            ),
+            iconButtonSelectedData: IconButtonData(
+              color: tokens.colors.interactive.enabled,
+            ),
+          ),
+        ),
+    codeBlock: const QuillToolbarToggleStyleButtonOptions(
+      iconData: Icons.data_object,
+    ),
+    toggleCheckList: const QuillToolbarToggleCheckListButtonOptions(
+      iconData: Icons.checklist_rounded,
+    ),
+  );
 }
 
 /// The full formatting set, shown inline when the toolbar is wide enough.
@@ -141,6 +158,7 @@ QuillSimpleToolbarConfig _fullConfig(
   BuildContext context,
   QuillController controller,
   EntryController notifier,
+  DsTokens tokens,
   Color toolbarColor,
 ) {
   return QuillSimpleToolbarConfig(
@@ -170,25 +188,14 @@ QuillSimpleToolbarConfig _fullConfig(
         onPressed: () => insertDividerEmbed(controller),
       ),
     ],
-    buttonOptions: QuillSimpleToolbarButtonOptions(
-      base:
-          QuillToolbarBaseButtonOptions<
-            dynamic,
-            QuillToolbarBaseButtonExtraOptions
-          >(afterButtonPressed: notifier.focusNode.requestFocus),
-      codeBlock: const QuillToolbarToggleStyleButtonOptions(
-        iconData: Icons.data_object,
-      ),
-      toggleCheckList: const QuillToolbarToggleCheckListButtonOptions(
-        iconData: Icons.checklist_rounded,
-      ),
-    ),
+    buttonOptions: _buttonOptions(notifier, tokens),
   );
 }
 
 /// The essential, always-visible formatting controls.
 QuillSimpleToolbarConfig _essentialsConfig(
   EntryController notifier,
+  DsTokens tokens,
   Color toolbarColor,
 ) {
   return QuillSimpleToolbarConfig(
@@ -218,19 +225,7 @@ QuillSimpleToolbarConfig _essentialsConfig(
     showRightAlignment: false,
     showJustifyAlignment: false,
     showSearchButton: false,
-    buttonOptions: QuillSimpleToolbarButtonOptions(
-      base:
-          QuillToolbarBaseButtonOptions<
-            dynamic,
-            QuillToolbarBaseButtonExtraOptions
-          >(afterButtonPressed: notifier.focusNode.requestFocus),
-      codeBlock: const QuillToolbarToggleStyleButtonOptions(
-        iconData: Icons.data_object,
-      ),
-      toggleCheckList: const QuillToolbarToggleCheckListButtonOptions(
-        iconData: Icons.checklist_rounded,
-      ),
-    ),
+    buttonOptions: _buttonOptions(notifier, tokens),
   );
 }
 
@@ -239,6 +234,7 @@ QuillSimpleToolbarConfig _advancedConfig(
   BuildContext context,
   QuillController controller,
   EntryController notifier,
+  DsTokens tokens,
   Color toolbarColor,
 ) {
   return QuillSimpleToolbarConfig(
@@ -269,19 +265,7 @@ QuillSimpleToolbarConfig _advancedConfig(
         onPressed: () => insertDividerEmbed(controller),
       ),
     ],
-    buttonOptions: QuillSimpleToolbarButtonOptions(
-      base:
-          QuillToolbarBaseButtonOptions<
-            dynamic,
-            QuillToolbarBaseButtonExtraOptions
-          >(afterButtonPressed: notifier.focusNode.requestFocus),
-      codeBlock: const QuillToolbarToggleStyleButtonOptions(
-        iconData: Icons.data_object,
-      ),
-      toggleCheckList: const QuillToolbarToggleCheckListButtonOptions(
-        iconData: Icons.checklist_rounded,
-      ),
-    ),
+    buttonOptions: _buttonOptions(notifier, tokens),
   );
 }
 
@@ -317,6 +301,7 @@ class _MoreFormattingButton extends StatelessWidget {
                   sheetContext,
                   controller,
                   notifier,
+                  tokens,
                   toolbarColor,
                 ),
               ),
