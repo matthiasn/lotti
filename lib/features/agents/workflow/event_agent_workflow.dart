@@ -6,9 +6,11 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -268,6 +270,7 @@ class EventAgentWorkflow {
       final reportTldr = strategy.extractReportTldr();
       final reportOneLiner = strategy.extractReportOneLiner();
       final extractedObservations = strategy.extractObservations();
+      final deferredItems = strategy.extractDeferredItems();
 
       await syncService.runInTransaction(() async {
         final latestState =
@@ -364,6 +367,35 @@ class EventAgentWorkflow {
           );
         }
 
+        // Persist deferred proposals (follow-up tasks) as a pending change set
+        // keyed by the event id, so the detail page can surface them for
+        // accept/reject.
+        if (deferredItems.isNotEmpty) {
+          final changeItems = deferredItems.map((item) {
+            final toolName = item['toolName'] as String? ?? '';
+            final args = item['args'] as Map<String, dynamic>? ?? {};
+            return ChangeItem(
+              toolName: toolName,
+              args: args,
+              humanSummary: _buildHumanSummary(toolName, args),
+            );
+          }).toList();
+
+          await syncService.upsertEntity(
+            AgentDomainEntity.changeSet(
+              id: _uuid.v4(),
+              agentId: agentId,
+              taskId: eventId,
+              threadId: threadId,
+              runKey: runKey,
+              status: ChangeSetStatus.pending,
+              items: changeItems,
+              createdAt: now,
+              vectorClock: null,
+            ),
+          );
+        }
+
         // Update state: the run reached inference, so content has arrived —
         // clear the content gate.
         final hostId = await syncService.localHost();
@@ -450,6 +482,19 @@ class EventAgentWorkflow {
       );
     } catch (e, s) {
       _logError('failed to persist token usage', error: e, stackTrace: s);
+    }
+  }
+
+  /// Builds a user-facing one-line summary for a deferred tool call.
+  static String _buildHumanSummary(String toolName, Map<String, dynamic> args) {
+    switch (toolName) {
+      case EventAgentToolNames.suggestFollowUpTask:
+        final title = args['title'];
+        return title is String && title.trim().isNotEmpty
+            ? 'Follow-up task: ${title.trim()}'
+            : 'Suggest a follow-up task';
+      default:
+        return 'Deferred: $toolName';
     }
   }
 

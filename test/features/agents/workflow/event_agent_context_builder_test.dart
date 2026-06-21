@@ -156,14 +156,15 @@ void main() {
   });
 
   group('buildToolDefinitions', () {
-    test('exposes exactly the narrate + observe tools', () {
+    test('exposes the narrate, observe, and follow-up tools', () {
       final tools = builder.buildToolDefinitions();
 
-      expect(tools, hasLength(2));
+      expect(tools, hasLength(3));
       final names = tools.map((t) => t.function.name).toSet();
       expect(names, {
         EventAgentToolNames.updateReport,
         EventAgentToolNames.recordObservations,
+        EventAgentToolNames.suggestFollowUpTask,
       });
     });
   });

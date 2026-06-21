@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 abstract final class EventAgentToolNames {
   static const updateReport = 'update_report';
   static const recordObservations = 'record_observations';
+  static const suggestFollowUpTask = 'suggest_follow_up_task';
 }
 
 /// Wire argument names for the event agent's `update_report` call.
@@ -114,4 +115,33 @@ const eventAgentTools = <AgentToolDefinition>[
       'required': ['observations'],
     },
   ),
+  AgentToolDefinition(
+    name: EventAgentToolNames.suggestFollowUpTask,
+    description:
+        'Propose a concrete follow-up task the event implies (send a '
+        'thank-you, share the album, book the next one). This is a deferred '
+        'tool — the task is presented to the user for review and only created '
+        'on accept. Only suggest follow-ups that are clearly grounded in the '
+        'event; do not invent busywork.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'title': {
+          'type': 'string',
+          'description': 'Short, action-oriented title for the follow-up task.',
+        },
+        'notes': {
+          'type': 'string',
+          'description': 'Optional context for what the task involves and why.',
+        },
+      },
+      'required': ['title'],
+    },
+  ),
 ];
+
+/// Event agent tools whose mutations require user confirmation before being
+/// applied (surfaced as accept/reject suggestions).
+const eventDeferredTools = <String>{
+  EventAgentToolNames.suggestFollowUpTask,
+};

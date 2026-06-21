@@ -136,9 +136,12 @@ void main() {
     ).thenAnswer((_) async => [testModel]);
   }
 
-  /// Drives the strategy to publish a recap (and optional observations) the way
-  /// the LLM would, via the conversation delegate.
-  void stubReportPublishingRun({List<String> observations = const []}) {
+  /// Drives the strategy to publish a recap (and optional observations /
+  /// follow-up proposals) the way the LLM would, via the conversation delegate.
+  void stubReportPublishingRun({
+    List<String> observations = const [],
+    List<String> followUpTitles = const [],
+  }) {
     mockConversationRepository.sendMessageDelegate =
         ({
           required conversationId,
@@ -182,6 +185,15 @@ void main() {
                   function: ChatCompletionMessageFunctionCall(
                     name: EventAgentToolNames.recordObservations,
                     arguments: jsonEncode({'observations': observations}),
+                  ),
+                ),
+              for (var i = 0; i < followUpTitles.length; i++)
+                ChatCompletionMessageToolCall(
+                  id: 'call-followup-$i',
+                  type: ChatCompletionMessageToolCallType.function,
+                  function: ChatCompletionMessageFunctionCall(
+                    name: EventAgentToolNames.suggestFollowUpTask,
+                    arguments: jsonEncode({'title': followUpTitles[i]}),
                   ),
                 ),
             ];
@@ -383,6 +395,28 @@ void main() {
           .toList();
       expect(payloads, hasLength(1));
     });
+
+    test(
+      'persists suggested follow-ups as a pending change set on the event',
+      () async {
+        stubReportPublishingRun(
+          followUpTitles: ['Share the album with the group'],
+        );
+
+        await run();
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        final changeSets = captured.whereType<ChangeSetEntity>().toList();
+        expect(changeSets, hasLength(1));
+        expect(changeSets.single.taskId, eventId);
+        expect(changeSets.single.status, ChangeSetStatus.pending);
+        final item = changeSets.single.items.single;
+        expect(item.toolName, EventAgentToolNames.suggestFollowUpTask);
+        expect(item.humanSummary, contains('Share the album with the group'));
+      },
+    );
 
     test('increments the failure count when the conversation throws', () async {
       mockConversationRepository.sendMessageDelegate =

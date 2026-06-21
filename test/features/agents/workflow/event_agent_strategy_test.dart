@@ -193,6 +193,42 @@ void main() {
     });
   });
 
+  group('suggest_follow_up_task (deferred)', () {
+    test('accumulates the proposal and queues it for review', () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _makeToolCall(
+            name: EventAgentToolNames.suggestFollowUpTask,
+            args: {
+              'title': 'Share the album with the group',
+              'notes': 'Everyone asked for the photos.',
+            },
+          ),
+        ],
+        manager: mockManager,
+      );
+
+      final deferred = strategy.extractDeferredItems();
+      expect(deferred, hasLength(1));
+      expect(
+        deferred.single['toolName'],
+        EventAgentToolNames.suggestFollowUpTask,
+      );
+      expect(
+        (deferred.single['args'] as Map)['title'],
+        'Share the album with the group',
+      );
+      // It is not published as a report — it awaits user review.
+      expect(strategy.extractReportContent(), '');
+      verify(
+        () => mockManager.addToolResponse(
+          toolCallId: 'call-1',
+          response: 'Queued suggest_follow_up_task for user review.',
+        ),
+      ).called(1);
+    });
+  });
+
   group('error handling', () {
     test('responds with an error for an unknown tool', () async {
       await strategy.processToolCalls(

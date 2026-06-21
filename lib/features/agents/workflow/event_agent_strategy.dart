@@ -48,6 +48,7 @@ class EventAgentStrategy extends ConversationStrategy {
   String? _reportOneLiner;
   String? _finalResponse;
   final _observations = <ObservationRecord>[];
+  final _deferredItems = <Map<String, dynamic>>[];
 
   static const _uuid = Uuid();
 
@@ -92,6 +93,17 @@ class EventAgentStrategy extends ConversationStrategy {
 
       if (toolName == EventAgentToolNames.recordObservations) {
         await _handleRecordObservations(args, call.id, manager);
+        continue;
+      }
+
+      // Deferred tools: accumulate for later persistence + user review.
+      if (eventDeferredTools.contains(toolName)) {
+        _deferredItems.add({'toolName': toolName, 'args': args});
+        manager.addToolResponse(
+          toolCallId: call.id,
+          response: 'Queued $toolName for user review.',
+        );
+        await _recordToolResultMessage(toolName: toolName);
         continue;
       }
 
@@ -141,6 +153,11 @@ class EventAgentStrategy extends ConversationStrategy {
   /// Returns observations accumulated from `record_observations` calls.
   List<ObservationRecord> extractObservations() =>
       List.unmodifiable(_observations);
+
+  /// Returns deferred tool items accumulated during the conversation, for
+  /// persistence as a pending change set the user can accept or reject.
+  List<Map<String, dynamic>> extractDeferredItems() =>
+      List.unmodifiable(_deferredItems);
 
   // ── Report handling ────────────────────────────────────────────────────────
 
