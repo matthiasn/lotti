@@ -4,7 +4,6 @@
 //
 // Helper file - no test cases of its own. `main()` below satisfies
 // `flutter test` when the path is passed directly.
-// ignore_for_file: unreachable_from_main
 
 import 'dart:async';
 import 'dart:convert';

@@ -3,7 +3,6 @@
 // walks `test/` rather than `test/**/*_test.dart`). The helpers in this
 // file are exported and consumed by sibling `_test.dart` files, so the
 // analyzer's `unreachable_from_main` check doesn't apply here.
-// ignore_for_file: unreachable_from_main
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';

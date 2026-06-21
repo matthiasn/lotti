@@ -39,9 +39,7 @@ class TestErrorWithBodyAndMessage {
   TestErrorWithBodyAndMessage({this.body, this.message});
   // Read dynamically by AiErrorUtils (error.body / error.message), which the
   // analyzer cannot see.
-  // ignore: unreachable_from_main
   final dynamic body;
-  // ignore: unreachable_from_main
   final String? message;
 
   @override

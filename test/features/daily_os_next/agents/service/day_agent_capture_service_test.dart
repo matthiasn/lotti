@@ -19,9 +19,9 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../features/agents/test_data/entity_factories.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../agents/test_data/entity_factories.dart';
 
 const _agentId = 'day-agent-001';
 const _threadId = 'thread-001';

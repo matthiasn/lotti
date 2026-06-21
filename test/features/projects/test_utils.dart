@@ -10,7 +10,7 @@ import 'package:lotti/features/projects/state/project_one_liner_provider.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/utils/file_utils.dart';
 
-import '../../features/categories/test_utils.dart';
+import '../categories/test_utils.dart';
 
 /// Shared test factory for creating [ProjectEntry] instances.
 ///
