@@ -75,14 +75,17 @@ class _DueDateTextState extends State<DueDateText> {
     final tokens = context.designTokens;
     final color = _getColor(context, status);
 
-    // Near dates (within a week, in either direction) read as relative phrasing
-    // by default — "Due Today", "Due in 3 days", "Overdue by 5 days" — which is
-    // far quicker to triage and gives overdue a redundant text cue beyond its
-    // colour. Distant dates default to the absolute date for precise planning.
-    // Tapping flips to the other representation.
+    // Default representation: relative phrasing whenever it triages faster.
+    // *Overdue* dates are ALWAYS relative ("Overdue by N days"), however long
+    // ago — a bare absolute date disguises the most urgent item as a far-off
+    // one and drops the redundant text cue colour-blind users rely on. Future
+    // dates are relative within a week ("Due Today", "Due in 3 days") and
+    // absolute beyond it, where an exact date aids planning. Since overdue days
+    // are negative they always satisfy `days <= _relativeWindowDays`, so a
+    // single threshold covers both. Tapping flips to the other representation.
     final days = status.daysUntilDue;
-    final isNear = days != null && days.abs() <= _relativeWindowDays;
-    final showRelative = _showRelativeOverride ?? isNear;
+    final defaultRelative = days != null && days <= _relativeWindowDays;
+    final showRelative = _showRelativeOverride ?? defaultRelative;
     final text = showRelative
         ? _getRelativeText(context, status)
         : _getAbsoluteText(context, status);

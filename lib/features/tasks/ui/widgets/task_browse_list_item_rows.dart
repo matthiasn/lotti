@@ -466,28 +466,41 @@ class _TrackedDurationMetaContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // bodySmall (not caption) so the duration reads at the same size as the
-    // one-liner rather than as the tiniest text on the card — the recessive
-    // read comes from the muted colour + regular weight, not a smaller size,
-    // which keeps it legible for low-vision users while still subordinate to
-    // the bold title.
-    final textStyle = context.designTokens.typography.styles.body.bodySmall
-        .copyWith(
-          color: TaskShowcasePalette.mediumText(context),
-          fontFeatures: const [FontFeature.tabularFigures()],
-        );
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.timelapse_rounded,
-          size: 18,
-          color: TaskShowcasePalette.mediumText(context),
-        ),
-        const SizedBox(width: 6),
-        Text(label, style: textStyle),
-      ],
+    final tokens = context.designTokens;
+    // The tracked-duration reads as the same bordered surface pill as the other
+    // metadata chips (category, due) so the row is one consistent set and each
+    // chip's boundary is legible for low-vision users. bodySmall (14px) keeps
+    // it readable; the recessive read comes from the muted colour, not a
+    // smaller size. Tabular figures let durations line up when scanned.
+    return Container(
+      height: 24,
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step2,
+        vertical: tokens.spacing.step1,
+      ),
+      decoration: BoxDecoration(
+        color: TaskShowcasePalette.surface(context),
+        borderRadius: BorderRadius.circular(tokens.radii.xs),
+        border: Border.all(color: TaskShowcasePalette.containerBorder(context)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.timelapse_rounded,
+            size: 14,
+            color: TaskShowcasePalette.mediumText(context),
+          ),
+          SizedBox(width: tokens.spacing.step1),
+          Text(
+            label,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: TaskShowcasePalette.mediumText(context),
+              fontFeatures: const [FontFeature.tabularFigures()],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

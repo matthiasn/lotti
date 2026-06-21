@@ -562,19 +562,23 @@ void main() {
         data: buildTask().data.copyWith(due: dueDate),
       );
 
-      await pumpTaskCard(
-        tester,
-        ModernTaskCard(
-          task: task,
-        ),
-      );
+      // Pin a clock so Nov 10 is a far *future* date (overdue dates now always
+      // render relative, so a far-past date would not show the absolute form).
+      await withClock(Clock(() => DateTime(2025, 11)), () async {
+        await pumpTaskCard(
+          tester,
+          ModernTaskCard(
+            task: task,
+          ),
+        );
 
-      // Due date should be shown with event icon and "Due:" prefix
-      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
-      expect(
-        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
-        findsOneWidget,
-      );
+        // Due date should be shown with event icon and "Due:" prefix
+        expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+        expect(
+          find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+          findsOneWidget,
+        );
+      });
     });
 
     testWidgets('showDueDate defaults to true', (tester) async {
@@ -583,13 +587,15 @@ void main() {
         data: buildTask().data.copyWith(due: dueDate),
       );
 
-      await pumpTaskCard(tester, ModernTaskCard(task: task));
+      await withClock(Clock(() => DateTime(2025, 11)), () async {
+        await pumpTaskCard(tester, ModernTaskCard(task: task));
 
-      // Default should show due date with "Due:" prefix
-      expect(
-        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
-        findsOneWidget,
-      );
+        // Default should show due date with "Due:" prefix
+        expect(
+          find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+          findsOneWidget,
+        );
+      });
     });
 
     testWidgets('does not show due date row when due is null', (tester) async {
@@ -629,26 +635,32 @@ void main() {
       );
       final task = Task(meta: meta, data: data);
 
-      await pumpTaskCard(
-        tester,
-        ModernTaskCard(
-          task: task,
-          showCreationDate: true,
-        ),
-      );
+      // Pin a clock so Nov 10 renders in the absolute form (overdue dates now
+      // always render relative).
+      await withClock(Clock(() => DateTime(2025, 11)), () async {
+        await pumpTaskCard(
+          tester,
+          ModernTaskCard(
+            task: task,
+            showCreationDate: true,
+          ),
+        );
 
-      // Verify both dates are present
-      final creationDateText = DateFormat.yMMMd().format(creationDate);
-      final dueDateText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        // Verify both dates are present
+        final creationDateText = DateFormat.yMMMd().format(creationDate);
+        final dueDateText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
 
-      expect(find.text(creationDateText), findsOneWidget);
-      expect(find.text(dueDateText), findsOneWidget);
+        expect(find.text(creationDateText), findsOneWidget);
+        expect(find.text(dueDateText), findsOneWidget);
 
-      // Verify layout: creation date on left, due date on right
-      final creationDateOffset = tester.getTopLeft(find.text(creationDateText));
-      final dueDateOffset = tester.getTopLeft(find.text(dueDateText));
+        // Verify layout: creation date on left, due date on right
+        final creationDateOffset = tester.getTopLeft(
+          find.text(creationDateText),
+        );
+        final dueDateOffset = tester.getTopLeft(find.text(dueDateText));
 
-      expect(creationDateOffset.dx, lessThan(dueDateOffset.dx));
+        expect(creationDateOffset.dx, lessThan(dueDateOffset.dx));
+      });
     });
 
     // Completed statuses hide the due date; parameterised to avoid
@@ -712,14 +724,18 @@ void main() {
       );
       final task = Task(meta: meta, data: data);
 
-      await pumpTaskCard(tester, ModernTaskCard(task: task));
+      // Pin a clock so Nov 10 renders in the absolute form (overdue dates now
+      // always render relative).
+      await withClock(Clock(() => DateTime(2025, 11)), () async {
+        await pumpTaskCard(tester, ModernTaskCard(task: task));
 
-      // Due date SHOULD be shown for in-progress tasks
-      expect(find.byIcon(Icons.event_rounded), findsOneWidget);
-      expect(
-        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
-        findsOneWidget,
-      );
+        // Due date SHOULD be shown for in-progress tasks
+        expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+        expect(
+          find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+          findsOneWidget,
+        );
+      });
     });
 
     testWidgets(
