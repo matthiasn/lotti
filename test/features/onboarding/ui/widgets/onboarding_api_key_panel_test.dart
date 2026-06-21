@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -48,6 +50,12 @@ void main() {
         ),
         mediaQueryData: mq,
         overrides: [
+          // Never construct a real HttpClient in the verifier (the fake probe
+          // ignores it, but the default factory would still create one).
+          connectionVerifierClientProvider.overrideWith(
+            (ref) =>
+                () => MockClient((_) async => http.Response('', 200)),
+          ),
           if (probeResult != null)
             connectionProbeRegistryProvider.overrideWith(
               (ref) => {type: _FakeProbe(probeResult)},
@@ -63,9 +71,14 @@ void main() {
   Future<void> enterKeyAndSettle(WidgetTester tester, String key) async {
     await tester.enterText(find.byType(TextField), key);
     await tester.pump(); // process onChanged → schedule debounce
-    await tester.pump(const Duration(milliseconds: 600)); // fire debounce timer
-    await tester.pump(); // resolve probe future → rebuild
+    await tester.pump(const Duration(milliseconds: 900)); // fire debounce timer
+    await tester.pumpAndSettle(); // resolve probe + settle the status crossfade
   }
+
+  /// The Connect CTA's current `onPressed` — null means disabled.
+  VoidCallback? connectOnPressed(WidgetTester tester) => tester
+      .widget<DesignSystemButton>(find.byType(DesignSystemButton))
+      .onPressed;
 
   testWidgets('idle key step shows a tappable "get a key" link', (
     tester,
@@ -77,9 +90,11 @@ void main() {
       findsOneWidget,
     );
     expect(find.byIcon(Icons.open_in_new_rounded), findsOneWidget);
+    // Nothing verified yet → Connect is disabled.
+    expect(connectOnPressed(tester), isNull);
   });
 
-  testWidgets('a valid key verifies and shows the confirmation', (
+  testWidgets('a valid key verifies, shows confirmation, enables Connect', (
     tester,
   ) async {
     await pumpPanel(
@@ -90,32 +105,18 @@ void main() {
         latency: Duration(milliseconds: 120),
       ),
     );
+    expect(connectOnPressed(tester), isNull);
 
     await enterKeyAndSettle(tester, 'good-key');
 
     expect(find.text('Connection verified'), findsOneWidget);
     // The "get a key" link gives way to the live status once a probe resolves.
     expect(find.textContaining('Get a key at'), findsNothing);
+    // Verified → Connect is now enabled.
+    expect(connectOnPressed(tester), isNotNull);
   });
 
-  testWidgets('an invalid key surfaces the provider rejection inline', (
-    tester,
-  ) async {
-    await pumpPanel(
-      tester,
-      type: InferenceProviderType.gemini,
-      probeResult: const ConnectionCheckFailedHttp(
-        status: 401,
-        message: 'Invalid API key provided',
-      ),
-    );
-
-    await enterKeyAndSettle(tester, 'bad-key');
-
-    expect(find.text('Invalid API key provided'), findsOneWidget);
-  });
-
-  testWidgets('pressing Connect with an unverified key does not connect', (
+  testWidgets('a rejected key shows the error and keeps Connect disabled', (
     tester,
   ) async {
     var connected = false;
@@ -129,16 +130,40 @@ void main() {
       ),
     );
 
-    // Tap Connect before the debounce fires: _connect must verify first and
-    // bail on rejection rather than creating a half-working provider.
-    await tester.enterText(find.byType(TextField), 'bad-key');
-    await tester.pump();
-    await tester.tap(find.text('Connect'));
-    await tester.pump(); // _connect sets busy + starts verify
-    await tester.pump(); // probe resolves → rejection
+    await enterKeyAndSettle(tester, 'bad-key');
 
-    expect(connected, isFalse);
     expect(find.text('Invalid API key provided'), findsOneWidget);
+    // Rejected → Connect stays disabled; tapping it cannot connect.
+    expect(connectOnPressed(tester), isNull);
+    await tester.tap(find.text('Connect'), warnIfMissed: false);
+    await tester.pump();
+    expect(connected, isFalse);
+  });
+
+  testWidgets('typing clears a prior rejection (neutral while editing)', (
+    tester,
+  ) async {
+    await pumpPanel(
+      tester,
+      type: InferenceProviderType.gemini,
+      probeResult: const ConnectionCheckFailedHttp(
+        status: 401,
+        message: 'Invalid API key provided',
+      ),
+    );
+    await enterKeyAndSettle(tester, 'bad-key');
+    expect(find.text('Invalid API key provided'), findsOneWidget);
+
+    // Editing the key clears the stale rejection (it crossfades out) rather
+    // than leaving it on screen between keystrokes.
+    await tester.enterText(find.byType(TextField), 'bad-key2');
+    await tester.pump(); // rebuild → start the crossfade
+    await tester.pump(const Duration(milliseconds: 300)); // advance past it
+    expect(find.text('Invalid API key provided'), findsNothing);
+
+    // Clear the field so the pending debounce timer doesn't outlive the test.
+    await tester.enterText(find.byType(TextField), '');
+    await tester.pump();
   });
 
   testWidgets('local provider needs no key and probes on open', (tester) async {

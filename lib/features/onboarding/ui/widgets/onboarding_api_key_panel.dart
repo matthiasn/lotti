@@ -17,10 +17,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/markdown_link_utils.dart';
 
-/// Debounce before a key edit fires a live probe — long enough that
-/// typing/pasting settles, short enough that an invalid key surfaces
-/// almost immediately.
-const _verifyDebounce = Duration(milliseconds: 600);
+/// Debounce before a key edit fires a live probe. Deliberately on the slower
+/// side so a partial key mid-typing never churns through checking → invalid;
+/// the probe runs only once the user actually pauses.
+const _verifyDebounce = Duration(milliseconds: 800);
 
 /// Screen 3 of the FTUE: the visually-matching, simple step that gathers just
 /// the API key for the chosen provider, **verifies it live** against the
@@ -84,14 +84,11 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
 
   void _onKeyChanged(String value) {
     _debounce?.cancel();
-    // Drop any in-flight probe so its late result can't overwrite the state
-    // for the key the user is now typing.
-    _verifier.invalidate();
-    if (value.trim().isEmpty) {
-      // Back to idle → the "get a key" link returns, no stale error lingers.
-      _verifier.reset();
-      return;
-    }
+    // Clear any prior result and drop the in-flight probe. While the user is
+    // still typing the slot stays neutral — never a stale "invalid" that
+    // churns on each keystroke — and the probe re-runs only once typing pauses.
+    _verifier.reset();
+    if (value.trim().isEmpty) return;
     _debounce = Timer(_verifyDebounce, () {
       if (mounted) _verifyNow();
     });
@@ -102,28 +99,19 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
   }
 
   Future<void> _connect() async {
-    final key = _controller.text.trim();
-    if (_requiresKey && key.isEmpty) return;
+    // The CTA is only enabled once the probe has verified the key, so a bad
+    // key can't reach here; guard defensively anyway.
+    final verified = ref.read(
+      connectionVerifierControllerProvider(widget.type),
+    );
+    if (verified is! ConnectionCheckVerified) return;
 
+    final key = _controller.text.trim();
+    _debounce?.cancel();
     setState(() {
       _busy = true;
       _error = null;
     });
-
-    // Verify first (reusing any live result), so a bad key never creates a
-    // half-working provider.
-    _debounce?.cancel();
-    var state = ref.read(connectionVerifierControllerProvider(widget.type));
-    if (state is! ConnectionCheckVerified) {
-      await _verifier.verify(baseUrl: _baseUrl, apiKey: key);
-      if (!mounted) return;
-      state = ref.read(connectionVerifierControllerProvider(widget.type));
-    }
-    if (state is! ConnectionCheckVerified) {
-      // The inline status line already explains why; just re-enable the CTA.
-      setState(() => _busy = false);
-      return;
-    }
 
     try {
       final repository = ref.read(aiConfigRepositoryProvider);
@@ -170,11 +158,49 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
       connectionVerifierControllerProvider(widget.type),
     );
 
+    // The content of the fixed-height status slot. Distinct keys let the
+    // AnimatedSwitcher crossfade between them:
+    //  - empty field → the "get a key" link (cloud providers only);
+    //  - typing, awaiting the debounce (idle but text present) → a neutral
+    //    empty slot, so no stale status flickers between keystrokes;
+    //  - any probe state → the live checking/verified/rejected status.
+    final keyEntered = _controller.text.trim().isNotEmpty;
+    final Widget statusChild;
+    if (verifyState is ConnectionCheckIdle) {
+      statusChild = (_requiresKey && console != null && !keyEntered)
+          ? _GetKeyLink(
+              key: const ValueKey('link'),
+              console: console,
+              brand: brand,
+            )
+          : const SizedBox.shrink(key: ValueKey('empty'));
+    } else {
+      statusChild = _VerifyStatus(
+        key: ValueKey('status-${verifyState.runtimeType}'),
+        state: verifyState,
+        providerName: onboardingProviderName(messages, widget.type),
+      );
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
       child: Stack(
         children: [
-          Positioned.fill(child: OnboardingBackdrop(accent: brand)),
+          Positioned.fill(
+            // Bleak fade: the brand-lit backdrop desaturates to greyscale when
+            // the key is rejected, then recovers to full brand colour once the
+            // user fixes it (or while still typing/verifying).
+            child: TweenAnimationBuilder<double>(
+              tween: Tween<double>(end: _isRejected(verifyState) ? 0 : 1),
+              duration: MotionDurations.long2,
+              curve: MotionCurves.standard,
+              child: OnboardingBackdrop(accent: brand),
+              builder: (context, saturation, child) => ColorFiltered(
+                colorFilter: _saturationColorFilter(saturation),
+                child: child,
+              ),
+            ),
+          ),
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
@@ -250,7 +276,16 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                     autofocus: true,
                     enabled: !_busy,
                     onChanged: _onKeyChanged,
-                    onSubmitted: (_) => _connect(),
+                    // Enter connects when already verified, otherwise forces an
+                    // immediate check instead of waiting out the debounce.
+                    onSubmitted: (_) {
+                      if (verifyState is ConnectionCheckVerified) {
+                        _connect();
+                      } else {
+                        _debounce?.cancel();
+                        _verifyNow();
+                      }
+                    },
                     style: tokens.typography.styles.body.bodyLarge.copyWith(
                       color: textHigh,
                     ),
@@ -271,37 +306,27 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                       ),
                     ),
                   ),
-                  SizedBox(height: tokens.spacing.step3),
-                  // Live verification status replaces the "get a key" link once
-                  // a probe is in flight or has resolved.
-                  if (verifyState is ConnectionCheckIdle && console != null)
-                    _GetKeyLink(console: console, brand: brand)
-                  else
-                    _VerifyStatus(
-                      state: verifyState,
-                      providerName: onboardingProviderName(
-                        messages,
-                        widget.type,
-                      ),
-                    ),
-                ] else ...[
+                ] else
                   Text(
                     messages.onboardingApiKeyLocalNote,
                     style: tokens.typography.styles.body.bodyLarge.copyWith(
                       color: textMed,
                     ),
                   ),
-                  if (verifyState is! ConnectionCheckIdle) ...[
-                    SizedBox(height: tokens.spacing.step3),
-                    _VerifyStatus(
-                      state: verifyState,
-                      providerName: onboardingProviderName(
-                        messages,
-                        widget.type,
-                      ),
+                SizedBox(height: tokens.spacing.step3),
+                // Fixed-height status slot: the live states (link → checking →
+                // verified/rejected) crossfade in place rather than reflowing —
+                // and shoving — the bottom-anchored panel as they swap.
+                SizedBox(
+                  height: tokens.spacing.step7,
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: AnimatedSwitcher(
+                      duration: MotionDurations.short3,
+                      child: statusChild,
                     ),
-                  ],
-                ],
+                  ),
+                ),
                 if (_error != null)
                   Padding(
                     padding: EdgeInsets.only(top: tokens.spacing.step4),
@@ -314,7 +339,11 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
                   ),
                 SizedBox(height: tokens.spacing.step6),
                 DesignSystemButton(
-                  onPressed: _busy ? null : _connect,
+                  // Disabled until the key is verified, so the user can only
+                  // proceed with a key the provider actually accepted.
+                  onPressed: (_busy || verifyState is! ConnectionCheckVerified)
+                      ? null
+                      : _connect,
                   label: _busy
                       ? messages.onboardingApiKeyConnecting
                       : messages.onboardingApiKeyConnect,
@@ -331,12 +360,33 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
   }
 }
 
+/// Whether the verification state is a rejection — drives the bleak greyscale
+/// fade of the backdrop. Checking / verified / idle all stay in full colour.
+bool _isRejected(ConnectionCheckState state) =>
+    state is ConnectionCheckFailedHttp || state is ConnectionCheckFailedNetwork;
+
+/// A luminance-preserving saturation [ColorFilter]: [s] == 1 leaves colour
+/// untouched, [s] == 0 collapses to greyscale. Intermediate values (driven by a
+/// tween) give the smooth desaturation when a key is rejected.
+ColorFilter _saturationColorFilter(double s) {
+  const lumR = 0.2126;
+  const lumG = 0.7152;
+  const lumB = 0.0722;
+  final inv = 1 - s;
+  return ColorFilter.matrix(<double>[
+    lumR * inv + s, lumG * inv, lumB * inv, 0, 0, //
+    lumR * inv, lumG * inv + s, lumB * inv, 0, 0, //
+    lumR * inv, lumG * inv, lumB * inv + s, 0, 0, //
+    0, 0, 0, 1, 0, //
+  ]);
+}
+
 /// Tappable "Get a key at `<console>`" hint that launches the provider's API-key
 /// console in the browser. The host is rendered in the provider's brand colour
 /// with an underline + external-link glyph so it reads as a link on the dark
 /// panel.
 class _GetKeyLink extends StatelessWidget {
-  const _GetKeyLink({required this.console, required this.brand});
+  const _GetKeyLink({required this.console, required this.brand, super.key});
 
   final String console;
   final Color brand;
@@ -348,44 +398,43 @@ class _GetKeyLink extends StatelessWidget {
     final textMed = dsTokensDark.colors.text.mediumEmphasis;
     final bodySmall = tokens.typography.styles.body.bodySmall;
 
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: InkWell(
-        onTap: () => unawaited(handleMarkdownLinkTap('https://$console', '')),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Flexible(
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '${messages.onboardingApiKeyGetKeyAt} ',
-                        style: bodySmall.copyWith(color: textMed),
+    return InkWell(
+      onTap: () => unawaited(handleMarkdownLinkTap('https://$console', '')),
+      borderRadius: BorderRadius.circular(tokens.radii.s),
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step1),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text.rich(
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${messages.onboardingApiKeyGetKeyAt} ',
+                      style: bodySmall.copyWith(color: textMed),
+                    ),
+                    TextSpan(
+                      text: console,
+                      style: bodySmall.copyWith(
+                        color: brand,
+                        decoration: TextDecoration.underline,
+                        decorationColor: brand,
                       ),
-                      TextSpan(
-                        text: console,
-                        style: bodySmall.copyWith(
-                          color: brand,
-                          decoration: TextDecoration.underline,
-                          decorationColor: brand,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-              SizedBox(width: tokens.spacing.step1),
-              Icon(
-                Icons.open_in_new_rounded,
-                size: tokens.spacing.step4,
-                color: brand,
-              ),
-            ],
-          ),
+            ),
+            SizedBox(width: tokens.spacing.step1),
+            Icon(
+              Icons.open_in_new_rounded,
+              size: tokens.spacing.step4,
+              color: brand,
+            ),
+          ],
         ),
       ),
     );
@@ -397,7 +446,11 @@ class _GetKeyLink extends StatelessWidget {
 /// but as a single inline row that fits the cinematic panel. Idle renders
 /// nothing — the caller shows the "get a key" link in that slot instead.
 class _VerifyStatus extends StatelessWidget {
-  const _VerifyStatus({required this.state, required this.providerName});
+  const _VerifyStatus({
+    required this.state,
+    required this.providerName,
+    super.key,
+  });
 
   final ConnectionCheckState state;
   final String providerName;
@@ -472,7 +525,6 @@ class _VerifyStatus extends StatelessWidget {
   }) {
     final tokens = context.designTokens;
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox.square(
           dimension: tokens.spacing.step5,
@@ -485,7 +537,7 @@ class _VerifyStatus extends StatelessWidget {
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: color,
             ),
-            maxLines: 3,
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
         ),
