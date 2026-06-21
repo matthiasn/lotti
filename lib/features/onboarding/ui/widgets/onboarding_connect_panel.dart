@@ -3,6 +3,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/ui/widgets/aurora_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -49,6 +50,23 @@ String onboardingProviderTagline(
   };
 }
 
+/// Literal external **brand** colours for the FTUE provider tiles (per
+/// product-owner direction: render each provider in the colour people
+/// associate with it). These are deliberately NOT design-system tokens — the
+/// app's `aiProvider` palette is its own themed hues, and these brand
+/// identities are external. Scoped to onboarding so the global palette and the
+/// rest of AI Settings are unaffected.
+Color onboardingProviderBrandColor(InferenceProviderType type) {
+  return switch (type) {
+    InferenceProviderType.gemini => const Color(0xFF4285F4), // Google blue
+    InferenceProviderType.mistral => const Color(0xFFFF7000), // Mistral orange
+    InferenceProviderType.alibaba => const Color(0xFF615CED), // Qwen violet
+    InferenceProviderType.openAi => const Color(0xFF10A37F), // OpenAI green
+    InferenceProviderType.ollama => const Color(0xFFC7C7CC), // Ollama neutral
+    _ => const Color(0xFF5ED4B7), // brand teal fallback
+  };
+}
+
 /// The cinematic connect page: an always-dark panel matching the welcome, with
 /// an ambient **aurora** backdrop (a different motion from the welcome's
 /// constellation) behind a back/title header and clean, Apple-style provider
@@ -81,13 +99,26 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
       borderRadius: BorderRadius.circular(tokens.radii.l),
       child: Stack(
         children: [
-          // Ambient aurora backdrop (subtle so the tiles stay legible).
+          // Combined backdrop: the aurora wash (screen 2) layered under the
+          // neural constellation (screen 1), so the connect page is as alive as
+          // the welcome rather than a flat cloud gradient.
           Positioned.fill(
             child: ColoredBox(
               color: panelBg,
-              child: AuroraHero(
-                colors: onboardingAuroraColors(accent),
-                maxAlpha: 0.3,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  AuroraHero(
+                    colors: onboardingAuroraColors(accent),
+                    maxAlpha: 0.28,
+                  ),
+                  NeuralConstellation(
+                    nodeColor: accent,
+                    lineColor: accent.withValues(alpha: 0.4),
+                    pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
+                    nodeCount: 18,
+                  ),
+                ],
               ),
             ),
           ),
@@ -225,7 +256,7 @@ class _ProviderTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final accent = aiProviderAccent(type: type, tokens: dsTokensDark);
+    final accent = onboardingProviderBrandColor(type);
     final textHigh = dsTokensDark.colors.text.highEmphasis;
     final textMed = dsTokensDark.colors.text.mediumEmphasis;
     final tagline = onboardingProviderTagline(messages, type);
