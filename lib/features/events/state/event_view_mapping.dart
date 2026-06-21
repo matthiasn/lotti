@@ -95,7 +95,14 @@ EventDetailData eventDetailDataFromEntities({
       break;
     }
   }
-  cover ??= images.isEmpty ? null : images.first;
+  // Match the overview card (events_controller.loadResolvedEvents): the newest
+  // linked photo, picked explicitly rather than relying on the caller's link
+  // ordering, so the card and the detail never disagree about an event's cover.
+  cover ??= images.isEmpty
+      ? null
+      : images.reduce(
+          (a, b) => a.meta.dateFrom.isAfter(b.meta.dateFrom) ? a : b,
+        );
 
   final card = eventCardDataFromEvent(
     event,

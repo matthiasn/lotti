@@ -7,10 +7,21 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   group('eventStatusLabel', () {
-    test('capitalizes the all-caps status label', () {
-      expect(eventStatusLabel(EventStatus.tentative), 'Tentative');
-      expect(eventStatusLabel(EventStatus.completed), 'Completed');
-      expect(eventStatusLabel(EventStatus.rescheduled), 'Rescheduled');
+    testWidgets('returns the localized status label', (tester) async {
+      late BuildContext ctx;
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          Builder(
+            builder: (context) {
+              ctx = context;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      expect(eventStatusLabel(ctx, EventStatus.tentative), 'Tentative');
+      expect(eventStatusLabel(ctx, EventStatus.completed), 'Completed');
+      expect(eventStatusLabel(ctx, EventStatus.rescheduled), 'Rescheduled');
     });
   });
 
@@ -50,9 +61,20 @@ void main() {
       await tester.tap(find.text('open'));
       await tester.pumpAndSettle();
 
-      // Every status renders as a row.
-      for (final status in EventStatus.values) {
-        expect(find.text(eventStatusLabel(status)), findsWidgets);
+      // Every status renders as a row (localized labels).
+      const labels = [
+        'Tentative',
+        'Planned',
+        'Ongoing',
+        'Completed',
+        'Cancelled',
+        'Postponed',
+        'Rescheduled',
+        'Missed',
+      ];
+      expect(labels, hasLength(EventStatus.values.length));
+      for (final label in labels) {
+        expect(find.text(label), findsWidgets);
       }
 
       await tester.tap(find.text('Completed'));

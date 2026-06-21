@@ -50,6 +50,7 @@ class EventPhotoGrid extends StatelessWidget {
                 child: _PhotoTile(
                   photo: photos[i],
                   radius: tokens.radii.s,
+                  index: i,
                   // The last visible tile carries the "+N" badge for the rest.
                   overflow: capped && i == tileCount - 1
                       ? photos.length - tileCount + 1
@@ -72,12 +73,14 @@ class _PhotoTile extends StatelessWidget {
   const _PhotoTile({
     required this.photo,
     required this.radius,
+    required this.index,
     required this.overflow,
     required this.onTap,
   });
 
   final EventPhoto photo;
   final double radius;
+  final int index;
   final int overflow;
   final VoidCallback onTap;
 
@@ -89,18 +92,23 @@ class _PhotoTile extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image(
-            // Downsample to the tile so a wall of full-res photos doesn't blow
-            // up memory.
-            image: ResizeImage(
-              photo.image,
-              width: 360,
-              policy: ResizeImagePolicy.fit,
+          // Matches the viewer's PhotoViewHeroAttributes tag so tapping a tile
+          // animates into the full-screen viewer for that photo.
+          Hero(
+            tag: 'event_photo_$index',
+            child: Image(
+              // Downsample to the tile so a wall of full-res photos doesn't
+              // blow up memory.
+              image: ResizeImage(
+                photo.image,
+                width: 360,
+                policy: ResizeImagePolicy.fit,
+              ),
+              fit: BoxFit.cover,
+              alignment: Alignment(photo.cropX * 2 - 1, 0),
+              errorBuilder: (context, error, stackTrace) =>
+                  ColoredBox(color: cs.surfaceContainerHighest),
             ),
-            fit: BoxFit.cover,
-            alignment: Alignment(photo.cropX * 2 - 1, 0),
-            errorBuilder: (context, error, stackTrace) =>
-                ColoredBox(color: cs.surfaceContainerHighest),
           ),
           if (overflow > 0)
             ColoredBox(
@@ -221,6 +229,7 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
             right: 0,
             top: MediaQuery.paddingOf(context).top,
             child: IconButton(
+              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
               padding: EdgeInsets.all(tokens.spacing.step6),
               onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
               icon: Stack(

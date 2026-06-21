@@ -4991,6 +4991,30 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsSectionUpcoming => 'Próximos';
 
   @override
+  String get eventsStatusCancelled => 'Cancelado';
+
+  @override
+  String get eventsStatusCompleted => 'Completado';
+
+  @override
+  String get eventsStatusMissed => 'Perdido';
+
+  @override
+  String get eventsStatusOngoing => 'En curso';
+
+  @override
+  String get eventsStatusPlanned => 'Planificado';
+
+  @override
+  String get eventsStatusPostponed => 'Pospuesto';
+
+  @override
+  String get eventsStatusRescheduled => 'Reprogramado';
+
+  @override
+  String get eventsStatusTentative => 'Tentativo';
+
+  @override
   String get eventsSummaryTitle => 'Resumen';
 
   @override

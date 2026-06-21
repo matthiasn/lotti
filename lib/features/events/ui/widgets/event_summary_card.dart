@@ -244,7 +244,7 @@ class _StatusPill extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
       ),
       child: Text(
-        eventStatusLabel(status),
+        eventStatusLabel(context, status),
         style: tokens.typography.styles.body.bodySmall.copyWith(
           color: color,
           fontWeight: FontWeight.w600,

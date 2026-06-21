@@ -207,7 +207,7 @@ class EventCardFooter extends StatelessWidget {
           const Spacer(),
           if (showStatus)
             Text(
-              eventStatusLabel(data.status),
+              eventStatusLabel(context, data.status),
               style: tokens.typography.styles.others.caption.copyWith(
                 color: data.status.color,
                 fontWeight: FontWeight.w600,

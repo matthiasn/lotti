@@ -359,7 +359,7 @@ class _HeroContent extends StatelessWidget {
               onTap: onTapStatus,
               child: EventOverlayPill(
                 dotColor: card.status.color,
-                label: eventStatusLabel(card.status),
+                label: eventStatusLabel(context, card.status),
               ),
             ),
           ],

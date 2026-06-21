@@ -5002,6 +5002,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsSectionUpcoming => 'Viitoare';
 
   @override
+  String get eventsStatusCancelled => 'Anulat';
+
+  @override
+  String get eventsStatusCompleted => 'Finalizat';
+
+  @override
+  String get eventsStatusMissed => 'Ratat';
+
+  @override
+  String get eventsStatusOngoing => 'În desfășurare';
+
+  @override
+  String get eventsStatusPlanned => 'Planificat';
+
+  @override
+  String get eventsStatusPostponed => 'Amânat';
+
+  @override
+  String get eventsStatusRescheduled => 'Reprogramat';
+
+  @override
+  String get eventsStatusTentative => 'Provizoriu';
+
+  @override
   String get eventsSummaryTitle => 'Rezumat';
 
   @override

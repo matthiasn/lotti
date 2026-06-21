@@ -4968,6 +4968,30 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsSectionUpcoming => 'Nadcházející';
 
   @override
+  String get eventsStatusCancelled => 'Zrušeno';
+
+  @override
+  String get eventsStatusCompleted => 'Dokončeno';
+
+  @override
+  String get eventsStatusMissed => 'Zmeškáno';
+
+  @override
+  String get eventsStatusOngoing => 'Probíhá';
+
+  @override
+  String get eventsStatusPlanned => 'Naplánováno';
+
+  @override
+  String get eventsStatusPostponed => 'Odloženo';
+
+  @override
+  String get eventsStatusRescheduled => 'Přeplánováno';
+
+  @override
+  String get eventsStatusTentative => 'Předběžně';
+
+  @override
   String get eventsSummaryTitle => 'Souhrn';
 
   @override

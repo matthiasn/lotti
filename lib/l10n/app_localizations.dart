@@ -8550,6 +8550,54 @@ abstract class AppLocalizations {
   /// **'Upcoming'**
   String get eventsSectionUpcoming;
 
+  /// No description provided for @eventsStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get eventsStatusCancelled;
+
+  /// No description provided for @eventsStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get eventsStatusCompleted;
+
+  /// No description provided for @eventsStatusMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get eventsStatusMissed;
+
+  /// No description provided for @eventsStatusOngoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing'**
+  String get eventsStatusOngoing;
+
+  /// No description provided for @eventsStatusPlanned.
+  ///
+  /// In en, this message translates to:
+  /// **'Planned'**
+  String get eventsStatusPlanned;
+
+  /// No description provided for @eventsStatusPostponed.
+  ///
+  /// In en, this message translates to:
+  /// **'Postponed'**
+  String get eventsStatusPostponed;
+
+  /// No description provided for @eventsStatusRescheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Rescheduled'**
+  String get eventsStatusRescheduled;
+
+  /// No description provided for @eventsStatusTentative.
+  ///
+  /// In en, this message translates to:
+  /// **'Tentative'**
+  String get eventsStatusTentative;
+
   /// No description provided for @eventsSummaryTitle.
   ///
   /// In en, this message translates to:
