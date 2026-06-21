@@ -564,7 +564,7 @@ void main() {
 
       // Pin a clock so Nov 10 is a far *future* date (overdue dates now always
       // render relative, so a far-past date would not show the absolute form).
-      await withClock(Clock(() => DateTime(2025, 11)), () async {
+      await withClock(Clock(() => DateTime(2025, 10, 20)), () async {
         await pumpTaskCard(
           tester,
           ModernTaskCard(
@@ -587,7 +587,7 @@ void main() {
         data: buildTask().data.copyWith(due: dueDate),
       );
 
-      await withClock(Clock(() => DateTime(2025, 11)), () async {
+      await withClock(Clock(() => DateTime(2025, 10, 20)), () async {
         await pumpTaskCard(tester, ModernTaskCard(task: task));
 
         // Default should show due date with "Due:" prefix
@@ -637,7 +637,7 @@ void main() {
 
       // Pin a clock so Nov 10 renders in the absolute form (overdue dates now
       // always render relative).
-      await withClock(Clock(() => DateTime(2025, 11)), () async {
+      await withClock(Clock(() => DateTime(2025, 10, 20)), () async {
         await pumpTaskCard(
           tester,
           ModernTaskCard(
@@ -726,7 +726,7 @@ void main() {
 
       // Pin a clock so Nov 10 renders in the absolute form (overdue dates now
       // always render relative).
-      await withClock(Clock(() => DateTime(2025, 11)), () async {
+      await withClock(Clock(() => DateTime(2025, 10, 20)), () async {
         await pumpTaskCard(tester, ModernTaskCard(task: task));
 
         // Due date SHOULD be shown for in-progress tasks

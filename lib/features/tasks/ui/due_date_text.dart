@@ -5,7 +5,6 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 
 /// Widget to display due date with color coding for overdue/today status.
 /// Supports tapping to toggle between absolute (e.g., "Dec 24, 2025") and
@@ -29,12 +28,16 @@ class _DueDateTextState extends State<DueDateText> {
 
   /// Within this window a relative phrasing ("Due Today", "Overdue by 3 days")
   /// triages faster than an absolute date; beyond it an exact date is more
-  /// useful for planning, so the chip defaults to the absolute form.
-  static const int _relativeWindowDays = 7;
+  /// useful for planning, so the chip defaults to the absolute form. Two weeks
+  /// keeps the whole near-term horizon in one relative register so a "Due in
+  /// 10 days" chip doesn't sit next to a bare date the eye has to do math on.
+  static const int _relativeWindowDays = 14;
 
   Color _getColor(BuildContext context, DueDateStatus status) {
-    return status.urgentColor ??
-        context.colorScheme.onSurfaceVariant.withValues(alpha: 0.85);
+    // Upcoming (non-urgent) dates use the same medium-emphasis grey as the
+    // other metadata chips — bright enough to read for low-vision users and
+    // consistent with the row, rather than the faintest text on the card.
+    return status.urgentColor ?? TaskShowcasePalette.mediumText(context);
   }
 
   String _getAbsoluteText(BuildContext context, DueDateStatus status) {
