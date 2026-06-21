@@ -2,23 +2,92 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/motion/staggered_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/ui/widgets/aurora_hero.dart';
+import 'package:lotti/features/onboarding/ui/widgets/crystallize_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/neural_constellation.dart';
+import 'package:lotti/features/onboarding/ui/widgets/waveform_text_hero.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+/// The candidate animated welcome heroes. The active one is chosen via
+/// [OnboardingHeroPanel.heroStyle]; the debug animation gallery lets all of
+/// them be compared live (look + motion) before committing to one.
+enum OnboardingHeroStyle {
+  /// Drifting "external brain" node network with a travelling thought pulse.
+  constellation,
+
+  /// Spoken phrases that crystallize into a structured checklist card.
+  crystallize,
+
+  /// Slow flowing aurora of additive colour blooms.
+  aurora,
+
+  /// A luminous voice waveform that resolves into a typed task title.
+  waveform;
+
+  String get label => switch (this) {
+    OnboardingHeroStyle.constellation => 'Constellation',
+    OnboardingHeroStyle.crystallize => 'Crystallize',
+    OnboardingHeroStyle.aurora => 'Aurora',
+    OnboardingHeroStyle.waveform => 'Waveform',
+  };
+}
+
+/// The aurora bloom palette derived from the brand accent (teal family), shared
+/// by the welcome hero and the connect-page backdrop.
+List<Color> onboardingAuroraColors(Color accent) {
+  final base = HSLColor.fromColor(accent);
+  return [
+    accent,
+    base.withHue((base.hue + 28) % 360).toColor(),
+    base
+        .withHue((base.hue - 36) % 360)
+        .withLightness((base.lightness + 0.08).clamp(0.0, 1.0))
+        .toColor(),
+  ];
+}
+
+/// Builds the animated visual for [style], coloured from the dark token set so
+/// it reads on the cinematic dark panel regardless of the app's theme.
+Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
+  final accent = dsTokensDark.colors.interactive.enabled;
+  switch (style) {
+    case OnboardingHeroStyle.constellation:
+      return NeuralConstellation(
+        nodeColor: accent,
+        lineColor: accent.withValues(alpha: 0.5),
+        pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
+      );
+    case OnboardingHeroStyle.crystallize:
+      return CrystallizeHero(
+        accent: accent,
+        cardColor: dsTokensLight.colors.background.level01,
+        onCardColor: dsTokensLight.colors.text.highEmphasis,
+        ghostColor: dsTokensDark.colors.text.mediumEmphasis,
+      );
+    case OnboardingHeroStyle.aurora:
+      return AuroraHero(colors: onboardingAuroraColors(accent));
+    case OnboardingHeroStyle.waveform:
+      return WaveformTextHero(
+        waveColor: accent,
+        textColor: dsTokensDark.colors.text.highEmphasis,
+      );
+  }
+}
+
 /// The cinematic welcome content: an always-dark rounded panel with the
-/// animated neural-constellation hero ("your external brain, alive") filling
-/// the upper region and the promise + CTA + skip below.
-///
-/// Always dark (uses the dark token set) so the intro feels like a deliberate,
-/// premium takeover in both light and dark app themes.
+/// animated [heroStyle] hero filling the upper region and the promise + CTA +
+/// skip below. Always dark (uses the dark token set) so the intro feels like a
+/// deliberate, premium takeover in both light and dark app themes.
 class OnboardingHeroPanel extends StatelessWidget {
   const OnboardingHeroPanel({
     required this.onConnect,
     required this.onSkip,
+    this.heroStyle = OnboardingHeroStyle.constellation,
     this.heroHeight = 264,
     super.key,
   });
 
+  final OnboardingHeroStyle heroStyle;
   final VoidCallback onConnect;
   final VoidCallback onSkip;
   final double heroHeight;
@@ -26,7 +95,6 @@ class OnboardingHeroPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final accent = dsTokensDark.colors.interactive.enabled;
     final panelBg = dsTokensDark.colors.background.level01;
     final textHigh = dsTokensDark.colors.text.highEmphasis;
     final textMed = dsTokensDark.colors.text.mediumEmphasis;
@@ -41,11 +109,7 @@ class OnboardingHeroPanel extends StatelessWidget {
             SizedBox(
               height: heroHeight,
               width: double.infinity,
-              child: NeuralConstellation(
-                nodeColor: accent,
-                lineColor: accent.withValues(alpha: 0.5),
-                pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
-              ),
+              child: buildOnboardingHeroVisual(heroStyle),
             ),
             Padding(
               padding: EdgeInsets.fromLTRB(
