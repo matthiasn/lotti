@@ -118,10 +118,8 @@ class EntryDetailsWidget extends ConsumerWidget {
       bottom: tokens.spacing.step4,
     );
 
-    // When the transient save button is the last thing in the card (an unsaved
-    // linked entry), it is a chunky control that does not need the full content
-    // gutter beneath it — tighten the bottom inset so it sits closer to the edge
-    // rather than floating above a wide band.
+    // The transient save button (an unsaved linked entry) is a chunky control
+    // that needs even less air beneath it than ordinary content.
     final showsSaveButton =
         linkedFrom != null &&
         (ref.watch(saveButtonControllerProvider(id: itemId)).value ?? false);
@@ -130,17 +128,15 @@ class EntryDetailsWidget extends ConsumerWidget {
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
       // One shared shell inset: a consistent left/right gutter so every card
-      // type aligns to a single content edge. The top is intentionally tighter
-      // (step3) because the header's 48px tap targets overhang below the
-      // timestamp baseline and already supply visual air; the bottom takes the
-      // full gutter (step4) so the last line — e.g. an audio transcript — does
-      // not crowd the card edge, but drops to step3 under the save button (a
-      // control, which would otherwise read as floating above too wide a band).
+      // type aligns to a single content edge. The top is tighter (step3) because
+      // the header's tap targets already supply visual air. The bottom is step3
+      // for ordinary content, dropping to step2 under the save button so the
+      // control sits snug to the card edge rather than floating above a band.
       padding: EdgeInsets.fromLTRB(
         tokens.spacing.step4,
         tokens.spacing.step3,
         tokens.spacing.step4,
-        showsSaveButton ? tokens.spacing.step3 : tokens.spacing.step4,
+        showsSaveButton ? tokens.spacing.step2 : tokens.spacing.step3,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
