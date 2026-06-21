@@ -4,6 +4,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -68,96 +69,11 @@ no tool to do so by design.
 Use `record_observations` for private notes and follow-up ideas that should
 persist across recaps but are not shown to the user.''';
 
-    if (version == null) return scaffold;
-
-    final generalDirective = version.generalDirective.trim();
-    final reportDirective = version.reportDirective.trim();
-    final hasNewDirectives =
-        generalDirective.isNotEmpty || reportDirective.isNotEmpty;
-
-    final buf = StringBuffer()..write(scaffold);
-
-    if (hasNewDirectives) {
-      if (reportDirective.isNotEmpty) {
-        buf
-          ..writeln()
-          ..writeln()
-          ..writeln('## Report Directive')
-          ..writeln()
-          ..write(reportDirective);
-      }
-
-      if (soulVersion != null) {
-        // Soul assigned: separate personality from operational directives.
-        _appendSoulPersonality(buf, soulVersion);
-        if (generalDirective.isNotEmpty) {
-          buf
-            ..writeln()
-            ..writeln()
-            ..writeln('## Your Operational Directives')
-            ..writeln()
-            ..write(generalDirective);
-        }
-      } else {
-        // No soul: legacy combined heading.
-        final effectiveGeneralDirective = generalDirective.isNotEmpty
-            ? generalDirective
-            : version.directives;
-        if (effectiveGeneralDirective.trim().isNotEmpty) {
-          buf
-            ..writeln()
-            ..writeln()
-            ..writeln('## Your Personality & Directives')
-            ..writeln()
-            ..write(effectiveGeneralDirective);
-        }
-      }
-    } else {
-      // Legacy fallback: single directives field.
-      final legacyDirective = version.directives.trim();
-      if (legacyDirective.isNotEmpty) {
-        buf
-          ..writeln()
-          ..writeln()
-          ..writeln('## Your Personality & Directives')
-          ..writeln()
-          ..write(legacyDirective);
-      }
-    }
-
-    return buf.toString();
-  }
-
-  /// Appends soul personality fields to the prompt buffer.
-  static void _appendSoulPersonality(
-    StringBuffer buf,
-    SoulDocumentVersionEntity soul,
-  ) {
-    buf
-      ..writeln()
-      ..writeln()
-      ..writeln('## Your Personality')
-      ..writeln()
-      ..write(soul.voiceDirective);
-
-    if (soul.toneBounds.trim().isNotEmpty) {
-      buf
-        ..writeln()
-        ..writeln()
-        ..write(soul.toneBounds);
-    }
-    if (soul.coachingStyle.trim().isNotEmpty) {
-      buf
-        ..writeln()
-        ..writeln()
-        ..write(soul.coachingStyle);
-    }
-    if (soul.antiSycophancyPolicy.trim().isNotEmpty) {
-      buf
-        ..writeln()
-        ..writeln()
-        ..write(soul.antiSycophancyPolicy);
-    }
+    return composeAgentSystemPrompt(
+      scaffold: scaffold,
+      version: version,
+      soulVersion: soulVersion,
+    );
   }
 
   String buildUserMessage({

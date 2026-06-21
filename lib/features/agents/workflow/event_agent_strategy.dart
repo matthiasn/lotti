@@ -1,18 +1,15 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
-import 'package:clock/clock.dart';
-import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/agent_message_recording.dart';
 import 'package:lotti/features/agents/workflow/agent_tool_arg_parsing.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
-import 'package:uuid/uuid.dart';
 
 /// [ConversationStrategy] implementation for the Event Agent.
 ///
@@ -29,7 +26,7 @@ import 'package:uuid/uuid.dart';
 /// message is persisted to `agent.sqlite` as an [AgentMessageEntity], mirroring
 /// `ProjectAgentStrategy`.
 class EventAgentStrategy extends ConversationStrategy
-    with ObservationRecordParsing {
+    with ObservationRecordParsing, AgentMessageRecording {
   EventAgentStrategy({
     required this.syncService,
     required this.agentId,
@@ -38,15 +35,19 @@ class EventAgentStrategy extends ConversationStrategy
   });
 
   /// Sync-aware write service for persisting messages.
+  @override
   final AgentSyncService syncService;
 
   /// The agent's stable ID.
+  @override
   final String agentId;
 
   /// The conversation thread ID for the current wake.
+  @override
   final String threadId;
 
   /// The run key for the current wake cycle.
+  @override
   final String runKey;
 
   String? _reportContent;
@@ -56,15 +57,13 @@ class EventAgentStrategy extends ConversationStrategy
   final _observations = <ObservationRecord>[];
   final _deferredItems = <Map<String, dynamic>>[];
 
-  static const _uuid = Uuid();
-
   @override
   Future<ConversationAction> processToolCalls({
     required List<ChatCompletionMessageToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     // Persist the assistant message that requested tool calls.
-    await _recordAssistantMessage();
+    await recordAssistantMessage();
 
     for (final call in toolCalls) {
       final toolName = call.function.name;
@@ -83,14 +82,14 @@ class EventAgentStrategy extends ConversationStrategy
             'Error: invalid arguments format — expected a JSON object. '
             'Detail: ${e.runtimeType}';
         manager.addToolResponse(toolCallId: call.id, response: errorMsg);
-        await _recordToolResultMessage(
+        await recordToolResultMessage(
           toolName: toolName,
           errorMessage: errorMsg,
         );
         continue;
       }
 
-      await _recordActionMessage(toolName: toolName, args: args);
+      await recordActionMessage(toolName: toolName);
 
       if (toolName == EventAgentToolNames.updateReport) {
         await _handleUpdateReport(args, call.id, manager);
@@ -109,14 +108,14 @@ class EventAgentStrategy extends ConversationStrategy
           toolCallId: call.id,
           response: 'Queued $toolName for user review.',
         );
-        await _recordToolResultMessage(toolName: toolName);
+        await recordToolResultMessage(toolName: toolName);
         continue;
       }
 
       // Unknown tool — tell the LLM.
       final errorMsg = 'Error: unknown tool "$toolName".';
       manager.addToolResponse(toolCallId: call.id, response: errorMsg);
-      await _recordToolResultMessage(
+      await recordToolResultMessage(
         toolName: toolName,
         errorMessage: errorMsg,
       );
@@ -214,7 +213,7 @@ class EventAgentStrategy extends ConversationStrategy
       toolCallId: callId,
       response: 'Recap updated successfully.',
     );
-    await _recordToolResultMessage(
+    await recordToolResultMessage(
       toolName: EventAgentToolNames.updateReport,
     );
   }
@@ -272,7 +271,7 @@ class EventAgentStrategy extends ConversationStrategy
       toolCallId: callId,
       response: 'Recorded $accepted observation(s).',
     );
-    await _recordToolResultMessage(
+    await recordToolResultMessage(
       toolName: EventAgentToolNames.recordObservations,
     );
   }
@@ -286,89 +285,11 @@ class EventAgentStrategy extends ConversationStrategy
     required ConversationManager manager,
   }) async {
     manager.addToolResponse(toolCallId: callId, response: errorMsg);
-    await _recordToolResultMessage(toolName: toolName, errorMessage: errorMsg);
+    await recordToolResultMessage(toolName: toolName, errorMessage: errorMsg);
   }
 
   /// Test seam for the shared JSON/markdown argument parser.
   @visibleForTesting
   Map<String, dynamic> debugParseToolArguments(String raw) =>
       parseAgentToolArguments(raw);
-
-  // ── Message persistence ────────────────────────────────────────────────────
-
-  Future<void> _recordAssistantMessage() async {
-    try {
-      await syncService.upsertEntity(
-        AgentDomainEntity.agentMessage(
-          id: _uuid.v4(),
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.thought,
-          createdAt: clock.now(),
-          vectorClock: null,
-          metadata: AgentMessageMetadata(runKey: runKey),
-        ),
-      );
-    } catch (e) {
-      developer.log(
-        'Failed to persist assistant message (errorType=${e.runtimeType})',
-        name: 'EventAgentStrategy',
-      );
-    }
-  }
-
-  Future<void> _recordActionMessage({
-    required String toolName,
-    required Map<String, dynamic> args,
-  }) async {
-    try {
-      await syncService.upsertEntity(
-        AgentDomainEntity.agentMessage(
-          id: _uuid.v4(),
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.action,
-          createdAt: clock.now(),
-          vectorClock: null,
-          metadata: AgentMessageMetadata(
-            runKey: runKey,
-            toolName: toolName,
-          ),
-        ),
-      );
-    } catch (e) {
-      developer.log(
-        'Failed to persist action message (errorType=${e.runtimeType})',
-        name: 'EventAgentStrategy',
-      );
-    }
-  }
-
-  Future<void> _recordToolResultMessage({
-    required String toolName,
-    String? errorMessage,
-  }) async {
-    try {
-      await syncService.upsertEntity(
-        AgentDomainEntity.agentMessage(
-          id: _uuid.v4(),
-          agentId: agentId,
-          threadId: threadId,
-          kind: AgentMessageKind.toolResult,
-          createdAt: clock.now(),
-          vectorClock: null,
-          metadata: AgentMessageMetadata(
-            runKey: runKey,
-            toolName: toolName,
-            errorMessage: errorMessage,
-          ),
-        ),
-      );
-    } catch (e) {
-      developer.log(
-        'Failed to persist tool result message (errorType=${e.runtimeType})',
-        name: 'EventAgentStrategy',
-      );
-    }
-  }
 }
