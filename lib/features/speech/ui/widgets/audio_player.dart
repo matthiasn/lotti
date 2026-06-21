@@ -19,6 +19,13 @@ const List<double> _speedSequence = <double>[
   2,
 ];
 
+/// Diameter of the circular play/pause control. The timecode/speed row is
+/// indented by this width (plus the control gap) so it aligns under the
+/// waveform rather than sitting under — and visually colliding with — the
+/// play button.
+const double _playControlDiameter = 48;
+const double _playControlDiameterCompact = 40;
+
 /// Minimal audio player card embedding play controls, progress, and speed toggle.
 class AudioPlayerWidget extends ConsumerWidget {
   const AudioPlayerWidget(this.journalAudio, {super.key});
@@ -160,16 +167,30 @@ class _PlayerBody extends StatelessWidget {
         ),
         Row(
           children: <Widget>[
-            // Elapsed / total and the speed pill are grouped together at the
-            // card's content gutter (not inset under the scrubber) with an
+            // Indent the elapsed/total + speed pill to line up under the
+            // waveform's left edge (past the play button + its gap) so the
+            // timecode no longer sits under and collides with the play control.
+            SizedBox(
+              width:
+                  (isCompact
+                      ? _playControlDiameterCompact
+                      : _playControlDiameter) +
+                  controlSpacing,
+            ),
+            // Elapsed / total and the speed pill are grouped together with an
             // explicit separator so the pair reads unambiguously as
-            // elapsed-vs-total; the speed pill sits right beside them rather
-            // than floating alone at the far edge, and trailing space falls to
-            // the right like every other value line.
-            Text(
-              '${formatAudioDuration(progress)} / '
-              '${formatAudioDuration(totalDuration)}',
-              style: timeStyle,
+            // elapsed-vs-total; the speed pill sits right beside them and
+            // trailing space falls to the right like every other value line.
+            // The timecode is Flexible so it gives way (rather than overflowing)
+            // once the indent + pill leave too little room on very narrow cards.
+            Flexible(
+              child: Text(
+                '${formatAudioDuration(progress)} / '
+                '${formatAudioDuration(totalDuration)}',
+                style: timeStyle,
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+              ),
             ),
             SizedBox(width: tokens?.spacing.step4 ?? 12.0),
             _SpeedButton(
@@ -177,7 +198,6 @@ class _PlayerBody extends StatelessWidget {
               currentSpeed: state.speed,
               isActive: isActive,
             ),
-            const Spacer(),
           ],
         ),
       ],
@@ -289,7 +309,9 @@ class _PlayButton extends StatelessWidget {
     final theme = Theme.of(context);
     final tokens = theme.extension<DsTokens>();
     final scheme = theme.colorScheme;
-    final diameter = (isCompact ? 40 : 48).toDouble();
+    final diameter = isCompact
+        ? _playControlDiameterCompact
+        : _playControlDiameter;
     final isLoading = status == AudioPlayerStatus.initializing && isActive;
 
     final iconColor = tokens?.colors.text.highEmphasis ?? scheme.onSurface;
