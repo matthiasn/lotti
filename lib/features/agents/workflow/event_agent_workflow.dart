@@ -6,11 +6,11 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
+import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -396,15 +396,10 @@ class EventAgentWorkflow {
         // keyed by the event id, so the detail page can surface them for
         // accept/reject.
         if (deferredItems.isNotEmpty) {
-          final changeItems = deferredItems.map((item) {
-            final toolName = item['toolName'] as String? ?? '';
-            final args = item['args'] as Map<String, dynamic>? ?? {};
-            return ChangeItem(
-              toolName: toolName,
-              args: args,
-              humanSummary: _buildHumanSummary(toolName, args),
-            );
-          }).toList();
+          final changeItems = buildDeferredChangeItems(
+            deferredItems,
+            _buildHumanSummary,
+          );
 
           await syncService.upsertEntity(
             AgentDomainEntity.changeSet(

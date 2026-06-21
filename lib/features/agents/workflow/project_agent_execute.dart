@@ -416,18 +416,10 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
 
         // Persist deferred change set (if any items were accumulated).
         if (deferredItems.isNotEmpty) {
-          final changeItems = deferredItems.map((item) {
-            final toolName = item['toolName'] as String? ?? '';
-            final args = item['args'] as Map<String, dynamic>? ?? {};
-            return ChangeItem(
-              toolName: toolName,
-              args: args,
-              humanSummary: ProjectAgentWorkflow._buildHumanSummary(
-                toolName,
-                args,
-              ),
-            );
-          }).toList();
+          final changeItems = buildDeferredChangeItems(
+            deferredItems,
+            ProjectAgentWorkflow._buildHumanSummary,
+          );
 
           await syncService.upsertEntity(
             AgentDomainEntity.changeSet(
