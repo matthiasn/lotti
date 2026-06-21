@@ -65,7 +65,18 @@ class EventToolDispatcher {
     final title = titleValue.trim();
 
     final event = await journalRepository.getJournalEntityById(eventId);
-    final categoryId = event?.meta.categoryId;
+    // Guard against accept-after-delete: if the event is gone (or soft-deleted)
+    // we must not create an orphaned, uncategorized, unlinked task. Refuse so
+    // the proposal stays unresolved rather than silently dropping a task.
+    if (event == null || event.meta.deletedAt != null) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: event $eventId no longer exists',
+        errorMessage: 'Event missing or deleted; follow-up not created',
+      );
+    }
+
+    final categoryId = event.meta.categoryId;
     final category = categoryId != null
         ? entitiesCacheService.getCategoryById(categoryId)
         : null;

@@ -172,4 +172,117 @@ void main() {
     expect(result.success, isFalse);
     expect(result.output, contains('Unknown tool'));
   });
+
+  // Defense-in-depth for the human-only rating/cover invariant: even if a
+  // foreign tool name somehow reached the event dispatcher (it cannot — the
+  // strategy only persists `eventDeferredTools`), the dispatcher refuses every
+  // tool except suggest_follow_up_task and never touches the event entity.
+  for (final foreign in const [
+    'set_event_status',
+    'set_event_rating',
+    'set_event_cover',
+    'set_task_status',
+    'update_project_status',
+    'update_report',
+    'create_task',
+  ]) {
+    test(
+      'refuses the non-follow-up tool "$foreign" and creates nothing',
+      () async {
+        final result = await dispatcher.dispatch(foreign, {'x': 1}, eventId);
+
+        expect(result.success, isFalse);
+        verifyNever(
+          () => mockPersistenceLogic.createTaskEntry(
+            data: any(named: 'data'),
+            entryText: any(named: 'entryText'),
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      },
+    );
+  }
+
+  test('the event tool surface is exactly narrate + observe + follow-up, with '
+      'no rating/cover/status tool', () {
+    expect(eventDeferredTools, {EventAgentToolNames.suggestFollowUpTask});
+    final names = {
+      ...eventAgentTools.map((t) => t.name),
+      ...eventDeferredTools,
+    };
+    expect(names, {
+      EventAgentToolNames.updateReport,
+      EventAgentToolNames.recordObservations,
+      EventAgentToolNames.suggestFollowUpTask,
+    });
+    for (final name in names) {
+      expect(
+        name,
+        isNot(anyOf(contains('rating'), contains('cover'), contains('status'))),
+        reason: 'no event tool may touch rating/cover/status',
+      );
+    }
+  });
+
+  test('refuses to create a task when the event is gone', () async {
+    when(
+      () => mockJournalRepository.getJournalEntityById(eventId),
+    ).thenAnswer((_) async => null);
+
+    final result = await dispatcher.dispatch(
+      EventAgentToolNames.suggestFollowUpTask,
+      {'title': 'X'},
+      eventId,
+    );
+
+    expect(result.success, isFalse);
+    expect(result.errorMessage, contains('Event missing or deleted'));
+    verifyNever(
+      () => mockPersistenceLogic.createTaskEntry(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        linkedId: any(named: 'linkedId'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    );
+  });
+
+  test('refuses to create a task when the event is soft-deleted', () async {
+    final deletedEvent = JournalEntity.event(
+      meta: Metadata(
+        id: eventId,
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+        categoryId: categoryId,
+        deletedAt: now,
+      ),
+      data: const EventData(
+        title: 'Trip',
+        stars: 0,
+        status: EventStatus.completed,
+      ),
+    );
+    when(
+      () => mockJournalRepository.getJournalEntityById(eventId),
+    ).thenAnswer((_) async => deletedEvent);
+
+    final result = await dispatcher.dispatch(
+      EventAgentToolNames.suggestFollowUpTask,
+      {'title': 'X'},
+      eventId,
+    );
+
+    expect(result.success, isFalse);
+    verifyNever(
+      () => mockPersistenceLogic.createTaskEntry(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        linkedId: any(named: 'linkedId'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    );
+  });
 }
