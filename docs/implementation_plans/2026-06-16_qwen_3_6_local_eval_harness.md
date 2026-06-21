@@ -211,7 +211,7 @@ Live oMLX eval:
 
 ```bash
 QWEN_EVAL_BASE_URL=http://127.0.0.1:8003/v1 \
-QWEN_EVAL_API_KEY=$(jq -r '.auth.api_key' /Users/mn/.omlx/settings.json) \
+QWEN_EVAL_API_KEY=$(jq -r '.auth.api_key' "$HOME/.omlx/settings.json") \
 tool/qwen_local_inference_eval.sh
 ```
 
@@ -287,7 +287,7 @@ metadata tools with the requested values and finish with a valid `update_report`
 Run it with:
 
 ```bash
-LOCAL_TASK_AGENT_EVAL_API_KEY=$(jq -r '.auth.api_key' /Users/mn/.omlx/settings.json) \
+LOCAL_TASK_AGENT_EVAL_API_KEY=$(jq -r '.auth.api_key' "$HOME/.omlx/settings.json") \
 tool/local_task_agent_inference_eval.sh
 ```
 
@@ -295,7 +295,7 @@ To run only Gemma:
 
 ```bash
 LOCAL_TASK_AGENT_EVAL_PROFILES='gemma4=gemma-4-26B-A4B-it-QAT-MLX-4bit' \
-LOCAL_TASK_AGENT_EVAL_API_KEY=$(jq -r '.auth.api_key' /Users/mn/.omlx/settings.json) \
+LOCAL_TASK_AGENT_EVAL_API_KEY=$(jq -r '.auth.api_key' "$HOME/.omlx/settings.json") \
 tool/local_task_agent_inference_eval.sh
 ```
 
@@ -334,7 +334,7 @@ expected metadata suggestions and an `AgentReportEntity` from `update_report`.
 Run it with:
 
 ```bash
-LOCAL_TASK_AGENT_WORKFLOW_EVAL_API_KEY=$(jq -r '.auth.api_key' /Users/mn/.omlx/settings.json) \
+LOCAL_TASK_AGENT_WORKFLOW_EVAL_API_KEY=$(jq -r '.auth.api_key' "$HOME/.omlx/settings.json") \
 tool/local_task_agent_workflow_eval.sh
 ```
 
@@ -429,7 +429,7 @@ This MVP intentionally does not add:
 
    ```bash
    QWEN_EVAL_BASE_URL=http://127.0.0.1:8003/v1 \
-   QWEN_EVAL_API_KEY=$(jq -r '.auth.api_key' /Users/mn/.omlx/settings.json) \
+   QWEN_EVAL_API_KEY=$(jq -r '.auth.api_key' "$HOME/.omlx/settings.json") \
    tool/qwen_local_inference_eval.sh
    ```
 

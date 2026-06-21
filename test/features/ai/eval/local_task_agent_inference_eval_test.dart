@@ -93,6 +93,21 @@ void main() {
     },
   );
 
+  test('parseLocalTaskAgentEvalTemperature validates the accepted range', () {
+    expect(parseLocalTaskAgentEvalTemperature(null), isNull);
+    expect(parseLocalTaskAgentEvalTemperature('   '), isNull);
+    expect(parseLocalTaskAgentEvalTemperature('0'), 0);
+    expect(parseLocalTaskAgentEvalTemperature(' 0.7 '), 0.7);
+    expect(parseLocalTaskAgentEvalTemperature('2'), 2);
+
+    for (final value in ['nan', 'NaN', 'Infinity', '-0.1', '2.1']) {
+      expect(
+        () => parseLocalTaskAgentEvalTemperature(value),
+        throwsFormatException,
+      );
+    }
+  });
+
   test(
     'runner exercises real conversation continuation until update_report',
     () async {
@@ -163,6 +178,42 @@ void main() {
       );
     },
   );
+
+  test('runner records inference failure and continues the matrix', () async {
+    const secondProfile = LocalTaskAgentEvalProfile(
+      name: 'second-local-model',
+      providerModelId: 'second-local-model-id',
+      modelClass: 'local-test',
+    );
+    final fakeInference = _FailThenSucceedInferenceRepository();
+    final runner = _createRunner(
+      provider: provider,
+      inferenceRepository: fakeInference,
+    );
+
+    final report = await runner.run(
+      profiles: const [profile, secondProfile],
+      scenarios: [defaultLocalTaskAgentWakeScenario()],
+    );
+
+    expect(report.results, hasLength(2));
+    expect(
+      report.results.first.failureCategory,
+      LocalTaskAgentEvalFailureCategory.inferenceFailed,
+    );
+    expect(
+      report.results.first.finalContent,
+      contains('Inference failed'),
+    );
+    expect(
+      report.results.last.failureCategory,
+      LocalTaskAgentEvalFailureCategory.none,
+    );
+    expect(
+      fakeInference.requests.map((request) => request.model),
+      equals(['local-model-id', 'second-local-model-id']),
+    );
+  });
 
   test(
     'runner fails simple tool smoke output when final report is missing',
@@ -278,10 +329,12 @@ class _RecordedRequest {
   const _RecordedRequest({
     required this.messages,
     required this.toolNames,
+    required this.model,
   });
 
   final List<ChatCompletionMessage> messages;
   final List<String> toolNames;
+  final String model;
 }
 
 class _QueuedInferenceRepository extends InferenceRepositoryInterface {
@@ -308,6 +361,7 @@ class _QueuedInferenceRepository extends InferenceRepositoryInterface {
       _RecordedRequest(
         messages: messages,
         toolNames: tools?.map((tool) => tool.function.name).toList() ?? [],
+        model: model,
       ),
     );
     final responses = _requestIndex < responsesByRequest.length
@@ -315,6 +369,63 @@ class _QueuedInferenceRepository extends InferenceRepositoryInterface {
         : const <CreateChatCompletionStreamResponse>[];
     _requestIndex++;
     return Stream.fromIterable(responses);
+  }
+}
+
+class _FailThenSucceedInferenceRepository extends InferenceRepositoryInterface {
+  final requests = <_RecordedRequest>[];
+
+  @override
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
+    Map<String, String>? thoughtSignatures,
+    ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
+  }) {
+    requests.add(
+      _RecordedRequest(
+        messages: messages,
+        toolNames: tools?.map((tool) => tool.function.name).toList() ?? [],
+        model: model,
+      ),
+    );
+    if (requests.length == 1) {
+      throw StateError('connection refused');
+    }
+    return Stream.fromIterable([
+      _toolCalls([
+        (
+          name: TaskAgentToolNames.setTaskTitle,
+          argumentsJson: '{"title":"Validate local Gemma fallback"}',
+        ),
+        (
+          name: TaskAgentToolNames.updateTaskEstimate,
+          argumentsJson: '{"minutes":150}',
+        ),
+        (
+          name: TaskAgentToolNames.updateTaskDueDate,
+          argumentsJson: '{"dueDate":"2026-07-04"}',
+        ),
+        (
+          name: TaskAgentToolNames.updateTaskPriority,
+          argumentsJson: '{"priority":"P1"}',
+        ),
+        (
+          name: TaskAgentToolNames.updateReport,
+          argumentsJson: jsonEncode({
+            'oneLiner': 'Report exists',
+            'tldr': 'Report exists.',
+            'content': '## TLDR\nReport exists.',
+          }),
+        ),
+      ]),
+    ]);
   }
 }
 

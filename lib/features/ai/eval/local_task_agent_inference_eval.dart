@@ -263,6 +263,22 @@ enum LocalTaskAgentEvalFailureCategory {
   argumentMismatch,
   unexpectedToolCall,
   missingReport,
+  inferenceFailed,
+}
+
+double? parseLocalTaskAgentEvalTemperature(
+  String? value, {
+  String name = 'LOCAL_TASK_AGENT_EVAL_TEMPERATURE',
+}) {
+  if (value == null || value.trim().isEmpty) return null;
+  final parsed = double.tryParse(value.trim());
+  if (parsed == null || !parsed.isFinite || parsed < 0 || parsed > 2) {
+    throw FormatException(
+      'Expected $name to be a finite number in [0, 2], got "$value".',
+      value,
+    );
+  }
+  return parsed;
 }
 
 class LocalTaskAgentEvalToolCall {
@@ -444,7 +460,19 @@ class LocalTaskAgentInferenceEvalRunner {
     final results = <LocalTaskAgentEvalCaseResult>[];
     for (final profile in profiles) {
       for (final scenario in scenarios) {
-        results.add(await _runScenario(profile, scenario));
+        try {
+          results.add(await _runScenario(profile, scenario));
+        } catch (error) {
+          results.add(
+            _inferenceFailedResult(
+              profile: profile,
+              scenario: scenario,
+              latencyMs: 0,
+              toolCalls: const [],
+              error: error,
+            ),
+          );
+        }
       }
     }
     return LocalTaskAgentEvalReport(
@@ -465,43 +493,86 @@ class LocalTaskAgentInferenceEvalRunner {
       systemMessage: scenario.systemPrompt,
       maxTurns: scenario.maxTurns,
     );
+    final manager = conversationRepository.getConversation(conversationId);
 
     try {
-      final usage = await conversationRepository.sendMessage(
-        conversationId: conversationId,
-        message: scenario.userMessage,
-        model: profile.providerModelId,
-        provider: provider,
-        inferenceRepo: inferenceRepository,
-        tools: buildLocalTaskAgentEvalTools(),
-        temperature: temperature,
-        strategy: strategy,
-      );
-      stopwatch.stop();
+      try {
+        final usage = await conversationRepository.sendMessage(
+          conversationId: conversationId,
+          message: scenario.userMessage,
+          model: profile.providerModelId,
+          provider: provider,
+          inferenceRepo: inferenceRepository,
+          tools: buildLocalTaskAgentEvalTools(),
+          temperature: temperature,
+          strategy: strategy,
+        );
+        stopwatch.stop();
 
-      final manager = conversationRepository.getConversation(conversationId);
-      final finalContent = _extractFinalAssistantContent(manager);
-      final failureCategory = _classifyResult(
-        scenario: scenario,
-        toolCalls: strategy.toolCalls,
-        finalContent: finalContent,
-        hasReport: strategy.hasReport,
-      );
+        var finalContent = _extractFinalAssistantContent(manager);
+        final classifiedFailure = _classifyResult(
+          scenario: scenario,
+          toolCalls: strategy.toolCalls,
+          finalContent: finalContent,
+          hasReport: strategy.hasReport,
+        );
+        final failureCategory =
+            classifiedFailure ==
+                    LocalTaskAgentEvalFailureCategory.emptyResponse &&
+                usage == null &&
+                !_hasAssistantMessage(manager)
+            ? LocalTaskAgentEvalFailureCategory.inferenceFailed
+            : classifiedFailure;
+        if (failureCategory ==
+                LocalTaskAgentEvalFailureCategory.inferenceFailed &&
+            finalContent == null) {
+          finalContent =
+              'Inference failed before the model returned a '
+              'response.';
+        }
 
-      return LocalTaskAgentEvalCaseResult(
-        profile: profile,
-        scenario: scenario,
-        provider: provider,
-        latencyMs: stopwatch.elapsedMilliseconds,
-        inputTokens: usage?.inputTokens,
-        outputTokens: usage?.outputTokens,
-        finalContent: finalContent,
-        toolCalls: strategy.toolCalls,
-        failureCategory: failureCategory,
-      );
+        return LocalTaskAgentEvalCaseResult(
+          profile: profile,
+          scenario: scenario,
+          provider: provider,
+          latencyMs: stopwatch.elapsedMilliseconds,
+          inputTokens: usage?.inputTokens,
+          outputTokens: usage?.outputTokens,
+          finalContent: finalContent,
+          toolCalls: strategy.toolCalls,
+          failureCategory: failureCategory,
+        );
+      } catch (error) {
+        stopwatch.stop();
+        return _inferenceFailedResult(
+          profile: profile,
+          scenario: scenario,
+          latencyMs: stopwatch.elapsedMilliseconds,
+          toolCalls: strategy.toolCalls,
+          error: error,
+        );
+      }
     } finally {
       conversationRepository.deleteConversation(conversationId);
     }
+  }
+
+  LocalTaskAgentEvalCaseResult _inferenceFailedResult({
+    required LocalTaskAgentEvalProfile profile,
+    required LocalTaskAgentEvalScenario scenario,
+    required int latencyMs,
+    required List<LocalTaskAgentEvalToolCall> toolCalls,
+    required Object error,
+  }) {
+    return LocalTaskAgentEvalCaseResult(
+      profile: profile,
+      scenario: scenario,
+      provider: provider,
+      latencyMs: latencyMs,
+      finalContent: 'Inference failed with exception: $error',
+      toolCalls: toolCalls,
+      failureCategory: LocalTaskAgentEvalFailureCategory.inferenceFailed,
+    );
   }
 }
 
@@ -606,6 +677,13 @@ LocalTaskAgentEvalFailureCategory _classifyResult({
   }
 
   return LocalTaskAgentEvalFailureCategory.none;
+}
+
+bool _hasAssistantMessage(ConversationManager? manager) {
+  if (manager == null) return false;
+  return manager.messages.any(
+    (message) => message.role == ChatCompletionMessageRole.assistant,
+  );
 }
 
 String? _extractFinalAssistantContent(ConversationManager? manager) {

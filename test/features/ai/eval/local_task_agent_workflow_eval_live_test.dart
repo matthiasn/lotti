@@ -550,8 +550,7 @@ class _WorkflowEvalReport {
         .whereType<String>()
         .firstOrNull;
     final userPrompt = payloads
-        .map((payload) => payload.content)
-        .map((content) => content['text'])
+        .map((payload) => _promptTextFromPayloadContent(payload.content))
         .whereType<String>()
         .where((text) => text.contains('## Current Task Context'))
         .firstOrNull;
@@ -629,6 +628,19 @@ Provider: `${provider.name}` (${provider.inferenceProviderType.name}) at `${prov
 ${result.error == null ? '' : 'Error: `${result.error}`\n'}
 ''';
   }
+}
+
+String? _promptTextFromPayloadContent(Map<String, dynamic> content) {
+  final text = content['text'];
+  if (text is String) return text;
+
+  final head = content['head'];
+  final tail = content['tail'];
+  final combined = [
+    if (head is String) head,
+    if (tail is String) tail,
+  ].join();
+  return combined.isEmpty ? null : combined;
 }
 
 void _writeReport(_WorkflowEvalReport report) {

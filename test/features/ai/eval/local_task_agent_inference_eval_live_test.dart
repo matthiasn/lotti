@@ -95,9 +95,10 @@ List<String> _envList(String name) {
 }
 
 double? _envDouble(String name) {
-  final value = Platform.environment[name];
-  if (value == null || value.trim().isEmpty) return null;
-  return double.tryParse(value.trim());
+  return parseLocalTaskAgentEvalTemperature(
+    Platform.environment[name],
+    name: name,
+  );
 }
 
 void _write(String path, String content) {
