@@ -127,7 +127,7 @@ void main() {
       expect(status.urgency, DueDateUrgency.overdue);
       expect(status.daysUntilDue, -2);
       expect(status.isUrgent, isTrue);
-      expect(status.urgentColor, taskStatusRed);
+      expect(status.urgentColor, taskIconColorRed);
     });
 
     test('returns dueToday status when dueDate equals reference', () {
@@ -141,7 +141,7 @@ void main() {
       expect(status.urgency, DueDateUrgency.dueToday);
       expect(status.daysUntilDue, 0);
       expect(status.isUrgent, isTrue);
-      expect(status.urgentColor, taskStatusOrange);
+      expect(status.urgentColor, taskIconColorOrange);
     });
 
     test('returns normal status when dueDate is after reference', () {
@@ -244,7 +244,7 @@ void main() {
         daysUntilDue: -1,
       );
 
-      expect(status.urgentColor, taskStatusRed);
+      expect(status.urgentColor, taskIconColorRed);
     });
 
     test('urgentColor returns orange for dueToday', () {
@@ -253,7 +253,7 @@ void main() {
         daysUntilDue: 0,
       );
 
-      expect(status.urgentColor, taskStatusOrange);
+      expect(status.urgentColor, taskIconColorOrange);
     });
 
     test('urgentColor returns null for normal', () {

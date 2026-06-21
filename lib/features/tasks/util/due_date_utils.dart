@@ -36,12 +36,19 @@ class DueDateStatus {
       urgency == DueDateUrgency.overdue || urgency == DueDateUrgency.dueToday;
 
   /// Returns the appropriate color for this status, or null for normal.
+  ///
+  /// Uses the lighter on-surface icon-red / icon-orange tints rather than the
+  /// fully saturated `taskStatusRed`/`taskStatusOrange`: the saturated red
+  /// measured ~3.9:1 as text on the dark card (below WCAG AA), while the
+  /// lighter `taskIconColorRed` (#E57373) clears AA (~5.4:1) and reads as a
+  /// calmer "attention" red rather than an alarm — so the overdue cue is both
+  /// legible and stops out-shouting the lead-card rail.
   Color? get urgentColor {
     switch (urgency) {
       case DueDateUrgency.overdue:
-        return taskStatusRed;
+        return taskIconColorRed;
       case DueDateUrgency.dueToday:
-        return taskStatusOrange;
+        return taskIconColorOrange;
       case DueDateUrgency.normal:
         return null;
     }

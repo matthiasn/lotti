@@ -105,10 +105,10 @@ void main() {
         tester.widget<Text>(find.text('AI Task Summary')).style?.fontWeight,
         FontWeight.w600,
       );
-      // Section headers use subtitle1 (16px) at a high-emphasis bold weight —
-      // a step larger than the 14px card titles — so the group label clearly
-      // out-ranks the cards below it.
-      expect(tester.widget<Text>(find.text('Today')).style?.fontSize, 16);
+      // Section headers use heading3 (20px) at a high-emphasis bold weight —
+      // a clear step larger than the 16px card titles — so the group label
+      // unambiguously out-ranks the cards below it.
+      expect(tester.widget<Text>(find.text('Today')).style?.fontSize, 20);
       expect(
         tester.widget<Text>(find.text('Today')).style?.fontWeight,
         FontWeight.w700,
@@ -123,9 +123,11 @@ void main() {
         tester.widget<Text>(find.text('User Testing').first).style,
         isNotNull,
       );
+      // Card titles use subtitle1 (16px) so there's a real header > title >
+      // body size ramp.
       expect(
         tester.widget<Text>(find.text('User Testing').first).style?.fontSize,
-        14,
+        16,
       );
       expect(
         tester.widget<Text>(find.text('User Testing').first).style?.fontWeight,

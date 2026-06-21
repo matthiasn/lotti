@@ -75,6 +75,7 @@ class TaskBrowseRowShell extends StatelessWidget {
       hoveredTaskId: hoveredTaskId,
     );
     final selected = entry.task.meta.id == selectedTaskId;
+    final tokens = context.designTokens;
 
     return DecoratedBox(
       decoration: decoration,
@@ -113,7 +114,11 @@ class TaskBrowseRowShell extends StatelessWidget {
                         key: ValueKey(
                           'task-browse-divider-${entry.task.meta.id}',
                         ),
-                        height: 1,
+                        // A taller divider box (line centred) gives each card
+                        // clear breathing room above/below the hairline so the
+                        // card-to-card gap decisively beats the intra-card gaps
+                        // — without un-merging the grouped container.
+                        height: tokens.spacing.step5,
                         thickness: 1,
                         // Inset to the content's left edge so within-group rows
                         // read as related lines under one container, while the
@@ -125,7 +130,7 @@ class TaskBrowseRowShell extends StatelessWidget {
                         key: ValueKey(
                           'task-browse-divider-slot-${entry.task.meta.id}',
                         ),
-                        height: 1,
+                        height: tokens.spacing.step5,
                       ),
             ],
           ),
@@ -429,7 +434,7 @@ class _TaskBrowseTitle extends StatelessWidget {
       isEmpty ? context.messages.taskUntitled : trimmed,
       maxLines: maxLines,
       overflow: TextOverflow.ellipsis,
-      style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+      style: tokens.typography.styles.subtitle.subtitle1.copyWith(
         color: isEmpty
             ? TaskShowcasePalette.error(context)
             : TaskShowcasePalette.highText(context),
@@ -532,13 +537,14 @@ class SectionHeaderTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPriority = sectionKey.kind == TaskBrowseSectionKind.priority;
     // The section label is the backbone of the grouped list, so it must
-    // out-rank the card titles below it: it uses `subtitle1` (16px) — a step
-    // LARGER than the 14px card titles — at the heaviest weight, so the group
-    // header reads as more authoritative than its members rather than tying
-    // with them. The priority *colour* is carried by the tinted band and the
-    // glyph (see TaskBrowseListItem), so the label itself stays white for
+    // out-rank the card titles below it: it uses `heading3` (20px) — a clear
+    // step LARGER than the 16px card titles — at the heaviest weight, so the
+    // group header reads as unambiguously more authoritative than its members.
+    // This completes a real size ramp (header 20 > title 16 > body 14) rather
+    // than leaning on the band fill alone. The priority *colour* is carried by
+    // the tinted band and the glyph, so the label itself stays white for
     // maximum legibility on the band.
-    final textStyle = context.designTokens.typography.styles.subtitle.subtitle1
+    final textStyle = context.designTokens.typography.styles.heading.heading3
         .copyWith(
           color: TaskShowcasePalette.highText(context),
           fontWeight: FontWeight.w700,
