@@ -24,6 +24,8 @@ class EventsOverviewView extends StatelessWidget {
     this.onOpenEvent,
     this.onCreate,
     this.onSearch,
+    this.onLoadMore,
+    this.isLoadingMore = false,
     super.key,
   });
 
@@ -35,6 +37,14 @@ class EventsOverviewView extends StatelessWidget {
   final ValueChanged<EventCardData>? onOpenEvent;
   final VoidCallback? onCreate;
   final VoidCallback? onSearch;
+
+  /// Called when the user scrolls near the bottom and more pages remain. Null
+  /// when the full archive is loaded, which also hides the trailing spinner.
+  final VoidCallback? onLoadMore;
+
+  /// Whether the next page is currently being fetched (shows a trailing
+  /// progress indicator).
+  final bool isLoadingMore;
 
   /// Target card width; column count is derived from the available width.
   static const double _targetCardWidth = 340;
@@ -58,61 +68,85 @@ class EventsOverviewView extends StatelessWidget {
               1,
               4,
             );
-            return CustomScrollView(
-              slivers: [
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(
-                      edge,
-                      tokens.spacing.step4,
-                      edge,
-                      tokens.spacing.step2,
-                    ),
-                    child: _Header(
-                      subtitle: subtitle,
-                      categories: categories,
-                      selectedCategoryId: selectedCategoryId,
-                      onSelectCategory: onSelectCategory,
-                      onSearch: onSearch,
-                      onCreateInHeader: onCreate,
-                    ),
-                  ),
-                ),
-                for (final section in sections) ...[
+            return NotificationListener<ScrollNotification>(
+              // Fetch the next page as the user nears the bottom. The controller
+              // ignores repeat calls while a fetch is in flight or the archive
+              // is fully loaded, so firing on every scroll tick is safe.
+              onNotification: (notification) {
+                final loadMore = onLoadMore;
+                if (loadMore != null &&
+                    notification.metrics.axis == Axis.vertical &&
+                    notification.metrics.pixels >=
+                        notification.metrics.maxScrollExtent - 600) {
+                  loadMore();
+                }
+                return false;
+              },
+              child: CustomScrollView(
+                slivers: [
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
                         edge,
-                        tokens.spacing.step7,
+                        tokens.spacing.step4,
                         edge,
                         tokens.spacing.step2,
                       ),
-                      child: Text(
-                        section.title,
-                        style: tokens.typography.styles.subtitle.subtitle1
-                            .copyWith(
-                              color: context.colorScheme.onSurface,
-                              fontWeight: FontWeight.w600,
-                            ),
+                      child: _Header(
+                        subtitle: subtitle,
+                        categories: categories,
+                        selectedCategoryId: selectedCategoryId,
+                        onSelectCategory: onSelectCategory,
+                        onSearch: onSearch,
+                        onCreateInHeader: onCreate,
                       ),
                     ),
                   ),
-                  SliverPadding(
-                    padding: EdgeInsets.symmetric(horizontal: edge),
-                    sliver: section.featured
-                        ? _featuredSliver(section, gap)
-                        : _gridSliver(
-                            section,
-                            columns: columns,
-                            contentWidth: contentWidth,
-                            gap: gap,
-                          ),
+                  for (final section in sections) ...[
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.fromLTRB(
+                          edge,
+                          tokens.spacing.step7,
+                          edge,
+                          tokens.spacing.step2,
+                        ),
+                        child: Text(
+                          section.title,
+                          style: tokens.typography.styles.subtitle.subtitle1
+                              .copyWith(
+                                color: context.colorScheme.onSurface,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ),
+                    ),
+                    SliverPadding(
+                      padding: EdgeInsets.symmetric(horizontal: edge),
+                      sliver: section.featured
+                          ? _featuredSliver(section, gap)
+                          : _gridSliver(
+                              section,
+                              columns: columns,
+                              contentWidth: contentWidth,
+                              gap: gap,
+                            ),
+                    ),
+                  ],
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        vertical: tokens.spacing.step6,
+                      ),
+                      child: Center(
+                        child: isLoadingMore
+                            ? const CircularProgressIndicator()
+                            : SizedBox(height: tokens.spacing.step6),
+                      ),
+                    ),
                   ),
                 ],
-                SliverToBoxAdapter(
-                  child: SizedBox(height: tokens.spacing.step12),
-                ),
-              ],
+              ),
             );
           },
         ),

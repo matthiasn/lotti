@@ -42,7 +42,7 @@ flowchart TD
     DB[(JournalDb + EntitiesCacheService)]
 
     subgraph Overview
-      ESP[eventsStreamProvider<br/>loadResolvedEvents] -->|ResolvedEvent list| OP[EventsOverviewPage]
+      ESP[eventsOverviewControllerProvider<br/>loadResolvedEventsPage paged] -->|ResolvedEvent page| OP[EventsOverviewPage]
       OP -->|eventCardDataFromEvent<br/>+ groupEventsIntoSections| OV[EventsOverviewView]
       OV --> CARD[EventCard / EventFeatureCard]
     end
@@ -79,8 +79,18 @@ of events — eager rendering would mount every card and decode every cover phot
 at once, spiking memory enough for the OS to kill the app on phones. Cover
 decoding is bounded too: `EventCoverImage` decodes each photo no wider than it is
 displayed (the screen width, or an explicit `decodeWidth` for small thumbnails)
-via `ResizeImage`, never at full camera resolution. (The query layer still loads
-up to `eventsQueryLimit` events up front; true paged DB loading is a follow-up.)
+via `ResizeImage`, never at full camera resolution.
+
+The data load is paged as well. `eventsOverviewControllerProvider` (an
+`AsyncNotifier`) loads `eventsPageSize` events at a time via
+`loadResolvedEventsPage(limit:, offset:, categoryId:)` — resolving covers only
+for that page — and appends the next page when the view's scroll listener nears
+the bottom. The category filter is applied **server-side** (re-querying from the
+first page) and the filter chips come from `EntitiesCacheService.sortedCategories`
+(all active categories), so filtering stays correct and complete regardless of
+how far the archive has been scrolled. An `eventNotification` re-fetches just the
+currently-loaded window, so new/edited events appear without resetting scroll
+depth.
 
 ### Detail
 
@@ -171,7 +181,8 @@ rather than a blank void.
 | `ui/widgets/event_summary_card.dart` | Dense list-context summary card (cover + meta + metrics) for the logbook / task timeline. |
 | `ui/widgets/event_photo_gallery.dart` | `EventPhotoGrid` (photo wall + "+N" overflow) + full-screen `EventPhotoGalleryViewer`. |
 | `state/event_view_mapping.dart` | Pure entity→view-model mapping, date labels, grouping. |
-| `state/events_controller.dart` | `eventsStreamProvider` + `loadResolvedEvents` (DB → resolved events). |
+| `state/events_controller.dart` | `loadResolvedEventsPage` / `loadResolvedEvents` (DB → resolved events, paged). |
+| `state/events_overview_controller.dart` | `eventsOverviewControllerProvider`: paged, category-filterable overview state. |
 | `ui/pages/events_overview_page.dart` | Route page: provider → localized sections → view. |
 | `ui/pages/event_detail_page.dart` | Route page: event + links → `EventDetailData` → view. |
 

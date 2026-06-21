@@ -180,5 +180,50 @@ void main() {
         expect(built, lessThan(50));
       },
     );
+
+    testWidgets('fires onLoadMore when scrolled near the bottom', (
+      tester,
+    ) async {
+      var loadMoreCalls = 0;
+      final events = [
+        for (var i = 0; i < 12; i++)
+          buildEventCardData(
+            id: 'e$i',
+            title: 'Event $i',
+            coverImage: testImage(),
+          ),
+      ];
+      await pumpEventScreen(
+        tester,
+        EventsOverviewView(
+          sections: [EventSection(title: '2026', events: events)],
+          onLoadMore: () => loadMoreCalls++,
+        ),
+      );
+
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -5000));
+      await tester.pump();
+
+      expect(loadMoreCalls, greaterThan(0));
+    });
+
+    testWidgets('shows a trailing progress indicator while loading more', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventsOverviewView(
+          sections: [
+            EventSection(
+              title: '2026',
+              events: [buildEventCardData(coverImage: testImage())],
+            ),
+          ],
+          onLoadMore: () {},
+          isLoadingMore: true,
+        ),
+      );
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    });
   });
 }
