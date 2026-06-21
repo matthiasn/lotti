@@ -23,7 +23,14 @@ class DueDateText extends StatefulWidget {
 }
 
 class _DueDateTextState extends State<DueDateText> {
-  bool _showRelative = false;
+  /// `null` follows the proximity default (relative phrasing for near dates,
+  /// absolute date for far ones); tapping sets it to flip to the other form.
+  bool? _showRelativeOverride;
+
+  /// Within this window a relative phrasing ("Due Today", "Overdue by 3 days")
+  /// triages faster than an absolute date; beyond it an exact date is more
+  /// useful for planning, so the chip defaults to the absolute form.
+  static const int _relativeWindowDays = 7;
 
   Color _getColor(BuildContext context, DueDateStatus status) {
     return status.urgentColor ??
@@ -67,7 +74,16 @@ class _DueDateTextState extends State<DueDateText> {
 
     final tokens = context.designTokens;
     final color = _getColor(context, status);
-    final text = _showRelative
+
+    // Near dates (within a week, in either direction) read as relative phrasing
+    // by default — "Due Today", "Due in 3 days", "Overdue by 5 days" — which is
+    // far quicker to triage and gives overdue a redundant text cue beyond its
+    // colour. Distant dates default to the absolute date for precise planning.
+    // Tapping flips to the other representation.
+    final days = status.daysUntilDue;
+    final isNear = days != null && days.abs() <= _relativeWindowDays;
+    final showRelative = _showRelativeOverride ?? isNear;
+    final text = showRelative
         ? _getRelativeText(context, status)
         : _getAbsoluteText(context, status);
 
@@ -89,9 +105,9 @@ class _DueDateTextState extends State<DueDateText> {
     };
 
     return GestureDetector(
-      onTap: () => setState(() => _showRelative = !_showRelative),
+      onTap: () => setState(() => _showRelativeOverride = !showRelative),
       child: Container(
-        height: 20,
+        height: 24,
         padding: EdgeInsets.symmetric(
           horizontal: tokens.spacing.step2,
           vertical: tokens.spacing.step1,
@@ -99,16 +115,20 @@ class _DueDateTextState extends State<DueDateText> {
         decoration: BoxDecoration(
           color: TaskShowcasePalette.surface(context),
           borderRadius: BorderRadius.circular(tokens.radii.xs),
-          border: Border.all(color: TaskShowcasePalette.border(context)),
+          // Stronger hairline (decorative.level02) so the chip boundary is
+          // perceptible against the near-same-tone surface for low-vision users.
+          border: Border.all(
+            color: TaskShowcasePalette.containerBorder(context),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.event_rounded, size: 12, color: color),
+            Icon(Icons.event_rounded, size: 14, color: color),
             const SizedBox(width: 4),
             Text(
               text,
-              style: tokens.typography.styles.others.caption.copyWith(
+              style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: color,
                 fontWeight: weight,
               ),

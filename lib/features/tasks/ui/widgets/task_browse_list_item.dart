@@ -104,18 +104,13 @@ class TaskBrowseListItem extends StatelessWidget {
     };
     // Favour an unmistakable "what do I do first?" read: ONLY the single
     // globally most-urgent task (the first card of the top bucket after the
-    // urgency sort) is marked — with a bold full-height priority rail AND a
-    // faint whole-card priority tint — so there is exactly one anchor rather
-    // than one per bucket competing for the eye.
+    // urgency sort) is marked — with a bold full-height priority rail down its
+    // leading edge — so there is exactly one anchor rather than one per bucket
+    // competing for the eye. The rail alone carries the anchor; the whole-card
+    // colour wash was dropped because it read as anxiety-inducing "alarm" tint.
     final leadAccentColor = isGlobalLead ? priorityColor : null;
     const leadAccentWidth = 6.0;
-    final surfaceColor = TaskShowcasePalette.surface(context);
-    final cardColor = isGlobalLead && priorityColor != null
-        ? Color.alphaBlend(
-            priorityColor.withValues(alpha: 0.1),
-            surfaceColor,
-          )
-        : surfaceColor;
+    final cardColor = TaskShowcasePalette.surface(context);
     final borderSide = BorderSide(
       color: TaskShowcasePalette.containerBorder(context),
     );

@@ -26,7 +26,7 @@ class TaskShowcaseCategoryChip extends StatelessWidget {
     final tokens = context.designTokens;
     final accent = colorFromCssHex(colorHex);
     return Container(
-      height: 20,
+      height: 24,
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step2,
         vertical: tokens.spacing.step1,
@@ -34,12 +34,14 @@ class TaskShowcaseCategoryChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: TaskShowcasePalette.surface(context),
         borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: TaskShowcasePalette.border(context)),
+        // Stronger hairline (decorative.level02) so the chip boundary is
+        // perceptible against the near-same-tone surface for low-vision users.
+        border: Border.all(color: TaskShowcasePalette.containerBorder(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 12, color: accent),
+          Icon(icon, size: 14, color: accent),
           SizedBox(width: tokens.spacing.step1),
           Flexible(
             child: Text(
@@ -47,7 +49,7 @@ class TaskShowcaseCategoryChip extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               softWrap: false,
-              style: tokens.typography.styles.others.caption.copyWith(
+              style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: TaskShowcasePalette.mediumText(context),
               ),
             ),
@@ -114,7 +116,7 @@ class TaskShowcaseMetaChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Container(
-      height: 20,
+      height: 24,
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step2,
         vertical: tokens.spacing.step1,
@@ -122,20 +124,22 @@ class TaskShowcaseMetaChip extends StatelessWidget {
       decoration: BoxDecoration(
         color: TaskShowcasePalette.surface(context),
         borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: TaskShowcasePalette.border(context)),
+        // Stronger hairline (decorative.level02) so each chip's boundary is
+        // perceptible against the near-same-tone surface for low-vision users.
+        border: Border.all(color: TaskShowcasePalette.containerBorder(context)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             icon,
-            size: 12,
+            size: 14,
             color: TaskShowcasePalette.mediumText(context),
           ),
           SizedBox(width: tokens.spacing.step1),
           Text(
             label,
-            style: tokens.typography.styles.others.caption.copyWith(
+            style: tokens.typography.styles.body.bodySmall.copyWith(
               color: TaskShowcasePalette.mediumText(context),
             ),
           ),

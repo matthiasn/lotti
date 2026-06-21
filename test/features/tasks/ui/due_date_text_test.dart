@@ -7,17 +7,26 @@ import 'package:lotti/features/tasks/ui/due_date_text.dart';
 import '../../../test_helper.dart';
 
 void main() {
-  group('DueDateText', () {
-    testWidgets('displays icon and text', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 20);
+  // Reference "today" for all cases. The widget defaults to a *relative*
+  // phrasing for dates within a week (in either direction) and an *absolute*
+  // date for anything further out; tapping flips to the other representation.
+  final fakeNow = DateTime(2025, 6, 15, 12);
 
+  Future<void> pump(
+    WidgetTester tester,
+    DateTime dueDate, {
+    bool dark = false,
+  }) {
+    final child = DueDateText(dueDate: dueDate);
+    return tester.pumpWidget(
+      dark ? DarkWidgetTestBench(child: child) : WidgetTestBench(child: child),
+    );
+  }
+
+  group('DueDateText', () {
+    testWidgets('displays icon and a single text label', (tester) async {
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
+        await pump(tester, DateTime(2025, 6, 20)); // +5 days (near)
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -26,190 +35,144 @@ void main() {
     });
 
     testWidgets('displays "Due Today" for today', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 15);
-
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
+        await pump(tester, DateTime(2025, 6, 15));
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Due Today'), findsOneWidget);
       });
     });
 
-    testWidgets('displays absolute date format by default', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 20);
-
+    testWidgets('defaults to relative phrasing for near dates', (tester) async {
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
+        await pump(tester, DateTime(2025, 6, 20)); // +5 days (within a week)
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Should show "Due: Jun 20, 2025" format
-        final expectedText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
-        expect(find.text(expectedText), findsOneWidget);
+        // Relative is the default for near dates — no tap needed.
+        expect(find.text('Due in 5 days'), findsOneWidget);
+        expect(
+          find.text('Due: ${DateFormat.yMMMd().format(DateTime(2025, 6, 20))}'),
+          findsNothing,
+        );
       });
     });
 
-    testWidgets('toggles to relative format on tap', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 20); // 5 days from reference
-
+    testWidgets('defaults to the absolute date for far dates', (tester) async {
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
+        await pump(tester, DateTime(2025, 7, 5)); // +20 days (beyond a week)
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Initially shows absolute format
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        final absoluteText =
+            'Due: ${DateFormat.yMMMd().format(DateTime(2025, 7, 5))}';
+        expect(find.text(absoluteText), findsOneWidget);
+        expect(find.text('Due in 20 days'), findsNothing);
+      });
+    });
+
+    testWidgets('taps a far date to reveal the relative phrasing', (
+      tester,
+    ) async {
+      await withClock(Clock(() => fakeNow), () async {
+        await pump(tester, DateTime(2025, 7, 5)); // +20 days (far → absolute)
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final absoluteText =
+            'Due: ${DateFormat.yMMMd().format(DateTime(2025, 7, 5))}';
         expect(find.text(absoluteText), findsOneWidget);
 
-        // Tap to toggle - use the Text widget directly to avoid hit test issues
         await tester.tap(find.text(absoluteText));
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Now shows relative format
-        expect(find.text('Due in 5 days'), findsOneWidget);
+        expect(find.text('Due in 20 days'), findsOneWidget);
       });
     });
 
-    testWidgets('displays "Due Tomorrow" for tomorrow', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 16);
-
+    testWidgets('taps a near date to reveal the absolute date', (tester) async {
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
+        await pump(tester, DateTime(2025, 6, 20)); // +5 days (near → relative)
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Tap to show relative - use the text to avoid hit test issues
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
-        await tester.tap(find.text(absoluteText));
+        expect(find.text('Due in 5 days'), findsOneWidget);
+
+        await tester.tap(find.text('Due in 5 days'));
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final absoluteText =
+            'Due: ${DateFormat.yMMMd().format(DateTime(2025, 6, 20))}';
+        expect(find.text(absoluteText), findsOneWidget);
+      });
+    });
+
+    testWidgets('shows "Due Tomorrow" for +1 day by default', (tester) async {
+      await withClock(Clock(() => fakeNow), () async {
+        await pump(tester, DateTime(2025, 6, 16));
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Due Tomorrow'), findsOneWidget);
+        expect(find.textContaining('1 days'), findsNothing);
       });
     });
 
-    testWidgets('displays "Due Yesterday" for yesterday', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 14);
-
+    testWidgets('shows "Due Yesterday" for -1 day by default', (tester) async {
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Tap to show relative - use the text to avoid hit test issues
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
-        await tester.tap(find.text(absoluteText));
+        await pump(tester, DateTime(2025, 6, 14));
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Due Yesterday'), findsOneWidget);
+        expect(find.textContaining('1 days'), findsNothing);
       });
     });
 
-    testWidgets('displays "Overdue by X days" for past dates', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 12); // 3 days ago
-
+    testWidgets('shows "Overdue by 3 days" for a recent past date', (
+      tester,
+    ) async {
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Tap to show relative - use the text to avoid hit test issues
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
-        await tester.tap(find.text(absoluteText));
+        await pump(tester, DateTime(2025, 6, 12)); // -3 days (near)
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Overdue by 3 days'), findsOneWidget);
       });
     });
 
-    testWidgets('toggles back to absolute format on second tap', (
+    testWidgets('toggles back to absolute on the second tap (far date)', (
       tester,
     ) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 20);
-
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
+        await pump(tester, DateTime(2025, 7, 5)); // +20 days (far → absolute)
         await tester.pump(const Duration(milliseconds: 100));
 
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        final absoluteText =
+            'Due: ${DateFormat.yMMMd().format(DateTime(2025, 7, 5))}';
 
-        // First tap - switch to relative
         await tester.tap(find.text(absoluteText));
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.text('Due in 5 days'), findsOneWidget);
+        expect(find.text('Due in 20 days'), findsOneWidget);
 
-        // Second tap - switch back to absolute
-        await tester.tap(find.text('Due in 5 days'));
+        await tester.tap(find.text('Due in 20 days'));
         await tester.pump(const Duration(milliseconds: 100));
         expect(find.text(absoluteText), findsOneWidget);
       });
     });
 
-    testWidgets('applies non-urgent color for future dates', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 25); // 10 days in future - not urgent
-
+    testWidgets('applies a non-urgent color for far future dates', (
+      tester,
+    ) async {
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
+        await pump(tester, DateTime(2025, 6, 25)); // +10 days, not urgent
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Verify the icon exists and uses non-urgent color (from colorScheme)
         final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
-        // Non-urgent future dates should NOT have red or orange colors
         expect(icon.color, isNotNull);
       });
     });
 
-    testWidgets('shows "Due Today" in absolute mode for today', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 15); // Same day
-
+    testWidgets('keeps "Due Today" across a tap', (tester) async {
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
+        await pump(tester, DateTime(2025, 6, 15));
         await tester.pump(const Duration(milliseconds: 100));
 
-        // In absolute mode (default), "Due Today" should show for same-day
         expect(find.text('Due Today'), findsOneWidget);
 
-        // Toggle to relative - should still show "Due Today"
         await tester.tap(find.text('Due Today'));
         await tester.pump(const Duration(milliseconds: 100));
         expect(find.text('Due Today'), findsOneWidget);
@@ -217,65 +180,12 @@ void main() {
     });
 
     testWidgets('renders in dark mode', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 20);
-
       await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          DarkWidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
+        await pump(tester, DateTime(2025, 6, 20), dark: true);
         await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(DueDateText), findsOneWidget);
         expect(find.byIcon(Icons.event_rounded), findsOneWidget);
-      });
-    });
-
-    testWidgets('uses "Due Tomorrow" for 1 day in future', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 16); // 1 day from reference
-
-      await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Tap to show relative
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
-        await tester.tap(find.text(absoluteText));
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Should use "Due Tomorrow" not "Due in 1 days"
-        expect(find.text('Due Tomorrow'), findsOneWidget);
-        expect(find.textContaining('1 days'), findsNothing);
-      });
-    });
-
-    testWidgets('uses "Due Yesterday" for overdue by 1 day', (tester) async {
-      final fakeNow = DateTime(2025, 6, 15, 12);
-      final dueDate = DateTime(2025, 6, 14); // 1 day ago
-
-      await withClock(Clock(() => fakeNow), () async {
-        await tester.pumpWidget(
-          WidgetTestBench(
-            child: DueDateText(dueDate: dueDate),
-          ),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Tap to show relative
-        final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
-        await tester.tap(find.text(absoluteText));
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // Should use "Due Yesterday" not "Overdue by 1 days"
-        expect(find.text('Due Yesterday'), findsOneWidget);
-        expect(find.textContaining('1 days'), findsNothing);
       });
     });
   });

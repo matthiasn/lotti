@@ -734,21 +734,23 @@ void main() {
         await withClock(Clock(() => fakeNow), () async {
           await pumpTaskCard(tester, ModernTaskCard(task: task));
 
-          // Initially shows absolute date
+          // A near date (+5 days) defaults to the relative phrasing.
           final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
-          expect(find.text(absoluteText), findsOneWidget);
+          expect(find.text('Due in 5 days'), findsOneWidget);
+          expect(find.text(absoluteText), findsNothing);
 
           // Tap the due-date text directly to avoid card tap hit-testing.
-          await tester.tap(find.text(absoluteText));
-          await tester.pump(const Duration(milliseconds: 100));
-
-          expect(find.text(absoluteText), findsNothing);
-          expect(find.text('Due in 5 days'), findsOneWidget);
-
           await tester.tap(find.text('Due in 5 days'));
           await tester.pump(const Duration(milliseconds: 100));
 
           expect(find.text(absoluteText), findsOneWidget);
+          expect(find.text('Due in 5 days'), findsNothing);
+
+          // Tapping again flips back to the relative phrasing.
+          await tester.tap(find.text(absoluteText));
+          await tester.pump(const Duration(milliseconds: 100));
+
+          expect(find.text('Due in 5 days'), findsOneWidget);
         });
       },
     );

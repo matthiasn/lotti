@@ -316,10 +316,12 @@ class TaskRowContent extends ConsumerWidget {
                 SizedBox(height: tokens.spacing.step2),
                 Text(
                   oneLiner,
-                  // Show the AI summary in full rather than truncating it: the
-                  // subtitle carries the task's current status, which is worth
-                  // a second line when the model emits one. Medium emphasis
-                  // keeps it subordinate to the bold title above.
+                  // Show the AI summary across up to two lines — enough to read
+                  // the task's current status (which is worth a second line)
+                  // without letting a long summary balloon the card height.
+                  // Medium emphasis keeps it subordinate to the bold title.
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: tokens.typography.styles.others.caption.copyWith(
                     color: TaskShowcasePalette.mediumText(context),
                   ),

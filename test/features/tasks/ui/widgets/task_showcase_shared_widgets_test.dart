@@ -83,9 +83,9 @@ void main() {
               ),
             )
             .height,
-        // Calm category chip now matches the other metadata chips' height
-        // instead of the old, shorter CategoryTag (18).
-        20,
+        // Category and meta chips share a 24px height — bumped from 20 with
+        // their 14px text so the chip row is comfortable for low-vision users.
+        24,
       );
       expect(
         tester
@@ -95,7 +95,7 @@ void main() {
               ),
             )
             .height,
-        20,
+        24,
       );
       expect(
         tester
