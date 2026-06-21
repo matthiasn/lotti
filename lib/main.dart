@@ -12,6 +12,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -88,6 +89,7 @@ Future<AppExitResponse> _handleAppExitRequested() async {
     closeIfRegistered<JournalDb>((db) => db.close()),
     closeIfRegistered<Fts5Db>((db) => db.close()),
     closeIfRegistered<EditorDb>((db) => db.close()),
+    closeIfRegistered<OnboardingMetricsDb>((db) => db.close()),
     closeIfRegistered<SyncDatabase>((db) => db.close()),
     closeIfRegistered<AgentDatabase>((db) => db.close()),
     closeIfRegistered<SettingsDb>((db) => db.close()),

@@ -13,6 +13,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_grou
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/logging_settings_page.dart';
@@ -124,6 +125,10 @@ const Map<String, SettingsPanelSpec> kSettingsPanels =
         build: _advancedMaintenancePanel,
         scrollable: true,
       ),
+      'advanced-onboarding-metrics': SettingsPanelSpec(
+        build: _advancedOnboardingMetricsPanel,
+        scrollable: true,
+      ),
       'advanced-logging': SettingsPanelSpec(
         build: _advancedLoggingPanel,
         scrollable: true,
@@ -205,6 +210,8 @@ Widget _speechPanel(BuildContext context) => const SpeechSettingsBody();
 Widget _advancedAboutPanel(BuildContext context) => const AboutBody();
 Widget _advancedMaintenancePanel(BuildContext context) =>
     const MaintenanceBody();
+Widget _advancedOnboardingMetricsPanel(BuildContext context) =>
+    const OnboardingMetricsBody();
 Widget _advancedLoggingPanel(BuildContext context) =>
     const LoggingSettingsBody();
 Widget _advancedAnimationsPanel(BuildContext context) =>

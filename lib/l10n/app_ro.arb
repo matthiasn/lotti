@@ -3300,6 +3300,8 @@
   "settingsMeasurablesSubtitle": "Configurați tipurile de date măsurabile",
   "settingsMeasurablesTitle": "Măsurători",
   "settingsMeasurableUnitLabel": "Unitatea abrevierii",
+  "settingsOnboardingMetricsSubtitle": "Pâlnie FTUE — instalare, activare, retenție (depanare)",
+  "settingsOnboardingMetricsTitle": "Valori de onboarding",
   "settingsResetGeminiConfirm": "Resetează",
   "settingsResetGeminiConfirmQuestion": "Aceasta va afișa din nou dialogul de configurare Gemini. Continui?",
   "settingsResetGeminiSubtitle": "Afișează din nou dialogul de configurare Gemini AI",

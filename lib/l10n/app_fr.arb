@@ -3300,6 +3300,8 @@
   "settingsMeasurablesSubtitle": "Configurer les types de données mesurables",
   "settingsMeasurablesTitle": "Éléments mesurables",
   "settingsMeasurableUnitLabel": "Abréviation d'unité",
+  "settingsOnboardingMetricsSubtitle": "Entonnoir FTUE — installation, activation, rétention (débogage)",
+  "settingsOnboardingMetricsTitle": "Métriques d'intégration",
   "settingsResetGeminiConfirm": "Réinitialiser",
   "settingsResetGeminiConfirmQuestion": "Cela affichera à nouveau le dialogue de configuration Gemini. Continuer?",
   "settingsResetGeminiSubtitle": "Afficher à nouveau le dialogue de configuration Gemini AI",

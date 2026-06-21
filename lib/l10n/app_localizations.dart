@@ -107,6 +107,18 @@ abstract class AppLocalizations {
     Locale('ro'),
   ];
 
+  /// No description provided for @settingsOnboardingMetricsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Onboarding Metrics'**
+  String get settingsOnboardingMetricsTitle;
+
+  /// No description provided for @settingsOnboardingMetricsSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'FTUE funnel — install, activation, retention (debug)'**
+  String get settingsOnboardingMetricsSubtitle;
+
   /// No description provided for @activeLabel.
   ///
   /// In en, this message translates to:

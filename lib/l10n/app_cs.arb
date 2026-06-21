@@ -3084,6 +3084,8 @@
   "settingsMeasurablesSubtitle": "Konfigurace měřitelných datových typů",
   "settingsMeasurablesTitle": "Měřitelné typy",
   "settingsMeasurableUnitLabel": "Zkratka jednotky (volitelné)",
+  "settingsOnboardingMetricsSubtitle": "FTUE trychtýř — instalace, aktivace, retence (ladění)",
+  "settingsOnboardingMetricsTitle": "Metriky onboardingu",
   "settingsResetGeminiConfirm": "Obnovit",
   "settingsResetGeminiConfirmQuestion": "Tímto se znovu zobrazí dialog nastavení Gemini. Pokračovat?",
   "settingsResetGeminiSubtitle": "Zobrazit znovu dialog pro nastavení Gemini AI",

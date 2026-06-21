@@ -3826,6 +3826,8 @@
   "settingsMeasurablesSubtitle": "Configure measurable data types",
   "settingsMeasurablesTitle": "Measurables",
   "settingsMeasurableUnitLabel": "Unit abbreviation (optional)",
+  "settingsOnboardingMetricsSubtitle": "FTUE funnel — install, activation, retention (debug)",
+  "settingsOnboardingMetricsTitle": "Onboarding Metrics",
   "settingsResetGeminiConfirm": "Reset",
   "settingsResetGeminiConfirmQuestion": "This will show the Gemini setup dialog again. Continue?",
   "settingsResetGeminiSubtitle": "Show the Gemini AI setup dialog again",

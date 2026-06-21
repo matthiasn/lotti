@@ -9,6 +9,13 @@ class AppLocalizationsCs extends AppLocalizations {
   AppLocalizationsCs([String locale = 'cs']) : super(locale);
 
   @override
+  String get settingsOnboardingMetricsTitle => 'Metriky onboardingu';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'FTUE trychtýř — instalace, aktivace, retence (ladění)';
+
+  @override
   String get activeLabel => 'Aktivní';
 
   @override

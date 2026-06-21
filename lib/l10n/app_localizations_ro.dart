@@ -9,6 +9,13 @@ class AppLocalizationsRo extends AppLocalizations {
   AppLocalizationsRo([String locale = 'ro']) : super(locale);
 
   @override
+  String get settingsOnboardingMetricsTitle => 'Valori de onboarding';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'Pâlnie FTUE — instalare, activare, retenție (depanare)';
+
+  @override
   String get activeLabel => 'Activ';
 
   @override

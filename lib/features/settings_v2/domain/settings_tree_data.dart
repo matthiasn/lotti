@@ -265,6 +265,11 @@ List<SettingsNode> buildSettingsTree({
           panel: 'advanced-maintenance',
         ),
         leaf(
+          'advanced/onboarding-metrics',
+          Icons.trending_up_rounded,
+          panel: 'advanced-onboarding-metrics',
+        ),
+        leaf(
           'advanced/about',
           Icons.info_outline_rounded,
           panel: 'advanced-about',

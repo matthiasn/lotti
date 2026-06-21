@@ -9,6 +9,13 @@ class AppLocalizationsDe extends AppLocalizations {
   AppLocalizationsDe([String locale = 'de']) : super(locale);
 
   @override
+  String get settingsOnboardingMetricsTitle => 'Onboarding-Metriken';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'FTUE-Funnel – Installation, Aktivierung, Bindung (Debug)';
+
+  @override
   String get activeLabel => 'Aktiv';
 
   @override

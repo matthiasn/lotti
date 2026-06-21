@@ -3300,6 +3300,8 @@
   "settingsMeasurablesSubtitle": "Messbare Datentypen konfigurieren",
   "settingsMeasurablesTitle": "Messgrößen",
   "settingsMeasurableUnitLabel": "Einheitenabkürzung (optional)",
+  "settingsOnboardingMetricsSubtitle": "FTUE-Funnel – Installation, Aktivierung, Bindung (Debug)",
+  "settingsOnboardingMetricsTitle": "Onboarding-Metriken",
   "settingsResetGeminiConfirm": "Zurücksetzen",
   "settingsResetGeminiConfirmQuestion": "Der Gemini-Einrichtungsdialog wird erneut angezeigt. Fortfahren?",
   "settingsResetGeminiSubtitle": "Den Gemini AI-Einrichtungsdialog erneut anzeigen",

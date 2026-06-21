@@ -3300,6 +3300,8 @@
   "settingsMeasurablesSubtitle": "Configurar tipos de datos medibles",
   "settingsMeasurablesTitle": "Medibles",
   "settingsMeasurableUnitLabel": "Abreviatura de la unidad (opcional)",
+  "settingsOnboardingMetricsSubtitle": "Embudo FTUE: instalación, activación, retención (depuración)",
+  "settingsOnboardingMetricsTitle": "Métricas de onboarding",
   "settingsResetGeminiConfirm": "Restablecer",
   "settingsResetGeminiConfirmQuestion": "Esto mostrará el diálogo de configuración de Gemini de nuevo. ¿Continuar?",
   "settingsResetGeminiSubtitle": "Mostrar el diálogo de configuración de Gemini AI de nuevo",

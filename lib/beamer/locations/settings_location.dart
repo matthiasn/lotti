@@ -18,6 +18,7 @@ import 'package:lotti/features/categories/ui/pages/category_details_page.dart'
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/label_details_page.dart';
 import 'package:lotti/features/labels/ui/pages/labels_list_page.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_metrics_page.dart';
 import 'package:lotti/features/projects/ui/pages/project_detail_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/about_page.dart';
 import 'package:lotti/features/settings/ui/pages/advanced/celebration_settings_page.dart';
@@ -122,6 +123,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
     '/settings/advanced/conflicts/:conflictId/edit',
     '/settings/advanced/conflicts',
     '/settings/advanced/maintenance',
+    '/settings/advanced/onboarding_metrics',
     // Flat legacy route for the mobile-only Health import leaf
     // (`advanced/health-import` in the tree). Declared here so Beamer
     // selects this location for the URL.
@@ -638,6 +640,12 @@ class SettingsLocation extends BeamLocation<BeamState> {
         const BeamPage(
           key: ValueKey('settings-maintenance'),
           child: MaintenancePage(),
+        ),
+
+      if (pathContains('advanced/onboarding_metrics'))
+        const BeamPage(
+          key: ValueKey('settings-onboarding-metrics'),
+          child: OnboardingMetricsPage(),
         ),
     ];
   }

@@ -9,6 +9,13 @@ class AppLocalizationsEs extends AppLocalizations {
   AppLocalizationsEs([String locale = 'es']) : super(locale);
 
   @override
+  String get settingsOnboardingMetricsTitle => 'Métricas de onboarding';
+
+  @override
+  String get settingsOnboardingMetricsSubtitle =>
+      'Embudo FTUE: instalación, activación, retención (depuración)';
+
+  @override
   String get activeLabel => 'Activo';
 
   @override
