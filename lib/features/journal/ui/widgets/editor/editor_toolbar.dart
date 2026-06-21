@@ -126,7 +126,7 @@ class _ToolbarSeparator extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step2),
+      padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step4),
       child: Container(
         width: 1,
         height: tokens.spacing.sectionGap,
@@ -179,6 +179,9 @@ QuillSimpleToolbarConfig _fullConfig(
       codeBlock: const QuillToolbarToggleStyleButtonOptions(
         iconData: Icons.data_object,
       ),
+      toggleCheckList: const QuillToolbarToggleCheckListButtonOptions(
+        iconData: Icons.checklist_rounded,
+      ),
     ),
   );
 }
@@ -223,6 +226,9 @@ QuillSimpleToolbarConfig _essentialsConfig(
           >(afterButtonPressed: notifier.focusNode.requestFocus),
       codeBlock: const QuillToolbarToggleStyleButtonOptions(
         iconData: Icons.data_object,
+      ),
+      toggleCheckList: const QuillToolbarToggleCheckListButtonOptions(
+        iconData: Icons.checklist_rounded,
       ),
     ),
   );
@@ -271,6 +277,9 @@ QuillSimpleToolbarConfig _advancedConfig(
           >(afterButtonPressed: notifier.focusNode.requestFocus),
       codeBlock: const QuillToolbarToggleStyleButtonOptions(
         iconData: Icons.data_object,
+      ),
+      toggleCheckList: const QuillToolbarToggleCheckListButtonOptions(
+        iconData: Icons.checklist_rounded,
       ),
     ),
   );
@@ -330,21 +339,31 @@ class _ToolbarSaveButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final provider = saveButtonControllerProvider(id: entryId);
     final unsaved = ref.watch(provider).value ?? false;
+    final tokens = context.designTokens;
 
-    // The button holds its position and footprint in both states (the
-    // design-system disabled state keeps a faint neutral pill at full opacity).
-    // A leading save glyph appears only when there are unsaved changes, so the
-    // dirty/clean distinction is carried by an icon — not the teal hue alone.
-    return DesignSystemButton(
-      label: context.messages.saveLabel,
-      leadingIcon: unsaved ? Icons.save_rounded : null,
-      // null onPressed → the button renders its disabled (quiet) state.
-      onPressed: unsaved
-          ? () {
-              ref.read(provider.notifier).save();
-              FocusManager.instance.primaryFocus?.unfocus();
-            }
-          : null,
+    // A persistent pill container with an always-visible outline (matching the
+    // small button's corner radius) gives the control a perceivable shape in
+    // BOTH states. So the clean→dirty change is figure-ground (the outline fills
+    // with teal) plus a leading save glyph — never carried by the teal hue
+    // alone, and the clean state never has a near-invisible (1:1) boundary.
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+        border: Border.all(
+          color: unsaved ? Colors.transparent : tokens.colors.text.lowEmphasis,
+        ),
+      ),
+      child: DesignSystemButton(
+        label: context.messages.saveLabel,
+        leadingIcon: unsaved ? Icons.save_rounded : null,
+        // null onPressed → the button renders its disabled (quiet) state.
+        onPressed: unsaved
+            ? () {
+                ref.read(provider.notifier).save();
+                FocusManager.instance.primaryFocus?.unfocus();
+              }
+            : null,
+      ),
     );
   }
 }

@@ -135,14 +135,13 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
           : Colors.transparent,
       elevation: 0,
       clipBehavior: shouldShowEditorToolBar ? Clip.hardEdge : Clip.none,
-      shape: RoundedRectangleBorder(
-        borderRadius: const BorderRadius.all(
+      // No outline: when editing, the brightened surface + the toolbar strip
+      // already signal "this is the editing panel". A third concentric border
+      // (entry card → editor card → text field) read heavy next to the calm
+      // read-only cards, so the toolbar + text share one brightened panel.
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(
           Radius.circular(inputBorderRadius),
-        ),
-        side: BorderSide(
-          color: shouldShowEditorToolBar
-              ? context.colorScheme.outline.withAlpha(100)
-              : Colors.transparent,
         ),
       ),
       child: ConstrainedBox(
