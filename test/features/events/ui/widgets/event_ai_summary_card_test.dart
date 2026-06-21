@@ -32,8 +32,10 @@ void main() {
     return makeTestableWidgetWithScaffold(
       EventAiSummaryCard(eventId: eventId, fallbackSummary: fallbackSummary),
       overrides: <Override>[
-        eventAgentProvider(eventId).overrideWith((ref) async => agent),
-        agentReportProvider(agentId).overrideWith((ref) async => report),
+        // Resolve synchronously so the data-state tests don't transit a
+        // loading frame (the loading/error states have their own tests).
+        eventAgentProvider(eventId).overrideWith((ref) => agent),
+        agentReportProvider(agentId).overrideWith((ref) => report),
         if (service != null)
           eventAgentServiceProvider.overrideWithValue(service),
       ],
@@ -47,7 +49,7 @@ void main() {
       await tester.pumpWidget(
         buildCard(fallbackSummary: 'A passive summary from a linked note.'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(
         find.text('A passive summary from a linked note.'),
@@ -59,7 +61,7 @@ void main() {
 
     testWidgets('renders nothing when there is no fallback', (tester) async {
       await tester.pumpWidget(buildCard());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.text('Summary'), findsNothing);
       expect(find.byIcon(Icons.auto_awesome), findsNothing);
@@ -123,7 +125,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       // The punchy tldr is shown, not the raw markdown body.
       expect(find.text('A warm rooftop birthday. 🎂'), findsOneWidget);
@@ -140,7 +142,7 @@ void main() {
           report: makeTestReport(content: 'Just a body recap.'),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.text('Just a body recap.'), findsOneWidget);
     });
@@ -149,7 +151,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildCard(agent: agentIdentity));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(
         find.text('Add a photo or note and the recap will appear here.'),
@@ -171,10 +173,10 @@ void main() {
           service: service,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       await tester.tap(find.byIcon(Icons.refresh));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       verify(() => service.triggerReanalysis(agentId)).called(1);
     });

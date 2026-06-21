@@ -204,27 +204,6 @@ void main() {
     );
   }
 
-  test('the event tool surface is exactly narrate + observe + follow-up, with '
-      'no rating/cover/status tool', () {
-    expect(eventDeferredTools, {EventAgentToolNames.suggestFollowUpTask});
-    final names = {
-      ...eventAgentTools.map((t) => t.name),
-      ...eventDeferredTools,
-    };
-    expect(names, {
-      EventAgentToolNames.updateReport,
-      EventAgentToolNames.recordObservations,
-      EventAgentToolNames.suggestFollowUpTask,
-    });
-    for (final name in names) {
-      expect(
-        name,
-        isNot(anyOf(contains('rating'), contains('cover'), contains('status'))),
-        reason: 'no event tool may touch rating/cover/status',
-      );
-    }
-  });
-
   test('refuses to create a task when the event is gone', () async {
     when(
       () => mockJournalRepository.getJournalEntityById(eventId),

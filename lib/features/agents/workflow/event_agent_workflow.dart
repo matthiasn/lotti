@@ -454,12 +454,19 @@ class EventAgentWorkflow {
       _logError('wake failed', error: e, stackTrace: s);
 
       try {
-        await syncService.upsertEntity(
-          state.copyWith(
-            updatedAt: now,
-            consecutiveFailureCount: state.consecutiveFailureCount + 1,
-          ),
-        );
+        // Re-read state in a transaction before bumping the failure count, so a
+        // concurrent gate-clear or a peer device's state write that landed
+        // since the wake-start snapshot is not clobbered (e.g. resurrecting
+        // `awaitingContent` or reverting a newer `wakeCounter`).
+        await syncService.runInTransaction(() async {
+          final current = await agentRepository.getAgentState(agentId) ?? state;
+          await syncService.upsertEntity(
+            current.copyWith(
+              updatedAt: now,
+              consecutiveFailureCount: current.consecutiveFailureCount + 1,
+            ),
+          );
+        });
       } catch (stateError, s) {
         _logError(
           'failed to update failure count',
