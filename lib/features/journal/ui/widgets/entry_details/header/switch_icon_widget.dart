@@ -10,6 +10,7 @@ class SwitchIconWidget extends StatelessWidget {
     required this.icon,
     required this.activeIcon,
     required this.activeColor,
+    this.iconSize,
     super.key,
   });
 
@@ -20,6 +21,9 @@ class SwitchIconWidget extends StatelessWidget {
   final IconData icon;
   final IconData activeIcon;
   final Color activeColor;
+
+  /// Glyph size; defaults to the [IconButton] default when null.
+  final double? iconSize;
 
   @override
   Widget build(BuildContext context) {
@@ -44,10 +48,12 @@ class SwitchIconWidget extends StatelessWidget {
         icon: value
             ? Icon(
                 activeIcon,
+                size: iconSize,
                 color: activeColor,
               )
             : Icon(
                 icon,
+                size: iconSize,
                 // highEmphasis (pure white, ~15:1) for the OFF state: the thin
                 // outline glyph (e.g. the unfavorited star) read as a faint
                 // hairline at mediumEmphasis for low-vision users, so it was

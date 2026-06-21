@@ -128,6 +128,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           // crisp, clearly-tappable control — at mediumEmphasis the thin
           // outline read as faint for low-vision users.
           iconColor: tokens.colors.text.highEmphasis,
+          iconSize: AppTheme.headerActionIconSize,
         ),
       // The rating edit affordance lives in the header action cluster (a real,
       // aligned, comfortably-sized control) rather than as a small icon orphaned
@@ -135,6 +136,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
       if (entry is RatingEntry)
         IconButton(
           tooltip: context.messages.sessionRatingEditButton,
+          iconSize: AppTheme.headerActionIconSize,
           icon: Icon(
             Icons.edit_outlined,
             color: tokens.colors.text.highEmphasis,
@@ -153,6 +155,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           icon: Icons.flag_outlined,
           activeIcon: Icons.flag,
           activeColor: context.colorScheme.error,
+          iconSize: AppTheme.headerActionIconSize,
         ),
       // --- fixed trailing anchor: identical x on every card type ---
       // Favorite is shown on every (non-event) entry — outline when not
@@ -165,8 +168,10 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
           icon: Icons.star_outline_rounded,
           activeIcon: Icons.star_rounded,
           activeColor: starredGold,
+          iconSize: AppTheme.headerActionIconSize,
         ),
       IconButton(
+        iconSize: AppTheme.headerActionIconSize,
         icon: Icon(Icons.more_horiz, color: tokens.colors.text.highEmphasis),
         onPressed: () => ExtendedHeaderModal.show(
           context: context,
@@ -207,6 +212,7 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
       turns: widget.isCollapsed ? -0.25 : 0.0,
       duration: AppTheme.chevronRotationDuration,
       child: IconButton(
+        iconSize: AppTheme.headerActionIconSize,
         icon: Icon(
           Icons.expand_more,
           color: tokens.colors.text.highEmphasis,

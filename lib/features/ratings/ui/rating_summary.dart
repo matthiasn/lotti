@@ -132,8 +132,11 @@ TextStyle _labelStyle(DsTokens tokens) =>
       color: tokens.colors.text.mediumEmphasis,
     );
 
+// heading3 (20/w700) matches the shared value-line hero size used by every
+// other card (see EntryTextWidget), so the rating percentages read as the same
+// "value" tier rather than a one-off size.
 TextStyle _valueStyle(DsTokens tokens) =>
-    tokens.typography.styles.subtitle.subtitle1.copyWith(
+    tokens.typography.styles.heading.heading3.copyWith(
       color: tokens.colors.text.highEmphasis,
       fontFeatures: const [FontFeature.tabularFigures()],
     );

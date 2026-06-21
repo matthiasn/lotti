@@ -26,9 +26,12 @@ class EntryTextWidget extends StatelessWidget {
     final labelStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.mediumEmphasis,
     );
-    // subtitle1 (16/w600) lifts the measured value above the 14px body/label
-    // so the number the user came for is the card's primary figure.
-    final valueStyle = tokens.typography.styles.subtitle.subtitle1.copyWith(
+    // heading3 (20/w700) lifts the measured value a full type rung above the
+    // 14px label and the 16px timestamp, so the number the user came for is
+    // unmistakably the card's primary figure — hierarchy carried by SIZE, not
+    // weight alone (the value was previously only bolder, not bigger, so the
+    // timestamp competed with it for first fixation).
+    final valueStyle = tokens.typography.styles.heading.heading3.copyWith(
       color: tokens.colors.text.highEmphasis,
       fontFeatures: const [FontFeature.tabularFigures()],
     );

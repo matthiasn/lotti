@@ -23,6 +23,10 @@ class AppTheme {
   static const double iconContainerBorderRadius = 14; // More rounded
   static const double iconSize = 22; // Slightly larger icons
   static const double iconSizeCompact = 20;
+  // Entry-card header action glyphs (star/AI/chevron/overflow/edit): a larger
+  // glyph than the default body icon so the thin outline controls (esp. the
+  // unfavorited star) stay perceptible for low-vision users on the dark card.
+  static const double headerActionIconSize = 28;
 
   // Spacing constants
   static const double spacingXSmall = 4;
