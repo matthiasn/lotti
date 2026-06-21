@@ -216,10 +216,11 @@ getMistralFtueKnownModels() {
 // =============================================================================
 
 /// Model IDs used for Melious FTUE automation.
-const ftueMeliousThinkingModelId = meliousMistralSmall4119BInstructModelId;
-const ftueMeliousAdvancedThinkingModelId = meliousDeepseekV4ProModelId;
-const ftueMeliousWhisperModelId = meliousWhisperLargeV3ModelId;
-const ftueMeliousWhisperTurboModelId = meliousWhisperLargeV3TurboModelId;
+const String ftueMeliousThinkingModelId =
+    meliousMistralSmall4119BInstructModelId;
+const String ftueMeliousAdvancedThinkingModelId = meliousDeepseekV4ProModelId;
+const String ftueMeliousWhisperModelId = meliousWhisperLargeV3ModelId;
+const String ftueMeliousWhisperTurboModelId = meliousWhisperLargeV3TurboModelId;
 
 /// Finds a KnownModel by its provider model ID from the meliousModels list.
 /// Returns null if not found.

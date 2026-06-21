@@ -145,7 +145,6 @@ void main() {
           name: ftueMeliousCategoryName,
           color: ftueMeliousCategoryColor,
           defaultProfileId: profileMeliousId,
-          defaultTemplateId: null,
         ),
       ).called(1);
     });

@@ -280,7 +280,7 @@ void main() {
         meliousRepository: meliousRepository,
       );
       final meliousProvider = providerOfType(InferenceProviderType.melious);
-      final messages = [
+      const messages = [
         ChatCompletionMessage.system(content: 'answer tersely'),
         ChatCompletionMessage.user(
           content: ChatCompletionUserMessageContent.string('hello'),

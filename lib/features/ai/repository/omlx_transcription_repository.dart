@@ -19,7 +19,7 @@ class OmlxTranscriptionRepository extends TranscriptionRepository {
   /// Heuristic for routing oMLX speech-to-text models to
   /// `/audio/transcriptions` instead of chat completions.
   ///
-  /// The caller also gates on [InferenceProviderType.omlx], so this can stay
+  /// The caller also gates on `InferenceProviderType.omlx`, so this can stay
   /// intentionally broad without affecting MLX Audio, Whisper, or cloud
   /// providers.
   static bool isOmlxTranscriptionModel(String model) {

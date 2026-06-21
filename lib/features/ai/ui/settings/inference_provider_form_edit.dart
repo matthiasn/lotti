@@ -17,6 +17,8 @@ import 'package:uuid/uuid.dart';
 
 // Edit-mode form widgets: provider type, available models, AI setup.
 
+// Riverpod 3 keeps the concrete auto-dispose provider type internal.
+// ignore: specify_nonobvious_property_types
 final meliousInferenceRepositoryProvider =
     Provider.autoDispose<MeliousInferenceRepository>((ref) {
       final repository = MeliousInferenceRepository();
