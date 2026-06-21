@@ -7,7 +7,6 @@ import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/audio_waveform_provider.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_progress_bar.dart';
 import 'package:lotti/features/speech/ui/widgets/progress/audio_waveform_scrubber.dart';
-import 'package:lotti/themes/theme.dart';
 
 const List<double> _speedSequence = <double>[
   0.5,
@@ -31,16 +30,15 @@ class AudioPlayerWidget extends ConsumerWidget {
     final controller = ref.read(audioPlayerControllerProvider.notifier);
     final isActive = state.audioNote?.meta.id == journalAudio.meta.id;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        vertical: AppTheme.cardPadding * 0.4,
-      ),
-      child: _AudioPlayerCardShell(
-        journalAudio: journalAudio,
-        state: state,
-        controller: controller,
-        isActive: isActive,
-      ),
+    // No outer vertical padding: the player is a body section whose surrounding
+    // spacing is owned by its container (the entry card's vertical rhythm, the
+    // captures panel's explicit gaps). Self-padding here double-counted against
+    // that rhythm and bloated the gap above an audio entry's transcript.
+    return _AudioPlayerCardShell(
+      journalAudio: journalAudio,
+      state: state,
+      controller: controller,
+      isActive: isActive,
     );
   }
 }

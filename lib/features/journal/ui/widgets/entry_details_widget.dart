@@ -121,11 +121,17 @@ class EntryDetailsWidget extends ConsumerWidget {
       key: isAudio ? Key('$itemId-${item.meta.vectorClock}') : Key(itemId),
       margin: cardMargin,
       // One shared shell inset: a consistent left/right gutter so every card
-      // type aligns to a single content edge, with a slightly tighter top/bottom
-      // so short cards don't carry more vertical air than their content needs.
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step4,
-        vertical: tokens.spacing.step3,
+      // type aligns to a single content edge. The top is intentionally tighter
+      // (step3) because the header's 48px tap targets overhang below the
+      // timestamp baseline and already supply visual air; the bottom has no such
+      // overhang, so it takes the full gutter (step4, matching the horizontal
+      // inset and the inter-section rhythm) to keep the last line — e.g. an audio
+      // transcript — from crowding the card edge.
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step4,
+        tokens.spacing.step3,
+        tokens.spacing.step4,
+        tokens.spacing.step4,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
