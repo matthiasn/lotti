@@ -125,9 +125,10 @@ class _PlayerBody extends StatelessWidget {
 
     final theme = Theme.of(context);
     final tokens = theme.extension<DsTokens>();
+    // lowEmphasis so the timecode recedes to the same quiet tone as the card's
+    // timestamp — it is supporting metadata, not a payload value.
     final timeColor =
-        tokens?.colors.text.mediumEmphasis ??
-        theme.colorScheme.onSurfaceVariant;
+        tokens?.colors.text.lowEmphasis ?? theme.colorScheme.onSurfaceVariant;
     final captionStyle = tokens?.typography.styles.others.caption;
     // Shared numeric badge features (tabular + open four/six/nine + slashed
     // zero): constant digit advance so the elapsed counter does not "breathe"
