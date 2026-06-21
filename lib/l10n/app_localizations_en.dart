@@ -7775,12 +7775,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncActivityInboxLabel => 'Inbox';
 
   @override
-  String get syncActivityOutboxLabel => 'Outbox';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Sync activity. Outbox: $outbox. Inbox: $inbox. Open sync outbox.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Outbox';
 
   @override
   String get syncDeleteConfigConfirm => 'YES, I\'M SURE';
@@ -8415,6 +8415,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'No title';
+
+  @override
+  String taskTrackedTimeTooltip(String duration) {
+    return 'Time tracked: $duration';
+  }
 
   @override
   String get taskUntitled => '(untitled)';

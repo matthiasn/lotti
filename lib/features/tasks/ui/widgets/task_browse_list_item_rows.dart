@@ -319,10 +319,12 @@ class TaskRowContent extends ConsumerWidget {
                   // Show the AI summary across up to two lines — enough to read
                   // the task's current status (which is worth a second line)
                   // without letting a long summary balloon the card height.
-                  // Medium emphasis keeps it subordinate to the bold title.
+                  // bodySmall (14px) keeps it as legible as the metadata chips
+                  // for low-vision users; medium emphasis (not size) is what
+                  // keeps it subordinate to the bold title.
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.others.caption.copyWith(
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
                     color: TaskShowcasePalette.mediumText(context),
                   ),
                 ),
@@ -471,35 +473,42 @@ class _TrackedDurationMetaContent extends StatelessWidget {
     // metadata chips (category, due) so the row is one consistent set and each
     // chip's boundary is legible for low-vision users. bodySmall (14px) keeps
     // it readable; the recessive read comes from the muted colour, not a
-    // smaller size. Tabular figures let durations line up when scanned.
-    return Container(
-      height: 24,
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: tokens.spacing.step1,
-      ),
-      decoration: BoxDecoration(
-        color: TaskShowcasePalette.surface(context),
-        borderRadius: BorderRadius.circular(tokens.radii.xs),
-        border: Border.all(color: TaskShowcasePalette.containerBorder(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.timelapse_rounded,
-            size: 14,
-            color: TaskShowcasePalette.mediumText(context),
+    // smaller size. Tabular figures let durations line up when scanned. A
+    // tooltip names the value ("Time tracked: …") since a bare clock glyph
+    // alone reads ambiguously (estimate? remaining?) to first-time users.
+    return Tooltip(
+      message: context.messages.taskTrackedTimeTooltip(label),
+      child: Container(
+        height: 24,
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step2,
+          vertical: tokens.spacing.step1,
+        ),
+        decoration: BoxDecoration(
+          color: TaskShowcasePalette.surface(context),
+          borderRadius: BorderRadius.circular(tokens.radii.xs),
+          border: Border.all(
+            color: TaskShowcasePalette.containerBorder(context),
           ),
-          SizedBox(width: tokens.spacing.step1),
-          Text(
-            label,
-            style: tokens.typography.styles.body.bodySmall.copyWith(
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.timelapse_rounded,
+              size: 14,
               color: TaskShowcasePalette.mediumText(context),
-              fontFeatures: const [FontFeature.tabularFigures()],
             ),
-          ),
-        ],
+            SizedBox(width: tokens.spacing.step1),
+            Text(
+              label,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: TaskShowcasePalette.mediumText(context),
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -523,11 +532,13 @@ class SectionHeaderTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     final isPriority = sectionKey.kind == TaskBrowseSectionKind.priority;
     // The section label is the backbone of the grouped list, so it must
-    // out-rank the card titles below it: a crisp high-emphasis semibold label
-    // in a distinct register. The priority *colour* is carried boldly by the
-    // tinted header band and the glyph (see TaskBrowseListItem), so the label
-    // itself stays white for maximum legibility on the band.
-    final textStyle = context.designTokens.typography.styles.others.caption
+    // out-rank the card titles below it: it uses `subtitle1` (16px) — a step
+    // LARGER than the 14px card titles — at the heaviest weight, so the group
+    // header reads as more authoritative than its members rather than tying
+    // with them. The priority *colour* is carried by the tinted band and the
+    // glyph (see TaskBrowseListItem), so the label itself stays white for
+    // maximum legibility on the band.
+    final textStyle = context.designTokens.typography.styles.subtitle.subtitle1
         .copyWith(
           color: TaskShowcasePalette.highText(context),
           fontWeight: FontWeight.w700,

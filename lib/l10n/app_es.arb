@@ -3345,7 +3345,6 @@
   "speechVoiceGenderMale": "Masculina",
   "speechVoicePreviewTooltip": "Escuchar la voz",
   "syncActivityInboxLabel": "Entrada",
-  "syncActivityOutboxLabel": "Salida",
   "syncActivityIndicatorSemantics": "Actividad de sincronización. Bandeja de salida: {outbox}. Bandeja de entrada: {inbox}. Abrir bandeja de salida de sincronización.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {
@@ -3357,6 +3356,7 @@
       }
     }
   },
+  "syncActivityOutboxLabel": "Salida",
   "syncDeleteConfigConfirm": "SÍ, ESTOY SEGURO",
   "syncDeleteConfigQuestion": "¿Quieres eliminar la configuración de sincronización?",
   "syncEntitiesConfirm": "INICIAR SINCRONIZACIÓN",
@@ -3671,6 +3671,7 @@
   "taskStatusOpen": "Abierto",
   "taskStatusRejected": "Rechazado",
   "taskTitleEmpty": "Sin título",
+  "taskTrackedTimeTooltip": "Tiempo registrado: {duration}",
   "taskUntitled": "(sin título)",
   "thinkingDisclosureCopied": "Razonamiento copiado",
   "thinkingDisclosureCopy": "Copiar razonamiento",

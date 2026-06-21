@@ -7976,12 +7976,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncActivityInboxLabel => 'Intrare';
 
   @override
-  String get syncActivityOutboxLabel => 'Ieșire';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Activitate sincronizare. Coadă de ieșire: $outbox. Coadă de intrare: $inbox. Deschide coada de ieșire pentru sincronizare.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Ieșire';
 
   @override
   String get syncDeleteConfigConfirm => 'DA, SUNT SIGUR';
@@ -8625,6 +8625,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Fără titlu';
+
+  @override
+  String taskTrackedTimeTooltip(String duration) {
+    return 'Timp înregistrat: $duration';
+  }
 
   @override
   String get taskUntitled => '(fără titlu)';

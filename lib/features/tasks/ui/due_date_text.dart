@@ -41,9 +41,10 @@ class _DueDateTextState extends State<DueDateText> {
     if (status.daysUntilDue == 0) {
       return context.messages.taskDueToday;
     }
-    return context.messages.taskDueDateWithDate(
-      DateFormat.yMMMd().format(widget.dueDate),
-    );
+    // Bare date — no "Due:" prefix. The calendar icon already signals a due
+    // date and the relative phrasings ("Due in 3 days") carry the word, so the
+    // absolute form stays a quiet, non-repetitive date.
+    return DateFormat.yMMMd().format(widget.dueDate);
   }
 
   String _getRelativeText(BuildContext context, DueDateStatus status) {

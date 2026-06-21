@@ -3129,7 +3129,6 @@
   "speechVoiceGenderMale": "Mužský",
   "speechVoicePreviewTooltip": "Přehrát ukázku hlasu",
   "syncActivityInboxLabel": "Příchozí",
-  "syncActivityOutboxLabel": "Odchozí",
   "syncActivityIndicatorSemantics": "Aktivita synchronizace. Odchozí: {outbox}. Příchozí: {inbox}. Otevřít odchozí frontu synchronizace.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {
@@ -3141,6 +3140,7 @@
       }
     }
   },
+  "syncActivityOutboxLabel": "Odchozí",
   "syncDeleteConfigConfirm": "ANO, JSEM SI JISTÝ",
   "syncDeleteConfigQuestion": "Chcete smazat konfiguraci synchronizace?",
   "syncEntitiesConfirm": "SPUSTIT SYNCHRONIZACI",
@@ -3454,6 +3454,7 @@
   "taskStatusOpen": "Otevřeno",
   "taskStatusRejected": "Odmítnuto",
   "taskTitleEmpty": "Bez názvu",
+  "taskTrackedTimeTooltip": "Sledovaný čas: {duration}",
   "taskUntitled": "(bez názvu)",
   "thinkingDisclosureCopied": "Úvaha zkopírována",
   "thinkingDisclosureCopy": "Kopírovat úvahu",

@@ -3857,7 +3857,6 @@
   "speechVoiceGenderMale": "Male",
   "speechVoicePreviewTooltip": "Preview voice",
   "syncActivityInboxLabel": "Inbox",
-  "syncActivityOutboxLabel": "Outbox",
   "syncActivityIndicatorSemantics": "Sync activity. Outbox: {outbox}. Inbox: {inbox}. Open sync outbox.",
   "@syncActivityIndicatorSemantics": {
     "placeholders": {
@@ -3869,6 +3868,7 @@
       }
     }
   },
+  "syncActivityOutboxLabel": "Outbox",
   "syncDeleteConfigConfirm": "YES, I'M SURE",
   "syncDeleteConfigQuestion": "Do you want to delete the sync configuration?",
   "syncEntitiesConfirm": "START SYNC",
@@ -4190,6 +4190,14 @@
   "taskStatusOpen": "Open",
   "taskStatusRejected": "Rejected",
   "taskTitleEmpty": "No title",
+  "taskTrackedTimeTooltip": "Time tracked: {duration}",
+  "@taskTrackedTimeTooltip": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
   "taskUntitled": "(untitled)",
   "thinkingDisclosureCopied": "Reasoning copied",
   "thinkingDisclosureCopy": "Copy reasoning",

@@ -92,13 +92,14 @@ class TaskBrowseListItem extends StatelessWidget {
     final priorityColor = sectionPriority?.colorForBrightness(
       Theme.of(context).brightness,
     );
-    // Quiet, lightly-graduated band fills: the band only labels its group. The
-    // urgency *anchor* is the lead-card rail + glyph + due chips, so the bands
-    // no longer need a loud "alert" fill — even the urgent band stays calm.
+    // Band fills are graduated steeply by rank so the section header out-ranks
+    // the cards it groups and the urgent (red) band visibly outweighs the high
+    // (orange) band — orange is intrinsically brighter, so red needs a markedly
+    // higher alpha to read as the stronger of the two.
     final bandAlpha = switch (sectionPriority) {
-      TaskPriority.p0Urgent => 0.13,
-      TaskPriority.p1High => 0.10,
-      TaskPriority.p2Medium => 0.08,
+      TaskPriority.p0Urgent => 0.26,
+      TaskPriority.p1High => 0.15,
+      TaskPriority.p2Medium => 0.10,
       TaskPriority.p3Low => 0.06,
       null => 0.0,
     };

@@ -13441,17 +13441,17 @@ abstract class AppLocalizations {
   /// **'Inbox'**
   String get syncActivityInboxLabel;
 
-  /// No description provided for @syncActivityOutboxLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Outbox'**
-  String get syncActivityOutboxLabel;
-
   /// No description provided for @syncActivityIndicatorSemantics.
   ///
   /// In en, this message translates to:
   /// **'Sync activity. Outbox: {outbox}. Inbox: {inbox}. Open sync outbox.'**
   String syncActivityIndicatorSemantics(int outbox, int inbox);
+
+  /// No description provided for @syncActivityOutboxLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbox'**
+  String get syncActivityOutboxLabel;
 
   /// No description provided for @syncDeleteConfigConfirm.
   ///
@@ -14574,6 +14574,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No title'**
   String get taskTitleEmpty;
+
+  /// No description provided for @taskTrackedTimeTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Time tracked: {duration}'**
+  String taskTrackedTimeTooltip(String duration);
 
   /// No description provided for @taskUntitled.
   ///

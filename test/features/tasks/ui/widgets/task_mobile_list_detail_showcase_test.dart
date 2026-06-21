@@ -105,9 +105,10 @@ void main() {
         tester.widget<Text>(find.text('AI Task Summary')).style?.fontWeight,
         FontWeight.w600,
       );
-      // Section headers use the caption size (12px) but a high-emphasis bold
-      // weight so the group label out-ranks the card titles below it.
-      expect(tester.widget<Text>(find.text('Today')).style?.fontSize, 12);
+      // Section headers use subtitle1 (16px) at a high-emphasis bold weight —
+      // a step larger than the 14px card titles — so the group label clearly
+      // out-ranks the cards below it.
+      expect(tester.widget<Text>(find.text('Today')).style?.fontSize, 16);
       expect(
         tester.widget<Text>(find.text('Today')).style?.fontWeight,
         FontWeight.w700,

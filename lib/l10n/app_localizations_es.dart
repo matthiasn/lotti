@@ -7976,12 +7976,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get syncActivityInboxLabel => 'Entrada';
 
   @override
-  String get syncActivityOutboxLabel => 'Salida';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Actividad de sincronización. Bandeja de salida: $outbox. Bandeja de entrada: $inbox. Abrir bandeja de salida de sincronización.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Salida';
 
   @override
   String get syncDeleteConfigConfirm => 'SÍ, ESTOY SEGURO';
@@ -8628,6 +8628,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Sin título';
+
+  @override
+  String taskTrackedTimeTooltip(String duration) {
+    return 'Tiempo registrado: $duration';
+  }
 
   @override
   String get taskUntitled => '(sin título)';

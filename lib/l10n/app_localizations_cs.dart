@@ -7926,12 +7926,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncActivityInboxLabel => 'Příchozí';
 
   @override
-  String get syncActivityOutboxLabel => 'Odchozí';
-
-  @override
   String syncActivityIndicatorSemantics(int outbox, int inbox) {
     return 'Aktivita synchronizace. Odchozí: $outbox. Příchozí: $inbox. Otevřít odchozí frontu synchronizace.';
   }
+
+  @override
+  String get syncActivityOutboxLabel => 'Odchozí';
 
   @override
   String get syncDeleteConfigConfirm => 'ANO, JSEM SI JISTÝ';
@@ -8578,6 +8578,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Bez názvu';
+
+  @override
+  String taskTrackedTimeTooltip(String duration) {
+    return 'Sledovaný čas: $duration';
+  }
 
   @override
   String get taskUntitled => '(bez názvu)';

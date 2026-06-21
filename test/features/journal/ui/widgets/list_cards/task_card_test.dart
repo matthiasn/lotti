@@ -575,7 +575,7 @@ void main() {
         // Due date should be shown with event icon and "Due:" prefix
         expect(find.byIcon(Icons.event_rounded), findsOneWidget);
         expect(
-          find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+          find.text(DateFormat.yMMMd().format(dueDate)),
           findsOneWidget,
         );
       });
@@ -592,7 +592,7 @@ void main() {
 
         // Default should show due date with "Due:" prefix
         expect(
-          find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+          find.text(DateFormat.yMMMd().format(dueDate)),
           findsOneWidget,
         );
       });
@@ -648,7 +648,7 @@ void main() {
 
         // Verify both dates are present
         final creationDateText = DateFormat.yMMMd().format(creationDate);
-        final dueDateText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+        final dueDateText = DateFormat.yMMMd().format(dueDate);
 
         expect(find.text(creationDateText), findsOneWidget);
         expect(find.text(dueDateText), findsOneWidget);
@@ -694,7 +694,7 @@ void main() {
         // Due date should NOT be shown for completed tasks
         expect(find.byIcon(Icons.event_rounded), findsNothing);
         expect(
-          find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+          find.text(DateFormat.yMMMd().format(dueDate)),
           findsNothing,
         );
       });
@@ -732,7 +732,7 @@ void main() {
         // Due date SHOULD be shown for in-progress tasks
         expect(find.byIcon(Icons.event_rounded), findsOneWidget);
         expect(
-          find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+          find.text(DateFormat.yMMMd().format(dueDate)),
           findsOneWidget,
         );
       });
@@ -751,7 +751,7 @@ void main() {
           await pumpTaskCard(tester, ModernTaskCard(task: task));
 
           // A near date (+5 days) defaults to the relative phrasing.
-          final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
+          final absoluteText = DateFormat.yMMMd().format(dueDate);
           expect(find.text('Due in 5 days'), findsOneWidget);
           expect(find.text(absoluteText), findsNothing);
 

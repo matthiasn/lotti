@@ -51,7 +51,7 @@ void main() {
         // Relative is the default for near dates — no tap needed.
         expect(find.text('Due in 5 days'), findsOneWidget);
         expect(
-          find.text('Due: ${DateFormat.yMMMd().format(DateTime(2025, 6, 20))}'),
+          find.text(DateFormat.yMMMd().format(DateTime(2025, 6, 20))),
           findsNothing,
         );
       });
@@ -62,8 +62,7 @@ void main() {
         await pump(tester, DateTime(2025, 7, 5)); // +20 days (beyond a week)
         await tester.pump(const Duration(milliseconds: 100));
 
-        final absoluteText =
-            'Due: ${DateFormat.yMMMd().format(DateTime(2025, 7, 5))}';
+        final absoluteText = DateFormat.yMMMd().format(DateTime(2025, 7, 5));
         expect(find.text(absoluteText), findsOneWidget);
         expect(find.text('Due in 20 days'), findsNothing);
       });
@@ -76,8 +75,7 @@ void main() {
         await pump(tester, DateTime(2025, 7, 5)); // +20 days (far → absolute)
         await tester.pump(const Duration(milliseconds: 100));
 
-        final absoluteText =
-            'Due: ${DateFormat.yMMMd().format(DateTime(2025, 7, 5))}';
+        final absoluteText = DateFormat.yMMMd().format(DateTime(2025, 7, 5));
         expect(find.text(absoluteText), findsOneWidget);
 
         await tester.tap(find.text(absoluteText));
@@ -97,8 +95,7 @@ void main() {
         await tester.tap(find.text('Due in 5 days'));
         await tester.pump(const Duration(milliseconds: 100));
 
-        final absoluteText =
-            'Due: ${DateFormat.yMMMd().format(DateTime(2025, 6, 20))}';
+        final absoluteText = DateFormat.yMMMd().format(DateTime(2025, 6, 20));
         expect(find.text(absoluteText), findsOneWidget);
       });
     });
@@ -141,8 +138,7 @@ void main() {
         await pump(tester, DateTime(2025, 7, 5)); // +20 days (far → absolute)
         await tester.pump(const Duration(milliseconds: 100));
 
-        final absoluteText =
-            'Due: ${DateFormat.yMMMd().format(DateTime(2025, 7, 5))}';
+        final absoluteText = DateFormat.yMMMd().format(DateTime(2025, 7, 5));
 
         await tester.tap(find.text(absoluteText));
         await tester.pump(const Duration(milliseconds: 100));
