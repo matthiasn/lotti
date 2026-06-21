@@ -86,16 +86,25 @@ void main() {
         height: 240,
       );
 
-      // The selected tile carries a 3px ring; the unselected one a hairline.
-      final borderWidths = tester
-          .widgetList<Container>(find.byType(Container))
-          .map((c) => c.decoration)
-          .whereType<BoxDecoration>()
-          .map((d) => d.border)
-          .whereType<Border>()
-          .map((b) => b.top.width)
-          .toList();
-      expect(borderWidths, containsAll(<double>[3, 1]));
+      // Scope to each tile's own Container so an unrelated widget's border
+      // can't satisfy the check: the selected tile ('a') carries a 3px ring,
+      // the unselected one ('b') a hairline.
+      double tileBorderWidth(int index) {
+        final container = tester.widget<Container>(
+          find
+              .ancestor(
+                of: find.byType(EventCoverImage).at(index),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+        final border =
+            (container.decoration! as BoxDecoration).border! as Border;
+        return border.top.width;
+      }
+
+      expect(tileBorderWidth(0), 3);
+      expect(tileBorderWidth(1), 1);
     });
 
     group('showEventCoverPicker', () {
