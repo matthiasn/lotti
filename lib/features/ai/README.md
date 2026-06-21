@@ -227,6 +227,32 @@ app provider type is `InferenceProviderType.omlx`, with default base URL
 `http://127.0.0.1:8003/v1`; its known Qwen3.6 rows are text+image models, so
 the same local model can back thinking and image-recognition slots.
 
+`tool/local_task_agent_inference_eval.sh` is the stronger app-shaped local eval.
+It sends a production-style first-wake task-agent prompt through
+`ConversationRepository`, the real Task Agent system prompt scaffold, the full
+enabled task-agent tool surface, `CloudInferenceWrapper`, and the same
+continuation loop used by agent workflows. The default live matrix compares
+`Qwen3.6-35B-A3B-4bit` with `gemma-4-26B-A4B-it-QAT-MLX-4bit` on one task
+scenario that requires title, estimate, due-date, and priority tool calls plus a
+valid final `update_report`. This catches the failure mode the narrow helper
+cannot: a model that emits isolated function calls but cannot complete the
+actual task-agent wake contract. Set `LOCAL_TASK_AGENT_EVAL_PROFILES` to a
+comma-separated `name=model` list to narrow or expand the comparison. The eval
+does not mutate the database, execute write dispatchers, render UI, or validate
+image input; it validates the local model's behavior inside the app's
+conversation and tool-call orchestration layer.
+
+`tool/local_task_agent_workflow_eval.sh` is the app-path local eval. It calls
+`TaskAgentWorkflow.execute` with the seeded Laura task-agent directives, lets the
+workflow build the real system and user prompts, invokes local oMLX through the
+normal `CloudInferenceWrapper`, and then requires production persistence outputs:
+a `ChangeSetEntity` containing the expected metadata suggestions and an
+`AgentReportEntity` from `update_report`. The surrounding repositories are test
+doubles with deterministic task/project context, so this is still not a live UI
+or real-user-database replay, but it exercises the same workflow, strategy,
+change-set, report-writing, and forced-report retry mechanics that an in-app wake
+uses.
+
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
 prefers Mistral's non-realtime Voxtral transcription model over MLX Qwen when
 both are configured, then falls back to MLX Qwen, Gemini Flash, or the first
