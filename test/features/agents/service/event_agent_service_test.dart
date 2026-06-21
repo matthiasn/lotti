@@ -254,31 +254,34 @@ void main() {
       expect(notifiedAgentIds, isEmpty);
     });
 
-    test('throws before creating the agent for a wrong-kind template', () async {
-      stubCreateFlow(
-        identity: makeIdentity(),
-        templateKind: AgentTemplateKind.projectAgent,
-      );
+    test(
+      'throws before creating the agent for a wrong-kind template',
+      () async {
+        stubCreateFlow(
+          identity: makeIdentity(),
+          templateKind: AgentTemplateKind.projectAgent,
+        );
 
-      await expectLater(
-        () => service.createEventAgent(
-          eventId: eventId,
-          templateId: kTestTemplateId,
-          displayName: 'Event Agent',
-          allowedCategoryIds: const {},
-        ),
-        throwsA(isA<StateError>()),
-      );
+        await expectLater(
+          () => service.createEventAgent(
+            eventId: eventId,
+            templateId: kTestTemplateId,
+            displayName: 'Event Agent',
+            allowedCategoryIds: const {},
+          ),
+          throwsA(isA<StateError>()),
+        );
 
-      verifyNever(
-        () => mockAgentService.createAgent(
-          kind: any(named: 'kind'),
-          displayName: any(named: 'displayName'),
-          config: any(named: 'config'),
-          allowedCategoryIds: any(named: 'allowedCategoryIds'),
-        ),
-      );
-    });
+        verifyNever(
+          () => mockAgentService.createAgent(
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
 
     test('throws when the freshly created agent has no state', () async {
       final identity = makeIdentity();
