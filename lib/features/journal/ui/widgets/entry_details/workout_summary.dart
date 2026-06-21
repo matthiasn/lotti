@@ -46,19 +46,17 @@ class WorkoutSummary extends StatelessWidget {
           entryTextForWorkout(data, includeTitle: !showChart),
           padding: EdgeInsets.zero,
         ),
-        // Zone the card: one deliberate section break separates the value-line
-        // summary (Energy/Duration) from the trend-chart zone, then a tighter
-        // item step groups the charts within that zone — so the summary and the
-        // trends read as two distinct groups rather than one flat stack.
+        // One uniform rhythm step (cardItemSpacing) separates every element —
+        // value line → first chart and chart → chart alike. The earlier
+        // section-gap before the first chart double-counted against this step
+        // and read as a dead band over the (short) chart titles; this also
+        // matches the health card, the other chart-bearing summary, so the two
+        // read as one system.
         if (showChart)
-          for (var i = 0; i < items.length; i++) ...[
-            SizedBox(
-              height: i == 0
-                  ? tokens.spacing.sectionGap
-                  : tokens.spacing.cardItemSpacing,
-            ),
+          for (final item in items) ...[
+            SizedBox(height: tokens.spacing.cardItemSpacing),
             DashboardWorkoutChart(
-              chartConfig: items[i],
+              chartConfig: item,
               rangeStart: getRangeStart(context: context),
               rangeEnd: getRangeEnd(),
               embedded: true,
