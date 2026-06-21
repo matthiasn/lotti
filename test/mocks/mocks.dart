@@ -34,6 +34,7 @@ import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
+import 'package:lotti/features/agents/service/event_agent_service.dart';
 import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
@@ -932,6 +933,8 @@ class MockSyncNodeProfileBroadcaster extends Mock
 class MockWakeOrchestrator extends Mock implements WakeOrchestrator {}
 
 class MockTaskAgentService extends Mock implements TaskAgentService {}
+
+class MockEventAgentService extends Mock implements EventAgentService {}
 
 class MockTaskAgentWorkflow extends Mock implements TaskAgentWorkflow {}
 

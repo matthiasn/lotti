@@ -281,6 +281,7 @@ CategoryDefinition _$CategoryDefinitionFromJson(Map<String, dynamic> json) =>
           .toList(),
       defaultProfileId: json['defaultProfileId'] as String?,
       defaultTemplateId: json['defaultTemplateId'] as String?,
+      defaultEventTemplateId: json['defaultEventTemplateId'] as String?,
       isAvailableForDayPlan: json['isAvailableForDayPlan'] as bool?,
       $type: json['runtimeType'] as String?,
     );
@@ -304,6 +305,7 @@ Map<String, dynamic> _$CategoryDefinitionToJson(CategoryDefinition instance) =>
       'correctionExamples': instance.correctionExamples,
       'defaultProfileId': instance.defaultProfileId,
       'defaultTemplateId': instance.defaultTemplateId,
+      'defaultEventTemplateId': instance.defaultEventTemplateId,
       'isAvailableForDayPlan': instance.isAvailableForDayPlan,
       'runtimeType': instance.$type,
     };

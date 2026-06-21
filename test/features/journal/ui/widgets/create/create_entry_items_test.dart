@@ -14,6 +14,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/features/agents/state/event_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
@@ -1526,6 +1527,9 @@ void main() {
               ),
               overrides: [
                 journalDbProvider.overrideWithValue(mockDb),
+                eventAgentServiceProvider.overrideWithValue(
+                  MockEventAgentService(),
+                ),
               ],
             ),
           );
@@ -1589,6 +1593,9 @@ void main() {
               ),
               overrides: [
                 journalDbProvider.overrideWithValue(mockDb),
+                eventAgentServiceProvider.overrideWithValue(
+                  MockEventAgentService(),
+                ),
               ],
             ),
           );
@@ -2426,7 +2433,12 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             const CreateEventItem(null, categoryId: 'cat-id'),
-            overrides: [journalDbProvider.overrideWithValue(mockDb)],
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+              eventAgentServiceProvider.overrideWithValue(
+                MockEventAgentService(),
+              ),
+            ],
           ),
         );
 

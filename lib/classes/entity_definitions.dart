@@ -155,6 +155,13 @@ sealed class EntityDefinition with _$EntityDefinition {
     /// An agent is auto-created from this template when a task is created.
     String? defaultTemplateId,
 
+    /// Default event-agent template ID for new events in this category.
+    /// An event agent is auto-created from this template when an event is
+    /// created. Independent of `defaultTemplateId` so enabling task agents
+    /// does not implicitly spawn event agents. Nullable for JSON backward
+    /// compatibility (absent key ⇒ `null` ⇒ no event agent).
+    String? defaultEventTemplateId,
+
     /// Opt-in switch making this category available for day planning.
     /// Categories are NOT available by default — only categories with this
     /// flag set to `true` are offered for selection in the day plan.

@@ -51,10 +51,10 @@ class CreateEventItem extends ConsumerWidget {
       return const SizedBox.shrink();
     }
 
-    return _buildEventItem(context);
+    return _buildEventItem(context, ref);
   }
 
-  Widget _buildEventItem(BuildContext context) {
+  Widget _buildEventItem(BuildContext context, WidgetRef ref) {
     return CreateMenuListItem(
       icon: Icons.event_rounded,
       title: context.messages.addActionAddEvent,
@@ -67,6 +67,7 @@ class CreateEventItem extends ConsumerWidget {
           return;
         }
         if (event != null) {
+          unawaited(autoAssignCategoryEventAgent(ref, event));
           beamToNamed('/events/${event.meta.id}');
         }
         Navigator.of(context).pop();

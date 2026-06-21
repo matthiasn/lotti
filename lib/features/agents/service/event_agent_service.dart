@@ -69,8 +69,8 @@ class EventAgentService {
   Future<AgentIdentityEntity> createEventAgent({
     required String eventId,
     required String templateId,
-    required String displayName,
     required Set<String> allowedCategoryIds,
+    String? displayName,
     String? profileId,
     bool awaitContent = true,
   }) async {
@@ -101,7 +101,7 @@ class EventAgentService {
 
       final identity = await agentService.createAgent(
         kind: _agentKind,
-        displayName: displayName,
+        displayName: displayName ?? 'Event Agent',
         config: AgentConfig(profileId: profileId),
         allowedCategoryIds: allowedCategoryIds,
       );
