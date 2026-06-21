@@ -135,13 +135,19 @@ class _EditorWidgetState extends ConsumerState<EditorWidget> {
           : Colors.transparent,
       elevation: 0,
       clipBehavior: shouldShowEditorToolBar ? Clip.hardEdge : Clip.none,
-      // No outline: when editing, the brightened surface + the toolbar strip
-      // already signal "this is the editing panel". A third concentric border
-      // (entry card → editor card → text field) read heavy next to the calm
-      // read-only cards, so the toolbar + text share one brightened panel.
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(
+      // While editing, the panel sits on the same dark surface as the entry card
+      // around it, so a brightness step alone is imperceptible. A clear outline
+      // bounds the whole editing panel (toolbar + text) so it reads as a single,
+      // distinct edit zone within the card — the toolbar and text stay one
+      // surface inside that boundary. Transparent (no box) when read-only.
+      shape: RoundedRectangleBorder(
+        borderRadius: const BorderRadius.all(
           Radius.circular(inputBorderRadius),
+        ),
+        side: BorderSide(
+          color: shouldShowEditorToolBar
+              ? context.colorScheme.outline
+              : Colors.transparent,
         ),
       ),
       child: ConstrainedBox(

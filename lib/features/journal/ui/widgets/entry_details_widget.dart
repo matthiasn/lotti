@@ -461,18 +461,13 @@ class _EntryDetailsContentState extends ConsumerState<EntryDetailsContent> {
   /// read-only line's text ~3px from the editor's own left edge; without this
   /// the body sat on a second, inboard left rail (the most-flagged break in the
   /// card family's alignment).
-  Widget _bodyEditor(String itemId) => Transform.translate(
-    offset: const Offset(-3, 0),
-    // Drop the Material Card's default vertical margin (EdgeInsets.all(4)) — it
-    // added a stray band above the read-only markdown (most visible before the
-    // editor toolbar appears). Keep the 4px horizontal margin: the -3px nudge
-    // above is tuned against it to land the text on the shared content gutter,
-    // so zeroing it entirely would clip the first glyph.
-    child: EditorWidget(
-      entryId: itemId,
-      margin: const EdgeInsets.symmetric(horizontal: 4),
-    ),
-  );
+  // Zero the Material Card's default margin (EdgeInsets.all(4)): the stray
+  // vertical band sat above the read-only markdown, and the horizontal inset
+  // shifted the body off the shared content gutter. With no margin the read-only
+  // text and the (now outlined) editing panel both sit flush on the gutter,
+  // aligned with the timestamp/labels and symmetric within the card.
+  Widget _bodyEditor(String itemId) =>
+      EditorWidget(entryId: itemId, margin: EdgeInsets.zero);
 
   /// Interleaves ONE shared vertical-rhythm step (`cardItemSpacing`) *between*
   /// stacked body sections — but not before the first one. The header row is
