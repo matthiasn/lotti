@@ -62,11 +62,26 @@ class _EntryDetailHeaderState extends ConsumerState<EntryDetailHeader> {
     final entry = entryState.entry;
     final id = entryState.entryId;
 
-    if (widget.isCollapsible) {
-      return _buildCollapsibleHeader(context, entry, id, notifier);
-    }
+    final header = widget.isCollapsible
+        ? _buildCollapsibleHeader(context, entry, id, notifier)
+        : _buildDefaultHeader(context, entry, id, notifier);
 
-    return _buildDefaultHeader(context, entry, id, notifier);
+    // Slim the action-button tap targets to a shorter oval (48 wide × 40 tall,
+    // down from the default 48 × 48 square). The square hit areas made the
+    // header row taller than its content, so the small timestamp was centred in
+    // a tall row with noticeable dead space above it — unbalancing the card
+    // against its bottom gutter. Width stays 48 to preserve horizontal tap
+    // separation for motor-impaired users; only the height is reduced.
+    return IconButtonTheme(
+      data: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: const Size(48, 40),
+          padding: EdgeInsets.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ),
+      child: header,
+    );
   }
 
   Widget _buildDefaultHeader(
