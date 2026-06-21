@@ -13,7 +13,7 @@ Categories are persisted `CategoryDefinition` entities. In the current codebase 
 - Reusable picker surfaces: `CategoryField`, `CategoryPickerSheet`, and `CategoryCreateModal`
 - Category presentation metadata: `name`, `color`, `icon`
 - Category flags: `private`, `active`, `favorite`, `isAvailableForDayPlan`
-- Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`
+- Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`, `defaultEventTemplateId`
 - Category-scoped AI and speech context: `speechDictionary`, `correctionExamples`
 
 ## Current Model Boundaries
@@ -97,6 +97,10 @@ The fields with verified runtime consumers are:
   Copied into `TaskData.profileId` when tasks are created from category-aware entry points.
 - `defaultTemplateId`
   Used to auto-create a task agent in content-awaiting mode for new tasks.
+- `defaultEventTemplateId`
+  Used to auto-create an event agent in content-awaiting mode for new events
+  (`autoAssignCategoryEventAgentWith()`). Independent of `defaultTemplateId` so
+  enabling task agents does not implicitly spawn event agents.
 - `speechDictionary`
   Editable in the details page, appendable via `SpeechDictionaryService`, and injected into AI/speech flows by `PromptBuilderHelper`.
 - `correctionExamples`
@@ -242,6 +246,7 @@ Verified call sites:
 - `lib/logic/create/create_entry.dart`
   - `createTask()` copies `defaultProfileId`
   - `autoAssignCategoryAgentWith()` uses `defaultTemplateId`
+  - `autoAssignCategoryEventAgentWith()` uses `defaultEventTemplateId`
 - `lib/features/agents/workflow/project_tool_dispatcher.dart`
   - project-created tasks inherit `defaultProfileId`
   - auto-assignment uses `defaultTemplateId`
