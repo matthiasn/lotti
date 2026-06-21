@@ -108,32 +108,30 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
           Padding(
             padding: EdgeInsets.fromLTRB(
               tokens.spacing.step5,
-              tokens.spacing.step3,
               tokens.spacing.step5,
               tokens.spacing.step5,
+              tokens.spacing.step6,
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  children: [
-                    _IconBtn(
-                      icon: Icons.arrow_back_rounded,
-                      color: textHigh,
-                      onTap: widget.onBack,
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Expanded(
-                      child: Text(
-                        context.messages.onboardingConnectTitle,
-                        style: tokens.typography.styles.subtitle.subtitle1
-                            .copyWith(color: textHigh),
-                      ),
-                    ),
-                  ],
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: _IconBtn(
+                    icon: Icons.arrow_back_rounded,
+                    color: textHigh,
+                    onTap: widget.onBack,
+                  ),
                 ),
-                SizedBox(height: tokens.spacing.step5),
+                SizedBox(height: tokens.spacing.step4),
+                Text(
+                  context.messages.onboardingConnectTitle,
+                  style: tokens.typography.styles.heading.heading3.copyWith(
+                    color: textHigh,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step6),
                 for (final type in onboardingPrimaryProviders)
                   Padding(
                     padding: EdgeInsets.only(bottom: tokens.spacing.step3),
@@ -237,16 +235,11 @@ class _DarkProviderTile extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.all(tokens.spacing.step4),
         decoration: BoxDecoration(
-          color: dsTokensDark.colors.background.level02.withValues(alpha: 0.85),
+          // Light translucent "glass" so the aurora bleeds through — bright and
+          // premium, never a dull dark card.
+          color: textHigh.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(tokens.radii.m),
-          border: Border.all(color: textHigh.withValues(alpha: 0.08)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.35),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
-            ),
-          ],
+          border: Border.all(color: textHigh.withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [
