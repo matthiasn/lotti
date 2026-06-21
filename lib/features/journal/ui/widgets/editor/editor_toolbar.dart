@@ -45,9 +45,12 @@ class ToolbarWidget extends ConsumerWidget {
     final tokens = context.designTokens;
     final savePad = tokens.spacing.step3;
 
-    // QuillSimpleToolbar paints its own Container background; brighten the card
-    // surface a touch so the bar reads as a distinct (but related) strip.
-    final toolbarColor = context.colorScheme.surface.brighten(15);
+    // The toolbar shares the editor card's surface so the strip and the text
+    // area read as one panel rather than a brighter bar bolted onto a darker
+    // box; a single hairline divider (below) marks the seam instead of a
+    // brightness jump + shadow. QuillSimpleToolbar paints its own background, so
+    // this colour is also threaded into each config.
+    final toolbarColor = context.colorScheme.surface.brighten();
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -57,39 +60,49 @@ class ToolbarWidget extends ConsumerWidget {
         final showAll = constraints.maxWidth >= fullToolbarMinWidth;
 
         final toolbar = Material(
-          elevation: 1,
+          // No elevation: the toolbar and the text area share one flat surface,
+          // separated only by the hairline below.
           color: toolbarColor,
           surfaceTintColor: Colors.transparent,
-          child: SizedBox(
-            height: height,
-            child: Row(
-              children: [
-                Expanded(
-                  child: QuillSimpleToolbar(
-                    controller: controller,
-                    config: showAll
-                        ? _fullConfig(
-                            context,
-                            controller,
-                            notifier,
-                            tokens,
-                            toolbarColor,
-                          )
-                        : _essentialsConfig(notifier, tokens, toolbarColor),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              // One hairline marks the toolbar/content seam; the strip and the
+              // text area otherwise share a single surface.
+              border: Border(
+                bottom: BorderSide(color: context.colorScheme.outlineVariant),
+              ),
+            ),
+            child: SizedBox(
+              height: height,
+              child: Row(
+                children: [
+                  Expanded(
+                    child: QuillSimpleToolbar(
+                      controller: controller,
+                      config: showAll
+                          ? _fullConfig(
+                              context,
+                              controller,
+                              notifier,
+                              tokens,
+                              toolbarColor,
+                            )
+                          : _essentialsConfig(notifier, tokens, toolbarColor),
+                    ),
                   ),
-                ),
-                if (!showAll)
-                  _MoreFormattingButton(
-                    controller: controller,
-                    notifier: notifier,
-                  ),
-                // A generous, deterministic gap fences the save/discard actions
-                // off from the formatting controls so they read as the pinned,
-                // primary cluster and an overshoot can't land on them (no orphan
-                // divider glyph).
-                SizedBox(width: tokens.spacing.step5),
-                _ToolbarActions(entryId: entryId, savePad: savePad),
-              ],
+                  if (!showAll)
+                    _MoreFormattingButton(
+                      controller: controller,
+                      notifier: notifier,
+                    ),
+                  // A generous, deterministic gap fences the save/discard actions
+                  // off from the formatting controls so they read as the pinned,
+                  // primary cluster and an overshoot can't land on them (no orphan
+                  // divider glyph).
+                  SizedBox(width: tokens.spacing.step5),
+                  _ToolbarActions(entryId: entryId, savePad: savePad),
+                ],
+              ),
             ),
           ),
         );
@@ -285,7 +298,7 @@ class _MoreFormattingButton extends StatelessWidget {
       color: tokens.colors.text.mediumEmphasis,
       tooltip: context.messages.editorMoreFormatting,
       onPressed: () {
-        final toolbarColor = context.colorScheme.surface.brighten(15);
+        final toolbarColor = context.colorScheme.surface.brighten();
         showModalBottomSheet<void>(
           context: context,
           backgroundColor: toolbarColor,
@@ -350,7 +363,10 @@ class _ToolbarActions extends ConsumerWidget {
               : null,
         ),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: savePad),
+          // A slightly larger trailing inset (== the card's corner radius) keeps
+          // the save pill clear of the card's rounded corner instead of pinching
+          // it; the smaller leading gap separates it from the discard slot.
+          padding: EdgeInsets.only(left: savePad, right: tokens.spacing.step4),
           child: _ToolbarSaveButton(entryId: entryId, unsaved: unsaved),
         ),
       ],
