@@ -66,13 +66,17 @@ void main() {
     await tester.pump();
   }
 
-  /// Enters [key] and advances past the verification debounce so the canned
-  /// probe result is reflected in the UI.
+  /// Enters [key] and advances past the debounce, the probe, and the minimum
+  /// "checking" dwell so the canned probe result is reflected in the UI.
   Future<void> enterKeyAndSettle(WidgetTester tester, String key) async {
     await tester.enterText(find.byType(TextField), key);
     await tester.pump(); // process onChanged → schedule debounce
-    await tester.pump(const Duration(milliseconds: 900)); // fire debounce timer
-    await tester.pumpAndSettle(); // resolve probe + settle the status crossfade
+    await tester.pump(const Duration(milliseconds: 900)); // debounce → checking
+    await tester.pump(); // probe resolves → parked behind the dwell
+    await tester.pump(
+      const Duration(milliseconds: 1100),
+    ); // dwell → apply result
+    await tester.pumpAndSettle(); // settle the status crossfade
   }
 
   /// The Connect CTA's current `onPressed` — null means disabled.
@@ -140,6 +144,33 @@ void main() {
     expect(connected, isFalse);
   });
 
+  testWidgets('checking stays visible for the minimum dwell', (tester) async {
+    await pumpPanel(
+      tester,
+      type: InferenceProviderType.gemini,
+      probeResult: const ConnectionCheckFailedHttp(
+        status: 401,
+        message: 'Invalid API key provided',
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField), 'bad-key');
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 900)); // debounce → checking
+    await tester.pump(); // probe resolves immediately, but the result is parked
+
+    // Before the dwell elapses the "checking" line is still shown, not the
+    // (already-resolved) rejection.
+    expect(find.textContaining('Checking key'), findsOneWidget);
+    expect(find.text('Invalid API key provided'), findsNothing);
+
+    // Once the dwell elapses the held result appears.
+    await tester.pump(const Duration(milliseconds: 1100));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Checking key'), findsNothing);
+    expect(find.text('Invalid API key provided'), findsOneWidget);
+  });
+
   testWidgets('typing clears a prior rejection (neutral while editing)', (
     tester,
   ) async {
@@ -175,9 +206,11 @@ void main() {
         latency: Duration(milliseconds: 8),
       ),
     );
-    // initState fires the reachability probe post-frame; let it resolve.
-    await tester.pump();
-    await tester.pump();
+    // initState fires the reachability probe post-frame; advance past the
+    // probe and the minimum checking dwell.
+    await tester.pump(); // probe resolves → parked behind the dwell
+    await tester.pump(const Duration(milliseconds: 1100)); // dwell → result
+    await tester.pumpAndSettle();
 
     expect(find.text('Runs on your device — no key needed.'), findsOneWidget);
     expect(find.byType(TextField), findsNothing);

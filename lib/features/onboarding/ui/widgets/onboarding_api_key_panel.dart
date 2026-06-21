@@ -22,6 +22,11 @@ import 'package:lotti/utils/markdown_link_utils.dart';
 /// the probe runs only once the user actually pauses.
 const _verifyDebounce = Duration(milliseconds: 800);
 
+/// Minimum time the "Checking…" status stays on screen once a probe starts, so
+/// a fast provider response doesn't flash past before it can be read. A result
+/// that arrives sooner is held until this elapses.
+const _minCheckingVisible = Duration(seconds: 1);
+
 /// Screen 3 of the FTUE: the visually-matching, simple step that gathers just
 /// the API key for the chosen provider, **verifies it live** against the
 /// provider's "list models" endpoint, and only then creates the provider and
@@ -54,6 +59,14 @@ class OnboardingApiKeyPanel extends ConsumerStatefulWidget {
 class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
   final _controller = TextEditingController();
   Timer? _debounce;
+  Timer? _dwellTimer;
+  bool _dwellElapsed = false;
+  ConnectionCheckState? _pendingResult;
+
+  /// The status the slot renders. Mirrors the verifier but holds the "checking"
+  /// state visible for at least [_minCheckingVisible]; see [_onVerifierChanged].
+  ConnectionCheckState _display = const ConnectionCheckIdle();
+
   bool _busy = false;
   String? _error;
 
@@ -75,6 +88,7 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
   @override
   void dispose() {
     _debounce?.cancel();
+    _dwellTimer?.cancel();
     _controller.dispose();
     super.dispose();
   }
@@ -84,9 +98,11 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
 
   void _onKeyChanged(String value) {
     _debounce?.cancel();
-    // Clear any prior result and drop the in-flight probe. While the user is
-    // still typing the slot stays neutral — never a stale "invalid" that
-    // churns on each keystroke — and the probe re-runs only once typing pauses.
+    // Clear any prior result and drop the in-flight probe. The verifier emits
+    // Idle, which resets the display via [_onVerifierChanged], so while the
+    // user is still typing the slot stays neutral — never a stale "invalid"
+    // churning on each keystroke — and the probe re-runs only once typing
+    // pauses.
     _verifier.reset();
     if (value.trim().isEmpty) return;
     _debounce = Timer(_verifyDebounce, () {
@@ -98,13 +114,47 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
     unawaited(_verifier.verify(baseUrl: _baseUrl, apiKey: _controller.text));
   }
 
+  /// Drives the displayed status from verifier changes, enforcing the minimum
+  /// "checking" dwell: a result that resolves before [_minCheckingVisible] has
+  /// elapsed is parked in [_pendingResult] and applied when the dwell timer
+  /// fires, so the "Checking…" line is always readable.
+  void _onVerifierChanged(ConnectionCheckState next) {
+    switch (next) {
+      case ConnectionCheckChecking():
+        _dwellTimer?.cancel();
+        _pendingResult = null;
+        _dwellElapsed = false;
+        _dwellTimer = Timer(_minCheckingVisible, () {
+          _dwellElapsed = true;
+          final pending = _pendingResult;
+          if (pending != null && mounted) {
+            setState(() {
+              _display = pending;
+              _pendingResult = null;
+            });
+          }
+        });
+        setState(() => _display = next);
+      case ConnectionCheckIdle():
+        _dwellTimer?.cancel();
+        _pendingResult = null;
+        _dwellElapsed = false;
+        setState(() => _display = next);
+      case ConnectionCheckVerified():
+      case ConnectionCheckFailedHttp():
+      case ConnectionCheckFailedNetwork():
+        if (_display is ConnectionCheckChecking && !_dwellElapsed) {
+          _pendingResult = next; // hold until the dwell elapses
+        } else {
+          setState(() => _display = next);
+        }
+    }
+  }
+
   Future<void> _connect() async {
     // The CTA is only enabled once the probe has verified the key, so a bad
     // key can't reach here; guard defensively anyway.
-    final verified = ref.read(
-      connectionVerifierControllerProvider(widget.type),
-    );
-    if (verified is! ConnectionCheckVerified) return;
+    if (_display is! ConnectionCheckVerified) return;
 
     final key = _controller.text.trim();
     _debounce?.cancel();
@@ -154,9 +204,13 @@ class _OnboardingApiKeyPanelState extends ConsumerState<OnboardingApiKeyPanel> {
     final textMed = dsTokensDark.colors.text.mediumEmphasis;
     final panelBg = dsTokensDark.colors.background.level01;
     final console = aiProviderKeyConsoleUrl(widget.type);
-    final verifyState = ref.watch(
-      connectionVerifierControllerProvider(widget.type),
-    );
+    // Listen (not watch) keeps the verifier alive and feeds the local display
+    // state machine, which holds "checking" visible for [_minCheckingVisible].
+    // The rendered status is [_display], not the raw verifier state.
+    ref.listen(connectionVerifierControllerProvider(widget.type), (_, next) {
+      _onVerifierChanged(next);
+    });
+    final verifyState = _display;
 
     // The content of the fixed-height status slot. Distinct keys let the
     // AnimatedSwitcher crossfade between them:
