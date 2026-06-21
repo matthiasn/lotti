@@ -83,6 +83,17 @@ void main() {
     expect(state.reached(OnboardingEventName.providerModalShown), isTrue);
   });
 
+  testWidgets('back from connect returns to the welcome', (tester) async {
+    await openWelcome(tester);
+    await tester.tap(find.text('Connect your brain'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gemini'), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.arrow_back_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Talk. Lotti turns it into a plan.'), findsOneWidget);
+  });
+
   testWidgets('More options reveals OpenAI and Ollama', (tester) async {
     await openWelcome(tester);
     await tester.tap(find.text('Connect your brain'));

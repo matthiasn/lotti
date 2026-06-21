@@ -6424,17 +6424,19 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
-  String get onboardingConnectGeminiTagline =>
-      'Google · rápido, nivel gratuito generoso';
+  String get onboardingConnectGeminiTagline => 'Estados Unidos';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Lo mejor para voz (Voxtral)';
+  String get onboardingConnectMistralTagline => 'Unión Europea';
 
   @override
   String get onboardingConnectMoreOptions => 'Más opciones';
+
+  @override
+  String get onboardingConnectLessOptions => 'Menos opciones';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';
@@ -6446,7 +6448,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get onboardingConnectQwenName => 'Qwen';
 
   @override
-  String get onboardingConnectQwenTagline => 'Alibaba · voz, chat e imágenes';
+  String get onboardingConnectQwenTagline => 'China';
 
   @override
   String get onboardingConnectTitle =>

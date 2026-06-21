@@ -10981,7 +10981,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingConnectGeminiTagline.
   ///
   /// In en, this message translates to:
-  /// **'Google · fast, generous free tier'**
+  /// **'United States'**
   String get onboardingConnectGeminiTagline;
 
   /// No description provided for @onboardingConnectMistralName.
@@ -10993,7 +10993,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingConnectMistralTagline.
   ///
   /// In en, this message translates to:
-  /// **'Best for voice (Voxtral)'**
+  /// **'European Union'**
   String get onboardingConnectMistralTagline;
 
   /// No description provided for @onboardingConnectMoreOptions.
@@ -11001,6 +11001,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'More options'**
   String get onboardingConnectMoreOptions;
+
+  /// No description provided for @onboardingConnectLessOptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Less options'**
+  String get onboardingConnectLessOptions;
 
   /// No description provided for @onboardingConnectOllamaName.
   ///
@@ -11023,7 +11029,7 @@ abstract class AppLocalizations {
   /// No description provided for @onboardingConnectQwenTagline.
   ///
   /// In en, this message translates to:
-  /// **'Alibaba · voice, chat & images'**
+  /// **'China'**
   String get onboardingConnectQwenTagline;
 
   /// No description provided for @onboardingConnectTitle.

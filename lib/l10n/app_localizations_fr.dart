@@ -6431,17 +6431,19 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
-  String get onboardingConnectGeminiTagline =>
-      'Google · rapide, offre gratuite généreuse';
+  String get onboardingConnectGeminiTagline => 'États-Unis';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Idéal pour la voix (Voxtral)';
+  String get onboardingConnectMistralTagline => 'Union européenne';
 
   @override
   String get onboardingConnectMoreOptions => 'Plus d\'options';
+
+  @override
+  String get onboardingConnectLessOptions => 'Moins d\'options';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';
@@ -6453,7 +6455,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get onboardingConnectQwenName => 'Qwen';
 
   @override
-  String get onboardingConnectQwenTagline => 'Alibaba · voix, chat et images';
+  String get onboardingConnectQwenTagline => 'Chine';
 
   @override
   String get onboardingConnectTitle =>

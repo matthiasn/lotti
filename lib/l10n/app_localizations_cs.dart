@@ -6382,17 +6382,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
-  String get onboardingConnectGeminiTagline =>
-      'Google · rychlé, štědrá bezplatná verze';
+  String get onboardingConnectGeminiTagline => 'Spojené státy';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline => 'Nejlepší pro hlas (Voxtral)';
+  String get onboardingConnectMistralTagline => 'Evropská unie';
 
   @override
   String get onboardingConnectMoreOptions => 'Další možnosti';
+
+  @override
+  String get onboardingConnectLessOptions => 'Méně možností';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';
@@ -6404,7 +6406,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get onboardingConnectQwenName => 'Qwen';
 
   @override
-  String get onboardingConnectQwenTagline => 'Alibaba · hlas, chat a obrázky';
+  String get onboardingConnectQwenTagline => 'Čína';
 
   @override
   String get onboardingConnectTitle =>

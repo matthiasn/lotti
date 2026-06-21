@@ -54,8 +54,9 @@ Widget buildOnboardingHeroVisual(OnboardingHeroStyle style) {
     case OnboardingHeroStyle.constellation:
       return NeuralConstellation(
         nodeColor: accent,
-        lineColor: accent.withValues(alpha: 0.5),
+        lineColor: accent.withValues(alpha: 0.6),
         pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
+        nodeCount: 30,
       );
     case OnboardingHeroStyle.crystallize:
       return CrystallizeHero(

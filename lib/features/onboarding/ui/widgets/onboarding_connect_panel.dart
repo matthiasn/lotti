@@ -114,9 +114,9 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                   ),
                   NeuralConstellation(
                     nodeColor: accent,
-                    lineColor: accent.withValues(alpha: 0.4),
+                    lineColor: accent.withValues(alpha: 0.55),
                     pulseColor: Color.lerp(accent, Colors.white, 0.45)!,
-                    nodeCount: 18,
+                    nodeCount: 26,
                   ),
                 ],
               ),
@@ -182,33 +182,58 @@ class _OnboardingConnectPanelState extends State<OnboardingConnectPanel> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            _showMore
-                                ? Icons.expand_less_rounded
-                                : Icons.expand_more_rounded,
-                            size: tokens.spacing.step4,
-                            color: accent,
+                          AnimatedRotation(
+                            turns: _showMore ? 0.5 : 0,
+                            duration: MotionDurations.short4,
+                            child: Icon(
+                              Icons.expand_more_rounded,
+                              size: tokens.spacing.step4,
+                              color: accent,
+                            ),
                           ),
                           SizedBox(width: tokens.spacing.step1),
-                          Text(
-                            context.messages.onboardingConnectMoreOptions,
-                            style: tokens.typography.styles.body.bodyMedium
-                                .copyWith(color: accent),
+                          AnimatedSwitcher(
+                            duration: MotionDurations.short4,
+                            child: Text(
+                              _showMore
+                                  ? context
+                                        .messages
+                                        .onboardingConnectLessOptions
+                                  : context
+                                        .messages
+                                        .onboardingConnectMoreOptions,
+                              key: ValueKey(_showMore),
+                              style: tokens.typography.styles.body.bodyMedium
+                                  .copyWith(color: accent),
+                            ),
                           ),
                         ],
                       ),
                     ),
                   ),
                 ),
-                if (_showMore)
-                  for (final type in onboardingMoreProviders)
-                    Padding(
-                      padding: EdgeInsets.only(top: tokens.spacing.step2),
-                      child: _ProviderTile(
-                        type: type,
-                        onTap: () => widget.onSelect(type),
-                      ),
-                    ),
+                AnimatedSize(
+                  duration: MotionDurations.long2,
+                  curve: MotionCurves.emphasizedDecelerate,
+                  alignment: Alignment.topCenter,
+                  child: _showMore
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (final type in onboardingMoreProviders)
+                              Padding(
+                                padding: EdgeInsets.only(
+                                  top: tokens.spacing.step2,
+                                ),
+                                child: _ProviderTile(
+                                  type: type,
+                                  onTap: () => widget.onSelect(type),
+                                ),
+                              ),
+                          ],
+                        )
+                      : const SizedBox(width: double.infinity),
+                ),
               ],
             ),
           ),
@@ -270,8 +295,8 @@ class _ProviderTile extends StatelessWidget {
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
-              accent.withValues(alpha: 0.26),
-              accent.withValues(alpha: 0.12),
+              accent.withValues(alpha: 0.3),
+              accent.withValues(alpha: 0.14),
             ],
           ),
           borderRadius: BorderRadius.circular(tokens.radii.l),

@@ -19,6 +19,7 @@ class NeuralConstellation extends StatefulWidget {
     required this.lineColor,
     required this.pulseColor,
     this.nodeCount = 24,
+    this.pulseCount = 3,
     this.seed = 7,
     super.key,
   });
@@ -33,6 +34,9 @@ class NeuralConstellation extends StatefulWidget {
   final Color pulseColor;
 
   final int nodeCount;
+
+  /// How many "thought" pulses travel the network at once.
+  final int pulseCount;
   final int seed;
 
   @override
@@ -101,6 +105,7 @@ class _NeuralConstellationState extends State<NeuralConstellation>
               nodeColor: widget.nodeColor,
               lineColor: widget.lineColor,
               pulseColor: widget.pulseColor,
+              pulseCount: widget.pulseCount,
             ),
           );
         },
@@ -140,6 +145,7 @@ class _ConstellationPainter extends CustomPainter {
     required this.nodeColor,
     required this.lineColor,
     required this.pulseColor,
+    required this.pulseCount,
   });
 
   final List<_Node> nodes;
@@ -147,12 +153,13 @@ class _ConstellationPainter extends CustomPainter {
   final Color nodeColor;
   final Color lineColor;
   final Color pulseColor;
+  final int pulseCount;
 
   // Connect nodes closer than this fraction of the canvas diagonal.
   static const _linkThreshold = 0.26;
 
   // Seconds one pulse takes to travel its edge; edges are visited in order.
-  static const _pulsePeriod = 2.6;
+  static const _pulsePeriod = 3.4;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -179,44 +186,57 @@ class _ConstellationPainter extends CustomPainter {
       }
     }
 
-    // The travelling "thought" pulse rides one edge at a time.
-    var pulsedTarget = -1;
+    // Travelling "thought" pulses — several ride different edges, each easing
+    // in and out (sine envelope) so they swell and fade smoothly rather than
+    // popping on/off at the cycle boundary.
     if (edges.isNotEmpty) {
-      final edgeIndex = (t / _pulsePeriod).floor() % edges.length;
-      final progress = (t % _pulsePeriod) / _pulsePeriod;
-      final edge = edges[edgeIndex];
-      final a = positions[edge[0]];
-      final b = positions[edge[1]];
-      final p = Offset.lerp(a, b, Curves.easeInOut.transform(progress))!;
-      pulsedTarget = progress > 0.85 ? edge[1] : -1;
-
-      canvas
-        ..drawCircle(
-          p,
-          7,
-          Paint()
-            ..color = pulseColor.withValues(alpha: 0.35)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
-        )
-        ..drawCircle(p, 2.4, Paint()..color = pulseColor);
+      for (var k = 0; k < pulseCount; k++) {
+        final localT = t + k * (_pulsePeriod / pulseCount);
+        final edgeIndex =
+            ((localT / _pulsePeriod).floor() + k * 5) % edges.length;
+        final progress = (localT % _pulsePeriod) / _pulsePeriod;
+        final env = math.sin(progress * math.pi); // 0 → 1 → 0
+        if (env <= 0.02) continue;
+        final edge = edges[edgeIndex];
+        final p = Offset.lerp(
+          positions[edge[0]],
+          positions[edge[1]],
+          Curves.easeInOut.transform(progress),
+        )!;
+        canvas
+          ..drawCircle(
+            p,
+            8 * env,
+            Paint()
+              ..color = pulseColor.withValues(alpha: 0.42 * env)
+              ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 6),
+          )
+          ..drawCircle(
+            p,
+            2.6 * env,
+            Paint()..color = pulseColor.withValues(alpha: env),
+          );
+      }
     }
 
-    // Nodes: soft glow + crisp core. The pulse's destination flares briefly.
+    // Nodes: a gentle, continuous breathing glow (no abrupt flares) so the
+    // network reads as alive but calm.
     for (var i = 0; i < positions.length; i++) {
-      final flare = i == pulsedTarget;
-      final core = flare ? pulseColor : nodeColor;
+      // Slow, low-amplitude breath so a few nodes gently shimmer — a little
+      // life, not a hectic twinkle.
+      final tw = 0.5 + 0.5 * math.sin(t * 0.4 + nodes[i].phase);
       canvas
         ..drawCircle(
           positions[i],
-          nodes[i].radius * (flare ? 5 : 3.5),
+          nodes[i].radius * (3.6 + 0.5 * tw),
           Paint()
-            ..color = core.withValues(alpha: flare ? 0.5 : 0.22)
+            ..color = nodeColor.withValues(alpha: 0.2 + 0.08 * tw)
             ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
         )
         ..drawCircle(
           positions[i],
           nodes[i].radius,
-          Paint()..color = core.withValues(alpha: 0.95),
+          Paint()..color = nodeColor.withValues(alpha: 0.95),
         );
     }
   }

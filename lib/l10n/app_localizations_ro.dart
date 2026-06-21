@@ -6427,18 +6427,19 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingConnectGeminiName => 'Gemini';
 
   @override
-  String get onboardingConnectGeminiTagline =>
-      'Google · rapid, nivel gratuit generos';
+  String get onboardingConnectGeminiTagline => 'Statele Unite';
 
   @override
   String get onboardingConnectMistralName => 'Mistral';
 
   @override
-  String get onboardingConnectMistralTagline =>
-      'Cel mai bun pentru voce (Voxtral)';
+  String get onboardingConnectMistralTagline => 'Uniunea Europeană';
 
   @override
   String get onboardingConnectMoreOptions => 'Mai multe opțiuni';
+
+  @override
+  String get onboardingConnectLessOptions => 'Mai puține opțiuni';
 
   @override
   String get onboardingConnectOllamaName => 'Ollama';
@@ -6450,7 +6451,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get onboardingConnectQwenName => 'Qwen';
 
   @override
-  String get onboardingConnectQwenTagline => 'Alibaba · voce, chat și imagini';
+  String get onboardingConnectQwenTagline => 'China';
 
   @override
   String get onboardingConnectTitle =>
