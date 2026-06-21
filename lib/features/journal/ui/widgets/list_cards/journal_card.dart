@@ -10,6 +10,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
@@ -106,16 +107,7 @@ class _EntryCardContent extends StatelessWidget {
     final cs = context.colorScheme;
 
     return switch (item) {
-      final JournalEntry e => _scaffold(
-        context,
-        icon: Icons.notes_rounded,
-        iconColor: _categoryColor(context, item),
-        title: _contentTitle(
-          context,
-          e.entryText,
-          fallback: context.messages.entryTypeLabelJournalEntry,
-        ),
-      ),
+      final JournalEntry e => _journalEntryCard(context, e),
       final JournalAudio a => _scaffold(
         context,
         icon: Icons.mic_rounded,
@@ -282,6 +274,33 @@ class _EntryCardContent extends StatelessWidget {
       secondary: secondary,
       trailing: _statusIndicators(context),
       labelIds: item.meta.labelIds,
+    );
+  }
+
+  /// A plain journal entry renders as a note; a time recording (its `dateTo`
+  /// after its `dateFrom`) leads with a timer glyph and a [TimeSpanBar] so it
+  /// reads as elapsed time rather than a point-in-time observation.
+  Widget _journalEntryCard(BuildContext context, JournalEntry e) {
+    final span = e.meta.dateTo.difference(e.meta.dateFrom);
+    // Only surface the span where durations are relevant — a task/event's linked
+    // timeline (showLinkedDuration) — so the main logbook feed stays calm.
+    final isTimeRecording = showLinkedDuration && isTimeRecordingSpan(span);
+    return _scaffold(
+      context,
+      icon: isTimeRecording ? Icons.timer_outlined : Icons.notes_rounded,
+      iconColor: _categoryColor(context, item),
+      title: _contentTitle(
+        context,
+        e.entryText,
+        fallback: context.messages.entryTypeLabelJournalEntry,
+      ),
+      secondary: isTimeRecording
+          ? TimeSpanBar(
+              startLabel: hhMmFormat.format(e.meta.dateFrom),
+              endLabel: hhMmFormat.format(e.meta.dateTo),
+              durationLabel: formatRangeDuration(span),
+            )
+          : null,
     );
   }
 

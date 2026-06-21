@@ -91,7 +91,7 @@ class EventCategoryFilter {
   final Color color;
 }
 
-enum EventTimelineKind { photo, note, audio }
+enum EventTimelineKind { photo, note, audio, timeRecording }
 
 @immutable
 class EventPhoto {
@@ -111,10 +111,15 @@ class EventTimelineEntry {
     this.text,
     this.photos = const [],
     this.durationLabel,
+    this.endTimeLabel,
   });
 
   final String timeLabel;
   final EventTimelineKind kind;
+
+  /// End of the span for a [EventTimelineKind.timeRecording] beat (the start is
+  /// [timeLabel]); null for point-in-time beats.
+  final String? endTimeLabel;
 
   /// Id of the linked journal entry this beat was built from, so the detail
   /// view can open its source. `null` when the source isn't navigable.

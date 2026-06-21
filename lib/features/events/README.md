@@ -98,7 +98,14 @@ depth.
 when/where, category, rating over a strong scrim), then an AI summary card (the
 newest linked `AiResponseEntry` by `meta.dateFrom`, else the event note), a
 **Photos** gallery, a vertical timeline of linked entries (lead photo +
-supporting cluster + caption, notes, voice notes), and a linked-tasks section.
+supporting cluster + caption, notes, voice notes, and time recordings), and a
+linked-tasks section. A linked note whose `dateTo` is more than a minute after
+its `dateFrom` is a *time recording*: the mapping emits an
+`EventTimelineKind.timeRecording` beat that renders as a `TimeSpanBar`
+(start → end · elapsed, via `isTimeRecordingSpan`/`formatRangeDuration`) so it
+reads as a tracked interval rather than a point-in-time observation. The same
+`TimeSpanBar` surfaces in a task's linked-entries timeline (`journal_card.dart`,
+gated on `showLinkedDuration`).
 On wide screens the body splits into a main column (summary + photos + timeline)
 and a tasks rail; on phones it stacks.
 

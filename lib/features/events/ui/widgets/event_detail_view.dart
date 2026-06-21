@@ -8,6 +8,7 @@ import 'package:lotti/features/events/ui/widgets/event_cover_image.dart';
 import 'package:lotti/features/events/ui/widgets/event_overlay_pill.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
+import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
@@ -1099,6 +1100,26 @@ class _TimelineContent extends StatelessWidget {
         return Text(
           entry.text ?? '',
           style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
+        );
+      case EventTimelineKind.timeRecording:
+        // A time recording reads as a span (start → end · elapsed), with its
+        // note beneath, rather than a bare observation.
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TimeSpanBar(
+              startLabel: entry.timeLabel,
+              endLabel: entry.endTimeLabel ?? '',
+              durationLabel: entry.durationLabel ?? '',
+            ),
+            if (entry.text != null) ...[
+              SizedBox(height: tokens.spacing.step2),
+              Text(
+                entry.text!,
+                style: styles.body.bodyLarge.copyWith(color: cs.onSurface),
+              ),
+            ],
+          ],
         );
       case EventTimelineKind.audio:
         return Row(

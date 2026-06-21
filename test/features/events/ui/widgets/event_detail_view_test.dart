@@ -5,6 +5,7 @@ import 'package:lotti/classes/event_status.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
+import 'package:lotti/features/journal/ui/widgets/time_span_bar.dart';
 
 import '../../test_utils.dart';
 
@@ -114,6 +115,34 @@ void main() {
       expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
       expect(find.text('Voice note · 0:42'), findsOneWidget);
       expect(find.text('Toast from Dad'), findsOneWidget);
+    });
+
+    testWidgets('renders a time-recording beat as a span with its duration', (
+      tester,
+    ) async {
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(
+            timeline: const [
+              EventTimelineEntry(
+                timeLabel: '13:00',
+                kind: EventTimelineKind.timeRecording,
+                entryId: 'tr-1',
+                endTimeLabel: '15:30',
+                durationLabel: '2h 30m',
+                text: 'Wandered the festival.',
+              ),
+            ],
+          ),
+        ),
+        size: _tallMobile,
+      );
+
+      expect(find.byType(TimeSpanBar), findsOneWidget);
+      expect(find.text('2h 30m'), findsOneWidget);
+      expect(find.text('15:30'), findsOneWidget);
+      expect(find.text('Wandered the festival.'), findsOneWidget);
     });
 
     testWidgets('renders tasks with done/undone states and due labels', (
