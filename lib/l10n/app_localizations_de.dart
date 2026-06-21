@@ -4918,6 +4918,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Titelbild hinzufügen';
 
   @override
+  String get eventsChangeCover => 'Titelbild ändern';
+
+  @override
   String get eventsAddLabel => 'Hinzufügen';
 
   @override

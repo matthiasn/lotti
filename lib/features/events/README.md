@@ -152,6 +152,10 @@ should be removed once the old form route is retired (don't "fix" it).
   rating, so a fresh/tentative event isn't pushed gold stars.
 - **Cover** — while the event has no cover, an "add cover photo" action opens the
   create-entry menu; the first linked photo then becomes the cover automatically.
+  Once a cover exists, the hero overflow menu offers **Change cover** →
+  `EventCoverPicker` (a sheet of the event's linked photos), and picking one calls
+  `EntryController.updateEventCover(imageId)` to set `EventData.coverArtId`; the
+  sheet's "add photo" tile falls back to the create-entry menu for a new shot.
 - **Add to timeline** — opens the shared `CreateEntryModal` scoped to the event
   (`linkedFromId`), so new notes, photos and audio link straight back.
 - **Add task** — mirrors the linked-tasks flow: `createTask(linkedId: eventId)`

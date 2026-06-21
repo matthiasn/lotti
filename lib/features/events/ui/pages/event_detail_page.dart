@@ -7,6 +7,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
 import 'package:lotti/features/events/state/event_view_mapping.dart';
+import 'package:lotti/features/events/ui/widgets/event_cover_picker.dart';
 import 'package:lotti/features/events/ui/widgets/event_detail_view.dart';
 import 'package:lotti/features/events/ui/widgets/event_status_picker.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -145,6 +146,38 @@ class EventDetailPage extends ConsumerWidget {
       beamToNamed('/tasks/${task.meta.id}');
     }
 
+    // The event's linked photos, any of which can become the cover.
+    final linkedImages = linked.whereType<JournalImage>().toList();
+
+    // Opens a sheet to pick a different linked photo as the cover (or add a new
+    // one). Falls back to adding a photo when none are linked yet.
+    void changeCover() {
+      if (linkedImages.isEmpty) {
+        addLinkedEntry();
+        return;
+      }
+      showEventCoverPicker(
+        context: context,
+        currentCoverId: entry.data.coverArtId,
+        choices: [
+          for (final image in linkedImages)
+            EventCoverChoice(
+              id: image.meta.id,
+              image: FileImage(
+                File(
+                  getFullImagePath(
+                    image,
+                    documentsDirectory: documentsDirectory,
+                  ),
+                ),
+              ),
+            ),
+        ],
+        onSelect: controller.updateEventCover,
+        onAddPhoto: addLinkedEntry,
+      );
+    }
+
     return EventDetailView(
       data: data,
       onBack: () => Navigator.of(context).maybePop(),
@@ -155,6 +188,7 @@ class EventDetailPage extends ConsumerWidget {
           EntryDateTimeMultiPageModal.show(context: context, entry: entry),
       onSetRating: controller.updateRating,
       onAddCover: addLinkedEntry,
+      onChangeCover: data.card.coverImage == null ? null : changeCover,
       onDelete: confirmDelete,
       onAddToTimeline: addLinkedEntry,
       onAddTask: addTask,

@@ -2510,6 +2510,7 @@
   "entryTypeLabelWorkoutEntry": "Workout",
   "eventNameLabel": "Event:",
   "eventsAddCoverPhoto": "Add cover photo",
+  "eventsChangeCover": "Change cover",
   "eventsAddLabel": "Add",
   "eventsDeleteEvent": "Delete event",
   "eventsFilterAll": "All",

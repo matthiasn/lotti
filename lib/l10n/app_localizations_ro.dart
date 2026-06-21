@@ -4957,6 +4957,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Adăugați o fotografie de copertă';
 
   @override
+  String get eventsChangeCover => 'Schimbați coperta';
+
+  @override
   String get eventsAddLabel => 'Adăugați';
 
   @override

@@ -4948,6 +4948,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Añadir foto de portada';
 
   @override
+  String get eventsChangeCover => 'Cambiar portada';
+
+  @override
   String get eventsAddLabel => 'Añadir';
 
   @override

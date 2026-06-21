@@ -34,6 +34,7 @@ class EventDetailView extends StatelessWidget {
     this.onTapDateTime,
     this.onSetRating,
     this.onAddCover,
+    this.onChangeCover,
     this.onDelete,
     this.onRegenerateSummary,
     this.onAddToTimeline,
@@ -58,6 +59,10 @@ class EventDetailView extends StatelessWidget {
 
   /// Adds a cover photo (shown only while the event has no cover).
   final VoidCallback? onAddCover;
+
+  /// Changes the cover photo (offered in the overflow menu once the event has
+  /// one), e.g. picking a different linked photo or adding a new one.
+  final VoidCallback? onChangeCover;
 
   /// Deletes the event (offered in the overflow menu).
   final VoidCallback? onDelete;
@@ -94,6 +99,7 @@ class EventDetailView extends StatelessWidget {
             whenLabel: data.whenLabel,
             onBack: onBack,
             onDelete: onDelete,
+            onChangeCover: onChangeCover,
             onRenameTitle: onRenameTitle,
             onTapCategory: onTapCategory,
             onTapStatus: onTapStatus,
@@ -219,6 +225,7 @@ class _HeroSliver extends StatelessWidget {
     this.whenLabel,
     this.onBack,
     this.onDelete,
+    this.onChangeCover,
     this.onRenameTitle,
     this.onTapCategory,
     this.onTapStatus,
@@ -231,6 +238,7 @@ class _HeroSliver extends StatelessWidget {
   final String? whenLabel;
   final VoidCallback? onBack;
   final VoidCallback? onDelete;
+  final VoidCallback? onChangeCover;
   final ValueChanged<String>? onRenameTitle;
   final VoidCallback? onTapCategory;
   final VoidCallback? onTapStatus;
@@ -254,7 +262,8 @@ class _HeroSliver extends StatelessWidget {
       backgroundColor: dsPageSurface(context),
       leading: _ScrimIconButton(icon: Icons.arrow_back, onPressed: onBack),
       actions: [
-        if (onDelete != null) _HeroMenuButton(onDelete: onDelete),
+        if (onDelete != null || onChangeCover != null)
+          _HeroMenuButton(onDelete: onDelete, onChangeCover: onChangeCover),
         SizedBox(width: tokens.spacing.step2),
       ],
       flexibleSpace: FlexibleSpaceBar(
@@ -659,15 +668,17 @@ class _ScrimIconButton extends StatelessWidget {
 /// Overflow menu over the hero. Currently a single destructive action; more
 /// (share, change cover) slot in here as they land.
 class _HeroMenuButton extends StatelessWidget {
-  const _HeroMenuButton({this.onDelete});
+  const _HeroMenuButton({this.onDelete, this.onChangeCover});
 
   final VoidCallback? onDelete;
+  final VoidCallback? onChangeCover;
 
   @override
   Widget build(BuildContext context) {
     final cs = context.colorScheme;
+    final spacing = context.designTokens.spacing.step2;
     return Padding(
-      padding: EdgeInsets.all(context.designTokens.spacing.step2),
+      padding: EdgeInsets.all(spacing),
       child: Material(
         color: Colors.black.withValues(alpha: 0.35),
         shape: const CircleBorder(),
@@ -675,19 +686,36 @@ class _HeroMenuButton extends StatelessWidget {
         child: PopupMenuButton<String>(
           icon: const Icon(Icons.more_horiz, color: Colors.white),
           onSelected: (value) {
+            if (value == 'change_cover') onChangeCover?.call();
             if (value == 'delete') onDelete?.call();
           },
           itemBuilder: (context) => [
-            PopupMenuItem<String>(
-              value: 'delete',
-              child: Row(
-                children: [
-                  Icon(Icons.delete_outline, size: 18, color: cs.error),
-                  SizedBox(width: context.designTokens.spacing.step2),
-                  Text(context.messages.eventsDeleteEvent),
-                ],
+            if (onChangeCover != null)
+              PopupMenuItem<String>(
+                value: 'change_cover',
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.image_outlined,
+                      size: 18,
+                      color: cs.onSurfaceVariant,
+                    ),
+                    SizedBox(width: spacing),
+                    Text(context.messages.eventsChangeCover),
+                  ],
+                ),
               ),
-            ),
+            if (onDelete != null)
+              PopupMenuItem<String>(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, size: 18, color: cs.error),
+                    SizedBox(width: spacing),
+                    Text(context.messages.eventsDeleteEvent),
+                  ],
+                ),
+              ),
           ],
         ),
       ),

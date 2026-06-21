@@ -424,6 +424,17 @@ class EntryController extends _$EntryController {
     haptic: HapticFeedback.heavyImpact,
   );
 
+  /// Sets the event's cover photo to [imageId] (a linked [JournalImage]),
+  /// optionally repositioning the horizontal crop. Passing null clears the
+  /// explicit cover so it falls back to the newest linked photo.
+  Future<void> updateEventCover(String? imageId, {double? cropX}) =>
+      _updateEventData(
+        (data) => data.copyWith(
+          coverArtId: imageId,
+          coverArtCropX: cropX ?? data.coverArtCropX,
+        ),
+      );
+
   Future<bool> delete({
     required bool beamBack,
   }) async {

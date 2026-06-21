@@ -403,6 +403,25 @@ void main() {
       expect(deletes, 1);
     });
 
+    testWidgets('the overflow menu changes the cover', (tester) async {
+      var changes = 0;
+      await pumpEventScreen(
+        tester,
+        EventDetailView(
+          data: buildEventDetailData(),
+          onChangeCover: () => changes++,
+        ),
+        size: _tallMobile,
+      );
+
+      await tester.tap(find.byIcon(Icons.more_horiz));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Change cover'));
+      await tester.pumpAndSettle();
+
+      expect(changes, 1);
+    });
+
     testWidgets('wires back, regenerate and section add callbacks', (
       tester,
     ) async {

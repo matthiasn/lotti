@@ -2281,6 +2281,64 @@ void main() {
     });
   });
 
+  group('updateEventCover method', () {
+    setUp(() {
+      reset(mockPersistenceLogic);
+      when(
+        () => mockJournalDb.journalEntityById(testEventEntry.meta.id),
+      ).thenAnswer((_) async => testEventEntry);
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+    });
+
+    test('persists the chosen cover image id, preserving title', () async {
+      final container = makeProviderContainer();
+      final entryId = testEventEntry.meta.id;
+      final provider = entryControllerProvider(id: entryId);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      when(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: entryId,
+          data: any(named: 'data'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await notifier.updateEventCover('img-42');
+
+      final captured = verify(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: captureAny(named: 'data'),
+        ),
+      ).captured;
+      final data = captured.single as EventData;
+      expect(data.coverArtId, 'img-42');
+      expect(data.title, testEventEntry.data.title);
+    });
+
+    test('does nothing when entry is not a JournalEvent', () async {
+      final container = makeProviderContainer();
+      final provider = entryControllerProvider(id: testTextEntry.meta.id);
+      final notifier = container.read(provider.notifier);
+      await container.read(provider.future);
+
+      await notifier.updateEventCover('img-1');
+
+      verifyNever(
+        () => mockPersistenceLogic.updateEvent(
+          entryText: any(named: 'entryText'),
+          journalEntityId: any(named: 'journalEntityId'),
+          data: any(named: 'data'),
+        ),
+      );
+    });
+  });
+
   group('taskTitleFocusNodeListener method', () {
     setUp(() {
       // Ensure mocks are set up for this group

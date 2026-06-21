@@ -4923,6 +4923,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get eventsAddCoverPhoto => 'Přidat titulní fotku';
 
   @override
+  String get eventsChangeCover => 'Změnit obálku';
+
+  @override
   String get eventsAddLabel => 'Přidat';
 
   @override
