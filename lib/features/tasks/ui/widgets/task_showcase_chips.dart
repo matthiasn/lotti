@@ -141,6 +141,8 @@ class TaskShowcaseMetaChip extends StatelessWidget {
             label,
             style: tokens.typography.styles.body.bodySmall.copyWith(
               color: TaskShowcasePalette.mediumText(context),
+              // Tabular figures so dates/distances line up when chips stack.
+              fontFeatures: const [FontFeature.tabularFigures()],
             ),
           ),
         ],

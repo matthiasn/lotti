@@ -138,6 +138,8 @@ class _DueDateTextState extends State<DueDateText> {
               style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: color,
                 fontWeight: weight,
+                // Tabular figures so day counts line up when the chips stack.
+                fontFeatures: const [FontFeature.tabularFigures()],
               ),
             ),
           ],
